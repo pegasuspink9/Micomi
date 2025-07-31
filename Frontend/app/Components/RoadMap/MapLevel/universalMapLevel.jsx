@@ -1,0 +1,399 @@
+import { View, StyleSheet, ImageBackground, ScrollView, Dimensions, Image, Animated } from "react-native";
+import { useState, useEffect, useRef } from "react";
+import levels from "./greenLandData"; 
+import LevelButtons from "../RoadMapComponents/Buttons";
+import LottieView from "lottie-react-native";
+const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
+import { useLocalSearchParams } from "expo-router";
+import { MAP_THEMES, DEFAULT_THEME } from './MapDatas/mapData';
+
+export default function UniversalMapLevel() {
+  const [backgroundCount, setBackgroundCount] = useState(5);
+  const [lessons] = useState(levels || []);
+  const bushSwayAnim = useRef(new Animated.Value(0)).current;
+  
+  const { mapName } = useLocalSearchParams(); // Get mapName instead of mapType
+
+  // GET current theme from mapData
+  const getCurrentTheme = () => {
+    return MAP_THEMES[mapName] || DEFAULT_THEME;
+  };
+
+  const theme = getCurrentTheme();
+
+  console.log('Current map:', mapName);
+  console.log('Using theme:', theme);
+  console.log('Total lessons:', lessons.length);
+  console.log('Screen dimensions:', { screenHeight, screenWidth });
+
+  // CONDITIONAL bush animation - only for HTML/greenLand
+  useEffect(() => {
+    if (mapName === 'HTML') {
+      const swayAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(bushSwayAnim, {
+            toValue: 1,
+            duration: 4000,
+            useNativeDriver: true
+          }),
+          Animated.timing(bushSwayAnim, {
+            toValue: 0,
+            duration: 4000,
+            useNativeDriver: true
+          })
+        ])
+      );
+      
+      swayAnimation.start();
+      
+      return () => swayAnimation.stop();
+    }
+  }, [bushSwayAnim, mapName]);
+
+  const bushTransform = bushSwayAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-50, 1]
+  });
+
+  const bushTransformRight = bushSwayAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [50, 1]
+  });
+  
+  // Screen Size Calculation
+  const getResponsiveValues = () => {
+    const baseHeight = 844;
+    const heightRatio = screenHeight / baseHeight;
+    
+    return {
+      baseTop: 200 * heightRatio,
+      loopSpacing: 700 * heightRatio, 
+      buttonSpacing: 130 * heightRatio,
+      roadmapHeight: screenHeight * 1.45,
+      roadmapSpacing: screenHeight * 1.2,
+      heightRatio,
+    };
+  };
+  
+  const calculateContentHeight = () => {
+    if (lessons.length === 0) return screenHeight * 2;
+    
+    const responsive = getResponsiveValues();
+    
+    const lastIndex = lessons.length - 1;
+    let lastButtonTop;
+
+    if (lastIndex === 0) {
+      lastButtonTop = 200 * responsive.heightRatio;
+    } 
+    else {
+      const fourButtonPositions = [
+        { top: 350 * responsive.heightRatio },  
+        { top: 540 * responsive.heightRatio },  
+        { top: 735 * responsive.heightRatio },  
+        { top: 900 * responsive.heightRatio }, 
+      ];
+
+      const patternIndex = (lastIndex - 1) % 4; 
+      const loopNumber = Math.floor((lastIndex - 1) / 4); 
+
+      const verticalOffset = loopNumber * 680 * responsive.heightRatio;
+      lastButtonTop = fourButtonPositions[patternIndex].top + verticalOffset;
+    }
+    
+    return lastButtonTop + (500 * responsive.heightRatio);
+  };
+  
+  const handleScroll = ({ nativeEvent }) => {
+    const { contentOffset } = nativeEvent;
+    const currentScreen = Math.floor(contentOffset.y / screenHeight);
+    const neededBackgrounds = currentScreen + 20;
+   
+    if (neededBackgrounds > backgroundCount) {
+      setBackgroundCount(Math.max(neededBackgrounds, 15));
+    }
+  };
+
+  const handleLevelPress = (level) => {
+    console.log('Level pressed:', level);
+  };
+
+  // CONDITIONAL bush creation - only for HTML
+  const createInfiniteBushes = () => {
+    if (mapName !== 'HTML') return []; // No bushes for other maps
+
+    const responsive = getResponsiveValues();
+    const isLargerThanPhone = screenWidth > 500 || screenHeight > 900;
+
+    const originalBushes = [
+      { id: 'bush0', top: 200, zIndex: 5, right: isLargerThanPhone ? 380 * responsive.heightRatio : 10 * responsive.heightRatio },
+      { id: 'bush1', top: 280, zIndex: 5, right: isLargerThanPhone ? 370 * responsive.heightRatio : 12 * responsive.heightRatio },
+      { id: 'bush2', top: 380, zIndex: 5, right: isLargerThanPhone ? 350 * responsive.heightRatio : 100 },
+      { id: 'bush3', top: 450, zIndex: 5, right: isLargerThanPhone ? 320 * responsive.heightRatio : 170 },
+      { id: 'bush4', top: 550, zIndex: 5, right: isLargerThanPhone ? 350 * responsive.heightRatio : 220 },
+      { id: 'bush5', top: 650, zIndex: 5, right: isLargerThanPhone ? 408 * responsive.heightRatio : 240 },
+      { id: 'bush6', top: 750, zIndex: 5, right: isLargerThanPhone ? 360 * responsive.heightRatio : 80 },
+      { id: 'bush11', top: 200, right: isLargerThanPhone ? -190 * responsive.heightRatio : -330, zIndex: 5 },
+      { id: 'bush12', top: 300, right: isLargerThanPhone ? -220 * responsive.heightRatio : -350, zIndex: 5 },
+      { id: 'bush13', top: 400, right: isLargerThanPhone ? -200 * responsive.heightRatio : -250, zIndex: 5 },
+      { id: 'bush14', top: 500, right: isLargerThanPhone ? -230 * responsive.heightRatio : -140, zIndex: 5 },
+      { id: 'bush15', top: 600, right: isLargerThanPhone ? -190 * responsive.heightRatio : -160, zIndex: 5 },
+      { id: 'bush16', top: 1100, right: isLargerThanPhone ? -240 * responsive.heightRatio : -190, zIndex: 5 },
+      { id: 'bush17', top: 700, right: isLargerThanPhone ? -280 * responsive.heightRatio : -280, zIndex: 5 },
+    ];
+
+    const contentHeight = calculateContentHeight();
+    const patternHeight = 620; 
+    const repetitions = Math.ceil(contentHeight / patternHeight) + 5; 
+    
+    const allBushes = [];
+    
+    for (let i = 0; i < repetitions; i++) {
+      originalBushes.forEach((bush) => {
+        allBushes.push({
+          ...bush,
+          id: `${bush.id}-repeat-${i}`,
+          top: bush.top + (i * patternHeight), 
+          zIndex: bush.zIndex + i 
+        });
+      });
+    }
+    
+    return allBushes;
+  };
+
+  // RENDER different content based on map type
+  const renderMapSpecificContent = () => {
+    switch(mapName) {
+      case 'HTML':
+        return (
+          <>
+            {/* Animated Bushes for HTML/greenLand */}
+            <Animated.View
+              style={{
+                transform: [{ translateX: bushTransform }], 
+                zIndex: 10
+              }}
+            >
+              {createInfiniteBushes()
+                .filter(bush => bush.right >= 0)
+                .map((bush) => (
+                  <Image 
+                    key={bush.id}
+                    source={{ uri: 'https://github.com/user-attachments/assets/449d431f-1b95-44f1-b1bc-dfaa2cf830a6' }} 
+                    style={[
+                      styles.bush,
+                      {
+                        top: bush.top,
+                        right: bush.right,
+                        zIndex: bush.zIndex + 10
+                      }
+                    ]} 
+                  />
+                ))
+              }
+            </Animated.View>
+
+            <Animated.View 
+              style={{
+                transform: [{ translateX: bushTransformRight }],
+                zIndex: 10
+              }}
+            >
+              {createInfiniteBushes()
+                .filter(bush => bush.right < 0)
+                .map((bush) => (
+                  <Image 
+                    key={bush.id}
+                    source={{ uri: 'https://github.com/user-attachments/assets/449d431f-1b95-44f1-b1bc-dfaa2cf830a6' }} 
+                    style={[
+                      styles.bush,
+                      {
+                        top: bush.top,
+                        right: bush.right,
+                        zIndex: bush.zIndex + 15
+                      }
+                    ]} 
+                  />
+                ))
+              }
+            </Animated.View>
+          </>
+        );
+      case 'CSS':
+        return (
+          <View style={styles.lavaEffects}>
+            {/* ADD CSS/Lava specific effects here */}
+            {/* Example: Floating lava rocks, fire particles, etc. */}
+          </View>
+        );
+      case 'JavaScript':
+        return (
+          <View style={styles.snowEffects}>
+            {/* ADD JavaScript/Snow specific effects here */}
+            {/* Example: Falling snow, ice crystals, etc. */}
+          </View>
+        );
+      case 'Computer':
+        return (
+          <View style={styles.autumnEffects}>
+            {/* ADD Computer/Autumn specific effects here */}
+            {/* Example: Falling leaves, autumn trees, etc. */}
+          </View>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.colors.container }]}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={[
+          { minHeight: calculateContentHeight() }
+        ]}
+        onScroll={handleScroll}
+        scrollEventThrottle={100}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* DYNAMIC Header Background from mapData */}
+        <LottieView 
+          source={{ uri: theme.backgrounds.lottieBackground }}
+          autoPlay
+          style={[
+            styles.lottieTopBackground,
+            {
+              top: theme?.backgrounds?.positions?.lottieTop || -250,
+              left: theme?.backgrounds?.positions?.lottieLeft || 0,
+              width: theme?.backgrounds?.positions?.lottieWidth || '120%',
+            }
+          ]}
+          loop={true}
+          speed={1.5}
+          renderMode='HARDWARE'
+          cacheComposition={true}
+        />
+
+        <View style={[
+            styles.topBackground,
+            {
+              marginTop: theme?.backgrounds?.backgroundPosition?.marginTop || 0 
+            }
+        ]}>
+          <ImageBackground
+              source={{ uri: theme.backgrounds.topBackground }}
+              style={styles.backgroundImage}
+              resizeMode="fill"
+          />
+          </View>
+        
+
+        {/* RENDER map-specific content */}
+        {renderMapSpecificContent()}
+
+        {/* DYNAMIC Repeating Background from mapData */}
+        <View style={styles.backgroundContainer}>
+          {Array.from({ length: backgroundCount }, (_, index) => (
+            <ImageBackground
+              key={index}
+              source={{ uri: theme.backgrounds.repeatingBackground, cache: 'force-cache' }}
+              style={[
+                styles.backgroundSegment,
+                { top: screenHeight + (index * screenHeight)},
+                { marginTop: theme?.backgrounds?.backgroundPosition?.marginTop || 0 }
+              ]}
+              resizeMode="fill"
+            />
+          ))}
+        </View>
+
+        {/* Level Buttons with Theme */}
+        <View style={styles.levelButtonsContainer}>
+          <LevelButtons
+            lessons={lessons}
+            handleLevelPress={handleLevelPress}
+            screenHeight={screenHeight}
+            screenWidth={screenWidth}
+            theme={theme}
+            mapType={mapName}
+          />
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  lottieTopBackground: {
+    position: 'absolute',
+    top: -250,
+    width: '120%',
+    height: screenHeight,
+    zIndex: 1,
+    alignSelf: 'center',
+
+  },
+  // Header background styles
+  topBackground: {
+    position: 'absolute',
+    top: 0,
+    width: '100%',
+    height: screenHeight,
+    zIndex: 1,
+    opacity: 1 
+  },
+  backgroundImage: {
+    width: '100%',
+    height: '100%', 
+    flex: 1,
+  },
+  backgroundContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 0,
+  },
+  backgroundSegment: {
+    position: 'absolute',
+    width: '100%',
+    height: screenHeight,
+  },
+  levelButtonsContainer: {
+    top: 100,
+  },
+  bush: {
+    position: 'absolute',
+    width: 450,
+    height: 450,
+  },
+  // MAP-SPECIFIC effect containers
+  lavaEffects: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 5,
+  },
+  snowEffects: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 5,
+  },
+  autumnEffects: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 5,
+  },
+});
