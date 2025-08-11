@@ -4,13 +4,12 @@ import { LessonCreateInput, LessonUpdateInput } from "./lesson.types";
 const prisma = new PrismaClient();
 
 export const getAllLessons = async () => {
-  return prisma.lesson.findMany({ include: { level: true, map: true } });
+  return prisma.lesson.findMany({});
 };
 
 export const getLessonById = async (id: number) => {
   return prisma.lesson.findUnique({
     where: { lesson_id: id },
-    include: { level: true, map: true },
   });
 };
 

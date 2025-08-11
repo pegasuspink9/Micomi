@@ -1,5 +1,4 @@
 export interface LessonCreateInput {
-  map_id: number;
   level_id: number;
   lesson_title: string;
   description: string;
@@ -7,7 +6,6 @@ export interface LessonCreateInput {
 }
 
 export interface LessonUpdateInput {
-  map_id: number;
   level_id: number;
   lesson_title: string;
   description: string;

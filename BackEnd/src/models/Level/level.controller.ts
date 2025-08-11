@@ -16,6 +16,25 @@ export const getLevelByID = async (req: Request, res: Response) => {
   return successResponse(res, level, "Level found");
 };
 
+/* GET levels by map ID */
+export const getLevelChallenges = async (req: Request, res: Response) => {
+  try {
+    const levelId = Number(req.params.level_id);
+    const mapId = Number(req.params.map_id);
+
+    const level = await LevelService.getLevelChallenges(mapId, levelId);
+
+    if (!level) {
+      return errorResponse(res, null, "Level not found for this map", 404);
+    }
+
+    return successResponse(res, level.challenges, "Challenges found");
+  } catch (error) {
+    console.error(error);
+    return errorResponse(res, null, "Error fetching challenges", 500);
+  }
+};
+
 /* POST create level */
 export const createLevel = async (req: Request, res: Response) => {
   try {
