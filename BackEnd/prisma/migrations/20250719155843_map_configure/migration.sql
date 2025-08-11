@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Map" ADD COLUMN     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN     "last_updated" TIMESTAMP(3),
+ALTER COLUMN "is_active" SET DEFAULT false;
