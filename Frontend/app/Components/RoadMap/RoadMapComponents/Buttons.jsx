@@ -51,7 +51,8 @@ export default function LevelButtons({
    const ICON_IMAGES = {
     enemyButton: theme?.icons?.enemyButton || DEFAULT_THEME.icons.enemyButton,
     micomiButton: theme?.icons?.micomiButton || DEFAULT_THEME.icons.micomiButton,
-    shopButton: theme?.icons?.shopButton || DEFAULT_THEME.icons.shopButton
+    shopButton: theme?.icons?.shopButton || DEFAULT_THEME.icons.shopButton,
+    bossButton: theme?.icons?.bossButton || DEFAULT_THEME.icons.bossButton,
   };
 
 
@@ -157,7 +158,8 @@ export default function LevelButtons({
     const typeMap = {
       enemy: 'enemyButton',
       micomi: 'micomiButton',
-      shop: 'shopButton'
+      shop: 'shopButton',
+      boss: 'bossButton'
     };
     return typeMap[level.type] || 'levelButton';
   };
@@ -216,13 +218,17 @@ export default function LevelButtons({
           >
             {/* Button Background */}
             <ImageBackground 
-              source={{ uri: theme?.buttons?.buttonBackground || DEFAULT_THEME.buttons.buttonBackground }} 
-              style={styles.buttonImageBackground}
+              source={{ uri: theme?.buttons?.buttonBackground }} 
+              style={[styles.buttonImageBackground, theme?.buttons?.buttonBackgroundStyle]}
               resizeMode="contain"
             >
               <Image
                 source={{ uri: BUTTON_IMAGES[buttonType] }}
-                style={level.isUnlocked === false ? styles.lockedButton : styles.unlockedButton}
+                style={[level.isUnlocked === false ? styles.lockedButton : styles.unlockedButton, 
+                  level.isUnlocked === false ?
+                    theme?.buttons?.lockedButtonStyle || {}
+                    : theme?.buttons?.unlockedButtonStyle || {}
+                ]}
                 resizeMode="contain"
               />
             </ImageBackground>
@@ -238,14 +244,14 @@ export default function LevelButtons({
                   height: responsive.signageHeight,
                   top: responsive.signageTop,
                   left: responsive.signageLeft,
-                }
+                }, theme?.floatingComment?.signageBackgroundStyle || {}
               ]}
               resizeMode="contain"
             >
               <Text 
                 style={[
                   styles.tagsText, 
-                  { fontSize: responsive.textSize }
+                  { fontSize: responsive.textSize }, theme?.floatingComment.textStyle || {}
                 ]} 
                 numberOfLines={1} 
                 adjustsFontSizeToFit={true}
@@ -265,12 +271,12 @@ export default function LevelButtons({
               >
                 <ImageBackground 
                   source={{ uri: theme?.floatingComment?.commentBackground || DEFAULT_THEME.floatingComment.commentBackground }}
-                  style={styles.floatComment}
+                  style={[styles.floatComment, theme?.floatingComment?.commentBackgroundStyle || {}]}
                   resizeMode="contain"
                 >
                   <Image
                     source={{ uri: ICON_IMAGES[iconType] }}
-                    style={styles.floatIcon}
+                    style={[styles.floatIcon, theme?.icons?.iconStyles || {}]}
                     resizeMode="contain"
                   />
                 </ImageBackground>

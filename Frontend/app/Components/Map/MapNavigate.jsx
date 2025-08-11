@@ -72,11 +72,19 @@ export default function MapNavigate({ onMapChange }) {
             style={styles.islandImage}
             autoPlay
             loop
-            speed={map[currentMapIndex].unlocked ? 1 : 1}
+            speed={map[currentMapIndex].unlocked ? 1 : 0}
             resizeMode='contain'
             cacheComposition={true}
             renderMode='HARDWARE'
           />
+
+          {!map[currentMapIndex].unlocked && (
+            <Image
+              source={{ uri: 'https://github.com/user-attachments/assets/e8a1b478-91d3-44c9-8a59-4bc46db4d1c0'}}
+              style={styles.lockedOverlay}
+              resizeMode='contain'
+            />
+          )}
 
           {/* Add visual feedback for clickable islands */}
           {map[currentMapIndex].unlocked && (
@@ -84,15 +92,7 @@ export default function MapNavigate({ onMapChange }) {
               <Text style={styles.clickText}>Tap to Enter</Text>
             </View>
           )}
-
-           {!map[currentMapIndex].unlocked && (
-            <View style={styles.lockedOverlay}>
-              <Ionicons name="lock-closed" size={40} color="#fff" />
-              <Text style={styles.lockedText}>Locked</Text>
-            </View>
-          )}
-
-            </TouchableOpacity>
+      </TouchableOpacity>
 
         
 
@@ -207,8 +207,14 @@ const styles = StyleSheet.create({
    disabledArrow: {
     opacity: 0.5,
   },
-  lockedLevel: {
-    flexDirection: 'row',
+  lockedOverlay: {
+    position: 'absolute',
+    width: '120%',
+    height: '120%',
+    zIndex: 10,
+    justifyContent: 'center',
     alignItems: 'center',
+    left: -26,
+    opacity: 0.9,
   },
 });
