@@ -24,6 +24,18 @@ export const getLevelById = (id: number) =>
     },
   });
 
+export const getLevelChallenges = async (mapId: number, levelId: number) => {
+  return prisma.level.findFirst({
+    where: {
+      level_id: levelId,
+      map_id: mapId,
+    },
+    select: {
+      challenges: true,
+    },
+  });
+};
+
 export const createLevel = async (data: LevelCreateInput) => {
   return prisma.level.create({ data });
 };

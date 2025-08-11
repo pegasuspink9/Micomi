@@ -13,14 +13,12 @@ model Admin {
   email       String   @unique
   password    String
   created_at  DateTime @default(now())
-  maps        Map[]
 
   @@index([email])
 }
 
 model Map {
   map_id         Int            @id @default(autoincrement())
-  admin_id       Int
   map_name       String         @unique
   description    String
   difficulty_level DifficultyLevel
@@ -28,22 +26,16 @@ model Map {
   is_active      Boolean        @default(false)
   created_at     DateTime       @default(now())
   last_updated   DateTime?
-  admin          Admin          @relation(fields: [admin_id], references: [admin_id], onDelete: Cascade)
   levels         Level[]
-  lessons        Lesson[]
 }
 
 model Lesson {
   lesson_id     Int       @id @default(autoincrement())
-  map_id        Int
   level_id      Int
   lesson_title  String
   description   String 
   content       String    @db.Text
-  is_unlocked   Boolean   @default(false)
-  level         Level     @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
-  map           Map       @relation(fields: [map_id], references: [map_id], onDelete: Cascade)
-}
+} //Para sa Practice
 
 model Level {
   level_id        Int      @id @default(autoincrement())
@@ -58,7 +50,6 @@ model Level {
   challenges      Challenge[] 
   playerProgress  PlayerProgress[]
   enemies         Enemy[]
-  lessons         Lesson[]
   quest           Quest[]
 }
 

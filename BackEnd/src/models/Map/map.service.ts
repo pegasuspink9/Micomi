@@ -5,14 +5,24 @@ const prisma = new PrismaClient();
 
 export const getAllMaps = async () => {
   return prisma.map.findMany({
-    include: { admin: true, levels: true },
+    include: {
+      levels: {
+        include: {
+          challenges: true,
+          enemies: true,
+        },
+      },
+    },
   });
 };
 
 export const getMapById = async (id: number) => {
   return prisma.map.findUnique({
     where: { map_id: id },
-    include: { admin: true, levels: true },
+    select: {
+      map_id: true,
+      levels: true,
+    },
   });
 };
 
