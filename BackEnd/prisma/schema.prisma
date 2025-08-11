@@ -1,0 +1,243 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+
+model Admin {
+  admin_id    Int      @id @default(autoincrement())
+  username    String   @unique
+  email       String   @unique
+  password    String
+  created_at  DateTime @default(now())
+  maps        Map[]
+
+  @@index([email])
+}
+
+model Map {
+  map_id         Int            @id @default(autoincrement())
+  admin_id       Int
+  map_name       String         @unique
+  description    String
+  difficulty_level DifficultyLevel
+  map_image      String         @db.Text
+  is_active      Boolean        @default(false)
+  created_at     DateTime       @default(now())
+  last_updated   DateTime?
+  admin          Admin          @relation(fields: [admin_id], references: [admin_id], onDelete: Cascade)
+  levels         Level[]
+  lessons        Lesson[]
+}
+
+model Lesson {
+  lesson_id     Int       @id @default(autoincrement())
+  map_id        Int
+  level_id      Int
+  lesson_title  String
+  description   String 
+  content       String    @db.Text
+  is_unlocked   Boolean   @default(false)
+  level         Level     @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
+  map           Map       @relation(fields: [map_id], references: [map_id], onDelete: Cascade)
+}
+
+model Level {
+  level_id        Int      @id @default(autoincrement())
+  map_id          Int
+  level_number    Int
+  level_type      DifficultyLevel 
+  content         String   @db.Text
+  points_reward   Int      @default(0)
+  is_unlocked     Boolean  @default(false)
+  feedback_message String  @db.Text
+  map             Map      @relation(fields: [map_id], references: [map_id], onDelete: Cascade)
+  challenges      Challenge[] 
+  playerProgress  PlayerProgress[]
+  enemies         Enemy[]
+  lessons         Lesson[]
+  quest           Quest[]
+}
+
+model Challenge {
+  challenge_id   Int     @id @default(autoincrement())
+  level_id       Int
+  challenge_type String     
+  title          String
+  description    String  @db.Text
+  correct_answer String
+  hint           String  @db.Text
+  points_reward  Int     @default(0)      
+  coins_reward   Int     @default(0)   
+  difficulty     DifficultyLevel 
+  level          Level   @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
+}
+
+model Enemy {
+  enemy_id          Int     @id @default(autoincrement())
+  level_id          Int
+  enemy_name        String
+  enemy_description String
+  enemy_difficulty  String
+  enemy_avatar      String  @db.Text
+  enemy_skills      String
+  enemy_health      Int     
+  enemy_damage      Int
+  level             Level   @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
+}
+
+model Player {
+  player_id            Int      @id @default(autoincrement())
+  username             String   @unique
+  email                String   @unique
+  password             String
+  total_points         Int      @default(0)  
+  exp_points           Int      @default(0)    
+  level                Int      @default(1)   
+  created_at           DateTime @default(now())
+  last_active          DateTime?
+  days_logged_in       Int      @default(0)
+  coins                Int      @default(100)
+  inventory            Json     @default("[]") 
+  playerProgress       PlayerProgress[]
+  leaderboard          Leaderboard[]
+  playerAchievements   PlayerAchievement[]
+  missions             Quest[]
+
+  @@index([email])
+}
+
+model PlayerProgress {
+  progress_id    Int      @id @default(autoincrement())
+  player_id      Int
+  level_id       Int
+  player_answer  Json     @default("{}")
+  current_level  Int
+  score          Int      @default(0)
+  is_completed   Boolean  @default(false)
+  completed_at   DateTime?
+  attempts       Int      @default(0)
+
+  enemy_hp       Int?     
+  player_hp      Int?     
+  battle_status  BattleStatus? @default(in_progress)
+
+  player         Player   @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
+  level          Level    @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
+
+  @@unique([player_id, level_id])
+  @@index([player_id, level_id])
+}
+
+model Character {
+  character_id      Int      @id @default(autoincrement())
+  character_name    String
+  avatar_image      String   @db.Text
+  character_type    String  
+  health            Int      
+  weapon_name       String
+  weapon_skill      String
+  character_damage  Int      
+  is_purchased      Boolean  @default(false)
+  is_selected       Boolean  @default(false)
+  shop              Shop[]
+}
+
+model Leaderboard {
+  leaderboard_id  Int      @id @default(autoincrement())
+  player_id       Int
+  rank            Int
+  total_points    Int
+  player          Player   @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
+}
+
+model Achievement {
+  achievement_id    Int      @id @default(autoincrement())
+  name              String
+  description       String
+  badge_icon        String   @db.Text
+  points_required   Int      @default(0)
+  achievement_type  String
+  playerAchievements PlayerAchievement[]
+}
+
+model PlayerAchievement {
+  player_achievement_id Int      @id @default(autoincrement())
+  player_id             Int
+  achievement_id        Int
+  earned_at             DateTime
+  player                Player    @relation(fields: [player_id], references: [player_id])
+  achievement           Achievement @relation(fields: [achievement_id], references: [achievement_id])
+}
+
+model Shop {
+  shop_id            Int          @id @default(autoincrement())
+  potion_type        PotionType?  
+  potion_description String?
+  potion_price       Int?        
+  potion_health_boost Int?  
+  character_id       Int?      
+  character_price    Int?
+  is_active          Boolean      @default(true)
+  character          Character?   @relation(fields: [character_id], references: [character_id], onDelete: SetNull)
+}
+
+model Quest {
+  quest_id Int      @id @default(autoincrement())
+  player_id         Int?
+  level_id          Int?
+  title             String
+  description       String   @db.Text
+  objective_type    QuestType
+  target_value      Int
+  current_value     Int      @default(0)
+  reward_exp        Int      @default(0)
+  reward_coins      Int      @default(0)
+  is_completed      Boolean  @default(false)
+  is_template     Boolean    @default(false)
+  assigned_at       DateTime?
+  completed_at      DateTime?
+  created_at        DateTime @default(now())
+  player            Player?   @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
+  level             Level?   @relation(fields: [level_id], references: [level_id], onDelete: SetNull)
+}
+
+enum QuestType {
+  defeat_enemy
+  buy_potion
+  unlock_character
+  complete_lesson
+  solve_challenge
+  spend_coins
+  earn_exp
+  login_days
+}
+
+enum PotionType {
+  health
+  strong
+  freeze
+}
+
+enum DifficultyLevel {
+  easy
+  medium
+  hard
+  expert
+  final
+}
+
+enum BattleStatus {
+  in_progress
+  won
+  lost
+}
+
+enum SkillLevel {
+  beginner
+  intermediate
+  advanced
+}

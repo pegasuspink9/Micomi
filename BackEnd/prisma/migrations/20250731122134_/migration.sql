@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Quest" ALTER COLUMN "player_id" DROP NOT NULL,
+ALTER COLUMN "assigned_at" DROP NOT NULL,
+ALTER COLUMN "assigned_at" DROP DEFAULT;
