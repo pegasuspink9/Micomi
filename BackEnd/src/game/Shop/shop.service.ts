@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma, PotionType } from "@prisma/client";
+import { PrismaClient, Prisma, PotionType, ShopItemType } from "@prisma/client";
 import { InventoryItem } from "../../models/Shop/shop.types";
 
 const prisma = new PrismaClient();
@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 export const buyItem = async (
   playerId: number,
   shopId: number,
-  itemType: string
+  itemType: ShopItemType
 ) => {
   const player = await prisma.player.findUnique({
     where: { player_id: playerId },
@@ -23,11 +23,7 @@ export const buyItem = async (
   let cost: number;
 
   if (itemType === "potion") {
-    if (
-      shop.potion_price == null ||
-      shop.potion_type == null ||
-      shop.potion_health_boost == null
-    ) {
+    if (shop.potion_price == null || shop.potion_type == null) {
       throw new Error("Shop missing potion fields");
     }
     cost = shop.potion_price;
@@ -47,7 +43,8 @@ export const buyItem = async (
 
   if (itemType === "potion") {
     const existing = inventory.find(
-      (item) => item.type === "potion" && item.name === shop.potion_type
+      (item): item is Extract<InventoryItem, { type: "potion" }> =>
+        item.type === "potion" && item.name === shop.potion_type
     );
 
     if (existing) {
@@ -55,9 +52,8 @@ export const buyItem = async (
     } else {
       inventory.push({
         type: "potion",
-        name: shop.potion_type!,
+        name: shop.potion_type as string,
         quantity: 1,
-        healthBoost: shop.potion_health_boost!,
       });
     }
 
@@ -75,7 +71,7 @@ export const buyItem = async (
     if (!character) throw new Error("Character not found");
 
     const existing = inventory.find(
-      (item) =>
+      (item): item is Extract<InventoryItem, { type: "character" }> =>
         item.type === "character" && item.character_id === shop.character_id
     );
     if (existing && existing.is_purchased) {
@@ -155,7 +151,7 @@ export const usePotion = async (
     (player.inventory as unknown as InventoryItem[]) || [];
 
   const characterInInventory = inventory.find(
-    (item) =>
+    (item): item is Extract<InventoryItem, { type: "character" }> =>
       item.type === "character" &&
       item.character_id === characterId &&
       item.is_purchased
@@ -163,7 +159,7 @@ export const usePotion = async (
   if (!characterInInventory) throw new Error("Character not owned by player");
 
   const activePotion = inventory.find(
-    (item) =>
+    (item): item is Extract<InventoryItem, { type: "potion" }> =>
       item.type === "potion" &&
       item.name === potionName &&
       (item.quantity || 0) > 0
@@ -171,7 +167,10 @@ export const usePotion = async (
   if (!activePotion) throw new Error("No potions available");
 
   activePotion.quantity = (activePotion.quantity || 1) - 1;
-  const updatedInventory = inventory.filter((item) => item.quantity !== 0);
+  const updatedInventory = inventory.filter((item) => {
+    if (item.type === "character") return true;
+    return item.quantity !== 0;
+  });
 
   const updates: (
     | Prisma.PrismaPromise<Prisma.PlayerGetPayload<{}>>
@@ -185,12 +184,10 @@ export const usePotion = async (
 
   switch (potionName as PotionType) {
     case "health": {
-      const currentHealth = character.health || 0;
-      const healthBoost = activePotion.healthBoost || 0;
       updates.push(
         prisma.character.update({
           where: { character_id: characterId },
-          data: { health: currentHealth + healthBoost },
+          data: { health: character.health },
         })
       );
       break;
@@ -201,7 +198,6 @@ export const usePotion = async (
         type: "potion",
         name: "strong_effect",
         quantity: 1,
-        healthBoost: 0,
       });
       updates.push(
         prisma.player.update({
@@ -216,7 +212,6 @@ export const usePotion = async (
         type: "potion",
         name: "freeze_effect",
         quantity: 1,
-        healthBoost: 0,
       });
       updates.push(
         prisma.player.update({

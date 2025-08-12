@@ -42,7 +42,7 @@ export const fightEnemy = async (
 
   const inventory: InventoryItem[] = (player.inventory as any) || [];
   const characterInInventory = inventory.find(
-    (item) =>
+    (item): item is Extract<InventoryItem, { type: "character" }> =>
       item.type === "character" &&
       item.character_id === characterId &&
       item.is_purchased
@@ -62,12 +62,13 @@ export const fightEnemy = async (
     progress.battle_status === "in_progress"
   ) {
     const activePotion = inventory.find(
-      (item) => item.type === "potion" && (item.quantity || 0) > 0
+      (item): item is Extract<InventoryItem, { type: "potion" }> =>
+        item.type === "potion" && (item.quantity || 0) > 0
     );
     if (activePotion) {
       switch (activePotion.name) {
         case "health":
-          charHealth += activePotion.healthBoost || 0;
+          charHealth = character.health;
           break;
         case "strong":
           charDamage *= 2;
@@ -77,7 +78,10 @@ export const fightEnemy = async (
           break;
       }
       activePotion.quantity = (activePotion.quantity || 1) - 1;
-      const updatedInventory = inventory.filter((item) => item.quantity !== 0);
+      const updatedInventory = inventory.filter((item) => {
+        if (item.type === "character") return true;
+        return item.quantity !== 0;
+      });
       await prisma.player.update({
         where: { player_id: playerId },
         data: { inventory: updatedInventory as any },
@@ -133,10 +137,6 @@ export const fightEnemy = async (
         level.map_id,
         level.level_number
       );
-      await prisma.lesson.updateMany({
-        where: { level_id: levelId },
-        data: { is_unlocked: true },
-      });
     }
   }
 
