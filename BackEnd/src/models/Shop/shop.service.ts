@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, ShopItemType } from "@prisma/client";
 import { ShopCreateInput, ShopUpdateInput } from "./shop.types";
 
 const prisma = new PrismaClient();
@@ -13,16 +13,23 @@ export const getShopById = async (id: number) => {
 
 export const createShop = async (data: ShopCreateInput) => {
   const isPotion =
-    data.potion_type &&
-    data.potion_price &&
-    data.potion_health_boost &&
-    data.potion_description;
-  const isCharacter = data.character_id !== null && data.character_price;
+    data.item_type === ShopItemType.potion &&
+    data.potion_type !== undefined &&
+    data.potion_price !== undefined &&
+    data.potion_health_boost !== undefined &&
+    data.potion_description !== undefined;
+
+  const isCharacter =
+    data.item_type === ShopItemType.character &&
+    data.character_id !== undefined &&
+    data.character_price !== undefined;
+
   if (!isPotion && !isCharacter) {
-    throw new Error("Must provide either potion or character fields");
+    throw new Error("Must provide valid fields for either potion or character");
   }
+
   if (isPotion && isCharacter) {
-    throw new Error("Cannot provide both potion and character fields");
+    throw new Error("Cannot create shop item as both potion and character");
   }
 
   return prisma.shop.create({ data });

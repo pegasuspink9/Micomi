@@ -38,19 +38,20 @@ model Lesson {
 } //Para sa Practice
 
 model Level {
-  level_id        Int      @id @default(autoincrement())
-  map_id          Int
-  level_number    Int
-  level_type      DifficultyLevel 
-  content         String   @db.Text
-  points_reward   Int      @default(0)
-  is_unlocked     Boolean  @default(false)
-  feedback_message String  @db.Text
-  map             Map      @relation(fields: [map_id], references: [map_id], onDelete: Cascade)
-  challenges      Challenge[] 
-  playerProgress  PlayerProgress[]
-  enemies         Enemy[]
-  quest           Quest[]
+  level_id          Int      @id @default(autoincrement())
+  map_id            Int
+  level_number      Int
+  level_type        String 
+  level_difficulty  DifficultyLevel
+  content           String   @db.Text
+  points_reward     Int      @default(0)
+  is_unlocked       Boolean  @default(false)
+  feedback_message  String  @db.Text
+  map               Map      @relation(fields: [map_id], references: [map_id], onDelete: Cascade)
+  challenges        Challenge[] 
+  playerProgress    PlayerProgress[]
+  enemies           Enemy[]
+  quest             Quest[]
 }
 
 model Challenge {
@@ -97,6 +98,7 @@ model Player {
   leaderboard          Leaderboard[]
   playerAchievements   PlayerAchievement[]
   missions             Quest[]
+  shop                 Shop[]
 
   @@index([email])
 }
@@ -166,14 +168,21 @@ model PlayerAchievement {
 
 model Shop {
   shop_id            Int          @id @default(autoincrement())
+  item_type          ShopItemType
+
   potion_type        PotionType?  
   potion_description String?
   potion_price       Int?        
-  potion_health_boost Int?  
+   
   character_id       Int?      
   character_price    Int?
-  is_active          Boolean      @default(true)
+
+  player_id           Int? 
+  player              Player? @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
+
   character          Character?   @relation(fields: [character_id], references: [character_id], onDelete: SetNull)
+
+  is_active          Boolean      @default(true)
 }
 
 model Quest {
@@ -225,6 +234,11 @@ enum BattleStatus {
   in_progress
   won
   lost
+}
+
+enum ShopItemType {
+  character
+  potion
 }
 
 enum SkillLevel {
