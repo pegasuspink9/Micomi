@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import * as AdminService from "./admin.service";
 import { successResponse, errorResponse } from "../../../utils/response";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+} from "../../../utils/token";
 
 /*GET all admins*/
 export const getAllAdmins = async (req: Request, res: Response) => {
@@ -62,10 +66,32 @@ export const deleteAdmin = async (req: Request, res: Response) => {
 export const loginAdmin = async (req: Request, res: Response) => {
   try {
     const result = await AdminService.loginAdmin(req.body);
+
     if (!result) {
       return errorResponse(res, null, "Invalid credentials", 401);
     }
-    return successResponse(res, result, "Login successful");
+
+    const accessToken = generateAccessToken({
+      id: result.admin.id,
+      role: "admin",
+    });
+    const refreshToken = generateRefreshToken({
+      id: result.admin.id,
+      role: "admin",
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return successResponse(
+      res,
+      { accessToken, admin: result.admin },
+      "Login successful"
+    );
   } catch (error) {
     return errorResponse(res, null, "Failed to login");
   }

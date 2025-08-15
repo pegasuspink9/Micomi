@@ -1,12 +1,16 @@
 import express from "express";
 import * as LevelController from "./level.controller";
+import {
+  authenticate,
+  requireAdmin,
+} from "../../../middleware/auth.middleware";
 
 const router = express.Router();
 
-router.get("/", LevelController.getAllLevels);
-router.get("/:id", LevelController.getLevelByID);
-router.post("/", LevelController.createLevel);
-router.put("/:id", LevelController.updateLevel);
-router.delete("/:id", LevelController.deleteLevel);
+router.get("/", authenticate, LevelController.getAllLevels);
+router.get("/:id", authenticate, LevelController.getLevelByID);
+router.post("/", authenticate, requireAdmin, LevelController.createLevel);
+router.put("/:id", authenticate, requireAdmin, LevelController.updateLevel);
+router.delete("/:id", authenticate, requireAdmin, LevelController.deleteLevel);
 
 export default router;

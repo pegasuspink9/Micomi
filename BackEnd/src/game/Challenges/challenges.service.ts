@@ -1,5 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, QuestType } from "@prisma/client";
 import * as LevelService from "../Levels/levels.service";
+import { updateQuestProgress } from "game/Quests/quests.service";
 
 const prisma = new PrismaClient();
 
@@ -62,10 +63,10 @@ export const submitChallenge = async (
         player_id: playerId,
         level_id: levelId,
         current_level: level.level_number,
-        score: 0,
         attempts: 0,
         player_answer: {},
         completed_at: null,
+        challenge_start_time: new Date(),
       },
     });
   }
@@ -81,10 +82,6 @@ export const submitChallenge = async (
     data: {
       player_answer: answers,
       attempts: { increment: 1 },
-      score:
-        isCorrect && !wasCorrect
-          ? { increment: challenge.points_reward }
-          : currentProgress.score,
     },
   });
 
@@ -96,6 +93,8 @@ export const submitChallenge = async (
         coins: { increment: challenge.coins_reward },
       },
     });
+
+    await updateQuestProgress(playerId, QuestType.solve_challenge, 1);
   }
 
   const challenges = await prisma.challenge.findMany({
@@ -106,10 +105,21 @@ export const submitChallenge = async (
   );
 
   if (allCompleted && level.enemies.length === 0) {
+    const wasCompleted = currentProgress.is_completed;
+
     await prisma.playerProgress.update({
       where: { progress_id: currentProgress.progress_id },
       data: { is_completed: true, completed_at: new Date() },
     });
+
+    if (!wasCompleted) {
+      await prisma.player.update({
+        where: { player_id: playerId },
+        data: {
+          total_points: { increment: level.points_reward },
+        },
+      });
+    }
 
     if (level.level_type === "final") {
       const nextMap = await prisma.map.findFirst({
@@ -131,5 +141,5 @@ export const submitChallenge = async (
     }
   }
 
-  return { isCorrect, score: updatedProgress.score };
+  return { isCorrect, attempts: updatedProgress.attempts };
 };

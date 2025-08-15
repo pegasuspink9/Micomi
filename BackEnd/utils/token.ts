@@ -1,12 +1,20 @@
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET!;
+const REFRESH_SECRET = process.env.REFRESH_SECRET!;
 
-if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET is not defined in environment variables");
+if (!JWT_SECRET || !REFRESH_SECRET) {
+  throw new Error("JWT secrets are not set in environment variables");
 }
 
-export const generateToken = (payload: object) =>
-  jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
+export const generateAccessToken = (payload: object) =>
+  jwt.sign(payload, JWT_SECRET, { expiresIn: "15m" });
 
-export const verifyToken = (token: string) => jwt.verify(token, JWT_SECRET);
+export const generateRefreshToken = (payload: object) =>
+  jwt.sign(payload, REFRESH_SECRET, { expiresIn: "7d" });
+
+export const verifyAccessToken = (token: string) =>
+  jwt.verify(token, JWT_SECRET);
+
+export const verifyRefreshToken = (token: string) =>
+  jwt.verify(token, REFRESH_SECRET);

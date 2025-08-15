@@ -1,5 +1,3 @@
-import { DifficultyLevel } from "@prisma/client";
-
 export interface ChallengeCreateInput {
   level_id: number;
   challenge_type: string;
@@ -9,7 +7,8 @@ export interface ChallengeCreateInput {
   hint: string;
   points_reward: number;
   coins_reward: number;
-  difficulty: DifficultyLevel;
+  guide?: string;
+  test_cases?: string;
 }
 
 export interface ChallengeUpdateInput {
@@ -21,5 +20,6 @@ export interface ChallengeUpdateInput {
   hint?: string;
   points_reward?: number;
   coins_reward?: number;
-  difficulty?: DifficultyLevel;
+  guide?: string;
+  test_cases?: string;
 }

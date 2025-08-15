@@ -7,7 +7,8 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export const performFight = async (req: Request, res: Response) => {
-  const { playerId, enemyId, isCorrect, correctCount, totalCount } = req.body;
+  const playerId = (req as any).user.id;
+  const { enemyId, isCorrect, correctCount, totalCount } = req.body;
 
   try {
     if (!playerId || !enemyId) {
@@ -83,7 +84,7 @@ export const performFight = async (req: Request, res: Response) => {
     }
 
     await AchievementService.checkAchievements(parsedPlayerId);
-    await AchievementService.updateLeaderboard();
+    // await AchievementService.updateLeaderboard();
 
     return successResponse(res, result, "Fight completed");
   } catch (error) {

@@ -1,19 +1,11 @@
 import { PrismaClient } from "@prisma/client";
-import { InventoryItem } from "../../models/Shop/shop.types";
 
 const prisma = new PrismaClient();
-
-export const getPlayerAchievements = async (playerId: number) => {
-  return await prisma.playerAchievement.findMany({
-    where: { player_id: playerId },
-    include: { achievement: true },
-  });
-};
 
 export const checkAchievements = async (playerId: number) => {
   const player = await prisma.player.findUnique({
     where: { player_id: playerId },
-    select: { inventory: true, days_logged_in: true },
+    select: { days_logged_in: true },
   });
   if (!player) throw new Error("Player not found");
 
@@ -22,9 +14,11 @@ export const checkAchievements = async (playerId: number) => {
     existingPlayerAchievements,
     maps,
     completedLevelIds,
-    totalCharacters,
+    totalCollectibleCharacters,
     bossLevels,
     leaderboard,
+    ownedCharacters,
+    ownedPotions,
   ] = await Promise.all([
     prisma.achievement.findMany(),
     prisma.playerAchievement.findMany({
@@ -40,7 +34,7 @@ export const checkAchievements = async (playerId: number) => {
         select: { level_id: true },
       })
       .then((progress) => new Set(progress.map((p) => p.level_id))),
-    prisma.character.count(),
+    prisma.character.count({ where: { is_purchased: true } }),
     prisma.level.findMany({
       where: { level_type: "final" },
       include: {
@@ -54,16 +48,18 @@ export const checkAchievements = async (playerId: number) => {
       where: { player_id: playerId },
       select: { rank: true },
     }),
+    prisma.playerCharacter.count({
+      where: { player_id: playerId, is_purchased: true },
+    }),
+    prisma.playerPotion.findMany({
+      where: { player_id: playerId },
+    }),
   ]);
 
-  const inventory: InventoryItem[] =
-    (player.inventory as unknown as InventoryItem[]) || [];
-  const purchasedCharacters = inventory.filter(
-    (item) => item.type === "character" && item.is_purchased
-  ).length;
-  const potionCount = inventory
-    .filter((item) => item.type === "potion" && (item.quantity || 0) > 0)
-    .reduce((total, item) => total + (item.quantity || 0), 0);
+  const purchasedCharacters = ownedCharacters;
+
+  const potionCount = ownedPotions.reduce((total, p) => total + p.quantity, 0);
+
   const defeatedBosses = bossLevels.filter(
     (level) => level.playerProgress.length > 0
   ).length;
@@ -105,7 +101,9 @@ export const checkAchievements = async (playerId: number) => {
         shouldAward = hasCompletedAllMaps();
         break;
       case "Collector":
-        shouldAward = purchasedCharacters === totalCharacters;
+        shouldAward =
+          totalCollectibleCharacters > 0 &&
+          purchasedCharacters === totalCollectibleCharacters;
         break;
       case "Top 1":
         shouldAward = leaderboard?.rank === 1;
@@ -133,30 +131,4 @@ export const checkAchievements = async (playerId: number) => {
   if (awards.length > 0) {
     await prisma.playerAchievement.createMany({ data: awards });
   }
-};
-
-export const updateLeaderboard = async () => {
-  const players = await prisma.player.findMany({
-    select: { player_id: true, total_points: true },
-    orderBy: { total_points: "desc" },
-  });
-
-  await prisma.$transaction(async (tx) => {
-    await tx.leaderboard.deleteMany({});
-    const rankedData = players.map((player, index) => ({
-      player_id: player.player_id,
-      rank: index + 1,
-      total_points: player.total_points,
-    }));
-    if (rankedData.length > 0) {
-      await tx.leaderboard.createMany({ data: rankedData });
-    }
-  });
-};
-
-export const getLeaderboard = async () => {
-  return await prisma.leaderboard.findMany({
-    include: { player: true },
-    orderBy: { rank: "asc" },
-  });
 };

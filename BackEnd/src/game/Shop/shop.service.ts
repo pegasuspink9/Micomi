@@ -1,231 +1,200 @@
-import { PrismaClient, Prisma, PotionType, ShopItemType } from "@prisma/client";
-import { InventoryItem } from "../../models/Shop/shop.types";
+import { PrismaClient, PotionType, QuestType } from "@prisma/client";
+import { updateQuestProgress } from "game/Quests/quests.service";
 
 const prisma = new PrismaClient();
 
-export const buyItem = async (
-  playerId: number,
-  shopId: number,
-  itemType: ShopItemType
-) => {
+async function spendCoins(playerId: number, amount: number) {
   const player = await prisma.player.findUnique({
     where: { player_id: playerId },
   });
+  if (!player) throw new Error("Player not found");
+  if (player.coins < amount) throw new Error("Not enough coins");
 
-  const shop = await prisma.shop.findUnique({
-    where: { shop_id: shopId },
-    include: { character: true },
+  await prisma.player.update({
+    where: { player_id: playerId },
+    data: { coins: { decrement: amount } },
   });
 
-  if (!player || !shop) throw new Error("Player or shop not found");
-  if (!shop.is_active) throw new Error("Shop is not active");
+  await updateQuestProgress(playerId, QuestType.spend_coins, amount);
+}
 
-  let cost: number;
+export const buyPotion = async (playerId: number, potionShopId: number) => {
+  const player = await prisma.player.findUnique({
+    where: { player_id: playerId },
+  });
+  if (!player) throw new Error("Player not found");
 
-  if (itemType === "potion") {
-    if (shop.potion_price == null || shop.potion_type == null) {
-      throw new Error("Shop missing potion fields");
-    }
-    cost = shop.potion_price;
-  } else if (itemType === "character") {
-    if (shop.character_id == null || shop.character_price == null) {
-      throw new Error("Shop missing character fields");
-    }
-    cost = shop.character_price;
-  } else {
-    throw new Error("Invalid item type");
-  }
+  const potion = await prisma.potionShop.findUnique({
+    where: { potion_shop_id: potionShopId },
+  });
+  if (!potion) throw new Error("Potion not found");
 
-  if (player.coins < cost) throw new Error("Insufficient coins");
+  if (player.coins < potion.potion_price) throw new Error("Not enough coins");
 
-  const inventory: InventoryItem[] =
-    (player.inventory as unknown as InventoryItem[]) || [];
-
-  if (itemType === "potion") {
-    const existing = inventory.find(
-      (item): item is Extract<InventoryItem, { type: "potion" }> =>
-        item.type === "potion" && item.name === shop.potion_type
-    );
-
-    if (existing) {
-      existing.quantity = (existing.quantity || 0) + 1;
-    } else {
-      inventory.push({
-        type: "potion",
-        name: shop.potion_type as string,
-        quantity: 1,
-      });
-    }
-
-    await prisma.$transaction([
-      prisma.player.update({
-        where: { player_id: playerId },
-        data: {
-          coins: { decrement: shop.potion_price! },
-          inventory: inventory as any,
-        },
-      }),
-    ]);
-  } else if (itemType === "character") {
-    const character = shop.character;
-    if (!character) throw new Error("Character not found");
-
-    const existing = inventory.find(
-      (item): item is Extract<InventoryItem, { type: "character" }> =>
-        item.type === "character" && item.character_id === shop.character_id
-    );
-    if (existing && existing.is_purchased) {
-      throw new Error("Character already purchased");
-    }
-
-    inventory.forEach((item) => {
-      if (item.type === "character") {
-        item.is_selected = item.character_id === shop.character_id;
-      }
-    });
-    inventory.push({
-      type: "character",
-      name: character.character_name,
-      character_id: shop.character_id!,
-      is_purchased: true,
-      is_selected: true,
-    });
-    await prisma.$transaction([
-      prisma.player.update({
-        where: { player_id: playerId },
-        data: {
-          coins: { decrement: shop.character_price! },
-          inventory: inventory as any,
-        },
-      }),
-      prisma.character.update({
-        where: { character_id: shop.character_id! },
-        data: { is_purchased: true, is_selected: true },
-      }),
-      prisma.character.updateMany({
-        where: { character_id: { not: shop.character_id! } },
-        data: { is_selected: false },
-      }),
-    ]);
-  }
-
-  const quests = await prisma.quest.findMany({
+  const existing = await prisma.playerPotion.findUnique({
     where: {
-      player_id: playerId,
-      is_completed: false,
-      objective_type: itemType === "potion" ? "buy_potion" : "unlock_character",
+      player_id_potion_shop_id: {
+        player_id: playerId,
+        potion_shop_id: potionShopId,
+      },
     },
   });
 
-  for (const quest of quests) {
-    const newValue = (quest.current_value || 0) + 1;
-    await prisma.quest.update({
-      where: { quest_id: quest.quest_id },
-      data: {
-        current_value: newValue,
-        is_completed: newValue >= quest.target_value,
-        completed_at: newValue >= quest.target_value ? new Date() : undefined,
+  if (existing) {
+    await prisma.playerPotion.update({
+      where: {
+        player_id_potion_shop_id: {
+          player_id: playerId,
+          potion_shop_id: potionShopId,
+        },
       },
+      data: { quantity: { increment: 1 } },
+    });
+  } else {
+    await prisma.playerPotion.create({
+      data: { player_id: playerId, potion_shop_id: potionShopId, quantity: 1 },
     });
   }
 
-  return { message: `${itemType} purchased` };
+  await prisma.player.update({
+    where: { player_id: playerId },
+    data: { coins: { decrement: potion.potion_price } },
+  });
+
+  await updateQuestProgress(playerId, QuestType.buy_potion, 1);
+  await spendCoins(playerId, potion.potion_price);
+
+  return { message: `${potion.potion_type} purchased` };
 };
 
-export const usePotion = async (
+export const buyCharacter = async (
   playerId: number,
-  characterId: number,
-  potionName: string
+  characterShopId: number
 ) => {
   const player = await prisma.player.findUnique({
     where: { player_id: playerId },
   });
-  const character = await prisma.character.findUnique({
-    where: { character_id: characterId },
-  });
-
   if (!player) throw new Error("Player not found");
-  if (!character) throw new Error("Character not found");
 
-  const inventory: InventoryItem[] =
-    (player.inventory as unknown as InventoryItem[]) || [];
+  const charShop = await prisma.characterShop.findUnique({
+    where: { character_shop_id: characterShopId },
+    include: { character: true },
+  });
+  if (!charShop) throw new Error("Character not found");
 
-  const characterInInventory = inventory.find(
-    (item): item is Extract<InventoryItem, { type: "character" }> =>
-      item.type === "character" &&
-      item.character_id === characterId &&
-      item.is_purchased
-  );
-  if (!characterInInventory) throw new Error("Character not owned by player");
+  if (player.coins < charShop.character_price)
+    throw new Error("Not enough coins");
 
-  const activePotion = inventory.find(
-    (item): item is Extract<InventoryItem, { type: "potion" }> =>
-      item.type === "potion" &&
-      item.name === potionName &&
-      (item.quantity || 0) > 0
-  );
-  if (!activePotion) throw new Error("No potions available");
-
-  activePotion.quantity = (activePotion.quantity || 1) - 1;
-  const updatedInventory = inventory.filter((item) => {
-    if (item.type === "character") return true;
-    return item.quantity !== 0;
+  const existing = await prisma.playerCharacter.findUnique({
+    where: {
+      player_id_character_id: {
+        player_id: playerId,
+        character_id: charShop.character_id,
+      },
+    },
   });
 
-  const updates: (
-    | Prisma.PrismaPromise<Prisma.PlayerGetPayload<{}>>
-    | Prisma.PrismaPromise<Prisma.CharacterGetPayload<{}>>
-  )[] = [
-    prisma.player.update({
-      where: { player_id: playerId },
-      data: { inventory: updatedInventory as any },
-    }),
-  ];
+  if (existing?.is_purchased) throw new Error("Character already purchased");
 
-  switch (potionName as PotionType) {
-    case "health": {
+  await prisma.playerCharacter.updateMany({
+    where: { player_id: playerId },
+    data: { is_selected: false },
+  });
+
+  await prisma.playerCharacter.upsert({
+    where: {
+      player_id_character_id: {
+        player_id: playerId,
+        character_id: charShop.character_id,
+      },
+    },
+    update: { is_purchased: true, is_selected: true },
+    create: {
+      player_id: playerId,
+      character_id: charShop.character_id,
+      is_purchased: true,
+      is_selected: true,
+    },
+  });
+
+  await prisma.player.update({
+    where: { player_id: playerId },
+    data: { coins: { decrement: charShop.character_price } },
+  });
+
+  await updateQuestProgress(playerId, QuestType.unlock_character, 1);
+  await spendCoins(playerId, charShop.character_price);
+
+  return { message: `${charShop.character.character_name} purchased` };
+};
+
+//Still need to finalize!!!
+export const usePotion = async (playerId: number, potionType: PotionType) => {
+  // Get selected character
+  const playerCharacter = await prisma.playerCharacter.findFirst({
+    where: { player_id: playerId, is_selected: true, is_purchased: true },
+    include: { character: true },
+  });
+  if (!playerCharacter) throw new Error("No selected character found");
+
+  // Get the potion in player's inventory
+  const playerPotion = await prisma.playerPotion.findUnique({
+    where: {
+      player_id_potion_shop_id: {
+        player_id: playerId,
+        potion_shop_id: potionType as unknown as number, // map enum to shop ID if needed
+      },
+    },
+  });
+  if (!playerPotion || playerPotion.quantity <= 0)
+    throw new Error("Potion not available");
+
+  // Apply potion effect
+  const updates: any[] = [];
+
+  switch (potionType) {
+    case "health":
       updates.push(
         prisma.character.update({
-          where: { character_id: characterId },
-          data: { health: character.health },
+          where: { character_id: playerCharacter.character_id },
+          data: { health: playerCharacter.character.health },
         })
       );
       break;
-    }
-
     case "strong":
-      updatedInventory.push({
-        type: "potion",
-        name: "strong_effect",
-        quantity: 1,
-      });
       updates.push(
-        prisma.player.update({
-          where: { player_id: playerId },
-          data: { inventory: updatedInventory as any },
+        prisma.character.update({
+          where: { character_id: playerCharacter.character_id },
+          data: {
+            character_damage: playerCharacter.character.character_damage * 2,
+          },
         })
       );
       break;
-
     case "freeze":
-      updatedInventory.push({
-        type: "potion",
-        name: "freeze_effect",
-        quantity: 1,
-      });
+      // Freeze effect: you might store it in PlayerCharacter table for the battle session
       updates.push(
-        prisma.player.update({
-          where: { player_id: playerId },
-          data: { inventory: updatedInventory as any },
+        prisma.playerCharacter.update({
+          where: { player_character_id: playerCharacter.player_character_id },
+          data: {
+            /* you can add a "status_effect" field if needed */
+          },
         })
       );
       break;
-
-    default:
-      throw new Error("Invalid potion type");
   }
+
+  // Decrement potion quantity
+  updates.push(
+    prisma.playerPotion.update({
+      where: { player_potion_id: playerPotion.player_potion_id },
+      data: { quantity: { decrement: 1 } },
+    })
+  );
 
   await prisma.$transaction(updates);
 
-  return { message: `${potionName} potion used` };
+  return {
+    message: `${potionType} potion applied to ${playerCharacter.character.character_name}`,
+  };
 };

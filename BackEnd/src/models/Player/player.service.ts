@@ -1,8 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import { hashPassword, comparePassword } from "../../../utils/hash";
-import { generateToken } from "../../../utils/token";
+import { generateAccessToken } from "../../../utils/token";
 import { PlayerCreateInput, PlayerLoginInput } from "./player.types";
 import { isSameDay } from "../../../helper/date";
+import { updateQuestProgress } from "game/Quests/quests.service";
+import { QuestType } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -86,7 +88,11 @@ export const loginPlayer = async ({ email, password }: PlayerLoginInput) => {
     },
   });
 
-  const token = generateToken({ id: player.player_id, role: "player" });
+  if (shouldIncrementDays) {
+    await updateQuestProgress(player.player_id, QuestType.login_days, 1);
+  }
+
+  const token = generateAccessToken({ id: player.player_id, role: "player" });
   return {
     token,
     player: {

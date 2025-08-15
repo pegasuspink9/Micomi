@@ -17,7 +17,6 @@ export const createQuestTemplate = async (
     data: {
       ...data,
       is_template: true,
-      is_daily: true,
       current_value: 0,
       is_completed: false,
     },

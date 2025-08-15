@@ -1,30 +1,14 @@
 import { Request, Response } from "express";
-import { getSelectedCharacterId } from "./characters.service";
+import * as ShopService from "./characters.service";
 import { successResponse, errorResponse } from "../../../utils/response";
 
-export const getSelectedCharacter = async (req: Request, res: Response) => {
+export const selectCharacter = async (req: Request, res: Response) => {
+  const playerId = (req as any).user.id;
+  const { characterId } = req.body;
   try {
-    const { playerId } = req.params;
-    const parsedPlayerId = parseInt(playerId, 10);
-
-    if (isNaN(parsedPlayerId)) {
-      return errorResponse(res, "Error: ", "Invalid player ID", 400);
-    }
-
-    const characterId = await getSelectedCharacterId(parsedPlayerId);
-
-    if (characterId === null) {
-      return errorResponse(res, "Error: ", "No selected character found", 404);
-    }
-
-    return successResponse(
-      res,
-      { characterId },
-      "Selected character retrieved",
-      200
-    );
+    const result = await ShopService.selectCharacter(playerId, characterId);
+    return successResponse(res, result, "Character selected");
   } catch (error) {
-    console.error("Error fetching selected character:", error);
-    return errorResponse(res, error, "Internal server error", 500);
+    return errorResponse(res, null, (error as Error).message, 400);
   }
 };

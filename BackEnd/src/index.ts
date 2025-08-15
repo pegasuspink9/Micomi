@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 import adminRoutes from "./models/Admin/admin.routes";
 import playerRoutes from "./models/Player/player.routes";
 import mapRoutes from "./models/Map/map.routes";
@@ -13,19 +14,24 @@ import shopRoutes from "./models/Shop/shop.routes";
 import gameRoutes from "./game/routes/game.routes";
 import lessonRoutes from "./models/Lesson/lesson.routes";
 import questRoutes from "./models/Quest/quest.routes";
+import * as AuthController from "../middleware/auth.controller";
 
 dotenv.config();
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
 
 const cors = require("cors");
 app.use(
   cors({
     origin: ["http://localhost:3000"],
     methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
   })
 );
+
+app.use("/auth", AuthController.refreshAccessToken);
 
 app.use("/admin", adminRoutes);
 app.use("/player", playerRoutes);

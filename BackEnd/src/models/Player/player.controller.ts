@@ -1,5 +1,9 @@
 import { Request, Response } from "express";
 import { successResponse, errorResponse } from "../../../utils/response";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+} from "../../../utils/token";
 import * as PlayerService from "./player.service";
 
 /*GET all players*/
@@ -62,10 +66,32 @@ export const deletePlayer = async (req: Request, res: Response) => {
 export const loginPlayer = async (req: Request, res: Response) => {
   try {
     const result = await PlayerService.loginPlayer(req.body);
+
     if (!result) {
       return errorResponse(res, null, "Invalid email or password", 401);
     }
-    return successResponse(res, result, "Login successful");
+
+    const accessToken = generateAccessToken({
+      id: result.player.id,
+      role: "player",
+    });
+    const refreshToken = generateRefreshToken({
+      id: result.player.id,
+      role: "player",
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return successResponse(
+      res,
+      { accessToken, player: result.player },
+      "Login successful"
+    );
   } catch (error) {
     return errorResponse(res, null, "Failed to login", 500);
   }

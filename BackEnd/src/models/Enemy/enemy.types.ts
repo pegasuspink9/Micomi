@@ -3,6 +3,7 @@ export interface EnemyCreateInput {
   enemy_name: string;
   enemy_description: string;
   enemy_difficulty: string;
+  enemy_map: string;
   enemy_avatar: string;
   enemy_skills: string;
   enemy_health: number;
@@ -14,6 +15,7 @@ export interface EnemyUpdateInput {
   enemy_name?: string;
   enemy_description?: string;
   enemy_difficulty?: string;
+  enemy_map?: string;
   enemy_avatar?: string;
   enemy_skills?: string;
   enemy_health?: number;

@@ -1,40 +1,23 @@
-import { PotionType, ShopItemType } from "@prisma/client";
+import { PotionType } from "@prisma/client";
 
-export interface ShopCreateInput {
-  item_type: ShopItemType;
-  potion_type?: PotionType | null;
-  potion_description?: string | null;
-  potion_price?: number | null;
-  potion_health_boost?: number | null;
-  character_id?: number | null;
-  character_price?: number | null;
-  player_id?: number | null;
-  is_active?: boolean;
+export interface ShopPotionCreateInput {
+  potion_type: PotionType;
+  potion_description: string;
+  potion_price: number;
 }
 
-export interface ShopUpdateInput {
-  item_type?: ShopItemType;
-  potion_type?: PotionType | null;
-  potion_description?: string | null;
-  potion_price?: number | null;
-  potion_health_boost?: number | null;
-  character_id?: number | null;
-  character_price?: number | null;
-  player_id?: number | null;
-  is_active?: boolean;
+export interface ShopCharacterCreateInput {
+  character_id: number;
+  character_price: number;
 }
 
-export type InventoryItem =
-  | {
-      type: "potion";
-      name: string;
-      quantity: number;
-      is_selected?: boolean;
-    }
-  | {
-      type: "character";
-      name: string;
-      character_id: number;
-      is_purchased: boolean;
-      is_selected?: boolean;
-    };
+export interface ShopPotionUpdateInput {
+  potion_type?: PotionType;
+  potion_description?: string;
+  potion_price?: number;
+}
+
+export interface ShopCharacterUpdateInput {
+  character_id?: number;
+  character_price?: number;
+}

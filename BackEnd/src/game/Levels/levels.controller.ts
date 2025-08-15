@@ -4,7 +4,8 @@ import { successResponse, errorResponse } from "../../../utils/response";
 
 export const enterLevelController = async (req: Request, res: Response) => {
   try {
-    const { playerId, levelId } = req.body;
+    const playerId = (req as any).user.id;
+    const { levelId } = req.body;
 
     const result = await LevelService.enterLevel(playerId, levelId);
     return successResponse(res, result, "Entered level");
@@ -20,7 +21,9 @@ export const enterLevelController = async (req: Request, res: Response) => {
 
 export const unlockNextLevel = async (req: Request, res: Response) => {
   try {
-    const { playerId, mapId, currentLevelNumber } = req.body;
+    const playerId = (req as any).user.id;
+    const { mapId, currentLevelNumber } = req.body;
+
     const result = await LevelService.unlockNextLevel(
       playerId,
       mapId,

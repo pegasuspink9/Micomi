@@ -3,7 +3,7 @@ import * as AchievementService from "./achievements.service";
 import { successResponse, errorResponse } from "../../../utils/response";
 
 export const checkAchievements = async (req: Request, res: Response) => {
-  const { playerId } = req.body;
+  const playerId = (req as any).player.id;
   try {
     const parsedPlayerId = parseInt(playerId, 10);
     if (isNaN(parsedPlayerId)) {
@@ -27,38 +27,38 @@ export const checkAchievements = async (req: Request, res: Response) => {
   }
 };
 
-export const updateLeaderboard = async (req: Request, res: Response) => {
-  try {
-    await AchievementService.updateLeaderboard();
-    return successResponse(res, null, "Leaderboard updated successfully", 200);
-  } catch (error) {
-    return errorResponse(
-      res,
-      (error as Error).message,
-      "Failed to update leaderboard",
-      500
-    );
-  }
-};
+// export const updateLeaderboard = async (req: Request, res: Response) => {
+//   try {
+//     await AchievementService.updateLeaderboard();
+//     return successResponse(res, null, "Leaderboard updated successfully", 200);
+//   } catch (error) {
+//     return errorResponse(
+//       res,
+//       (error as Error).message,
+//       "Failed to update leaderboard",
+//       500
+//     );
+//   }
+// };
 
-export const getLeaderboard = async (req: Request, res: Response) => {
-  try {
-    const leaderboard = await AchievementService.getLeaderboard();
-    return successResponse(
-      res,
-      leaderboard,
-      "Leaderboard fetched successfully",
-      200
-    );
-  } catch (error) {
-    return errorResponse(
-      res,
-      (error as Error).message,
-      "Failed to fetch leaderboard",
-      404
-    );
-  }
-};
+// export const getLeaderboard = async (req: Request, res: Response) => {
+//   try {
+//     const leaderboard = await AchievementService.getLeaderboard();
+//     return successResponse(
+//       res,
+//       leaderboard,
+//       "Leaderboard fetched successfully",
+//       200
+//     );
+//   } catch (error) {
+//     return errorResponse(
+//       res,
+//       (error as Error).message,
+//       "Failed to fetch leaderboard",
+//       404
+//     );
+//   }
+// };
 
 export const getPlayerAchievements = async (req: Request, res: Response) => {
   const { playerId } = req.params;
@@ -73,7 +73,7 @@ export const getPlayerAchievements = async (req: Request, res: Response) => {
       );
     }
 
-    const achievements = await AchievementService.getPlayerAchievements(
+    const achievements = await AchievementService.checkAchievements(
       parsedPlayerId
     );
     return successResponse(

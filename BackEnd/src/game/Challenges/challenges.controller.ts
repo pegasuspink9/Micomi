@@ -3,7 +3,8 @@ import * as ChallengeService from "./challenges.service";
 import { successResponse, errorResponse } from "../../../utils/response";
 
 export const submitChallenge = async (req: Request, res: Response) => {
-  const { playerId, levelId, challengeId, answer } = req.body;
+  const playerId = (req as any).user.id;
+  const { levelId, challengeId, answer } = req.body;
   try {
     const result = await ChallengeService.submitChallenge(
       playerId,

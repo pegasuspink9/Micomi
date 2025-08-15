@@ -1,27 +1,52 @@
 import { PrismaClient, BattleStatus } from "@prisma/client";
 import * as LevelService from "../Levels/levels.service";
-import { InventoryItem } from "../../models/Shop/shop.types";
-import { getSelectedCharacterId } from "../Characters/characters.service";
 import { updateQuestProgress } from "../Quests/quests.service";
 import { QuestType } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 async function getFightSetup(playerId: number, enemyId: number) {
-  const characterId = await getSelectedCharacterId(playerId);
-  if (!characterId) throw new Error("No selected character found");
+  const player = await prisma.player.findUnique({
+    where: { player_id: playerId },
+    include: {
+      ownedCharacters: {
+        where: { is_selected: true, is_purchased: true },
+        include: { character: true },
+      },
+    },
+  });
 
-  const [player, character, enemy] = await Promise.all([
-    prisma.player.findUnique({ where: { player_id: playerId } }),
-    prisma.character.findUnique({ where: { character_id: characterId } }),
-    prisma.enemy.findUnique({ where: { enemy_id: enemyId } }),
-  ]);
+  if (!player) throw new Error("Player not found");
 
-  if (!player || !character || !enemy) {
-    throw new Error("Invalid character, enemy, or player");
+  const selectedCharacter = player.ownedCharacters[0]?.character;
+  if (!selectedCharacter) throw new Error("No selected character found");
+
+  const enemy = await prisma.enemy.findUnique({ where: { enemy_id: enemyId } });
+  if (!enemy) throw new Error("Enemy not found");
+
+  let progress = await prisma.playerProgress.findUnique({
+    where: {
+      player_id_level_id: { player_id: playerId, level_id: enemy.level_id },
+    },
+  });
+
+  if (!progress) {
+    progress = await prisma.playerProgress.create({
+      data: {
+        player_id: playerId,
+        level_id: enemy.level_id,
+        player_hp: selectedCharacter.health,
+        enemy_hp: enemy.enemy_health,
+        battle_status: "in_progress",
+        current_level: 1,
+        attempts: 0,
+        player_answer: {},
+        challenge_start_time: new Date(),
+      },
+    });
   }
 
-  return { player, character, enemy, characterId };
+  return { player, character: selectedCharacter, enemy, progress };
 }
 
 export const fightEnemy = async (
@@ -29,26 +54,44 @@ export const fightEnemy = async (
   enemyId: number,
   isCorrect: boolean
 ) => {
-  const { player, character, enemy, characterId } = await getFightSetup(
-    playerId,
-    enemyId
-  );
+  const { player, character, enemy } = await getFightSetup(playerId, enemyId);
   const levelId = enemy.level_id;
 
   const progress = await prisma.playerProgress.findUnique({
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
+    include: { level: { include: { challenges: true } } },
   });
   if (!progress) throw new Error("Missing player progress");
 
-  const inventory: InventoryItem[] = (player.inventory as any) || [];
-  const characterInInventory = inventory.find(
-    (item): item is Extract<InventoryItem, { type: "character" }> =>
-      item.type === "character" &&
-      item.character_id === characterId &&
-      item.is_purchased
-  );
-  if (!characterInInventory) throw new Error("Character not owned by player");
+  const currentChallenge = progress.level.challenges[0];
+  if (
+    currentChallenge &&
+    (currentChallenge.challenge_type === "multiple choice" ||
+      currentChallenge.challenge_type === "fill in the blank") &&
+    progress.challenge_start_time
+  ) {
+    const elapsedSeconds =
+      (Date.now() - new Date(progress.challenge_start_time).getTime()) / 1000;
+    if (elapsedSeconds > 10) {
+      await prisma.playerProgress.update({
+        where: {
+          player_id_level_id: { player_id: playerId, level_id: levelId },
+        },
+        data: {
+          player_hp: 0,
+          battle_status: "lost",
+        },
+      });
+      return {
+        status: "lost",
+        charHealth: 0,
+        enemyHealth: progress.enemy_hp ?? enemy.enemy_health,
+        message: "Time's up! The enemy ate your character.",
+      };
+    }
+  }
 
+  // Original combat logic below (unchanged) ...
   let charHealth = progress.player_hp ?? character.health;
   let enemyHealth =
     progress.enemy_hp ??
@@ -61,12 +104,16 @@ export const fightEnemy = async (
     progress.battle_status === null ||
     progress.battle_status === "in_progress"
   ) {
-    const activePotion = inventory.find(
-      (item): item is Extract<InventoryItem, { type: "potion" }> =>
-        item.type === "potion" && (item.quantity || 0) > 0
-    );
+    const activePotion = await prisma.playerPotion.findFirst({
+      where: {
+        player_id: playerId,
+        quantity: { gt: 0 },
+      },
+      include: { potion: true },
+    });
+
     if (activePotion) {
-      switch (activePotion.name) {
+      switch (activePotion.potion.potion_type) {
         case "health":
           charHealth = character.health;
           break;
@@ -77,14 +124,10 @@ export const fightEnemy = async (
           enemyDamage = 0;
           break;
       }
-      activePotion.quantity = (activePotion.quantity || 1) - 1;
-      const updatedInventory = inventory.filter((item) => {
-        if (item.type === "character") return true;
-        return item.quantity !== 0;
-      });
-      await prisma.player.update({
-        where: { player_id: playerId },
-        data: { inventory: updatedInventory as any },
+
+      await prisma.playerPotion.update({
+        where: { player_potion_id: activePotion.player_potion_id },
+        data: { quantity: activePotion.quantity - 1 },
       });
     }
   }
@@ -106,6 +149,7 @@ export const fightEnemy = async (
       enemy_hp: Math.max(enemyHealth, 0),
       player_hp: Math.max(charHealth, 0),
       battle_status: status,
+      challenge_start_time: new Date(),
     },
   });
 
@@ -116,6 +160,7 @@ export const fightEnemy = async (
       where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
       data: { is_completed: true, completed_at: new Date() },
     });
+
     await prisma.player.update({
       where: { player_id: playerId },
       data: { total_points: { increment: 50 }, exp_points: { increment: 50 } },
@@ -144,6 +189,8 @@ export const fightEnemy = async (
     status,
     charHealth: Math.max(charHealth, 0),
     enemyHealth: Math.max(enemyHealth, 0),
+    charDamage,
+    enemyDamage,
   };
 };
 
@@ -153,10 +200,7 @@ export const fightBossEnemy = async (
   correctCount: number,
   totalCount: number
 ) => {
-  const { player, character, enemy, characterId } = await getFightSetup(
-    playerId,
-    enemyId
-  );
+  const { player, character, enemy } = await getFightSetup(playerId, enemyId);
   const levelId = enemy.level_id;
 
   const progress = await prisma.playerProgress.findUnique({
@@ -164,18 +208,53 @@ export const fightBossEnemy = async (
   });
   if (!progress) throw new Error("Missing player progress");
 
+  // Original health and damage calculations
   let charHealth = progress.player_hp ?? character.health;
   let enemyHealth = progress.enemy_hp ?? enemy.enemy_health;
-  const charDamage = correctCount * 10;
-  const enemyDamage = (totalCount - correctCount) * 10;
+  let charDamage = correctCount * 10;
+  let enemyDamage = (totalCount - correctCount) * 10;
 
+  // Check for active potion
+  if (
+    progress.battle_status === null ||
+    progress.battle_status === "in_progress"
+  ) {
+    const activePotion = await prisma.playerPotion.findFirst({
+      where: { player_id: playerId, quantity: { gt: 0 } },
+      include: { potion: true },
+    });
+
+    if (activePotion) {
+      switch (activePotion.potion.potion_type) {
+        case "health":
+          charHealth = character.health;
+          break;
+        case "strong":
+          charDamage *= 2;
+          break;
+        case "freeze":
+          enemyDamage = 0;
+          break;
+      }
+
+      // Reduce potion quantity
+      await prisma.playerPotion.update({
+        where: { player_potion_id: activePotion.player_potion_id },
+        data: { quantity: activePotion.quantity - 1 },
+      });
+    }
+  }
+
+  // Apply damage
   enemyHealth -= charDamage;
   if (enemyHealth > 0) charHealth -= enemyDamage;
 
+  // Determine battle status
   let status: BattleStatus = "in_progress";
   if (enemyHealth <= 0) status = "won";
   if (charHealth <= 0) status = "lost";
 
+  // Update PlayerProgress
   await prisma.playerProgress.update({
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
     data: {
@@ -192,6 +271,7 @@ export const fightBossEnemy = async (
       where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
       data: { is_completed: true, completed_at: new Date() },
     });
+
     await prisma.player.update({
       where: { player_id: playerId },
       data: { total_points: { increment: 50 }, exp_points: { increment: 50 } },
