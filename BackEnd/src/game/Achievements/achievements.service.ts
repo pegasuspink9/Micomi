@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-
 const prisma = new PrismaClient();
 
 export const checkAchievements = async (playerId: number) => {
@@ -34,7 +33,7 @@ export const checkAchievements = async (playerId: number) => {
         select: { level_id: true },
       })
       .then((progress) => new Set(progress.map((p) => p.level_id))),
-    prisma.character.count({ where: { is_purchased: true } }),
+    prisma.character.count(),
     prisma.level.findMany({
       where: { level_type: "final" },
       include: {
@@ -51,17 +50,13 @@ export const checkAchievements = async (playerId: number) => {
     prisma.playerCharacter.count({
       where: { player_id: playerId, is_purchased: true },
     }),
-    prisma.playerPotion.findMany({
-      where: { player_id: playerId },
-    }),
+    prisma.playerPotion.findMany({ where: { player_id: playerId } }),
   ]);
 
   const purchasedCharacters = ownedCharacters;
-
   const potionCount = ownedPotions.reduce((total, p) => total + p.quantity, 0);
-
   const defeatedBosses = bossLevels.filter(
-    (level) => level.playerProgress.length > 0
+    (l) => l.playerProgress.length > 0
   ).length;
 
   const hasCompletedMap = (mapName: string): boolean => {
@@ -103,7 +98,7 @@ export const checkAchievements = async (playerId: number) => {
       case "Collector":
         shouldAward =
           totalCollectibleCharacters > 0 &&
-          purchasedCharacters === totalCollectibleCharacters;
+          purchasedCharacters >= totalCollectibleCharacters;
         break;
       case "Top 1":
         shouldAward = leaderboard?.rank === 1;
@@ -129,6 +124,14 @@ export const checkAchievements = async (playerId: number) => {
   }
 
   if (awards.length > 0) {
-    await prisma.playerAchievement.createMany({ data: awards });
+    await prisma.playerAchievement.createMany({
+      data: awards,
+      skipDuplicates: true,
+    });
   }
+
+  return prisma.playerAchievement.findMany({
+    where: { player_id: playerId },
+    include: { achievement: true },
+  });
 };

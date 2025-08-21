@@ -1,5 +1,5 @@
 import { PrismaClient, PotionType, QuestType } from "@prisma/client";
-import { updateQuestProgress } from "game/Quests/quests.service";
+import { updateQuestProgress } from "../Quests/quests.service";
 
 const prisma = new PrismaClient();
 

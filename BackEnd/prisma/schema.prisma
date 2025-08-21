@@ -150,7 +150,7 @@ model Character {
 
 model Leaderboard {
   leaderboard_id  Int      @id @default(autoincrement())
-  player_id       Int
+  player_id       Int      @unique
   rank            Int
   total_points    Int
   player          Player   @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
@@ -173,6 +173,8 @@ model PlayerAchievement {
   earned_at             DateTime
   player                Player    @relation(fields: [player_id], references: [player_id])
   achievement           Achievement @relation(fields: [achievement_id], references: [achievement_id])
+
+  @@unique([player_id, achievement_id])
 }
 
 model PotionShop {

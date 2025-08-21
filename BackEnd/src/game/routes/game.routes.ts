@@ -6,6 +6,7 @@ import * as AchievementController from "../Achievements/achievements.controller"
 import * as LevelController from "../Levels/levels.controller";
 import * as MapController from "../Maps/maps.controller";
 import * as CharacterController from "../Characters/characters.controller";
+import * as LeaderboardController from "../Leaderboard/leaderboard.controller";
 import {
   authenticate,
   requirePlayer,
@@ -76,16 +77,16 @@ router.post(
   "/check-achievements",
   authenticate,
   requirePlayer,
-  AchievementController.checkAchievements
+  AchievementController.getPlayerAchievements
 );
 router.get(
-  "/player-achievemnt/:id",
+  "/player-achievement/:id",
   AchievementController.getPlayerAchievements
 );
 
 //Leaderboard routes
-// router.get("/leaderboard", AchievementController.getLeaderboard);
-// router.post("/update-leaderboard", AchievementController.updateLeaderboard);
+router.get("/leaderboard", LeaderboardController.getLeaderboard);
+router.post("/update-leaderboard", LeaderboardController.updateLeaderboard);
 
 //Challenge route
 router.post(

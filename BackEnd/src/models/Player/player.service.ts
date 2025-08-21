@@ -2,8 +2,8 @@ import { PrismaClient } from "@prisma/client";
 import { hashPassword, comparePassword } from "../../../utils/hash";
 import { generateAccessToken } from "../../../utils/token";
 import { PlayerCreateInput, PlayerLoginInput } from "./player.types";
-import { isSameDay } from "../../../helper/date";
-import { updateQuestProgress } from "game/Quests/quests.service";
+import { isSameDay } from "../../../helper/dateTimeHelper";
+import { updateQuestProgress } from "../../game/Quests/quests.service";
 import { QuestType } from "@prisma/client";
 
 const prisma = new PrismaClient();

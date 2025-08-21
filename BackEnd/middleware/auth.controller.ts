@@ -29,6 +29,7 @@ export const logout = (req: Request, res: Response) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
+    path: "/",
   });
   return successResponse(res, null, "Logged out successfully");
 };

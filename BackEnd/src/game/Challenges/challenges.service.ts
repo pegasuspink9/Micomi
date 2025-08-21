@@ -1,6 +1,6 @@
 import { PrismaClient, QuestType } from "@prisma/client";
 import * as LevelService from "../Levels/levels.service";
-import { updateQuestProgress } from "game/Quests/quests.service";
+import { updateQuestProgress } from "../Quests/quests.service";
 
 const prisma = new PrismaClient();
 

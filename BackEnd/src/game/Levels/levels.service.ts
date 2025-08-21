@@ -38,6 +38,15 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     level.challenges = randomize(level.challenges);
   }
 
+  if (level.level_difficulty === "medium") {
+    const invalid = level.challenges.some(
+      (c) => !c.guide || c.guide.trim() === ""
+    );
+    if (invalid) {
+      throw new Error("All Medium level challenges must have a guide");
+    }
+  }
+
   if (level.level_difficulty === "hard") {
     const invalid = level.challenges.some((c) => {
       if (!c.test_cases) return true;
