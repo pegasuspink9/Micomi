@@ -11,12 +11,11 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { map } from './mapData';
 import LottieView from 'lottie-react-native';
 import { useRouter } from 'expo-router';
+import { useMapData } from '../../hooks/useMapData'; 
 
 const { width, height } = Dimensions.get('window');
-
 
 const LEVEL_SELECTOR_IMAGES = {
   'HTML': 'https://github.com/user-attachments/assets/f1ade869-bb35-4864-a796-2a964749f83b',
@@ -25,60 +24,134 @@ const LEVEL_SELECTOR_IMAGES = {
   'Computer': 'https://github.com/user-attachments/assets/8ab0728b-8988-46dd-8ad7-395abc4ba273'
 };
 
-
 export default function MapNavigate({ onMapChange }) {
   const [currentMapIndex, setCurrentMapIndex] = useState(0);
   const router = useRouter();
+  
+  // Use the new consolidated hook (no mapId = fetch all maps)
+  const { maps, loading, error, refetch } = useMapData();
+
+  // Add safety check for current map
+  const currentMap = maps[currentMapIndex];
+  const isValidMap = currentMap && typeof currentMap === 'object';
 
   useEffect(() => {
-  if (onMapChange) {
-    onMapChange(map[currentMapIndex].name);
-  }
-}, [currentMapIndex, onMapChange]);
+    if (onMapChange && maps.length > 0 && isValidMap) {
+      onMapChange(maps[currentMapIndex].map_name);
+    }
+  }, [currentMapIndex, onMapChange, maps, isValidMap]);
 
   const handlePrevious = () => {
-    setCurrentMapIndex(prevIndex => prevIndex > 0 ? prevIndex - 1 : map.length - 1);
+    setCurrentMapIndex(prevIndex => prevIndex > 0 ? prevIndex - 1 : maps.length - 1);
   };
 
   const handleNext = () => {
-    setCurrentMapIndex(prevIndex => prevIndex < map.length - 1 ? prevIndex + 1 : 0);
+    setCurrentMapIndex(prevIndex => prevIndex < maps.length - 1 ? prevIndex + 1 : 0);
   };
 
-    const handleIslandClick = () => {
-    if (map[currentMapIndex].unlocked) {
-      const currentMap = map[currentMapIndex].name;
+  const handleIslandClick = () => {
+    if (isValidMap && maps[currentMapIndex].is_active) {
+      const currentMap = maps[currentMapIndex].map_name;
       
       router.push({
         pathname: '/Components/RoadMap/roadMapLandPage',
         params: { 
           mapName: currentMap,
-          mapType: currentMap // ADD: Pass the map type
+          mapType: currentMap,
+          mapId: maps[currentMapIndex].map_id
         }
-      })
-    };
+      });
+    }
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#fff" />
+        <Text style={styles.loadingText}>Loading Maps...</Text>
+      </View>
+    );
+  }
+
+  // Error state with no maps available
+  if (error && maps.length === 0) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>Failed to load maps</Text>
+        <Text style={styles.errorSubText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={refetch}>
+          <Text style={styles.retryText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // No maps available
+  if (maps.length === 0) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>No maps available</Text>
+        <Text style={styles.errorSubText}>Please check your backend connection</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={refetch}>
+          <Text style={styles.retryText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Get proper image source for LottieView
+  const getMapImageSource = (mapData) => {
+    if (!mapData) {
+      return { uri: 'https://lottie.host/9875685d-8bb8-4749-ac63-c56953f45726/UnBHY7vAPX.json' };
+    }
+    
+    // Handle backend format (map_image is a string URL)
+    if (mapData.map_image && typeof mapData.map_image === 'string') {
+      if (mapData.map_image.startsWith('http')) {
+        return { uri: mapData.map_image };
+      }
+    }
+    
+    // Handle local format (map_image is already an object with uri)
+    if (mapData.map_image && mapData.map_image.uri) {
+      return mapData.map_image;
+    }
+    
+    // Ultimate fallback
+    return { uri: 'https://lottie.host/9875685d-8bb8-4749-ac63-c56953f45726/UnBHY7vAPX.json' };
   };
 
   return (
     <View style={styles.scrollContent}>
+      {/* Show error banner if there was an error but we have data */}
+      {error && maps.length > 0 && (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorBannerText}>
+            Backend connection issue - Some features may be limited
+          </Text>
+        </View>
+      )}
+
       {/* Floating Island */}
       <View style={styles.mapWrapper}>
         <TouchableOpacity 
           style={styles.island}
           onPress={handleIslandClick}
-          disabled={!map[currentMapIndex].unlocked}
+          disabled={!isValidMap || !maps[currentMapIndex].is_active}
         >
-            <LottieView
-            source={map[currentMapIndex].image}
+          <LottieView
+            source={getMapImageSource(maps[currentMapIndex])}
             style={styles.islandImage}
             autoPlay
             loop
-            speed={map[currentMapIndex].unlocked ? 1 : 0}
+            speed={isValidMap && maps[currentMapIndex].is_active ? 1 : 0}
             resizeMode='contain'
             cacheComposition={true}
             renderMode='HARDWARE'
           />
 
-          {!map[currentMapIndex].unlocked && (
+          {isValidMap && !maps[currentMapIndex].is_active && (
             <Image
               source={{ uri: 'https://github.com/user-attachments/assets/e8a1b478-91d3-44c9-8a59-4bc46db4d1c0'}}
               style={styles.lockedOverlay}
@@ -86,17 +159,9 @@ export default function MapNavigate({ onMapChange }) {
             />
           )}
 
-          {/* Add visual feedback for clickable islands */}
-          {map[currentMapIndex].unlocked && (
-            <View style={styles.clickIndicator}>
-              <Text style={styles.clickText}>Tap to Enter</Text>
-            </View>
-          )}
-      </TouchableOpacity>
+        </TouchableOpacity>
 
-        
-
-       <View style={styles.levelSelector}>
+        <View style={styles.levelSelector}>
           <TouchableOpacity 
             style={[styles.navArrow, currentMapIndex === 0 && styles.disabledArrow]} 
             onPress={handlePrevious}
@@ -106,28 +171,27 @@ export default function MapNavigate({ onMapChange }) {
           </TouchableOpacity>
           
           <ImageBackground
-            source={{uri: LEVEL_SELECTOR_IMAGES[map[currentMapIndex].name]}}
+            source={{uri: LEVEL_SELECTOR_IMAGES[isValidMap ? maps[currentMapIndex].map_name : 'HTML']}}
             style={styles.levelSelectorImage}
             resizeMode="contain"
           >
-          <View style={[
-            styles.currentLevel
-          ]}>
-            <Text style={styles.currentLevelText} numberOfLines={1} adjustsFontSizeToFit={true} >{map[currentMapIndex].name}</Text>
-           
-          </View>
+            <View style={styles.currentLevel}>
+              <Text style={styles.currentLevelText} numberOfLines={1} adjustsFontSizeToFit={true}>
+                {isValidMap ? maps[currentMapIndex].map_name : 'Loading...'}
+              </Text>
+            </View>
           </ImageBackground>
           
           <TouchableOpacity 
-            style={[styles.navArrow, currentMapIndex === map.length - 1 && styles.disabledArrow]} 
+            style={[styles.navArrow, currentMapIndex === maps.length - 1 && styles.disabledArrow]} 
             onPress={handleNext}
-            disabled={currentMapIndex === map.length - 1}
+            disabled={currentMapIndex === maps.length - 1}
           >
             <Image source={{uri: 'https://github.com/user-attachments/assets/5f2b8e72-f49e-4f06-8b76-40b580289d54'}} style={styles.arrowImage} />
           </TouchableOpacity>
         </View>
       </View>
-   </View>
+    </View>
   );
 }
 
@@ -161,25 +225,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-     width: '100%',
-     paddingHorizontal: 20,
-     marginTop: -30,
+    width: '100%',
+    paddingHorizontal: 20,
+    marginTop: -30,
   },
   levelSelectorImage: {
     width: 150,
     height: 150,
     justifyContent: 'center',
     alignItems: 'center',
-    
   },
-   arrowImage: {
+  arrowImage: {
     width: 120,
     height: 120,
     resizeMode: 'contain',
     marginHorizontal: -20,
-  
   },
-  navArrow:{
+  navArrow: {
     padding: 10
   },
   flippedHorizontal: {
@@ -198,13 +260,67 @@ const styles = StyleSheet.create({
     color: 'white',
     fontFamily: 'FunkySign',
   },
-   loadingContainer: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.8)',
   },
-   disabledArrow: {
+  loadingText: {
+    color: '#fff',
+    fontSize: 18,
+    marginTop: 10,
+    fontFamily: 'FunkySign',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    padding: 20,
+  },
+  errorText: {
+    color: '#ff6b6b',
+    fontSize: 18,
+    textAlign: 'center',
+    fontFamily: 'FunkySign',
+    marginBottom: 10,
+  },
+  errorSubText: {
+    color: '#fff',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 20,
+    opacity: 0.8,
+  },
+  retryButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 25,
+  },
+  retryText: {
+    color: '#fff',
+    fontSize: 16,
+    fontFamily: 'FunkySign',
+  },
+  errorBanner: {
+    backgroundColor: '#ff9800',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+  },
+  errorBannerText: {
+    color: '#fff',
+    fontSize: 12,
+    textAlign: 'center',
+    fontFamily: 'FunkySign',
+  },
+  disabledArrow: {
     opacity: 0.5,
   },
   lockedOverlay: {

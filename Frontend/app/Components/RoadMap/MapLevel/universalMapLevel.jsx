@@ -1,14 +1,11 @@
 import React, { useMemo, useCallback } from "react";
-import { View, StyleSheet, ImageBackground, ScrollView, Dimensions } from "react-native";
+import { View, StyleSheet, ImageBackground, ScrollView, Dimensions, Text } from "react-native";
 import { useState } from "react";
-import levels from "./greenLandData"; 
 import LevelButtons from "../RoadMapComponents/Buttons";
 import LottieView from "lottie-react-native";
 import { useLocalSearchParams } from "expo-router";
 import { MAP_THEMES, DEFAULT_THEME } from './MapDatas/mapData';
-import { useImageLoader } from '../LoadingState/useImageLoader';
-import LoadingScreen from '../LoadingState/LoadingScreen';
-
+import { useMapData } from '../../../hooks/useMapData';
 import BushAnimations from '../RoadMapComponents/MapSpecialAnimations/Bush Effect/bushAnimation';
 import PopAnimations from '../RoadMapComponents/MapSpecialAnimations/Lava Effect/lavaPopAnimation';
 import SnowAndAutumnAnimations from "../RoadMapComponents/MapSpecialAnimations/Snow And Autumn Effect/snowAndAutumnFall";
@@ -17,15 +14,20 @@ const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
 export default function UniversalMapLevel() {
   const [backgroundCount, setBackgroundCount] = useState(5);
-  const [lessons] = useState(levels || []);
   
-  const { mapName } = useLocalSearchParams();
+  const { mapName, mapId } = useLocalSearchParams();
+
+  const { levels, mapInfo, loading, error, refetch } = useMapData(mapId);
 
   const getCurrentTheme = () => {
     return MAP_THEMES[mapName] || DEFAULT_THEME;
   };
 
   const theme = getCurrentTheme();
+
+  // Log the levels for debugging
+  console.log('🎮 Levels loaded for map:', mapName, 'Count:', levels.length);
+  console.log('🗺️ Map info:', mapInfo);
 
   // Extract all URIs that need to be preloaded
   const allUris = useMemo(() => {
@@ -39,20 +41,20 @@ export default function UniversalMapLevel() {
       uris.push(theme.backgrounds.repeatingBackground);
     }
     
-    // Level button URIs from lessons
-    lessons.forEach(lesson => {
-      if (lesson.image) uris.push(lesson.image);
-      if (lesson.icon) uris.push(lesson.icon);
-      if (lesson.backgroundImage) uris.push(lesson.backgroundImage);
-      if (lesson.completedImage) uris.push(lesson.completedImage);
+    // Level button URIs from levels (changed from lessons)
+    levels.forEach(level => {
+      if (level.image) uris.push(level.image);
+      if (level.icon) uris.push(level.icon);
+      if (level.backgroundImage) uris.push(level.backgroundImage);
+      if (level.completedImage) uris.push(level.completedImage);
     });
 
     // Remove duplicates
     return [...new Set(uris.filter(Boolean))];
-  }, [theme, lessons]);
+  }, [theme, levels]); // Changed from lessons to levels
 
   // Use the image loader hook
-  const { allLoaded, loadingProgress } = useImageLoader(allUris);
+  // const { allLoaded, loadingProgress } = useImageLoader(allUris, mapName);
 
   // Memoized functions to prevent re-renders
   const getResponsiveValues = useCallback(() => {
@@ -70,11 +72,11 @@ export default function UniversalMapLevel() {
   }, []);
   
   const calculateContentHeight = useCallback(() => {
-    if (lessons.length === 0) return screenHeight * 2;
+    if (levels.length === 0) return screenHeight * 2; // Changed from lessons to levels
     
     const responsive = getResponsiveValues();
     
-    const lastIndex = lessons.length - 1;
+    const lastIndex = levels.length - 1; // Changed from lessons to levels
     let lastButtonTop;
 
     if (lastIndex === 0) {
@@ -96,7 +98,7 @@ export default function UniversalMapLevel() {
     }
     
     return lastButtonTop + (500 * responsive.heightRatio);
-  }, [lessons, getResponsiveValues]);
+  }, [levels, getResponsiveValues]); // Changed from lessons to levels
   
   const handleScroll = useCallback(({ nativeEvent }) => {
     const { contentOffset } = nativeEvent;
@@ -109,7 +111,14 @@ export default function UniversalMapLevel() {
   }, [backgroundCount]);
 
   const handleLevelPress = useCallback((level) => {
-    console.log('Level pressed:', level);
+    console.log('🎯 Level pressed:', {
+      level_id: level.level_id,
+      level_number: level.level_number,
+      level_name: level.levelName,
+      type: level.type,
+      is_unlocked: level.is_unlocked
+    });
+    
   }, []);
 
   const renderMapSpecificContent = useCallback(() => {
@@ -162,9 +171,23 @@ export default function UniversalMapLevel() {
     )), [backgroundCount, theme.backgrounds.repeatingBackground, theme?.backgrounds?.topBackgroundPosition?.marginTop]
   );
 
-  // Show loading screen while images are loading
-  if (!allLoaded) {
-    return <LoadingScreen progress={loadingProgress} theme={theme} />;
+  // Show loading screen while levels are loading
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: '#fff', fontSize: 18 }}>Loading {mapName} levels...</Text>
+      </View>
+    );
+  }
+
+  // Show error message if there's an error and no levels
+  if (error && levels.length === 0) { // Changed from levelsError to error
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: '#fff', fontSize: 18 }}>Failed to load levels for {mapName}</Text>
+        <Text style={{ color: '#fff', fontSize: 14, marginTop: 10 }}>{error}</Text>
+      </View>
+    );
   }
 
   return (
@@ -222,10 +245,10 @@ export default function UniversalMapLevel() {
           {backgroundSegments}
         </View>
 
-        {/* Level Buttons with Theme */}
+        {/* Level Buttons with Theme - Now using dynamic levels from backend */}
         <View style={styles.levelButtonsContainer}>
           <LevelButtons
-            lessons={lessons}
+            lessons={levels} // Pass levels as lessons prop to LevelButtons component
             handleLevelPress={handleLevelPress}
             screenHeight={screenHeight}
             screenWidth={screenWidth}
@@ -240,6 +263,7 @@ export default function UniversalMapLevel() {
   );
 }
 
+// Styles remain the same
 const styles = StyleSheet.create({
   container: {
     flex: 1,

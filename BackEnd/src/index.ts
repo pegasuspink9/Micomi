@@ -22,8 +22,18 @@ app.use(express.json());
 const cors = require("cors");
 app.use(
   cors({
-    origin: ["http://localhost:3000"],
+    origin: [
+      "http://localhost:3000", 
+      "http://localhost:8081", 
+      "http://192.168.254.120:8081", // Your IP with Expo dev server
+      "http://192.168.254.120:3000", // Your IP with backend
+      "http://127.0.0.1:8081",
+      "http://10.0.2.2:8081", // Android emulator
+      "http://localhost:8082", // Alternative Expo port
+      "http://192.168.254.120:8082", // Alternative Expo port with IP
+    ],
     methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
   })
 );
 
@@ -31,6 +41,7 @@ app.use("/admin", adminRoutes);
 app.use("/player", playerRoutes);
 
 app.use("/map", mapRoutes);
+app.use("/api/maps", mapRoutes); // Add API prefix route
 app.use("/level", levelRoutes);
 app.use("/challenge", challengeRoutes);
 app.use("/enemy", enemyRoutes);
