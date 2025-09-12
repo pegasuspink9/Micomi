@@ -28,7 +28,6 @@ export default function MapNavigate({ onMapChange }) {
   const [currentMapIndex, setCurrentMapIndex] = useState(0);
   const router = useRouter();
   
-  // Use the new consolidated hook (no mapId = fetch all maps)
   const { maps, loading, error, refetch } = useMapData();
 
   // Add safety check for current map

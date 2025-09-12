@@ -1,11 +1,11 @@
 import React, { useRef, useEffect, useMemo, useState } from 'react';
 import { View, ImageBackground, Image, Dimensions, StyleSheet, Animated } from 'react-native';
 import LottieView from 'lottie-react-native';
-import enemiesData from './GameData';
+import enemiesData from '../GameData/EnemyGameData';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
-export default function ScreenPlay({ isPaused = false }) {
+export default function ScreenPlay({ isPaused = false , borderColor = 'rgba(37, 144, 197, 1)' }) {
   const [attackingEnemies, setAttackingEnemies] = useState(new Set());
   
   const timeoutsRef = useRef([]);
@@ -230,8 +230,9 @@ export default function ScreenPlay({ isPaused = false }) {
     };
   }, [isPaused]);
 
+
   const dogProps = {
-    source: { uri: "https://lottie.host/e1ae2f92-3c33-4e02-b1a8-cf241779b1d0/CIm4y0FTDa.lottie" },
+    source: { uri: "https://lottie.host/0247b4e1-ad7f-4161-9294-c5f6742243f6/ParZXqrNqz.lottie" },
     style: [
       styles.dogRunImage,
       isPaused && styles.pausedElement
@@ -246,6 +247,8 @@ export default function ScreenPlay({ isPaused = false }) {
 
   return (
     <View style={styles.container}>
+      <View style={[styles.innerBorderContainer, {borderColor}]}>
+      <View style={styles.contentContainer}>
       <ImageBackground 
         source={{ uri: 'https://github.com/user-attachments/assets/15d02305-04b3-4bd3-885a-1440fadf61fc' }}
         style={[styles.firstGrid, isPaused && styles.pausedBackground]}
@@ -291,14 +294,67 @@ export default function ScreenPlay({ isPaused = false }) {
         })}
       </ImageBackground>
     </View>
+    </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    position: 'relative',
+container: {
+  zIndex: 1,
+  borderWidth: 8, // Make all sides equal
+  borderColor: '#1a1a1a',
+  borderRadius: SCREEN_WIDTH * 0.1,
+  overflow: 'hidden',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 12 },
+  shadowOpacity: 0.8,
+  shadowRadius: 20,
+  elevation: 25,
+
+  // Equal border widths for even sides
+  borderTopWidth: 8,
+  borderTopColor: '#5a5a5a',
+  borderLeftWidth: 8,
+  borderLeftColor: '#4a4a4a',
+  borderBottomWidth: 8,
+  borderBottomColor: '#0a0a0a',
+  borderRightWidth: 8,
+  borderRightColor: '#0f0f0f',
+},
+
+
+innerBorderContainer: {
+  borderWidth: 6, // Make all sides equal
+  overflow: 'hidden',
+  borderRadius: SCREEN_WIDTH * 0.08,
+
+  // Equal inner border widths
+  borderTopWidth: 6,
+  borderTopColor: '#6a6a6a', 
+  borderLeftWidth: 6,
+  borderLeftColor: '#5a5a5a',
+  borderBottomWidth: 6,
+  borderBottomColor: '#0a0a0a',
+  borderRightWidth: 6,
+  borderRightColor: '#151515', 
+
+  // Enhanced inner shadow for depth
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.8, 
+  shadowRadius: 12, 
+  elevation: 18,
+},
+
+  contentContainer: {
+    borderWidth: 3,
+    borderColor: 'black',
+    borderRadius: SCREEN_WIDTH * 0.06,
+    overflow: 'hidden',
+    backgroundColor: 'black'
   },
-  
+
   firstGrid: {
     minHeight: SCREEN_HEIGHT * 0.32,
     backgroundColor: '#ff6b6b',
@@ -317,8 +373,8 @@ const styles = StyleSheet.create({
   },
   
   dogRunImage: {
-    width: SCREEN_WIDTH * 0.34,
-    height: SCREEN_HEIGHT * 0.34,
+    width: SCREEN_WIDTH * 0.36,
+    height: SCREEN_HEIGHT * 0.36,
   },
   
   pausedElement: {
