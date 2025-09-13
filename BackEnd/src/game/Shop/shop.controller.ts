@@ -14,7 +14,7 @@ export const buyPotion = async (req: Request, res: Response) => {
 };
 
 export const buyCharacter = async (req: Request, res: Response) => {
-  const playerId = (req as any).user.id;
+  const playerId = Number(req.params.playerId);
   const { characterShopId } = req.body;
   try {
     const result = await ShopService.buyCharacter(playerId, characterShopId);

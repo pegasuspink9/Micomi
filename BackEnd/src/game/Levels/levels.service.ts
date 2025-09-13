@@ -93,7 +93,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     }
   }
 
-  const progress = await prisma.playerProgress.findFirst({
+  let progress = await prisma.playerProgress.findFirst({
     where: { player_id: playerId, level_id: levelId },
   });
 
@@ -102,6 +102,24 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       ? { ...ch, timeLimit: 10 }
       : ch
   );
+
+  const selectedChar = await prisma.playerCharacter.findFirst({
+    where: {
+      player_id: playerId,
+      is_selected: true,
+    },
+    include: { character: true },
+  });
+
+  if (!selectedChar) {
+    throw new Error("No character selected for this player");
+  }
+
+  const character = selectedChar.character;
+
+  const enemyMaxHp =
+    enemy.enemy_health *
+    (await prisma.challenge.count({ where: { level_id: levelId } }));
 
   if (!progress) {
     await prisma.playerProgress.create({
@@ -113,21 +131,36 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         player_answer: {},
         completed_at: null,
         challenge_start_time: new Date(),
+        player_hp: character.health,
+        enemy_hp: enemyMaxHp,
+        battle_status: "in_progress",
+        is_completed: false,
       },
     });
     return { level, enemies: [enemy], challenges: challengesWithTimer };
   }
 
   if (progress.is_completed) {
-    return {
-      level,
-      enemies: [enemy],
-      challenges: randomize(level.challenges),
-      completedAt: formatDateTime(progress.completed_at!),
-    };
+    progress = await prisma.playerProgress.update({
+      where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
+      data: {
+        player_hp: character.health,
+        enemy_hp: enemyMaxHp,
+        battle_status: "in_progress",
+        wrong_challenges: [],
+        player_answer: {},
+        is_completed: false,
+        completed_at: null,
+      },
+    });
   }
 
-  return { level, enemies: [enemy], challenges: level.challenges };
+  console.log(
+    "[enterLevel] challenge_start_time set to:",
+    (progress || {}).challenge_start_time
+  );
+
+  return { level, enemies: [enemy], challenges: challengesWithTimer };
 };
 
 export const unlockNextLevel = async (

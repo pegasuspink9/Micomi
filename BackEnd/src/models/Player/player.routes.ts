@@ -9,15 +9,10 @@ const router = express.Router();
 
 router.post("/login", PlayerController.loginPlayer);
 
-router.get("/", authenticate, PlayerController.getPlayers);
-router.get("/:id", authenticate, PlayerController.getPlayerById);
+router.get("/", PlayerController.getPlayers);
+router.get("/:id", PlayerController.getPlayerById);
 router.post("/register", PlayerController.createPlayer);
-router.put("/:id", authenticate, requireAdmin, PlayerController.updatePlayer);
-router.delete(
-  "/:id",
-  authenticate,
-  requireAdmin,
-  PlayerController.deletePlayer
-);
+router.put("/:id", PlayerController.updatePlayer);
+router.delete("/:id", PlayerController.deletePlayer);
 
 export default router;

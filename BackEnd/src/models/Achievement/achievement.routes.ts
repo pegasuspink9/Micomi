@@ -1,5 +1,5 @@
 import express from "express";
-import * as AchievementController from "./achievement.controller";
+import * as AchievementService from "./achievement.service";
 import {
   authenticate,
   requireAdmin,
@@ -7,25 +7,10 @@ import {
 
 const router = express.Router();
 
-router.get("/", authenticate, AchievementController.getAllAchievement);
-router.get("/:id", authenticate, AchievementController.getAchievementById);
-router.post(
-  "/",
-  authenticate,
-  requireAdmin,
-  AchievementController.createAchievement
-);
-router.put(
-  "/:id",
-  authenticate,
-  requireAdmin,
-  AchievementController.updateAchievement
-);
-router.delete(
-  "/:id",
-  authenticate,
-  requireAdmin,
-  AchievementController.deleteAchievement
-);
+router.get("/", AchievementService.getAllAchievement);
+router.get("/:id", AchievementService.getAchievementById);
+router.post("/", AchievementService.createAchievement);
+router.put("/:id", AchievementService.updateAchievement);
+router.delete("/:id", AchievementService.deleteAchievement);
 
 export default router;

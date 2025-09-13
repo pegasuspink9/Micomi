@@ -29,7 +29,7 @@ export const getPlayerById = (player_id: number) =>
 
 export const createPlayer = async (data: PlayerCreateInput) => {
   const hashedPassword = await hashPassword(data.password);
-  return prisma.player.create({
+  const newPlayer = await prisma.player.create({
     data: {
       email: data.email,
       username: data.username,
@@ -39,6 +39,28 @@ export const createPlayer = async (data: PlayerCreateInput) => {
       days_logged_in: 0,
     },
   });
+
+  const firstLevel = await prisma.level.findFirst({
+    orderBy: { level_number: "asc" },
+  });
+
+  if (firstLevel) {
+    await prisma.playerProgress.create({
+      data: {
+        player_id: newPlayer.player_id,
+        level_id: firstLevel.level_id,
+        current_level: firstLevel.level_number,
+        attempts: 0,
+        player_answer: {},
+        wrong_challenges: [],
+        is_completed: false,
+        completed_at: null,
+        challenge_start_time: new Date(),
+      },
+    });
+  }
+
+  return newPlayer;
 };
 
 export const updatePlayer = async (

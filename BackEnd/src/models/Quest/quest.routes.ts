@@ -1,12 +1,16 @@
 import { Router } from "express";
-import * as QuestController from "./quest.controller";
+import * as QuestService from "./quest.service";
+import {
+  authenticate,
+  requireAdmin,
+} from "../../../middleware/auth.middleware";
 
 const router = Router();
 
-router.post("/", QuestController.createTemplate);
-router.get("/", QuestController.getAllTemplates);
-router.get("/:id", QuestController.getTemplateById);
-router.put("/:id", QuestController.updateTemplate);
-router.delete("/:id", QuestController.deleteTemplate);
+router.post("/", QuestService.createTemplate);
+router.get("/", QuestService.getAllTemplates);
+router.get("/:id", QuestService.getTemplateById);
+router.put("/:id", QuestService.updateTemplate);
+router.delete("/:id", QuestService.deleteTemplate);
 
 export default router;

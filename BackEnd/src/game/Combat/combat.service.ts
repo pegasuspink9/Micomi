@@ -64,55 +64,6 @@ export const fightEnemy = async (
   });
   if (!progress) throw new Error("Missing player progress");
 
-  let elapsedSeconds = 0;
-  if (progress.challenge_start_time) {
-    elapsedSeconds =
-      (Date.now() - new Date(progress.challenge_start_time).getTime()) / 1000;
-  }
-
-  if (elapsedSeconds > 10) {
-    await prisma.playerProgress.update({
-      where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
-      data: { player_hp: 0, battle_status: "lost" },
-    });
-
-    return {
-      status: "lost",
-      charHealth: 0,
-      enemyHealth: progress.enemy_hp ?? enemy.enemy_health,
-      message: "Time's up! The enemy ate your character.",
-      timer: formatTimer(elapsedSeconds),
-    };
-  }
-
-  const currentChallenge = progress.level.challenges[0];
-  if (
-    currentChallenge &&
-    (currentChallenge.challenge_type === "multiple choice" ||
-      currentChallenge.challenge_type === "fill in the blank") &&
-    progress.challenge_start_time
-  ) {
-    const elapsedSeconds =
-      (Date.now() - new Date(progress.challenge_start_time).getTime()) / 1000;
-    if (elapsedSeconds > 10) {
-      await prisma.playerProgress.update({
-        where: {
-          player_id_level_id: { player_id: playerId, level_id: levelId },
-        },
-        data: {
-          player_hp: 0,
-          battle_status: "lost",
-        },
-      });
-      return {
-        status: "lost",
-        charHealth: 0,
-        enemyHealth: progress.enemy_hp ?? enemy.enemy_health,
-        message: "Time's up! The enemy ate your character.",
-      };
-    }
-  }
-
   let charHealth = progress.player_hp ?? character.health;
   let enemyHealth =
     progress.enemy_hp ??
@@ -120,6 +71,49 @@ export const fightEnemy = async (
       (await prisma.challenge.count({ where: { level_id: levelId } }));
   let charDamage = character.character_damage;
   let enemyDamage = enemy.enemy_damage;
+
+  const wrongChallenges: number[] =
+    (progress.wrong_challenges as number[]) ?? [];
+
+  console.log(
+    "[fightEnemy] progress.challenge_start_time:",
+    progress.challenge_start_time
+  );
+  let elapsedSeconds = 0;
+  if (progress.challenge_start_time) {
+    elapsedSeconds =
+      (Date.now() - new Date(progress.challenge_start_time).getTime()) / 1000;
+  }
+
+  console.log("[fightEnemy] computed elapsedSeconds:", elapsedSeconds);
+
+  if (elapsedSeconds > 10) {
+    charHealth -= enemyDamage;
+
+    let status: BattleStatus = "in_progress";
+    if (charHealth <= 0) status = "lost";
+
+    await prisma.playerProgress.update({
+      where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
+      data: {
+        player_hp: Math.max(charHealth, 0),
+        battle_status: status,
+        challenge_start_time: new Date(),
+        is_completed: status === "lost" ? false : undefined,
+      },
+    });
+
+    return {
+      status,
+      charHealth: Math.max(charHealth, 0),
+      enemyHealth,
+      message:
+        status === "lost"
+          ? "The enemy struck you down!"
+          : "The enemy attacked! New question awaits.",
+      timer: formatTimer(elapsedSeconds),
+    };
+  }
 
   if (
     progress.battle_status === null ||
@@ -156,12 +150,44 @@ export const fightEnemy = async (
   if (isCorrect) {
     await updateQuestProgress(playerId, QuestType.solve_challenge, 1);
     enemyHealth -= charDamage;
+
+    if (wrongChallenges.length > 0) {
+      wrongChallenges.shift();
+    }
   } else {
-    charHealth -= enemyDamage;
+    const challenges = progress.level.challenges;
+    const totalChallenges = challenges.length;
+
+    const answeredCount =
+      (enemy.enemy_health * totalChallenges - enemyHealth) / charDamage;
+    const currentChallenge = challenges[answeredCount % totalChallenges];
+
+    if (!wrongChallenges.includes(currentChallenge.challenge_id)) {
+      wrongChallenges.push(currentChallenge.challenge_id);
+    }
+
+    await prisma.playerProgress.update({
+      where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
+      data: {
+        wrong_challenges: wrongChallenges,
+      },
+    });
+
+    return {
+      status: "waiting",
+      charHealth,
+      enemyHealth,
+      charDamage,
+      enemyDamage,
+      message: "Wrong answer! You have 10s before the enemy strikes...",
+      timer: formatTimer(Math.max(0, 10 - elapsedSeconds)),
+    };
   }
 
   let status: BattleStatus = "in_progress";
-  if (enemyHealth <= 0) status = "won";
+  if (enemyHealth <= 0 && wrongChallenges.length === 0) {
+    status = "won";
+  }
   if (charHealth <= 0) status = "lost";
 
   await prisma.playerProgress.update({
@@ -171,6 +197,8 @@ export const fightEnemy = async (
       player_hp: Math.max(charHealth, 0),
       battle_status: status,
       challenge_start_time: new Date(),
+      wrong_challenges: wrongChallenges,
+      is_completed: status === "lost" ? false : undefined,
     },
   });
 
@@ -212,7 +240,8 @@ export const fightEnemy = async (
     enemyHealth: Math.max(enemyHealth, 0),
     charDamage,
     enemyDamage,
-    timer: formatTimer(elapsedSeconds),
+    wrongChallenges,
+    timer: formatTimer(Math.max(0, 10 - elapsedSeconds)),
   };
 };
 

@@ -4,8 +4,8 @@ import { successResponse, errorResponse } from "../../../utils/response";
 
 export const selectMap = async (req: Request, res: Response) => {
   try {
-    const playerId = (req as any).user.id;
-    const { mapId } = req.body;
+    const playerId = Number(req.params.playerId);
+    const mapId = Number(req.params.mapId);
     const result = await MapService.selectMap(playerId, mapId);
     return successResponse(res, result, "Seleted map successfully");
   } catch (error) {

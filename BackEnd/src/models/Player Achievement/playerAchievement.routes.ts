@@ -1,5 +1,5 @@
 import express from "express";
-import * as PlayerAchievementController from "./playerAchievement.controller";
+import * as PlayerAchievementService from "./playerAchievement.service";
 import {
   authenticate,
   requireAdmin,
@@ -7,29 +7,10 @@ import {
 
 const router = express.Router();
 
-router.get(
-  "/",
-  authenticate,
-  PlayerAchievementController.getAllPlayerAchievement
-);
-router.get("/:id", authenticate, PlayerAchievementController.updateAchievement);
-router.post(
-  "/",
-  authenticate,
-  requireAdmin,
-  PlayerAchievementController.createPlayerAchievement
-);
-router.put(
-  "/:id",
-  authenticate,
-  requireAdmin,
-  PlayerAchievementController.updateAchievement
-);
-router.delete(
-  "/:id",
-  authenticate,
-  requireAdmin,
-  PlayerAchievementController.deleteAchievement
-);
+router.get("/", PlayerAchievementService.getAllPlayerAchievement);
+router.get("/:id", PlayerAchievementService.getPlayerAchievementById);
+router.post("/", PlayerAchievementService.createPlayerAchievement);
+router.put("/:id", PlayerAchievementService.updatePlayerAchievement);
+router.delete("/:id", PlayerAchievementService.deletePlayerAchievement);
 
 export default router;

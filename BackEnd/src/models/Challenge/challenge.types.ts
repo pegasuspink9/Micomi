@@ -1,9 +1,11 @@
+import { Prisma } from "@prisma/client";
+
 export interface ChallengeCreateInput {
   level_id: number;
   challenge_type: string;
   title: string;
   description: string;
-  correct_answer: string;
+  correct_answer: Prisma.InputJsonValue;
   hint: string;
   points_reward: number;
   coins_reward: number;
@@ -16,7 +18,7 @@ export interface ChallengeUpdateInput {
   challenge_type?: string;
   title?: string;
   description?: string;
-  correct_answer?: string;
+  correct_answer?: Prisma.InputJsonValue;
   hint?: string;
   points_reward?: number;
   coins_reward?: number;

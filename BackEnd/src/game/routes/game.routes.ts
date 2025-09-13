@@ -14,71 +14,43 @@ import {
 
 const router = express.Router();
 
-//Level routes
-router.post(
-  "/entryLevel",
-  authenticate,
-  requirePlayer,
-  LevelController.enterLevelController
-);
-router.post(
-  "/unlockNewLevel",
-  authenticate,
-  requirePlayer,
-  LevelController.unlockNextLevel
-);
-
 //Map route
-router.post(
-  "/select-map",
-  authenticate,
-  requirePlayer,
-  MapController.selectMap
-);
+router.post("/select-map/:playerId/:mapId", MapController.selectMap);
 
 //Character route
 router.post(
-  "selected-character/:playerId",
-  authenticate,
-  requirePlayer,
+  "/select-character/:playerId/:characterId",
   CharacterController.selectCharacter
 );
 
-//Combat route
+//Level routes
 router.post(
-  "/fight",
-  authenticate,
-  requirePlayer,
-  CombatController.performFight
+  "/entryLevel/:playerId/:levelId",
+  LevelController.enterLevelController
+);
+router.post("/unlockNewLevel", LevelController.unlockNextLevel);
+
+//Challenge route
+router.post(
+  "/submit-challenge/:playerId/:levelId/:challengeId",
+  ChallengeController.submitChallenge
+);
+router.delete(
+  //for testing puposes only
+  "/delete-challenge-answer/:playerId/:levelId/:challengeId",
+  ChallengeController.deleteChallengeAnswerController
 );
 
 //Shop routes
-router.post(
-  "/buy-potion",
-  authenticate,
-  requirePlayer,
-  ShopController.buyPotion
-);
-router.post(
-  "/buy-character",
-  authenticate,
-  requirePlayer,
-  ShopController.buyCharacter
-);
-router.post(
-  "/use-potion",
-  authenticate,
-  requirePlayer,
-  ShopController.usePotion
-);
+router.post("/buy-potion", ShopController.buyPotion);
+router.post("/buy-character/:playerId", ShopController.buyCharacter);
+router.post("/use-potion", ShopController.usePotion);
+
+//Combat route
+router.post("/fight", CombatController.performFight);
 
 //Achievement routes
-router.post(
-  "/check-achievements",
-  authenticate,
-  requirePlayer,
-  AchievementController.getPlayerAchievements
-);
+router.post("/check-achievements", AchievementController.getPlayerAchievements);
 router.get(
   "/player-achievement/:id",
   AchievementController.getPlayerAchievements
@@ -87,13 +59,5 @@ router.get(
 //Leaderboard routes
 router.get("/leaderboard", LeaderboardController.getLeaderboard);
 router.post("/update-leaderboard", LeaderboardController.updateLeaderboard);
-
-//Challenge route
-router.post(
-  "/submit-challenge",
-  authenticate,
-  requirePlayer,
-  ChallengeController.submitChallenge
-);
 
 export default router;

@@ -4,8 +4,8 @@ import { successResponse, errorResponse } from "../../../utils/response";
 
 export const enterLevelController = async (req: Request, res: Response) => {
   try {
-    const playerId = (req as any).user.id;
-    const { levelId } = req.body;
+    const playerId = Number(req.params.playerId);
+    const levelId = Number(req.params.levelId);
 
     const result = await LevelService.enterLevel(playerId, levelId);
     return successResponse(res, result, "Entered level");

@@ -60,7 +60,7 @@ model Challenge {
   challenge_type String     //Easy: multiple choice and fill in the blank. Medium: code with guide. Hard: freeform coding
   title          String
   description    String  @db.Text
-  correct_answer String
+  correct_answer Json    @default("[]")
   hint           String  @db.Text
   points_reward  Int     @default(0)      
   coins_reward   Int     @default(0)   
@@ -88,13 +88,16 @@ model Player {
   username             String   @unique
   email                String   @unique
   password             String
-  total_points         Int      @default(0)  //point given after completing the level
-  exp_points           Int      @default(0)  //Don't forget to ask Earl
+  total_points         Int      @default(0)  //point given after completing the level (sum of all points)
+  exp_points           Int      @default(0)  //point given after completing the level plus the exp points from quest
   level                Int      @default(1)   
   created_at           DateTime @default(now())
   last_active          DateTime?
   days_logged_in       Int      @default(0)
   coins                Int      @default(100)
+
+  energy           Int      @default(5)
+  energy_reset_at  DateTime?
 
   playerProgress       PlayerProgress[]
   leaderboard          Leaderboard[]
@@ -112,7 +115,8 @@ model PlayerProgress {
   player_id      Int
   level_id       Int
 
-  player_answer  Json     @default("{}")
+  player_answer  Json     @default("[]")
+  wrong_challenges Json   @default("[]")
 
   current_level  Int
   attempts       Int      @default(0)

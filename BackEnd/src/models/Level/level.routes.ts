@@ -1,5 +1,5 @@
 import express from "express";
-import * as LevelController from "./level.controller";
+import * as LevelService from "./level.service";
 import {
   authenticate,
   requireAdmin,
@@ -7,10 +7,10 @@ import {
 
 const router = express.Router();
 
-router.get("/", authenticate, LevelController.getAllLevels);
-router.get("/:id", authenticate, LevelController.getLevelByID);
-router.post("/", authenticate, requireAdmin, LevelController.createLevel);
-router.put("/:id", authenticate, requireAdmin, LevelController.updateLevel);
-router.delete("/:id", authenticate, requireAdmin, LevelController.deleteLevel);
+router.get("/", LevelService.getAllLevels);
+router.get("/:id", LevelService.getLevelById);
+router.post("/", LevelService.createLevel);
+router.put("/:id", LevelService.updateLevel);
+router.delete("/:id", LevelService.deleteLevel);
 
 export default router;

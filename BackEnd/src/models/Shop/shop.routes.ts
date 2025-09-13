@@ -1,5 +1,5 @@
 import { Router } from "express";
-import * as ShopController from "./shop.controller";
+import * as ShopService from "./shop.service";
 import {
   authenticate,
   requireAdmin,
@@ -8,61 +8,23 @@ import {
 const router = Router();
 
 //Get all characters in the shop
-router.get(
-  "/shop-characters",
-  authenticate,
-  ShopController.getAllCharactersInShop
-);
+router.get("/shop-characters", ShopService.getAllCharactersInShop);
 //Get player characters
-router.get(
-  "/player-characters",
-  authenticate,
-  ShopController.getAllPlayerCharacter
-);
+router.get("/player-characters", ShopService.getAllPlayerCharacter);
 
 //CRUD for shop characters
-router.post(
-  "/create-character",
-  authenticate,
-  requireAdmin,
-  ShopController.createShopCharacter
-);
-router.put(
-  "/update-character/:id",
-  authenticate,
-  requireAdmin,
-  ShopController.updateShopCharacter
-);
-router.delete(
-  "/delete-character/:id",
-  authenticate,
-  requireAdmin,
-  ShopController.deleteShopCharacter
-);
+router.post("/create-character", ShopService.createShopCharacter);
+router.put("/update-character/:id", ShopService.updateShopCharacter);
+router.delete("/delete-character/:id", ShopService.deleteShopCharacter);
 
 //Get all potions in the shop
-router.get("/potions", authenticate, ShopController.getAllPotionsInShop);
+router.get("/potions", ShopService.getAllPotionsInShop);
 //Get all player potions
-router.get("/potions/player", authenticate, ShopController.getAllPlayerPotions);
+router.get("/potions/player", ShopService.getAllPlayerPotions);
 
 // CRUD potions in the shop
-router.post(
-  "/create-potion",
-  authenticate,
-  requireAdmin,
-  ShopController.createPotion
-);
-router.put(
-  "/update-potion/:id",
-  authenticate,
-  requireAdmin,
-  ShopController.updatePotion
-);
-router.delete(
-  "/delete-potion/:id",
-  authenticate,
-  requireAdmin,
-  ShopController.deletePotion
-);
+router.post("/create-potion", ShopService.createPotion);
+router.put("/update-potion/:id", ShopService.updatePotion);
+router.delete("/delete-potion/:id", ShopService.deletePotion);
 
 export default router;
