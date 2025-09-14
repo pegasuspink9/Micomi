@@ -80,6 +80,7 @@ export const fightEnemy = async (
     progress.challenge_start_time
   );
   let elapsedSeconds = 0;
+  const timeRemaining = Math.max(0, 10 - elapsedSeconds);
   if (progress.challenge_start_time) {
     elapsedSeconds =
       (Date.now() - new Date(progress.challenge_start_time).getTime()) / 1000;
@@ -111,7 +112,7 @@ export const fightEnemy = async (
         status === "lost"
           ? "The enemy struck you down!"
           : "The enemy attacked! New question awaits.",
-      timer: formatTimer(elapsedSeconds),
+      timer: formatTimer(timeRemaining),
     };
   }
 
@@ -179,7 +180,7 @@ export const fightEnemy = async (
       enemyHealth,
       charDamage,
       enemyDamage,
-      message: "Wrong answer! You have 10s before the enemy strikes...",
+      message: "Wrong answer!",
       timer: formatTimer(Math.max(0, 10 - elapsedSeconds)),
     };
   }
@@ -205,21 +206,35 @@ export const fightEnemy = async (
   if (status === "won") {
     await updateQuestProgress(playerId, QuestType.defeat_enemy, 1);
 
+    // mark level complete
     await prisma.playerProgress.update({
       where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
       data: { is_completed: true, completed_at: new Date() },
     });
 
-    await prisma.player.update({
-      where: { player_id: playerId },
-      data: { total_points: { increment: 50 }, exp_points: { increment: 50 } },
-    });
+    // check if player already completed before
+    if (!progress.is_completed) {
+      await prisma.playerProgress.update({
+        where: {
+          player_id_level_id: { player_id: playerId, level_id: levelId },
+        },
+        data: { is_completed: true, completed_at: new Date() },
+      });
+      // compute total rewards from challenges
+      const challenges = progress.level.challenges;
+      const totalExp = challenges.reduce((sum, c) => sum + c.points_reward, 0);
+      const totalCoins = challenges.reduce((sum, c) => sum + c.coins_reward, 0);
 
-    if (player.exp_points + 50 >= 100) {
       await prisma.player.update({
         where: { player_id: playerId },
-        data: { level: { increment: 1 }, exp_points: { decrement: 100 } },
+        data: {
+          total_points: { increment: totalExp },
+          exp_points: { increment: totalExp },
+          coins: { increment: totalCoins },
+        },
       });
+
+      // ✅ leave total_points untouched (for leaderboard only)
     }
 
     const level = await prisma.level.findUnique({

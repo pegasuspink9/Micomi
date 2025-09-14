@@ -65,7 +65,7 @@ model Challenge {
   points_reward  Int     @default(0)      
   coins_reward   Int     @default(0)   
   guide          String?
-  test_cases     String?
+  test_cases     Json?    @default("[]")
   level          Level   @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
 }
 
@@ -88,7 +88,7 @@ model Player {
   username             String   @unique
   email                String   @unique
   password             String
-  total_points         Int      @default(0)  //point given after completing the level (sum of all points)
+  total_points         Int      @default(0)  //point given after completing the level (sum of all points per challenge (only the first won))
   exp_points           Int      @default(0)  //point given after completing the level plus the exp points from quest
   level                Int      @default(1)   
   created_at           DateTime @default(now())

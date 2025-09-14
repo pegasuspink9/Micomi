@@ -2,7 +2,7 @@ import { PrismaClient, QuestType } from "@prisma/client";
 import * as LevelService from "../Levels/levels.service";
 import * as CombatService from "../Combat/combat.service";
 import { formatTimer } from "../../../helper/dateTimeHelper";
-import { updateQuestProgress } from "../Quests/quests.service";
+import { SubmitChallengeServiceResult } from "./challenges.types";
 
 const prisma = new PrismaClient();
 
@@ -11,35 +11,12 @@ const arraysEqual = (a: string[], b: string[]): boolean => {
   return a.every((val, index) => val === b[index]);
 };
 
-export const areAllChallengesCompleted = async (
-  playerId: number,
-  levelId: number
-): Promise<boolean> => {
-  const progress = await prisma.playerProgress.findUnique({
-    where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
-    select: { player_answer: true },
-  });
-
-  if (!progress) return false;
-
-  const answers = progress.player_answer as Record<string, string[]>;
-  const challenges = await prisma.challenge.findMany({
-    where: { level_id: levelId },
-  });
-
-  return challenges.every((ch) => {
-    const playerAnswer = answers[ch.challenge_id.toString()];
-    const correctAnswer = ch.correct_answer as string[];
-    return playerAnswer && arraysEqual(playerAnswer, correctAnswer);
-  });
-};
-
 export const submitChallengeService = async (
   playerId: number,
   levelId: number,
   challengeId: number,
   answer: string[]
-) => {
+): Promise<SubmitChallengeServiceResult> => {
   const [challenge, level, progress] = await Promise.all([
     prisma.challenge.findUnique({ where: { challenge_id: challengeId } }),
     prisma.level.findUnique({
@@ -79,6 +56,7 @@ export const submitChallengeService = async (
   const challengeStart = new Date(currentProgress.challenge_start_time!);
   const now = new Date();
   const elapsed = (now.getTime() - challengeStart.getTime()) / 1000;
+  const timeRemaining = Math.max(0, 10 - elapsed);
 
   const correctAnswer = challenge.correct_answer as string[];
   const isCorrect = arraysEqual(answer, correctAnswer);
@@ -101,13 +79,6 @@ export const submitChallengeService = async (
   let fightResult;
   let message;
 
-  console.log(
-    "[submitChallenge] elapsed (s):",
-    elapsed,
-    "challenge_start_time:",
-    currentProgress.challenge_start_time
-  );
-
   if (elapsed > 10) {
     fightResult = await CombatService.fightEnemy(
       playerId,
@@ -122,9 +93,7 @@ export const submitChallengeService = async (
 
     await prisma.playerProgress.update({
       where: { progress_id: currentProgress.progress_id },
-      data: {
-        wrong_challenges: wrongChallenges,
-      },
+      data: { wrong_challenges: wrongChallenges },
     });
 
     fightResult = await CombatService.fightEnemy(
@@ -133,15 +102,6 @@ export const submitChallengeService = async (
       true
     );
 
-    await prisma.player.update({
-      where: { player_id: playerId },
-      data: {
-        total_points: { increment: challenge.points_reward },
-        coins: { increment: challenge.coins_reward },
-      },
-    });
-
-    await updateQuestProgress(playerId, QuestType.solve_challenge, 1);
     message = "Correct! You attacked the enemy.";
   } else {
     if (!wrongChallenges.includes(challenge.challenge_id)) {
@@ -150,9 +110,7 @@ export const submitChallengeService = async (
 
     await prisma.playerProgress.update({
       where: { progress_id: currentProgress.progress_id },
-      data: {
-        wrong_challenges: wrongChallenges,
-      },
+      data: { wrong_challenges: wrongChallenges },
     });
 
     fightResult = await CombatService.fightEnemy(
@@ -172,7 +130,6 @@ export const submitChallengeService = async (
     string
   >;
   const answeredIds = Object.keys(answersRecord).map(Number);
-
   const wrongChallengesArr = (updatedProgress.wrong_challenges ??
     []) as number[];
 
@@ -181,11 +138,32 @@ export const submitChallengeService = async (
   const allCompleted =
     answeredIds.length === totalChallenges && wrongChallengesArr.length === 0;
 
-  if (allCompleted) {
+  if (allCompleted && !currentProgress.is_completed) {
+    // ✅ Mark completed
     await prisma.playerProgress.update({
       where: { progress_id: currentProgress.progress_id },
       data: { is_completed: true, completed_at: new Date() },
     });
+
+    // ✅ Compute exp + coins only ONCE
+    const totalExp = level.challenges.reduce(
+      (sum, c) => sum + c.points_reward,
+      0
+    );
+    const totalCoins = level.challenges.reduce(
+      (sum, c) => sum + c.coins_reward,
+      0
+    );
+
+    if (!progress?.is_completed) {
+      await prisma.player.update({
+        where: { player_id: playerId },
+        data: {
+          total_points: { increment: challenge.points_reward },
+          coins: { increment: challenge.coins_reward },
+        },
+      });
+    }
 
     await LevelService.unlockNextLevel(
       playerId,
@@ -199,7 +177,14 @@ export const submitChallengeService = async (
     attempts: updatedProgress.attempts,
     fightResult,
     message,
-    nextChallenge: nextChallenge?.nextChallenge ?? null,
+    nextChallenge: nextChallenge
+      ? {
+          ...nextChallenge.nextChallenge,
+          timeLimit: 10,
+          timeRemaining: timeRemaining,
+          timer: formatTimer(timeRemaining),
+        }
+      : null,
   };
 };
 

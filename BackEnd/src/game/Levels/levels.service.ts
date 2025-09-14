@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
-import { formatDateTime } from "../../../helper/dateTimeHelper";
+import { ChallengeDTO } from "./levels.types";
+import { formatTimer } from "../../../helper/dateTimeHelper";
 
 const prisma = new PrismaClient();
 
@@ -97,17 +98,8 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     where: { player_id: playerId, level_id: levelId },
   });
 
-  const challengesWithTimer = level.challenges.map((ch) =>
-    ["multiple choice", "fill in the blank"].includes(ch.challenge_type)
-      ? { ...ch, timeLimit: 10 }
-      : ch
-  );
-
   const selectedChar = await prisma.playerCharacter.findFirst({
-    where: {
-      player_id: playerId,
-      is_selected: true,
-    },
+    where: { player_id: playerId, is_selected: true },
     include: { character: true },
   });
 
@@ -122,7 +114,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     (await prisma.challenge.count({ where: { level_id: levelId } }));
 
   if (!progress) {
-    await prisma.playerProgress.create({
+    progress = await prisma.playerProgress.create({
       data: {
         player_id: playerId,
         level_id: levelId,
@@ -137,7 +129,6 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         is_completed: false,
       },
     });
-    return { level, enemies: [enemy], challenges: challengesWithTimer };
   }
 
   if (progress.is_completed) {
@@ -155,12 +146,34 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     });
   }
 
-  console.log(
-    "[enterLevel] challenge_start_time set to:",
-    (progress || {}).challenge_start_time
-  );
+  const challengesWithTimer: ChallengeDTO[] = level.challenges.map((ch) => {
+    const hasTimer = ["multiple choice", "fill in the blank"].includes(
+      ch.challenge_type
+    );
+    const timeLimit = hasTimer ? 10 : 0;
 
-  return { level, enemies: [enemy], challenges: challengesWithTimer };
+    return {
+      ...ch,
+      timeLimit,
+      timeRemaining: timeLimit,
+      timer: formatTimer(timeLimit),
+    };
+  });
+
+  const firstChallenge = challengesWithTimer[0] ?? null;
+
+  return {
+    level: {
+      level_id: level.level_id,
+      level_number: level.level_number,
+      level_difficulty: level.level_difficulty,
+    },
+    enemy: {
+      enemy_id: enemy.enemy_id,
+      enemy_health: enemy.enemy_health,
+    },
+    currentChallenge: firstChallenge,
+  };
 };
 
 export const unlockNextLevel = async (

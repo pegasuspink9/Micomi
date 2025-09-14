@@ -10,7 +10,7 @@ export interface ChallengeCreateInput {
   points_reward: number;
   coins_reward: number;
   guide?: string;
-  test_cases?: string;
+  test_cases?: Prisma.InputJsonValue;
 }
 
 export interface ChallengeUpdateInput {
@@ -23,5 +23,5 @@ export interface ChallengeUpdateInput {
   points_reward?: number;
   coins_reward?: number;
   guide?: string;
-  test_cases?: string;
+  test_cases?: Prisma.InputJsonValue;
 }
