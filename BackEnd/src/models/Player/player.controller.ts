@@ -12,7 +12,7 @@ export const getPlayers = async (_req: Request, res: Response) => {
     const result = await PlayerService.getAllPlayers();
     return successResponse(res, result, "Players fetched successfully");
   } catch (error) {
-    return errorResponse(res, null, "Failed to fetch players");
+    return errorResponse(res, error, "Failed to fetch players");
   }
 };
 
@@ -25,7 +25,7 @@ export const getPlayerById = async (req: Request, res: Response) => {
     }
     return successResponse(res, result, "Player found");
   } catch (error) {
-    return errorResponse(res, null, "Failed to fetch player");
+    return errorResponse(res, error, "Failed to fetch player");
   }
 };
 
@@ -35,7 +35,7 @@ export const createPlayer = async (req: Request, res: Response) => {
     const data = await PlayerService.createPlayer(req.body);
     return successResponse(res, data, "Player created successfully", 201);
   } catch (error) {
-    return errorResponse(res, null, "Failed to create player", 400);
+    return errorResponse(res, error, "Failed to create player", 400);
   }
 };
 
@@ -48,7 +48,7 @@ export const updatePlayer = async (req: Request, res: Response) => {
     );
     return successResponse(res, result, "Player updated successfully");
   } catch (error) {
-    return errorResponse(res, null, "Failed to update player");
+    return errorResponse(res, error, "Failed to update player");
   }
 };
 
@@ -58,7 +58,7 @@ export const deletePlayer = async (req: Request, res: Response) => {
     const result = await PlayerService.deletePlayer(Number(req.params.id));
     return successResponse(res, result, "Player deleted successfully");
   } catch (error) {
-    return errorResponse(res, null, "Failed to delete player");
+    return errorResponse(res, error, "Failed to delete player");
   }
 };
 
@@ -93,6 +93,6 @@ export const loginPlayer = async (req: Request, res: Response) => {
       "Login successful"
     );
   } catch (error) {
-    return errorResponse(res, null, "Failed to login", 500);
+    return errorResponse(res, error, "Failed to login", 500);
   }
 };

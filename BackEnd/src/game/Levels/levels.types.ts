@@ -5,7 +5,7 @@ export interface ChallengeDTO {
   challenge_type: string;
   title: string;
   description: string;
-  correct_answer: any;
+  correct_answer: Prisma.InputJsonValue | null;
   hint: string;
   points_reward: number;
   coins_reward: number;

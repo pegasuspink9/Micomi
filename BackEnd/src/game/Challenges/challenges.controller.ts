@@ -1,8 +1,5 @@
 import { Request, Response } from "express";
-import {
-  submitChallengeService,
-  deleteChallengeAnswer,
-} from "./challenges.service";
+import { submitChallengeService } from "./challenges.service";
 import { SubmitChallengeControllerResult } from "./challenges.types";
 import { successResponse, errorResponse } from "../../../utils/response";
 import { PrismaClient } from "@prisma/client";
@@ -113,27 +110,9 @@ export const submitChallenge = async (req: Request, res: Response) => {
   } catch (error) {
     return errorResponse(
       res,
-      "Something went wrong.",
+      "Challenge submission failed.",
       (error as Error).message,
       400
     );
-  }
-};
-
-export const deleteChallengeAnswerController = async (
-  req: Request,
-  res: Response
-) => {
-  const playerId = Number(req.params.playerId);
-  const levelId = Number(req.params.levelId);
-  const challengeId = Number(req.params.challengeId);
-
-  try {
-    const result = await deleteChallengeAnswer(playerId, levelId, challengeId);
-    return res.json(result);
-  } catch (error) {
-    return res
-      .status(400)
-      .json({ success: false, message: (error as Error).message });
   }
 };

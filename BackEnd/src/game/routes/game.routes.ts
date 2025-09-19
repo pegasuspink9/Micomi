@@ -35,11 +35,6 @@ router.post(
   "/submit-challenge/:playerId/:levelId/:challengeId",
   ChallengeController.submitChallenge
 );
-router.delete(
-  //for testing puposes only
-  "/delete-challenge-answer/:playerId/:levelId/:challengeId",
-  ChallengeController.deleteChallengeAnswerController
-);
 
 //Shop routes
 router.post("/buy-potion", ShopController.buyPotion);
@@ -58,6 +53,6 @@ router.get(
 
 //Leaderboard routes
 router.get("/leaderboard", LeaderboardController.getLeaderboard);
-router.post("/update-leaderboard", LeaderboardController.updateLeaderboard);
+router.get("/player-rank/:id", LeaderboardController.getPlayerRank);
 
 export default router;

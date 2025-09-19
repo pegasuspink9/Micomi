@@ -1,46 +1,40 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
-export const updateLeaderboard = async (
-  playerId: number,
-  pointsEarned: number
-) => {
-  const player = await prisma.player.update({
-    where: { player_id: playerId },
-    data: { total_points: { increment: pointsEarned } },
-    select: { total_points: true },
-  });
-
-  await prisma.leaderboard.upsert({
-    where: { player_id: playerId },
-    update: { total_points: player.total_points },
-    create: {
-      player_id: playerId,
-      total_points: player.total_points,
-      rank: 0,
-    },
-  });
-
-  await recalculateRanks();
-};
-
-export const recalculateRanks = async () => {
-  const leaderboard = await prisma.leaderboard.findMany({
-    orderBy: { total_points: "desc" },
-  });
-
-  for (let i = 0; i < leaderboard.length; i++) {
-    await prisma.leaderboard.update({
-      where: { leaderboard_id: leaderboard[i].leaderboard_id },
-      data: { rank: i + 1 },
-    });
-  }
-};
-
 export const getLeaderboard = async (limit = 10) => {
-  return prisma.leaderboard.findMany({
-    orderBy: { total_points: "desc" },
-    take: limit,
-    include: { player: { select: { username: true } } },
-  });
+  const rows = await prisma.$queryRawUnsafe<any[]>(`
+    SELECT player_id, username, total_points,
+           RANK() OVER (ORDER BY total_points DESC) AS rank
+    FROM "Player"
+    ORDER BY total_points DESC
+    LIMIT ${limit};
+  `);
+
+  return rows.map((r) => ({
+    player_id: Number(r.player_id),
+    username: r.username,
+    total_points: Number(r.total_points),
+    rank: Number(r.rank),
+  }));
+};
+
+export const getPlayerRank = async (playerId: number) => {
+  const rows = await prisma.$queryRawUnsafe<any[]>(`
+    SELECT player_id, username, total_points, rank FROM (
+      SELECT player_id, username, total_points,
+             RANK() OVER (ORDER BY total_points DESC) AS rank
+      FROM "Player"
+    ) ranked
+    WHERE player_id = ${playerId};
+  `);
+
+  if (rows.length === 0) return null;
+
+  const r = rows[0];
+  return {
+    player_id: Number(r.player_id),
+    username: r.username,
+    total_points: Number(r.total_points),
+    rank: Number(r.rank),
+  };
 };

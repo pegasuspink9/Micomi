@@ -11,6 +11,7 @@ export interface ChallengeCreateInput {
   coins_reward: number;
   guide?: string;
   test_cases?: Prisma.InputJsonValue;
+  options?: Prisma.InputJsonValue;
 }
 
 export interface ChallengeUpdateInput {
@@ -24,4 +25,5 @@ export interface ChallengeUpdateInput {
   coins_reward?: number;
   guide?: string;
   test_cases?: Prisma.InputJsonValue;
+  options?: Prisma.InputJsonValue;
 }

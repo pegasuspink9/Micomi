@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import { ChallengeDTO } from "./levels.types";
+import * as EnergyService from "../Energy/energy.service";
 import { formatTimer } from "../../../helper/dateTimeHelper";
+import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
 
 const prisma = new PrismaClient();
 
@@ -39,30 +41,13 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     level.challenges = randomize(level.challenges);
   }
 
-  if (level.level_difficulty === "medium") {
+  if (level.level_difficulty === "hard" || level.level_difficulty === "final") {
     const invalid = level.challenges.some(
       (c) => !c.guide || c.guide.trim() === ""
     );
     if (invalid) {
-      throw new Error("All Medium level challenges must have a guide");
+      throw new Error("All Hard level challenges must have a guide");
     }
-  }
-
-  if (level.level_difficulty === "hard") {
-    const invalid = level.challenges.some((c) => {
-      if (!c.test_cases) return true;
-      try {
-        const parsed =
-          typeof c.test_cases === "string"
-            ? JSON.parse(c.test_cases)
-            : c.test_cases;
-        return !Array.isArray(parsed) || parsed.length === 0;
-      } catch {
-        return true;
-      }
-    });
-    if (invalid)
-      throw new Error("All Hard level challenges must have test cases");
   }
 
   const firstLevel = await prisma.level.findFirst({
@@ -109,9 +94,20 @@ export const enterLevel = async (playerId: number, levelId: number) => {
 
   const character = selectedChar.character;
 
-  const enemyMaxHp =
-    enemy.enemy_health *
-    (await prisma.challenge.count({ where: { level_id: levelId } }));
+  const challengeCount = await prisma.challenge.count({
+    where: { level_id: levelId },
+  });
+
+  let enemyMaxHp: number = enemy.enemy_health;
+
+  if (level.level_difficulty === "easy") {
+    enemyMaxHp = enemy.enemy_health;
+  } else if (
+    level.level_difficulty === "hard" ||
+    level.level_difficulty === "final"
+  ) {
+    enemyMaxHp = enemy.enemy_health * challengeCount;
+  }
 
   if (!progress) {
     progress = await prisma.playerProgress.create({
@@ -142,15 +138,20 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         player_answer: {},
         is_completed: false,
         completed_at: null,
+        challenge_start_time: new Date(),
       },
     });
   }
 
   const challengesWithTimer: ChallengeDTO[] = level.challenges.map((ch) => {
-    const hasTimer = ["multiple choice", "fill in the blank"].includes(
-      ch.challenge_type
-    );
-    const timeLimit = hasTimer ? 10 : 0;
+    let timeLimit = 0;
+
+    if (
+      level.level_difficulty === "easy" &&
+      ["multiple choice", "fill in the blank"].includes(ch.challenge_type)
+    ) {
+      timeLimit = CHALLENGE_TIME_LIMIT;
+    }
 
     return {
       ...ch,
@@ -162,6 +163,17 @@ export const enterLevel = async (playerId: number, levelId: number) => {
 
   const firstChallenge = challengesWithTimer[0] ?? null;
 
+  const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
+
+  const selectedCharHealth = character.health;
+
+  if (!progress.is_completed) {
+    await prisma.playerProgress.update({
+      where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
+      data: { player_hp: character.health, enemy_hp: enemyMaxHp },
+    });
+  }
+
   return {
     level: {
       level_id: level.level_id,
@@ -170,9 +182,18 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     },
     enemy: {
       enemy_id: enemy.enemy_id,
-      enemy_health: enemy.enemy_health,
+      enemy_health: enemyMaxHp,
+    },
+    selectedCharacter: {
+      character_id: character.character_id,
+      name: character.character_name,
+      current_health: selectedCharHealth,
+      max_health: character.health,
+      damage: character.character_damage,
     },
     currentChallenge: firstChallenge,
+    energy: energyStatus.energy,
+    timeToNextEnergyRestore: energyStatus.timeToNextRestore,
   };
 };
 

@@ -50,7 +50,6 @@ model Level {
   map               Map      @relation(fields: [map_id], references: [map_id], onDelete: Cascade)
   challenges        Challenge[] 
   playerProgress    PlayerProgress[]
-  enemies           Enemy[]
   quest             Quest[]
 }
 
@@ -60,27 +59,35 @@ model Challenge {
   challenge_type String     //Easy: multiple choice and fill in the blank. Medium: code with guide. Hard: freeform coding
   title          String
   description    String  @db.Text
+  question       String?
   correct_answer Json    @default("[]")
   hint           String  @db.Text
   points_reward  Int     @default(0)      
-  coins_reward   Int     @default(0)   
+  coins_reward   Int     @default(0)  
+
   guide          String?
   test_cases     Json?    @default("[]")
-  level          Level   @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
+  options        Json?    @default("[]")
+
+  level          Level    @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
 }
 
 model Enemy {
   enemy_id          Int     @id @default(autoincrement())
-  level_id          Int
   enemy_name        String
   enemy_description String
   enemy_difficulty  String
   enemy_map         String   //to determine what map is this enemy (HTML, CSS, JavaScript, Computer)
-  enemy_avatar      String  @db.Text
   enemy_skills      String
   enemy_health      Int     
   enemy_damage      Int
-  level             Level   @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
+
+  //animations
+  enemy_avatar      String   @db.Text //idle animation
+  enemy_attack      String?  @db.Text 
+  enemy_dies        String?  @db.Text 
+
+  enemy_coins       Int?     @default(0)
 }
 
 model Player {
@@ -100,7 +107,6 @@ model Player {
   energy_reset_at  DateTime?
 
   playerProgress       PlayerProgress[]
-  leaderboard          Leaderboard[]
   playerAchievements   PlayerAchievement[]
   missions             Quest[]
 
@@ -108,6 +114,7 @@ model Player {
   ownedPotions         PlayerPotion[]
 
   @@index([email])
+  @@index([total_points])
 }
 
 model PlayerProgress {
@@ -139,7 +146,6 @@ model PlayerProgress {
 model Character {
   character_id      Int      @id @default(autoincrement())
   character_name    String
-  avatar_image      String   @db.Text
   character_type    String  
   health            Int      
   weapon_name       String
@@ -148,16 +154,16 @@ model Character {
   is_purchased      Boolean  @default(false)
   is_selected       Boolean  @default(false)
 
+  //animations
+  avatar_image      String?   @db.Text //idle image
+  character_hurt    String?   @db.Text 
+  character_attack  String?   @db.Text
+  character_dies    String?   @db.Text
+
+  user_coins        Int?      @default(0)
+
   playerCharacter     PlayerCharacter[]
   characterShop       CharacterShop[]
-}
-
-model Leaderboard {
-  leaderboard_id  Int      @id @default(autoincrement())
-  player_id       Int      @unique
-  rank            Int
-  total_points    Int
-  player          Player   @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
 }
 
 model Achievement {

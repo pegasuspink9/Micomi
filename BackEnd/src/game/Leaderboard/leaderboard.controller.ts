@@ -4,7 +4,8 @@ import { successResponse, errorResponse } from "../../../utils/response";
 
 export const getLeaderboard = async (req: Request, res: Response) => {
   try {
-    const leaderboard = await LeaderboardService.getLeaderboard(10);
+    const limit = parseInt(req.query.limit as string, 10) || 10;
+    const leaderboard = await LeaderboardService.getLeaderboard(limit);
     return successResponse(res, leaderboard, "Leaderboard fetched", 200);
   } catch (error) {
     console.error(error);
@@ -12,15 +13,14 @@ export const getLeaderboard = async (req: Request, res: Response) => {
   }
 };
 
-export const updateLeaderboard = async (req: Request, res: Response) => {
+export const getPlayerRank = async (req: Request, res: Response) => {
   try {
-    const playerId = (req as any).user.id;
-    const { points } = req.body;
-
-    await LeaderboardService.updateLeaderboard(playerId, points);
-    return successResponse(res, {}, "Leaderboard updated", 200);
+    const playerId = parseInt(req.params.id, 10);
+    const entry = await LeaderboardService.getPlayerRank(playerId);
+    if (!entry) return res.status(404).json({ error: "Player not found" });
+    return successResponse(res, entry, "Player rank fetched", 200);
   } catch (error) {
     console.error(error);
-    return errorResponse(res, error, "Failed to update leaderboard", 500);
+    return errorResponse(res, error, "Failed to fetch player rank", 500);
   }
 };

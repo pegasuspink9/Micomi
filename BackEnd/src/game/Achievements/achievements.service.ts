@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 export const checkAchievements = async (playerId: number) => {
   const player = await prisma.player.findUnique({
     where: { player_id: playerId },
-    select: { days_logged_in: true },
+    select: { days_logged_in: true, total_points: true },
   });
   if (!player) throw new Error("Player not found");
 
@@ -15,7 +15,6 @@ export const checkAchievements = async (playerId: number) => {
     completedLevelIds,
     totalCollectibleCharacters,
     bossLevels,
-    leaderboard,
     ownedCharacters,
     ownedPotions,
   ] = await Promise.all([
@@ -43,38 +42,61 @@ export const checkAchievements = async (playerId: number) => {
         },
       },
     }),
-    prisma.leaderboard.findFirst({
-      where: { player_id: playerId },
-      select: { rank: true },
-    }),
     prisma.playerCharacter.count({
       where: { player_id: playerId, is_purchased: true },
     }),
     prisma.playerPotion.findMany({ where: { player_id: playerId } }),
   ]);
 
+  // ✅ Calculate rank dynamically
+  const leaderboardRank = player.total_points
+    ? await prisma.player
+        .count({
+          where: { total_points: { gt: player.total_points } },
+        })
+        .then((count) => count + 1)
+    : null;
+
   const purchasedCharacters = ownedCharacters;
-  const potionCount = ownedPotions.reduce((total, p) => total + p.quantity, 0);
+  const potionCount = ownedPotions.reduce(
+    (total: number, p: { quantity: number }) => total + p.quantity,
+    0
+  );
   const defeatedBosses = bossLevels.filter(
-    (l) => l.playerProgress.length > 0
+    (l: { playerProgress: { progress_id: number }[] }) =>
+      l.playerProgress.length > 0
   ).length;
 
   const hasCompletedMap = (mapName: string): boolean => {
-    const map = maps.find((m) => m.map_name === mapName);
+    const map = maps.find(
+      (m: { map_name: string; levels: { level_id: number }[] }) =>
+        m.map_name === mapName
+    );
     if (!map) return false;
-    return map.levels.every((level) => completedLevelIds.has(level.level_id));
+    return map.levels.every((level: { level_id: number }) =>
+      completedLevelIds.has(level.level_id)
+    );
   };
 
   const hasCompletedAllMaps = (): boolean =>
-    maps.every((map) =>
-      map.levels.every((level) => completedLevelIds.has(level.level_id))
+    maps.every((map: { levels: { level_id: number }[] }) =>
+      map.levels.every((level: { level_id: number }) =>
+        completedLevelIds.has(level.level_id)
+      )
     );
 
   const earnedAchievementIds = new Set(
-    existingPlayerAchievements.map((a) => a.achievement_id)
+    existingPlayerAchievements.map(
+      (a: { achievement_id: number }) => a.achievement_id
+    )
   );
 
-  const awards = [];
+  const awards: {
+    player_id: number;
+    achievement_id: number;
+    earned_at: Date;
+  }[] = [];
+
   for (const achievement of achievements) {
     if (earnedAchievementIds.has(achievement.achievement_id)) continue;
 
@@ -101,7 +123,7 @@ export const checkAchievements = async (playerId: number) => {
           purchasedCharacters >= totalCollectibleCharacters;
         break;
       case "Top 1":
-        shouldAward = leaderboard?.rank === 1;
+        shouldAward = leaderboardRank === 1;
         break;
       case "Knowledge Keeper":
         shouldAward = player.days_logged_in >= 7;

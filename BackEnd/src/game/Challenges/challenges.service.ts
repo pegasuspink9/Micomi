@@ -1,27 +1,64 @@
-import { PrismaClient, QuestType } from "@prisma/client";
+import { PrismaClient, Challenge } from "@prisma/client";
 import * as LevelService from "../Levels/levels.service";
 import * as CombatService from "../Combat/combat.service";
+import * as EnergyService from "../Energy/energy.service";
 import { formatTimer } from "../../../helper/dateTimeHelper";
-import { SubmitChallengeServiceResult } from "./challenges.types";
+import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
+import {
+  SubmitChallengeControllerResult,
+  CompletionRewards,
+} from "./challenges.types";
 
 const prisma = new PrismaClient();
 
-const arraysEqual = (a: string[], b: string[]): boolean => {
-  if (a.length !== b.length) return false;
-  return a.every((val, index) => val === b[index]);
-};
+const arraysEqual = (a: string[], b: string[]): boolean =>
+  a.length === b.length && a.every((val, i) => val === b[i]);
+
+const isTimedChallengeType = (type: string) =>
+  ["multiple choice", "fill in the blank"].includes(type);
+
+const buildChallengeWithTimer = (
+  challenge: Challenge,
+  timeRemaining: number
+) => ({
+  ...challenge,
+  timeLimit: isTimedChallengeType(challenge.challenge_type)
+    ? CHALLENGE_TIME_LIMIT
+    : 0,
+  timeRemaining: isTimedChallengeType(challenge.challenge_type)
+    ? timeRemaining
+    : 0,
+  timer: isTimedChallengeType(challenge.challenge_type)
+    ? formatTimer(timeRemaining)
+    : null,
+});
 
 export const submitChallengeService = async (
   playerId: number,
   levelId: number,
   challengeId: number,
   answer: string[]
-): Promise<SubmitChallengeServiceResult> => {
+): Promise<
+  SubmitChallengeControllerResult & {
+    energy?: number;
+    timeToNextEnergyRestore?: string | null;
+  }
+> => {
+  const hasEnergy = await EnergyService.hasEnoughEnergy(playerId, 1);
+  if (!hasEnergy) {
+    const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
+    throw new Error(
+      `Not enough energy! Next energy restore in: ${
+        energyStatus.timeToNextRestore ?? "N/A"
+      }`
+    );
+  }
+
   const [challenge, level, progress] = await Promise.all([
     prisma.challenge.findUnique({ where: { challenge_id: challengeId } }),
     prisma.level.findUnique({
       where: { level_id: levelId },
-      include: { enemies: true, challenges: true },
+      include: { challenges: true, map: true },
     }),
     prisma.playerProgress.findUnique({
       where: {
@@ -29,7 +66,6 @@ export const submitChallengeService = async (
       },
     }),
   ]);
-
   if (!challenge) throw new Error("Challenge not found");
   if (!level) throw new Error("Level not found");
 
@@ -50,102 +86,124 @@ export const submitChallengeService = async (
     });
   }
 
-  const enemy = level.enemies[0];
-  if (!enemy) throw new Error("No enemy found for this level");
+  const enemy = await prisma.enemy.findFirst({
+    where: {
+      enemy_map: level.map.map_name,
+      enemy_difficulty: level.level_difficulty,
+    },
+  });
+  if (!enemy)
+    throw new Error("No enemy found for this level’s map + difficulty");
 
   const challengeStart = new Date(currentProgress.challenge_start_time!);
   const now = new Date();
   const elapsed = (now.getTime() - challengeStart.getTime()) / 1000;
-  const timeRemaining = Math.max(0, 10 - elapsed);
+  const timeRemaining = Math.max(0, CHALLENGE_TIME_LIMIT - elapsed);
 
   const correctAnswer = challenge.correct_answer as string[];
   const isCorrect = arraysEqual(answer, correctAnswer);
 
-  const answers = {
-    ...(currentProgress.player_answer as Record<string, string[]>),
-    [challengeId.toString()]: answer,
-  };
-
-  let wrongChallenges = (currentProgress.wrong_challenges ?? []) as number[];
-
   const updatedProgress = await prisma.playerProgress.update({
     where: { progress_id: currentProgress.progress_id },
     data: {
-      player_answer: answers,
+      player_answer: {
+        ...(currentProgress.player_answer as Record<string, string[]>),
+        [challengeId.toString()]: answer,
+      },
       attempts: { increment: 1 },
     },
   });
 
-  let fightResult;
-  let message;
+  let wrongChallenges = (updatedProgress.wrong_challenges ?? []) as number[];
+  let fightResult: any;
+  let message: string;
+  const useHardFight =
+    level.level_difficulty === "hard" || level.level_difficulty === "final";
 
-  if (elapsed > 10) {
-    fightResult = await CombatService.fightEnemy(
-      playerId,
-      enemy.enemy_id,
-      false
-    );
+  if (
+    isTimedChallengeType(challenge.challenge_type) &&
+    elapsed > CHALLENGE_TIME_LIMIT
+  ) {
+    fightResult = useHardFight
+      ? await CombatService.fightBossEnemy(playerId, enemy.enemy_id, false)
+      : await CombatService.fightEnemy(playerId, enemy.enemy_id, false);
     message = "Time's up! Enemy attacked you.";
   } else if (isCorrect) {
     wrongChallenges = wrongChallenges.filter(
       (id) => id !== challenge.challenge_id
     );
-
     await prisma.playerProgress.update({
       where: { progress_id: currentProgress.progress_id },
       data: { wrong_challenges: wrongChallenges },
     });
 
-    fightResult = await CombatService.fightEnemy(
-      playerId,
-      enemy.enemy_id,
-      true
-    );
-
+    fightResult = useHardFight
+      ? await CombatService.fightBossEnemy(playerId, enemy.enemy_id, true)
+      : await CombatService.fightEnemy(playerId, enemy.enemy_id, true);
     message = "Correct! You attacked the enemy.";
   } else {
-    if (!wrongChallenges.includes(challenge.challenge_id)) {
+    if (useHardFight) {
+      if (!wrongChallenges.includes(challenge.challenge_id)) {
+        wrongChallenges.push(challenge.challenge_id);
+      }
+    } else {
+      wrongChallenges = wrongChallenges.filter(
+        (id) => id !== challenge.challenge_id
+      );
       wrongChallenges.push(challenge.challenge_id);
     }
-
     await prisma.playerProgress.update({
       where: { progress_id: currentProgress.progress_id },
       data: { wrong_challenges: wrongChallenges },
     });
 
-    fightResult = await CombatService.fightEnemy(
-      playerId,
-      enemy.enemy_id,
-      false
-    );
-    message = `Wrong! You'll see this challenge again. Remaining time: ${formatTimer(
-      Math.max(0, 10 - elapsed)
-    )}`;
+    fightResult = useHardFight
+      ? await CombatService.fightBossEnemy(playerId, enemy.enemy_id, false)
+      : await CombatService.fightEnemy(playerId, enemy.enemy_id, false);
+
+    message =
+      challenge.challenge_type === "code with guide"
+        ? "Wrong! You'll need to try again on this same challenge."
+        : isTimedChallengeType(challenge.challenge_type)
+        ? `Wrong! You'll see this challenge again. Remaining time: ${formatTimer(
+            Math.max(0, CHALLENGE_TIME_LIMIT - elapsed)
+          )}`
+        : "Wrong! You'll see this challenge again.";
   }
 
-  const nextChallenge = await getNextChallengeService(playerId, levelId);
+  let nextChallenge: any = null;
+  if (useHardFight && !isCorrect) {
+    nextChallenge = buildChallengeWithTimer(challenge, timeRemaining);
+  } else if (!useHardFight) {
+    const next = await getNextChallengeService(playerId, levelId);
+    nextChallenge = next.nextChallenge;
+  }
 
-  const answersRecord = (updatedProgress.player_answer ?? {}) as Record<
-    string,
-    string
-  >;
-  const answeredIds = Object.keys(answersRecord).map(Number);
+  if (nextChallenge) {
+    await prisma.playerProgress.update({
+      where: { progress_id: currentProgress.progress_id },
+      data: { challenge_start_time: new Date() },
+    });
+  }
+
+  const answeredIds = Object.keys(updatedProgress.player_answer ?? {}).map(
+    Number
+  );
   const wrongChallengesArr = (updatedProgress.wrong_challenges ??
     []) as number[];
-
-  const totalChallenges = level.challenges.length;
-
   const allCompleted =
-    answeredIds.length === totalChallenges && wrongChallengesArr.length === 0;
+    answeredIds.length === level.challenges.length &&
+    wrongChallengesArr.length === 0;
+
+  let completionRewards: CompletionRewards | undefined = undefined;
+  let nextLevel: SubmitChallengeControllerResult["nextLevel"] = null;
 
   if (allCompleted && !currentProgress.is_completed) {
-    // ✅ Mark completed
     await prisma.playerProgress.update({
       where: { progress_id: currentProgress.progress_id },
       data: { is_completed: true, completed_at: new Date() },
     });
 
-    // ✅ Compute exp + coins only ONCE
     const totalExp = level.challenges.reduce(
       (sum, c) => sum + c.points_reward,
       0
@@ -159,32 +217,51 @@ export const submitChallengeService = async (
       await prisma.player.update({
         where: { player_id: playerId },
         data: {
-          total_points: { increment: challenge.points_reward },
-          coins: { increment: challenge.coins_reward },
+          total_points: { increment: totalExp },
+          coins: { increment: totalCoins },
         },
       });
     }
 
-    await LevelService.unlockNextLevel(
+    completionRewards = {
+      feedbackMessage:
+        level.feedback_message ?? `You completed Level ${level.level_number}!`,
+      currentTotalPoints: totalExp,
+      currentExpPoints: totalCoins,
+    };
+
+    nextLevel = await LevelService.unlockNextLevel(
       playerId,
       level.map_id,
       level.level_number
     );
   }
 
-  return {
+  const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
+
+  const result: SubmitChallengeControllerResult = {
     isCorrect,
     attempts: updatedProgress.attempts,
     fightResult,
     message,
-    nextChallenge: nextChallenge
-      ? {
-          ...nextChallenge.nextChallenge,
-          timeLimit: 10,
-          timeRemaining: timeRemaining,
-          timer: formatTimer(timeRemaining),
-        }
-      : null,
+    nextChallenge,
+    levelStatus: {
+      isCompleted: allCompleted,
+      battleWon: fightResult?.status === "won",
+      battleLost: fightResult?.status === "lost",
+      canProceed: allCompleted && !!nextLevel,
+      showFeedback: allCompleted,
+      playerHealth: fightResult?.charHealth ?? null,
+      enemyHealth: fightResult?.enemyHealth ?? null,
+    },
+    completionRewards,
+    nextLevel,
+  };
+
+  return {
+    ...result,
+    energy: energyStatus.energy,
+    timeToNextEnergyRestore: energyStatus.timeToNextRestore,
   };
 };
 
@@ -196,67 +273,87 @@ export const getNextChallengeService = async (
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
     include: { level: { include: { challenges: true } } },
   });
-
   if (!progress) throw new Error("Player progress not found");
+  if (!progress.level) throw new Error("Level not found");
 
+  switch (progress.level.level_difficulty) {
+    case "easy":
+      return getNextChallengeEasy(progress);
+    case "hard":
+    case "final":
+      return getNextChallengeHard(progress);
+    default:
+      throw new Error("Unsupported difficulty");
+  }
+};
+
+const getNextChallengeEasy = async (progress: any) => {
   const { level } = progress;
-  if (!level) throw new Error("Level not found");
 
-  const answeredIds = Object.keys(progress.player_answer ?? {}).map(Number);
-  const wrongChallenges: number[] =
-    (progress.wrong_challenges as number[]) ?? [];
+  const wrongChallenges = (progress.wrong_challenges as number[] | null) ?? [];
+  const answeredIds = Object.keys(
+    (progress.player_answer as Record<string, string[]> | null) ?? {}
+  ).map(Number);
 
-  let nextChallenge;
+  let nextChallenge =
+    level.challenges.find(
+      (c: Challenge) =>
+        !answeredIds.includes(c.challenge_id) &&
+        !wrongChallenges.includes(c.challenge_id)
+    ) || null;
 
-  if (wrongChallenges.length > 0) {
-    nextChallenge = level.challenges.find(
-      (c) => c.challenge_id === wrongChallenges[0]
-    );
-  } else {
-    nextChallenge = level.challenges.find(
-      (c) => !answeredIds.includes(c.challenge_id)
-    );
+  if (!nextChallenge && wrongChallenges.length > 0) {
+    const firstWrongId = wrongChallenges[0];
+    nextChallenge =
+      level.challenges.find(
+        (c: Challenge) => c.challenge_id === firstWrongId
+      ) || null;
   }
 
-  if (!nextChallenge) {
-    return { nextChallenge: null };
+  return wrapWithTimer(progress, nextChallenge);
+};
+
+const getNextChallengeHard = async (progress: any) => {
+  const { level } = progress;
+
+  const answeredIds = Object.keys(
+    (progress.player_answer as Record<string, string[]> | null) ?? {}
+  ).map(Number);
+  const wrongChallenges = (progress.wrong_challenges as number[] | null) ?? [];
+
+  let nextChallenge =
+    level.challenges.find(
+      (c: Challenge) => !answeredIds.includes(c.challenge_id)
+    ) || null;
+
+  if (!nextChallenge && wrongChallenges.length > 0) {
+    nextChallenge =
+      level.challenges.find((c: Challenge) =>
+        wrongChallenges.includes(c.challenge_id)
+      ) || null;
   }
+
+  return wrapWithTimer(progress, nextChallenge);
+};
+
+const wrapWithTimer = async (progress: any, challenge: Challenge | null) => {
+  if (!challenge) return { nextChallenge: null };
+
+  const challengeStart = new Date(progress.challenge_start_time!);
+  const elapsed = (Date.now() - challengeStart.getTime()) / 1000;
+  const timeRemaining = Math.max(0, CHALLENGE_TIME_LIMIT - elapsed);
 
   await prisma.playerProgress.update({
-    where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
+    where: {
+      player_id_level_id: {
+        player_id: progress.player_id,
+        level_id: progress.level_id,
+      },
+    },
     data: { challenge_start_time: new Date() },
   });
 
-  const challengeWithTimer = ["multiple choice", "fill in the blank"].includes(
-    nextChallenge.challenge_type
-  )
-    ? { ...nextChallenge, timeLimit: 10 }
-    : nextChallenge;
-
-  return { nextChallenge: challengeWithTimer };
-};
-
-export const deleteChallengeAnswer = async (
-  playerId: number,
-  levelId: number,
-  challengeId: number
-) => {
-  const progress = await prisma.playerProgress.findUnique({
-    where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
-  });
-
-  if (!progress) throw new Error("Progress not found");
-
-  const answers = { ...(progress.player_answer as Record<string, string>) };
-  delete answers[challengeId.toString()];
-
-  await prisma.playerProgress.update({
-    where: { progress_id: progress.progress_id },
-    data: {
-      player_answer: answers,
-      challenge_start_time: new Date(),
-    },
-  });
-
-  return { success: true, message: "Answer deleted from database." };
+  return {
+    nextChallenge: buildChallengeWithTimer(challenge, timeRemaining),
+  };
 };

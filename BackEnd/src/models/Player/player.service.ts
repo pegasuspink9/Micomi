@@ -12,7 +12,6 @@ export const getAllPlayers = () =>
   prisma.player.findMany({
     include: {
       playerProgress: true,
-      leaderboard: true,
       playerAchievements: true,
     },
   });
@@ -22,7 +21,6 @@ export const getPlayerById = (player_id: number) =>
     where: { player_id },
     include: {
       playerProgress: true,
-      leaderboard: true,
       playerAchievements: true,
     },
   });
