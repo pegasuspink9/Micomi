@@ -114,7 +114,7 @@ export const createCheckAnswerHandler = (
       
       // Reset border color but don't show output
       setTimeout(() => {
-        setBorderColor('rgba(37, 144, 197, 1)');
+        setBorderColor('white');
       }, 2000);
     }
   };

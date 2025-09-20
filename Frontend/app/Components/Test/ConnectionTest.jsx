@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { simpleApiService } from '../../services/simpleApi';
+
 
 export const ConnectionTest = () => {
   const [status, setStatus] = useState('Testing...');

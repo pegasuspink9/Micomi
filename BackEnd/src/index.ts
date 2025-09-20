@@ -23,14 +23,8 @@ const cors = require("cors");
 app.use(
   cors({
     origin: [
-      "http://localhost:3000", 
-      "http://localhost:8081", 
-      "http://192.168.254.120:8081", // Your IP with Expo dev server
-      "http://192.168.254.120:3000", // Your IP with backend
-      "http://127.0.0.1:8081",
-      "http://10.0.2.2:8081", // Android emulator
-      "http://localhost:8082", // Alternative Expo port
-      "http://192.168.254.120:8082", // Alternative Expo port with IP
+      "http://192.168.100.200:3000", 
+      "http://192.168.100.200:8082", 
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true

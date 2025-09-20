@@ -119,15 +119,7 @@ export default function CharacterProfile() {
 
             {/* Background Animation */}
             <Animated.View style={{ opacity: backgroundOpacity }}>
-              <LottieView
-                source={{ uri: URLS.characterBackground }}
-                style={styles.characterBackground}
-                autoPlay={isCharacterAnimating}
-                loop={isCharacterAnimating}
-                resizeMode='contain'
-                cacheComposition={true}
-                renderMode='HARDWARE'
-              />
+              
             </Animated.View>
 
             {/* Character Display */}
@@ -255,9 +247,9 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   screenLabelText: {
-    color: 'srgba(255, 255, 255, 1)',
-    fontSize: screenWidth * 0.2,
-    fontFamily: 'Computerfont',
+    color: 'rgba(255, 255, 255, 1)',
+    fontSize: screenWidth * 0.15,
+    fontFamily: 'GoldenAge',
     textAlign: 'center',
   },
   attributePanel: {

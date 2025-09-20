@@ -10,7 +10,7 @@ const MAP_THEMES = {
     },
     buttons: {
       unlockedButton: 'https://github.com/user-attachments/assets/eb369d98-9e37-487a-aa7b-616ef86cd610',
-      lockedButton: 'https://github.com/user-attachments/assets/e152a553-9b53-4420-91e7-fbcbfeb77b50',
+      lockedButton: 'https://github.com/user-attachments/assets/da188c97-1ce6-4a7a-9acb-fde5ff1b7fdc',
       buttonBackground: 'https://github.com/user-attachments/assets/0de7f423-3767-4ef7-b6aa-c109daa5689c'
     },
     stones: {

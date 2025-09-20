@@ -53,13 +53,13 @@ const CodeEditor = ({
   );
 };
 
-// Styles kept within the component
 const styles = StyleSheet.create({
   editorContainer: {
     backgroundColor: '#1e1e1e32',
     borderRadius: 12,
     margin: 5,
     overflow: 'hidden',
+    flex: 1, 
     
     borderTopWidth: 2,
     borderTopColor: '#4a4a4a',
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   codeContainer: {
     backgroundColor: '#000d2f99',
     paddingVertical: 12,
-    maxHeight: SCREEN_HEIGHT * 0.25,
+    flex: 1,
     
     borderTopWidth: 1,
     borderTopColor: '#0a0a0a',

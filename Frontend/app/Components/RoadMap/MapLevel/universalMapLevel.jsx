@@ -37,6 +37,7 @@ export default function UniversalMapLevel() {
     if (theme.backgrounds?.topBackground) {
       uris.push(theme.backgrounds.topBackground);
     }
+    
     if (theme.backgrounds?.repeatingBackground) {
       uris.push(theme.backgrounds.repeatingBackground);
     }
@@ -72,11 +73,11 @@ export default function UniversalMapLevel() {
   }, []);
   
   const calculateContentHeight = useCallback(() => {
-    if (levels.length === 0) return screenHeight * 2; // Changed from lessons to levels
+    if (levels.length === 0) return screenHeight * 2; 
     
     const responsive = getResponsiveValues();
     
-    const lastIndex = levels.length - 1; // Changed from lessons to levels
+    const lastIndex = levels.length - 1; 
     let lastButtonTop;
 
     if (lastIndex === 0) {
@@ -167,6 +168,8 @@ export default function UniversalMapLevel() {
           { marginTop: theme?.backgrounds?.topBackgroundPosition?.marginTop || 0 }
         ]}
         resizeMode="fill"
+        cache="force-cache"
+        priority="high" 
       />
     )), [backgroundCount, theme.backgrounds.repeatingBackground, theme?.backgrounds?.topBackgroundPosition?.marginTop]
   );

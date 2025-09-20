@@ -16,7 +16,6 @@ export const mapService = {
   // Get specific map with its levels - CORRECT ENDPOINT
   getMapWithLevels: async (mapId) => {
     try {
-      // Use your correct API endpoint
       const response = await apiService.get(`/map/select-map/${mapId}`);
       console.log(`🗺️ Map ${mapId} with levels:`, response);
       return response.success ? response.data : response;

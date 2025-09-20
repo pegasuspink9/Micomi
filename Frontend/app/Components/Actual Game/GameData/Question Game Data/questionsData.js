@@ -32,6 +32,16 @@ const questionsData = [{
   </html>`,
   options: "World, head, body, title, DOCTYPE",
   answer: ['World'],
+},{
+  questionType: 'multiple-choice',
+  question: 'This is a tag in HTML use to create a link?_',
+  options: "p, /, anchor, link tag, fs",
+  answer: 'anchor',
+},{
+  questionType: 'multiple-choice',
+  question: 'This is a tag in HTML use to create a link?_',
+  options: "p, /, anchor, link tag, fs",
+  answer: 'anchor',
 }];
 
 export default questionsData;

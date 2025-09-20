@@ -5,10 +5,16 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const GameContainer = ({ children, borderColor }) => {
   return (
-    <View style={styles.container}>
-      <View style={[styles.innerBorderContainer, { borderColor }]}>
-        <View style={styles.contentContainer}>
-          {children}
+    <View style={styles.outerFrame}>
+      <View style={styles.container}>
+        <View style={[styles.innerBorderContainer, { borderColor }]}>
+          <View style={styles.contentContainer}>
+            <View style={styles.containerHighlight} />
+            <View style={styles.containerShadow} />
+            <View style={styles.leftHighlight} />
+            <View style={styles.rightShadow} />
+            {children}
+          </View>
         </View>
       </View>
     </View>
@@ -16,10 +22,22 @@ const GameContainer = ({ children, borderColor }) => {
 };
 
 const styles = StyleSheet.create({
+  outerFrame: {
+    borderRadius: SCREEN_WIDTH * 0.11,
+    backgroundColor: '#0b7cfdc4', 
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 15,
+    },
+
+    
+  },
+
   container: {
     zIndex: 1,
-    borderWidth: 8,
-    borderColor: '#1a1a1a',
+    borderWidth: 3,
+    borderColor: '#052a53ff',
     borderRadius: SCREEN_WIDTH * 0.1,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -28,43 +46,88 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 25,
 
-    borderTopWidth: 8,
-    borderTopColor: '#5a5a5a',
-    borderLeftWidth: 8,
-    borderLeftColor: '#4a4a4a',
-    borderBottomWidth: 8,
-    borderBottomColor: '#0a0a0a',
-    borderRightWidth: 8,
-    borderRightColor: '#0f0f0f',
   },
 
   innerBorderContainer: {
     borderWidth: 6,
     overflow: 'hidden',
     borderRadius: SCREEN_WIDTH * 0.08,
+    position: 'relative',
 
+    // Original inner borders preserved
     borderTopWidth: 6,
-    borderTopColor: '#6a6a6a', 
+    borderTopColor: '#052a53ff', 
     borderLeftWidth: 6,
-    borderLeftColor: '#5a5a5a',
+    borderLeftColor: '#052a53ff',
     borderBottomWidth: 6,
-    borderBottomColor: '#0a0a0a',
+    borderBottomColor: '#052a53ff',
     borderRightWidth: 6,
-    borderRightColor: '#151515', 
+    borderRightColor: '#052a53ff', 
 
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.8, 
-    shadowRadius: 12, 
-    elevation: 18,
   },
 
   contentContainer: {
-    borderWidth: 3,
-    borderColor: 'black',
+    borderWidth: 2,
+    borderColor: '#052953f2',
     borderRadius: SCREEN_WIDTH * 0.06,
     overflow: 'hidden',
-    backgroundColor: 'black'
+    
+    borderTopWidth: 3,
+    borderTopColor: '#052953f2',
+    borderLeftWidth: 3,
+    borderLeftColor: '#052a53ff',
+    borderBottomWidth: 3,
+    borderBottomColor: '#052a53ff',
+    borderRightWidth: 3,
+    borderRightColor: '#052a53ff',
+  },
+
+  containerHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: SCREEN_WIDTH * 0.08,
+    borderTopLeftRadius: SCREEN_WIDTH * 0.06,
+    borderTopRightRadius: SCREEN_WIDTH * 0.06,
+    pointerEvents: 'none',
+    zIndex: 1,
+  },
+
+  containerShadow: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: SCREEN_WIDTH * 0.06,
+    borderBottomLeftRadius: SCREEN_WIDTH * 0.06,
+    borderBottomRightRadius: SCREEN_WIDTH * 0.06,
+    pointerEvents: 'none',
+    zIndex: 1,
+  },
+
+  leftHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: SCREEN_WIDTH * 0.04,
+    borderTopLeftRadius: SCREEN_WIDTH * 0.06,
+    borderBottomLeftRadius: SCREEN_WIDTH * 0.06,
+    pointerEvents: 'none',
+    zIndex: 1,
+  },
+
+  rightShadow: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: SCREEN_WIDTH * 0.03,
+    borderTopRightRadius: SCREEN_WIDTH * 0.06,
+    borderBottomRightRadius: SCREEN_WIDTH * 0.06,
+    pointerEvents: 'none',
+    zIndex: 1,
   },
 });
 

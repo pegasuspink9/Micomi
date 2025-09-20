@@ -10,7 +10,7 @@ export default function LoadingScreen({ progress = 0, theme }) {
       
       {/* Loading Animation */}
       <LottieView
-        source={{ uri: 'https://lottie.host/loading-animation.json' }} // Add your loading animation
+        source={{ uri: 'https://lottie.host/loading-animation.json' }}
         autoPlay
         loop
         style={styles.loadingAnimation}

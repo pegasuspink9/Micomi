@@ -6,17 +6,18 @@ const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const DogCharacter = ({ isPaused }) => {
   const dogProps = {
-    source: { uri: "https://lottie.host/0247b4e1-ad7f-4161-9294-c5f6742243f6/ParZXqrNqz.lottie" },
+    source: { uri: "https://lottie.host/061dbe35-d766-447b-aab3-3f16f2b6983d/gsWwaleGkQ.lottie" },
     style: [
       styles.dogRunImage,
       isPaused && styles.pausedElement
     ],
     autoPlay: !isPaused,
     loop: !isPaused,
-    speed: isPaused ? 0 : 1,
-    resizeMode: 'contain',
-    cacheComposition: true,
-    renderMode: 'HARDWARE'
+    speed: isPaused ? 1 : 0.6,
+    imageAssetsFolder: '',
+    onAnimationLoaded: () => {
+      console.log('Dog Lottie loaded');
+    }
   };
 
   return (

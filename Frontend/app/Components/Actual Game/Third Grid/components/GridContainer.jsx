@@ -1,15 +1,21 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const GridContainer = ({ children }) => {
   return (
     <View style={styles.thirdGrid}>
-      <View style={styles.innerContent}>
-        <View style={styles.innerBorder}>
-          <View style={styles.backlightOverlay} />
-          {children}
+      <View style={styles.outerFrame}>
+        <View style={styles.innerContent}>
+          <View style={styles.innerBorder}>
+            <View style={styles.backlightOverlay} />
+            <View style={styles.topHighlight} />
+            <View style={styles.bottomShadow} />
+            <View style={styles.leftHighlight} />
+            <View style={styles.rightShadow} />
+            {children}
+          </View>
         </View>
       </View>
     </View>
@@ -18,54 +24,59 @@ const GridContainer = ({ children }) => {
 
 const styles = StyleSheet.create({
   thirdGrid: {
-    flex: 1,
+    height: SCREEN_HEIGHT * 0.25,
     padding: SCREEN_WIDTH * 0.02,
     backgroundColor: 'transparent',
   },
 
+  outerFrame: {
+    flex: 1, // This will work within the fixed height container
+    backgroundColor: '#052a53ff',
+    borderRadius: SCREEN_WIDTH * 0.05,
+    padding: SCREEN_WIDTH * 0.004,
+    shadowColor: '#052a53ff',
+    shadowOffset: {
+      width: 0,
+      height: 12,
+    },
+    shadowOpacity: 0.6,
+    shadowRadius: 16,
+    elevation: 20,
+    // 3D outer border effect
+    borderTopWidth: 3,
+    borderTopColor: '#87ceeb',
+    borderLeftWidth: 2,
+    borderLeftColor: '#87ceeb',
+    borderBottomWidth: 5,
+    borderBottomColor: '#2c5282',
+    borderRightWidth: 4,
+    borderRightColor: '#2c5282',
+  },
+
   innerContent: {
     flex: 1,
-    backgroundColor: '#2c2c2e', 
-    borderRadius: SCREEN_WIDTH * 0.04,
+    backgroundColor: '#052a53ff',
+    borderRadius: SCREEN_WIDTH * 0.045,
     padding: SCREEN_WIDTH * 0.03,
-    shadowColor: '#000',
+    shadowColor: '#1a365d',
     shadowOffset: {
       width: 0,
       height: 8,
     },
-    shadowOpacity: 0.44,
-    shadowRadius: 10.32,
-    elevation: 16,
-    borderTopWidth: 2,
-    borderTopColor: '#4a4a4c',
-    borderBottomWidth: 4,
-    borderBottomColor: '#1c1c1e',
-    borderLeftWidth: 2,
-    borderLeftColor: '#3a3a3c',
-    borderRightWidth: 3,
-    borderRightColor: '#1c1c1e',
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 18,
   },
 
   innerBorder: {
     flex: 1,
-    backgroundColor: '#1c1c1e',
-    borderRadius: SCREEN_WIDTH * 0.025,
-    borderTopWidth: 1,
-    borderTopColor: '#0a0a0a',
-    borderLeftWidth: 1,
-    borderLeftColor: '#0a0a0a',
-    borderBottomWidth: 2,
-    borderBottomColor: '#2c2c2e',
-    borderRightWidth: 2,
-    borderRightColor: '#2c2c2e',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    backgroundColor: '#000000fc',
+    borderRadius: SCREEN_WIDTH * 0.03,
+    position: 'relative',
+    overflow: 'hidden',
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
     flexDirection: 'column',
     justifyContent: 'space-between',
   },
@@ -76,8 +87,53 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(7, 127, 255, 0.07)',
-    borderRadius: SCREEN_WIDTH * 0.025,
+    backgroundColor: 'rgba(135, 206, 235, 0.15)', 
+    borderRadius: SCREEN_WIDTH * 0.03,
+    pointerEvents: 'none',
+  },
+
+  topHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: SCREEN_WIDTH * 0.08,
+    background: 'linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 100%)',
+    borderTopLeftRadius: SCREEN_WIDTH * 0.03,
+    borderTopRightRadius: SCREEN_WIDTH * 0.03,
+    pointerEvents: 'none',
+  },
+
+  bottomShadow: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: SCREEN_WIDTH * 0.06,
+    borderBottomLeftRadius: SCREEN_WIDTH * 0.03,
+    borderBottomRightRadius: SCREEN_WIDTH * 0.03,
+    pointerEvents: 'none',
+  },
+
+  leftHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: SCREEN_WIDTH * 0.04,
+    borderTopLeftRadius: SCREEN_WIDTH * 0.03,
+    borderBottomLeftRadius: SCREEN_WIDTH * 0.03,
+    pointerEvents: 'none',
+  },
+
+  rightShadow: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: SCREEN_WIDTH * 0.03,
+    borderTopRightRadius: SCREEN_WIDTH * 0.03,
+    borderBottomRightRadius: SCREEN_WIDTH * 0.03,
     pointerEvents: 'none',
   },
 });

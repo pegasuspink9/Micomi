@@ -1,0 +1,110 @@
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, Animated, Text, Dimensions, Image } from 'react-native';
+
+const { width } = Dimensions.get('window');
+
+const Coin = ({ 
+  coins = 0,
+  onCoinsChange = null,
+  animated = true
+}) => {
+  const [animatedValue] = useState(new Animated.Value(1));
+  const [previousCoins, setPreviousCoins] = useState(coins);
+
+  // Animate coin when value changes
+  useEffect(() => {
+    if (animated && coins !== previousCoins) {
+      const isIncrease = coins > previousCoins;
+      
+      if (isIncrease) {
+        Animated.sequence([
+          Animated.timing(animatedValue, {
+            toValue: 1.3,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+          Animated.timing(animatedValue, {
+            toValue: 1,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      } else {
+        // Coin lost - shrink animation
+        Animated.sequence([
+          Animated.timing(animatedValue, {
+            toValue: 0.7,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(animatedValue, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+      
+      setPreviousCoins(coins);
+      
+      if (onCoinsChange) {
+        onCoinsChange(coins);
+      }
+    }
+  }, [coins, previousCoins, animated, onCoinsChange]);
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.coinRow}>
+        <Text style={styles.coinText}>{coins}</Text>
+        <Animated.View
+          style={[
+            styles.coinContainer,
+            {
+              transform: animated 
+                ? [{ scale: animatedValue }]
+                : [{ scale: 1 }]
+            }
+          ]}
+        >
+           <Image source={{ uri: 'https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd' }} style={styles.coinImage} />
+        </Animated.View>
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    top: width * 0.02,
+    right: width * 0.03,
+    alignItems: 'flex-end',
+    borderRadius: 8,
+    padding: 8,
+    maxWidth: width * 0.3,
+  },
+  coinImage: {
+    width: width * 0.06, 
+    height: width * 0.06, 
+    resizeMode: 'contain',
+  },
+  coinRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  coinText: {
+    fontSize: 13,
+    fontFamily: 'monospace',
+    fontWeight: 'bold',
+    color: '#030303ff',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  coinContainer: {
+    marginLeft: 2,
+  },
+});
+
+export default Coin;

@@ -4,6 +4,9 @@ export const useFonts = () => {
   const [fontsLoaded] = useExpoFonts({
     'FunkySign': require('./FunkySign.ttf'),
     'Computerfont': require('./Computerfont.ttf'),
+    'GoldenAge': require('./GoldenAgeShad.ttf'),
+    'GoldenAgeDark': require('./GoldenAgeDark.ttf'),
+    'DynaPuff': require('./DynaPuff.ttf')
   });
 
   return fontsLoaded;

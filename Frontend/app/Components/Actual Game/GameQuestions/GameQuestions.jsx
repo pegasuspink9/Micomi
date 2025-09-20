@@ -85,12 +85,12 @@ export default function GameQuestions({
   );
 }
 
-// Main component styles
+// Updated styles for flexible sizing
 const styles = StyleSheet.create({
   secondGrid: {
-    flexShrink: 1,
-    maxHeight: SCREEN_HEIGHT * 0.28,
+    flex: 1, // Changed: Now takes all available space
     paddingHorizontal: SCREEN_WIDTH * 0.04,
+    // Removed maxHeight constraint to allow expansion
   },
 
   scrollContent: {

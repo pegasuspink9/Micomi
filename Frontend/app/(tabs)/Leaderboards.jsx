@@ -5,6 +5,7 @@ import GameQuestions from '../Components/Actual Game/GameQuestions/GameQuestions
 import ThirdGrid from '../Components/Actual Game/Third Grid/thirdGrid';
 import Drawer from '../Components/Actual Game/Drawer/Drawer';
 import questionsData from '../Components/Actual Game/GameData/Question Game Data/questionsData';
+import LevelModal from '../Components/Actual Game/Level Intro and Outro/LevelModal';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const DRAWER_PEEK = SCREEN_HEIGHT * 0.05;
@@ -14,7 +15,7 @@ export default function LeaderBoard() {
   const [isOutputVisible, setIsOutputVisible] = useState(false);
   const [selectedAnswers, setSelectedAnswers] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [borderColor, setBorderColor] = useState('rgba(37, 144, 197, 1)');
+  const [borderColor, setBorderColor] = useState('white');
   
   const [timeLeft, setTimeLeft] = useState(null);
   const [isTimeExpired, setIsTimeExpired] = useState(false);
@@ -48,7 +49,7 @@ export default function LeaderBoard() {
     setTimeLeft(null);
     setIsTimeExpired(false);
     setSelectedAnswers([]);
-    setBorderColor('rgba(37, 144, 197, 1)');
+    setBorderColor('white');
     setHasShownOutput(false);
     
     if (isOutputVisible) {
@@ -167,6 +168,7 @@ export default function LeaderBoard() {
         hasShownOutput={hasShownOutput}
         setHasShownOutput={setHasShownOutput}
         setCorrectAnswerRef={setCorrectAnswerRef}
+        getBlankIndex={getBlankIndex} 
       />
 
       <Drawer
@@ -179,6 +181,10 @@ export default function LeaderBoard() {
         questionsData={questionsData}
         selectedAnswers={selectedAnswers}
       />
+{/* 
+      <LevelModal
+        
+      /> */}
     </ImageBackground>
   );
 }

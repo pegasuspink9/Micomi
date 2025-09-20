@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import GridContainer from './components/GridContainer';
 import AnswerGrid from './components/AnswerGrid';
-import RunButton from './components/RunButton';
+import GameButton from './components/GameButtons';
+import PotionGrid from './components/Potions/Potions';
 
 import { 
   getMaxAnswers,
@@ -24,7 +25,7 @@ export default function ThirdGrid({
   isTimeExpired,
   hasShownOutput,
   setHasShownOutput,
-  setCorrectAnswerRef // NEW: Reference to setCorrectAnswer function
+  setCorrectAnswerRef
 }) {
   
   const maxAnswers = getMaxAnswers(currentQuestion);
@@ -50,10 +51,10 @@ export default function ThirdGrid({
     isTimeExpired,
     hasShownOutput,
     setHasShownOutput,
-    setCorrectAnswerRef // NEW: Pass setCorrectAnswer ref
+    setCorrectAnswerRef
   );
 
-  // Handle timer expiration - ONLY show feedback, don't proceed yet
+  // Handle timer expiration
   useEffect(() => {
     console.log('🔍 Timer expiration check:', { isTimeExpired, timeLeft });
     
@@ -70,45 +71,61 @@ export default function ThirdGrid({
         correctAnswer: currentQuestion.answer 
       });
       
-      // NEW: Notify enemy system about correct answer state
       if (setCorrectAnswerRef?.current) {
         setCorrectAnswerRef.current(isCorrect && hasAnswers);
       }
       
       if (isCorrect && hasAnswers) {
-        // Correct answer - show green and auto-show output (only once)
         console.log('✅ Timer expired but answer is CORRECT');
         setBorderColor('#34c759');
         
-        // Auto-show output only if not shown yet and it's a code-blanks question
         if (!hasShownOutput && currentQuestion.questionType === 'code-blanks') {
           console.log('📺 Auto-showing output for correct answer');
           setHasShownOutput(true);
           setTimeout(() => {
-            animateToPosition(true); // Show drawer/output
+            animateToPosition(true);
           }, 100);
         }
         
       } else {
-        // Wrong or blank answer - show red but DON'T show output
         console.log('❌ Timer expired and answer is WRONG/BLANK - no output');
         setBorderColor('#ff3b30');
       }
     }
   }, [isTimeExpired]);
 
+  const [showPotions, setShowPotions] = useState(false);
+
+  const togglePotions = () => {
+    setShowPotions(!showPotions);
+  };
+
   return (
     <GridContainer>
-      <AnswerGrid
-        options={currentQuestion.options || ""}
-        selectedAnswers={selectedAnswers}
-        maxAnswers={maxAnswers}
-        onAnswerSelect={handleAnswerSelect}
-      />
+      {showPotions ? (
+        <PotionGrid />
+      ) : (
+        <AnswerGrid
+          options={currentQuestion.options || ""}
+          selectedAnswers={selectedAnswers}
+          maxAnswers={maxAnswers}
+          onAnswerSelect={handleAnswerSelect}
+        />
+      )}
       
-      <RunButton 
+      <GameButton 
+        title="Run"
+        position="right"
+        variant="primary"
         onPress={handleCheckAnswer}
         disabled={selectedAnswers.length === 0 || isTimeExpired}
+      />
+
+      <GameButton 
+        title={showPotions ? "Keyboard" : "Potions"}
+        position="left"
+        variant="secondary"
+        onPress={togglePotions}
       />
     </GridContainer>
   );

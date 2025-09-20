@@ -46,7 +46,6 @@ const useEnemyAnimations = (enemies, isPaused, onEnemyComplete, setAttackingEnem
           clearInterval(timerIntervalRef.current);
           timerIntervalRef.current = null;
           
-          // Force complete the current enemy animation
           setTimeout(() => {
             const currentIndex = currentEnemyIndex.current;
             if (currentIndex < enemies.length && enemyPositions[currentIndex]) {
@@ -64,10 +63,9 @@ const useEnemyAnimations = (enemies, isPaused, onEnemyComplete, setAttackingEnem
           }, 100);
         }
         
-        return; // DON'T decrement timer when paused - completely frozen
+        return;
       }
 
-      // Normal timer tick when NOT paused
       timeLeft -= 1;
       console.log('⏰ Timer tick:', timeLeft, '| Drawer closed - timer running normally');
       
@@ -107,12 +105,10 @@ const useEnemyAnimations = (enemies, isPaused, onEnemyComplete, setAttackingEnem
 
   const resumeTimer = () => {
     console.log('▶️ Timer resumed - will continue ticking normally');
-    // Timer will automatically resume due to isPausedRef.current becoming false
   };
 
   const pauseTimer = () => {
     console.log('⏸️ Timer paused - timeRemaining will freeze');
-    // Timer will automatically pause due to isPausedRef.current becoming true
   };
 
   const clearTimer = () => {

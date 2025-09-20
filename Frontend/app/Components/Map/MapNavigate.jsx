@@ -10,7 +10,6 @@ import {
   ImageBackground,
   ActivityIndicator
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import LottieView from 'lottie-react-native';
 import { useRouter } from 'expo-router';
 import { useMapData } from '../../hooks/useMapData'; 

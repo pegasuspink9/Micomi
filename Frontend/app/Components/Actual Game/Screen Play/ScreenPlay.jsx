@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Dimensions } from 'react-native';
+import { Dimensions, StyleSheet } from 'react-native';
 import enemiesData from '../GameData/Enemy Game Data/EnemyGameData';
 import GameContainer from './components/GameContainer';
 import GameBackground from './components/GameBackground';
@@ -8,18 +8,37 @@ import EnemyCharacter from './components/EnemyCharacter';
 import useEnemyAnimations from './hooks/useEnemyAnimations';
 import { clearAllAnimations, resetGameState, processEnemyData } from './utils/gameStateHelper';
 import { calculateResumeAnimation, createEnemyAnimation } from './utils/animationHelpers';
+import Life from './components/Life';
+import Coin from './components/Coin';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function ScreenPlay({ 
   isPaused = false, 
-  borderColor = 'rgba(37, 144, 197, 1)', 
+  borderColor = 'white', 
   onEnemyComplete,
   onTimerUpdate = null,
   currentQuestionIndex = 0,
   onAllowEnemyCompletion = null,
-  onSetCorrectAnswer = null // NEW: Callback to set correct answer state
+  onSetCorrectAnswer = null
 }) {
+
+  
+
+  const [playerHealth, setPlayerHealth] = useState(130);
+
+  const handleHealthChange = (newHealth, maxHealth) => {
+    console.log(`Health changed: ${newHealth}/${maxHealth}`);
+  };
+
+  const simulateDamage = () => {
+    setPlayerHealth(prev => Math.max(0, prev - 50)); 
+  };
+
+  const simulateHeal = () => {
+    setPlayerHealth(prev => Math.min(250, prev + 50)); 
+  };
+
   const [attackingEnemies, setAttackingEnemies] = useState(new Set());
   
   const enemies = useMemo(() => processEnemyData(enemiesData), []);
@@ -31,11 +50,9 @@ export default function ScreenPlay({
     hasInitialized,
     currentEnemyIndex,
     isEnemyRunning,
-    startNextEnemy,
     startEnemyForQuestion,
-    resetForNewQuestion,
     allowCompletion,
-    setCorrectAnswer, // NEW: Get this function
+    setCorrectAnswer, 
     pauseTimer,
     resumeTimer
   } = useEnemyAnimations(enemies, isPaused, onEnemyComplete, setAttackingEnemies, onTimerUpdate);
@@ -160,6 +177,20 @@ export default function ScreenPlay({
       <GameBackground isPaused={isPaused}>
         <DogCharacter isPaused={isPaused} />
         
+        {/* SIMPLIFIED: All UI styling is now in the Life component */}
+        <Life 
+          health={playerHealth}
+          maxHealth={250}
+          onHealthChange={handleHealthChange}
+          animated={true}
+        />
+
+        <Coin 
+          coins={150} 
+          onCoinsChange={(newCoins) => console.log('Coins changed:', newCoins)}
+          animated={true}
+        />
+
         {enemies.map((enemy, index) => {
           if (!enemyPositions[index]) return null;
           
