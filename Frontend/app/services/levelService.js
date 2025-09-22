@@ -41,7 +41,7 @@ export const levelService = {
   unlockNextLevel: async (playerId, mapId, currentLevelNumber) => {
     try {
       const response = await apiService.post(`/api/levels/unlock`, {
-        player_id: playerId,
+        player_id: playerId, 
         map_id: mapId,
         current_level_number: currentLevelNumber
       });

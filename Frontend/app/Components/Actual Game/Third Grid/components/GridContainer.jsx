@@ -24,13 +24,16 @@ const GridContainer = ({ children }) => {
 
 const styles = StyleSheet.create({
   thirdGrid: {
-    height: SCREEN_HEIGHT * 0.25,
-    padding: SCREEN_WIDTH * 0.02,
+    position: 'absolute', 
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: SCREEN_HEIGHT * 0.20,
     backgroundColor: 'transparent',
   },
 
   outerFrame: {
-    flex: 1, // This will work within the fixed height container
+    flex: 1,
     backgroundColor: '#052a53ff',
     borderRadius: SCREEN_WIDTH * 0.05,
     padding: SCREEN_WIDTH * 0.004,

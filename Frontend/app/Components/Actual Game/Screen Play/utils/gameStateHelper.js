@@ -1,13 +1,3 @@
-
-
-
-
-
-
-
-
-
-
 export const clearAllAnimations = (timeoutsRef, animationsRef) => {
   timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
   timeoutsRef.current = [];

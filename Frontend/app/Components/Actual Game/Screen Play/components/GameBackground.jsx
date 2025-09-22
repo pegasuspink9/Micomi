@@ -6,7 +6,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const GameBackground = ({ children, isPaused }) => {
   return (
     <ImageBackground 
-      source={{ uri: 'https://github.com/user-attachments/assets/15d02305-04b3-4bd3-885a-1440fadf61fc' }}
+      source={{ uri: 'https://github.com/user-attachments/assets/9df980cc-0f88-4f04-87de-3fd0cf5d99f2' }}
       style={[styles.firstGrid, isPaused && styles.pausedBackground]}
     >
       {children}

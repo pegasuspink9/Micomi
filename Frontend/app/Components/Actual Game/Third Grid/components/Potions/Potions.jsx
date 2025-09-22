@@ -21,21 +21,21 @@ const PotionGrid = ({
   const getPotionColors = (name) => {
     const colorMap = {
       'Health': {
-        background: 'rgba(220, 38, 38, 0.8)', 
+        background: 'rgba(220, 38, 38, 1)', 
         border: '#dc2626', 
         frameColor: '#991b1b', 
         innerColor: '#f87171', 
         pressedColor: '#b91c1c' 
       },
       'Strong': {
-        background: 'rgba(245, 158, 11, 0.8)', 
+        background: 'rgba(245, 159, 11, 1)', 
         border: '#f59e0b', 
         frameColor: '#d97706', 
         innerColor: '#fbbf24',
         pressedColor: '#ea580c' 
       },
       'Hint': {
-        background: 'rgba(37, 99, 235, 0.8)', 
+        background: 'rgba(37, 100, 235, 1)', 
         border: '#2563eb', 
         frameColor: '#1d4ed8', 
         innerColor: '#60a5fa', 
@@ -352,9 +352,8 @@ const styles = StyleSheet.create({
 
   potionName: {
     fontSize: 10,
-    fontWeight: 'bold',
     color: '#fff',
-    fontFamily: 'monospace', // Console font (same as AnswerOption)
+    fontFamily: 'DynaPuff', 
     textAlign: 'center',
     textShadowColor: '#000',
     textShadowOffset: { width: 1, height: 1 },

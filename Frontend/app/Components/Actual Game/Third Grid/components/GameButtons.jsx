@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   buttonFrame: {
     borderRadius: SCREEN_WIDTH * 0.025,
     position: 'absolute',
-    bottom: SCREEN_WIDTH * 0.002,
+    bottom: SCREEN_WIDTH * 0.018,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -143,7 +143,6 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
     
-    // Console-style 3D borders (same as AnswerOption)
     borderTopWidth: 2,
     borderLeftWidth: 2,
     borderBottomWidth: 3,

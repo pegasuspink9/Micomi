@@ -1,7 +1,6 @@
 // Try different possible backend URLs
 const POSSIBLE_BACKEND_URLS = [
-  'http://192.168.100.200:3000',
-  'http://192.168.100.200:3000', 
+  'http://192.168.254.118:3000',
 ];
 
 class ApiService {
@@ -43,7 +42,6 @@ class ApiService {
   }
 
   async request(endpoint, options = {}) {
-    // Test connection first if not available
     if (!this.isBackendAvailable) {
       await this.testConnection();
     }
@@ -83,7 +81,6 @@ class ApiService {
       clearTimeout(timeoutId);
       console.error(`❌ API request failed for ${endpoint}:`, error);
       
-      // Mark backend as unavailable if it's a network error
       if (error.message.includes('Network request failed') || error.message.includes('fetch') || error.name === 'AbortError') {
         this.isBackendAvailable = false;
       }

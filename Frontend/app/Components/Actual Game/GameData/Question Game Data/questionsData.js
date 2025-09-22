@@ -33,6 +33,53 @@ const questionsData = [{
   options: "World, head, body, title, DOCTYPE",
   answer: ['World'],
 },{
+  questionType: 'code-blanks',
+  question: `<!DOCTYPE _>
+    <html>
+      <head>
+        <title>My First Webpage</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          h1 { color: blue; }
+          p { color: green; }
+        </style>
+      </head>
+      <_>
+        <h1>Hello, World!</h1>
+        <p>This is my first webpage!</p>
+      </body>
+    </html>
+     <html>
+      <head>
+        <title>My First Webpage</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          h1 { color: blue; }
+          p { color: green; }
+        </style>
+      </head>
+      <_>
+        <h1>Hello, World!</h1>
+        <p>This is my first webpage!</p>
+      </body>
+    </html>
+     <html>
+      <head>
+        <title>My First Webpage</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          h1 { color: blue; }
+          p { color: green; }
+        </style>
+      </head>
+      <_>
+        <h1>Hello, World!</h1>
+        <p>This is my first webpage!</p>
+      </body>
+    </html>`,
+  options: "html, head, body, title, DOCTYPE",
+  answer: ['html', 'body', 'body', 'title'],
+},{
   questionType: 'multiple-choice',
   question: 'This is a tag in HTML use to create a link?_',
   options: "p, /, anchor, link tag, fs",
