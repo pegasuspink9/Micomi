@@ -111,6 +111,7 @@ export const submitChallengeService = async (
         is_completed: false,
         enemy_hp: enemyMaxHealth,
         player_hp: character.health,
+        coins_earned: 0,
       },
     });
   }
@@ -185,7 +186,10 @@ export const submitChallengeService = async (
     );
     await prisma.playerProgress.update({
       where: { progress_id: currentProgress.progress_id },
-      data: { wrong_challenges: wrongChallenges },
+      data: {
+        wrong_challenges: wrongChallenges,
+        coins_earned: { increment: challenge.coins_reward },
+      },
     });
 
     fightResult = await CombatService.fightEnemy(
@@ -272,7 +276,7 @@ export const submitChallengeService = async (
       where: { player_id: playerId },
       data: {
         total_points: { increment: totalExp },
-        coins: { increment: totalCoins },
+        coins: { increment: freshProgress?.coins_earned ?? 0 },
       },
     });
 
@@ -308,6 +312,7 @@ export const submitChallengeService = async (
       enemyHealth: fightResult?.enemyHealth ?? enemyMaxHealth,
       enemyMaxHealth: enemyMaxHealth,
       playerMaxHealth: character.health,
+      coinsEarned: freshProgress?.coins_earned ?? 0,
     },
     completionRewards,
     nextLevel,

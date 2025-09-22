@@ -143,6 +143,9 @@ model PlayerProgress {
   has_strong_effect  Boolean @default(false)
   has_freeze_effect  Boolean @default(false)
 
+  //track kuwens during combat
+  coins_earned         Int      @default(0)
+
   player         Player   @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
   level          Level    @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
 
