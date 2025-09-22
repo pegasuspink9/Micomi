@@ -24,6 +24,10 @@ router.post(
 );
 
 //Level routes
+router.get(
+  "/entryLevel/:playerId/:levelId/preview",
+  LevelController.previewLevelController
+);
 router.post(
   "/entryLevel/:playerId/:levelId",
   LevelController.enterLevelController

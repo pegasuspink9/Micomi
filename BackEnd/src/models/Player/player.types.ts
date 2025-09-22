@@ -16,6 +16,7 @@ export interface PlayerUpdateInput {
   email?: string;
   password?: string;
   username?: string;
+  coins?: number;
   created_at?: Date;
   last_active?: Date;
   days_logged_in?: number;
