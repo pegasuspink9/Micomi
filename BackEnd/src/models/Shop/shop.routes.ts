@@ -10,7 +10,7 @@ const router = Router();
 //Get all characters in the shop
 router.get("/shop-characters", ShopService.getAllCharactersInShop);
 //Get player characters
-router.get("/player-characters", ShopService.getAllPlayerCharacter);
+router.get("/player-characters/:playerId", ShopService.getAllPlayerCharacter);
 
 //CRUD for shop characters
 router.post("/create-character", ShopService.createShopCharacter);
@@ -20,7 +20,7 @@ router.delete("/delete-character/:id", ShopService.deleteShopCharacter);
 //Get all potions in the shop
 router.get("/potions", ShopService.getAllPotionsInShop);
 //Get all player potions
-router.get("/potions/player", ShopService.getAllPlayerPotions);
+router.get("/potions/:playerId", ShopService.getAllPlayerPotions);
 
 // CRUD potions in the shop
 router.post("/create-potion", ShopService.createPotion);

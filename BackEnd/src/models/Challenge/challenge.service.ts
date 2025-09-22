@@ -37,8 +37,8 @@ export const getChallengeById = async (req: Request, res: Response) => {
 
 export const createChallenge = async (req: Request, res: Response) => {
   try {
-    const data: ChallengeCreateInput = req.body;
-    const challenge = await prisma.challenge.create({ data });
+    const data: ChallengeCreateInput[] = req.body;
+    const challenge = await prisma.challenge.createMany({ data });
 
     return successResponse(res, challenge, "Challenge created", 201);
   } catch (error) {

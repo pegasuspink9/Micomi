@@ -12,7 +12,6 @@ export const getAllMaps = async (req: Request, res: Response) => {
         levels: {
           include: {
             challenges: true,
-            enemies: true,
           },
         },
       },

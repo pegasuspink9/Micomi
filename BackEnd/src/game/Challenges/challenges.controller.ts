@@ -32,29 +32,38 @@ export const submitChallenge = async (req: Request, res: Response) => {
       answer
     );
 
-    const playerProgress = await prisma.playerProgress.findUnique({
+    console.log("CONTROLLER - Final result health values:");
+    console.log("- levelStatus.playerHealth:", result.levelStatus.playerHealth);
+    console.log("- levelStatus.enemyHealth:", result.levelStatus.enemyHealth);
+    console.log("- fightResult.charHealth:", result.fightResult?.charHealth);
+    console.log("- fightResult.enemyHealth:", result.fightResult?.enemyHealth);
+
+    const freshProgress = await prisma.playerProgress.findUnique({
       where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
     });
 
-    if (!playerProgress) {
+    if (!freshProgress) {
       return successResponse(res, result, "Challenge successfully submitted.");
     }
 
-    const isLevelCompleted = playerProgress.is_completed;
-    const battleWon = playerProgress.battle_status === "won";
-    const battleLost = playerProgress.battle_status === "lost";
+    const isLevelCompleted = freshProgress.is_completed;
+    const battleWon = freshProgress.battle_status === "won";
+    const battleLost = freshProgress.battle_status === "lost";
     const canProceed = isLevelCompleted && battleWon;
 
     const enhancedResult: SubmitChallengeControllerResult = {
       ...result,
       levelStatus: {
+        ...result.levelStatus,
         isCompleted: isLevelCompleted,
         battleWon,
         battleLost,
         canProceed,
         showFeedback: canProceed,
-        playerHealth: playerProgress.player_hp,
-        enemyHealth: playerProgress.enemy_hp,
+        playerHealth: result.levelStatus.playerHealth,
+        enemyHealth: result.levelStatus.enemyHealth,
+        playerMaxHealth: result.levelStatus.playerMaxHealth,
+        enemyMaxHealth: result.levelStatus.enemyMaxHealth,
       },
     };
 

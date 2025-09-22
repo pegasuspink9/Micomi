@@ -43,6 +43,7 @@ model Level {
   level_number      Int
   level_type        String 
   level_difficulty  DifficultyLevel
+  level_title       String?
   content           String   @db.Text
   points_reward     Int      @default(0)
   is_unlocked       Boolean  @default(false)
@@ -86,6 +87,8 @@ model Enemy {
   enemy_avatar      String   @db.Text //idle animation
   enemy_attack      String?  @db.Text 
   enemy_dies        String?  @db.Text 
+  enemy_run         String?  @db.Text
+  enemy_hurt        String?  @db.Text
 
   enemy_coins       Int?     @default(0)
 }
@@ -136,6 +139,10 @@ model PlayerProgress {
   player_hp      Int?     
   battle_status  BattleStatus? @default(in_progress)
 
+  //active potion effects during combat
+  has_strong_effect  Boolean @default(false)
+  has_freeze_effect  Boolean @default(false)
+
   player         Player   @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
   level          Level    @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
 
@@ -150,17 +157,19 @@ model Character {
   health            Int      
   weapon_name       String
   weapon_skill      String
-  character_damage  Int      
+  character_damage  Json?    @default("[]") //10, 20, 30  
   is_purchased      Boolean  @default(false)
   is_selected       Boolean  @default(false)
 
   //animations
   avatar_image      String?   @db.Text //idle image
-  character_hurt    String?   @db.Text 
-  character_attack  String?   @db.Text
+  character_run     String?   @db.Text
+  character_hurt    String?   @db.Text
   character_dies    String?   @db.Text
 
   user_coins        Int?      @default(0)
+
+  character_attacks Json?   @default("[]") //["basic_attack", "second_attack", "special_attack"] animation links
 
   playerCharacter     PlayerCharacter[]
   characterShop       CharacterShop[]
@@ -192,6 +201,7 @@ model PotionShop {
   potion_type         PotionType @unique 
   potion_description  String 
   potion_price        Int
+  potion_url          String?     @db.Text
 
   buyers              PlayerPotion[]
 }
@@ -264,6 +274,7 @@ enum PotionType {
   health
   strong
   freeze
+  hint
 }
 
 enum DifficultyLevel {
