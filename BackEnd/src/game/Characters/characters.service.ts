@@ -1,19 +1,31 @@
 import { PrismaClient } from "@prisma/client";
-import { InventoryItem } from "models/Shop/shop.types";
 
 const prisma = new PrismaClient();
 
-export async function getSelectedCharacterId(
-  playerId: number
-): Promise<number | null> {
-  const player = await prisma.player.findUnique({
-    where: { player_id: playerId },
+export const selectCharacter = async (
+  playerId: number,
+  characterId: number
+) => {
+  const playerChar = await prisma.playerCharacter.findUnique({
+    where: {
+      player_id_character_id: {
+        player_id: playerId,
+        character_id: characterId,
+      },
+    },
   });
-  if (!player) return null;
-  const inventory: InventoryItem[] =
-    (player.inventory as unknown as InventoryItem[]) || [];
-  const selected = inventory.find(
-    (item) => item.type === "character" && item.is_selected
-  );
-  return selected?.character_id || null;
-}
+  if (!playerChar || !playerChar.is_purchased)
+    throw new Error("Character not owned by player");
+
+  await prisma.playerCharacter.updateMany({
+    where: { player_id: playerId },
+    data: { is_selected: false },
+  });
+
+  await prisma.playerCharacter.update({
+    where: { player_character_id: playerChar.player_character_id },
+    data: { is_selected: true },
+  });
+
+  return { message: "Character selected" };
+};

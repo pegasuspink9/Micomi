@@ -1,8 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import { hashPassword, comparePassword } from "../../../utils/hash";
-import { generateToken } from "../../../utils/token";
+import { generateAccessToken } from "../../../utils/token";
 import { PlayerCreateInput, PlayerLoginInput } from "./player.types";
-import { isSameDay } from "../../../helper/date";
+import { isSameDay } from "../../../helper/dateTimeHelper";
+import { updateQuestProgress } from "../../game/Quests/quests.service";
+import { QuestType } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -10,7 +12,6 @@ export const getAllPlayers = () =>
   prisma.player.findMany({
     include: {
       playerProgress: true,
-      leaderboard: true,
       playerAchievements: true,
     },
   });
@@ -20,14 +21,13 @@ export const getPlayerById = (player_id: number) =>
     where: { player_id },
     include: {
       playerProgress: true,
-      leaderboard: true,
       playerAchievements: true,
     },
   });
 
 export const createPlayer = async (data: PlayerCreateInput) => {
   const hashedPassword = await hashPassword(data.password);
-  return prisma.player.create({
+  const newPlayer = await prisma.player.create({
     data: {
       email: data.email,
       username: data.username,
@@ -37,6 +37,28 @@ export const createPlayer = async (data: PlayerCreateInput) => {
       days_logged_in: 0,
     },
   });
+
+  const firstLevel = await prisma.level.findFirst({
+    orderBy: { level_number: "asc" },
+  });
+
+  if (firstLevel) {
+    await prisma.playerProgress.create({
+      data: {
+        player_id: newPlayer.player_id,
+        level_id: firstLevel.level_id,
+        current_level: firstLevel.level_number,
+        attempts: 0,
+        player_answer: {},
+        wrong_challenges: [],
+        is_completed: false,
+        completed_at: null,
+        challenge_start_time: new Date(),
+      },
+    });
+  }
+
+  return newPlayer;
 };
 
 export const updatePlayer = async (
@@ -86,7 +108,11 @@ export const loginPlayer = async ({ email, password }: PlayerLoginInput) => {
     },
   });
 
-  const token = generateToken({ id: player.player_id, role: "player" });
+  if (shouldIncrementDays) {
+    await updateQuestProgress(player.player_id, QuestType.login_days, 1);
+  }
+
+  const token = generateAccessToken({ id: player.player_id, role: "player" });
   return {
     token,
     player: {

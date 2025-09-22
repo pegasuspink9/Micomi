@@ -1,12 +1,16 @@
 import express from "express";
-import * as CharacterController from "./character.controller";
+import * as CharacterService from "./character.service";
+import {
+  authenticate,
+  requireAdmin,
+} from "../../../middleware/auth.middleware";
 
 const router = express.Router();
 
-router.get("/", CharacterController.getAllCharacters);
-router.get("/:id", CharacterController.getCharacterById);
-router.post("/", CharacterController.createCharacter);
-router.put("/:id", CharacterController.updateCharacter);
-router.delete("/:id", CharacterController.deleteCharacter);
+router.get("/", CharacterService.getAllCharacters);
+router.get("/:id", CharacterService.getCharacterById);
+router.post("/", CharacterService.createCharacter);
+router.put("/:id", CharacterService.updateCharacter);
+router.delete("/:id", CharacterService.deleteCharacter);
 
 export default router;

@@ -1,18 +1,22 @@
 import express from "express";
-import * as MapController from "./map.controller";
-import * as LevelController from "../Level/level.controller";
+import * as MapService from "./map.service";
+import * as LevelService from "../Level/level.service";
+import {
+  authenticate,
+  requireAdmin,
+} from "../../../middleware/auth.middleware";
 
 const router = express.Router();
 
-router.get("/", MapController.getAllMaps);
-router.post("/", MapController.createMap);
-router.put("/:id", MapController.updateMap);
-router.delete("/:id", MapController.deleteMap);
+router.get("/", MapService.getAllMaps);
+router.post("/", MapService.createMap);
+router.put("/:id", MapService.updateMap);
+router.delete("/:id", MapService.deleteMap);
 
-router.get("/select-map/:id", MapController.getMapById);
+router.get("/select-map/:id", MapService.getMapById);
 router.get(
   "/select-map/:map_id/select-level/:level_id",
-  LevelController.getLevelChallenges
+  LevelService.getLevelChallenges
 );
 
 export default router;

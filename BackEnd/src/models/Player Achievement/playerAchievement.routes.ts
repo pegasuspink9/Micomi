@@ -1,12 +1,16 @@
 import express from "express";
-import * as PlayerAchievementController from "./playerAchievement.controller";
+import * as PlayerAchievementService from "./playerAchievement.service";
+import {
+  authenticate,
+  requireAdmin,
+} from "../../../middleware/auth.middleware";
 
 const router = express.Router();
 
-router.get("/", PlayerAchievementController.getAllPlayerAchievement);
-router.get("/:id", PlayerAchievementController.updateAchievement);
-router.post("/", PlayerAchievementController.createPlayerAchievement);
-router.put("/:id", PlayerAchievementController.updateAchievement);
-router.delete("/:id", PlayerAchievementController.deleteAchievement);
+router.get("/", PlayerAchievementService.getAllPlayerAchievement);
+router.get("/:id", PlayerAchievementService.getPlayerAchievementById);
+router.post("/", PlayerAchievementService.createPlayerAchievement);
+router.put("/:id", PlayerAchievementService.updatePlayerAchievement);
+router.delete("/:id", PlayerAchievementService.deletePlayerAchievement);
 
 export default router;

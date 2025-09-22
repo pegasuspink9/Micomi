@@ -8,9 +8,10 @@ export const updateQuestProgressController = async (
   res: Response
 ) => {
   try {
-    const { player_id, objective_type, increment } = req.body;
+    const playerId = (req as any).user.id;
+    const { objective_type, increment } = req.body;
 
-    if (!player_id || !objective_type) {
+    if (!playerId || !objective_type) {
       return errorResponse(res, null, "Missing required fields", 400);
     }
 
@@ -19,7 +20,7 @@ export const updateQuestProgressController = async (
     }
 
     const result = await QuestService.updateQuestProgress(
-      Number(player_id),
+      Number(playerId),
       objective_type,
       increment || 1
     );

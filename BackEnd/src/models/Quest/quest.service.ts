@@ -1,55 +1,83 @@
-import { PrismaClient, Quest } from "@prisma/client";
+import { Request, Response } from "express";
+import { PrismaClient } from "@prisma/client";
+import { successResponse, errorResponse } from "../../../utils/response";
+import { CreateQuestDto, UpdateQuestDto } from "./quest.types";
+
 const prisma = new PrismaClient();
 
-export const createQuestTemplate = async (
-  data: Omit<
-    Quest,
-    | "quest_id"
-    | "created_at"
-    | "completed_at"
-    | "current_value"
-    | "is_completed"
-    | "player_id"
-    | "assigned_at"
-  >
-) => {
-  return prisma.quest.create({
-    data: {
-      ...data,
-      is_template: true,
-      is_daily: true,
-      current_value: 0,
-      is_completed: false,
-    },
-  });
+/* GET all quest templates */
+export const getAllTemplates = async (_req: Request, res: Response) => {
+  try {
+    const templates = await prisma.quest.findMany({
+      where: { is_template: true },
+    });
+    return successResponse(res, templates, "Quest templates fetched");
+  } catch (error) {
+    return errorResponse(res, null, "Quests not found", 404);
+  }
 };
 
-export const getAllQuestTemplates = async () => {
-  return prisma.quest.findMany({
-    where: {
-      is_template: true,
-    },
-  });
+/* GET quest template by ID */
+export const getTemplateById = async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id);
+  try {
+    const template = await prisma.quest.findUnique({
+      where: { quest_id: id },
+    });
+    if (!template) {
+      return errorResponse(res, null, "Quest not found", 404);
+    }
+    return successResponse(res, template, "Quest found");
+  } catch (error) {
+    return errorResponse(res, null, "Quest not found", 404);
+  }
 };
 
-export const getQuestTemplateById = async (questId: number) => {
-  return prisma.quest.findUnique({
-    where: { quest_id: questId },
-  });
+/* CREATE a quest template */
+export const createTemplate = async (req: Request, res: Response) => {
+  try {
+    const data: CreateQuestDto = req.body;
+
+    const quest = await prisma.quest.create({
+      data: {
+        ...data,
+        is_template: true,
+        current_value: 0,
+        is_completed: false,
+      },
+    });
+
+    return successResponse(res, quest, "Quest created", 201);
+  } catch (error) {
+    console.error("Create Quest Error:", error);
+    return errorResponse(res, null, "Failed to create quest", 400);
+  }
 };
 
-export const updateQuestTemplate = async (
-  questId: number,
-  data: Partial<Quest>
-) => {
-  return prisma.quest.update({
-    where: { quest_id: questId },
-    data,
-  });
+/* UPDATE a quest template */
+export const updateTemplate = async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id);
+  try {
+    const data: UpdateQuestDto = req.body;
+
+    const updated = await prisma.quest.update({
+      where: { quest_id: id },
+      data,
+    });
+
+    return successResponse(res, updated, "Quest updated");
+  } catch (error) {
+    return errorResponse(res, error, "Something went wrong", 400);
+  }
 };
 
-export const deleteQuestTemplate = async (questId: number) => {
-  return prisma.quest.delete({
-    where: { quest_id: questId },
-  });
+/* DELETE a quest template */
+export const deleteTemplate = async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id);
+  try {
+    await prisma.quest.delete({ where: { quest_id: id } });
+    return successResponse(res, null, "Quest deleted");
+  } catch (error) {
+    return errorResponse(res, error, "Failed to delete quest", 400);
+  }
 };

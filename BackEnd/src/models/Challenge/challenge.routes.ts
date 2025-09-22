@@ -1,12 +1,16 @@
 import express from "express";
-import * as ChallengeController from "./challenge.controller";
+import * as ChallengeService from "./challenge.service";
+import {
+  authenticate,
+  requireAdmin,
+} from "../../../middleware/auth.middleware";
 
 const router = express.Router();
 
-router.get("/", ChallengeController.getAllChallenges);
-router.get("/:id", ChallengeController.getChallengeById);
-router.post("/", ChallengeController.createChallenge);
-router.put("/:id", ChallengeController.updateChallenge);
-router.delete("/:id", ChallengeController.deleteChallenge);
+router.get("/", ChallengeService.getAllChallenges);
+router.get("/:id", ChallengeService.getChallengeById);
+router.post("/", ChallengeService.createChallenge);
+router.put("/:id", ChallengeService.updateChallenge);
+router.delete("/:id", ChallengeService.deleteChallenge);
 
 export default router;

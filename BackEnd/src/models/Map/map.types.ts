@@ -1,7 +1,6 @@
 import { DifficultyLevel } from "@prisma/client";
 
 export interface MapCreateInput {
-  admin_id: number;
   map_name: string;
   description: string;
   difficulty_level: DifficultyLevel;
