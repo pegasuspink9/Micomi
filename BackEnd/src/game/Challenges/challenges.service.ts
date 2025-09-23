@@ -308,7 +308,8 @@ export const submitChallengeService = async (
       battleLost: fightResult?.status === "lost",
       canProceed: allCompleted && !!nextLevel,
       showFeedback: allCompleted,
-      playerHealth: fightResult?.charHealth ?? character.health,
+      playerHealth:
+        fightResult?.charHealth ?? freshProgress?.player_hp ?? character.health,
       enemyHealth: fightResult?.enemyHealth ?? enemyMaxHealth,
       enemyMaxHealth: enemyMaxHealth,
       playerMaxHealth: character.health,

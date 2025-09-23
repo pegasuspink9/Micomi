@@ -43,7 +43,7 @@ router.post(
 //Shop routes
 router.post("/buy-character/:playerId", ShopController.buyCharacter);
 router.post("/buy-potion/:playerId", ShopController.buyPotion);
-router.post("/use-potion", ShopController.usePotion);
+router.post("/use-potion/:playerId", ShopController.usePotion);
 
 //Combat route
 router.post("/fight", CombatController.performFight);
