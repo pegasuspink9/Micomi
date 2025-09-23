@@ -1,38 +1,86 @@
 import { Alert } from 'react-native';
 
 export const getBlankCount = (questionText) => {
+  if (!questionText || typeof questionText !== 'string') {
+    return 1;
+  }
   const blanks = questionText.match(/_/g);
   return blanks ? blanks.length : 1;
 };
 
 export const getMaxAnswers = (currentQuestion) => {
-  return currentQuestion.questionType === 'code-blanks' 
-    ? (currentQuestion.question.match(/_/g) || []).length 
-    : 1;
-};
-
-export const checkAnswer = (currentQuestion, selectedAnswers) => {
-  let isCorrect = false;
-  
-  if (currentQuestion.questionType === 'code-blanks') {
-    const correctAnswers = Array.isArray(currentQuestion.answer) 
-      ? currentQuestion.answer 
-      : [currentQuestion.answer];
-    
-    isCorrect = correctAnswers.every((answer, index) => 
-      selectedAnswers[index] === answer
-    ) && selectedAnswers.length === correctAnswers.length;
-  } else {
-    isCorrect = selectedAnswers.includes(currentQuestion.answer);
+  if (!currentQuestion) {
+    return 1;
   }
   
+  // Check for both possible type field names from API
+  const challengeType = currentQuestion.type || currentQuestion.challenge_type;
+
+  if (challengeType === 'fill in the blank' || challengeType === 'code with guide') {
+    const question = currentQuestion.question || '';
+    const blankCount = (question.match(/_/g) || []).length;
+    return blankCount > 0 ? blankCount : 1;
+  }
+  
+  return 1;
+};
+
+
+
+export const checkAnswer = (currentQuestion, selectedAnswers) => {
+  if (!currentQuestion || !selectedAnswers) {
+    return false;
+  }
+  
+  // Handle both API response format (correctAnswer) and legacy format (answer)
+  const correctAnswers = currentQuestion.correctAnswer || currentQuestion.answer;
+  
+  if (!correctAnswers) {
+    console.warn('No correct answer found in question data');
+    return false;
+  }
+  
+  const challenge_type = currentQuestion.type || currentQuestion.challenge_type;
+  let isCorrect = false;
+
+  if (challenge_type === 'fill in the blank') {
+    const correctAnswersArray = Array.isArray(correctAnswers)
+      ? correctAnswers
+      : [correctAnswers];
+    
+    console.log('Fill in blank check:', { 
+      correctAnswersArray, 
+      selectedAnswers,
+      lengthMatch: selectedAnswers.length === correctAnswersArray.length
+    });
+    
+    isCorrect = correctAnswersArray.every((answer, index) => 
+      selectedAnswers[index] === answer
+    ) && selectedAnswers.length === correctAnswersArray.length;
+  } else {
+    // Multiple choice - check if selected answer is in correct answers
+    const correctAnswersArray = Array.isArray(correctAnswers) 
+      ? correctAnswers 
+      : [correctAnswers];
+    
+    isCorrect = selectedAnswers.some(selected => 
+      correctAnswersArray.includes(selected)
+    );
+  }
+  
+  console.log('Answer check result:', { isCorrect, challenge_type, correctAnswers, selectedAnswers });
   return isCorrect;
 };
 
 export const canSelectAnswer = (selectedAnswers, answer, maxAnswers) => {
-  if (selectedAnswers.includes(answer)) {
-    return true; 
+  if (!selectedAnswers || !Array.isArray(selectedAnswers)) {
+    return true;
   }
+  
+  if (selectedAnswers.includes(answer)) {
+    return true; // Can deselect
+  }
+  
   return selectedAnswers.length < maxAnswers;
 };
 
@@ -46,10 +94,12 @@ export const createAnswerSelectHandler = (currentQuestion, selectedAnswers, setS
     }
 
     setSelectedAnswers(prev => {
-      if (prev.includes(answer)) {
-        return prev.filter(item => item !== answer);
+      const prevArray = Array.isArray(prev) ? prev : [];
+      
+      if (prevArray.includes(answer)) {
+        return prevArray.filter(item => item !== answer);
       } else {
-        return [...prev, answer];
+        return [...prevArray, answer];
       }
     });
   };
@@ -62,60 +112,76 @@ export const createNextQuestionHandler = (
   setSelectedAnswers
 ) => {
   return () => {
-    if (currentQuestionIndex < questionsData.length - 1) {
+    if (questionsData && currentQuestionIndex < questionsData.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
       setSelectedAnswers([]);
     }
   };
 };
 
-// ENHANCED: Manual submission with correct answer notification
 export const createCheckAnswerHandler = (
-  currentQuestion, 
-  selectedAnswers, 
-  setBorderColor, 
+  currentQuestion,
+  selectedAnswers,
+  setBorderColor,
   animateToPosition,
-  isTimeExpired = false,
-  hasShownOutput = false,
-  setHasShownOutput = null,
-  setCorrectAnswerRef = null // NEW: Reference to setCorrectAnswer function
+  hasShownOutput,
+  setHasShownOutput,
+  setCorrectAnswerRef,
+  submitAnswerFunction
 ) => {
-  return () => {
-    // Prevent manual submission if time already expired
-    if (isTimeExpired) {
-      console.log('❌ Cannot submit - Timer has expired');
+  return async () => {
+    if (!selectedAnswers || selectedAnswers.length === 0) {
+      console.warn('No answers selected');
       return;
     }
 
-    const isCorrect = checkAnswer(currentQuestion, selectedAnswers);
-    console.log('🎯 Manual submission:', { isCorrect, selectedAnswers });
+    console.log('Checking answer:', { selectedAnswers, currentQuestion });
+    
+    // Submit answer to API
+    if (submitAnswerFunction) {
+      try {
+        const result = await submitAnswerFunction(selectedAnswers);
+        
+        if (result.success) {
+          const isCorrect = result.result?.isCorrect || false;
+          
+          if (isCorrect) {
+            setBorderColor('green');
+            console.log('Correct answer! Moving to next challenge.');
+          } else {
+            setBorderColor('red');
+            console.log('Incorrect answer. Message:', result.result?.message);
+          }
 
-    // NEW: Notify enemy system about correct answer state
-    if (setCorrectAnswerRef?.current) {
-      setCorrectAnswerRef.current(isCorrect);
-    }
-
-    if (isCorrect) {
-      setBorderColor('#34c759'); 
-      console.log('✅ Correct answer submitted manually');
-      
-      // Auto-show output only if not shown yet and it's a code-blanks question
-      if (!hasShownOutput && currentQuestion.questionType === 'code-blanks' && setHasShownOutput) {
-        console.log('📺 Auto-showing output for correct manual answer');
-        setHasShownOutput(true);
-        setTimeout(() => {
-          animateToPosition(true); // Show drawer/output automatically
-        }, 100);
+          // Show the output drawer
+          if (!hasShownOutput) {
+            setHasShownOutput(true);
+            if (setCorrectAnswerRef.current) {
+              setCorrectAnswerRef.current(isCorrect);
+            }
+            animateToPosition(true);
+          }
+        } else {
+          // Handle submission error
+          console.error('Failed to submit answer:', result.error);
+          setBorderColor('red');
+        }
+      } catch (error) {
+        console.error('Error during answer submission:', error);
+        setBorderColor('red');
       }
-      
     } else {
-      setBorderColor('#ff3b30'); 
-      console.log('❌ Wrong answer submitted manually - no output');
+      // Fallback to local checking if no submit function provided
+      const isCorrect = checkAnswer(currentQuestion, selectedAnswers);
+      setBorderColor(isCorrect ? 'green' : 'red');
       
-      // Reset border color but don't show output
-      setTimeout(() => {
-        setBorderColor('white');
-      }, 2000);
+      if (!hasShownOutput) {
+        setHasShownOutput(true);
+        if (setCorrectAnswerRef.current) {
+          setCorrectAnswerRef.current(isCorrect);
+        }
+        animateToPosition(true);
+      }
     }
   };
 };

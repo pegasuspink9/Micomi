@@ -4,7 +4,7 @@ export const mapService = {
   // Get all maps with their levels
   getAllMapsWithLevels: async () => {
     try {
-      const response = await apiService.get('/api/maps');
+      const response = await apiService.get('/map');
       console.log('🗺️ Maps with levels response:', response);
       return response.success ? response.data : response;
     } catch (error) {

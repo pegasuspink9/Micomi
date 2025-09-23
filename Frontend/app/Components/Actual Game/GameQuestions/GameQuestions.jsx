@@ -16,7 +16,8 @@ export default function GameQuestions({
   const blankRefs = useRef({});
 
   useEffect(() => {
-    if (currentQuestion.questionType === 'code-blanks') {
+    // Check for both fill in the blank and code with guide types
+    if (currentQuestion.challenge_type === 'fill in the blank' || currentQuestion.challenge_type === 'code with guide') {
       scrollToNextBlank(scrollViewRef, blankRefs, currentQuestion, selectedAnswers);
     }
   }, [selectedAnswers]);
@@ -64,7 +65,8 @@ export default function GameQuestions({
         bounces={true}
       >
         <View style={styles.questionContainer}>
-          {currentQuestion.questionType === 'code-blanks' ? (
+          {/* Updated: Check for both fill in the blank and code with guide types */}
+          {(currentQuestion.challenge_type === 'fill in the blank' || currentQuestion.challenge_type === 'code with guide') ? (
             <CodeEditor 
               currentQuestion={currentQuestion}
               selectedAnswers={selectedAnswers}

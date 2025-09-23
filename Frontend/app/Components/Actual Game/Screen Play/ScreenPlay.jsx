@@ -23,8 +23,6 @@ export default function ScreenPlay({
   onSetCorrectAnswer = null
 }) {
 
-  
-
   const [playerHealth, setPlayerHealth] = useState(130);
 
   const handleHealthChange = (newHealth, maxHealth) => {

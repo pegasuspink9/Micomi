@@ -78,12 +78,12 @@ export default function MapLandingPage() {
 
         {/* Map Navigation */}
          <LottieView
-                    source={{ uri: 'https://lottie.host/6dc90492-37c5-4169-9db7-4a6f79ad0bf9/pR3Q6bxLZq.lottie' }}
-                    style={styles.clouds}
-                    resizeMode="cover"
-                    autoPlay
-                    loop
-                    speed={0.8}
+            source={{ uri: 'https://lottie.host/6dc90492-37c5-4169-9db7-4a6f79ad0bf9/pR3Q6bxLZq.lottie' }}
+            style={styles.clouds}
+            resizeMode="cover"
+            autoPlay
+            loop
+            speed={0.8}
           />
         <MapNavigate onMapChange={handleGradientChange} />
 

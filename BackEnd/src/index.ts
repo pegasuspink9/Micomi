@@ -1,5 +1,6 @@
-import express from "express";
 import dotenv from "dotenv";
+import express from "express";
+import cookieParser from "cookie-parser";
 import adminRoutes from "./models/Admin/admin.routes";
 import playerRoutes from "./models/Player/player.routes";
 import mapRoutes from "./models/Map/map.routes";
@@ -13,11 +14,13 @@ import shopRoutes from "./models/Shop/shop.routes";
 import gameRoutes from "./game/routes/game.routes";
 import lessonRoutes from "./models/Lesson/lesson.routes";
 import questRoutes from "./models/Quest/quest.routes";
+import authRoutes from "../middleware/auth.routes";
 
 dotenv.config();
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
 
 const cors = require("cors");
 app.use(
@@ -31,11 +34,12 @@ app.use(
   })
 );
 
+app.use("/auth", authRoutes);
+
 app.use("/admin", adminRoutes);
 app.use("/player", playerRoutes);
 
 app.use("/map", mapRoutes);
-app.use("/api/maps", mapRoutes); // Add API prefix route
 app.use("/level", levelRoutes);
 app.use("/challenge", challengeRoutes);
 app.use("/enemy", enemyRoutes);

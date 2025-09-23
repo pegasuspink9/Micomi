@@ -14,21 +14,33 @@ import {
 
 export default function ThirdGrid({ 
   currentQuestion, 
-  selectedAnswers, 
+  selectedAnswers = [], // Default to empty array
   setSelectedAnswers,
-  currentQuestionIndex,
+  currentQuestionIndex = 0,
   setCurrentQuestionIndex,
   questionsData,
   animateToPosition,
   setBorderColor,
-  timeLeft,
-  isTimeExpired,
   hasShownOutput,
   setHasShownOutput,
-  setCorrectAnswerRef
+  setCorrectAnswerRef,
+  challengeData,
+  gameState, // Direct access to game state
+  submitAnswer, // New prop for API submission
+  submitting = false // New prop for loading state
 }) {
   
+  // Safety check for currentQuestion
+  if (!currentQuestion) {
+    console.warn('No currentQuestion provided to ThirdGrid');
+    return null;
+  }
+  
   const maxAnswers = getMaxAnswers(currentQuestion);
+  console.log('Max answers calculated:', { 
+    maxAnswers, 
+    challenge_type: currentQuestion.type || currentQuestion.challenge_type 
+  });
 
   const handleAnswerSelect = createAnswerSelectHandler(
     currentQuestion, 
@@ -48,51 +60,11 @@ export default function ThirdGrid({
     selectedAnswers,
     setBorderColor,
     animateToPosition,
-    isTimeExpired,
     hasShownOutput,
     setHasShownOutput,
-    setCorrectAnswerRef
+    setCorrectAnswerRef,
+    submitAnswer // Pass the submit function
   );
-
-  // Handle timer expiration
-  useEffect(() => {
-    console.log('🔍 Timer expiration check:', { isTimeExpired, timeLeft });
-    
-    if (isTimeExpired) {
-      console.log('🔥 TIMER EXPIRED - Evaluating answer');
-      
-      const isCorrect = checkAnswer(currentQuestion, selectedAnswers);
-      const hasAnswers = selectedAnswers.length > 0;
-      
-      console.log('📊 Answer evaluation:', { 
-        isCorrect, 
-        hasAnswers, 
-        selectedAnswers, 
-        correctAnswer: currentQuestion.answer 
-      });
-      
-      if (setCorrectAnswerRef?.current) {
-        setCorrectAnswerRef.current(isCorrect && hasAnswers);
-      }
-      
-      if (isCorrect && hasAnswers) {
-        console.log('✅ Timer expired but answer is CORRECT');
-        setBorderColor('#34c759');
-        
-        if (!hasShownOutput && currentQuestion.questionType === 'code-blanks') {
-          console.log('📺 Auto-showing output for correct answer');
-          setHasShownOutput(true);
-          setTimeout(() => {
-            animateToPosition(true);
-          }, 100);
-        }
-        
-      } else {
-        console.log('❌ Timer expired and answer is WRONG/BLANK - no output');
-        setBorderColor('#ff3b30');
-      }
-    }
-  }, [isTimeExpired]);
 
   const [showPotions, setShowPotions] = useState(false);
 
@@ -100,13 +72,23 @@ export default function ThirdGrid({
     setShowPotions(!showPotions);
   };
 
+  // Debug logging
+  console.log('ThirdGrid render:', {
+    questionTitle: currentQuestion.title,
+    challenge_type: currentQuestion.type || currentQuestion.challenge_type,
+    optionsLength: currentQuestion.options?.length,
+    selectedAnswersLength: selectedAnswers?.length,
+    maxAnswers,
+    submitting
+  });
+
   return (
     <GridContainer>
       {showPotions ? (
         <PotionGrid />
       ) : (
         <AnswerGrid
-          options={currentQuestion.options || ""}
+          options={currentQuestion.options || []}
           selectedAnswers={selectedAnswers}
           maxAnswers={maxAnswers}
           onAnswerSelect={handleAnswerSelect}
@@ -114,11 +96,15 @@ export default function ThirdGrid({
       )}
       
       <GameButton 
-        title="Run"
+        title={submitting ? "Submitting..." : "Run"}
         position="right"
         variant="primary"
         onPress={handleCheckAnswer}
-        disabled={selectedAnswers.length === 0 || isTimeExpired}
+        disabled={
+          submitting || 
+          !Array.isArray(selectedAnswers) || 
+          selectedAnswers.length === 0
+        }
       />
 
       <GameButton 
@@ -126,6 +112,7 @@ export default function ThirdGrid({
         position="left"
         variant="secondary"
         onPress={togglePotions}
+        disabled={submitting}
       />
     </GridContainer>
   );

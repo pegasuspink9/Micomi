@@ -41,7 +41,6 @@ const AnswerOption = ({
 const styles = StyleSheet.create({
   buttonFrame: {
     borderRadius: SCREEN_WIDTH * 0.025,
-    paddingLeft: 1,
     backgroundColor: '#2c5282', // Dark sky blue frame
     marginBottom: SCREEN_HEIGHT * 0.010,
     shadowColor: '#1a365d',

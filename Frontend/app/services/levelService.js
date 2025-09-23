@@ -4,7 +4,7 @@ export const levelService = {
   // Get all levels for a specific map
   getLevelsByMapId: async (mapId) => {
     try {
-      const response = await apiService.get(`/api/levels?mapId=${mapId}`);
+      const response = await apiService.get(`/levels?mapId=${mapId}`);
       return response.success ? response.data : response;
     } catch (error) {
       console.error(`Failed to fetch levels for map ${mapId}:`, error);
@@ -15,7 +15,7 @@ export const levelService = {
   // Get specific level by ID
   getLevelById: async (levelId) => {
     try {
-      const response = await apiService.get(`/api/levels/${levelId}`);
+      const response = await apiService.get(`/levels/${levelId}`);
       return response.success ? response.data : response;
     } catch (error) {
       console.error(`Failed to fetch level ${levelId}:`, error);

@@ -36,8 +36,8 @@ const DogCharacter = ({ isPaused }) => {
     const currentFrame = Math.floor(frameIndex.value) % TOTAL_FRAMES;
     
     const COLUMNS = 6;
-    const frameWidth = 100; // Reduced from 120 to 80 (makes dog even smaller)
-    const frameHeight = 100; // Reduced from 120 to 80 (makes dog even smaller)
+    const frameWidth = 100;
+    const frameHeight = 100; 
     
     const column = currentFrame % COLUMNS;
     const row = Math.floor(currentFrame / COLUMNS);

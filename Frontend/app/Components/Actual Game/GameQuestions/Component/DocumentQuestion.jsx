@@ -9,7 +9,6 @@ const DocumentQuestion = ({ currentQuestion, selectedAnswers }) => {
 
   return (
     <View style={styles.documentContainer}>
-      {/* Document Header - similar to editor header */}
       <View style={styles.documentHeader}>
         <View style={styles.windowControls}>
           <View style={[styles.windowButton, { backgroundColor: '#ff5f56' }]} />
