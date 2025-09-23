@@ -15,6 +15,79 @@ const prisma = new PrismaClient();
 
 const randomize = <T>(arr: T[]) => [...arr].sort(() => Math.random() - 0.5);
 
+export const previewLevel = async (playerId: number, levelId: number) => {
+  const level: (Level & { map: any; challenges: Challenge[] }) | null =
+    await prisma.level.findUnique({
+      where: { level_id: levelId },
+      include: {
+        map: true,
+        challenges: true,
+      },
+    });
+
+  if (!level) throw new Error("Level not found");
+
+  const enemy: Enemy | null = await prisma.enemy.findFirst({
+    where: {
+      enemy_map: level.map.map_name,
+      enemy_difficulty: level.level_difficulty,
+    },
+  });
+  if (!enemy)
+    throw new Error(
+      `No enemy found for map ${level.map.map_name} and difficulty ${level.level_difficulty}`
+    );
+
+  const selectedChar: (PlayerCharacter & { character: any }) | null =
+    await prisma.playerCharacter.findFirst({
+      where: { player_id: playerId, is_selected: true },
+      include: { character: true },
+    });
+  if (!selectedChar) throw new Error("No character selected for this player");
+
+  const character = selectedChar.character;
+  const playerMaxHealth = character.health;
+  const enemyMaxHealth = enemy.enemy_health * level.challenges.length;
+
+  const totalPoints =
+    (level.points_reward ?? 0) +
+    level.challenges.reduce((sum, ch) => sum + (ch.points_reward ?? 0), 0);
+
+  const totalCoins = level.challenges.reduce(
+    (sum, ch) => sum + (ch.coins_reward ?? 0),
+    0
+  );
+
+  const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
+
+  return {
+    level: {
+      level_id: level.level_id,
+      level_number: level.level_number,
+      level_difficulty: level.level_difficulty,
+      level_title: level.level_title,
+      content: level.content,
+      total_points: totalPoints,
+      total_coins: totalCoins,
+    },
+    enemy: {
+      enemy_id: enemy.enemy_id,
+      enemy_health: enemyMaxHealth,
+      enemy_idle: enemy.enemy_avatar,
+    },
+    selectedCharacter: {
+      character_id: character.character_id,
+      name: character.character_name,
+      current_health: playerMaxHealth,
+      max_health: playerMaxHealth,
+      damage: character.character_damage,
+      character_idle: character.avatar_image,
+    },
+    energy: energyStatus.energy,
+    timeToNextEnergyRestore: energyStatus.timeToNextRestore,
+  };
+};
+
 export const enterLevel = async (playerId: number, levelId: number) => {
   const level: (Level & { map: any; challenges: Challenge[] }) | null =
     await prisma.level.findUnique({

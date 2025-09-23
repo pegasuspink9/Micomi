@@ -3,6 +3,23 @@ import * as LevelService from "./levels.service";
 import * as EnergyService from "../Energy/energy.service";
 import { successResponse, errorResponse } from "../../../utils/response";
 
+export const previewLevelController = async (req: Request, res: Response) => {
+  try {
+    const playerId = Number(req.params.playerId);
+    const levelId = Number(req.params.levelId);
+
+    const result = await LevelService.previewLevel(playerId, levelId);
+    return successResponse(res, result, "Level preview loaded");
+  } catch (error) {
+    return errorResponse(
+      res,
+      "Failed to preview level",
+      (error as Error).message,
+      400
+    );
+  }
+};
+
 export const enterLevelController = async (req: Request, res: Response) => {
   try {
     const playerId = Number(req.params.playerId);

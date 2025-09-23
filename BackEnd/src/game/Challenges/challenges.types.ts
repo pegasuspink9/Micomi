@@ -45,4 +45,5 @@ export interface LevelStatus {
   enemyHealth: number;
   enemyMaxHealth: number;
   playerMaxHealth: number;
+  coinsEarned: number;
 }

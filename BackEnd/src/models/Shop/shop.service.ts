@@ -103,12 +103,23 @@ export const getAllPotionsInShop = async (req: Request, res: Response) => {
 /* GET all player potions */
 export const getAllPlayerPotions = async (req: Request, res: Response) => {
   try {
+    const { playerId } = req.params;
+
     const playerPotions = await prisma.playerPotion.findMany({
-      include: { player: true, potion: true },
+      where: { player_id: Number(playerId) },
+      include: {
+        potion: true,
+      },
     });
+
+    if (!playerPotions || playerPotions.length === 0) {
+      return errorResponse(res, null, "No potions found for this player", 404);
+    }
+
     return successResponse(res, playerPotions, "Player potions fetched");
   } catch (error) {
-    return errorResponse(res, null, "Player potions not found", 404);
+    console.error(error);
+    return errorResponse(res, null, "Failed to fetch player potions", 500);
   }
 };
 

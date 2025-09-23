@@ -153,6 +153,8 @@ export async function fightEnemy(
   let characterHurtUrl: string | null = null;
   let characterDiesUrl: string | null = null;
   let enemyDiesUrl: string | null = null;
+  let characterIdle: string | null = null;
+  let enemyIdle: string | null = null;
 
   if (isCorrect) {
     await updateQuestProgress(playerId, QuestType.solve_challenge, 1);
@@ -177,19 +179,23 @@ export async function fightEnemy(
         attackType = "special_attack";
         damage = damageArray[2] ?? 25;
         attackUrl = attacksArray[2] || null;
+        characterIdle = character.avatar_image || null;
       } else if (elapsedSeconds < 10) {
         attackType = "second_attack";
         damage = damageArray[1] ?? 15;
         attackUrl = attacksArray[1] || null;
+        characterIdle = character.avatar_image || null;
       } else {
         attackType = "basic_attack";
         damage = damageArray[0] ?? 10;
         attackUrl = attacksArray[0] || null;
+        characterIdle = character.avatar_image || null;
       }
     } else {
       attackType = "basic_attack";
       damage = damageArray[0] ?? 10;
       attackUrl = attacksArray[0] || null;
+      characterIdle = character.avatar_image || null;
     }
 
     console.log("- Attack type:", attackType);
@@ -206,6 +212,7 @@ export async function fightEnemy(
 
     enemyHealth = Math.max(enemyHealth - damage, 0);
     enemyHurtUrl = enemy.enemy_hurt || null;
+    enemyIdle = enemy.enemy_avatar || null;
     console.log("- Enemy health after attack:", enemyHealth);
 
     if (enemyHealth <= 0) {
@@ -230,8 +237,10 @@ export async function fightEnemy(
       }
 
       charHealth = Math.max(charHealth - enemyDamage, 0);
+      enemyIdle = enemy.enemy_avatar || null;
       enemyAttackUrl = enemy.enemy_attack || null;
       characterHurtUrl = character.character_hurt || null;
+      characterIdle = character.avatar_image || null;
       console.log(
         "- Enemy dealt",
         enemyDamage,
@@ -284,9 +293,10 @@ export async function fightEnemy(
     characterHurtUrl,
     characterDiesUrl,
     enemyDiesUrl,
+    enemyIdle,
+    characterIdle,
     timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,
   };
 }
-
