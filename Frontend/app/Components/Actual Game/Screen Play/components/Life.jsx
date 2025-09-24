@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Animated, Text, Dimensions } from 'react-native';
+import { View, StyleSheet, Animated, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
@@ -8,14 +8,14 @@ const Life = ({
   health = 300, 
   maxHealth = 300,
   onHealthChange = null,
-  animated = true
+  animated = true,
+  position = 'left' 
 }) => {
   const [animatedValues] = useState(() => 
     Array(7).fill(0).map(() => new Animated.Value(1))
   );
   const [previousHealth, setPreviousHealth] = useState(health);
 
-  // Calculate hearts state based on health
   const getHeartStates = () => {
     const heartsData = [];
     const healthPerHeart = maxHealth / 5; 
@@ -55,14 +55,12 @@ const Life = ({
 
   const heartsData = getHeartStates();
 
-  // Animate hearts when health changes
   useEffect(() => {
     if (animated && health !== previousHealth) {
       const isHealthLoss = health < previousHealth;
       
       heartsData.forEach((heart, index) => {
         if (isHealthLoss && !heart.isActive && previousHealth > index * 50) {
-          // Heart lost - animate out
           Animated.sequence([
             Animated.timing(animatedValues[index], {
               toValue: 1.3,
@@ -109,7 +107,6 @@ const Life = ({
     }
   }, [health, previousHealth, animated, heartsData, onHealthChange]);
 
-  // Get heart icon and color based on state
   const getHeartDisplay = (heartData) => {
     const { state } = heartData;
     
@@ -139,7 +136,10 @@ const Life = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[
+      styles.container,
+      position === 'left' ? styles.leftPosition : styles.rightPosition
+    ]}>
       <View style={styles.heartsRow}>
         {heartsData.map((heartData) => {
           const heartDisplay = getHeartDisplay(heartData);
@@ -162,11 +162,9 @@ const Life = ({
                 color={heartDisplay.color}
               />
             </Animated.View>
-            
           );
         })}
       </View>
-      
     </View>
   );
 };
@@ -175,11 +173,17 @@ const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     top: width * 0.02,
-    left: width * 0.03,
-    alignItems: 'flex-start',
     borderRadius: 8,
     padding: 8,
     maxWidth: width * 0.2,
+  },
+  leftPosition: {
+    left: width * 0.03,
+    alignItems: 'flex-start',
+  },
+  rightPosition: {
+    right: width * 0.03,
+    alignItems: 'flex-end',
   },
   heartsRow: {
     flexDirection: 'row',

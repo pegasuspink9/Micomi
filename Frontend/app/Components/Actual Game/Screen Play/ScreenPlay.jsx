@@ -181,6 +181,14 @@ export default function ScreenPlay({
           maxHealth={250}
           onHealthChange={handleHealthChange}
           animated={true}
+          position="left"   
+        />
+
+        <Life 
+          health={200}    
+          maxHealth={200}
+          animated={true}
+          position="right"
         />
 
         <Coin 

@@ -117,6 +117,8 @@ export const gameService = {
           characterHurtUrl: responseData.fightResult?.characterHurtUrl,
           characterDiesUrl: responseData.fightResult?.characterDiesUrl,
           enemyDiesUrl: responseData.fightResult?.enemyDiesUrl,
+          characterIdle: responseData.fightResult?.character_idle,
+          enemyIdle: responseData.fightResult?.enemy_idle,
           timer: responseData.fightResult?.timer,
           energy: responseData.fightResult?.energy,
           timeToNextEnergyRestore: responseData.fightResult?.timeToNextEnergyRestore

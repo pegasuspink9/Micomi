@@ -77,8 +77,8 @@ const Coin = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: width * 0.02,
-    right: width * 0.03,
+    top: width * 0.18,
+    left: width * 0.02,
     alignItems: 'flex-end',
     borderRadius: 8,
     padding: 8,
