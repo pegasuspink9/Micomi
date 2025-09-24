@@ -26,16 +26,18 @@ export default function LeaderBoard({ route }) {
   const [debugTab, setDebugTab] = useState('gameState'); // 'gameState', 'submission', 'challenge'
 
   // API data
-  const { 
-    currentChallenge, 
-    gameState, 
+    const { 
+    gameState,   
     loading, 
     error, 
-    submitting, 
-    submissionResult,
+    submitting,
     refetchGameData,
     submitAnswer 
   } = useGameData(playerId, levelId);
+
+  const currentChallenge = gameState?.currentChallenge;
+  const submissionResult = gameState?.submissionResult;
+
   
   const allowEnemyCompletionRef = useRef(null);
   const setCorrectAnswerRef = useRef(null);
@@ -50,25 +52,52 @@ export default function LeaderBoard({ route }) {
 
   // Log all extracted game data for debugging
   useEffect(() => {
-    if (gameState) {
-      console.log('🎮 Complete Game State:', gameState);
-      console.log('👤 Character Info:', gameState.selectedCharacter);
-      console.log('👹 Enemy Info:', gameState.enemy);
-      console.log('🏆 Level Info:', gameState.level);
-      console.log('⚡ Energy:', gameState.energy);
-    }
+  if (gameState) {
+    console.log('🔄 GAME STATE UPDATED:', {
+      challengeId: gameState.currentChallenge?.id,
+      challengeTitle: gameState.currentChallenge?.title,
+      characterHealth: gameState.selectedCharacter?.current_health,
+      enemyHealth: gameState.enemy?.enemy_health,
+      isSubmissionResult: !!gameState.submissionResult,
+      lastSubmissionCorrect: gameState.submissionResult?.isCorrect,
+      fightStatus: gameState.submissionResult?.fightResult?.status,
+      levelCompleted: gameState.submissionResult?.levelStatus?.isCompleted
+    });
+  }
   }, [gameState]);
 
   // Log submission results
   useEffect(() => {
-    if (submissionResult) {
-      console.log('📊 Submission Result:', submissionResult);
-      console.log('✅ Is Correct:', submissionResult.isCorrect);
-      console.log('🎯 Attempts:', submissionResult.attempts);
-      console.log('⚔️ Fight Result:', submissionResult.fightResult);
-      console.log('🏆 Level Status:', submissionResult.levelStatus);
+  if (gameState?.currentChallenge) {
+    console.log('🎯 CHALLENGE CHANGED:', {
+      from: 'previous challenge',
+      to: `${gameState.currentChallenge.title} (ID: ${gameState.currentChallenge.id})`,
+      timer: gameState.currentChallenge.timer,
+      timeRemaining: gameState.currentChallenge.timeRemaining
+    });
+    
+    setSelectedAnswers([]);
+    setBorderColor('white');
+    setHasShownOutput(false);
+    
+    // Close drawer if it's open
+    if (isOutputVisible) {
+      setIsOutputVisible(false);
+      Animated.parallel([
+        Animated.spring(translateY, {
+          toValue: DRAWER_HEIGHT - DRAWER_PEEK,
+          useNativeDriver: false,
+        }),
+        Animated.timing(backdropOpacity, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: false,
+        })
+      ]).start();
     }
-  }, [submissionResult]);
+  }
+  }, [gameState?.currentChallenge?.id]);
+
 
   const handleEnemyComplete = useCallback((enemyIndex) => {
     console.log(`🏁 Enemy ${enemyIndex} completed for challenge ${currentChallenge?.id}`);
@@ -248,49 +277,101 @@ export default function LeaderBoard({ route }) {
   );
 
   // Render challenge debug info
-  const renderChallengeDebug = () => (
-    <ScrollView style={styles.debugScrollView}>
-      <Text style={styles.debugSectionTitle}>🎯 Current Challenge</Text>
-      {currentChallenge ? (
-        <>
-          <View style={styles.debugSection}>
-            <Text style={styles.debugSubtitle}>📋 Basic Info</Text>
-            <Text style={styles.debugText}>ID: {currentChallenge.id}</Text>
-            <Text style={styles.debugText}>Title: {currentChallenge.title}</Text>
-            <Text style={styles.debugText}>Type: {currentChallenge.challenge_type}</Text>
-            <Text style={styles.debugText}>Question: {currentChallenge.question?.substring(0, 50)}...</Text>
-          </View>
+  const renderUnifiedStateDebug = () => (
+  <ScrollView style={styles.debugScrollView}>
+    <Text style={styles.debugSectionTitle}>🎮 Unified Game State</Text>
+    {gameState ? (
+      <>
+        <View style={styles.debugSection}>
+          <Text style={styles.debugSubtitle}>🏆 Level Info</Text>
+          <Text style={styles.debugText}>ID: {gameState.level?.level_id}</Text>
+          <Text style={styles.debugText}>Title: {gameState.level?.level_title}</Text>
+          <Text style={styles.debugText}>Difficulty: {gameState.level?.level_difficulty}</Text>
+        </View>
 
-          <View style={styles.debugSection}>
-            <Text style={styles.debugSubtitle}>⏱️ Timing</Text>
-            <Text style={styles.debugText}>Time Limit: {currentChallenge.timeLimit}s</Text>
-            <Text style={styles.debugText}>Time Remaining: {currentChallenge.timeRemaining}s</Text>
-            <Text style={styles.debugText}>Timer: {currentChallenge.timer}</Text>
-          </View>
+        <View style={styles.debugSection}>
+          <Text style={styles.debugSubtitle}>👤 Character (Live Health)</Text>
+          <Text style={styles.debugText}>Name: {gameState.selectedCharacter?.name}</Text>
+          <Text style={styles.debugText}>
+            Health: {gameState.selectedCharacter?.current_health}/{gameState.selectedCharacter?.max_health}
+          </Text>
+          <Text style={[
+            styles.debugText, 
+            { color: gameState.selectedCharacter?.current_health < gameState.selectedCharacter?.max_health ? '#f87171' : '#4ade80' }
+          ]}>
+            Status: {gameState.selectedCharacter?.current_health < gameState.selectedCharacter?.max_health ? 'INJURED' : 'HEALTHY'}
+          </Text>
+        </View>
 
-          <View style={styles.debugSection}>
-            <Text style={styles.debugSubtitle}>🎁 Rewards</Text>
-            <Text style={styles.debugText}>Points: {currentChallenge.pointsReward}</Text>
-            <Text style={styles.debugText}>Coins: {currentChallenge.coinsReward}</Text>
-          </View>
+        <View style={styles.debugSection}>
+          <Text style={styles.debugSubtitle}>👹 Enemy (Live Health)</Text>
+          <Text style={styles.debugText}>ID: {gameState.enemy?.enemy_id}</Text>
+          <Text style={styles.debugText}>Health: {gameState.enemy?.enemy_health}</Text>
+          <Text style={[
+            styles.debugText, 
+            { color: gameState.enemy?.enemy_health > 0 ? '#f87171' : '#4ade80' }
+          ]}>
+            Status: {gameState.enemy?.enemy_health > 0 ? 'ALIVE' : 'DEFEATED'}
+          </Text>
+        </View>
 
-          <View style={styles.debugSection}>
-            <Text style={styles.debugSubtitle}>📝 Options & Answers</Text>
-            <Text style={styles.debugText}>Options Count: {currentChallenge.options?.length || 0}</Text>
-            <Text style={styles.debugText}>Correct Answer: {JSON.stringify(currentChallenge.correctAnswer)}</Text>
-            <Text style={styles.debugText}>Selected: {JSON.stringify(selectedAnswers)}</Text>
-          </View>
+        <View style={styles.debugSection}>
+          <Text style={styles.debugSubtitle}>🎯 Current Challenge</Text>
+          <Text style={styles.debugText}>ID: {gameState.currentChallenge?.id}</Text>
+          <Text style={styles.debugText}>Title: {gameState.currentChallenge?.title}</Text>
+          <Text style={styles.debugText}>Type: {gameState.currentChallenge?.challenge_type}</Text>
+          <Text style={styles.debugText}>Timer: {gameState.currentChallenge?.timer}</Text>
+        </View>
 
-          {currentChallenge.hint && (
-            <View style={styles.debugSection}>
-              <Text style={styles.debugSubtitle}>💡 Hint</Text>
-              <Text style={styles.debugText}>{currentChallenge.hint}</Text>
-            </View>
-          )}
-        </>
-      ) : (
-        <Text style={styles.debugText}>No challenge available</Text>
-      )}
+        {gameState.submissionResult && (
+          <View style={styles.debugSection}>
+            <Text style={styles.debugSubtitle}>📊 Last Submission</Text>
+            <Text style={[
+              styles.debugText, 
+              { color: gameState.submissionResult.isCorrect ? '#4ade80' : '#f87171' }
+            ]}>
+              Result: {gameState.submissionResult.isCorrect ? 'CORRECT ✅' : 'INCORRECT ❌'}
+            </Text>
+            <Text style={styles.debugText}>Attempts: {gameState.submissionResult.attempts}</Text>
+            <Text style={styles.debugText}>Message: {gameState.submissionResult.message}</Text>
+            
+            {gameState.submissionResult.fightResult && (
+              <>
+                <Text style={styles.debugText}>Fight Status: {gameState.submissionResult.fightResult.status}</Text>
+                <Text style={styles.debugText}>Damage Dealt: {gameState.submissionResult.fightResult.damage}</Text>
+                <Text style={styles.debugText}>Attack Type: {gameState.submissionResult.fightResult.attackType || 'None'}</Text>
+              </>
+            )}
+          </View>
+        )}
+
+        <View style={styles.debugSection}>
+          <Text style={styles.debugSubtitle}>⚡ Resources</Text>
+          <Text style={styles.debugText}>Energy: {gameState.energy}</Text>
+          <Text style={styles.debugText}>Next Restore: {gameState.timeToNextEnergyRestore || 'N/A'}</Text>
+        </View>
+
+        {gameState.submissionResult?.levelStatus && (
+          <View style={styles.debugSection}>
+            <Text style={styles.debugSubtitle}>🏆 Level Progress</Text>
+            <Text style={styles.debugText}>
+              Completed: {gameState.submissionResult.levelStatus.isCompleted ? 'YES ✅' : 'NO ⏳'}
+            </Text>
+            <Text style={styles.debugText}>
+              Battle Won: {gameState.submissionResult.levelStatus.battleWon ? 'YES 🏆' : 'NO ⚔️'}
+            </Text>
+            <Text style={styles.debugText}>
+              Can Proceed: {gameState.submissionResult.levelStatus.canProceed ? 'YES ➡️' : 'NO ⏸️'}
+            </Text>
+            <Text style={styles.debugText}>
+              Coins Earned: {gameState.submissionResult.levelStatus.coinsEarned || 0} 🪙
+            </Text>
+          </View>
+        )}
+      </>
+    ) : (
+      <Text style={styles.debugText}>No unified game state available</Text>
+    )}
     </ScrollView>
   );
 
@@ -437,52 +518,52 @@ export default function LeaderBoard({ route }) {
       style={styles.container}
     >
       {/* Pass gameState to ScreenPlay */}
-      <ScreenPlay 
-        isPaused={isOutputVisible}
-        borderColor={borderColor}
-        onEnemyComplete={handleEnemyComplete}
-        currentQuestionIndex={0}
-        onAllowEnemyCompletion={handleAllowEnemyCompletion}
-        onSetCorrectAnswer={handleSetCorrectAnswer}
-        gameState={gameState} // Pass complete game state
-      />
+        <ScreenPlay 
+          isPaused={isOutputVisible}
+          borderColor={borderColor}
+          onEnemyComplete={handleEnemyComplete}
+          currentQuestionIndex={0}
+          onAllowEnemyCompletion={handleAllowEnemyCompletion}
+          onSetCorrectAnswer={handleSetCorrectAnswer}
+          gameState={gameState}
+        />
 
-      <GameQuestions 
-        currentQuestion={currentQuestion}
+       <GameQuestions 
+        currentQuestion={gameState?.currentChallenge || { timeLimit: 0 }}
         selectedAnswers={selectedAnswers}
         getBlankIndex={getBlankIndex}
-      />
+        />
 
       <ThirdGrid 
-        currentQuestion={currentQuestion}
-        selectedAnswers={selectedAnswers}
-        setSelectedAnswers={setSelectedAnswers}
-        currentQuestionIndex={0}
-        setCurrentQuestionIndex={() => {}}
-        animateToPosition={animateToPosition}
-        setBorderColor={setBorderColor}
-        hasShownOutput={hasShownOutput}
-        setHasShownOutput={setHasShownOutput}
-        setCorrectAnswerRef={setCorrectAnswerRef}
-        getBlankIndex={getBlankIndex}
-        challengeData={currentChallenge}
-        submitAnswer={submitAnswer}
-        submitting={submitting}
-        />
+      currentQuestion={gameState?.currentChallenge || { timeLimit: 0 }}
+      selectedAnswers={selectedAnswers}
+      setSelectedAnswers={setSelectedAnswers}
+      currentQuestionIndex={0}
+      setCurrentQuestionIndex={() => {}}
+      animateToPosition={animateToPosition}
+      setBorderColor={setBorderColor}
+      hasShownOutput={hasShownOutput}
+      setHasShownOutput={setHasShownOutput}
+      setCorrectAnswerRef={setCorrectAnswerRef}
+      getBlankIndex={getBlankIndex}
+      challengeData={gameState?.currentChallenge}
+      submitAnswer={submitAnswer}
+      submitting={submitting}
+      />
 
       <Drawer
-        isOutputVisible={isOutputVisible}
-        translateY={translateY}
-        backdropOpacity={backdropOpacity}
-        animateToPosition={animateToPosition}
-        currentQuestion={currentQuestion}
-        currentQuestionIndex={0} 
-        questionsData={null} 
-        selectedAnswers={selectedAnswers}
-        challengeData={currentChallenge}
-        gameState={gameState}
-        submissionResult={submissionResult}
-        />
+      isOutputVisible={isOutputVisible}
+      translateY={translateY}
+      backdropOpacity={backdropOpacity}
+      animateToPosition={animateToPosition}
+      currentQuestion={gameState?.currentChallenge || { timeLimit: 0 }}
+      currentQuestionIndex={0} 
+      questionsData={null} 
+      selectedAnswers={selectedAnswers}
+      challengeData={gameState?.currentChallenge}
+      gameState={gameState}
+      submissionResult={gameState?.submissionResult}
+      />
 
       {/* Enhanced Debug Interface - only in development */}
       {__DEV__ && (
@@ -498,10 +579,10 @@ export default function LeaderBoard({ route }) {
           </TouchableOpacity>
 
           {/* Debug Panel */}
-          {showDebugPanel && (
+           {__DEV__ && showDebugPanel && (
             <View style={styles.debugPanel}>
               <View style={styles.debugHeader}>
-                <Text style={styles.debugTitle}>🛠️ Debug Interface</Text>
+                <Text style={styles.debugTitle}>🛠️ Unified Game State Debug</Text>
                 <TouchableOpacity 
                   style={styles.debugClose}
                   onPress={() => setShowDebugPanel(false)}
@@ -510,8 +591,7 @@ export default function LeaderBoard({ route }) {
                 </TouchableOpacity>
               </View>
               
-              {renderDebugTabs()}
-              {renderDebugContent()}
+              {renderUnifiedStateDebug()}
             </View>
           )}
         </>

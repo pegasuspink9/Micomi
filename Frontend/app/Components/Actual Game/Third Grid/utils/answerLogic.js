@@ -25,8 +25,6 @@ export const getMaxAnswers = (currentQuestion) => {
   return 1;
 };
 
-
-
 export const checkAnswer = (currentQuestion, selectedAnswers) => {
   if (!currentQuestion || !selectedAnswers) {
     return false;
@@ -119,6 +117,7 @@ export const createNextQuestionHandler = (
   };
 };
 
+// UPDATED: Fixed to work with unified game state
 export const createCheckAnswerHandler = (
   currentQuestion,
   selectedAnswers,
@@ -142,33 +141,84 @@ export const createCheckAnswerHandler = (
       try {
         const result = await submitAnswerFunction(selectedAnswers);
         
+        console.log('Submit answer result:', result);
+        
         if (result.success) {
-          const isCorrect = result.result?.isCorrect || false;
+          // Access the submission result from the updated game state
+          const updatedGameState = result.updatedGameState;
+          const submissionResult = updatedGameState?.submissionResult;
           
-          if (isCorrect) {
-            setBorderColor('green');
-            console.log('Correct answer! Moving to next challenge.');
-          } else {
-            setBorderColor('red');
-            console.log('Incorrect answer. Message:', result.result?.message);
-          }
-
-          // Show the output drawer
-          if (!hasShownOutput) {
-            setHasShownOutput(true);
-            if (setCorrectAnswerRef.current) {
-              setCorrectAnswerRef.current(isCorrect);
+          if (submissionResult) {
+            const isCorrect = submissionResult.isCorrect || false;
+            
+            if (isCorrect) {
+              setBorderColor('green');
+              console.log('✅ Correct answer! Moving to next challenge.');
+              console.log('🎯 Next challenge:', updatedGameState.currentChallenge?.title);
+            } else {
+              setBorderColor('red');
+              console.log('❌ Incorrect answer. Message:', submissionResult.message);
             }
-            animateToPosition(true);
+
+            // Log fight result if available
+            if (submissionResult.fightResult) {
+              console.log('⚔️ Fight result:', {
+                status: submissionResult.fightResult.status,
+                charHealth: submissionResult.fightResult.charHealth,
+                enemyHealth: submissionResult.fightResult.enemyHealth,
+                damage: submissionResult.fightResult.damage,
+                attackType: submissionResult.fightResult.attackType
+              });
+            }
+
+            // Log level status if available
+            if (submissionResult.levelStatus) {
+              console.log('🏆 Level status:', {
+                isCompleted: submissionResult.levelStatus.isCompleted,
+                battleWon: submissionResult.levelStatus.battleWon,
+                battleLost: submissionResult.levelStatus.battleLost,
+                canProceed: submissionResult.levelStatus.canProceed
+              });
+            }
+
+            // Show the output drawer
+            if (!hasShownOutput) {
+              setHasShownOutput(true);
+              if (setCorrectAnswerRef.current) {
+                setCorrectAnswerRef.current(isCorrect);
+              }
+              animateToPosition(true);
+            }
+          } else {
+            console.error('❌ No submission result found in updated game state');
+            setBorderColor('red');
           }
         } else {
           // Handle submission error
-          console.error('Failed to submit answer:', result.error);
+          console.error('❌ Failed to submit answer:', result.error);
           setBorderColor('red');
+          
+          // Still show drawer for error feedback
+          if (!hasShownOutput) {
+            setHasShownOutput(true);
+            if (setCorrectAnswerRef.current) {
+              setCorrectAnswerRef.current(false);
+            }
+            animateToPosition(true);
+          }
         }
       } catch (error) {
-        console.error('Error during answer submission:', error);
+        console.error('❌ Error during answer submission:', error);
         setBorderColor('red');
+        
+        // Still show drawer for error feedback
+        if (!hasShownOutput) {
+          setHasShownOutput(true);
+          if (setCorrectAnswerRef.current) {
+            setCorrectAnswerRef.current(false);
+          }
+          animateToPosition(true);
+        }
       }
     } else {
       // Fallback to local checking if no submit function provided

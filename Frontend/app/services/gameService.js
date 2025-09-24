@@ -12,155 +12,157 @@ export const gameService = {
     }
   },
     
-  
   submitAnswer: async (playerId, levelId, challengeId, selectedAnswers) => {
     try {
+      // Validate inputs
+      if (!Array.isArray(selectedAnswers) || selectedAnswers.length === 0) {
+        throw new Error('selectedAnswers must be a non-empty array');
+      }
+
+      if (!playerId || !levelId || !challengeId) {
+        throw new Error('Missing required parameters: playerId, levelId, or challengeId');
+      }
+
       const payload = {
         answer: selectedAnswers,
       };
+      
+      // ENHANCED DIAGNOSTIC LOGGING
+      console.log('🔍 DETAILED SUBMIT ANSWER DIAGNOSTIC:');
+      console.log('==========================================');
+      console.log('  URL:', `/game/submit-challenge/${playerId}/${levelId}/${challengeId}`);
+      console.log('  Full URL would be:', `http://your-server/game/submit-challenge/${playerId}/${levelId}/${challengeId}`);
+      console.log('  Method: POST');
+      console.log('  Headers: Content-Type: application/json');
+      
+      console.log('  Raw Payload Object:', payload);
+      console.log('  Payload JSON String:', JSON.stringify(payload));
+      console.log('  Payload JSON String Length:', JSON.stringify(payload).length);
+      console.log('  Payload JSON Pretty:', JSON.stringify(payload, null, 2));
+      
+      console.log('  Selected Answers Analysis:');
+      console.log('    - Value:', selectedAnswers);
+      console.log('    - Type:', typeof selectedAnswers);
+      console.log('    - Is Array:', Array.isArray(selectedAnswers));
+      console.log('    - Length:', selectedAnswers?.length);
+      console.log('    - Each item:');
+      selectedAnswers.forEach((item, index) => {
+        console.log(`      [${index}]: "${item}" (type: ${typeof item}, length: ${item?.length || 'N/A'})`);
+      });
+      
+      console.log('  Parameters Analysis:');
+      console.log('    - playerId:', playerId, '(type:', typeof playerId, ')');
+      console.log('    - levelId:', levelId, '(type:', typeof levelId, ')');
+      console.log('    - challengeId:', challengeId, '(type:', typeof challengeId, ')');
+      
+      // Create exact copy of what will be sent
+      const exactPayload = JSON.parse(JSON.stringify({ answer: selectedAnswers }));
+      console.log('  Exact payload that will be sent:', exactPayload);
+      console.log('  Serialized exactly as sent:', JSON.stringify(exactPayload));
+      
+      // Show byte analysis
+      const payloadBytes = new TextEncoder().encode(JSON.stringify(payload));
+      console.log('  Payload byte length:', payloadBytes.length);
+      console.log('  Payload first 50 bytes:', Array.from(payloadBytes.slice(0, 50)).map(b => b.toString(16)).join(' '));
+      
+      console.log('==========================================');
+      
+      // Make the API call
+      console.log('🚀 Making API call...');
+      const startTime = Date.now();
       
       const response = await apiService.post(`/game/submit-challenge/${playerId}/${levelId}/${challengeId}`, 
         payload
       );
       
-      console.log(`🎮 Submitted answer for challenge ${challengeId} in level ${levelId} for player ${playerId}:`, response);
+      const endTime = Date.now();
+      console.log(`✅ API call completed in ${endTime - startTime}ms`);
+      console.log(`🎮 Submitted answer for challenge ${challengeId}:`, response);
+      
       return response.success ? response.data : response;
     } catch (error) {
-      console.error(`Failed to submit answer for challenge ${challengeId}:`, error);
+      console.error(`❌ Failed to submit answer for challenge ${challengeId}:`, error);
+      
+      // ENHANCED ERROR ANALYSIS
+      console.log('🔍 ERROR ANALYSIS:');
+      console.log('==========================================');
+      console.log('  Error type:', error.constructor.name);
+      console.log('  Error message:', error.message);
+      
+      if (error.response) {
+        console.log('  Response Status:', error.response.status);
+        console.log('  Response Status Text:', error.response.statusText);
+        console.log('  Response Headers:', JSON.stringify(error.response.headers, null, 2));
+        console.log('  Response Data:', error.response.data);
+        
+        // Try to get more details about the 400 error
+        if (error.response.status === 400) {
+          console.log('  🚨 HTTP 400 BAD REQUEST DETAILS:');
+          console.log('    This means the server rejected the request format');
+          console.log('    Common causes:');
+          console.log('    - Invalid JSON syntax');
+          console.log('    - Missing required fields');
+          console.log('    - Wrong data types');
+          console.log('    - Invalid parameter values');
+          console.log('    - Server-side validation rules');
+          
+          if (error.response.data) {
+            console.log('  Server error response:', error.response.data);
+          }
+        }
+      } else if (error.request) {
+        console.log('  Request Object:', error.request);
+        console.log('  No response received from server');
+      } else {
+        console.log('  Request setup error:', error.message);
+      }
+      console.log('==========================================');
+      
       throw error;
     }
   },
 
- extractChallengeFromResponse: (responseData) => {
-    try {
-      const challenge = responseData.nextChallenge || responseData.currentChallenge;
-      
-      if (!challenge) {
-        console.warn('⚠️ No challenge found in response data');
-        return null;
+  // Test method to compare working vs failing requests
+  testAnswerFormats: async (playerId, levelId, challengeId, correctAnswers, incorrectAnswers) => {
+    console.log('🧪 TESTING DIFFERENT ANSWER FORMATS:');
+    console.log('==========================================');
+    
+    const testCases = [
+      { name: 'Correct answers (failing)', answers: correctAnswers },
+      { name: 'Incorrect answers (working)', answers: incorrectAnswers },
+      // Test variations
+      { name: 'Correct as single string', answers: correctAnswers.join(',') },
+      { name: 'Correct first item only', answers: [correctAnswers[0]] },
+      { name: 'Incorrect first item only', answers: [incorrectAnswers[0]] },
+    ];
+    
+    for (const testCase of testCases) {
+      console.log(`\n🧪 Testing: ${testCase.name}`);
+      try {
+        const payload = { answer: testCase.answers };
+        console.log('   Payload:', JSON.stringify(payload));
+        
+        // Don't actually send, just log what would be sent
+        console.log('   Would send to:', `/game/submit-challenge/${playerId}/${levelId}/${challengeId}`);
+        console.log('   Payload size:', JSON.stringify(payload).length, 'characters');
+        
+      } catch (error) {
+        console.log('   Error creating payload:', error.message);
       }
-      
-      console.log(`📋 Extracting challenge: ${challenge.title || 'Unnamed Challenge'}`);
-      
-      // Ensure options is always an array
-      let options = [];
-      if (Array.isArray(challenge.options)) {
-        options = challenge.options.filter(option => 
-          option !== null && 
-          option !== undefined && 
-          String(option).trim().length > 0
-        );
-      } else if (typeof challenge.options === 'string') {
-        options = challenge.options.split(',')
-          .map(option => option.trim())
-          .filter(option => option.length > 0);
-      }
-      
-      console.log('📋 Processed options:', options);
-      
-      let correctAnswer = [];
-      if (Array.isArray(challenge.correct_answer)) {
-        correctAnswer = challenge.correct_answer;
-      } else if (challenge.correct_answer) {
-        correctAnswer = [challenge.correct_answer];
-      }
-      
-      const transformedChallenge = {
-        id: challenge.challenge_id,
-        question: challenge.question,
-        options: options,
-        correctAnswer: correctAnswer,
-        challenge_type: challenge.challenge_type,
-        timeLimit: challenge.timeLimit,
-        timeRemaining: challenge.timeRemaining,
-        timer: challenge.timer,
-        title: challenge.title,
-        description: challenge.description,
-        hint: challenge.hint,
-        pointsReward: challenge.points_reward,
-        coinsReward: challenge.coins_reward,
-        guide: challenge.guide,
-        testCases: challenge.test_cases || []
-      };
-      
-      console.log('✅ Challenge transformed:', transformedChallenge);
-      return transformedChallenge;
-      
-    } catch (error) {
-      console.error('❌ Error extracting challenge from response:', error);
-      return null;
     }
+    console.log('==========================================');
   },
 
-  extractSubmissionResult: (responseData) => {
+  // NEW: Unified game state extraction that handles both entry and submission responses
+  extractUnifiedGameState: (responseData, isSubmission = false) => {
     try {
       if (!responseData) {
         console.warn('⚠️ No response data found');
         return null;
       }
 
-      const result = {
-        isCorrect: responseData.isCorrect || false,
-        attempts: responseData.attempts || 0,
-
-        fightResult: 
-        {
-          status: responseData.fightResult?.status,
-          charHealth: responseData.fightResult?.charHealth,
-          enemyHealth: responseData.fightResult?.enemyHealth,
-          enemyMaxHealth: responseData.fightResult?.enemyMaxHealth,
-          attackType: responseData.fightResult?.attackType,
-          damage: responseData.fightResult?.damage,
-          attackUrl: responseData.fightResult?.attackUrl,
-          enemyAttackUrl: responseData.fightResult?.enemyAttackUrl,
-          enemyHurtUrl: responseData.fightResult?.enemyHurtUrl,
-          characterHurtUrl: responseData.fightResult?.characterHurtUrl,
-          characterDiesUrl: responseData.fightResult?.characterDiesUrl,
-          enemyDiesUrl: responseData.fightResult?.enemyDiesUrl,
-          characterIdle: responseData.fightResult?.character_idle,
-          enemyIdle: responseData.fightResult?.enemy_idle,
-          timer: responseData.fightResult?.timer,
-          energy: responseData.fightResult?.energy,
-          timeToNextEnergyRestore: responseData.fightResult?.timeToNextEnergyRestore
-        },
-        message: responseData.message,
-        levelStatus: {
-          isCompleted: responseData.levelStatus?.isCompleted || false,
-          battleWon: responseData.levelStatus?.battleWon || false,
-          battleLost: responseData.levelStatus?.battleLost || false,
-          canProceed: responseData.levelStatus?.canProceed || false,
-          showFeedback: responseData.levelStatus?.showFeedback || false,
-          playerHealth: responseData.levelStatus?.playerHealth || 0,
-          enemyHealth: responseData.levelStatus?.enemyHealth || 0,
-          enemyMaxHealth: responseData.levelStatus?.enemyMaxHealth || 0,
-          playerMaxHealth: responseData.levelStatus?.playerMaxHealth || 0
-        },
-        nextLevel: responseData.nextLevel || null,
-        energy: responseData.energy || 0,
-        timeToNextEnergyRestore: responseData.timeToNextEnergyRestore || null
-      };
-
-
-      
-      console.log('✅ Submission result extracted:', result);
-      return result;
-      
-    } catch (error) {
-      console.error('❌ Error extracting submission result:', error);
-      return null;
-    }
-  },
-
-  // Extract game state from API response - UPDATED to include all attributes
-  extractGameState: (responseData) => {
-    try {
-      if (!responseData) {
-        console.warn('⚠️ No response data found');
-        return null;
-      }
-
+      // Base game state structure
       const gameState = {
-        // Level information
         level: {
           level_id: responseData.level?.level_id || null,
           level_number: responseData.level?.level_number || null,
@@ -169,14 +171,12 @@ export const gameService = {
           content: responseData.level?.content || null,
         },
         
-        // Enemy information
         enemy: {
           enemy_id: responseData.enemy?.enemy_id || null,
           enemy_health: responseData.enemy?.enemy_health || null,
           enemy_idle: responseData.enemy?.enemy_idle || null,
         },
         
-        // Selected character information
         selectedCharacter: {
           character_id: responseData.selectedCharacter?.character_id || null,
           name: responseData.selectedCharacter?.name || null,
@@ -186,21 +186,129 @@ export const gameService = {
           character_idle: responseData.selectedCharacter?.character_idle || null,
         },
         
-        // Energy and timing
         energy: responseData.energy || 0,
         timeToNextEnergyRestore: responseData.timeToNextEnergyRestore || null,
-        
-        // Fight result data if available
-        fightResult: responseData.fightResult || null,
-        levelStatus: responseData.levelStatus || null
+        currentChallenge: null,
+        submissionResult: null
       };
+
+      // Extract challenge data
+      const challengeSource = isSubmission ? responseData.nextChallenge : responseData.currentChallenge;
+      if (challengeSource) {
+        let options = [];
+        if (Array.isArray(challengeSource.options)) {
+          options = challengeSource.options.filter(option => 
+            option !== null && 
+            option !== undefined && 
+            String(option).trim().length > 0
+          );
+        } else if (typeof challengeSource.options === 'string') {
+          options = challengeSource.options.split(',')
+            .map(option => option.trim())
+            .filter(option => option.length > 0);
+        }
+
+        let correctAnswer = [];
+        if (Array.isArray(challengeSource.correct_answer)) {
+          correctAnswer = challengeSource.correct_answer;
+        } else if (challengeSource.correct_answer) {
+          correctAnswer = [challengeSource.correct_answer];
+        }
+
+        gameState.currentChallenge = {
+          id: challengeSource.challenge_id,
+          question: challengeSource.question,
+          options: options,
+          correctAnswer: correctAnswer,
+          challenge_type: challengeSource.challenge_type,
+          timeLimit: challengeSource.timeLimit,
+          timeRemaining: challengeSource.timeRemaining,
+          timer: challengeSource.timer,
+          title: challengeSource.title,
+          description: challengeSource.description,
+          hint: challengeSource.hint,
+          pointsReward: challengeSource.points_reward,
+          coinsReward: challengeSource.coins_reward,
+          guide: challengeSource.guide,
+          testCases: challengeSource.test_cases || []
+        };
+      }
+
+      // If this is a submission response, extract submission-specific data
+      if (isSubmission) {
+        gameState.submissionResult = {
+          isCorrect: responseData.isCorrect || false,
+          attempts: responseData.attempts || 0,
+          message: responseData.message,
+          
+          fightResult: responseData.fightResult ? {
+            status: responseData.fightResult.status,
+            charHealth: responseData.fightResult.charHealth,
+            enemyHealth: responseData.fightResult.enemyHealth,
+            enemyMaxHealth: responseData.fightResult.enemyMaxHealth,
+            attackType: responseData.fightResult.attackType,
+            damage: responseData.fightResult.damage,
+            attackUrl: responseData.fightResult.attackUrl,
+            enemyAttackUrl: responseData.fightResult.enemyAttackUrl,
+            enemyHurtUrl: responseData.fightResult.enemyHurtUrl,
+            characterHurtUrl: responseData.fightResult.characterHurtUrl,
+            characterDiesUrl: responseData.fightResult.characterDiesUrl,
+            enemyDiesUrl: responseData.fightResult.enemyDiesUrl,
+            characterIdle: responseData.fightResult.character_idle,
+            enemyIdle: responseData.fightResult.enemy_idle,
+            timer: responseData.fightResult.timer,
+            energy: responseData.fightResult.energy,
+            timeToNextEnergyRestore: responseData.fightResult.timeToNextEnergyRestore
+          } : null,
+          
+          levelStatus: responseData.levelStatus ? {
+            isCompleted: responseData.levelStatus.isCompleted || false,
+            battleWon: responseData.levelStatus.battleWon || false,
+            battleLost: responseData.levelStatus.battleLost || false,
+            canProceed: responseData.levelStatus.canProceed || false,
+            showFeedback: responseData.levelStatus.showFeedback || false,
+            playerHealth: responseData.levelStatus.playerHealth || 0,
+            enemyHealth: responseData.levelStatus.enemyHealth || 0,
+            enemyMaxHealth: responseData.levelStatus.enemyMaxHealth || 0,
+            playerMaxHealth: responseData.levelStatus.playerMaxHealth || 0,
+            coinsEarned: responseData.levelStatus.coinsEarned || 0
+          } : null,
+          
+          nextLevel: responseData.nextLevel || null
+        };
+
+        // Update character health from fight result if available
+        if (responseData.fightResult?.charHealth) {
+          gameState.selectedCharacter.current_health = responseData.fightResult.charHealth;
+        }
+
+        // Update enemy health from fight result if available  
+        if (responseData.fightResult?.enemyHealth) {
+          gameState.enemy.enemy_health = responseData.fightResult.enemyHealth;
+        }
+      }
       
-      console.log('✅ Game state extracted with all attributes:', gameState);
+      console.log(`✅ Unified game state extracted (${isSubmission ? 'submission' : 'entry'}):`, gameState);
       return gameState;
       
     } catch (error) {
-      console.error('❌ Error extracting game state:', error);
+      console.error('❌ Error extracting unified game state:', error);
       return null;
     }
+  },
+
+  // Legacy methods for backward compatibility
+  extractChallengeFromResponse: (responseData) => {
+    const gameState = gameService.extractUnifiedGameState(responseData, false);
+    return gameState?.currentChallenge || null;
+  },
+
+  extractSubmissionResult: (responseData) => {
+    const gameState = gameService.extractUnifiedGameState(responseData, true);
+    return gameState?.submissionResult || null;
+  },
+
+  extractGameState: (responseData) => {
+    return gameService.extractUnifiedGameState(responseData, false);
   }
 };

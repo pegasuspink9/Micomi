@@ -2,16 +2,15 @@ import { useState, useEffect } from 'react';
 import { gameService } from '../services/gameService';
 
 export const useGameData = (playerId, levelId) => {
-  const [currentChallenge, setCurrentChallenge] = useState(null);
+  // Unified game state that contains everything
   const [gameState, setGameState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [submissionResult, setSubmissionResult] = useState(null);
 
   const fetchGameData = async () => {
     if (!playerId || !levelId) {
-      console.warn('⚠️ Missing playerId or levelId');
+      console.warn('Missing playerId or levelId');
       setError('Missing player ID or level ID');
       setLoading(false);
       return;
@@ -21,37 +20,34 @@ export const useGameData = (playerId, levelId) => {
       setLoading(true);
       setError(null);
       
-      console.log(`🎮 Fetching game data for player ${playerId}, level ${levelId}`);
+      console.log(`Fetching game data for player ${playerId}, level ${levelId}`);
       const responseData = await gameService.enterLevel(playerId, levelId);
       
-      // Validate response data
       if (!responseData) {
         throw new Error('No response data received');
       }
       
-      // Extract challenge and game state
-      const challenge = gameService.extractChallengeFromResponse(responseData);
-      const state = gameService.extractGameState(responseData);
+      const unifiedState = gameService.extractUnifiedGameState(responseData, false);
       
-      // Validate extracted data
-      if (!challenge) {
+      if (!unifiedState) {
+        throw new Error('Failed to extract game state from response');
+      }
+
+      if (!unifiedState.currentChallenge) {
         throw new Error('No challenge data found in response');
       }
       
-      if (!challenge.options || !Array.isArray(challenge.options)) {
-        console.warn('⚠️ Challenge options are missing or invalid:', challenge.options);
-        challenge.options = [];
+      if (!unifiedState.currentChallenge.options || !Array.isArray(unifiedState.currentChallenge.options)) {
+        console.warn('Challenge options are missing or invalid:', unifiedState.currentChallenge.options);
+        unifiedState.currentChallenge.options = [];
       }
       
-      setCurrentChallenge(challenge);
-      setGameState(state);
-      
-      console.log('✅ Game data loaded successfully:', { challenge, state });
+      setGameState(unifiedState);
+      console.log('Game data loaded successfully:', unifiedState);
     } catch (err) {
-      console.error('❌ Failed to fetch game data:', err);
+      console.error('Failed to fetch game data:', err);
       const errorMessage = err.message || 'Failed to load game data';
       setError(errorMessage);
-      setCurrentChallenge(null);
       setGameState(null);
     } finally {
       setLoading(false);
@@ -59,8 +55,8 @@ export const useGameData = (playerId, levelId) => {
   };
 
   const submitAnswer = async (selectedAnswers) => {
-    if (!currentChallenge || !playerId || !levelId) {
-      console.error('❌ Missing required data for submission');
+    if (!gameState?.currentChallenge || !playerId || !levelId) {
+      console.error('Missing required data for submission');
       return { success: false, error: 'Missing required data' };
     }
 
@@ -68,12 +64,16 @@ export const useGameData = (playerId, levelId) => {
       setSubmitting(true);
       setError(null);
       
-      console.log(`🎯 Submitting answer for challenge ${currentChallenge.id}:`, selectedAnswers);
+      console.log(`DEBUG: Submitting answer for challenge ${gameState.currentChallenge.id}:`, selectedAnswers);
+      console.log('DEBUG: Selected answers type:', typeof selectedAnswers);
+      console.log('DEBUG: Selected answers is array:', Array.isArray(selectedAnswers));
+      console.log('DEBUG: Selected answers length:', selectedAnswers?.length);
       
+      // Use only the existing API service - no direct fetch calls
       const responseData = await gameService.submitAnswer(
         playerId, 
         levelId, 
-        currentChallenge.id, 
+        gameState.currentChallenge.id, 
         selectedAnswers
       );
       
@@ -81,38 +81,32 @@ export const useGameData = (playerId, levelId) => {
         throw new Error('No response data received from submission');
       }
 
-      // Extract submission result
-      const result = gameService.extractSubmissionResult(responseData);
-      setSubmissionResult(result);
-
-      // Extract next challenge and update current challenge
-      const nextChallenge = gameService.extractChallengeFromResponse(responseData);
-      if (nextChallenge) {
-        console.log(`🔄 Moving to next challenge: ${nextChallenge.title} (ID: ${nextChallenge.id})`);
-        setCurrentChallenge(nextChallenge);
+      // Extract unified game state (submission response)
+      const updatedState = gameService.extractUnifiedGameState(responseData, true);
+      
+      if (!updatedState) {
+        throw new Error('Failed to extract updated game state from submission response');
       }
 
-      // Update game state with new data
-      const updatedGameState = gameService.extractGameState(responseData);
-      if (updatedGameState) {
-        setGameState(updatedGameState);
-      }
+      // Update the complete game state
+      setGameState(updatedState);
 
-      console.log('✅ Answer submitted successfully:', {
-        isCorrect: result?.isCorrect,
-        nextChallengeId: nextChallenge?.id,
-        nextChallengeTitle: nextChallenge?.title
+      console.log('Answer submitted successfully:', {
+        isCorrect: updatedState.submissionResult?.isCorrect,
+        nextChallengeId: updatedState.currentChallenge?.id,
+        nextChallengeTitle: updatedState.currentChallenge?.title,
+        characterHealth: updatedState.selectedCharacter?.current_health,
+        enemyHealth: updatedState.enemy?.enemy_health,
+        fightStatus: updatedState.submissionResult?.fightResult?.status
       });
 
       return { 
         success: true, 
-        result, 
-        nextChallenge,
-        updatedGameState 
+        updatedGameState: updatedState
       };
 
     } catch (err) {
-      console.error('❌ Failed to submit answer:', err);
+      console.error('Failed to submit answer:', err);
       const errorMessage = err.message || 'Failed to submit answer';
       setError(errorMessage);
       return { success: false, error: errorMessage };
@@ -129,14 +123,25 @@ export const useGameData = (playerId, levelId) => {
     fetchGameData();
   };
 
+  // Convenience accessors for backward compatibility
+  const currentChallenge = gameState?.currentChallenge || null;
+  const submissionResult = gameState?.submissionResult || null;
+
   return { 
-    currentChallenge, 
-    gameState, 
+    // Main unified state
+    gameState,
+    
+    // Convenience accessors (for backward compatibility)
+    currentChallenge,
+    submissionResult,
+    
+    // Status flags
     loading, 
     error, 
     submitting,
-    submissionResult,
+    
+    // Actions
     refetchGameData,
-    submitAnswer 
+    submitAnswer
   };
 };
