@@ -49,9 +49,10 @@ export const previewLevel = async (playerId: number, levelId: number) => {
   const playerMaxHealth = character.health;
   const enemyMaxHealth = enemy.enemy_health * level.challenges.length;
 
-  const totalPoints =
-    (level.points_reward ?? 0) +
-    level.challenges.reduce((sum, ch) => sum + (ch.points_reward ?? 0), 0);
+  const totalPoints = level.challenges.reduce(
+    (sum, ch) => sum + (ch.points_reward ?? 0),
+    0
+  );
 
   const totalCoins = level.challenges.reduce(
     (sum, ch) => sum + (ch.coins_reward ?? 0),

@@ -12,6 +12,7 @@ export interface ChallengeCreateInput {
   guide?: string;
   test_cases?: Prisma.InputJsonValue;
   options?: Prisma.InputJsonValue;
+  expected_output?: Prisma.InputJsonValue;
 }
 
 export interface ChallengeUpdateInput {
@@ -26,4 +27,5 @@ export interface ChallengeUpdateInput {
   guide?: string;
   test_cases?: Prisma.InputJsonValue;
   options?: Prisma.InputJsonValue;
+  expected_output?: Prisma.InputJsonValue;
 }

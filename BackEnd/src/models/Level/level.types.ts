@@ -5,8 +5,8 @@ export interface LevelCreateInput {
   level_number: number;
   level_type: string;
   level_difficulty: DifficultyLevel;
+  level_title?: string;
   content: string;
-  points_reward: number;
   feedback_message: string;
 }
 
@@ -16,7 +16,7 @@ export interface LevelUpdateInput {
   level_number?: number;
   level_type?: string;
   level_difficulty?: DifficultyLevel;
+  level_title?: string;
   content?: string;
-  points_reward?: number;
   feedback_message?: string;
 }

@@ -190,12 +190,14 @@ export async function fightEnemy(
         damage = damageArray[0] ?? 10;
         attackUrl = attacksArray[0] || null;
         character_idle = character.avatar_image || null;
+        console.log("- Longest answer: defaulting to basic attack", attackUrl);
       }
     } else {
       attackType = "basic_attack";
       damage = damageArray[0] ?? 10;
       attackUrl = attacksArray[0] || null;
       character_idle = character.avatar_image || null;
+      console.log("- Short answer: defaulting to basic attack", attackUrl);
     }
 
     console.log("- Attack type:", attackType);
@@ -251,6 +253,8 @@ export async function fightEnemy(
       if (charHealth <= 0) {
         status = BattleStatus.lost;
         characterDiesUrl = character.character_dies || null;
+
+        // await EnergyService.deductEnergy(playerId, 1); disabled to allow retries while testing
       }
     } else {
       console.log("- Enemy already defeated: no counterattack damage.");
