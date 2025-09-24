@@ -45,7 +45,6 @@ model Level {
   level_difficulty  DifficultyLevel
   level_title       String?
   content           String   @db.Text
-  points_reward     Int      @default(0)
   is_unlocked       Boolean  @default(false)
   feedback_message  String  @db.Text
   map               Map      @relation(fields: [map_id], references: [map_id], onDelete: Cascade)
@@ -66,9 +65,10 @@ model Challenge {
   points_reward  Int     @default(0)      
   coins_reward   Int     @default(0)  
 
-  guide          String?
-  test_cases     Json?    @default("[]")
-  options        Json?    @default("[]")
+  guide           String?
+  test_cases      Json?    @default("[]")
+  options         Json?    @default("[]")
+  expected_output Json?    @default("[]")
 
   level          Level    @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
 }
