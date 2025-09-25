@@ -26,8 +26,8 @@ const cors = require("cors");
 app.use(
   cors({
     origin: [
-      "http://192.168.254.118:3000", 
-      "http://192.168.254.118:8082", 
+      "http://10.0.10.87:3000", 
+      "http://10.0.10.87:8082", 
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true

@@ -14,6 +14,23 @@ const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 const DogCharacter = ({ isPaused }) => {
   const frameIndex = useSharedValue(0);
   
+
+  switch(animation){
+    case 'idle':
+      URL = selectedCharacter.character_idle
+      break;
+    case 'hurt':
+      URL = selectedCharacter.characterHurtUrl
+      break;
+    case 'dies': 
+      URL = selectedCharacter.characterDiesUrl
+      break;
+    case 'attack':
+      URL = selectedCharacter.characterAttackUrl
+      break;
+      
+      
+  }
   // Animation configuration for 23 frames
   const TOTAL_FRAMES = 24;
   const FRAME_DURATION = 45; 
@@ -53,6 +70,8 @@ const DogCharacter = ({ isPaused }) => {
     };
   });
 
+
+  
   return (
     <View style={[styles.dogRun, isPaused && styles.pausedElement]}>
       <View style={styles.spriteContainer}>

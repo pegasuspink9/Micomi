@@ -282,6 +282,15 @@ export const gameService = {
           gameState.selectedCharacter.current_health = responseData.fightResult.charHealth;
         }
 
+        if (responseData.fightResult?.character_idle) {
+          gameState.selectedCharacter.character_idle = responseData.fightResult.character_idle;
+        }
+
+        if(responseData.fightResult?.enemy_idle) {
+          gameState.enemy.enemy_idle = responseData.fightResult.enemy_idle;
+        }
+
+
         // Update enemy health from fight result if available  
         if (responseData.fightResult?.enemyHealth) {
           gameState.enemy.enemy_health = responseData.fightResult.enemyHealth;

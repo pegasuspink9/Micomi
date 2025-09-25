@@ -2,7 +2,8 @@ generator client {
   provider = "prisma-client-js"
 }
 
-datasource d  provider = "postgresql"
+datasource db {
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -41,7 +42,6 @@ model Level {
   map_id           Int
   level_number     Int
   content          String
-  points_reward    Int              @default(0)
   is_unlocked      Boolean          @default(false)
   feedback_message String
   level_difficulty DifficultyLevel
@@ -54,20 +54,21 @@ model Level {
 }
 
 model Challenge {
-  challenge_id   Int     @id @default(autoincrement())
-  level_id       Int
-  title          String
-  description    String
-  points_reward  Int     @default(0)
-  coins_reward   Int     @default(0)
-  hint           String
-  challenge_type String
-  guide          String?
-  correct_answer Json    @default("[]")
-  test_cases     Json?   @default("[]")
-  options        Json?   @default("[]")
-  question       String?
-  level          Level   @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
+  challenge_id    Int     @id @default(autoincrement())
+  level_id        Int
+  title           String
+  description     String
+  points_reward   Int     @default(0)
+  coins_reward    Int     @default(0)
+  hint            String
+  challenge_type  String
+  guide           String?
+  correct_answer  Json    @default("[]")
+  test_cases      Json?   @default("[]")
+  options         Json?   @default("[]")
+  question        String?
+  expected_output Json?   @default("[]")
+  level           Level   @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
 }
 
 model Enemy {
@@ -127,6 +128,7 @@ model PlayerProgress {
   wrong_challenges     Json          @default("[]")
   has_freeze_effect    Boolean       @default(false)
   has_strong_effect    Boolean       @default(false)
+  coins_earned         Int           @default(0)
   level                Level         @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
   player               Player        @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
 
@@ -265,39 +267,3 @@ enum BattleStatus {
   won
   lost
 }
-rogress
-  won
-  lost
-}
-
-
-
-enge
-  spend_coins
-  earn_exp //not yet implemented (needs clarification)
-  login_days
-}
-
-enum PotionType {
-  health
-  strong
-  freeze
-  hint
-}
-
-enum DifficultyLevel {
-  easy
-  medium
-  hard
-  expert
-  final
-}
-
-enum BattleStatus {
-  in_progress
-  won
-  lost
-}
-
-
-

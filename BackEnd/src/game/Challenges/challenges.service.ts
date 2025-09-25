@@ -8,7 +8,7 @@ import {
   SubmitChallengeControllerResult,
   CompletionRewards,
 } from "./challenges.types";
-
+ 
 const prisma = new PrismaClient();
 
 const arraysEqual = (a: string[], b: string[]): boolean => {
