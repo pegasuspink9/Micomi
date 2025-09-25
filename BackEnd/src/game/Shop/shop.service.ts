@@ -22,8 +22,15 @@ async function spendCoins(playerId: number, amount: number) {
 export const buyPotion = async (
   playerId: number,
   levelId: number,
-  potionType: PotionType
+  potionId: number
 ) => {
+  const potion = await prisma.potionShop.findUnique({
+    where: { potion_shop_id: potionId },
+  });
+  if (!potion) throw new Error("Potion not found");
+
+  const potionType = potion.potion_type;
+
   const potionConfig = await prisma.potionShopByLevel.findUnique({
     where: { level_id: levelId },
   });
@@ -38,16 +45,11 @@ export const buyPotion = async (
   if (maxAllowed === 0)
     throw new Error(`${potionType} not available in this level`);
 
-  const potion = await prisma.potionShop.findUnique({
-    where: { potion_type: potionType },
-  });
-  if (!potion) throw new Error("Potion not found");
-
   const playerPotion = await prisma.playerPotion.findUnique({
     where: {
       player_id_potion_shop_id: {
         player_id: playerId,
-        potion_shop_id: potion.potion_shop_id,
+        potion_shop_id: potionId,
       },
     },
   });
@@ -57,18 +59,26 @@ export const buyPotion = async (
     throw new Error(`Limit reached: ${maxAllowed} ${potionType} potions`);
   }
 
+  // Check coins before transaction
+  const player = await prisma.player.findUnique({
+    where: { player_id: playerId },
+  });
+  if (!player) throw new Error("Player not found");
+  if (player.coins < potion.potion_price) throw new Error("Not enough coins");
+
+  // Transaction: upsert potion and decrement coins
   await prisma.$transaction([
     prisma.playerPotion.upsert({
       where: {
         player_id_potion_shop_id: {
           player_id: playerId,
-          potion_shop_id: potion.potion_shop_id,
+          potion_shop_id: potionId,
         },
       },
       update: { quantity: { increment: 1 } },
       create: {
         player_id: playerId,
-        potion_shop_id: potion.potion_shop_id,
+        potion_shop_id: potionId,
         quantity: 1,
       },
     }),
@@ -79,7 +89,6 @@ export const buyPotion = async (
   ]);
 
   await updateQuestProgress(playerId, QuestType.buy_potion, 1);
-  await spendCoins(playerId, potion.potion_price);
 
   return await previewLevel(playerId, levelId);
 };

@@ -29,7 +29,7 @@ router.get(
   LevelController.previewLevelController
 );
 router.post(
-  "/entryLevel/:playerId/:levelId/buyPotion/:potionType",
+  "/entryLevel/:playerId/:levelId/preview/buyPotion/:potionId",
   ShopController.buyPotion
 );
 router.post(

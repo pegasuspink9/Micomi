@@ -6,18 +6,10 @@ export const buyPotion = async (req: Request, res: Response) => {
   try {
     const playerId = Number(req.params.playerId);
     const levelId = Number(req.params.levelId);
-    const potionType = req.params.potionType as
-      | "health"
-      | "strong"
-      | "freeze"
-      | "hint";
+    const potionId = Number(req.params.potionId);
 
-    const result = await ShopService.buyPotion(playerId, levelId, potionType);
-    return successResponse(
-      res,
-      result,
-      `${potionType} potion purchased successfully`
-    );
+    const result = await ShopService.buyPotion(playerId, levelId, potionId);
+    return successResponse(res, result, `Potion purchased successfully`);
   } catch (error) {
     return errorResponse(res, null, (error as Error).message, 400);
   }
