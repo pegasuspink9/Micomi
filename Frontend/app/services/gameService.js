@@ -14,7 +14,6 @@ export const gameService = {
     
   submitAnswer: async (playerId, levelId, challengeId, selectedAnswers) => {
     try {
-      // Validate inputs
       if (!Array.isArray(selectedAnswers) || selectedAnswers.length === 0) {
         throw new Error('selectedAnswers must be a non-empty array');
       }
@@ -161,7 +160,7 @@ export const gameService = {
         return null;
       }
 
-      // Base game state structure
+      // Base game state structure with updated attribute names
       const gameState = {
         level: {
           level_id: responseData.level?.level_id || null,
@@ -173,17 +172,19 @@ export const gameService = {
         
         enemy: {
           enemy_id: responseData.enemy?.enemy_id || null,
+          enemy_name: responseData.enemy?.enemy_name || null,
           enemy_health: responseData.enemy?.enemy_health || null,
+          enemy_damage: responseData.enemy?.enemy_damage || null,
           enemy_idle: responseData.enemy?.enemy_idle || null,
         },
         
         selectedCharacter: {
-          character_id: responseData.selectedCharacter?.character_id || null,
-          name: responseData.selectedCharacter?.name || null,
-          current_health: responseData.selectedCharacter?.current_health || null,
-          max_health: responseData.selectedCharacter?.max_health || null,
-          damage: responseData.selectedCharacter?.damage || [],
-          character_idle: responseData.selectedCharacter?.character_idle || null,
+          character_id: responseData.character?.character_id || null,
+          name: responseData.character?.character_name || null,
+          current_health: responseData.character?.character_health || null,
+          max_health: responseData.character?.character_health || null, // Using character_health as max initially
+          damage: responseData.character?.character_damage || [],
+          character_idle: responseData.character?.character_idle || null,
         },
         
         energy: responseData.energy || 0,
@@ -221,7 +222,7 @@ export const gameService = {
           options: options,
           correctAnswer: correctAnswer,
           challenge_type: challengeSource.challenge_type,
-          timeLimit: challengeSource.timeLimit,
+          timeLimit: challengeSource.timeLimit || challengeSource.timer,
           timeRemaining: challengeSource.timeRemaining,
           timer: challengeSource.timer,
           title: challengeSource.title,
@@ -230,7 +231,8 @@ export const gameService = {
           pointsReward: challengeSource.points_reward,
           coinsReward: challengeSource.coins_reward,
           guide: challengeSource.guide,
-          testCases: challengeSource.test_cases || []
+          testCases: challengeSource.test_cases || [],
+          expected_output: challengeSource.expected_output
         };
       }
 
@@ -243,22 +245,38 @@ export const gameService = {
           
           fightResult: responseData.fightResult ? {
             status: responseData.fightResult.status,
-            charHealth: responseData.fightResult.charHealth,
-            enemyHealth: responseData.fightResult.enemyHealth,
-            enemyMaxHealth: responseData.fightResult.enemyMaxHealth,
-            attackType: responseData.fightResult.attackType,
-            damage: responseData.fightResult.damage,
-            attackUrl: responseData.fightResult.attackUrl,
-            enemyAttackUrl: responseData.fightResult.enemyAttackUrl,
-            enemyHurtUrl: responseData.fightResult.enemyHurtUrl,
-            characterHurtUrl: responseData.fightResult.characterHurtUrl,
-            characterDiesUrl: responseData.fightResult.characterDiesUrl,
-            enemyDiesUrl: responseData.fightResult.enemyDiesUrl,
-            characterIdle: responseData.fightResult.character_idle,
-            enemyIdle: responseData.fightResult.enemy_idle,
             timer: responseData.fightResult.timer,
             energy: responseData.fightResult.energy,
-            timeToNextEnergyRestore: responseData.fightResult.timeToNextEnergyRestore
+            timeToNextEnergyRestore: responseData.fightResult.timeToNextEnergyRestore,
+            
+            // Character data from fightResult
+            character: responseData.fightResult.character ? {
+              character_id: responseData.fightResult.character.character_id,
+              character_name: responseData.fightResult.character.character_name,
+              character_idle: responseData.fightResult.character.character_idle,
+              character_run: responseData.fightResult.character.character_run,
+              character_attack_type: responseData.fightResult.character.character_attack_type,
+              character_attack: responseData.fightResult.character.character_attack,
+              character_hurt: responseData.fightResult.character.character_hurt,
+              character_dies: responseData.fightResult.character.character_dies,
+              character_damage: responseData.fightResult.character.character_damage,
+              character_health: responseData.fightResult.character.character_health,
+              character_max_health: responseData.fightResult.character.character_max_health,
+            } : null,
+            
+            // Enemy data from fightResult
+            enemy: responseData.fightResult.enemy ? {
+              enemy_id: responseData.fightResult.enemy.enemy_id,
+              enemy_name: responseData.fightResult.enemy.enemy_name,
+              enemy_idle: responseData.fightResult.enemy.enemy_idle,
+              enemy_run: responseData.fightResult.enemy.enemy_run,
+              enemy_attack: responseData.fightResult.enemy.enemy_attack,
+              enemy_hurt: responseData.fightResult.enemy.enemy_hurt,
+              enemy_dies: responseData.fightResult.enemy.enemy_dies,
+              enemy_damage: responseData.fightResult.enemy.enemy_damage,
+              enemy_health: responseData.fightResult.enemy.enemy_health,
+              enemy_max_health: responseData.fightResult.enemy.enemy_max_health,
+            } : null,
           } : null,
           
           levelStatus: responseData.levelStatus ? {
@@ -269,31 +287,57 @@ export const gameService = {
             showFeedback: responseData.levelStatus.showFeedback || false,
             playerHealth: responseData.levelStatus.playerHealth || 0,
             enemyHealth: responseData.levelStatus.enemyHealth || 0,
-            enemyMaxHealth: responseData.levelStatus.enemyMaxHealth || 0,
-            playerMaxHealth: responseData.levelStatus.playerMaxHealth || 0,
             coinsEarned: responseData.levelStatus.coinsEarned || 0
           } : null,
           
           nextLevel: responseData.nextLevel || null
         };
 
-        // Update character health from fight result if available
-        if (responseData.fightResult?.charHealth) {
-          gameState.selectedCharacter.current_health = responseData.fightResult.charHealth;
+        // Merge fight result data into main character state
+        if (responseData.fightResult?.character?.character_health) {
+          gameState.selectedCharacter.current_health = responseData.fightResult.character.character_health;
         }
 
-        if (responseData.fightResult?.character_idle) {
-          gameState.selectedCharacter.character_idle = responseData.fightResult.character_idle;
+        if (responseData.fightResult?.character?.character_max_health) {
+          gameState.selectedCharacter.max_health = responseData.fightResult.character.character_max_health;
         }
 
-        if(responseData.fightResult?.enemy_idle) {
-          gameState.enemy.enemy_idle = responseData.fightResult.enemy_idle;
+        if (responseData.fightResult?.character?.character_idle) {
+          gameState.selectedCharacter.character_idle = responseData.fightResult.character.character_idle;
         }
 
+        if (responseData.fightResult?.character?.character_name) {
+          gameState.selectedCharacter.name = responseData.fightResult.character.character_name;
+        }
 
-        // Update enemy health from fight result if available  
-        if (responseData.fightResult?.enemyHealth) {
-          gameState.enemy.enemy_health = responseData.fightResult.enemyHealth;
+        if (responseData.fightResult?.character?.character_damage) {
+          gameState.selectedCharacter.damage = responseData.fightResult.character.character_damage;
+        }
+
+        // Merge fight result data into main enemy state
+        if (responseData.fightResult?.enemy?.enemy_health) {
+          gameState.enemy.enemy_health = responseData.fightResult.enemy.enemy_health;
+        }
+
+        if (responseData.fightResult?.enemy?.enemy_idle) {
+          gameState.enemy.enemy_idle = responseData.fightResult.enemy.enemy_idle;
+        }
+
+        if (responseData.fightResult?.enemy?.enemy_name) {
+          gameState.enemy.enemy_name = responseData.fightResult.enemy.enemy_name;
+        }
+
+        if (responseData.fightResult?.enemy?.enemy_damage) {
+          gameState.enemy.enemy_damage = responseData.fightResult.enemy.enemy_damage;
+        }
+
+        // Update energy and timer from fight result if available
+        if (responseData.fightResult?.energy !== undefined) {
+          gameState.energy = responseData.fightResult.energy;
+        }
+
+        if (responseData.fightResult?.timeToNextEnergyRestore !== undefined) {
+          gameState.timeToNextEnergyRestore = responseData.fightResult.timeToNextEnergyRestore;
         }
       }
       

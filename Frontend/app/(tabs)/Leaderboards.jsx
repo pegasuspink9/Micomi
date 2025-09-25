@@ -7,6 +7,7 @@ import Drawer from '../Components/Actual Game/Drawer/Drawer';
 import LevelModal from '../Components/Actual Game/Level Intro and Outro/LevelModal';
 import { useGameData } from '../hooks/useGameData';
 
+
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const DRAWER_PEEK = SCREEN_HEIGHT * 0.05;
 const DRAWER_HEIGHT = SCREEN_HEIGHT * 0.7;
@@ -145,13 +146,22 @@ export default function LeaderBoard({ route }) {
             <Text style={styles.debugText}>ID: {gameState.level?.level_id}</Text>
             <Text style={styles.debugText}>Title: {gameState.level?.level_title}</Text>
             <Text style={styles.debugText}>Difficulty: {gameState.level?.level_difficulty}</Text>
+            <Text style={styles.debugText}>Number: {gameState.level?.level_number}</Text>
+            <Text style={styles.debugText}>Content: {gameState.level?.content}</Text>
           </View>
 
           <View style={styles.debugSection}>
             <Text style={styles.debugSubtitle}>👤 Character</Text>
+            <Text style={styles.debugText}>ID: {gameState.selectedCharacter?.character_id}</Text>
             <Text style={styles.debugText}>Name: {gameState.selectedCharacter?.name}</Text>
             <Text style={styles.debugText}>
               Health: {gameState.selectedCharacter?.current_health}
+            </Text>
+            <Text style={styles.debugText}>
+              Max Health: {gameState.selectedCharacter?.max_health}
+            </Text>
+            <Text style={styles.debugText}>
+              Damage: {JSON.stringify(gameState.selectedCharacter?.damage)}
             </Text>
             <Text style={styles.debugText}>Character Idle:</Text>
               {gameState.selectedCharacter?.character_idle ? (
@@ -163,14 +173,16 @@ export default function LeaderBoard({ route }) {
               ) : (
                 <Text style={styles.debugText}>No Idle Image</Text>
               )}
-            <Text style={styles.debugText}>Character Attack URL: {gameState.submissionResult?.fightResult?.attackUrl}</Text>
-
+            <Text style={styles.debugText}>Character Hurt URL: {gameState.submissionResult?.fightResult?.character?.character_hurt}</Text>
+            <Text style={styles.debugText}>Character Attack URL: {gameState.submissionResult?.fightResult?.character?.character_attack}</Text>
           </View>
 
           <View style={styles.debugSection}>
             <Text style={styles.debugSubtitle}>👹 Enemy</Text>
             <Text style={styles.debugText}>ID: {gameState.enemy?.enemy_id}</Text>
+            <Text style={styles.debugText}>Name: {gameState.enemy?.enemy_name}</Text>
             <Text style={styles.debugText}>Health: {gameState.enemy?.enemy_health}</Text>
+            <Text style={styles.debugText}>Damage: {gameState.enemy?.enemy_damage}</Text>
              <Text style={styles.debugText}>Enemy Idle:</Text>
               {gameState.enemy?.enemy_idle ? (
                 <ImageBackground
@@ -181,7 +193,8 @@ export default function LeaderBoard({ route }) {
               ) : (
                 <Text style={styles.debugText}>No Idle Image</Text>
               )}
-            <Text style={styles.debugText}>Enemy Attack URL: {gameState.submissionResult?.fightResult?.enemyAttackUrl}</Text>
+            <Text style={styles.debugText}>Enemy Attack URL: {gameState.submissionResult?.fightResult?.enemy?.enemy_attack}</Text>
+            <Text style={styles.debugText}>Enemy Hurt URL: {gameState.submissionResult?.fightResult?.enemy?.enemy_hurt}</Text>
           </View>
 
           <View style={styles.debugSection}>
@@ -189,6 +202,19 @@ export default function LeaderBoard({ route }) {
             <Text style={styles.debugText}>ID: {gameState.currentChallenge?.id}</Text>
             <Text style={styles.debugText}>Title: {gameState.currentChallenge?.title}</Text>
             <Text style={styles.debugText}>Type: {gameState.currentChallenge?.challenge_type}</Text>
+            <Text style={styles.debugText}>Description: {gameState.currentChallenge?.description}</Text>
+            <Text style={styles.debugText}>Hint: {gameState.currentChallenge?.hint}</Text>
+            <Text style={styles.debugText}>Points: {gameState.currentChallenge?.pointsReward}</Text>
+            <Text style={styles.debugText}>Coins: {gameState.currentChallenge?.coinsReward}</Text>
+            <Text style={styles.debugText}>Timer: {gameState.currentChallenge?.timer}</Text>
+            <Text style={styles.debugText}>Options: {JSON.stringify(gameState.currentChallenge?.options)}</Text>
+            <Text style={styles.debugText}>Correct Answer: {JSON.stringify(gameState.currentChallenge?.correctAnswer)}</Text>
+          </View>
+
+          <View style={styles.debugSection}>
+            <Text style={styles.debugSubtitle}>⚡ Game Status</Text>
+            <Text style={styles.debugText}>Energy: {gameState.energy}</Text>
+            <Text style={styles.debugText}>Time to Next Energy: {gameState.timeToNextEnergyRestore}</Text>
           </View>
 
           {submissionResult && (
@@ -197,6 +223,22 @@ export default function LeaderBoard({ route }) {
               <Text style={styles.debugText}>Result: {submissionResult.isCorrect ? 'CORRECT' : 'INCORRECT'}</Text>
               <Text style={styles.debugText}>Attempts: {submissionResult.attempts}</Text>
               <Text style={styles.debugText}>Message: {submissionResult.message}</Text>
+              
+              {submissionResult.fightResult && (
+                <>
+                  <Text style={styles.debugText}>Fight Status: {submissionResult.fightResult.status}</Text>
+                  <Text style={styles.debugText}>Fight Timer: {submissionResult.fightResult.timer}</Text>
+                  <Text style={styles.debugText}>Fight Energy: {submissionResult.fightResult.energy}</Text>
+                </>
+              )}
+              
+              {submissionResult.levelStatus && (
+                <>
+                  <Text style={styles.debugText}>Level Completed: {submissionResult.levelStatus.isCompleted ? 'Yes' : 'No'}</Text>
+                  <Text style={styles.debugText}>Battle Won: {submissionResult.levelStatus.battleWon ? 'Yes' : 'No'}</Text>
+                  <Text style={styles.debugText}>Coins Earned: {submissionResult.levelStatus.coinsEarned}</Text>
+                </>
+              )}
             </View>
           )}
         </>
