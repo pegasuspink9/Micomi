@@ -14,6 +14,7 @@ import shopRoutes from "./models/Shop/shop.routes";
 import gameRoutes from "./game/routes/game.routes";
 import lessonRoutes from "./models/Lesson/lesson.routes";
 import questRoutes from "./models/Quest/quest.routes";
+import levelPotionShopRoutes from "./models/Potion Shop by Level/levelPotionShop.routes";
 import authRoutes from "../middleware/auth.routes";
 
 dotenv.config();
@@ -49,6 +50,7 @@ app.use("/playerAchievement", playerAchievementRoutes);
 app.use("/shop", shopRoutes);
 app.use("/lesson", lessonRoutes);
 app.use("/quest", questRoutes);
+app.use("/level-potion-shop", levelPotionShopRoutes);
 
 app.use("/game", gameRoutes);
 

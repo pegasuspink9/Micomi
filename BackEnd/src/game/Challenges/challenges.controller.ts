@@ -62,8 +62,6 @@ export const submitChallenge = async (req: Request, res: Response) => {
         showFeedback: canProceed,
         playerHealth: result.levelStatus.playerHealth,
         enemyHealth: result.levelStatus.enemyHealth,
-        playerMaxHealth: result.levelStatus.playerMaxHealth,
-        enemyMaxHealth: result.levelStatus.enemyMaxHealth,
       },
     };
 
@@ -81,7 +79,6 @@ export const submitChallenge = async (req: Request, res: Response) => {
             feedback_message: true,
             map_id: true,
             level_number: true,
-            points_reward: true,
           },
         }),
         prisma.player.findUnique({

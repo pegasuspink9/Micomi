@@ -22,6 +22,7 @@ export interface CompletionRewards {
   feedbackMessage?: string | null;
   currentTotalPoints?: number;
   currentExpPoints?: number;
+  coinsEarned?: number;
 }
 
 export interface SubmitChallengeControllerResult
@@ -43,7 +44,5 @@ export interface LevelStatus {
   showFeedback: boolean;
   playerHealth: number;
   enemyHealth: number;
-  enemyMaxHealth: number;
-  playerMaxHealth: number;
   coinsEarned: number;
 }
