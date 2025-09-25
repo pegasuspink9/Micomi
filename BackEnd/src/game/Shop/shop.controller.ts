@@ -3,11 +3,21 @@ import * as ShopService from "./shop.service";
 import { errorResponse, successResponse } from "../../../utils/response";
 
 export const buyPotion = async (req: Request, res: Response) => {
-  const playerId = Number(req.params.playerId);
-  const { potionShopId } = req.body;
   try {
-    const result = await ShopService.buyPotion(playerId, potionShopId);
-    return successResponse(res, result, `Potion purchased`, 201);
+    const playerId = Number(req.params.playerId);
+    const levelId = Number(req.params.levelId);
+    const potionType = req.params.potionType as
+      | "health"
+      | "strong"
+      | "freeze"
+      | "hint";
+
+    const result = await ShopService.buyPotion(playerId, levelId, potionType);
+    return successResponse(
+      res,
+      result,
+      `${potionType} potion purchased successfully`
+    );
   } catch (error) {
     return errorResponse(res, null, (error as Error).message, 400);
   }

@@ -16,50 +16,82 @@ const prisma = new PrismaClient();
 const randomize = <T>(arr: T[]) => [...arr].sort(() => Math.random() - 0.5);
 
 export const previewLevel = async (playerId: number, levelId: number) => {
-  const level: (Level & { map: any; challenges: Challenge[] }) | null =
-    await prisma.level.findUnique({
-      where: { level_id: levelId },
-      include: {
-        map: true,
-        challenges: true,
-      },
-    });
-
+  const level = await prisma.level.findUnique({
+    where: { level_id: levelId },
+    include: { map: true, challenges: true },
+  });
   if (!level) throw new Error("Level not found");
 
-  const enemy: Enemy | null = await prisma.enemy.findFirst({
+  const enemy = await prisma.enemy.findFirst({
     where: {
       enemy_map: level.map.map_name,
       enemy_difficulty: level.level_difficulty,
     },
   });
-  if (!enemy)
-    throw new Error(
-      `No enemy found for map ${level.map.map_name} and difficulty ${level.level_difficulty}`
-    );
+  if (!enemy) throw new Error("Enemy not found for this level");
 
-  const selectedChar: (PlayerCharacter & { character: any }) | null =
-    await prisma.playerCharacter.findFirst({
-      where: { player_id: playerId, is_selected: true },
-      include: { character: true },
-    });
-  if (!selectedChar) throw new Error("No character selected for this player");
+  const selectedChar = await prisma.playerCharacter.findFirst({
+    where: { player_id: playerId, is_selected: true },
+    include: { character: true },
+  });
+  if (!selectedChar) throw new Error("No character selected");
 
   const character = selectedChar.character;
-  const playerMaxHealth = character.health;
-  const enemyMaxHealth = enemy.enemy_health * level.challenges.length;
+  const playerMaxHealth = Number(character.health ?? 0);
+  const enemyMaxHealth =
+    Number(enemy.enemy_health ?? 0) * Number(level.challenges.length ?? 0);
 
   const totalPoints = level.challenges.reduce(
-    (sum, ch) => sum + (ch.points_reward ?? 0),
+    (sum, ch) => sum + Number(ch.points_reward ?? 0),
     0
   );
-
   const totalCoins = level.challenges.reduce(
-    (sum, ch) => sum + (ch.coins_reward ?? 0),
+    (sum, ch) => sum + Number(ch.coins_reward ?? 0),
     0
   );
 
   const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
+
+  const player = await prisma.player.findUnique({
+    where: { player_id: playerId },
+  });
+  if (!player) throw new Error("Player not found");
+
+  const potionConfig = await prisma.potionShopByLevel.findUnique({
+    where: { level_id: levelId },
+  });
+
+  let potionShop: any[] = [];
+  if (potionConfig) {
+    const potions = await prisma.potionShop.findMany();
+    const playerPotions = await prisma.playerPotion.findMany({
+      where: { player_id: playerId },
+    });
+
+    potionShop = potions.map((p) => {
+      const owned =
+        playerPotions.find((pp) => pp.potion_shop_id === p.potion_shop_id)
+          ?.quantity ?? 0;
+
+      const rawLimit =
+        potionConfig[
+          `${p.potion_type.toLowerCase()}_quantity` as keyof typeof potionConfig
+        ] ?? 0;
+
+      const limit = Number(rawLimit ?? 0);
+
+      return {
+        potion_id: p.potion_shop_id,
+        type: p.potion_type,
+        description: p.potion_description,
+        price: p.potion_price,
+        url: p.potion_url,
+        limit,
+        owned,
+        remaining: Math.max(0, limit - owned),
+      };
+    });
+  }
 
   return {
     level: {
@@ -73,19 +105,22 @@ export const previewLevel = async (playerId: number, levelId: number) => {
     },
     enemy: {
       enemy_id: enemy.enemy_id,
+      enemy_name: enemy.enemy_name,
       enemy_health: enemyMaxHealth,
       enemy_idle: enemy.enemy_avatar,
+      enemy_damage: enemy.enemy_damage,
     },
     selectedCharacter: {
       character_id: character.character_id,
-      name: character.character_name,
-      current_health: playerMaxHealth,
-      max_health: playerMaxHealth,
-      damage: character.character_damage,
+      character_name: character.character_name,
+      character_health: playerMaxHealth,
+      character_damage: character.character_damage,
       character_idle: character.avatar_image,
     },
     energy: energyStatus.energy,
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
+    coins: player.coins,
+    potionShop,
   };
 };
 
@@ -218,8 +253,6 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       }
       return {
         ...ch,
-        timeLimit,
-        timeRemaining: timeLimit,
         timer: formatTimer(timeLimit),
       };
     }
@@ -238,15 +271,16 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     },
     enemy: {
       enemy_id: enemy.enemy_id,
+      enemy_name: enemy.enemy_name,
       enemy_health: enemyMaxHealth,
       enemy_idle: enemy.enemy_avatar,
+      enemy_damage: enemy.enemy_damage,
     },
-    selectedCharacter: {
+    character: {
       character_id: character.character_id,
-      name: character.character_name,
-      current_health: playerMaxHealth,
-      max_health: playerMaxHealth,
-      damage: character.character_damage,
+      character_name: character.character_name,
+      character_health: playerMaxHealth,
+      character_damage: character.character_damage,
       character_idle: character.avatar_image,
     },
     currentChallenge: firstChallenge,

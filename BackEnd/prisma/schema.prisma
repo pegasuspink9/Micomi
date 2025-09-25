@@ -51,6 +51,7 @@ model Level {
   challenges        Challenge[] 
   playerProgress    PlayerProgress[]
   quest             Quest[]
+  potionShopByLevel PotionShopByLevel[]
 }
 
 model Challenge {
@@ -207,6 +208,21 @@ model PotionShop {
   potion_url          String?     @db.Text
 
   buyers              PlayerPotion[]
+}
+
+model PotionShopByLevel {
+  potion_shop_by_level_id Int   @id @default(autoincrement())
+  level_id                Int
+  potions_avail           Json   @default("[]") //["health","strong", "freeze", "hint"]
+
+  health_quantity         Int    @default(0)
+  strong_quantity         Int    @default(0)
+  freeze_quantity         Int    @default(0)
+  hint_quantity           Int    @default(0)
+
+  level                   Level  @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
+
+  @@unique([level_id]) 
 }
 
 model PlayerPotion {

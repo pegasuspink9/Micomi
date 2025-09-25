@@ -203,6 +203,14 @@ export const submitChallengeService = async (
       ? "Hint used! Revealed part of the correct answer."
       : "Correct! You attacked the enemy.";
   } else {
+    if (!wrongChallenges.includes(challenge.challenge_id)) {
+      wrongChallenges.push(challenge.challenge_id);
+      await prisma.playerProgress.update({
+        where: { progress_id: currentProgress.progress_id },
+        data: { wrong_challenges: wrongChallenges },
+      });
+    }
+
     fightResult = await CombatService.fightEnemy(
       playerId,
       enemy.enemy_id,
@@ -210,18 +218,13 @@ export const submitChallengeService = async (
       elapsed,
       challengeId
     );
-    message = "Wrong! You'll see this challenge again later.";
 
-    if (
-      fightResult.enemyHealth > 0 &&
-      !wrongChallenges.includes(challenge.challenge_id)
-    ) {
-      wrongChallenges.push(challenge.challenge_id);
+    if (updatedProgress.enemy_hp! <= 0) {
+      message =
+        "Wrong! You must answer this challenge correctly to complete the level.";
+    } else {
+      message = "Wrong! You'll see this challenge again later.";
     }
-    await prisma.playerProgress.update({
-      where: { progress_id: currentProgress.progress_id },
-      data: { wrong_challenges: wrongChallenges },
-    });
   }
 
   const next = await getNextChallengeService(playerId, levelId);
@@ -236,6 +239,7 @@ export const submitChallengeService = async (
 
   const freshProgress = await prisma.playerProgress.findUnique({
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
+    include: { level: { include: { challenges: true } } },
   });
 
   console.log("CHALLENGE SERVICE - Fresh progress after combat:");
@@ -251,8 +255,7 @@ export const submitChallengeService = async (
     []) as number[];
   const allCompleted =
     answeredIds.length === level.challenges.length &&
-    (wrongChallengesArr.length === 0 ||
-      (freshProgress?.enemy_hp ?? Infinity) <= 0);
+    wrongChallengesArr.length === 0;
 
   let completionRewards: CompletionRewards | undefined = undefined;
   let nextLevel: SubmitChallengeControllerResult["nextLevel"] = null;
@@ -311,8 +314,6 @@ export const submitChallengeService = async (
       playerHealth:
         fightResult?.charHealth ?? freshProgress?.player_hp ?? character.health,
       enemyHealth: fightResult?.enemyHealth ?? enemyMaxHealth,
-      enemyMaxHealth: enemyMaxHealth,
-      playerMaxHealth: character.health,
       coinsEarned: freshProgress?.coins_earned ?? 0,
     },
     completionRewards,
@@ -344,28 +345,39 @@ const getNextChallengeEasy = async (progress: any) => {
     (progress.player_answer as Record<string, string[]> | null) ?? {}
   ).map(Number);
 
-  let nextChallenge =
-    level.challenges.find(
-      (c: Challenge) => !answeredIds.includes(c.challenge_id)
-    ) || null;
+  const enemyDefeated = progress.enemy_hp <= 0;
+  let nextChallenge: Challenge | null = null;
 
-  if (
-    nextChallenge === null &&
-    wrongChallenges.length > 0 &&
-    progress.enemy_hp > 0
-  ) {
-    const [firstWrongId, ...rest] = wrongChallenges;
-
+  if (!enemyDefeated) {
     nextChallenge =
       level.challenges.find(
-        (c: Challenge) => c.challenge_id === firstWrongId
+        (c: Challenge) => !answeredIds.includes(c.challenge_id)
       ) || null;
 
-    const rotated = [...rest, firstWrongId];
-    await prisma.playerProgress.update({
-      where: { progress_id: progress.progress_id },
-      data: { wrong_challenges: rotated },
-    });
+    if (!nextChallenge && wrongChallenges.length > 0) {
+      const firstWrongId = wrongChallenges[0];
+      nextChallenge =
+        level.challenges.find(
+          (c: Challenge) => c.challenge_id === firstWrongId
+        ) || null;
+    }
+  } else {
+    if (wrongChallenges.length > 0) {
+      const firstWrongId = wrongChallenges.find(
+        (id) =>
+          !arraysEqual(
+            progress.player_answer?.[id.toString()] ?? [],
+            level.challenges.find((c: Challenge) => c.challenge_id === id)
+              ?.correct_answer ?? []
+          )
+      );
+      if (firstWrongId) {
+        nextChallenge =
+          level.challenges.find(
+            (c: Challenge) => c.challenge_id === firstWrongId
+          ) || null;
+      }
+    }
   }
 
   return wrapWithTimer(progress, nextChallenge);

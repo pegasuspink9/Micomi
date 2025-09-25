@@ -12,7 +12,5 @@ export interface ChallengeDTO {
   guide?: string | null;
   test_cases?: Prisma.InputJsonValue | null;
 
-  timeLimit: number;
-  timeRemaining: number;
   timer: string;
 }

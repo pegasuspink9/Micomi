@@ -1,5 +1,6 @@
 import { PrismaClient, PotionType, QuestType } from "@prisma/client";
 import { updateQuestProgress } from "../Quests/quests.service";
+import { previewLevel } from "../Levels/levels.service";
 
 const prisma = new PrismaClient();
 
@@ -18,53 +19,69 @@ async function spendCoins(playerId: number, amount: number) {
   await updateQuestProgress(playerId, QuestType.spend_coins, amount);
 }
 
-export const buyPotion = async (playerId: number, potionShopId: number) => {
-  const player = await prisma.player.findUnique({
-    where: { player_id: playerId },
+export const buyPotion = async (
+  playerId: number,
+  levelId: number,
+  potionType: PotionType
+) => {
+  const potionConfig = await prisma.potionShopByLevel.findUnique({
+    where: { level_id: levelId },
   });
-  if (!player) throw new Error("Player not found");
+  if (!potionConfig)
+    throw new Error("No potion shop configured for this level");
+
+  const maxAllowed = Number(
+    potionConfig[
+      `${potionType.toLowerCase()}_quantity` as keyof typeof potionConfig
+    ] ?? 0
+  );
+  if (maxAllowed === 0)
+    throw new Error(`${potionType} not available in this level`);
 
   const potion = await prisma.potionShop.findUnique({
-    where: { potion_shop_id: potionShopId },
+    where: { potion_type: potionType },
   });
   if (!potion) throw new Error("Potion not found");
 
-  if (player.coins < potion.potion_price) throw new Error("Not enough coins");
-
-  const existing = await prisma.playerPotion.findUnique({
+  const playerPotion = await prisma.playerPotion.findUnique({
     where: {
       player_id_potion_shop_id: {
         player_id: playerId,
-        potion_shop_id: potionShopId,
+        potion_shop_id: potion.potion_shop_id,
       },
     },
   });
 
-  if (existing) {
-    await prisma.playerPotion.update({
+  const alreadyOwned = playerPotion?.quantity ?? 0;
+  if (alreadyOwned >= maxAllowed) {
+    throw new Error(`Limit reached: ${maxAllowed} ${potionType} potions`);
+  }
+
+  await prisma.$transaction([
+    prisma.playerPotion.upsert({
       where: {
         player_id_potion_shop_id: {
           player_id: playerId,
-          potion_shop_id: potionShopId,
+          potion_shop_id: potion.potion_shop_id,
         },
       },
-      data: { quantity: { increment: 1 } },
-    });
-  } else {
-    await prisma.playerPotion.create({
-      data: { player_id: playerId, potion_shop_id: potionShopId, quantity: 1 },
-    });
-  }
-
-  await prisma.player.update({
-    where: { player_id: playerId },
-    data: { coins: { decrement: potion.potion_price } },
-  });
+      update: { quantity: { increment: 1 } },
+      create: {
+        player_id: playerId,
+        potion_shop_id: potion.potion_shop_id,
+        quantity: 1,
+      },
+    }),
+    prisma.player.update({
+      where: { player_id: playerId },
+      data: { coins: { decrement: potion.potion_price } },
+    }),
+  ]);
 
   await updateQuestProgress(playerId, QuestType.buy_potion, 1);
   await spendCoins(playerId, potion.potion_price);
 
-  return { message: `${potion.potion_type} purchased` };
+  return await previewLevel(playerId, levelId);
 };
 
 export const buyCharacter = async (

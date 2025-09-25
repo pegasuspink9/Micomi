@@ -5,6 +5,7 @@ import {
   QuestType,
 } from "@prisma/client";
 import * as EnergyService from "../Energy/energy.service";
+import * as LevelService from "../Levels/levels.service";
 import { updateQuestProgress } from "../Quests/quests.service";
 import { formatTimer } from "../../../helper/dateTimeHelper";
 
@@ -70,13 +71,26 @@ export async function getFightSetup(playerId: number, enemyId: number) {
   const responseEnemyHp = safeHp(progress.enemy_hp, scaledEnemyHp);
 
   return {
-    player,
-    character: selectedCharacter,
-    enemy,
+    enemy: {
+      enemy_id: enemy.enemy_id,
+      enemy_name: enemy.enemy_name,
+      enemy_idle: enemy.enemy_avatar,
+      enemy_damage: enemy.enemy_damage,
+      enemy_health: responseEnemyHp,
+      enemy_max_health: scaledEnemyHp,
+    },
+    selectedCharacter: {
+      character_id: selectedCharacter.character_id,
+      character_name: selectedCharacter.character_name,
+      character_idle: selectedCharacter.avatar_image,
+      character_health: progress.player_hp,
+      character_max_health: selectedCharacter.health,
+      character_damage: selectedCharacter.character_damage,
+      character_attacks: selectedCharacter.character_attacks,
+    },
+    status: progress.battle_status,
     progress,
     level,
-    enemyHealth: responseEnemyHp,
-    enemyMaxHealth: scaledEnemyHp,
   };
 }
 
@@ -145,7 +159,7 @@ export async function fightEnemy(
 
   console.log("- Character damage array:", damageArray);
 
-  let attackType: string | null = null;
+  let characterAttackType: string | null = null;
   let damage = 0;
   let attackUrl: string | null = null;
   let enemyAttackUrl: string | null = null;
@@ -155,6 +169,11 @@ export async function fightEnemy(
   let enemyDiesUrl: string | null = null;
   let character_idle: string | null = null;
   let enemy_idle: string | null = null;
+  let enemy_run: string | null = null;
+  let character_run: string | null = null;
+
+  character_run = character.character_run || null;
+  character_idle = character.avatar_image || null;
 
   if (isCorrect) {
     await updateQuestProgress(playerId, QuestType.solve_challenge, 1);
@@ -176,32 +195,39 @@ export async function fightEnemy(
 
     if (correctAnswerLength >= 4) {
       if (elapsedSeconds < 5) {
-        attackType = "special_attack";
+        characterAttackType = "special_attack";
         damage = damageArray[2] ?? 25;
+        character_run = character.character_run || null;
         attackUrl = attacksArray[2] || null;
         character_idle = character.avatar_image || null;
+        console.log("- Fastest response: special attack", attackUrl);
       } else if (elapsedSeconds < 10) {
-        attackType = "second_attack";
+        characterAttackType = "second_attack";
         damage = damageArray[1] ?? 15;
+        character_run = character.character_run || null;
         attackUrl = attacksArray[1] || null;
         character_idle = character.avatar_image || null;
+        console.log("- Medium response: second attack", attackUrl);
       } else {
-        attackType = "basic_attack";
+        characterAttackType = "basic_attack";
         damage = damageArray[0] ?? 10;
+        character_run = character.character_run || null;
         attackUrl = attacksArray[0] || null;
         character_idle = character.avatar_image || null;
-        console.log("- Longest answer: defaulting to basic attack", attackUrl);
+        console.log("- Slow response: basic attack", attackUrl);
       }
     } else {
-      attackType = "basic_attack";
+      characterAttackType = "basic_attack";
       damage = damageArray[0] ?? 10;
+      character_run = character.character_run || null;
       attackUrl = attacksArray[0] || null;
       character_idle = character.avatar_image || null;
       console.log("- Short answer: defaulting to basic attack", attackUrl);
     }
 
-    console.log("- Attack type:", attackType);
+    console.log("- Attack type:", characterAttackType);
     console.log("- Base damage:", damage);
+    console.log("- Paired attack URL:", attackUrl);
 
     if (progress.has_strong_effect) {
       damage *= 2;
@@ -225,6 +251,12 @@ export async function fightEnemy(
         enemyDiesUrl = enemy.enemy_dies || null;
       }
     }
+
+    await LevelService.unlockNextLevel(
+      playerId,
+      level.map_id,
+      level.level_number
+    );
   } else {
     if (enemyHealth > 0) {
       let enemyDamage = enemy.enemy_damage ?? 5;
@@ -240,9 +272,9 @@ export async function fightEnemy(
 
       charHealth = Math.max(charHealth - enemyDamage, 0);
       enemy_idle = enemy.enemy_avatar || null;
+      enemy_run = enemy.enemy_run || null;
       enemyAttackUrl = enemy.enemy_attack || null;
       characterHurtUrl = character.character_hurt || null;
-      character_idle = character.avatar_image || null;
       console.log(
         "- Enemy dealt",
         enemyDamage,
@@ -286,19 +318,31 @@ export async function fightEnemy(
 
   return {
     status,
-    charHealth,
-    enemyHealth,
-    enemyMaxHealth: scaledEnemyMaxHealth,
-    attackType,
-    damage,
-    attackUrl,
-    enemyAttackUrl,
-    enemyHurtUrl,
-    characterHurtUrl,
-    characterDiesUrl,
-    enemyDiesUrl,
-    enemy_idle,
-    character_idle,
+    enemy: {
+      enemy_id: enemy.enemy_id,
+      enemy_name: enemy.enemy_name,
+      enemy_idle,
+      enemy_run,
+      enemy_attack: enemyAttackUrl,
+      enemy_hurt: enemyHurtUrl,
+      enemy_dies: enemyDiesUrl,
+      enemy_damage: enemy.enemy_damage,
+      enemy_health: enemyHealth,
+      enemy_max_health: scaledEnemyMaxHealth,
+    },
+    character: {
+      character_id: character.character_id,
+      character_name: character.character_name,
+      character_idle,
+      character_run,
+      character_attack_type: characterAttackType,
+      character_attack: attackUrl,
+      character_hurt: characterHurtUrl,
+      character_dies: characterDiesUrl,
+      character_damage: damage,
+      character_health: charHealth,
+      character_max_health: character.health,
+    },
     timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,
