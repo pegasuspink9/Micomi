@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { gameService } from '../services/gameService';
 
 export const useGameData = (playerId, levelId) => {
@@ -7,6 +7,11 @@ export const useGameData = (playerId, levelId) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [waitingForAnimation, setWaitingForAnimation] = useState(false);
+
+  // Refs for managing submission queue
+  const pendingSubmissionRef = useRef(null);
+  const animationTimeoutRef = useRef(null);
 
   const fetchGameData = async () => {
     if (!playerId || !levelId) {
@@ -54,22 +59,58 @@ export const useGameData = (playerId, levelId) => {
     }
   };
 
+  // Handle animation completion and proceed with next challenge
+  const handleAnimationComplete = useCallback(() => {
+    console.log('Animation sequence completed, processing next challenge...');
+    
+    setWaitingForAnimation(false);
+    
+    // Clear any existing timeout
+    if (animationTimeoutRef.current) {
+      clearTimeout(animationTimeoutRef.current);
+      animationTimeoutRef.current = null;
+    }
+    
+    // Process any pending submission data
+    if (pendingSubmissionRef.current) {
+      console.log('Processing pending submission result');
+      const pendingData = pendingSubmissionRef.current;
+      pendingSubmissionRef.current = null;
+      
+      // Update game state with the pending submission result
+      setGameState(pendingData);
+      
+      console.log('Game state updated with submission result:', {
+        challengeId: pendingData.currentChallenge?.id,
+        challengeTitle: pendingData.currentChallenge?.title,
+        playerHealth: pendingData.selectedCharacter?.current_health,
+        enemyHealth: pendingData.enemy?.enemy_health,
+      });
+    }
+  }, []);
+
   const submitAnswer = async (selectedAnswers) => {
     if (!gameState?.currentChallenge || !playerId || !levelId) {
       console.error('Missing required data for submission');
       return { success: false, error: 'Missing required data' };
     }
 
+    // If we're already waiting for an animation, queue this submission
+    if (waitingForAnimation) {
+      console.log('Already waiting for animation, queueing submission...');
+      return { success: false, error: 'Animation in progress' };
+    }
+
     try {
       setSubmitting(true);
       setError(null);
       
-      console.log(`DEBUG: Submitting answer for challenge ${gameState.currentChallenge.id}:`, selectedAnswers);
-      console.log('DEBUG: Selected answers type:', typeof selectedAnswers);
-      console.log('DEBUG: Selected answers is array:', Array.isArray(selectedAnswers));
-      console.log('DEBUG: Selected answers length:', selectedAnswers?.length);
+      console.log(`Submitting answer for challenge ${gameState.currentChallenge.id}:`, selectedAnswers);
+      console.log('Selected answers type:', typeof selectedAnswers);
+      console.log('Selected answers is array:', Array.isArray(selectedAnswers));
+      console.log('Selected answers length:', selectedAnswers?.length);
       
-      // Use only the existing API service - no direct fetch calls
+      // Use only the existing API service
       const responseData = await gameService.submitAnswer(
         playerId, 
         levelId, 
@@ -88,38 +129,74 @@ export const useGameData = (playerId, levelId) => {
         throw new Error('Failed to extract updated game state from submission response');
       }
 
-      // Update the complete game state
-      setGameState(updatedState);
+      console.log('Submission processed, starting animation sequence...');
 
-      console.log('Answer submitted successfully:', {
+      // Store the pending data and set animation wait flag
+      pendingSubmissionRef.current = updatedState;
+      setWaitingForAnimation(true);
+
+      // Update game state with submission result to trigger animations
+      setGameState(prevState => ({
+        ...prevState,
+        submissionResult: updatedState.submissionResult,
+        currentChallenge: prevState.currentChallenge,
+      }));
+
+      // Fallback timeout in case animation callback doesn't fire
+      animationTimeoutRef.current = setTimeout(() => {
+        console.warn('Animation timeout reached, proceeding anyway...');
+        handleAnimationComplete();
+      }, 5000); // 5 second fallback
+
+      console.log('Animation sequence started:', {
         isCorrect: updatedState.submissionResult?.isCorrect,
-        nextChallengeId: updatedState.currentChallenge?.id,
-        nextChallengeTitle: updatedState.currentChallenge?.title,
-        characterHealth: updatedState.selectedCharacter?.current_health,
+        playerHealth: updatedState.selectedCharacter?.current_health,
         enemyHealth: updatedState.enemy?.enemy_health,
-        fightStatus: updatedState.submissionResult?.fightResult?.status
       });
 
       return { 
         success: true, 
-        updatedGameState: updatedState
+        updatedGameState: updatedState,
+        waitingForAnimation: true,
       };
 
     } catch (err) {
       console.error('Failed to submit answer:', err);
       const errorMessage = err.message || 'Failed to submit answer';
       setError(errorMessage);
+      
+      // Clear any pending data on error
+      pendingSubmissionRef.current = null;
+      setWaitingForAnimation(false);
+      
       return { success: false, error: errorMessage };
     } finally {
       setSubmitting(false);
     }
   };
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     fetchGameData();
   }, [playerId, levelId]);
 
   const refetchGameData = () => {
+    // Clear any pending data
+    pendingSubmissionRef.current = null;
+    setWaitingForAnimation(false);
+    if (animationTimeoutRef.current) {
+      clearTimeout(animationTimeoutRef.current);
+      animationTimeoutRef.current = null;
+    }
+    
     fetchGameData();
   };
 
@@ -139,9 +216,11 @@ export const useGameData = (playerId, levelId) => {
     loading, 
     error, 
     submitting,
+    waitingForAnimation,
     
     // Actions
     refetchGameData,
-    submitAnswer
+    submitAnswer,
+    onAnimationComplete: handleAnimationComplete, // Pass this to ScreenPlay
   };
 };

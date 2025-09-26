@@ -32,7 +32,9 @@ export default function LeaderBoard({ route }) {
     error, 
     submitting,
     refetchGameData,
-    submitAnswer 
+    submitAnswer,
+    waitingForAnimation, 
+    onAnimationComplete
   } = useGameData(playerId, levelId);
 
   const currentChallenge = gameState?.currentChallenge;
@@ -100,6 +102,8 @@ export default function LeaderBoard({ route }) {
   const handleSetCorrectAnswer = useCallback((setCorrectAnswerFn) => {
     setCorrectAnswerRef.current = setCorrectAnswerFn;
   }, []);
+
+ 
 
   const animateToPosition = useCallback((shouldOpen) => {
     const toValue = shouldOpen ? 0 : DRAWER_HEIGHT - DRAWER_PEEK;
@@ -173,6 +177,23 @@ export default function LeaderBoard({ route }) {
               ) : (
                 <Text style={styles.debugText}>No Idle Image</Text>
               )}
+
+             <Text style={styles.debugText}>Character Hurt:</Text>
+{/* Check both possible sources */}
+              {(() => {
+                const hurtImageUrl = gameState.submissionResult?.fightResult?.character?.character_hurt || 
+                                    gameState.selectedCharacter?.character_hurt;
+                
+                return hurtImageUrl ? (
+                  <ImageBackground
+                    source={{ uri: hurtImageUrl }}
+                    style={{ width: 60, height: 60, marginTop: 4 }}
+                    resizeMode="contain"
+                  />
+                ) : (
+                  <Text style={styles.debugText}>No Hurt Image</Text>
+                );
+              })()}
             <Text style={styles.debugText}>Character Hurt URL: {gameState.submissionResult?.fightResult?.character?.character_hurt}</Text>
             <Text style={styles.debugText}>Character Attack URL: {gameState.submissionResult?.fightResult?.character?.character_attack}</Text>
           </View>
@@ -292,6 +313,7 @@ export default function LeaderBoard({ route }) {
         currentQuestionIndex={0}
         onAllowEnemyCompletion={handleAllowEnemyCompletion}
         onSetCorrectAnswer={handleSetCorrectAnswer}
+        onSubmissionAnimationComplete={onAnimationComplete}
       />
 
       <GameQuestions 
