@@ -1,4 +1,4 @@
-import { PrismaClient, PotionType, QuestType } from "@prisma/client";
+import { PrismaClient, QuestType } from "@prisma/client";
 import { updateQuestProgress } from "../Quests/quests.service";
 import { previewLevel } from "../Levels/levels.service";
 

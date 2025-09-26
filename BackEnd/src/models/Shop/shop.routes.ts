@@ -1,5 +1,6 @@
 import { Router } from "express";
 import * as ShopService from "./shop.service";
+import * as CharacterService from "../../game/Characters/characters.controller";
 import {
   authenticate,
   requireAdmin,
@@ -8,9 +9,14 @@ import {
 const router = Router();
 
 //Get all characters in the shop
-router.get("/shop-characters", ShopService.getAllCharactersInShop);
+router.get("/character", ShopService.getAllCharactersInShop);
 //Get player characters
 router.get("/player-characters/:playerId", ShopService.getAllPlayerCharacter);
+//Character selection
+router.post(
+  "/select-character/:playerId/:characterId",
+  CharacterService.selectCharacter
+);
 
 //CRUD for shop characters
 router.post("/create-character", ShopService.createShopCharacter);
