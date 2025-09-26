@@ -29,7 +29,7 @@ router.get(
   LevelController.previewLevelController
 );
 router.post(
-  "/entryLevel/:playerId/:levelId/preview/buyPotion/:potionId",
+  "/entryLevel/:playerId/:levelId/preview/buy-potion/:potionId",
   ShopController.buyPotion
 );
 router.post(
@@ -46,7 +46,10 @@ router.post(
 
 //Shop routes
 router.post("/buy-character/:playerId", ShopController.buyCharacter);
-router.post("/use-potion/:playerId", ShopController.usePotion);
+router.post(
+  "/use-potion/:playerId/:levelId/:potionId",
+  ShopController.usePotion
+);
 
 //Combat route
 router.post("/fight", CombatController.performFight);

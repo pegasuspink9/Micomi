@@ -24,6 +24,7 @@ export const buyPotion = async (
   levelId: number,
   potionId: number
 ) => {
+  // Fetch potion to get type and price
   const potion = await prisma.potionShop.findUnique({
     where: { potion_shop_id: potionId },
   });
@@ -31,44 +32,71 @@ export const buyPotion = async (
 
   const potionType = potion.potion_type;
 
+  // Check level has shop config
   const potionConfig = await prisma.potionShopByLevel.findUnique({
     where: { level_id: levelId },
   });
   if (!potionConfig)
     throw new Error("No potion shop configured for this level");
 
-  const maxAllowed = Number(
+  // Check if available in this level (via limit or potions_avail)
+  const rawLimit =
     potionConfig[
       `${potionType.toLowerCase()}_quantity` as keyof typeof potionConfig
-    ] ?? 0
-  );
-  if (maxAllowed === 0)
-    throw new Error(`${potionType} not available in this level`);
+    ] ?? 0;
+  const maxAllowed = Number(rawLimit);
+  if (maxAllowed === 0) {
+    const potionsAvail = potionConfig.potions_avail as string[];
+    if (!potionsAvail.includes(potionType)) {
+      throw new Error(`${potionType} not available in this level`);
+    }
+  }
 
-  const playerPotion = await prisma.playerPotion.findUnique({
+  // Check per-level buys (enforce limit)
+  const playerLevelPotion = await prisma.playerLevelPotion.findUnique({
     where: {
-      player_id_potion_shop_id: {
+      player_id_level_id_potion_shop_id: {
         player_id: playerId,
+        level_id: levelId,
         potion_shop_id: potionId,
       },
     },
   });
 
-  const alreadyOwned = playerPotion?.quantity ?? 0;
-  if (alreadyOwned >= maxAllowed) {
-    throw new Error(`Limit reached: ${maxAllowed} ${potionType} potions`);
+  const levelBought = playerLevelPotion?.quantity ?? 0;
+  if (levelBought >= maxAllowed) {
+    throw new Error(
+      `Limit reached: ${maxAllowed} ${potionType} potions for this level`
+    );
   }
 
-  // Check coins before transaction
+  // Check coins
   const player = await prisma.player.findUnique({
     where: { player_id: playerId },
   });
   if (!player) throw new Error("Player not found");
   if (player.coins < potion.potion_price) throw new Error("Not enough coins");
 
-  // Transaction: upsert potion and decrement coins
-  await prisma.$transaction([
-    prisma.playerPotion.upsert({
+  // Atomic transaction: buy per-level, add to global, spend coins
+  await prisma.$transaction(async (tx) => {
+    await tx.playerLevelPotion.upsert({
+      where: {
+        player_id_level_id_potion_shop_id: {
+          player_id: playerId,
+          level_id: levelId,
+          potion_shop_id: potionId,
+        },
+      },
+      update: { quantity: { increment: 1 } },
+      create: {
+        player_id: playerId,
+        level_id: levelId,
+        potion_shop_id: potionId,
+        quantity: 1,
+      },
+    });
+
+    await tx.playerPotion.upsert({
       where: {
         player_id_potion_shop_id: {
           player_id: playerId,
@@ -81,15 +109,18 @@ export const buyPotion = async (
         potion_shop_id: potionId,
         quantity: 1,
       },
-    }),
-    prisma.player.update({
+    });
+
+    await tx.player.update({
       where: { player_id: playerId },
       data: { coins: { decrement: potion.potion_price } },
-    }),
-  ]);
+    });
+  });
 
+  // Post-transaction: update quests
   await updateQuestProgress(playerId, QuestType.buy_potion, 1);
 
+  // Return updated preview (shows new remaining=0 if limit hit)
   return await previewLevel(playerId, levelId);
 };
 
@@ -156,9 +187,16 @@ export const buyCharacter = async (
 
 export const usePotion = async (
   playerId: number,
-  potionType: PotionType,
-  levelId: number
+  levelId: number,
+  potionId: number
 ) => {
+  const potionShop = await prisma.potionShop.findUnique({
+    where: { potion_shop_id: potionId },
+  });
+  if (!potionShop) throw new Error("Potion not found");
+
+  const potionType = potionShop.potion_type;
+
   const progress = await prisma.playerProgress.findUnique({
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
     include: {
@@ -177,7 +215,7 @@ export const usePotion = async (
   const playerPotion = await prisma.playerPotion.findFirst({
     where: {
       player_id: playerId,
-      potion: { potion_type: potionType },
+      potion_shop_id: potionId,
       quantity: { gt: 0 },
     },
     include: { potion: true },
@@ -219,7 +257,7 @@ export const usePotion = async (
       break;
 
     case "hint":
-      // already handled in challenges.service.ts specifically in submitChallenge function
+      // handled separately in challenges.service
       break;
   }
 
@@ -234,5 +272,7 @@ export const usePotion = async (
 
   return {
     message: `${potionType} potion used`,
+    potionType,
+    remaining: playerPotion.quantity - 1,
   };
 };
