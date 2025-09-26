@@ -51,7 +51,7 @@ const DogCharacter = ({
   };
 
   // Movement distance (final X for attack/run)
-  const RUN_DISTANCE = SCREEN_WIDTH * 0.5; // Move 50% of screen width
+  const RUN_DISTANCE = SCREEN_WIDTH * 0.51; // Move 49% of screen width
 
   // Ref to hold pending timeout ids so we can clear them on cleanup
   const phaseTimeoutRef = useRef(null);
@@ -196,7 +196,7 @@ const DogCharacter = ({
       case 'attack':
         animationUrl = characterAnimations.character_attack || characterAnimations.attack;
         shouldLoop = false;
-        isCompound = false; // no compound run+attack sequence
+        isCompound = false; 
         break;
       case 'hurt':
         animationUrl = characterAnimations.character_hurt || characterAnimations.hurt;
@@ -354,8 +354,8 @@ const DogCharacter = ({
     const currentFrame = Math.floor(frameIndex.value) % TOTAL_FRAMES;
 
     const COLUMNS = 6;
-    const frameWidth = 100;
-    const frameHeight = 100;
+    const frameWidth = 90;
+    const frameHeight = 90;
 
     const column = currentFrame % COLUMNS;
     const row = Math.floor(currentFrame / COLUMNS);
@@ -441,22 +441,22 @@ const styles = StyleSheet.create({
   dogRun: {
     position: 'absolute',
     left: SCREEN_WIDTH * 0.01,
-    top: SCREEN_HEIGHT * 0.17,
+    top: SCREEN_HEIGHT * 0.18,
     justifyContent: 'flex-start',
     alignItems: 'center',
     zIndex: 10,
   },
 
   spriteContainer: {
-    width: 100,
-    height: 100,
+    width: 90,
+    height: 90,
     overflow: 'hidden',
     borderRadius: 8,
   },
 
   spriteSheet: {
-    width: 600, // 6 columns × 100px = 600px
-    height: 400, // 4 rows × 100px = 400px
+    width: 540, // 6 columns × 90 = 540px
+    height: 360, // 4 rows × 90 = 360px
   },
 
   spriteImage: {

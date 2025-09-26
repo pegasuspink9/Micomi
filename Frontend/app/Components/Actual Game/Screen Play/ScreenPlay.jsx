@@ -23,9 +23,12 @@ export default function ScreenPlay({
 
   const enemies = useMemo(() => processEnemyData(enemiesData), []);
 
+  // NEW: per-enemy animation states (default to 'idle')
+  const [enemyAnimationStates, setEnemyAnimationStates] = useState(() =>
+    enemies.map(() => 'idle')
+  );
 
   const lastSubmissionKeyRef = useRef(null);
-
   const enemyPositions = useMemo(
     () => enemies.map(() => new Animated.Value(0)),
     [enemies.length]
@@ -46,7 +49,7 @@ export default function ScreenPlay({
     ?? gameState.enemy?.enemy_max_health
     ?? 100;
 
-  // Extract all character animations from gameState
+  // Extract all character animations from gameState (player)
   const characterAnimations = {
     character_idle: gameState.submissionResult?.fightResult?.character?.character_idle 
       ?? gameState.selectedCharacter?.character_idle,
@@ -108,52 +111,73 @@ export default function ScreenPlay({
     }
   }, [playerHealth, onSubmissionAnimationComplete]);
 
-  // Determine character animation state based on game events
+  // Handler used when an enemy finishes a one-shot animation (attack/hurt/dies)
+  const handleEnemyAnimationComplete = useCallback((index) => (completedAnimationState) => {
+    console.log(`Enemy ${index} animation "${completedAnimationState}" completed`);
+
+    setEnemyAnimationStates(prev => {
+      const next = [...prev];
+      // if enemy died, keep dies; otherwise go to idle
+      if (completedAnimationState === 'dies') {
+        next[index] = 'dies';
+      } else {
+        next[index] = 'idle';
+      }
+      return next;
+    });
+  }, []);
+
+  // Determine character animation state based on game events (also set enemy states)
   useEffect(() => {
-  // Don't change animation if we're already playing a submission animation
-  if (isPlayingSubmissionAnimation) {
-    console.log(`Skipping animation change - submission animation in progress`);
-    return;
-  }
-
-  // Check for death first (highest priority)
-  if (playerHealth <= 0) {
-    console.log(`Player died - setting dies animation`);
-    setCharacterAnimationState('dies');
-    setIsPlayingSubmissionAnimation(true);
-    return;
-  }
-
-  const submission = gameState.submissionResult;
-  // create a compact key for the submission so we can compare identity
-  const submissionKey = submission
-    ? `${submission.isCorrect}-${submission.attempts || 0}-${submission.fightResult?.character?.character_health ?? ''}-${submission.fightResult?.enemy?.enemy_health ?? ''}`
-    : null;
-
-  // Only start an animation if there is a NEW submission that we haven't processed yet
-  if (submission && lastSubmissionKeyRef.current !== submissionKey) {
-    lastSubmissionKeyRef.current = submissionKey; // mark as processed
-
-    if (submission.isCorrect === true) {
-      console.log(`Correct answer - setting attack animation`);
-      setCharacterAnimationState('attack');
-      setIsPlayingSubmissionAnimation(true);
-    } else if (submission.isCorrect === false) {
-      console.log(`Wrong answer - setting hurt animation`);
-      setCharacterAnimationState('hurt');
-      setIsPlayingSubmissionAnimation(true);
+    // Don't change animation if we're already playing a submission animation
+    if (isPlayingSubmissionAnimation) {
+      console.log(`Skipping animation change - submission animation in progress`);
+      return;
     }
-    return;
-  }
 
-  // No submission result and not already idle - return to idle
-  if (!submission && characterAnimationState !== 'idle') {
-    console.log(`No submission result - setting idle animation`);
-    setCharacterAnimationState('idle');
-    setIsPlayingSubmissionAnimation(false);
-    lastSubmissionKeyRef.current = null;
-  }
-  }, [gameState.submissionResult, playerHealth, isPlayingSubmissionAnimation]);
+    // Check for death first (highest priority)
+    if (playerHealth <= 0) {
+      console.log(`Player died - setting dies animation`);
+      setCharacterAnimationState('dies');
+      setIsPlayingSubmissionAnimation(true);
+      return;
+    }
+
+    const submission = gameState.submissionResult;
+    // create a compact key for the submission so we can compare identity
+    const submissionKey = submission
+      ? `${submission.isCorrect}-${submission.attempts || 0}-${submission.fightResult?.character?.character_health ?? ''}-${submission.fightResult?.enemy?.enemy_health ?? ''}`
+      : null;
+
+    // Only start an animation if there is a NEW submission that we haven't processed yet
+    if (submission && lastSubmissionKeyRef.current !== submissionKey) {
+      lastSubmissionKeyRef.current = submissionKey; // mark as processed
+
+      if (submission.isCorrect === true) {
+        console.log(`Correct answer - setting player attack, enemy hurt`);
+        setCharacterAnimationState('attack');
+        // set enemy(s) to 'hurt' (if you have multiple enemies you may refine this)
+        setEnemyAnimationStates(prev => prev.map(() => 'hurt'));
+        setIsPlayingSubmissionAnimation(true);
+      } else if (submission.isCorrect === false) {
+        console.log(`Wrong answer - setting player hurt, enemy attack`);
+        setCharacterAnimationState('hurt');
+        setEnemyAnimationStates(prev => prev.map(() => 'attack'));
+        setIsPlayingSubmissionAnimation(true);
+      }
+      return;
+    }
+
+    // No submission result and not already idle - return to idle
+    if (!submission && characterAnimationState !== 'idle') {
+      console.log(`No submission result - setting idle animation`);
+      setCharacterAnimationState('idle');
+      setIsPlayingSubmissionAnimation(false);
+      lastSubmissionKeyRef.current = null;
+      // reset enemies to idle
+      setEnemyAnimationStates(enemies.map(() => 'idle'));
+    }
+  }, [gameState.submissionResult, playerHealth, isPlayingSubmissionAnimation, enemies]);
 
   // Debug logging for character data
   useEffect(() => {
@@ -213,7 +237,36 @@ export default function ScreenPlay({
         {/* Enemies */}
         {enemies.map((enemy, index) => {
           if (!enemyPositions[index]) return null;
-          
+
+          // Build enemy animations object: prefer submission fightResult enemy URLs, else enemy data
+          const enemyAnimations = {
+            character_idle:
+              gameState.submissionResult?.fightResult?.enemy?.enemy_idle ??
+              enemy.character_idle ??
+              enemy.enemy_idle ??
+              enemy.idle,
+            character_attack:
+              gameState.submissionResult?.fightResult?.enemy?.enemy_attack ??
+              enemy.character_attack ??
+              enemy.enemy_attack ??
+              enemy.attack,
+            character_hurt:
+              gameState.submissionResult?.fightResult?.enemy?.enemy_hurt ??
+              enemy.character_hurt ??
+              enemy.enemy_hurt ??
+              enemy.hurt,
+            character_run:
+              gameState.submissionResult?.fightResult?.enemy?.enemy_run ??
+              enemy.character_run ??
+              enemy.enemy_run ??
+              enemy.run,
+            character_dies:
+              gameState.submissionResult?.fightResult?.enemy?.enemy_dies ??
+              enemy.character_dies ??
+              enemy.enemy_dies ??
+              enemy.dies,
+          };
+
           return (
             <EnemyCharacter
               key={`enemy-${index}`}
@@ -222,6 +275,9 @@ export default function ScreenPlay({
               enemyPosition={enemyPositions[index]}
               isAttacking={attackingEnemies.has(index)}
               isPaused={isPaused}
+              characterAnimations={enemyAnimations}
+              currentState={enemyAnimationStates[index] || 'idle'}
+              onAnimationComplete={handleEnemyAnimationComplete(index)}
             />
           );
         })}
