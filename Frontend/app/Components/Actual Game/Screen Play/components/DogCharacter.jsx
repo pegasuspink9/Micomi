@@ -12,14 +12,6 @@ import Animated, {
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
-/**
- * DogCharacter
- * Props add-on:
- *  - attackMovement: 'slide' | 'teleport' | 'fade'  (default: 'fade')
- *    - 'slide' behaves like a timed movement (withTiming)
- *    - 'teleport' instantly jumps to final X
- *    - 'fade' teleports to final X and fades opacity from 0 -> 1
- */
 const DogCharacter = ({
   isPaused,
   characterAnimations = {},
@@ -39,7 +31,7 @@ const DogCharacter = ({
   const [preloadedImages] = useState(new Map()); // Cache for preloaded images
 
   const TOTAL_FRAMES = 24;
-  const FRAME_DURATION = 120;
+  const FRAME_DURATION = 150;
 
   // Animation duration constants (in milliseconds)
   const ANIMATION_DURATIONS = {

@@ -8,6 +8,7 @@ const GameBackground = ({ children, isPaused }) => {
     <ImageBackground 
       source={{ uri: 'https://github.com/user-attachments/assets/e8d6fed7-4356-49f6-af2d-715cf325df59' }}
       style={[styles.firstGrid, isPaused && styles.pausedBackground]}
+      resizeMode="fill"
     >
       {children}
     </ImageBackground>
@@ -16,7 +17,7 @@ const GameBackground = ({ children, isPaused }) => {
 
 const styles = StyleSheet.create({
   firstGrid: {
-    minHeight: SCREEN_HEIGHT * 0.32,
+    minHeight: SCREEN_HEIGHT * 0.334,
     backgroundColor: '#ff6b6b',
   },
   
