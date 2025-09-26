@@ -270,24 +270,21 @@ export const submitChallengeService = async (
       (sum, c) => sum + c.points_reward,
       0
     );
+    const totalPoints = level.challenges.reduce(
+      (sum, c) => sum + c.points_reward,
+      0
+    );
     const totalCoins = level.challenges.reduce(
       (sum, c) => sum + c.coins_reward,
       0
     );
 
-    await prisma.player.update({
-      where: { player_id: playerId },
-      data: {
-        total_points: { increment: totalExp },
-        coins: { increment: freshProgress?.coins_earned ?? 0 },
-      },
-    });
-
     completionRewards = {
       feedbackMessage:
         level.feedback_message ?? `You completed Level ${level.level_number}!`,
-      currentTotalPoints: totalExp,
-      currentExpPoints: totalCoins,
+      currentTotalPoints: totalPoints,
+      currentExpPoints: totalExp,
+      coinsEarned: totalCoins,
     };
 
     nextLevel = await LevelService.unlockNextLevel(

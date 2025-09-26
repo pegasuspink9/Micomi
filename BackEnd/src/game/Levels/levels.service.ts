@@ -67,7 +67,6 @@ export const previewLevel = async (playerId: number, levelId: number) => {
     const playerPotions = await prisma.playerPotion.findMany({
       where: { player_id: playerId },
     });
-    // Fetch per-level purchases for this specific level only
     const playerLevelPotions = await prisma.playerLevelPotion.findMany({
       where: {
         player_id: playerId,
@@ -92,25 +91,24 @@ export const previewLevel = async (playerId: number, levelId: number) => {
 
         const limit = Number(rawLimit ?? 0);
 
-        // Only show potions available in this level (if potions_avail includes the type, but since we map all, filter if needed)
         const isAvailable = potionConfig.potions_avail
           ? (potionConfig.potions_avail as string[]).includes(p.potion_type)
           : limit > 0;
-        if (!isAvailable) return null; // Skip unavailable potions
+        if (!isAvailable) return null;
 
         return {
-          player_owned_quantity: globalOwned, // Global total for inventory display
+          player_owned_quantity: globalOwned,
           potion_id: p.potion_shop_id,
           potion_type: p.potion_type,
           description: p.potion_description,
           potion_price: p.potion_price,
           potion_url: p.potion_url,
           limit,
-          boughtInLevel: levelBought, // Per-level for debugging/UI
-          remainToBuy: Math.max(0, limit - levelBought), // Per-level limit enforcement
+          boughtInLevel: levelBought,
+          remainToBuy: Math.max(0, limit - levelBought),
         };
       })
-      .filter(Boolean); // Remove nulls for unavailable potions
+      .filter(Boolean);
   }
 
   return {
@@ -321,15 +319,17 @@ export const unlockNextLevel = async (
     where: {
       map_id: mapId,
       level_number: currentLevelNumber + 1,
-      is_unlocked: false,
     },
   });
+
   if (!nextLevel) return null;
 
-  await prisma.level.update({
-    where: { level_id: nextLevel.level_id },
-    data: { is_unlocked: true },
-  });
+  if (!nextLevel.is_unlocked) {
+    await prisma.level.update({
+      where: { level_id: nextLevel.level_id },
+      data: { is_unlocked: true },
+    });
+  }
 
   const existingProgress = await prisma.playerProgress.findFirst({
     where: { player_id: playerId, level_id: nextLevel.level_id },
@@ -343,11 +343,16 @@ export const unlockNextLevel = async (
         current_level: nextLevel.level_number,
         attempts: 0,
         player_answer: {},
-        completed_at: new Date(),
+        completed_at: null,
         challenge_start_time: new Date(),
       },
     });
   }
+
+  await prisma.player.update({
+    where: { player_id: playerId },
+    data: { level: nextLevel.level_id },
+  });
 
   return nextLevel;
 };

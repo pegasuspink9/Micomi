@@ -108,7 +108,7 @@ model Player {
   days_logged_in       Int      @default(0)
   coins                Int      @default(100)
 
-  energy           Int      @default(5)
+  energy           Int      @default(25)
   energy_reset_at  DateTime?
 
   playerProgress       PlayerProgress[]
