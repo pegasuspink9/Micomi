@@ -183,11 +183,10 @@ model Character {
 
 model Achievement {
   achievement_id    Int      @id @default(autoincrement())
-  name              String
+  achievement_name              String
   description       String
-  badge_icon        String   @db.Text
-  points_required   Int      @default(0)
-  achievement_type  String
+  badge_icon        String?   @db.Text
+  conditions        String
   playerAchievements PlayerAchievement[]
 }
 

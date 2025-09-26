@@ -4,7 +4,7 @@ import { successResponse, errorResponse } from "../../../utils/response";
 
 export const getPlayerAchievements = async (req: Request, res: Response) => {
   try {
-    const playerId = (req as any).user.id;
+    const playerId = Number(req.params.playerId);
 
     const achievements = await AchievementService.checkAchievements(playerId);
 

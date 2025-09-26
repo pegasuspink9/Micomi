@@ -40,8 +40,23 @@ export const getAchievementById = async (req: Request, res: Response) => {
   }
 };
 
-export const createAchievement = async (data: AchievementCreateInput) => {
-  return prisma.achievement.create({ data });
+export const createAchievement = async (req: Request, res: Response) => {
+  try {
+    const { achievement_name, description, badge_icon, conditions } = req.body;
+
+    const achievement = await prisma.achievement.create({
+      data: {
+        achievement_name,
+        description,
+        badge_icon,
+        conditions,
+      },
+    });
+
+    return successResponse(res, achievement, "Achievement created");
+  } catch (error) {
+    return errorResponse(res, error, "Failed to create achievement");
+  }
 };
 
 export const updateAchievement = async (req: Request, res: Response) => {

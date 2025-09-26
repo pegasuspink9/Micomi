@@ -1,5 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
+import { prisma } from "../../../prisma/client";
 
 export const checkAchievements = async (playerId: number) => {
   const player = await prisma.player.findUnique({
@@ -14,7 +13,6 @@ export const checkAchievements = async (playerId: number) => {
     maps,
     completedLevelIds,
     totalCollectibleCharacters,
-    bossLevels,
     ownedCharacters,
     ownedPotions,
   ] = await Promise.all([
@@ -33,22 +31,12 @@ export const checkAchievements = async (playerId: number) => {
       })
       .then((progress) => new Set(progress.map((p) => p.level_id))),
     prisma.character.count(),
-    prisma.level.findMany({
-      where: { level_type: "final" },
-      include: {
-        playerProgress: {
-          where: { player_id: playerId, is_completed: true },
-          select: { progress_id: true },
-        },
-      },
-    }),
     prisma.playerCharacter.count({
       where: { player_id: playerId, is_purchased: true },
     }),
     prisma.playerPotion.findMany({ where: { player_id: playerId } }),
   ]);
 
-  // ✅ Calculate rank dynamically
   const leaderboardRank = player.total_points
     ? await prisma.player
         .count({
@@ -62,28 +50,46 @@ export const checkAchievements = async (playerId: number) => {
     (total: number, p: { quantity: number }) => total + p.quantity,
     0
   );
+
+  const bossLevels = await prisma.level.findMany({
+    where: { level_difficulty: { in: ["hard", "final"] } },
+    include: {
+      playerProgress: {
+        where: { player_id: playerId, is_completed: true },
+        select: { progress_id: true },
+      },
+    },
+  });
+
   const defeatedBosses = bossLevels.filter(
     (l: { playerProgress: { progress_id: number }[] }) =>
       l.playerProgress.length > 0
   ).length;
 
+  const finalLevels = await prisma.level.findMany({
+    where: { level_difficulty: "final" },
+    include: {
+      map: true,
+      playerProgress: {
+        where: { player_id: playerId, is_completed: true },
+        select: { progress_id: true },
+      },
+    },
+  });
+
   const hasCompletedMap = (mapName: string): boolean => {
-    const map = maps.find(
-      (m: { map_name: string; levels: { level_id: number }[] }) =>
-        m.map_name === mapName
-    );
-    if (!map) return false;
-    return map.levels.every((level: { level_id: number }) =>
-      completedLevelIds.has(level.level_id)
-    );
+    const finalLevel = finalLevels.find((l) => l.map.map_name === mapName);
+    if (!finalLevel) return false;
+
+    return finalLevel.playerProgress.length > 0;
   };
 
-  const hasCompletedAllMaps = (): boolean =>
-    maps.every((map: { levels: { level_id: number }[] }) =>
-      map.levels.every((level: { level_id: number }) =>
-        completedLevelIds.has(level.level_id)
-      )
-    );
+  const hasCompletedAllMaps = (): boolean => {
+    return maps.every((m) => {
+      const finalLevel = finalLevels.find((l) => l.map.map_id === m.map_id);
+      return finalLevel && finalLevel.playerProgress.length > 0;
+    });
+  };
 
   const earnedAchievementIds = new Set(
     existingPlayerAchievements.map(
@@ -101,7 +107,7 @@ export const checkAchievements = async (playerId: number) => {
     if (earnedAchievementIds.has(achievement.achievement_id)) continue;
 
     let shouldAward = false;
-    switch (achievement.name) {
+    switch (achievement.achievement_name) {
       case "HTML Hero":
         shouldAward = hasCompletedMap("HTML");
         break;

@@ -1,15 +1,13 @@
 export interface AchievementCreateInput {
-  name: string;
+  achievement_name: string;
   description: string;
-  badge_icon: string;
-  points_required: number;
-  achievement_type: string;
+  badge_icon?: string;
+  conditions: string;
 }
 
 export interface AchievementUpdateInput {
-  name?: string;
+  achievement_name?: string;
   description?: string;
   badge_icon?: string;
-  points_required?: number;
-  achievement_type?: string;
+  conditions?: string;
 }

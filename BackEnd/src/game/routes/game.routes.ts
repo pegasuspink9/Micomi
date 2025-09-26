@@ -50,7 +50,7 @@ router.post("/fight", CombatController.performFight);
 //Achievement routes
 router.post("/check-achievements", AchievementController.getPlayerAchievements);
 router.get(
-  "/player-achievement/:id",
+  "/player-achievement/:playerId",
   AchievementController.getPlayerAchievements
 );
 
