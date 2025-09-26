@@ -270,24 +270,21 @@ export const submitChallengeService = async (
       (sum, c) => sum + c.points_reward,
       0
     );
+    const totalPoints = level.challenges.reduce(
+      (sum, c) => sum + c.points_reward,
+      0
+    );
     const totalCoins = level.challenges.reduce(
       (sum, c) => sum + c.coins_reward,
       0
     );
 
-    await prisma.player.update({
-      where: { player_id: playerId },
-      data: {
-        total_points: { increment: totalExp },
-        coins: { increment: freshProgress?.coins_earned ?? 0 },
-      },
-    });
-
     completionRewards = {
       feedbackMessage:
         level.feedback_message ?? `You completed Level ${level.level_number}!`,
-      currentTotalPoints: totalExp,
-      currentExpPoints: totalCoins,
+      currentTotalPoints: totalPoints,
+      currentExpPoints: totalExp,
+      coinsEarned: totalCoins,
     };
 
     nextLevel = await LevelService.unlockNextLevel(
@@ -338,6 +335,67 @@ export const getNextChallengeService = async (
 };
 
 const getNextChallengeEasy = async (progress: any) => {
+  const { level } = progress;
+
+  const wrongChallenges = (progress.wrong_challenges as number[] | null) ?? [];
+  const answeredIds = Object.keys(
+    (progress.player_answer as Record<string, string[]> | null) ?? {}
+  ).map(Number);
+
+  const enemyDefeated = progress.enemy_hp <= 0;
+  const playerAlive = progress.player_hp > 0;
+  let nextChallenge: Challenge | null = null;
+
+  if (!enemyDefeated) {
+    nextChallenge =
+      level.challenges.find(
+        (c: Challenge) => !answeredIds.includes(c.challenge_id)
+      ) || null;
+
+    if (!nextChallenge && wrongChallenges.length > 0) {
+      nextChallenge = getNextWrongChallenge(progress, level, wrongChallenges);
+    }
+  } else {
+    if (playerAlive && wrongChallenges.length > 0) {
+      nextChallenge = getNextWrongChallenge(progress, level, wrongChallenges);
+    }
+  }
+
+  return wrapWithTimer(progress, nextChallenge);
+};
+
+function getNextWrongChallenge(
+  progress: any,
+  level: any,
+  wrongChallenges: number[]
+) {
+  const filteredWrongs = wrongChallenges.filter((id: number) => {
+    const ans = progress.player_answer?.[id.toString()] ?? [];
+    const challenge = level.challenges.find(
+      (c: Challenge) => c.challenge_id === id
+    );
+    return !arraysEqual(ans, challenge?.correct_answer ?? []);
+  });
+
+  const currentWrongs = [...new Set(filteredWrongs)];
+
+  if (currentWrongs.length === 0) return null;
+
+  const totalChallenges = level.challenges.length;
+  const cyclingAttempts = Math.max(0, progress.attempts - totalChallenges);
+  const idx = cyclingAttempts % currentWrongs.length;
+
+  const id = currentWrongs[idx];
+
+  const challenge = level.challenges.find(
+    (c: Challenge) => c.challenge_id === id
+  );
+
+  return challenge || null;
+}
+
+const getNextChallengeHard = async (progress: any) => {
+  //for Hard level
   const { level } = progress;
 
   const wrongChallenges = (progress.wrong_challenges as number[] | null) ?? [];

@@ -52,6 +52,7 @@ model Level {
   playerProgress    PlayerProgress[]
   quest             Quest[]
   potionShopByLevel PotionShopByLevel[]
+  potionsBoughtByLevel    PlayerLevelPotion[]
 }
 
 model Challenge {
@@ -107,7 +108,7 @@ model Player {
   days_logged_in       Int      @default(0)
   coins                Int      @default(100)
 
-  energy           Int      @default(5)
+  energy           Int      @default(25)
   energy_reset_at  DateTime?
 
   playerProgress       PlayerProgress[]
@@ -116,6 +117,7 @@ model Player {
 
   ownedCharacters      PlayerCharacter[]
   ownedPotions         PlayerPotion[]
+  ownedLevelPotions    PlayerLevelPotion[]
 
   @@index([email])
   @@index([total_points])
@@ -208,6 +210,22 @@ model PotionShop {
   potion_url          String?     @db.Text
 
   buyers              PlayerPotion[]
+  levelBuyers         PlayerLevelPotion[]
+}
+
+model PlayerLevelPotion {
+  player_level_potion_id Int      @id @default(autoincrement())
+  player_id              Int
+  level_id               Int
+  potion_shop_id         Int
+  quantity               Int      @default(0)
+  created_at             DateTime @default(now())
+
+  player                 Player     @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
+  level                  Level      @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
+  potion                 PotionShop @relation(fields: [potion_shop_id], references: [potion_shop_id], onDelete: Cascade)
+
+  @@unique([player_id, level_id, potion_shop_id])
 }
 
 model PotionShopByLevel {

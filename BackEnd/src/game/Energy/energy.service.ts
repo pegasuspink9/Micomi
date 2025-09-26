@@ -3,7 +3,7 @@ import { formatTimeInHours } from "../../../helper/dateTimeHelper";
 
 const prisma = new PrismaClient();
 
-const MAX_ENERGY = 5;
+const MAX_ENERGY = 25;
 const ENERGY_RESTORE_INTERVAL = 30 * 60 * 1000;
 
 export const updatePlayerEnergy = async (playerId: number) => {
@@ -61,7 +61,7 @@ export const updatePlayerEnergy = async (playerId: number) => {
   };
 };
 
-export const deductEnergy = async (playerId: number, amount: number = 1) => {
+export const deductEnergy = async (playerId: number, amount: number = 5) => {
   const player = await prisma.player.findUnique({
     where: { player_id: playerId },
   });
@@ -120,7 +120,7 @@ export const getPlayerEnergyStatus = async (playerId: number) => {
 
 export const hasEnoughEnergy = async (
   playerId: number,
-  required: number = 1
+  required: number = 5
 ): Promise<boolean> => {
   const energyStatus = await updatePlayerEnergy(playerId);
   return energyStatus.energy >= required;

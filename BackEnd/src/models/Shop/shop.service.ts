@@ -24,8 +24,10 @@ export const getAllCharactersInShop = async (req: Request, res: Response) => {
 
 /* GET all player characters */
 export const getAllPlayerCharacter = async (req: Request, res: Response) => {
+  const id = Number(req.params.playerId);
   try {
     const playerCharacters = await prisma.playerCharacter.findMany({
+      where: { player_id: id },
       include: { player: true, character: true },
     });
     return successResponse(res, playerCharacters, "Player characters fetched");

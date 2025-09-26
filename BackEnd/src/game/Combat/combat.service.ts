@@ -56,7 +56,7 @@ export async function getFightSetup(playerId: number, enemyId: number) {
       data: {
         player_id: playerId,
         level_id: level.level_id,
-        current_level: 1,
+        current_level: level.level_id,
         attempts: 0,
         player_answer: [],
         wrong_challenges: [],
@@ -249,14 +249,44 @@ export async function fightEnemy(
       if (answeredCount === totalChallenges) {
         status = BattleStatus.won;
         enemyDiesUrl = enemy.enemy_dies || null;
+
+        if (!progress.is_completed) {
+          const totalExp = level.challenges.reduce(
+            (sum, c) => sum + c.points_reward,
+            0
+          );
+          const totalPoints = level.challenges.reduce(
+            (sum, c) => sum + c.points_reward,
+            0
+          );
+          const totalCoins = level.challenges.reduce(
+            (sum, c) => sum + c.coins_reward,
+            0
+          );
+
+          await prisma.player.update({
+            where: { player_id: playerId },
+            data: {
+              total_points: { increment: totalPoints },
+              exp_points: { increment: totalExp },
+              coins: { increment: totalCoins },
+            },
+          });
+        }
+      }
+      try {
+        await LevelService.unlockNextLevel(
+          playerId,
+          level.map_id,
+          level.level_number
+        );
+        console.log(
+          "- Level unlocked after enemy defeated and all challenges answered"
+        );
+      } catch (err) {
+        console.error("Error unlocking next level:", err);
       }
     }
-
-    await LevelService.unlockNextLevel(
-      playerId,
-      level.map_id,
-      level.level_number
-    );
   } else {
     if (enemyHealth > 0) {
       let enemyDamage = enemy.enemy_damage ?? 5;

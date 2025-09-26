@@ -18,7 +18,7 @@ const randomize = <T>(arr: T[]) => [...arr].sort(() => Math.random() - 0.5);
 export const previewLevel = async (playerId: number, levelId: number) => {
   const level = await prisma.level.findUnique({
     where: { level_id: levelId },
-    include: { map: true, challenges: true },
+    include: { map: true, challenges: true, potionShopByLevel: true },
   });
   if (!level) throw new Error("Level not found");
 
@@ -67,30 +67,48 @@ export const previewLevel = async (playerId: number, levelId: number) => {
     const playerPotions = await prisma.playerPotion.findMany({
       where: { player_id: playerId },
     });
-
-    potionShop = potions.map((p) => {
-      const owned =
-        playerPotions.find((pp) => pp.potion_shop_id === p.potion_shop_id)
-          ?.quantity ?? 0;
-
-      const rawLimit =
-        potionConfig[
-          `${p.potion_type.toLowerCase()}_quantity` as keyof typeof potionConfig
-        ] ?? 0;
-
-      const limit = Number(rawLimit ?? 0);
-
-      return {
-        potion_id: p.potion_shop_id,
-        type: p.potion_type,
-        description: p.potion_description,
-        price: p.potion_price,
-        url: p.potion_url,
-        limit,
-        owned,
-        remaining: Math.max(0, limit - owned),
-      };
+    const playerLevelPotions = await prisma.playerLevelPotion.findMany({
+      where: {
+        player_id: playerId,
+        level_id: levelId,
+      },
     });
+
+    potionShop = potions
+      .map((p) => {
+        const globalOwned =
+          playerPotions.find((pp) => pp.potion_shop_id === p.potion_shop_id)
+            ?.quantity ?? 0;
+        const levelBought =
+          playerLevelPotions.find(
+            (plp) => plp.potion_shop_id === p.potion_shop_id
+          )?.quantity ?? 0;
+
+        const rawLimit =
+          potionConfig[
+            `${p.potion_type.toLowerCase()}_quantity` as keyof typeof potionConfig
+          ] ?? 0;
+
+        const limit = Number(rawLimit ?? 0);
+
+        const isAvailable = potionConfig.potions_avail
+          ? (potionConfig.potions_avail as string[]).includes(p.potion_type)
+          : limit > 0;
+        if (!isAvailable) return null;
+
+        return {
+          player_owned_quantity: globalOwned,
+          potion_id: p.potion_shop_id,
+          potion_type: p.potion_type,
+          description: p.potion_description,
+          potion_price: p.potion_price,
+          potion_url: p.potion_url,
+          limit,
+          boughtInLevel: levelBought,
+          remainToBuy: Math.max(0, limit - levelBought),
+        };
+      })
+      .filter(Boolean);
   }
 
   return {
@@ -110,7 +128,7 @@ export const previewLevel = async (playerId: number, levelId: number) => {
       enemy_idle: enemy.enemy_avatar,
       enemy_damage: enemy.enemy_damage,
     },
-    selectedCharacter: {
+    character: {
       character_id: character.character_id,
       character_name: character.character_name,
       character_health: playerMaxHealth,
@@ -119,7 +137,10 @@ export const previewLevel = async (playerId: number, levelId: number) => {
     },
     energy: energyStatus.energy,
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
-    coins: player.coins,
+    player_info: {
+      player_id: player.player_id,
+      player_coins: player.coins,
+    },
     potionShop,
   };
 };
@@ -298,15 +319,17 @@ export const unlockNextLevel = async (
     where: {
       map_id: mapId,
       level_number: currentLevelNumber + 1,
-      is_unlocked: false,
     },
   });
+
   if (!nextLevel) return null;
 
-  await prisma.level.update({
-    where: { level_id: nextLevel.level_id },
-    data: { is_unlocked: true },
-  });
+  if (!nextLevel.is_unlocked) {
+    await prisma.level.update({
+      where: { level_id: nextLevel.level_id },
+      data: { is_unlocked: true },
+    });
+  }
 
   const existingProgress = await prisma.playerProgress.findFirst({
     where: { player_id: playerId, level_id: nextLevel.level_id },
@@ -320,11 +343,16 @@ export const unlockNextLevel = async (
         current_level: nextLevel.level_number,
         attempts: 0,
         player_answer: {},
-        completed_at: new Date(),
+        completed_at: null,
         challenge_start_time: new Date(),
       },
     });
   }
+
+  await prisma.player.update({
+    where: { player_id: playerId },
+    data: { level: nextLevel.level_id },
+  });
 
   return nextLevel;
 };
