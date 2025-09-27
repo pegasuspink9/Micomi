@@ -1,8 +1,10 @@
-import { PrismaClient, Challenge } from "@prisma/client";
+import { PrismaClient, Challenge, QuestType } from "@prisma/client";
 import * as LevelService from "../Levels/levels.service";
 import * as CombatService from "../Combat/combat.service";
 import * as EnergyService from "../Energy/energy.service";
 import { formatTimer } from "../../../helper/dateTimeHelper";
+import { updateQuestProgress } from "../../game/Quests/quests.service";
+import { updateProgressForChallenge } from "../Combat/special_attack.helper";
 import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
 import {
   SubmitChallengeControllerResult,
@@ -165,52 +167,42 @@ export const submitChallengeService = async (
 
   const isCorrect = arraysEqual(finalAnswer, correctAnswer);
 
-  const updatedProgress = await prisma.playerProgress.update({
-    where: { progress_id: currentProgress.progress_id },
-    data: {
-      player_answer: {
-        ...(currentProgress.player_answer as Record<string, string[]>),
-        [challengeId.toString()]: finalAnswer,
-      },
-      attempts: { increment: 1 },
-    },
-  });
+  let wasEverWrong = false;
+  if (isCorrect) {
+    wasEverWrong = (
+      (currentProgress.wrong_challenges as number[]) ?? []
+    ).includes(challengeId);
+  }
 
-  let wrongChallenges = (updatedProgress.wrong_challenges ?? []) as number[];
+  const { updatedProgress, alreadyAnsweredCorrectly } =
+    await updateProgressForChallenge(
+      currentProgress.progress_id,
+      challengeId,
+      isCorrect,
+      finalAnswer
+    );
+
   let fightResult: any;
   let message: string;
 
   if (isCorrect) {
-    wrongChallenges = wrongChallenges.filter(
-      (id) => id !== challenge.challenge_id
-    );
-    await prisma.playerProgress.update({
-      where: { progress_id: currentProgress.progress_id },
-      data: {
-        wrong_challenges: wrongChallenges,
-        coins_earned: { increment: challenge.coins_reward },
-      },
-    });
-
     fightResult = await CombatService.fightEnemy(
       playerId,
       enemy.enemy_id,
       true,
       elapsed,
-      challengeId
+      challengeId,
+      alreadyAnsweredCorrectly,
+      wasEverWrong
     );
     message = hintUsed
       ? "Hint used! Revealed part of the correct answer."
       : "Correct! You attacked the enemy.";
-  } else {
-    if (!wrongChallenges.includes(challenge.challenge_id)) {
-      wrongChallenges.push(challenge.challenge_id);
-      await prisma.playerProgress.update({
-        where: { progress_id: currentProgress.progress_id },
-        data: { wrong_challenges: wrongChallenges },
-      });
-    }
 
+    if (!hintUsed) {
+      await updateQuestProgress(playerId, QuestType.solve_challenge_no_hint, 1);
+    }
+  } else {
     fightResult = await CombatService.fightEnemy(
       playerId,
       enemy.enemy_id,

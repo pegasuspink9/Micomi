@@ -1,6 +1,6 @@
 import { QuestType } from "@prisma/client";
 
-export interface CreateQuestDto {
+export interface CreateQuest {
   title: string;
   description: string;
   objective_type: QuestType;
@@ -9,12 +9,11 @@ export interface CreateQuestDto {
   reward_coins: number;
 }
 
-export interface UpdateQuestDto {
+export interface UpdateQuest {
   title?: string;
   description?: string;
   objective_type?: QuestType;
   target_value?: number;
   reward_exp?: number;
   reward_coins?: number;
-  is_template?: boolean;
 }

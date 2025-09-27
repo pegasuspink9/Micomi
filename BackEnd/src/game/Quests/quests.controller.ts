@@ -8,7 +8,7 @@ export const updateQuestProgressController = async (
   res: Response
 ) => {
   try {
-    const playerId = (req as any).user.id;
+    const playerId = Number(req.params.playerId);
     const { objective_type, increment } = req.body;
 
     if (!playerId || !objective_type) {
@@ -26,6 +26,21 @@ export const updateQuestProgressController = async (
     );
 
     return successResponse(res, result, "Quest progress updated");
+  } catch (error) {
+    return errorResponse(res, null, (error as Error).message);
+  }
+};
+
+export const claimQuestRewardController = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const playerId = Number(req.params.playerId);
+    const questId = Number(req.params.questId);
+
+    const result = await QuestService.claimQuestReward(playerId, questId);
+    return successResponse(res, result, "Quest reward claimed");
   } catch (error) {
     return errorResponse(res, null, (error as Error).message);
   }

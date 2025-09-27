@@ -50,7 +50,6 @@ model Level {
   map               Map      @relation(fields: [map_id], references: [map_id], onDelete: Cascade)
   challenges        Challenge[] 
   playerProgress    PlayerProgress[]
-  quest             Quest[]
   potionShopByLevel PotionShopByLevel[]
   potionsBoughtByLevel    PlayerLevelPotion[]
 }
@@ -113,7 +112,7 @@ model Player {
 
   playerProgress       PlayerProgress[]
   playerAchievements   PlayerAchievement[]
-  missions             Quest[]
+  playerQuests         PlayerQuest[]
 
   ownedCharacters      PlayerCharacter[]
   ownedPotions         PlayerPotion[]
@@ -148,6 +147,9 @@ model PlayerProgress {
 
   //track kuwens during combat
   coins_earned         Int      @default(0)
+
+  //for quest purpose
+  took_damage   Boolean?  @default(false)
 
   player         Player   @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
   level          Level    @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
@@ -276,34 +278,51 @@ model PlayerCharacter {
 }
 
 model Quest {
-  quest_id Int      @id @default(autoincrement())
-  player_id         Int?
-  level_id          Int?
-  title             String
-  description       String   @db.Text
-  objective_type    QuestType
-  target_value      Int
-  current_value     Int      @default(0)
-  reward_exp        Int      @default(0)
-  reward_coins      Int      @default(0)
-  is_completed      Boolean  @default(false)
-  is_template       Boolean    @default(false)
-  assigned_at       DateTime?
-  completed_at      DateTime?
-  created_at        DateTime @default(now())
-  player            Player?   @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
-  level             Level?   @relation(fields: [level_id], references: [level_id], onDelete: SetNull)
+  quest_id       Int      @id @default(autoincrement())
+  title          String
+  description    String   @db.Text
+  objective_type QuestType
+  target_value   Int
+  reward_exp     Int      @default(0)
+  reward_coins   Int      @default(0)
+  created_at     DateTime @default(now())
+
+  playerQuests   PlayerQuest[]
+}
+
+model PlayerQuest {
+  player_quest_id Int      @id @default(autoincrement())
+  player_id       Int
+  quest_id        Int
+
+  current_value   Int      @default(0)
+  is_completed    Boolean  @default(false)
+  is_claimed      Boolean  @default(false)
+  completed_at    DateTime?
+
+  player Player @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
+  quest  Quest  @relation(fields: [quest_id], references: [quest_id], onDelete: Cascade)
+
+  @@unique([player_id, quest_id])
 }
 
 enum QuestType {
-  defeat_enemy
-  buy_potion
-  unlock_character
+  defeat_enemy //already in the combat
+  buy_potion //already in the shop
+  unlock_character //already in the shop
   complete_lesson //not yet implemented
-  solve_challenge
-  spend_coins
-  earn_exp //not yet implemented (needs clarification)
-  login_days
+  solve_challenge //already in the combat
+  spend_coins //already in the shop
+  earn_exp //already in the combat (giving of rewards)
+  login_days //still questionable (already on login)
+
+  //newly added
+  reach_level
+  use_potion //already in the shop
+  solve_challenge_no_hint //alreacy in the challenge
+  defeat_enemy_full_hp //already in combat
+  perfect_level //already in the combat
+  defeat_boss //already in the shop
 }
 
 enum PotionType {
