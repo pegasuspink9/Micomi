@@ -34,10 +34,10 @@ export const performFight = async (req: Request, res: Response) => {
       return errorResponse(res, null, "Enemy or Level not found", 404);
     }
 
-    const { level_type, map_id, level_number } = enemy.level;
+    const { level_difficulty, map_id, level_number } = enemy.level;
     let result;
 
-    if (level_type === "easy" || level_type === "medium") {
+    if (level_difficulty === "easy") {
       if (typeof isCorrect !== "boolean") {
         return errorResponse(
           res,
@@ -51,7 +51,7 @@ export const performFight = async (req: Request, res: Response) => {
         parsedEnemyId,
         isCorrect
       );
-    } else if (level_type === "hard" || level_type === "final") {
+    } else if (level_difficulty === "hard" || level_difficulty === "final") {
       if (typeof correctCount !== "number" || typeof totalCount !== "number") {
         return errorResponse(
           res,
@@ -67,7 +67,7 @@ export const performFight = async (req: Request, res: Response) => {
         totalCount
       );
 
-      if (level_type === "final" && result.status === "won") {
+      if (level_difficulty === "final" && result.status === "won") {
         const nextMap = await prisma.map.findFirst({
           where: { map_id: { gt: map_id }, is_active: false },
           orderBy: { map_id: "asc" },
@@ -80,7 +80,12 @@ export const performFight = async (req: Request, res: Response) => {
         }
       }
     } else {
-      return errorResponse(res, null, `Unknown level_type: ${level_type}`, 400);
+      return errorResponse(
+        res,
+        null,
+        `Unknown level_difficulty: ${level_difficulty}`,
+        400
+      );
     }
 
     await AchievementService.checkAchievements(parsedPlayerId);

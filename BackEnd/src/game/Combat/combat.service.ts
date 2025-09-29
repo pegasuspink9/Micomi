@@ -164,6 +164,7 @@ export async function fightEnemy(
 
   let characterAttackType: string | null = null;
   let damage = 0;
+  let enemyDamage = 0;
   let attackUrl: string | null = null;
   let enemyAttackUrl: string | null = null;
   let enemyHurtUrl: string | null = null;
@@ -321,8 +322,6 @@ export async function fightEnemy(
     }
   } else {
     if (enemyHealth > 0) {
-      let enemyDamage = enemy.enemy_damage ?? 5;
-
       if (progress.has_freeze_effect) {
         enemyDamage = 0;
         await prisma.playerProgress.update({
@@ -332,6 +331,7 @@ export async function fightEnemy(
         console.log("- Freeze potion active, enemy attack nullified");
       }
 
+      enemyDamage = enemy.enemy_damage;
       charHealth = Math.max(charHealth - enemyDamage, 0);
       enemy_idle = enemy.enemy_avatar || null;
       enemy_run = enemy.enemy_run || null;
@@ -395,7 +395,7 @@ export async function fightEnemy(
       enemy_attack: enemyAttackUrl,
       enemy_hurt: enemyHurtUrl,
       enemy_dies: enemyDiesUrl,
-      enemy_damage: enemy.enemy_damage,
+      enemy_damage: enemyDamage,
       enemy_health: enemyHealth,
       enemy_max_health: scaledEnemyMaxHealth,
     },
