@@ -35,11 +35,14 @@ model Lesson {
   lesson_title  String
   lesson_description   String 
   lesson_content       String    @db.Text
+
+  level         Level     @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
 } //Micomi level
 
 model Level {
   level_id          Int      @id @default(autoincrement())
   map_id            Int
+  enemy_id    Int?
   level_number      Int
   level_type        String 
   level_difficulty  DifficultyLevel
@@ -47,11 +50,15 @@ model Level {
   content           String   @db.Text
   is_unlocked       Boolean  @default(false)
   feedback_message  String  @db.Text
+
   map               Map      @relation(fields: [map_id], references: [map_id], onDelete: Cascade)
+  enemy             Enemy?    @relation(fields: [enemy_id], references: [enemy_id], onDelete: Cascade)
+
   challenges        Challenge[] 
   playerProgress    PlayerProgress[]
   potionShopByLevel PotionShopByLevel[]
   potionsBoughtByLevel    PlayerLevelPotion[]
+  lessons           Lesson[]
 }
 
 model Challenge {
@@ -92,6 +99,7 @@ model Enemy {
   enemy_hurt        String?  @db.Text
 
   enemy_coins       Int?     @default(0)
+  levels           Level[]
 }
 
 model Player {
@@ -338,6 +346,7 @@ enum DifficultyLevel {
   hard
   expert
   final
+  null //for micomi level
 }
 
 enum BattleStatus {

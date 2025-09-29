@@ -2,6 +2,7 @@ import { DifficultyLevel } from "@prisma/client";
 
 export interface LevelCreateInput {
   map_id: number;
+  enemy_id?: number;
   level_number: number;
   level_type: string;
   level_difficulty: DifficultyLevel;
@@ -13,6 +14,7 @@ export interface LevelCreateInput {
 export interface LevelUpdateInput {
   level_id?: number;
   map_id?: number;
+  enemy_id?: number;
   level_number?: number;
   level_type?: string;
   level_difficulty?: DifficultyLevel;

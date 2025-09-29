@@ -17,7 +17,7 @@ const safeHp = (hp: number | null | undefined, fallbackMax: number) =>
     ? Math.max(hp, 0)
     : Math.max(fallbackMax, 0);
 
-export async function getFightSetup(playerId: number, enemyId: number) {
+export async function getFightSetup(playerId: number, levelId: number) {
   const player = await prisma.player.findUnique({
     where: { player_id: playerId },
     include: {
@@ -32,17 +32,14 @@ export async function getFightSetup(playerId: number, enemyId: number) {
   const selectedCharacter = player.ownedCharacters[0]?.character;
   if (!selectedCharacter) throw new Error("No selected character found");
 
-  const enemy = await prisma.enemy.findUnique({ where: { enemy_id: enemyId } });
-  if (!enemy) throw new Error("Enemy not found");
-
-  const level = await prisma.level.findFirst({
-    where: {
-      map: { map_name: enemy.enemy_map },
-      level_difficulty: enemy.enemy_difficulty as DifficultyLevel,
-    },
-    include: { challenges: true },
+  const level = await prisma.level.findUnique({
+    where: { level_id: levelId },
+    include: { challenges: true, enemy: true },
   });
-  if (!level) throw new Error("No level found for enemy's map + difficulty");
+  if (!level) throw new Error("Level not found");
+  if (!level.enemy) throw new Error("No enemy assigned to this level");
+
+  const enemy = level.enemy;
 
   let progress = await prisma.playerProgress.findUnique({
     where: {
@@ -210,7 +207,7 @@ export async function fightEnemy(
       attackUrl = attacksArray[2] || null;
       character_idle = character.avatar_image || null;
       console.log("- Special attack triggered!");
-    } else if (correctAnswerLength <= 2) {
+    } else if (correctAnswerLength > 2) {
       if (elapsedSeconds > 5) {
         characterAttackType = "basic_attack";
         damage = damageArray[0] ?? 10;
