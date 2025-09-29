@@ -177,6 +177,11 @@ export const gameService = {
           enemy_damage: responseData.enemy?.enemy_damage || null,
           enemy_idle: responseData.enemy?.enemy_idle || null,
           enemy_max_health: responseData.enemy?.enemy_health,
+          enemy_idle: responseData.enemy?.enemy_idle || null,
+          enemy_run: responseData.enemy?.enemy_run || null,
+          enemy_attack: responseData.enemy?.enemy_attack || null,
+          enemy_hurt: responseData.enemy?.enemy_hurt || null,
+          enemy_dies: responseData.enemy?.enemy_dies || null,
         },
         
         selectedCharacter: {
@@ -185,7 +190,13 @@ export const gameService = {
           current_health: responseData.character?.character_health || null,
           max_health: responseData.character?.character_health || null,
           damage: responseData.character?.character_damage || [],
+          character_run: responseData.character?.character_run || null,
+          character_attack: responseData.character?.character_attack || null,
           character_idle: responseData.character?.character_idle || null,
+          character_run: responseData.character?.character_run || null,
+          character_attack: responseData.character?.character_attack || [],
+          character_hurt: responseData.character?.character_hurt || null,
+          character_dies: responseData.character?.character_dies || null
         },
         
         energy: responseData.energy || 0,

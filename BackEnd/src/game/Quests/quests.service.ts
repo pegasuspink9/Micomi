@@ -11,17 +11,17 @@ export async function updateQuestProgress(
     const playerQuests = await tx.playerQuest.findMany({
       where: {
         player_id: playerId,
-        quest: { objective_type: type },
+        Quest: { objective_type: type },   
         is_completed: false,
       },
-      include: { quest: true },
+      include: { Quest: true },    
     });
 
     const results = [];
 
     for (const pq of playerQuests) {
       const newValue = Math.max(0, pq.current_value + increment);
-      const completed = newValue >= pq.quest.target_value;
+      const completed = newValue >= pq.Quest.target_value; // <-- pq.Quest
 
       const updatedPQ = await tx.playerQuest.update({
         where: { player_quest_id: pq.player_quest_id },
@@ -30,7 +30,7 @@ export async function updateQuestProgress(
           is_completed: completed,
           completed_at: completed ? new Date() : null,
         },
-        include: { quest: true },
+        include: { Quest: true },         // <-- include `Quest`
       });
 
       results.push(updatedPQ);
@@ -46,7 +46,7 @@ export async function claimQuestReward(playerId: number, questId: number) {
       where: {
         player_id_quest_id: { player_id: playerId, quest_id: questId },
       },
-      include: { quest: true },
+      include: { Quest: true },           // <-- include `Quest`
     });
 
     if (!playerQuest) throw new Error("Quest not found for this player.");
@@ -56,22 +56,22 @@ export async function claimQuestReward(playerId: number, questId: number) {
     await tx.player.update({
       where: { player_id: playerId },
       data: {
-        exp_points: { increment: playerQuest.quest.reward_exp },
-        coins: { increment: playerQuest.quest.reward_coins },
+        exp_points: { increment: playerQuest.Quest.reward_exp }, // <-- .Quest
+        coins: { increment: playerQuest.Quest.reward_coins },    // <-- .Quest
       },
     });
 
     const updatedPQ = await tx.playerQuest.update({
       where: { player_quest_id: playerQuest.player_quest_id },
       data: { is_claimed: true },
-      include: { quest: true },
+      include: { Quest: true },           // <-- include `Quest`
     });
 
     return {
       message: "Reward claimed successfully!",
       rewards: {
-        exp: playerQuest.quest.reward_exp,
-        coins: playerQuest.quest.reward_coins,
+        exp: playerQuest.Quest.reward_exp,
+        coins: playerQuest.Quest.reward_coins,
       },
       quest: updatedPQ,
     };

@@ -49,7 +49,7 @@ const EnemyCharacter = ({
   const [debugPosition, setDebugPosition] = useState(0);
 
   const TOTAL_FRAMES = 24;
-  const FRAME_DURATION = 200; // keep enemy timing similar to your original
+  const FRAME_DURATION = 50; // keep enemy timing similar to your original
 
   // Animation duration constants (in milliseconds) -- preserved from your enemy version
   const ANIMATION_DURATIONS = {
@@ -447,33 +447,7 @@ const EnemyCharacter = ({
           )}
         </Animated.View>
       </View>
-{/* 
-      {__DEV__ && (
-        <View style={styles.debugInfo}>
-          <Text style={styles.debugText}>
-            State: {currentState} | Loop: {isAnimationLooping ? 'Y' : 'N'}
-          </Text>
-          {isCompoundAnimation && (
-            <Text style={styles.debugText}>Phase: {compoundPhase} | Compound: Y</Text>
-          )}
-          <Text style={styles.debugText}>
-            Preloaded: {preloadedImages.size} | Ready: {imageReady ? 'Y' : 'N'}
-          </Text>
-          <Text style={styles.debugText}>
-            URL:{' '}
-            {currentAnimationUrl
-              ? currentAnimationUrl.substring(Math.max(0, currentAnimationUrl.length - 20))
-              : 'None'}
-          </Text>
-          <RNImage
-            source={{
-              uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758953113/491922473-52b411e8-e027-44bb-a9ec-4fed9f3d5f80_msrgsp.png',
-            }}
-            style={{ width: 50, height: 50, marginTop: 4 }}
-          />
-          <Text style={styles.debugText}>Frame: {debugFrame} | Pos: {debugPosition}</Text>
-        </View>
-      )} */}
+
     </Animated.View>
   );
 };

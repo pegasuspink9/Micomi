@@ -214,8 +214,29 @@ export default function LeaderBoard({ route }) {
               ) : (
                 <Text style={styles.debugText}>No Idle Image</Text>
               )}
-            <Text style={styles.debugText}>Enemy Attack URL: {gameState.submissionResult?.fightResult?.enemy?.enemy_attack}</Text>
-            <Text style={styles.debugText}>Enemy Hurt URL: {gameState.submissionResult?.fightResult?.enemy?.enemy_hurt}</Text>
+            <Text style={styles.debugText}>
+              {gameState.enemy?.enemy_attack ? (
+                <ImageBackground
+                  source={{ uri: gameState.enemy?.enemy_attack }}
+                  style={{ width: 60, height: 60, marginTop: 4 }}
+                  resizeMode="contain"
+                />
+              ) : (
+                <Text style={styles.debugText}>No Attack Image</Text>
+              )}
+            </Text>
+
+            <Text style={styles.debugText}>Enemy Hurt URL:
+                {gameState.enemy?.enemy_hurt ? (
+                <ImageBackground
+                  source={{ uri: gameState.enemy?.enemy_hurt }}
+                  style={{ width: 60, height: 60, marginTop: 4 }}
+                  resizeMode="contain"
+                />
+              ) : (
+                <Text style={styles.debugText}>No Hurt Image</Text>
+              )}
+            </Text>
           </View>
 
           <View style={styles.debugSection}>
@@ -339,7 +360,7 @@ export default function LeaderBoard({ route }) {
         submitting={submitting}
       />
 
-      {/* <Drawer
+      <Drawer
         isOutputVisible={isOutputVisible}
         translateY={translateY}
         backdropOpacity={backdropOpacity}
@@ -351,7 +372,7 @@ export default function LeaderBoard({ route }) {
         challengeData={gameState?.currentChallenge}
         gameState={gameState}
         submissionResult={gameState?.submissionResult}
-      /> */}
+      />
 
       {/* Debug Interface */}
       {__DEV__ && (

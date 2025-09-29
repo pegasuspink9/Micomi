@@ -64,7 +64,7 @@
           bounces={true}
         >
           <View style={styles.questionContainer}>
-            {(currentQuestion.challenge_type === 'fill in the blank' || currentQuestion.challenge_type === 'code with guide') ? (
+            {(currentQuestion.challenge_type === 'fill in the blank' || currentQuestion.challenge_type === 'code with guide' || currentQuestion.challenge_type === 'multiple choice') ? (
               <CodeEditor 
                 currentQuestion={currentQuestion}
                 selectedAnswers={selectedAnswers}
@@ -72,6 +72,7 @@
                 scrollViewRef={scrollViewRef}
                 blankRefs={blankRefs}
                 renderSyntaxHighlightedLine={renderSyntaxHighlightedLine}
+                fileName={currentQuestion.filename || 'script.py'}
               />
             ) : (
               <DocumentQuestion 
