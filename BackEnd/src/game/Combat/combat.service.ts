@@ -7,6 +7,7 @@ import {
 import * as EnergyService from "../Energy/energy.service";
 import * as LevelService from "../Levels/levels.service";
 import { updateQuestProgress } from "../Quests/quests.service";
+import { updateProgressForChallenge } from "./special_attack.helper";
 import { formatTimer } from "../../../helper/dateTimeHelper";
 
 const prisma = new PrismaClient();
@@ -99,7 +100,9 @@ export async function fightEnemy(
   enemyId: number,
   isCorrect: boolean,
   elapsedSeconds: number,
-  challengeId?: number
+  challengeId?: number,
+  alreadyAnsweredCorrectly?: boolean,
+  wasEverWrong?: boolean
 ) {
   const enemy = await prisma.enemy.findUnique({ where: { enemy_id: enemyId } });
   if (!enemy) throw new Error("Enemy not found");
@@ -186,35 +189,41 @@ export async function fightEnemy(
     }
 
     const correctAnswerLength = currentChallenge
-      ? new Set(currentChallenge.correct_answer as string[]).size
+      ? (currentChallenge.correct_answer as string[]).length
       : 1;
 
     console.log("- Challenge ID:", challengeId);
     console.log("- Correct answer length:", correctAnswerLength);
     console.log("- Elapsed seconds:", elapsedSeconds);
+    console.log("- Already answered correctly:", alreadyAnsweredCorrectly);
+    console.log("- Was ever wrong:", wasEverWrong);
 
-    if (correctAnswerLength >= 4) {
-      if (elapsedSeconds < 5) {
-        characterAttackType = "special_attack";
-        damage = damageArray[2] ?? 25;
-        character_run = character.character_run || null;
-        attackUrl = attacksArray[2] || null;
-        character_idle = character.avatar_image || null;
-        console.log("- Fastest response: special attack", attackUrl);
-      } else if (elapsedSeconds < 10) {
-        characterAttackType = "second_attack";
-        damage = damageArray[1] ?? 15;
-        character_run = character.character_run || null;
-        attackUrl = attacksArray[1] || null;
-        character_idle = character.avatar_image || null;
-        console.log("- Medium response: second attack", attackUrl);
-      } else {
+    if (
+      !alreadyAnsweredCorrectly &&
+      !wasEverWrong &&
+      correctAnswerLength >= 5
+    ) {
+      characterAttackType = "special_attack";
+      damage = damageArray[2] ?? 25;
+      character_run = character.character_run || null;
+      attackUrl = attacksArray[2] || null;
+      character_idle = character.avatar_image || null;
+      console.log("- Special attack triggered!");
+    } else if (correctAnswerLength <= 2) {
+      if (elapsedSeconds > 5) {
         characterAttackType = "basic_attack";
         damage = damageArray[0] ?? 10;
         character_run = character.character_run || null;
         attackUrl = attacksArray[0] || null;
         character_idle = character.avatar_image || null;
-        console.log("- Slow response: basic attack", attackUrl);
+        console.log("- Basic attack triggered!");
+      } else {
+        characterAttackType = "second_attack";
+        damage = damageArray[1] ?? 15;
+        character_run = character.character_run || null;
+        attackUrl = attacksArray[1] || null;
+        character_idle = character.avatar_image || null;
+        console.log("- Second attack triggered!");
       }
     } else {
       characterAttackType = "basic_attack";
@@ -222,7 +231,7 @@ export async function fightEnemy(
       character_run = character.character_run || null;
       attackUrl = attacksArray[0] || null;
       character_idle = character.avatar_image || null;
-      console.log("- Short answer: defaulting to basic attack", attackUrl);
+      console.log("- Basic attack triggered at default!");
     }
 
     console.log("- Attack type:", characterAttackType);
@@ -264,6 +273,27 @@ export async function fightEnemy(
             0
           );
 
+          await updateQuestProgress(playerId, QuestType.defeat_enemy, 1);
+
+          if (status === BattleStatus.won) {
+            if (!progress.took_damage) {
+              await updateQuestProgress(
+                playerId,
+                QuestType.defeat_enemy_full_hp,
+                1
+              );
+
+              await updateQuestProgress(playerId, QuestType.perfect_level, 1);
+            }
+          }
+
+          if (
+            enemy.enemy_difficulty === "hard" ||
+            enemy.enemy_difficulty === "final"
+          ) {
+            await updateQuestProgress(playerId, QuestType.defeat_boss, 1);
+          }
+
           await prisma.player.update({
             where: { player_id: playerId },
             data: {
@@ -272,6 +302,8 @@ export async function fightEnemy(
               coins: { increment: totalCoins },
             },
           });
+
+          await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
         }
       }
       try {
@@ -311,6 +343,13 @@ export async function fightEnemy(
         "damage, player health:",
         charHealth
       );
+
+      if (charHealth < character.health) {
+        await prisma.playerProgress.update({
+          where: { progress_id: progress.progress_id },
+          data: { took_damage: true },
+        });
+      }
 
       if (charHealth <= 0) {
         status = BattleStatus.lost;

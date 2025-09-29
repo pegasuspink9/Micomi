@@ -1,5 +1,6 @@
 import { Router } from "express";
 import * as QuestService from "./quest.service";
+import * as QuesController from "../../game/Quests/quests.controller";
 import {
   authenticate,
   requireAdmin,
@@ -7,10 +8,16 @@ import {
 
 const router = Router();
 
-router.post("/", QuestService.createTemplate);
-router.get("/", QuestService.getAllTemplates);
-router.get("/:id", QuestService.getTemplateById);
-router.put("/:id", QuestService.updateTemplate);
-router.delete("/:id", QuestService.deleteTemplate);
+router.get("/", QuestService.getAllQuests);
+router.get("/:id", QuestService.getQuestById);
+router.post("/", QuestService.createQuest);
+router.put("/:id", QuestService.updateQuest);
+router.delete("/:id", QuestService.deleteQuest);
+
+router.get("/:playerId", QuestService.getPlayerQuest);
+router.post(
+  "/:playerId/:questId/claim",
+  QuesController.claimQuestRewardController
+);
 
 export default router;

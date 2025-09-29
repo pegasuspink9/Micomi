@@ -173,6 +173,11 @@ export const buyCharacter = async (
 
   await updateQuestProgress(playerId, QuestType.unlock_character, 1);
   await spendCoins(playerId, charShop.character_price);
+  await updateQuestProgress(
+    playerId,
+    QuestType.spend_coins,
+    charShop.character_price
+  );
 
   return { message: `${charShop.character.character_name} purchased` };
 };
@@ -261,6 +266,8 @@ export const usePotion = async (
   );
 
   await prisma.$transaction(updates);
+
+  await updateQuestProgress(playerId, QuestType.use_potion, 1);
 
   return {
     message: `${potionType} potion used`,
