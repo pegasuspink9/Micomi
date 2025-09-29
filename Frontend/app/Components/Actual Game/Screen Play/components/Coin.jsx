@@ -30,7 +30,6 @@ const Coin = ({
           }),
         ]).start();
       } else {
-        // Coin lost - shrink animation
         Animated.sequence([
           Animated.timing(animatedValue, {
             toValue: 0.7,
@@ -78,7 +77,7 @@ const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     top: width * 0.18,
-    left: width * 0.02,
+    left: width * 0.007,
     alignItems: 'flex-end',
     borderRadius: 8,
     padding: 8,

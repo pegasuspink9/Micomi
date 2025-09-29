@@ -30,13 +30,13 @@ const DogCharacter = ({
   const [compoundPhase, setCompoundPhase] = useState(''); // kept for debug compatibility
   const [preloadedImages] = useState(new Map()); // Cache for preloaded images
 
-  const TOTAL_FRAMES = 24;
-  const FRAME_DURATION = 150;
+  const TOTAL_FRAMES = 24
+  const FRAME_DURATION = 100;
 
   // Animation duration constants (in milliseconds)
   const ANIMATION_DURATIONS = {
     idle: 2000,
-    attack: 2500, // attack duration
+    attack: 2000, 
     hurt: 2000,
     run: -1,
     dies: 2000,
@@ -296,7 +296,7 @@ const DogCharacter = ({
           } else if (attackMovement === 'fade') {
             positionX.value = RUN_DISTANCE;
             opacity.value = 0;
-            const fadeDuration = Math.min(300, animationDuration);
+            const fadeDuration = Math.min(100, animationDuration);
             opacity.value = withTiming(1, { duration: fadeDuration });
           } else {
             positionX.value = 0;

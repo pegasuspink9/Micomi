@@ -261,7 +261,7 @@ export const gameService = {
             energy: responseData.fightResult.energy,
             timeToNextEnergyRestore: responseData.fightResult.timeToNextEnergyRestore,
             
-            // Character data from fightResult
+            // Character data from fightResul
             character: responseData.fightResult.character ? {
               character_id: responseData.fightResult.character.character_id,
               character_name: responseData.fightResult.character.character_name,

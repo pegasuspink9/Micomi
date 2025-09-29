@@ -1,4 +1,3 @@
-// components/Damage.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
@@ -12,23 +11,17 @@ import {
 
 const { width } = Dimensions.get('window');
 
-/**
- * Floating damage ticks animation component
- * Props:
- *  - damage (number): the total damage to split & animate (e.g. 10)
- *  - steps (number): how many ticks to split into
- *  - animated (bool)
- *  - tickInterval (ms)
- *  - onTick (fn)
- */
 const FloatingDamageTicks = ({
   damage = 0,
-  steps = 5,
+  steps = 2,
   animated = true,
-  tickInterval = 140,
+  tickInterval = 200,
+  startDelay = 0,
   onTick = null,
+  position = 'right', 
+  trigger = 0,
 }) => {
-  const [activeTicks, setActiveTicks] = useState([]); // array of {id, amount}
+  const [activeTicks, setActiveTicks] = useState([]);
   const nextId = useRef(0);
   const timers = useRef([]);
 
@@ -48,13 +41,15 @@ const FloatingDamageTicks = ({
     return arr;
   }
 
-  useEffect(() => {
-    if (!damage || damage <= 0) return;
+ useEffect(() => {
+  if (!damage || damage <= 0) return;
 
-    // clear previous timers (avoid overlap)
-    timers.current.forEach(t => clearTimeout(t));
-    timers.current = [];
+  // clear previous timers (avoid overlap)
+  timers.current.forEach(t => clearTimeout(t));
+  timers.current = [];
 
+  // Start the sequence after the provided startDelay
+  const startTimer = setTimeout(() => {
     const ticks = splitDamage(Math.round(damage), steps);
     const tickObjs = ticks.map(amount => ({
       id: `${Date.now()}-${nextId.current++}`,
@@ -64,9 +59,9 @@ const FloatingDamageTicks = ({
     setActiveTicks(prev => [...prev, ...tickObjs]);
 
     tickObjs.forEach((tick, idx) => {
-      const startDelay = idx * tickInterval;
+      const startDelayForTick = idx * tickInterval;
       const t = setTimeout(() => {
-        const totalAnimMs = 600; // must match TickItem animation length
+        const totalAnimMs = 600;
         const endTimer = setTimeout(() => {
           setActiveTicks(curr => curr.filter(x => x.id !== tick.id));
           if (typeof onTick === 'function') {
@@ -79,20 +74,29 @@ const FloatingDamageTicks = ({
         }, totalAnimMs);
 
         timers.current.push(endTimer);
-      }, startDelay);
+      }, startDelayForTick);
 
       timers.current.push(t);
     });
+  }, startDelay);
 
-    return () => {
-      timers.current.forEach(t => clearTimeout(t));
-      timers.current = [];
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [damage]);
+  timers.current.push(startTimer);
+
+  return () => {
+    timers.current.forEach(t => clearTimeout(t));
+    timers.current = [];
+  };
+}, [damage, startDelay, trigger]);
+
 
   return (
-    <View pointerEvents="none" style={styles.ticksContainer}>
+    <View
+      pointerEvents="none"
+      style={[
+        styles.ticksContainer,
+        position === 'left' ? styles.ticksContainerLeft : styles.ticksContainerRight,
+      ]}
+    >
       {activeTicks.map((tickObj, index) => (
         <TickItem
           key={tickObj.id}
@@ -118,33 +122,32 @@ const TickItem = ({ amount = 1, index = 0, animated = true }) => {
 
     Animated.parallel([
       Animated.timing(translateY, {
-        toValue: -36 - Math.min(12 * index, 40),
-        duration: 600,
+        toValue: -100 - Math.min(12 * index, 40),
+        duration: 5000,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 600,
+        duration: 5000,
         easing: Easing.linear,
         useNativeDriver: true,
       }),
       Animated.sequence([
         Animated.timing(scale, {
           toValue: 1.12,
-          duration: 120,
+          duration: 5000,
           easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
         Animated.timing(scale, {
           toValue: 1,
-          duration: 480,
+          duration: 5000,
           easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
       ]),
     ]).start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -162,22 +165,15 @@ const TickItem = ({ amount = 1, index = 0, animated = true }) => {
   );
 };
 
-/**
- * Damage display component (default export)
- *
- * Props:
- *  - totalDamage (number): the total damage counter to display (like coin total)
- *  - incoming (number): damage just received (this is what triggers the floating ticks)
- *  - onTotalChange (fn): called when displayed totalDamage changes
- *  - animated (bool)
- *  - style (object) override for container
- */
 export default function Damage({
   totalDamage = 0,
   incoming = 0,
+  startDelay = 0,
   onTotalChange = null,
   animated = true,
+  position = 'right', 
   style = {},
+  trigger = 0, 
 }) {
   const prevTotalRef = useRef(totalDamage);
 
@@ -192,16 +188,21 @@ export default function Damage({
     prevTotalRef.current = totalDamage;
   }, [totalDamage, onTotalChange]);
 
+  const containerPositionStyle = position === 'left' ? styles.leftContainer : styles.rightContainer;
+
   return (
-    <View style={[styles.container, style]}>
-      <View style={styles.badge}>
-        <Text style={styles.label}>Damage</Text>
-        <Text style={styles.value}>{totalDamage}</Text>
-      </View>
+    <View style={[styles.container, containerPositionStyle, style]}>
+    
 
       {/* Floating ticks animate when `incoming` > 0 */}
       {incoming > 0 && (
-        <FloatingDamageTicks damage={incoming} animated={animated} />
+        <FloatingDamageTicks
+          damage={incoming}
+          animated={animated}
+          startDelay={startDelay}
+          position={position}
+          trigger={trigger}
+        />
       )}
     </View>
   );
@@ -210,10 +211,17 @@ export default function Damage({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: width * 0.18,
-    right: width * 0.08,
+    top: width * 0.15,
     alignItems: 'center',
     pointerEvents: 'box-none',
+  },
+  leftContainer: {
+    left: width * 0.1,
+    alignItems: 'flex-start',
+  },
+  rightContainer: {
+    right: width * 0.1,
+    alignItems: 'center',
   },
   badge: {
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -237,24 +245,30 @@ const styles = StyleSheet.create({
 
   ticksContainer: {
     position: 'absolute',
-    top: -36,
-    left: 6,
-    width: 80,
-    alignItems: 'flex-start',
+    width: 40,
     pointerEvents: 'none',
   },
+  ticksContainerRight: {
+    top: width * 0.139,
+    right: width * -0.02,
+    alignItems: 'flex-start',
+  },
+  ticksContainerLeft: {
+    top: width * 0.150,
+    right: width * -0.1,
+    alignItems: 'flex-end',
+  },
+
   tick: {
     position: 'relative',
     marginVertical: 2,
-    alignSelf: 'flex-start',
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
   tickText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    fontFamily: 'monospace',
-    color: '#ff4d4d',
+    fontSize: 12,
+    fontFamily: 'DynaPuff',
+    color: '#ff0000ff',
     textShadowColor: 'rgba(0,0,0,0.45)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,

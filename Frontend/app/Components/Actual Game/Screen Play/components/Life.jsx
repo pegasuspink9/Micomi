@@ -151,7 +151,7 @@ const Life = ({
               >
                 <Ionicons
                   name={heartDisplay.icon}
-                  size={16}
+                  size={15}
                   color={heartDisplay.color}
                 />
               </Animated.View>
@@ -181,8 +181,8 @@ const styles = StyleSheet.create({
   },
 
   borderWrapper: {
-    paddingHorizontal: 6,
-    paddingVertical: 4,
+    paddingHorizontal: 11,
+    paddingVertical: 3,
     borderRadius: 6,
   },
 
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   },
   heartContainer: {
     marginHorizontal: 2,
-    marginVertical: 2,
+    marginVertical: 1,
   },
 });
 

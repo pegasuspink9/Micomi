@@ -1,4 +1,4 @@
-// ScreenPlay.js
+// ScreenPlay.js (fixed: character damage displayed on the RIGHT, enemy damage on the LEFT)
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { Animated } from 'react-native';
 import enemiesData from '../GameData/Enemy Game Data/EnemyGameData';
@@ -10,7 +10,8 @@ import { processEnemyData } from './utils/gameStateHelper';
 import Life from './components/Life';
 import Coin from './components/Coin';
 import Damage from './components/Damage';
-//current 
+import Message from './components/Message';
+
 export default function ScreenPlay({ 
   gameState,
   isPaused = false, 
@@ -21,8 +22,6 @@ export default function ScreenPlay({
   const [totalCoins, setTotalCoins] = useState(0);
   const [characterAnimationState, setCharacterAnimationState] = useState('idle');
   const [isPlayingSubmissionAnimation, setIsPlayingSubmissionAnimation] = useState(false);
-
-
 
   const enemies = useMemo(() => processEnemyData(enemiesData), []);
 
@@ -45,8 +44,6 @@ export default function ScreenPlay({
   const playerMaxHealth = gameState.submissionResult?.fightResult?.character?.character_max_health
     ?? gameState.selectedCharacter?.max_health;
 
-
-  // IMPORTANT: robust fallbacks so we don't get undefined on entry responses
   const enemyHealth = (
     gameState.submissionResult?.fightResult?.enemy?.enemy_health ??
     gameState.submissionResult?.levelStatus?.enemyHealth ??
@@ -78,8 +75,6 @@ export default function ScreenPlay({
 
   const coinsEarned = gameState.submissionResult?.levelStatus?.coinsEarned ?? 0;
   
-
-
   // Handle coin updates
   useEffect(() => {
     if (coinsEarned > 0) {
@@ -91,8 +86,21 @@ export default function ScreenPlay({
     }
   }, [coinsEarned]);
 
-  const damageThisSubmission =
-  gameState.submissionResult?.fightResult?.character?.character_damage;
+  const damageThisSubmission = gameState.submissionResult?.fightResult?.character?.character_damage;
+    
+
+  const enemyDamageThisSubmission = gameState.submissionResult?.fightResult?.enemy?.enemy_damage;
+
+
+
+
+  const [submissionSeq, setSubmissionSeq] = useState(0);
+    useEffect(() => {
+      // increment when a new submission result object arrives
+      if (gameState.submissionResult) {
+        setSubmissionSeq(s => s + 1);
+      }
+    }, [gameState.submissionResult]);
 
   // Handle character animation completion
   const handleCharacterAnimationComplete = useCallback((completedAnimationState) => {
@@ -162,12 +170,10 @@ export default function ScreenPlay({
     }
 
     const submission = gameState.submissionResult;
-    // create a compact key for the submission so we can compare identity
     const submissionKey = submission
       ? `${submission.isCorrect}-${submission.attempts || 0}-${submission.fightResult?.character?.character_health ?? ''}-${submission.fightResult?.enemy?.enemy_health ?? ''}`
       : null;
 
-    // Only start an animation if there is a NEW submission that we haven't processed yet
     if (submission && lastSubmissionKeyRef.current !== submissionKey) {
       lastSubmissionKeyRef.current = submissionKey; // mark as processed
 
@@ -185,13 +191,11 @@ export default function ScreenPlay({
       return;
     }
 
-    // No submission result and not already idle - return to idle
     if (!submission && characterAnimationState !== 'idle') {
       console.log(`No submission result - setting idle animation`);
       setCharacterAnimationState('idle');
       setIsPlayingSubmissionAnimation(false);
       lastSubmissionKeyRef.current = null;
-      // reset enemies to idle
       setEnemyAnimationStates(enemies.map(() => 'idle'));
     }
   }, [gameState.submissionResult, playerHealth, isPlayingSubmissionAnimation, enemies]);
@@ -244,9 +248,28 @@ export default function ScreenPlay({
           position="right"
         />
 
+        {/* NOTE: swapped positions so character damage appears on the RIGHT and enemy damage on the LEFT */}
         <Damage
           incoming={damageThisSubmission}
           animated={true}
+          startDelay={3000} 
+          position="right"
+          trigger={submissionSeq} 
+        />
+
+        <Damage
+          incoming={enemyDamageThisSubmission}
+          animated={true}
+          startDelay={1800} 
+          position="left" 
+          trigger={submissionSeq} 
+        />
+
+
+        <Message
+          message={gameState.submissionResult?.message || ''}
+          trigger={submissionSeq}
+          duration={2400}
         />
 
         {/* Coins */}
