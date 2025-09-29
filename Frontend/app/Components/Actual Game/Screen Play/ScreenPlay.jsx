@@ -9,7 +9,7 @@ import EnemyCharacter from './components/EnemyCharacter';
 import { processEnemyData } from './utils/gameStateHelper';
 import Life from './components/Life';
 import Coin from './components/Coin';
-
+import Damage from './components/Damage';
 //current 
 export default function ScreenPlay({ 
   gameState,
@@ -21,6 +21,8 @@ export default function ScreenPlay({
   const [totalCoins, setTotalCoins] = useState(0);
   const [characterAnimationState, setCharacterAnimationState] = useState('idle');
   const [isPlayingSubmissionAnimation, setIsPlayingSubmissionAnimation] = useState(false);
+
+
 
   const enemies = useMemo(() => processEnemyData(enemiesData), []);
 
@@ -76,6 +78,8 @@ export default function ScreenPlay({
 
   const coinsEarned = gameState.submissionResult?.levelStatus?.coinsEarned ?? 0;
   
+
+
   // Handle coin updates
   useEffect(() => {
     if (coinsEarned > 0) {
@@ -86,6 +90,9 @@ export default function ScreenPlay({
       });
     }
   }, [coinsEarned]);
+
+  const damageThisSubmission =
+  gameState.submissionResult?.fightResult?.character?.character_damage;
 
   // Handle character animation completion
   const handleCharacterAnimationComplete = useCallback((completedAnimationState) => {
@@ -235,6 +242,11 @@ export default function ScreenPlay({
           }
           animated={true}
           position="right"
+        />
+
+        <Damage
+          incoming={damageThisSubmission}
+          animated={true}
         />
 
         {/* Coins */}

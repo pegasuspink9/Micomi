@@ -49,7 +49,7 @@ const EnemyCharacter = ({
   const [debugPosition, setDebugPosition] = useState(0);
 
   const TOTAL_FRAMES = 24;
-  const FRAME_DURATION = 50; // keep enemy timing similar to your original
+  const FRAME_DURATION = 50;
 
   // Animation duration constants (in milliseconds) -- preserved from your enemy version
   const ANIMATION_DURATIONS = {
