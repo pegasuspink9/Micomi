@@ -16,16 +16,24 @@ export async function updateProgressForChallenge(
     string,
     string[]
   >;
-  const alreadyAnsweredCorrectly = !!existingAnswers[challengeId.toString()];
 
-  const newAnswers = { ...existingAnswers };
+  const alreadyAnsweredCorrectly =
+    !!existingAnswers[challengeId.toString()] &&
+    (progress.wrong_challenges as number[]).includes(challengeId) === false;
+
+  const newAnswers = {
+    ...existingAnswers,
+    [challengeId.toString()]: finalAnswer,
+  };
+
   let wrongChallenges = (progress.wrong_challenges ?? []) as number[];
 
-  if (isCorrect && !alreadyAnsweredCorrectly) {
-    newAnswers[challengeId.toString()] = finalAnswer;
+  if (isCorrect) {
     wrongChallenges = wrongChallenges.filter((id) => id !== challengeId);
-  } else if (!isCorrect && !wrongChallenges.includes(challengeId)) {
-    wrongChallenges.push(challengeId);
+  } else {
+    if (!wrongChallenges.includes(challengeId)) {
+      wrongChallenges.push(challengeId);
+    }
   }
 
   const updatedProgress = await prisma.playerProgress.update({
