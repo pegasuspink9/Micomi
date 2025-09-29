@@ -17,10 +17,10 @@ import { useMapData } from '../../hooks/useMapData';
 const { width, height } = Dimensions.get('window');
 
 const LEVEL_SELECTOR_IMAGES = {
-  'HTML': 'https://github.com/user-attachments/assets/f1ade869-bb35-4864-a796-2a964749f83b',
-  'CSS': 'https://github.com/user-attachments/assets/b20d16ef-7374-4eae-b87e-ec9d61171071',
-  'JavaScript': 'https://github.com/user-attachments/assets/570e2a1e-a6cb-4f7f-bdfd-54920f810694',
-  'Computer': 'https://github.com/user-attachments/assets/8ab0728b-8988-46dd-8ad7-395abc4ba273'
+  'HTML': 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945741/469539795-f1ade869-bb35-4864-a796-2a964749f83b_hbzsxn.png',
+  'CSS': 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945759/469539799-b20d16ef-7374-4eae-b87e-ec9d61171071_g0qgdf.png',
+  'JavaScript': 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945815/469015824-570e2a1e-a6cb-4f7f-bdfd-54920f810694_yr5mi8.png',
+  'Computer': 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945877/469628154-8ab0728b-8988-46dd-8ad7-395abc4ba273_1_dsr2b5.png'
 };
 
 export default function MapNavigate({ onMapChange }) {
@@ -151,7 +151,7 @@ export default function MapNavigate({ onMapChange }) {
 
           {isValidMap && !maps[currentMapIndex].is_active && (
             <Image
-              source={{ uri: 'https://github.com/user-attachments/assets/e8a1b478-91d3-44c9-8a59-4bc46db4d1c0'}}
+              source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945939/473288860-e8a1b478-91d3-44c9-8a59-4bc46db4d1c0_jaroj9.png'}}
               style={styles.lockedOverlay}
               resizeMode='contain'
             />
@@ -165,7 +165,7 @@ export default function MapNavigate({ onMapChange }) {
             onPress={handlePrevious}
             disabled={currentMapIndex === 0}
           >
-            <Image source={{uri: 'https://github.com/user-attachments/assets/5f2b8e72-f49e-4f06-8b76-40b580289d54'}} style={[styles.arrowImage, styles.flippedHorizontal]} />
+            <Image source={{uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945991/469163197-5f2b8e72-f49e-4f06-8b76-40b580289d54_mf5hcw.png'}} style={[styles.arrowImage, styles.flippedHorizontal]} />
           </TouchableOpacity>
           
           <ImageBackground
@@ -185,7 +185,7 @@ export default function MapNavigate({ onMapChange }) {
             onPress={handleNext}
             disabled={currentMapIndex === maps.length - 1}
           >
-            <Image source={{uri: 'https://github.com/user-attachments/assets/5f2b8e72-f49e-4f06-8b76-40b580289d54'}} style={styles.arrowImage} />
+            <Image source={{uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945991/469163197-5f2b8e72-f49e-4f06-8b76-40b580289d54_mf5hcw.png'}} style={styles.arrowImage} />
           </TouchableOpacity>
         </View>
       </View>

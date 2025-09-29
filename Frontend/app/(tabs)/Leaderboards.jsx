@@ -339,7 +339,7 @@ export default function LeaderBoard({ route }) {
         submitting={submitting}
       />
 
-      <Drawer
+      {/* <Drawer
         isOutputVisible={isOutputVisible}
         translateY={translateY}
         backdropOpacity={backdropOpacity}
@@ -351,7 +351,7 @@ export default function LeaderBoard({ route }) {
         challengeData={gameState?.currentChallenge}
         gameState={gameState}
         submissionResult={gameState?.submissionResult}
-      />
+      /> */}
 
       {/* Debug Interface */}
       {__DEV__ && (

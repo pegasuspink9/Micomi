@@ -31,6 +31,7 @@ const AnswerOption = ({
             isDisabled && styles.listItemTextDisabled 
           ]}>
             {item}
+            
           </Text>
         </View>
       </Pressable>
@@ -40,9 +41,8 @@ const AnswerOption = ({
 
 const styles = StyleSheet.create({
   buttonFrame: {
-    borderRadius: SCREEN_WIDTH * 0.025,
-    backgroundColor: '#2c5282', // Dark sky blue frame
-    marginBottom: SCREEN_HEIGHT * 0.010,
+    backgroundColor: '#000000ff', 
+    marginBottom: SCREEN_HEIGHT * 0.009,
     shadowColor: '#1a365d',
     shadowOffset: {
       width: 0,
@@ -63,7 +63,6 @@ const styles = StyleSheet.create({
   },
 
   listItemContainer: {
-    borderRadius: SCREEN_WIDTH * 0.02,
     width: SCREEN_WIDTH * 0.20,
     position: 'relative',
     overflow: 'hidden',
@@ -94,7 +93,7 @@ const styles = StyleSheet.create({
   innerButton: {
     position: 'relative',
     alignItems: 'center',
-    paddingVertical: 5,
+    paddingVertical: 3,
     justifyContent: 'center',
     backgroundColor: '#014656ae', 
     borderRadius: SCREEN_WIDTH * 0.015,
@@ -180,7 +179,7 @@ const styles = StyleSheet.create({
   },
 
   listItemText: {
-    fontSize: SCREEN_WIDTH * 0.032,
+    fontSize: SCREEN_WIDTH * 0.026,
     color: '#ffffff', 
     textAlign: 'center',
     fontFamily: 'DynaPuff', 

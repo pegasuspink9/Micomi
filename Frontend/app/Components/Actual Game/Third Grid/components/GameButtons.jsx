@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   buttonFrame: {
     borderRadius: SCREEN_WIDTH * 0.025,
     position: 'absolute',
-    bottom: SCREEN_WIDTH * 0.018,
+    bottom: SCREEN_WIDTH * 0.028,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

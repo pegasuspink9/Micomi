@@ -13,7 +13,7 @@ export const getMaxAnswers = (currentQuestion) => {
     return 1;
   }
   
-  // Check for both possible type field names from API
+  // Check for both possile type field names from API
   const challengeType = currentQuestion.type || currentQuestion.challenge_type;
 
   if (challengeType === 'fill in the blank' || challengeType === 'code with guide') {

@@ -54,6 +54,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     margin: 5, // Same margin as CodeEditor
     overflow: 'hidden',
+    flex: 1,
     
     // Same border styling as CodeEditor
     borderTopWidth: 2,

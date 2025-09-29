@@ -17,11 +17,11 @@ const DogCharacter = ({
   characterAnimations = {},
   currentState = 'idle',
   onAnimationComplete = null,
-  attackMovement = 'fade', // new prop
+  attackMovement = 'fade',
 }) => {
   const frameIndex = useSharedValue(0);
-  const positionX = useSharedValue(0); // for horizontal placement
-  const opacity = useSharedValue(1); // for fade-in option
+  const positionX = useSharedValue(0); 
+  const opacity = useSharedValue(1); 
 
   const [currentAnimationUrl, setCurrentAnimationUrl] = useState('');
   const [isAnimationLooping, setIsAnimationLooping] = useState(true);
@@ -50,8 +50,7 @@ const DogCharacter = ({
     },
   };
 
-  // Movement distance (final X for attack/run)
-  const RUN_DISTANCE = SCREEN_WIDTH * 0.51; // Move 49% of screen width
+  const RUN_DISTANCE = SCREEN_WIDTH * 0.53; 
 
   // Ref to hold pending timeout ids so we can clear them on cleanup
   const phaseTimeoutRef = useRef(null);
@@ -427,6 +426,7 @@ const DogCharacter = ({
             onLoadEnd={() => {
               setImageReady(true);
             }}
+            cachePolicy="disk"
           />
         </Animated.View>
       </View>
@@ -455,8 +455,8 @@ const styles = StyleSheet.create({
   },
 
   spriteSheet: {
-    width: 540, // 6 columns × 90 = 540px
-    height: 360, // 4 rows × 90 = 360px
+    width: 540,
+    height: 360,
   },
 
   spriteImage: {

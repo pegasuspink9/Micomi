@@ -28,14 +28,14 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: SCREEN_HEIGHT * 0.20,
+    height: SCREEN_HEIGHT * 0.15,
     backgroundColor: 'transparent',
   },
 
   outerFrame: {
     flex: 1,
     backgroundColor: '#052a53ff',
-    borderRadius: SCREEN_WIDTH * 0.05,
+    borderRadius: SCREEN_WIDTH * 0.03,
     padding: SCREEN_WIDTH * 0.004,
     shadowColor: '#052a53ff',
     shadowOffset: {

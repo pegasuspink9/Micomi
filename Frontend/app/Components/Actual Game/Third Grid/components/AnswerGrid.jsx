@@ -109,15 +109,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-around',
-    alignItems: 'center',
-    width: '100%',
     paddingHorizontal: SCREEN_WIDTH * 0.01,
   },
 
   scrollableButton: {
     flexGrow: 1,
     paddingHorizontal: SCREEN_WIDTH * 0.01,
-    paddingVertical: SCREEN_HEIGHT * 0.02,
     paddingBottom: SCREEN_HEIGHT * 0.08, 
   },
 

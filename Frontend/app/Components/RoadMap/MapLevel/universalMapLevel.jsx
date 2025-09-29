@@ -125,13 +125,13 @@ export default function UniversalMapLevel() {
   const renderMapSpecificContent = useCallback(() => {
     switch(mapName) {
       case 'HTML':
-        return (
-          <BushAnimations 
-            mapName={mapName}
-            calculateContentHeight={calculateContentHeight}
-            getResponsiveValues={getResponsiveValues}
-          />
-        );
+        // return (
+        //   <BushAnimations 
+        //     mapName={mapName}
+        //     calculateContentHeight={calculateContentHeight}
+        //     getResponsiveValues={getResponsiveValues}
+        //   />
+        // );
       case 'CSS':
         return (
           <PopAnimations 

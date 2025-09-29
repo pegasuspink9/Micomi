@@ -1,3 +1,4 @@
+// ScreenPlay.js
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { Animated } from 'react-native';
 import enemiesData from '../GameData/Enemy Game Data/EnemyGameData';
@@ -42,12 +43,22 @@ export default function ScreenPlay({
   const playerMaxHealth = gameState.submissionResult?.fightResult?.character?.character_max_health
     ?? gameState.selectedCharacter?.max_health;
 
-  const enemyHealth = gameState.submissionResult?.fightResult?.enemy?.enemy_health
-    ?? gameState.enemy?.enemy_health;
 
-  const enemyMaxHealth = gameState.submissionResult?.fightResult?.enemy?.enemy_max_health
-    ?? gameState.enemy?.enemy_max_health
-    ?? 100;
+  // IMPORTANT: robust fallbacks so we don't get undefined on entry responses
+  const enemyHealth = (
+    gameState.submissionResult?.fightResult?.enemy?.enemy_health ??
+    gameState.submissionResult?.levelStatus?.enemyHealth ??
+    gameState.enemy?.enemy_health ??
+    gameState.enemy?.enemy_max_health
+  );
+
+  const enemyMaxHealth = (
+    gameState.submissionResult?.fightResult?.enemy?.enemy_max_health ??
+    gameState.submissionResult?.levelStatus?.enemyMaxHealth ??
+    gameState.submissionResult?.levelStatus?.enemy_max_health ??
+    gameState.enemy?.enemy_max_health ??
+    gameState.enemy?.enemy_health 
+  );
 
   // Extract all character animations from gameState (player)
   const characterAnimations = {
@@ -156,7 +167,6 @@ export default function ScreenPlay({
       if (submission.isCorrect === true) {
         console.log(`Correct answer - setting player attack, enemy hurt`);
         setCharacterAnimationState('attack');
-        // set enemy(s) to 'hurt' (if you have multiple enemies you may refine this)
         setEnemyAnimationStates(prev => prev.map(() => 'hurt'));
         setIsPlayingSubmissionAnimation(true);
       } else if (submission.isCorrect === false) {
@@ -238,30 +248,34 @@ export default function ScreenPlay({
         {enemies.map((enemy, index) => {
           if (!enemyPositions[index]) return null;
 
-          // Build enemy animations object: prefer submission fightResult enemy URLs, else enemy data
           const enemyAnimations = {
             character_idle:
               gameState.submissionResult?.fightResult?.enemy?.enemy_idle ??
+              gameState.enemy?.enemy_idle ??
               enemy.character_idle ??
               enemy.enemy_idle ??
               enemy.idle,
             character_attack:
               gameState.submissionResult?.fightResult?.enemy?.enemy_attack ??
+              gameState.enemy?.enemy_attack ??
               enemy.character_attack ??
               enemy.enemy_attack ??
               enemy.attack,
             character_hurt:
               gameState.submissionResult?.fightResult?.enemy?.enemy_hurt ??
+              gameState.enemy?.enemy_hurt ??
               enemy.character_hurt ??
               enemy.enemy_hurt ??
               enemy.hurt,
             character_run:
               gameState.submissionResult?.fightResult?.enemy?.enemy_run ??
+              gameState.enemy?.enemy_run ??
               enemy.character_run ??
               enemy.enemy_run ??
               enemy.run,
             character_dies:
               gameState.submissionResult?.fightResult?.enemy?.enemy_dies ??
+              gameState.enemy?.enemy_dies ??
               enemy.character_dies ??
               enemy.enemy_dies ??
               enemy.dies,
