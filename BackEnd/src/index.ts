@@ -17,8 +17,13 @@ import questRoutes from "./models/Quest/quest.routes";
 import levelPotionShopRoutes from "./models/Potion Shop by Level/levelPotionShop.routes";
 import authRoutes from "../middleware/auth.routes";
 
+import { Server } from "socket.io";
+import http from "http";
+
 dotenv.config();
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.json());
 app.use(cookieParser());
@@ -33,10 +38,8 @@ app.use(
 );
 
 app.use("/auth", authRoutes);
-
 app.use("/admin", adminRoutes);
 app.use("/player", playerRoutes);
-
 app.use("/map", mapRoutes);
 app.use("/level", levelRoutes);
 app.use("/challenge", challengeRoutes);
@@ -48,9 +51,24 @@ app.use("/shop", shopRoutes);
 app.use("/lesson", lessonRoutes);
 app.use("/quest", questRoutes);
 app.use("/level-potion-shop", levelPotionShopRoutes);
-
 app.use("/game", gameRoutes);
 
-app.listen(3000, () => {
-  console.log(`Server running on http://localhost:3000`);
+io.on("connection", (socket) => {
+  console.log("Player connected:", socket.id);
+
+  socket.on("joinRoom", (playerId: number) => {
+    socket.join(playerId.toString());
+    console.log(`Player ${playerId} joined their room`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Player disconnected:", socket.id);
+  });
+});
+
+export { io, server };
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });

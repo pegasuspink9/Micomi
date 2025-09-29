@@ -1,4 +1,5 @@
 import { prisma } from "../../../prisma/client";
+import { io } from "../../index";
 
 export const checkAchievements = async (playerId: number) => {
   const player = await prisma.player.findUnique({
@@ -157,6 +158,8 @@ export const checkAchievements = async (playerId: number) => {
       skipDuplicates: true,
     });
   }
+
+  io.to(playerId.toString()).emit("achievementUnlocked", awards);
 
   return prisma.playerAchievement.findMany({
     where: { player_id: playerId },

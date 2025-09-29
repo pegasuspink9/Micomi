@@ -33,9 +33,9 @@ model Lesson {
   lesson_id     Int       @id @default(autoincrement())
   level_id      Int
   lesson_title  String
-  description   String 
-  content       String    @db.Text
-} //Para sa Practice
+  lesson_description   String 
+  lesson_content       String    @db.Text
+} //Micomi level
 
 model Level {
   level_id          Int      @id @default(autoincrement())
