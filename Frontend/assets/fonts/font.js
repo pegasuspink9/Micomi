@@ -6,7 +6,8 @@ export const useFonts = () => {
     'Computerfont': require('./Computerfont.ttf'),
     'GoldenAge': require('./GoldenAgeShad.ttf'),
     'GoldenAgeDark': require('./GoldenAgeDark.ttf'),
-    'DynaPuff': require('./DynaPuff.ttf')
+    'DynaPuff': require('./DynaPuff.ttf'),
+    'MusicVibes': require('./MusicVibes.otf'),
   });
 
   return fontsLoaded;

@@ -140,7 +140,6 @@ const styles = StyleSheet.create({
       height: 2,
     },
     shadowOpacity: 0.2,
-    // Pressed state - invert the 3D effect
     borderTopWidth: 3,
     borderTopColor: '#1e3a8a',
     borderLeftWidth: 3,
@@ -171,7 +170,7 @@ const styles = StyleSheet.create({
 
   listItemDisabled: {
     opacity: 0.4,
-    backgroundColor: '#64748b', // Gray blue when disabled
+    backgroundColor: '#2e78e0ff',
     borderTopColor: '#94a3b8',
     borderLeftColor: '#94a3b8',
     borderBottomColor: '#334155',

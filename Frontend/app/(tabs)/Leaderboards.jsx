@@ -374,17 +374,23 @@ export default function LeaderBoard({ route }) {
         submissionResult={gameState?.submissionResult}
       />
 
+      {/* <LevelModal 
+       
+      /> */}
+
+
+
       {/* Debug Interface */}
       {__DEV__ && (
         <>
-          <TouchableOpacity 
+          {/* <TouchableOpacity 
             style={styles.debugToggle}
             onPress={() => setShowDebugPanel(!showDebugPanel)}
           >
             <Text style={styles.debugToggleText}>
               {showDebugPanel ? '🔍 Hide Debug' : '🔍 Show Debug'}
             </Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {__DEV__ && showDebugPanel && (
             <View style={styles.debugPanel}>

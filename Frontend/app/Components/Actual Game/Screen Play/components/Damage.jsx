@@ -265,6 +265,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
+  
   tickText: {
     fontSize: 12,
     fontFamily: 'DynaPuff',

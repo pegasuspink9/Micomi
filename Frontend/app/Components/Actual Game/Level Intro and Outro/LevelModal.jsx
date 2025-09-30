@@ -1,3 +1,4 @@
+import { ImageBackground } from 'expo-image';
 import React from 'react';
 import { View, Text, Modal, Pressable, StyleSheet, Dimensions, Image } from 'react-native';
 
@@ -42,16 +43,27 @@ const LevelModal = ({
             
             {/* Robot Eyes/Visor with Organic Shape */}
             <View style={styles.visor}>
-              <View style={styles.visorGlass}>
-                {/* Modal Content */}
-                <View style={styles.modalContent}>
-                  <View style={styles.textContainer}>
-                     <Text style={styles.levelTitle}>Level: {levelData.level_number}</Text>
-                  </View>
+               <ImageBackground
+                  source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759220459/363a62c7-6a6a-456a-a3b5-c1ffb987aef1_fnpugf.png' }}
+              
+                  imageStyle={styles.backgroundImage} 
+                  resizeMode="cover"
+                >
+                <View style={styles.visorGlass}  resizeMode="cover">
+                  {/* Modal Content */}
+                  <View style={styles.modalContent}>
+                    <View style={styles.textContainer}>
+                       <Text style={styles.levelTitle}>Level: {levelData.level_number}</Text>
+                    </View>
                  
                   <View style={styles.levelInfo}>
                     <Text style={styles.levelType}>{levelData.level_type}</Text>
                   </View>
+
+                  <View style={styles.levelInfo}>
+                    <Text style={styles.enemy}>Enemy Found:{levelData.level_type}</Text>
+                  </View>
+                  
                   
                   <View style={styles.contentContainer}>
                     <Text style={styles.contentText}>{levelData.content}</Text>
@@ -60,7 +72,7 @@ const LevelModal = ({
                   <View style={styles.rewardContainer}>
                     <Text style={styles.rewardLabel}>Rewards:</Text>
                     <View style={styles.rewardFrames}>
-                      {/* Coins Reward */}
+                      
                       <View style={styles.rewardFrame}>
                         <View style={styles.rewardBox}>
                           <View style={styles.rewardIconContainer}>
@@ -69,8 +81,7 @@ const LevelModal = ({
                           </View>
                         </View>
                       </View>
-                      
-                      {/* EXP Reward */}
+
                       <View style={styles.rewardFrame}>
                         <View style={styles.rewardBox}>
                           <View style={styles.rewardIconContainer}>
@@ -94,6 +105,8 @@ const LevelModal = ({
                   </View>
                 </View>
               </View>
+              
+                 </ImageBackground>
             </View>
           </View>
           
@@ -134,25 +147,24 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: SCREEN_WIDTH * 0.08,
   },
 
   robotHead: {
     alignSelf: 'center',
-    marginTop: SCREEN_HEIGHT * 0.09,
+    marginTop: SCREEN_HEIGHT * -0.2,
     width: SCREEN_WIDTH * 0.85,
     position: 'relative',
   },
 
   // Outer decorative border with complex curves
   outerBorder: {
-    backgroundColor: '#008ca5ff',
+    backgroundColor: '#03aaafff',
     borderRadius: SCREEN_WIDTH * 0.12,
     padding: 4,
-    borderTopLeftRadius: SCREEN_WIDTH * 0.15,
-    borderTopRightRadius: SCREEN_WIDTH * 0.08,
-    borderBottomLeftRadius: SCREEN_WIDTH * 0.1,
-    borderBottomRightRadius: SCREEN_WIDTH * 0.18,
+    borderTopLeftRadius: SCREEN_WIDTH * 0.12,
+    borderTopRightRadius: SCREEN_WIDTH * 0.12,
+    borderBottomLeftRadius: SCREEN_WIDTH * 0.12,
+    borderBottomRightRadius: SCREEN_WIDTH * 0.12,
     shadowColor: '#1e40af',
     shadowOffset: {
       width: 0,
@@ -175,21 +187,21 @@ const styles = StyleSheet.create({
   antenna: {
     position: 'absolute',
     alignSelf: 'center',
-    top: SCREEN_WIDTH * -0.5,
+    top: SCREEN_WIDTH * -0.35,
     zIndex: 5,
-    width: SCREEN_WIDTH * 0.7,
-    height: SCREEN_WIDTH * 0.7,
+    width: SCREEN_WIDTH * 0.5,
+    height: SCREEN_WIDTH * 0.5,
   },
 
   visor: {
-    backgroundColor: '#0c36a8ff',
+    backgroundColor: '#e8ecedff',
     padding: 4,
-    marginBottom: 10,
+    marginBottom: -120,
     // Organic visor shape
     borderTopLeftRadius: SCREEN_WIDTH * 0.15,
     borderTopRightRadius: SCREEN_WIDTH * 0.12,
     borderBottomLeftRadius: SCREEN_WIDTH * 0.06,
-    borderBottomRightRadius: SCREEN_WIDTH * 0.18,
+    borderBottomRightRadius: SCREEN_WIDTH * 0.06,
     // Enhanced 3D visor effect
     borderTopWidth: 2,
     borderTopColor: '#002c38ff',
@@ -207,11 +219,11 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 10,
+    elevation: 10
   },
 
   visorGlass: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: 'rgba(255, 255, 255, 0.81)',
     minHeight: SCREEN_HEIGHT * 0.4,
     position: 'relative',
     overflow: 'hidden',
@@ -219,24 +231,33 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: SCREEN_WIDTH * 0.15,
     borderTopRightRadius: SCREEN_WIDTH * 0.11,
     borderBottomLeftRadius: SCREEN_WIDTH * 0.055,
-    borderBottomRightRadius: SCREEN_WIDTH * 0.18,
+    borderBottomRightRadius: SCREEN_WIDTH * 0.055,
     // Enhanced glass effect
     borderWidth: 2,
-    borderTopColor: 'rgba(15, 2, 107, 0.8)',
-    borderLeftColor: 'rgba(15, 2, 107, 0.8)',
-    borderBottomColor: 'rgba(15, 2, 107, 0.8)',
-    borderRightColor: 'rgba(15, 2, 107, 0.8)',
+    borderTopColor: 'rgba(4, 59, 141, 0.55)',
+    borderLeftColor: 'rgba(4, 59, 141, 0.8)',
+    borderBottomColor: 'rgba(4, 59, 141, 0.8)',
+    borderRightColor: 'rgba(4, 59, 141, 0.8)',
+    paddingBottom: 100,
   },
 
+
+// imageStyle applied directly to the background image (this actually rounds the bitmap)
+backgroundImage: {
+  borderTopLeftRadius: SCREEN_WIDTH * 0.15,
+  borderTopRightRadius: SCREEN_WIDTH * 0.11,
+  borderBottomLeftRadius: SCREEN_WIDTH * 0.055,
+  borderBottomRightRadius: SCREEN_WIDTH * 0.055,
+},
+
   modalContent: {
-    padding: SCREEN_WIDTH * 0.05,
     alignItems: 'center',
   },
 
   textContainer: {
-    backgroundColor: 'rgba(3, 76, 107, 0.5)',
-    width: SCREEN_WIDTH * 1,  
-    height: SCREEN_WIDTH * 0.13,
+    backgroundColor: '#3f76dcc2',
+    width: SCREEN_WIDTH * 0.7,  
+    height: SCREEN_WIDTH * 0.17,
     borderBottomLeftRadius: SCREEN_WIDTH * 0.1, 
     borderBottomRightRadius: SCREEN_WIDTH * 0.1, 
     borderTopLeftRadius: 0,     
@@ -246,21 +267,21 @@ const styles = StyleSheet.create({
     alignSelf: 'center', 
     borderWidth: 2,
     borderColor: '#darkgreen',
-    shadowColor: '#000',
+    shadowColor: '#000000ff',
     shadowOffset: {
       width: 0,
       height: 2,
     },
     marginBottom: 10,
-    shadowOpacity: 0.25,
+    shadowOpacity: 1,
     shadowRadius: 3.84,
     elevation: 5,
   },
 
   levelTitle: {
-    fontSize: SCREEN_WIDTH * 0.1,
-    color: '#1a365d',
-    fontFamily: 'GoldenAge',
+    fontSize: SCREEN_WIDTH * 0.13,
+    color: '#d8d8d8ff',
+    fontFamily: 'MusicVibes',
     textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 0.1)',
     textShadowOffset: { width: 1, height: 1 },
@@ -284,6 +305,7 @@ const styles = StyleSheet.create({
     fontSize: SCREEN_WIDTH * 0.029,
     color: '#374151',
     textAlign: 'justify',
+    width: 230,
     fontFamily: 'DynaPuff',
   },
 
@@ -388,18 +410,14 @@ const styles = StyleSheet.create({
 
   closeButton: {
     position: 'absolute',
-    top: -10,
-    right: -10,
-    width: 44,
-    height: 44,
+    top: SCREEN_HEIGHT * 0.01,
+    right: SCREEN_WIDTH * 0.02,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: '#ef4444',
     justifyContent: 'center',
     alignItems: 'center',
-    // Organic close button shape
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 8,
-    borderBottomLeftRadius: 15,
-    borderBottomRightRadius: 30,
     shadowColor: '#dc2626',
     shadowOffset: {
       width: 0,

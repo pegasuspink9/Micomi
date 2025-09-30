@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
@@ -7,17 +7,22 @@ import {
   Image,
   Pressable
 } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const PotionGrid = ({ 
   potions = [
-      { id: 1, name: 'Health', count: 3, image: 'https://github.com/user-attachments/assets/062f823a-2381-4a64-8c83-9c6d9349b24a' },
-    { id: 2, name: 'Strong', count: 1, image: 'https://github.com/user-attachments/assets/e368c20c-e7fa-46ec-8b66-1334ac2de1d2' },
-    { id: 3, name: 'Hint', count: 2, image: 'https://github.com/user-attachments/assets/ff2e041c-9f7b-438c-91e6-1f371cfe1966' }
+      { id: 1, name: 'Health', count: 3, image: 'https://github.com/user-attachments/assets/765b1917-5b6a-4156-9d38-0acbdbfc909a' },
+    { id: 2, name: 'Strong', count: 1, image: 'https://github.com/user-attachments/assets/3264eb79-0afd-4987-8c64-6d46b0fc03a0' },
+    { id: 3, name: 'Hint', count: 2, image: 'https://github.com/user-attachments/assets/1fb726a5-f63d-44f4-8e33-8d9c961940ff' },
+    { id: 4, name: 'Immune', count: 2, image: 'https://github.com/user-attachments/assets/d2a4ab58-2d5d-4e35-80b2-71e591bdd297' },
   ],
   onPotionPress
 }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
   const getPotionColors = (name) => {
     const colorMap = {
       'Health': {
@@ -40,7 +45,14 @@ const PotionGrid = ({
         frameColor: '#1d4ed8', 
         innerColor: '#60a5fa', 
         pressedColor: '#1e40af' 
-      }
+      },
+      'Mana': {
+        background: 'rgba(0, 213, 255, 0.44)', 
+        border: '#00d5ff',
+        frameColor: '#0891b2',
+        innerColor: '#22d3ee',
+        pressedColor: '#0e7490'
+      },
     };
     
     return colorMap[name] || {
@@ -81,20 +93,7 @@ const PotionGrid = ({
         disabled={!potion || potion.count === 0}
       >
         
-      <View style={[
-        styles.potionNameContainer,
-        {
-          backgroundColor: colors.background,
-          borderColor: colors.border,
-        }
-      ]}>
-          <Text style={[
-            styles.potionName,
-            potion && potion.count === 0 && styles.potionNameDisabled
-          ]}>
-            {potion ? potion.name : ''}
-          </Text>
-      </View>
+       
 
         <View style={styles.potionSlotInner}>
           <View style={styles.potionSlotContent}>
@@ -133,25 +132,57 @@ const PotionGrid = ({
     );
   };
 
-  // Create 3x3 grid with potions and empty slots
-  const createGrid = () => {
-    const grid = [];
-    for (let i = 0; i < potions.length; i++) {
-      const potion = potions[i];
-      grid.push(
-        <PotionSlot 
-          key={i} 
-          potion={potion} 
-          isEmpty={!potion}
-        />
-      );
-    }
-    return grid;
+  // Compute pixel positions so arrows sit just outside the centered potion container
+  const CONTAINER_PCT = 0.12;
+  const CONTAINER_WIDTH = SCREEN_WIDTH * CONTAINER_PCT;
+  const ARROW_SIZE = SCREEN_WIDTH * 0.1; 
+  const GAP = 10; // small gap between potion frame and arrow
+
+  const leftArrowLeft = (SCREEN_WIDTH / 3.2) - (CONTAINER_WIDTH / 2) - GAP;
+  const rightArrowLeft = (SCREEN_WIDTH / 2) + (CONTAINER_WIDTH / 2) + GAP;
+
+  const createSingleView = () => {
+    const potion = potions && potions.length > 0 ? potions[currentIndex] : null;
+    return (
+      <View style={styles.singleWrapper}>
+        <View style={styles.singleSlotContainer}>
+          <PotionSlot potion={potion} isEmpty={!potion} />
+        </View>
+
+        {/* Left arrow - absolutely positioned just outside left edge */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.arrowButton,
+            { left: leftArrowLeft, width: ARROW_SIZE, height: ARROW_SIZE, marginTop: -(ARROW_SIZE/2) },
+            currentIndex === 0 && styles.arrowDisabled,
+            pressed && styles.arrowPressed
+          ]}
+          onPress={() => currentIndex > 0 && setCurrentIndex(currentIndex - 1)}
+          disabled={currentIndex === 0}
+        >
+            <Image source={{uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945991/469163197-5f2b8e72-f49e-4f06-8b76-40b580289d54_mf5hcw.png'}}  style={[styles.arrowImage, styles.flippedHorizontal]}  />
+        </Pressable>
+
+        {/* Right arrow - absolutely positioned just outside right edge */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.arrowButton,
+            { left: rightArrowLeft, width: ARROW_SIZE, height: ARROW_SIZE, marginTop: -(ARROW_SIZE/2) },
+            currentIndex >= (potions.length - 1) && styles.arrowDisabled,
+            pressed && styles.arrowPressed
+          ]}
+          onPress={() => currentIndex < (potions.length - 1) && setCurrentIndex(currentIndex + 1)}
+          disabled={currentIndex >= (potions.length - 1)}
+        > 
+        <Image source={{uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945991/469163197-5f2b8e72-f49e-4f06-8b76-40b580289d54_mf5hcw.png'}} style={styles.arrowImage} />
+        </Pressable>
+      </View>
+    );
   };
 
   return (
     <View style={styles.gridContainer}>
-      {createGrid()}
+      {createSingleView()}
     </View>
   );
 };
@@ -163,11 +194,60 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-evenly',
     alignItems: 'flex-start',
-    padding: SCREEN_WIDTH * 0.04,
+    paddingTop: SCREEN_WIDTH * 0.02,
+  },
+
+  arrowImage:{
+    width: SCREEN_WIDTH * 0.2,
+    height: SCREEN_WIDTH * 0.2,
+    resizeMode: 'contain',
+  },
+
+  flippedHorizontal: {
+    transform: [{ scaleX: -1 }],
+  },
+
+  // wrapper centers the potionFrame; arrows are absolutely positioned to sit centered vertically near it
+  singleWrapper: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    paddingVertical: SCREEN_WIDTH * 0.02,
+  },
+
+  singleSlotContainer: {
+    width: '22%', 
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  arrowButton: {
+    // size set dynamically to keep same visual size; base visuals kept here
+    borderRadius: SCREEN_WIDTH * 0.02,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    position: 'absolute',
+  },
+
+  arrowText: {
+    fontSize: 22,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+
+  arrowDisabled: {
+    opacity: 0.3,
+  },
+
+  arrowPressed: {
+    transform: [{ translateY: 1 }],
   },
 
   potionFrame: {
-    width: '26%',
+    width: '100%',
     aspectRatio: 1,
     borderRadius: SCREEN_WIDTH * 0.03,
     padding: 2,
@@ -220,7 +300,6 @@ const styles = StyleSheet.create({
       height: 2,
     },
     shadowOpacity: 0.2,
-    // Pressed state - invert the 3D effect (same as AnswerOption)
     borderTopWidth: 3,
     borderLeftWidth: 3,
     borderBottomWidth: 1,
@@ -324,8 +403,8 @@ const styles = StyleSheet.create({
   },
 
   potionImage: {
-    width: '70%',
-    height: SCREEN_WIDTH * 0.16,
+    width: '100%',
+    height: SCREEN_WIDTH * 0.19,
     borderRadius: 30,
     zIndex: 2,
   },
@@ -334,31 +413,8 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
 
-  potionNameContainer: {
-    position: 'absolute',
-    top: 55,
-    alignSelf: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    borderWidth: 2,
-    zIndex: 10, 
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 3,
-    elevation: 8,
-  },
 
-  potionName: {
-    fontSize: 10,
-    color: '#fff',
-    fontFamily: 'DynaPuff', 
-    textAlign: 'center',
-    textShadowColor: '#000',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
+
 
   potionNameDisabled: {
     color: '#888',
@@ -368,7 +424,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 3,
     right: 3,
-    backgroundColor: '#0824428d',
     borderRadius: 8,
     minWidth: 16,
     height: 16,
@@ -386,10 +441,9 @@ const styles = StyleSheet.create({
 
 
   countText: {
-    color: '#fff',
+    color: '#ffffff94',
     fontSize: 10,
-    fontWeight: 'bold',
-    fontFamily: 'monospace', // Console font
+    fontFamily: 'DynaPuff', 
   },
 });
 

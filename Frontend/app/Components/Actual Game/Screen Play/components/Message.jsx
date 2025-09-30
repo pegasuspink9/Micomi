@@ -29,12 +29,12 @@ export default function Message({
   const [isShown, setIsShown] = useState(false);
 
   // POP animation tuning (change these to taste)
-  const POP_START = 1.6;       // start very big
-  const POP_OVERSHOOT = 0.9;   // quick undershoot snap
-  const POP_SETTLE = 1.0;      // final settled scale
-  const POP_FAST_MS = 120;     // fast shrink duration
-  const POP_SETTLE_MS = 180;   // settle duration
-  const FADE_IN_MS = 160;      // opacity fade in
+  const POP_START = 4.6;       // start very big
+  const POP_OVERSHOOT = 0.5;   // quick undershoot snap
+  const POP_SETTLE = 0.9;      // final settled scale
+  const POP_FAST_MS = 250;     // fast shrink duration
+  const POP_SETTLE_MS = 190;   // settle duration
+  const FADE_IN_MS = 210;      // opacity fade in
 
   // show/hide handler
   const show = () => {
@@ -45,7 +45,6 @@ export default function Message({
     setIsShown(true);
 
     if (animated) {
-      // start big, snap smaller quickly, then spring/settle to normal
       opacity.setValue(0);
       scale.setValue(POP_START);
 
@@ -78,7 +77,7 @@ export default function Message({
     // schedule hide
     hideTimerRef.current = setTimeout(() => {
       hide();
-    }, Math.max(500, duration));
+    }, Math.max(700, duration));
   };
 
   const hide = () => {
@@ -148,7 +147,7 @@ export default function Message({
 const styles = StyleSheet.create({
   viewport: {
     position: 'absolute',
-    top: width * 0.18,
+    top: width * 0.15,
     left: 0,
     right: 0,
     alignItems: 'center',
@@ -159,16 +158,12 @@ const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: 10,
     paddingVertical: 10,
-    borderRadius: 12,
-    maxWidth: width * 0.70,
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    borderWidth: 2,
-    borderColor: '#1700e7ff', // optional border you requested earlier
+    maxWidth: width * 0.50,
+    alignItems: 'center'
   },
   messageText: {
-    color: '#1700e7ff',
-    fontSize: 14,
+    color: '#08004bff',
+    fontSize: 17,
     textAlign: 'center',
     lineHeight: 18,
     fontFamily: 'FunkySign',
