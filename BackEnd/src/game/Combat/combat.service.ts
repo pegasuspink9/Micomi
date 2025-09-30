@@ -12,6 +12,8 @@ import { formatTimer } from "../../../helper/dateTimeHelper";
 
 const prisma = new PrismaClient();
 
+const ENEMY_HEALTH = 30;
+
 const safeHp = (hp: number | null | undefined, fallbackMax: number) =>
   typeof hp === "number" && !Number.isNaN(hp)
     ? Math.max(hp, 0)
@@ -47,7 +49,7 @@ export async function getFightSetup(playerId: number, levelId: number) {
     },
   });
 
-  const scaledEnemyHp = enemy.enemy_health * (level.challenges?.length ?? 1);
+  const scaledEnemyHp = ENEMY_HEALTH * (level.challenges?.length ?? 1);
 
   if (!progress) {
     progress = await prisma.playerProgress.create({
@@ -135,10 +137,10 @@ export async function fightEnemy(
   if (!character) throw new Error("Character not found");
 
   const challengeCount = level.challenges?.length ?? 1;
-  const scaledEnemyMaxHealth = enemy.enemy_health * challengeCount;
+  const scaledEnemyMaxHealth = ENEMY_HEALTH * challengeCount;
 
   console.log("DEBUG Combat Service:");
-  console.log("- Enemy base health:", enemy.enemy_health);
+  console.log("- Enemy base health:", ENEMY_HEALTH);
   console.log("- Number of challenges:", challengeCount);
   console.log("- Calculated scaled health:", scaledEnemyMaxHealth);
   console.log("- FRESH Progress enemy_hp from DB:", progress.enemy_hp);
@@ -196,139 +198,144 @@ export async function fightEnemy(
     console.log("- Already answered correctly:", alreadyAnsweredCorrectly);
     console.log("- Was ever wrong:", wasEverWrong);
 
-    if (
-      !alreadyAnsweredCorrectly &&
-      !wasEverWrong &&
-      correctAnswerLength >= 5
-    ) {
-      character_attack_type = "special_attack";
-      damage = damageArray[2] ?? 25;
-      character_run = character.character_run || null;
-      character_attack = attacksArray[2] || null;
-      character_idle = character.avatar_image || null;
-      console.log("- Special attack triggered!");
-    } else if (correctAnswerLength > 2) {
-      if (elapsedSeconds > 5) {
+    if (enemyHealth > 0) {
+      if (
+        !alreadyAnsweredCorrectly &&
+        !wasEverWrong &&
+        correctAnswerLength >= 5
+      ) {
+        character_attack_type = "special_attack";
+        damage = damageArray[2] ?? 25;
+        character_run = character.character_run || null;
+        character_attack = attacksArray[2] || null;
+        character_idle = character.avatar_image || null;
+        console.log("- Special attack triggered!");
+      } else if (correctAnswerLength > 2) {
+        if (elapsedSeconds > 5) {
+          character_attack_type = "basic_attack";
+          damage = damageArray[0] ?? 10;
+          character_run = character.character_run || null;
+          character_attack = attacksArray[0] || null;
+          character_idle = character.avatar_image || null;
+          console.log("- Basic attack triggered!");
+        } else {
+          character_attack_type = "second_attack";
+          damage = damageArray[1] ?? 15;
+          character_run = character.character_run || null;
+          character_attack = attacksArray[1] || null;
+          character_idle = character.avatar_image || null;
+          console.log("- Second attack triggered!");
+        }
+      } else {
         character_attack_type = "basic_attack";
         damage = damageArray[0] ?? 10;
         character_run = character.character_run || null;
         character_attack = attacksArray[0] || null;
         character_idle = character.avatar_image || null;
-        console.log("- Basic attack triggered!");
-      } else {
-        character_attack_type = "second_attack";
-        damage = damageArray[1] ?? 15;
-        character_run = character.character_run || null;
-        character_attack = attacksArray[1] || null;
+        console.log("- Basic attack triggered at default!");
+      }
+
+      console.log("- Attack type:", character_attack_type);
+      console.log("- Base damage:", damage);
+      console.log("- Paired attack URL:", character_attack);
+
+      if (progress.has_strong_effect) {
+        damage *= 2;
+        await prisma.playerProgress.update({
+          where: { progress_id: progress.progress_id },
+          data: { has_strong_effect: false },
+        });
+        console.log("- Strong potion applied, damage doubled");
+      }
+
+      enemyHealth = Math.max(enemyHealth - damage, 0);
+      enemy_hurt = enemy.enemy_hurt || null;
+      enemy_idle = enemy.enemy_avatar || null;
+      console.log("- Enemy health after attack:", enemyHealth);
+
+      if (enemyHealth <= 0) {
+        enemy_dies = enemy.enemy_dies || null;
+
+        enemy_hurt = null;
+        enemy_idle = null;
+        enemy_run = null;
+        enemy_attack = null;
+
         character_idle = character.avatar_image || null;
-        console.log("- Second attack triggered!");
+        character_run = null;
+
+        const answeredCount = Object.keys(progress.player_answer ?? {}).length;
+        const totalChallenges = level.challenges.length;
+        const wrongChallengesCount = (progress.wrong_challenges ?? []).length;
+
+        if (answeredCount === totalChallenges && wrongChallengesCount === 0) {
+          status = BattleStatus.won;
+
+          if (!progress.is_completed) {
+            const totalExp = level.challenges.reduce(
+              (sum, c) => sum + c.points_reward,
+              0
+            );
+            const totalPoints = level.challenges.reduce(
+              (sum, c) => sum + c.points_reward,
+              0
+            );
+            const totalCoins = level.challenges.reduce(
+              (sum, c) => sum + c.coins_reward,
+              0
+            );
+
+            await updateQuestProgress(playerId, QuestType.defeat_enemy, 1);
+
+            if (status === BattleStatus.won) {
+              if (!progress.took_damage) {
+                await updateQuestProgress(
+                  playerId,
+                  QuestType.defeat_enemy_full_hp,
+                  1
+                );
+
+                await updateQuestProgress(playerId, QuestType.perfect_level, 1);
+              }
+            }
+
+            if (
+              enemy.enemy_difficulty === "hard" ||
+              enemy.enemy_difficulty === "final"
+            ) {
+              await updateQuestProgress(playerId, QuestType.defeat_boss, 1);
+            }
+
+            await prisma.player.update({
+              where: { player_id: playerId },
+              data: {
+                total_points: { increment: totalPoints },
+                exp_points: { increment: totalExp },
+                coins: { increment: totalCoins },
+              },
+            });
+
+            await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
+          }
+
+          try {
+            await LevelService.unlockNextLevel(
+              playerId,
+              level.map_id,
+              level.level_number
+            );
+            console.log(
+              "- Level unlocked after enemy defeated and all challenges answered"
+            );
+          } catch (err) {
+            console.error("Error unlocking next level:", err);
+          }
+        }
       }
     } else {
-      character_attack_type = "basic_attack";
-      damage = damageArray[0] ?? 10;
-      character_run = character.character_run || null;
-      character_attack = attacksArray[0] || null;
-      character_idle = character.avatar_image || null;
-      console.log("- Basic attack triggered at default!");
-    }
-
-    console.log("- Attack type:", character_attack_type);
-    console.log("- Base damage:", damage);
-    console.log("- Paired attack URL:", character_attack);
-
-    if (progress.has_strong_effect) {
-      damage *= 2;
-      await prisma.playerProgress.update({
-        where: { progress_id: progress.progress_id },
-        data: { has_strong_effect: false },
-      });
-      console.log("- Strong potion applied, damage doubled");
-    }
-
-    enemyHealth = Math.max(enemyHealth - damage, 0);
-    enemy_hurt = enemy.enemy_hurt || null;
-    enemy_idle = enemy.enemy_avatar || null;
-    console.log("- Enemy health after attack:", enemyHealth);
-
-    if (enemyHealth <= 0) {
-      enemy_dies = enemy.enemy_dies || null;
-
-      enemy_hurt = null;
-      enemy_idle = null;
-      enemy_run = null;
-      enemy_attack = null;
-
+      console.log("- Enemy already defeated: no attack shown.");
       character_idle = character.avatar_image || null;
       character_run = null;
-      character_attack = null;
-
-      const answeredCount = Object.keys(progress.player_answer ?? {}).length;
-      const totalChallenges = level.challenges.length;
-      const wrongChallengesCount = (progress.wrong_challenges ?? []).length;
-
-      if (answeredCount === totalChallenges && wrongChallengesCount === 0) {
-        status = BattleStatus.won;
-
-        if (!progress.is_completed) {
-          const totalExp = level.challenges.reduce(
-            (sum, c) => sum + c.points_reward,
-            0
-          );
-          const totalPoints = level.challenges.reduce(
-            (sum, c) => sum + c.points_reward,
-            0
-          );
-          const totalCoins = level.challenges.reduce(
-            (sum, c) => sum + c.coins_reward,
-            0
-          );
-
-          await updateQuestProgress(playerId, QuestType.defeat_enemy, 1);
-
-          if (status === BattleStatus.won) {
-            if (!progress.took_damage) {
-              await updateQuestProgress(
-                playerId,
-                QuestType.defeat_enemy_full_hp,
-                1
-              );
-
-              await updateQuestProgress(playerId, QuestType.perfect_level, 1);
-            }
-          }
-
-          if (
-            enemy.enemy_difficulty === "hard" ||
-            enemy.enemy_difficulty === "final"
-          ) {
-            await updateQuestProgress(playerId, QuestType.defeat_boss, 1);
-          }
-
-          await prisma.player.update({
-            where: { player_id: playerId },
-            data: {
-              total_points: { increment: totalPoints },
-              exp_points: { increment: totalExp },
-              coins: { increment: totalCoins },
-            },
-          });
-
-          await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
-        }
-
-        try {
-          await LevelService.unlockNextLevel(
-            playerId,
-            level.map_id,
-            level.level_number
-          );
-          console.log(
-            "- Level unlocked after enemy defeated and all challenges answered"
-          );
-        } catch (err) {
-          console.error("Error unlocking next level:", err);
-        }
-      }
     }
   } else {
     if (enemyHealth > 0) {

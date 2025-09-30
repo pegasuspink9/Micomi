@@ -5,7 +5,8 @@ export async function updateProgressForChallenge(
   progressId: number,
   challengeId: number,
   isCorrect: boolean,
-  finalAnswer: string[]
+  finalAnswer: string[],
+  isBonusRound: boolean = false
 ) {
   const progress = await prisma.playerProgress.findUnique({
     where: { progress_id: progressId },
@@ -44,8 +45,12 @@ export async function updateProgressForChallenge(
       },
     });
   } else {
-    if (!wrongChallenges.includes(challengeId)) {
-      wrongChallenges.push(challengeId);
+    if (isBonusRound) {
+      wrongChallenges = wrongChallenges.filter((id) => id !== challengeId);
+    } else {
+      if (!wrongChallenges.includes(challengeId)) {
+        wrongChallenges.push(challengeId);
+      }
     }
   }
 

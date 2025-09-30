@@ -15,6 +15,8 @@ const prisma = new PrismaClient();
 
 const randomize = <T>(arr: T[]) => [...arr].sort(() => Math.random() - 0.5);
 
+const ENEMY_HEALTH = 30;
+
 export const previewLevel = async (playerId: number, levelId: number) => {
   const level = await prisma.level.findUnique({
     where: { level_id: levelId },
@@ -42,8 +44,7 @@ export const previewLevel = async (playerId: number, levelId: number) => {
 
   const character = selectedChar.character;
   const playerMaxHealth = Number(character.health ?? 0);
-  const enemyMaxHealth =
-    Number(enemy.enemy_health ?? 0) * Number(level.challenges.length ?? 0);
+  const enemyMaxHealth = ENEMY_HEALTH * Number(level.challenges.length ?? 0);
 
   const totalPoints = level.challenges.reduce(
     (sum, ch) => sum + Number(ch.points_reward ?? 0),
@@ -227,7 +228,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
 
   const character = selectedChar.character;
   const playerMaxHealth = character.health;
-  const enemyMaxHealth = enemy.enemy_health * level.challenges.length;
+  const enemyMaxHealth = ENEMY_HEALTH * level.challenges.length;
 
   console.log("🔄 ENTERING LEVEL - Health Reset:");
   console.log("- Player max health:", playerMaxHealth);
