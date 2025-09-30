@@ -12,6 +12,11 @@ export async function updateProgressForChallenge(
   });
   if (!progress) throw new Error("Progress not found");
 
+  const challenge = await prisma.challenge.findUnique({
+    where: { challenge_id: challengeId },
+  });
+  if (!challenge) throw new Error("Challenge not found");
+
   const existingAnswers = (progress.player_answer ?? {}) as Record<
     string,
     string[]
@@ -30,6 +35,14 @@ export async function updateProgressForChallenge(
 
   if (isCorrect) {
     wrongChallenges = wrongChallenges.filter((id) => id !== challengeId);
+
+    await prisma.playerProgress.update({
+      where: { progress_id: progressId },
+      data: {
+        wrong_challenges: wrongChallenges,
+        coins_earned: { increment: challenge.coins_reward },
+      },
+    });
   } else {
     if (!wrongChallenges.includes(challengeId)) {
       wrongChallenges.push(challengeId);
