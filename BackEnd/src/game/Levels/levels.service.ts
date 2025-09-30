@@ -18,7 +18,11 @@ const randomize = <T>(arr: T[]) => [...arr].sort(() => Math.random() - 0.5);
 export const previewLevel = async (playerId: number, levelId: number) => {
   const level = await prisma.level.findUnique({
     where: { level_id: levelId },
-    include: { map: true, challenges: true, potionShopByLevel: true },
+    include: {
+      map: true,
+      challenges: true,
+      potionShopByLevel: true,
+    },
   });
   if (!level) throw new Error("Level not found");
 

@@ -12,6 +12,7 @@ export const getAllLevels = async (req: Request, res: Response) => {
         map: true,
         challenges: true,
         playerProgress: true,
+        lessons: true,
       },
     });
     return successResponse(res, levels, "Fetched all levels");
@@ -29,6 +30,7 @@ export const getLevelById = async (req: Request, res: Response) => {
         map: true,
         challenges: true,
         playerProgress: true,
+        lessons: true,
       },
     });
 
@@ -53,6 +55,7 @@ export const getLevelChallenges = async (req: Request, res: Response) => {
       },
       select: {
         challenges: true,
+        lessons: true,
       },
     });
 

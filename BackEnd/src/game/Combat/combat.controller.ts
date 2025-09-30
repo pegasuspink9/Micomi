@@ -8,33 +8,33 @@ const prisma = new PrismaClient();
 
 export const performFight = async (req: Request, res: Response) => {
   const playerId = (req as any).user.id;
-  const { enemyId, isCorrect, correctCount, totalCount } = req.body;
+  const { levelId, isCorrect, correctCount, totalCount } = req.body;
 
   try {
-    if (!playerId || !enemyId) {
+    if (!playerId || !levelId) {
       return errorResponse(
         res,
         null,
-        "Player ID and Enemy ID are required",
+        "Player ID and Level ID are required",
         400
       );
     }
 
     const parsedPlayerId = parseInt(playerId, 10);
-    const parsedEnemyId = parseInt(enemyId, 10);
-    if (isNaN(parsedPlayerId) || isNaN(parsedEnemyId)) {
-      return errorResponse(res, null, "Invalid player or enemy ID", 400);
+    const parsedLevelId = parseInt(levelId, 10);
+    if (isNaN(parsedPlayerId) || isNaN(parsedLevelId)) {
+      return errorResponse(res, null, "Invalid player or level ID", 400);
     }
 
-    const enemy = await prisma.enemy.findUnique({
-      where: { enemy_id: parsedEnemyId },
-      include: { level: true },
+    const level = await prisma.level.findUnique({
+      where: { level_id: parsedLevelId },
+      include: { enemy: true },
     });
-    if (!enemy || !enemy.level) {
-      return errorResponse(res, null, "Enemy or Level not found", 404);
+    if (!level || !level.enemy) {
+      return errorResponse(res, null, "Level or Enemy not found", 404);
     }
 
-    const { level_difficulty, map_id, level_number } = enemy.level;
+    const { level_difficulty, map_id, level_number } = level;
     let result;
 
     if (level_difficulty === "easy") {
@@ -46,9 +46,10 @@ export const performFight = async (req: Request, res: Response) => {
           400
         );
       }
+
       result = await CombatService.fightEnemy(
         parsedPlayerId,
-        parsedEnemyId,
+        parsedLevelId,
         isCorrect
       );
     } else if (level_difficulty === "hard" || level_difficulty === "final") {
@@ -60,9 +61,10 @@ export const performFight = async (req: Request, res: Response) => {
           400
         );
       }
+
       result = await CombatService.fightBossEnemy(
         parsedPlayerId,
-        parsedEnemyId,
+        parsedLevelId,
         correctCount,
         totalCount
       );
