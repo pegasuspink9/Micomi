@@ -19,6 +19,8 @@ const arraysEqual = (a: string[], b: string[]): boolean => {
   return setA.size === setB.size && [...setA].every((val) => setB.has(val));
 };
 
+const ENEMY_HEALTH = 30;
+
 const isTimedChallengeType = (type: string) =>
   ["multiple choice", "fill in the blank"].includes(type);
 
@@ -93,7 +95,7 @@ export const submitChallengeService = async (
   const character = player.ownedCharacters[0]?.character;
   if (!character) throw new Error("No selected character found");
 
-  const enemyMaxHealth = enemy.enemy_health * (level.challenges?.length ?? 1);
+  const enemyMaxHealth = ENEMY_HEALTH * (level.challenges?.length ?? 1);
 
   let currentProgress = await prisma.playerProgress.findUnique({
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
@@ -174,12 +176,16 @@ export const submitChallengeService = async (
     ).includes(challengeId);
   }
 
+  const isBonusRound =
+    currentProgress.enemy_hp <= 0 && currentProgress.player_hp > 0;
+
   const { updatedProgress, alreadyAnsweredCorrectly } =
     await updateProgressForChallenge(
       currentProgress.progress_id,
       challengeId,
       isCorrect,
-      finalAnswer
+      finalAnswer,
+      isBonusRound
     );
 
   let fightResult: any;
@@ -348,8 +354,15 @@ const getNextChallengeEasy = async (progress: any) => {
       nextChallenge = getNextWrongChallenge(progress, level, wrongChallenges);
     }
   } else {
-    if (playerAlive && wrongChallenges.length > 0) {
-      nextChallenge = getNextWrongChallenge(progress, level, wrongChallenges);
+    if (playerAlive) {
+      nextChallenge =
+        level.challenges.find(
+          (c: Challenge) => !answeredIds.includes(c.challenge_id)
+        ) || null;
+
+      if (!nextChallenge && wrongChallenges.length > 0) {
+        nextChallenge = getNextWrongChallenge(progress, level, wrongChallenges);
+      }
     }
   }
 
