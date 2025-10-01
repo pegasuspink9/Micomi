@@ -266,7 +266,9 @@ export async function fightEnemy(
 
         const answeredCount = Object.keys(progress.player_answer ?? {}).length;
         const totalChallenges = level.challenges.length;
-        const wrongChallengesCount = (progress.wrong_challenges ?? []).length;
+        const wrongChallengesCount = (
+          (progress.wrong_challenges as unknown[]) ?? []
+        ).length;
 
         if (answeredCount === totalChallenges && wrongChallengesCount === 0) {
           status = BattleStatus.won;

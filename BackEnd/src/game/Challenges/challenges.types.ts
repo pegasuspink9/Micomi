@@ -38,9 +38,6 @@ export interface SubmitChallengeControllerResult
 
 export interface LevelStatus {
   isCompleted: boolean;
-  battleWon: boolean;
-  battleLost: boolean;
-  canProceed: boolean;
   showFeedback: boolean;
   playerHealth: number;
   enemyHealth: number;

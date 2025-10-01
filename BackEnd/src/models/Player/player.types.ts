@@ -7,12 +7,11 @@ export interface PlayerCreateInput {
   email: string;
   password: string;
   username: string;
-  created_at?: Date;
-  last_active?: Date;
-  days_logged_in?: number;
+  player_name?: string;
 }
 
 export interface PlayerUpdateInput {
+  player_name?: string;
   email?: string;
   password?: string;
   username?: string;

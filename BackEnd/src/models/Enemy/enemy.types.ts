@@ -12,6 +12,7 @@ export interface EnemyCreateInput {
   enemy_dies?: string;
   enemy_run?: string;
   enemy_hurt?: string;
+  avatar_enemy?: string;
 
   enemy_coins?: number;
 }
@@ -30,6 +31,8 @@ export interface EnemyUpdateInput {
   enemy_dies?: string;
   enemy_run?: string;
   enemy_hurt?: string;
+
+  avatar_enemy?: string;
 
   enemy_coins?: number;
 }

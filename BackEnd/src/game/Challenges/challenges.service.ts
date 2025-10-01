@@ -6,6 +6,7 @@ import { formatTimer } from "../../../helper/dateTimeHelper";
 import { updateQuestProgress } from "../../game/Quests/quests.service";
 import { updateProgressForChallenge } from "../Combat/special_attack.helper";
 import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
+import { generateDynamicMessage } from "../../../helper/gamePlayMessageHelper";
 import {
   SubmitChallengeControllerResult,
   CompletionRewards,
@@ -116,6 +117,7 @@ export const submitChallengeService = async (
         enemy_hp: enemyMaxHealth,
         player_hp: character.health,
         coins_earned: 0,
+        consecutive_corrects: 0,
       },
     });
   }
@@ -189,7 +191,9 @@ export const submitChallengeService = async (
     );
 
   let fightResult: any;
-  let message: string;
+  let message: string = "Challenge submitted.";
+
+  const isFinalChallenge = updatedProgress.enemy_hp <= ENEMY_HEALTH;
 
   if (isCorrect) {
     fightResult = await CombatService.fightEnemy(
@@ -201,6 +205,19 @@ export const submitChallengeService = async (
       alreadyAnsweredCorrectly,
       wasEverWrong
     );
+
+    message = generateDynamicMessage(
+      true,
+      player.player_name,
+      hintUsed,
+      updatedProgress.consecutive_corrects ?? 0,
+      fightResult.character_health ?? character.health, // playerHealth (use fightResult if available)
+      character.health,
+      isFinalChallenge,
+      elapsed,
+      enemy.enemy_name
+    );
+
     message = hintUsed
       ? "Hint used! Revealed part of the correct answer."
       : "Correct! You attacked the enemy.";
@@ -215,6 +232,18 @@ export const submitChallengeService = async (
       false,
       elapsed,
       challengeId
+    );
+
+    message = generateDynamicMessage(
+      false,
+      player.player_name,
+      false,
+      0,
+      fightResult.character_health ?? character.health, // playerHealth
+      character.health,
+      isFinalChallenge,
+      elapsed,
+      enemy.enemy_name
     );
 
     if (updatedProgress.enemy_hp! <= 0) {
@@ -302,9 +331,6 @@ export const submitChallengeService = async (
     nextChallenge,
     levelStatus: {
       isCompleted: allCompleted,
-      battleWon: fightResult?.status === "won",
-      battleLost: fightResult?.status === "lost",
-      canProceed: allCompleted && !!nextLevel,
       showFeedback: allCompleted,
       playerHealth:
         fightResult?.charHealth ?? freshProgress?.player_hp ?? character.health,

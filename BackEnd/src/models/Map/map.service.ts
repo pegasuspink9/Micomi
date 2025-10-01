@@ -29,7 +29,11 @@ export const getMapById = async (req: Request, res: Response) => {
       where: { map_id: id },
       select: {
         map_id: true,
-        levels: true,
+        levels: {
+          orderBy: {
+            level_number: "asc",
+          },
+        },
       },
     });
 

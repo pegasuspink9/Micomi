@@ -13,6 +13,8 @@ export async function updateProgressForChallenge(
   });
   if (!progress) throw new Error("Progress not found");
 
+  let consecutiveCorrects = progress.consecutive_corrects ?? 0;
+
   const challenge = await prisma.challenge.findUnique({
     where: { challenge_id: challengeId },
   });
@@ -36,6 +38,7 @@ export async function updateProgressForChallenge(
 
   if (isCorrect) {
     wrongChallenges = wrongChallenges.filter((id) => id !== challengeId);
+    consecutiveCorrects += 1;
 
     await prisma.playerProgress.update({
       where: { progress_id: progressId },
@@ -52,6 +55,7 @@ export async function updateProgressForChallenge(
         wrongChallenges.push(challengeId);
       }
     }
+    consecutiveCorrects = 0;
   }
 
   const updatedProgress = await prisma.playerProgress.update({
@@ -60,6 +64,7 @@ export async function updateProgressForChallenge(
       player_answer: newAnswers,
       wrong_challenges: wrongChallenges,
       attempts: { increment: 1 },
+      consecutive_corrects: consecutiveCorrects,
     },
   });
 

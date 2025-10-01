@@ -14,6 +14,8 @@ export interface CharacterCreateInput {
   character_attack?: string;
   character_run?: string;
 
+  character_avatar?: string;
+
   user_coins?: number;
 
   character_attacks?: Prisma.InputJsonValue; //["basic_attack", "second_attack", "special_attack"] animation links
@@ -31,6 +33,8 @@ export interface CharacterUpdateInput {
   character_hurt?: string;
   character_dies?: string;
   character_attack?: string;
+
+  character_avatar?: string;
 
   user_coins?: number;
 
