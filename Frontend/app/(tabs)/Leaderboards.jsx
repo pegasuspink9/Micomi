@@ -3,24 +3,38 @@ import { View, StyleSheet, Dimensions, Animated, ImageBackground, Text, Activity
 import ScreenPlay from '../Components/Actual Game/Screen Play/ScreenPlay';
 import GameQuestions from '../Components/Actual Game/GameQuestions/GameQuestions';
 import ThirdGrid from '../Components/Actual Game/Third Grid/thirdGrid';
-import Drawer from '../Components/Actual Game/Drawer/Drawer';
 import LevelModal from '../Components/Actual Game/Level Intro and Outro/LevelModal';
 import { useGameData } from '../hooks/useGameData';
 
-
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const DRAWER_PEEK = SCREEN_HEIGHT * 0.05;
-const DRAWER_HEIGHT = SCREEN_HEIGHT * 0.7;
 
 export default function LeaderBoard({ route }) {
   const { playerId = 11, levelId = 1 } = route?.params || {};
 
   // Game state
-  const [isOutputVisible, setIsOutputVisible] = useState(false);
   const [selectedAnswers, setSelectedAnswers] = useState([]);
   const [currentQuestionIndex] = useState(0);
   const [borderColor, setBorderColor] = useState('white');
-  const [hasShownOutput, setHasShownOutput] = useState(false);
+  const [activeGameTab, setActiveGameTab] = useState('code');
+
+
+  const [showModal, setShowModal] = useState(true);
+
+  const startGame = (levelData) => {
+    console.log('🎮 Starting game with level data:', levelData);
+    setShowModal(false);
+  };
+
+
+  const handleGameTabChange = (tabName) => {
+    setActiveGameTab(tabName);
+  };
+
+  const handleCorrectAnswer = () => {
+    setActiveGameTab('output');
+  };
+
+  const shouldHideThirdGrid = activeGameTab === 'output' || activeGameTab === 'expected';
 
   // Debug interface state
   const [showDebugPanel, setShowDebugPanel] = useState(false);
@@ -43,10 +57,6 @@ export default function LeaderBoard({ route }) {
   const allowEnemyCompletionRef = useRef(null);
   const setCorrectAnswerRef = useRef(null);
 
-  const translateY = useRef(new Animated.Value(DRAWER_HEIGHT - DRAWER_PEEK)).current;
-  const backdropOpacity = useRef(new Animated.Value(0)).current;
-
-  // Use API challenge data or fallback to empty object
   const currentQuestion = currentChallenge || {
     timeLimit: 0
   };
@@ -55,45 +65,15 @@ export default function LeaderBoard({ route }) {
     if (currentChallenge) {
       setSelectedAnswers([]);
       setBorderColor('white');
-      setHasShownOutput(false);
-      if (isOutputVisible) {
-        setIsOutputVisible(false);
-        Animated.parallel([
-          Animated.spring(translateY, {
-            toValue: DRAWER_HEIGHT - DRAWER_PEEK,
-            useNativeDriver: false,
-          }),
-          Animated.timing(backdropOpacity, {
-            toValue: 0,
-            duration: 250,
-            useNativeDriver: false,
-          })
-        ]).start();
-      }
+      setActiveGameTab('code');
     }
   }, [currentChallenge?.id]);
 
   const handleEnemyComplete = useCallback(() => {
     setSelectedAnswers([]);
     setBorderColor('white');
-    setHasShownOutput(false);
-    if (isOutputVisible) {
-      setIsOutputVisible(false);
-      Animated.parallel([
-        Animated.spring(translateY, {
-          toValue: DRAWER_HEIGHT - DRAWER_PEEK,
-          useNativeDriver: false,
-          tension: 100,
-          friction: 8,
-        }),
-        Animated.timing(backdropOpacity, {
-          toValue: 0,
-          duration: 250,
-          useNativeDriver: false,
-        })
-      ]).start();
-    }
-  }, [isOutputVisible, translateY, backdropOpacity]);
+    setActiveGameTab('code');
+  }, []);
 
   const handleAllowEnemyCompletion = useCallback((allowCompletionFn) => {
     allowEnemyCompletionRef.current = allowCompletionFn;
@@ -102,32 +82,6 @@ export default function LeaderBoard({ route }) {
   const handleSetCorrectAnswer = useCallback((setCorrectAnswerFn) => {
     setCorrectAnswerRef.current = setCorrectAnswerFn;
   }, []);
-
- 
-
-  const animateToPosition = useCallback((shouldOpen) => {
-    const toValue = shouldOpen ? 0 : DRAWER_HEIGHT - DRAWER_PEEK;
-    const backdropValue = shouldOpen ? 0.5 : 0;
-
-    setIsOutputVisible(shouldOpen);
-    if (shouldOpen && allowEnemyCompletionRef.current) {
-      allowEnemyCompletionRef.current();
-    }
-    Animated.parallel([
-      Animated.spring(translateY, {
-        toValue,
-        useNativeDriver: false,
-        tension: 100,
-        friction: 8,
-        overshootClamping: true,
-      }),
-      Animated.timing(backdropOpacity, {
-        toValue: backdropValue,
-        duration: 250,
-        useNativeDriver: false,
-      })
-    ]).start();
-  }, [translateY, backdropOpacity]);
 
   const getBlankIndex = (lineIndex, partIndex) => {
     let blankIndex = 0;
@@ -139,7 +93,7 @@ export default function LeaderBoard({ route }) {
     return blankIndex;
   };
 
-  // Render unified debug
+  // Render unified debug - same as before
   const renderUnifiedStateDebug = () => (
     <ScrollView style={styles.debugScrollView}>
       <Text style={styles.debugSectionTitle}>🎮 Unified Game State</Text>
@@ -179,7 +133,6 @@ export default function LeaderBoard({ route }) {
               )}
 
              <Text style={styles.debugText}>Character Hurt:</Text>
-{/* Check both possible sources */}
               {(() => {
                 const hurtImageUrl = gameState.submissionResult?.fightResult?.character?.character_hurt || 
                                     gameState.selectedCharacter?.character_hurt;
@@ -328,7 +281,7 @@ export default function LeaderBoard({ route }) {
     >
       <ScreenPlay 
         gameState={gameState}
-        isPaused={isOutputVisible}
+        isPaused={false}
         borderColor={borderColor}
         onEnemyComplete={handleEnemyComplete}
         currentQuestionIndex={0}
@@ -341,57 +294,38 @@ export default function LeaderBoard({ route }) {
         currentQuestion={gameState?.currentChallenge || { timeLimit: 0 }}
         selectedAnswers={selectedAnswers}
         getBlankIndex={getBlankIndex}
+        onTabChange={handleGameTabChange}
+        activeTab={activeGameTab}
       />
 
-      <ThirdGrid 
-        currentQuestion={gameState?.currentChallenge || { timeLimit: 0 }}
-        selectedAnswers={selectedAnswers}
-        setSelectedAnswers={setSelectedAnswers}
-        currentQuestionIndex={0}
-        setCurrentQuestionIndex={() => {}}
-        animateToPosition={animateToPosition}
-        setBorderColor={setBorderColor}
-        hasShownOutput={hasShownOutput}
-        setHasShownOutput={setHasShownOutput}
-        setCorrectAnswerRef={setCorrectAnswerRef}
-        getBlankIndex={getBlankIndex}
-        challengeData={gameState?.currentChallenge}
-        submitAnswer={submitAnswer}
-        submitting={submitting}
+      {!shouldHideThirdGrid && (
+        <ThirdGrid 
+          currentQuestion={gameState?.currentChallenge || { timeLimit: 0 }}
+          selectedAnswers={selectedAnswers}
+          setSelectedAnswers={setSelectedAnswers}
+          currentQuestionIndex={0}
+          setCurrentQuestionIndex={() => {}}
+          setBorderColor={setBorderColor}
+          setCorrectAnswerRef={setCorrectAnswerRef}
+          getBlankIndex={getBlankIndex}
+          challengeData={gameState?.currentChallenge}
+          submitAnswer={submitAnswer}
+          submitting={submitting}
+          onCorrectAnswer={handleCorrectAnswer}
+        />
+      )}
+      
+      <LevelModal 
+        visible={showModal}
+        levelId={1}
+        playerId={11}
+        onClose={() => setShowModal(false)}
+        onPlay={(levelData) => startGame(levelData)}
       />
-
-      <Drawer
-        isOutputVisible={isOutputVisible}
-        translateY={translateY}
-        backdropOpacity={backdropOpacity}
-        animateToPosition={animateToPosition}
-        currentQuestion={gameState?.currentChallenge || { timeLimit: 0 }}
-        currentQuestionIndex={0} 
-        questionsData={null} 
-        selectedAnswers={selectedAnswers}
-        challengeData={gameState?.currentChallenge}
-        gameState={gameState}
-        submissionResult={gameState?.submissionResult}
-      />
-
-      {/* <LevelModal 
-       
-      /> */}
-
-
 
       {/* Debug Interface */}
       {__DEV__ && (
         <>
-          {/* <TouchableOpacity 
-            style={styles.debugToggle}
-            onPress={() => setShowDebugPanel(!showDebugPanel)}
-          >
-            <Text style={styles.debugToggleText}>
-              {showDebugPanel ? '🔍 Hide Debug' : '🔍 Show Debug'}
-            </Text>
-          </TouchableOpacity> */}
-
           {__DEV__ && showDebugPanel && (
             <View style={styles.debugPanel}>
               <View style={styles.debugHeader}>

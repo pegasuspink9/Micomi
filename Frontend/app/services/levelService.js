@@ -23,6 +23,15 @@ export const levelService = {
     }
   },
 
+    getLevelPreview: async (levelId) => {
+    try {
+      const response = await apiService.get(`/game/entryLevel/11/${levelId}/preview`);
+      return response; // Return the full response, not response.data
+    } catch (error) {
+      console.error(`Failed to fetch level preview ${levelId}:`, error);
+      throw error;
+    }
+  },
   // Update level progress
   updateLevelProgress: async (playerId, levelId, progressData) => {
     try {

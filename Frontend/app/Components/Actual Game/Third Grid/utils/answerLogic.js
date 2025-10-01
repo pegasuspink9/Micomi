@@ -13,7 +13,7 @@ export const getMaxAnswers = (currentQuestion) => {
     return 1;
   }
   
-  // Check for both possile type field names from API
+  // Check for both possible type field names from API
   const challengeType = currentQuestion.type || currentQuestion.challenge_type;
 
   if (challengeType === 'fill in the blank' || challengeType === 'code with guide') {
@@ -117,16 +117,14 @@ export const createNextQuestionHandler = (
   };
 };
 
-// UPDATED: Fixed to work with unified game state
+// UPDATED: Added automatic tab switching on correct answer
 export const createCheckAnswerHandler = (
   currentQuestion,
   selectedAnswers,
   setBorderColor,
-  animateToPosition,
-  hasShownOutput,
-  setHasShownOutput,
   setCorrectAnswerRef,
-  submitAnswerFunction
+  submitAnswerFunction,
+  onCorrectAnswer // NEW: Callback function to switch tab
 ) => {
   return async () => {
     if (!selectedAnswers || selectedAnswers.length === 0) {
@@ -155,6 +153,11 @@ export const createCheckAnswerHandler = (
               setBorderColor('green');
               console.log('✅ Correct answer! Moving to next challenge.');
               console.log('🎯 Next challenge:', updatedGameState.currentChallenge?.title);
+              
+              // NEW: Automatically switch to Output tab on correct answer
+              if (onCorrectAnswer) {
+                onCorrectAnswer();
+              }
             } else {
               setBorderColor('red');
               console.log('❌ Incorrect answer. Message:', submissionResult.message);
@@ -181,13 +184,9 @@ export const createCheckAnswerHandler = (
               });
             }
 
-            // Show the output drawer
-            if (!hasShownOutput) {
-              setHasShownOutput(true);
-              if (setCorrectAnswerRef.current) {
-                setCorrectAnswerRef.current(isCorrect);
-              }
-              animateToPosition(true);
+            // Set correct answer reference for other components
+            if (setCorrectAnswerRef && setCorrectAnswerRef.current) {
+              setCorrectAnswerRef.current(isCorrect);
             }
           } else {
             console.error('❌ No submission result found in updated game state');
@@ -198,26 +197,18 @@ export const createCheckAnswerHandler = (
           console.error('❌ Failed to submit answer:', result.error);
           setBorderColor('red');
           
-          // Still show drawer for error feedback
-          if (!hasShownOutput) {
-            setHasShownOutput(true);
-            if (setCorrectAnswerRef.current) {
-              setCorrectAnswerRef.current(false);
-            }
-            animateToPosition(true);
+          // Set error state
+          if (setCorrectAnswerRef && setCorrectAnswerRef.current) {
+            setCorrectAnswerRef.current(false);
           }
         }
       } catch (error) {
         console.error('❌ Error during answer submission:', error);
         setBorderColor('red');
         
-        // Still show drawer for error feedback
-        if (!hasShownOutput) {
-          setHasShownOutput(true);
-          if (setCorrectAnswerRef.current) {
-            setCorrectAnswerRef.current(false);
-          }
-          animateToPosition(true);
+        // Set error state
+        if (setCorrectAnswerRef && setCorrectAnswerRef.current) {
+          setCorrectAnswerRef.current(false);
         }
       }
     } else {
@@ -225,12 +216,13 @@ export const createCheckAnswerHandler = (
       const isCorrect = checkAnswer(currentQuestion, selectedAnswers);
       setBorderColor(isCorrect ? 'green' : 'red');
       
-      if (!hasShownOutput) {
-        setHasShownOutput(true);
-        if (setCorrectAnswerRef.current) {
-          setCorrectAnswerRef.current(isCorrect);
-        }
-        animateToPosition(true);
+      // NEW: Automatically switch to Output tab on correct answer (local mode)
+      if (isCorrect && onCorrectAnswer) {
+        onCorrectAnswer();
+      }
+      
+      if (setCorrectAnswerRef && setCorrectAnswerRef.current) {
+        setCorrectAnswerRef.current(isCorrect);
       }
     }
   };

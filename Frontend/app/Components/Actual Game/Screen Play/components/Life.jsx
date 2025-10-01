@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 const { width } = Dimensions.get('window');
 
 // Each heart represents up to HEART_UNIT HP. Set to 20 to match your example.
-const HEART_UNIT = 20;
+const HEART_UNIT = 100;
 
 const Life = ({
   health = 0,

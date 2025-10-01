@@ -158,14 +158,15 @@ const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: 10,
     paddingVertical: 10,
-    maxWidth: width * 0.50,
-    alignItems: 'center'
+    width: width * 0.7,
+    alignItems: 'center',
   },
   messageText: {
-    color: '#08004bff',
-    fontSize: 17,
+    color: '#010371ff',
+    fontSize: 16,
     textAlign: 'center',
     lineHeight: 18,
-    fontFamily: 'FunkySign',
+    fontFamily: 'Oups',
+    textDecorationColor: '#fafafaff',
   },
 });

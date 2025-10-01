@@ -4,17 +4,11 @@ import { DEFAULT_THEME } from '../MapLevel/MapDatas/mapData';
 
 const { height: defaultHeight, width: defaultWidth } = Dimensions.get('window');
 
-// Constants - moved outside for better performance
 const BASE_HEIGHT = 844;
 const BASE_WIDTH = 390;
 const PATTERN_HEIGHT = 700;
 const STONES_PER_PATTERN = 37;
 
-
-
-
-
-// Stone pattern - optimized structure
 const BASE_STONE_PATTERN = [
   { top: 220, left: '50%' }, { top: 240, left: '55%' }, { top: 260, left: '60%' }, 
   { top: 280, left: '65%' }, { top: 300, left: '68%' }, { top: 320, left: '69%' }, 
@@ -31,7 +25,6 @@ const BASE_STONE_PATTERN = [
   { top: 900, left: '45%' }
 ];
 
-// Button patterns
 const BUTTON_PATTERNS = [
   { top: 350, left: '70%' },
   { top: 540, left: '48%' },
@@ -48,19 +41,18 @@ export default function LevelButtons({
 }) {
   const floatAnim = useRef(new Animated.Value(0)).current;
 
-   const ICON_IMAGES = {
+  const ICON_IMAGES = {
     enemyButton: theme?.icons?.enemyButton || DEFAULT_THEME.icons.enemyButton,
     micomiButton: theme?.icons?.micomiButton || DEFAULT_THEME.icons.micomiButton,
     shopButton: theme?.icons?.shopButton || DEFAULT_THEME.icons.shopButton,
     bossButton: theme?.icons?.bossButton || DEFAULT_THEME.icons.bossButton,
   };
 
-
   const BUTTON_IMAGES = {
     unlockedButton: theme?.buttons?.unlockedButton || DEFAULT_THEME.buttons.unlockedButton,
     lockedButton: theme?.buttons?.lockedButton || DEFAULT_THEME.buttons.lockedButton
   };
-  // Animation setup
+
   useEffect(() => {
     const animation = Animated.loop(
       Animated.sequence([
@@ -81,13 +73,11 @@ export default function LevelButtons({
     return () => animation.stop();
   }, [floatAnim]);
 
-  // Responsive calculations
   const responsive = {
     heightRatio: screenHeight / BASE_HEIGHT,
     widthRatio: screenWidth / BASE_WIDTH,
     get buttonSize() { return Math.min(100 * this.widthRatio, 100 * this.heightRatio); },
     get stoneSize() { return Math.min(100 * this.widthRatio, 100 * this.heightRatio); },
-    // Responsive signage and text calculations
     get signageScale() { 
       return Math.min(this.widthRatio, this.heightRatio);
     },
@@ -98,20 +88,16 @@ export default function LevelButtons({
     get textSize() { 
       const baseSize = 12;
       let scaleFactor = this.signageScale;
-   
-      
       const scaledSize = baseSize * scaleFactor;
       return Math.max(8, Math.min(scaledSize, 20)); 
     }
   };
 
-  // Animation interpolation
   const floatTransform = floatAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -15] 
   });
 
-  // Generate stone positions
   const generateStonePositions = () => {
     if (!lessons?.length) return [];
     
@@ -132,7 +118,6 @@ export default function LevelButtons({
     return positions;
   };
 
-  // Calculate button position
   const getButtonPosition = (index) => {
     if (index === 0) {
       return {
@@ -151,22 +136,30 @@ export default function LevelButtons({
     };
   };
 
-  // Helper functions
-  const getButtonType = (level) => level.isUnlocked === false ? 'lockedButton' : 'unlockedButton';
+  const getButtonType = (level) => {
+    return level.is_unlocked === false ? 'lockedButton' : 'unlockedButton';
+  };
   
   const getIconType = (level) => {
+    const levelType = level.level_type;
+    
     const typeMap = {
+      enemyLevel: 'enemyButton',
+      enemyButton: 'enemyButton', 
+      micomiButton: 'micomiButton',
+      shopButton: 'shopButton',
+      bossButton: 'bossButton',
       enemy: 'enemyButton',
       micomi: 'micomiButton',
       shop: 'shopButton',
       boss: 'bossButton'
     };
-    return typeMap[level.type] || 'levelButton';
+    
+    return typeMap[levelType] || 'enemyButton';
   };
 
   const stonePositions = generateStonePositions();
 
-  // Early return for no lessons
   if (!lessons?.length) {
     return (
       <View style={styles.buttonContainer}>
@@ -175,9 +168,10 @@ export default function LevelButtons({
     );
   }   
 
+  console.log('🔥 Rendering buttons for levels:', lessons);
+
   return (
     <View style={styles.buttonContainer}>
-      {/* Stones */}
       {stonePositions.map((position, index) => (
         <Image
           key={`stone-${index}`}
@@ -195,15 +189,19 @@ export default function LevelButtons({
         />
       ))}
 
-      {/* Level Buttons */}
       {lessons.map((level, index) => {
         const iconType = getIconType(level);
         const buttonType = getButtonType(level);
         const position = getButtonPosition(index);
+        
+        const isUnlocked = level.is_unlocked === true;
+        const isLocked = level.is_unlocked === false;
+
+        console.log(`🎯 Level ${level.level_number}: type=${level.level_type}, unlocked=${level.is_unlocked}, icon=${iconType}, button=${buttonType}`);
 
         return (
           <Pressable
-            key={level.id || index}
+            key={level.level_id || index}
             style={[
               styles.levelButton,
               {
@@ -214,9 +212,8 @@ export default function LevelButtons({
               }
             ]}
             onPress={() => handleLevelPress(level)}
-            disabled={level.locked}
+            disabled={isLocked}
           >
-            {/* Button Background */}
             <ImageBackground 
               source={{ uri: theme?.buttons?.buttonBackground }} 
               style={[styles.buttonImageBackground, theme?.buttons?.buttonBackgroundStyle]}
@@ -224,45 +221,50 @@ export default function LevelButtons({
             >
               <Image
                 source={{ uri: BUTTON_IMAGES[buttonType] }}
-                style={[level.isUnlocked === false ? styles.lockedButton : styles.unlockedButton, 
-                  level.isUnlocked === false ?
-                    theme?.buttons?.lockedButtonStyle || {}
+                style={[
+                  isLocked ? styles.lockedButton : styles.unlockedButton, 
+                  isLocked 
+                    ? theme?.buttons?.lockedButtonStyle || {}
                     : theme?.buttons?.unlockedButtonStyle || {}
                 ]}
                 resizeMode="contain"
               />
             </ImageBackground>
 
-            {/* Signage with Responsive Text */}
-           {level.content && level.content.trim() !== '' && level.content.trim().toLowerCase() !== 'none' && (
-            <ImageBackground
-              source={{ uri: theme.floatingComment.signageBackground }}
-              style={[
-                styles.signage,
-                {
-                  width: responsive.signageWidth,
-                  height: responsive.signageHeight,
-                  top: responsive.signageTop,
-                  left: responsive.signageLeft,
-                }, theme?.floatingComment?.signageBackgroundStyle || {}
-              ]}
-              resizeMode="contain"
-            >
-              <Text 
+            {/* Changed: Use level_title instead of content */}
+            {level.level_title && 
+             level.level_title !== 'null' && 
+             level.level_title.toString().trim() !== '' && 
+             level.level_title.toString().trim().toLowerCase() !== 'none' && (
+              <ImageBackground
+                source={{ uri: theme.floatingComment.signageBackground }}
                 style={[
-                  styles.tagsText, 
-                  { fontSize: responsive.textSize }, theme?.floatingComment.textStyle || {}
-                ]} 
-                numberOfLines={1} 
-                adjustsFontSizeToFit={true}
+                  styles.signage,
+                  {
+                    width: responsive.signageWidth,
+                    height: responsive.signageHeight,
+                    top: responsive.signageTop,
+                    left: responsive.signageLeft,
+                  }, 
+                  theme?.floatingComment?.signageBackgroundStyle || {}
+                ]}
+                resizeMode="contain"
               >
-                {level.content}
-              </Text>
-            </ImageBackground>
-          )}
+                <Text 
+                  style={[
+                    styles.tagsText, 
+                    { fontSize: responsive.textSize }, 
+                    theme?.floatingComment.textStyle || {}
+                  ]} 
+                  numberOfLines={1} 
+                  adjustsFontSizeToFit={true}
+                >
+                  {level.level_title}
+                </Text>
+              </ImageBackground>
+            )}
 
-            {/* Floating Icon */}
-            {level.isUnlocked === true && (
+            {isUnlocked && (
               <Animated.View
                 style={[
                   styles.floatComment,

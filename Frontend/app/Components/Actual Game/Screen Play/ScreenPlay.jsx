@@ -252,7 +252,7 @@ export default function ScreenPlay({
         <Damage
           incoming={damageThisSubmission}
           animated={true}
-          startDelay={3000} 
+          startDelay={1000} 
           position="right"
           trigger={submissionSeq} 
         />
@@ -260,7 +260,7 @@ export default function ScreenPlay({
         <Damage
           incoming={enemyDamageThisSubmission}
           animated={true}
-          startDelay={1800} 
+          startDelay={1000} 
           position="left" 
           trigger={submissionSeq} 
         />

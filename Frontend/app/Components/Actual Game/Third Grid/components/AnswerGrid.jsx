@@ -6,8 +6,8 @@ const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const AnswerGrid = ({ 
   options, 
-  selectedAnswers = [], // Default to empty array
-  maxAnswers = 1, // Default maxAnswers
+  selectedAnswers = [],
+  maxAnswers = 1,
   onAnswerSelect 
 }) => {
   const renderListItems = () => {

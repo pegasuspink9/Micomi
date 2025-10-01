@@ -6,8 +6,11 @@ import Animated, {
   useAnimatedStyle,
   withRepeat,
   withTiming,
+  withSequence,
+  withDelay,
   cancelAnimation,
   runOnJS,
+  Easing,
 } from 'react-native-reanimated';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -21,38 +24,38 @@ const DogCharacter = ({
 }) => {
   const frameIndex = useSharedValue(0);
   const positionX = useSharedValue(0); 
-  const opacity = useSharedValue(1); 
+  const opacity = useSharedValue(1);
+  const blinkOpacity = useSharedValue(1);
 
   const [currentAnimationUrl, setCurrentAnimationUrl] = useState('');
   const [isAnimationLooping, setIsAnimationLooping] = useState(true);
   const [imageReady, setImageReady] = useState(false);
   const [isCompoundAnimation, setIsCompoundAnimation] = useState(false);
-  const [compoundPhase, setCompoundPhase] = useState(''); // kept for debug compatibility
-  const [preloadedImages] = useState(new Map()); // Cache for preloaded images
+  const [compoundPhase, setCompoundPhase] = useState('');
+  const [preloadedImages] = useState(new Map());
 
-  const TOTAL_FRAMES = 24
+  const TOTAL_FRAMES = 24;
   const FRAME_DURATION = 100;
 
-  // Animation duration constants (in milliseconds)
+  // Enhanced animation duration constants
   const ANIMATION_DURATIONS = {
     idle: 2000,
-    attack: 2000, 
+    attack: 3000, 
     hurt: 2000,
     run: -1,
     dies: 2000,
   };
 
-  // Compound animation phases (kept for compatibility)
-  const COMPOUND_PHASES = {
-    attack: {
-      run: { duration: 5000, animation: 'run' },
-      attack: { duration: 2000, animation: 'attack' },
-    },
-  };
+  // Movement positions - start, center, end
+  const START_POSITION = 0;
+  const CENTER_POSITION = SCREEN_WIDTH * 0.265; 
+  const RUN_DISTANCE = SCREEN_WIDTH * 0.53;
 
-  const RUN_DISTANCE = SCREEN_WIDTH * 0.53; 
+  // Blink timing constants
+  const BLINK_DURATION = 50; // Slightly longer blinks
+  const MOVEMENT_DURATION = 100; // Duration for each movement phase
+  const ATTACK_ANIMATION_DURATION = 1000; // Duration for attack frames
 
-  // Ref to hold pending timeout ids so we can clear them on cleanup
   const phaseTimeoutRef = useRef(null);
 
   // Preload all animations when character animations change
@@ -88,6 +91,28 @@ const DogCharacter = ({
     }
   }, [characterAnimations, preloadedImages]);
 
+  // Enhanced blink animations for each position
+  const createStartBlink = useCallback(() => {
+    return withSequence(
+      withTiming(0.2, { duration: BLINK_DURATION, easing: Easing.inOut(Easing.quad) }),
+      withTiming(1, { duration: BLINK_DURATION, easing: Easing.inOut(Easing.quad) })
+    );
+  }, []);
+
+  const createCenterBlink = useCallback(() => {
+    return withSequence(
+      withTiming(0.1, { duration: BLINK_DURATION, easing: Easing.inOut(Easing.quad) }),
+      withTiming(1, { duration: BLINK_DURATION, easing: Easing.inOut(Easing.quad) })
+    );
+  }, []);
+
+  const createEndBlink = useCallback(() => {
+    return withSequence(
+      withTiming(0.05, { duration: BLINK_DURATION, easing: Easing.inOut(Easing.quad) }),
+      withTiming(1, { duration: BLINK_DURATION, easing: Easing.inOut(Easing.quad) })
+    );
+  }, []);
+
   // Callback to notify parent when animation completes
   const notifyAnimationComplete = useCallback(() => {
     if (onAnimationComplete && typeof onAnimationComplete === 'function') {
@@ -108,7 +133,7 @@ const DogCharacter = ({
     [characterAnimations, currentAnimationUrl]
   );
 
-  // JS helper to schedule starting the attack phase (runs on JS thread).
+  // Enhanced attack phase with blink preparation
   const scheduleAttackPhase = useCallback(
     (attackDuration, attackUrl) => {
       if (phaseTimeoutRef.current) {
@@ -122,14 +147,19 @@ const DogCharacter = ({
           setCurrentAnimationUrl(attackUrl);
         }
 
+        // Start frame animation
         frameIndex.value = 0;
         frameIndex.value = withTiming(
           TOTAL_FRAMES - 1,
-          { duration: attackDuration },
+          { 
+            duration: ATTACK_ANIMATION_DURATION,
+            easing: Easing.inOut(Easing.ease)
+          },
           (attackFinished) => {
             if (attackFinished) {
               runOnJS(notifyAnimationComplete)();
               frameIndex.value = 0;
+              blinkOpacity.value = 1;
             }
           }
         );
@@ -138,7 +168,6 @@ const DogCharacter = ({
     [notifyAnimationComplete, currentAnimationUrl]
   );
 
-  // Another small helper: used to schedule a hold (JS) after natural cycle
   const runScheduleHold = useCallback(
     (delayMs, attackDuration, attackUrl) => {
       if (phaseTimeoutRef.current) {
@@ -195,7 +224,7 @@ const DogCharacter = ({
       case 'attack':
         animationUrl = characterAnimations.character_attack || characterAnimations.attack;
         shouldLoop = false;
-        isCompound = false; 
+        isCompound = false;
         break;
       case 'hurt':
         animationUrl = characterAnimations.character_hurt || characterAnimations.hurt;
@@ -229,9 +258,8 @@ const DogCharacter = ({
     }
   }, [currentState, characterAnimations]);
 
-  // Handle animation timing and looping
+  // Enhanced animation timing with smooth start->center->end transition
   useEffect(() => {
-    // clear any previously scheduled timeouts when we (re)start animation
     if (phaseTimeoutRef.current) {
       clearTimeout(phaseTimeoutRef.current);
       phaseTimeoutRef.current = null;
@@ -241,12 +269,14 @@ const DogCharacter = ({
       cancelAnimation(frameIndex);
       cancelAnimation(positionX);
       cancelAnimation(opacity);
+      cancelAnimation(blinkOpacity);
 
       frameIndex.value = 0;
+      blinkOpacity.value = 1;
 
       if (isCompoundAnimation && currentState === 'attack') {
-        // Legacy compound branch (kept for compatibility)
-        const phases = COMPOUND_PHASES.attack;
+        // Legacy compound branch - keep existing logic
+        const phases = COMPOUND_PHASES?.attack || { run: { duration: 1000 }, attack: { duration: 2000 } };
         positionX.value = 0;
 
         const naturalRunCycleDuration = FRAME_DURATION * TOTAL_FRAMES;
@@ -267,75 +297,109 @@ const DogCharacter = ({
             }
           }
         );
-
-        // no movement is started here to avoid crashes in legacy branch
       } else if (isAnimationLooping) {
-        // Standard infinite loop for idle, run animations
-        positionX.value = 0; // Reset position for non-compound animations
-        opacity.value = 1; // ensure visible
+        // Standard infinite loop
+        positionX.value = START_POSITION;
+        opacity.value = 1;
         frameIndex.value = withRepeat(
           withTiming(TOTAL_FRAMES - 1, {
             duration: FRAME_DURATION * TOTAL_FRAMES,
+            easing: Easing.linear,
           }),
           -1,
           false
         );
       } else {
-        // One-shot animations (hurt, dies, attack)
-        const animationDuration =
-          ANIMATION_DURATIONS[currentState] || FRAME_DURATION * TOTAL_FRAMES;
-
-        // Handle attack movement modes
+        // Enhanced attack sequence: START -> CENTER -> END with blinks
         if (currentState === 'attack') {
-          if (attackMovement === 'slide') {
-            positionX.value = withTiming(RUN_DISTANCE, { duration: animationDuration });
-            opacity.value = 1;
-          } else if (attackMovement === 'teleport') {
-            positionX.value = RUN_DISTANCE;
-            opacity.value = 1;
-          } else if (attackMovement === 'fade') {
-            positionX.value = RUN_DISTANCE;
-            opacity.value = 0;
-            const fadeDuration = Math.min(100, animationDuration);
-            opacity.value = withTiming(1, { duration: fadeDuration });
-          } else {
-            positionX.value = 0;
-            opacity.value = 1;
-          }
-        } else {
-          // ensure no position movement for other one-shot animations
-          positionX.value = 0;
+          // Reset to start position
+          positionX.value = START_POSITION;
           opacity.value = 1;
-        }
 
-        frameIndex.value = withTiming(
-          TOTAL_FRAMES - 1,
-          { duration: animationDuration },
-          (finished) => {
-            if (finished) {
-              runOnJS(notifyAnimationComplete)();
-              frameIndex.value = 0;
+          // Phase 1: Blink at START, then move to CENTER
+          blinkOpacity.value = createStartBlink();
+          
+          setTimeout(() => {
+            positionX.value = withTiming(CENTER_POSITION, { 
+              duration: MOVEMENT_DURATION,
+              easing: Easing.inOut(Easing.quad)
+            });
+          }, BLINK_DURATION * 2);
+
+          // Phase 2: Blink at CENTER, then move to END
+          setTimeout(() => {
+            blinkOpacity.value = createCenterBlink();
+            
+            setTimeout(() => {
+              positionX.value = withTiming(RUN_DISTANCE, { 
+                duration: MOVEMENT_DURATION,
+                easing: Easing.inOut(Easing.quad)
+              });
+            }, BLINK_DURATION * 2);
+          }, MOVEMENT_DURATION + BLINK_DURATION * 2);
+
+          // Phase 3: Blink at END and start attack animation
+          setTimeout(() => {
+            blinkOpacity.value = createEndBlink();
+            
+            setTimeout(() => {
+              frameIndex.value = withTiming(
+                TOTAL_FRAMES - 1,
+                { 
+                  duration: ATTACK_ANIMATION_DURATION,
+                  easing: Easing.inOut(Easing.ease)
+                },
+                (finished) => {
+                  if (finished) {
+                    runOnJS(notifyAnimationComplete)();
+                    frameIndex.value = 0;
+                    blinkOpacity.value = 1;
+                  }
+                }
+              );
+            }, BLINK_DURATION * 2);
+          }, (MOVEMENT_DURATION + BLINK_DURATION * 2) * 2);
+
+        } else {
+          // Other animations (hurt, dies) - standard behavior
+          positionX.value = START_POSITION;
+          opacity.value = 1;
+
+          const animationDuration =
+            ANIMATION_DURATIONS[currentState] || FRAME_DURATION * TOTAL_FRAMES;
+
+          frameIndex.value = withTiming(
+            TOTAL_FRAMES - 1,
+            { 
+              duration: animationDuration,
+              easing: Easing.inOut(Easing.ease)
+            },
+            (finished) => {
+              if (finished) {
+                runOnJS(notifyAnimationComplete)();
+                frameIndex.value = 0;
+              }
             }
-          }
-        );
+          );
+        }
       }
     } else {
-      // paused or not ready: cancel running animations
       cancelAnimation(frameIndex);
       cancelAnimation(positionX);
       cancelAnimation(opacity);
+      cancelAnimation(blinkOpacity);
     }
 
     return () => {
       cancelAnimation(frameIndex);
       cancelAnimation(positionX);
       cancelAnimation(opacity);
+      cancelAnimation(blinkOpacity);
       if (phaseTimeoutRef.current) {
         clearTimeout(phaseTimeoutRef.current);
         phaseTimeoutRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isPaused,
     currentAnimationUrl,
@@ -347,8 +411,12 @@ const DogCharacter = ({
     attackMovement,
     scheduleAttackPhase,
     runScheduleHold,
+    createStartBlink,
+    createCenterBlink,
+    createEndBlink,
   ]);
 
+  // Animated style with smoother frame transitions
   const animatedStyle = useAnimatedStyle(() => {
     const currentFrame = Math.floor(frameIndex.value) % TOTAL_FRAMES;
 
@@ -367,37 +435,19 @@ const DogCharacter = ({
     };
   });
 
-  // Animated style for character position (for run movement)
+  // Animated style for character position
   const positionStyle = useAnimatedStyle(() => {
     return {
       transform: [{ translateX: positionX.value }],
     };
   });
 
-  // Animated opacity style (for fade mode)
+  // Combined opacity style (includes both fade and blink effects)
   const opacityStyle = useAnimatedStyle(() => {
     return {
-      opacity: opacity.value,
+      opacity: opacity.value * blinkOpacity.value,
     };
   });
-
-  // Safe debug hooks
-  const [debugFrame, setDebugFrame] = useState(0);
-  const [debugPosition, setDebugPosition] = useState(0);
-
-  useEffect(() => {
-    const updateDebugValues = () => {
-      setTimeout(() => {
-        if (__DEV__) {
-          setDebugFrame(Math.floor(frameIndex.value));
-          setDebugPosition(Math.floor(positionX.value));
-        }
-      }, 100);
-    };
-
-    const interval = setInterval(updateDebugValues, 500); // Update every 500ms
-    return () => clearInterval(interval);
-  }, []);
 
   if (!currentAnimationUrl) {
     console.warn('🐕 No animation URL available, not rendering character');
@@ -417,12 +467,6 @@ const DogCharacter = ({
             onError={(error) => {
               console.error(`🐕 Failed to load animation: ${currentAnimationUrl}`, error);
             }}
-            onLoadStart={() => {
-              // no-op
-            }}
-            onLoad={() => {
-              // no-op
-            }}
             onLoadEnd={() => {
               setImageReady(true);
             }}
@@ -430,9 +474,6 @@ const DogCharacter = ({
           />
         </Animated.View>
       </View>
-
-      {/* Debug info (remove in production) */}
-      
     </Animated.View>
   );
 };
@@ -451,7 +492,6 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
     overflow: 'hidden',
-    borderRadius: 8,
   },
 
   spriteSheet: {
@@ -466,21 +506,6 @@ const styles = StyleSheet.create({
 
   pausedElement: {
     opacity: 0.6,
-  },
-
-  // Debug styles (remove in production)
-  debugInfo: {
-    position: 'absolute',
-    bottom: 20,
-    left: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    padding: 2,
-    borderRadius: 4,
-  },
-
-  debugText: {
-    color: 'white',
-    fontSize: 8,
   },
 });
 

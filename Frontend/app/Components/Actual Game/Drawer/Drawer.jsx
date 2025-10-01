@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Text, View, StyleSheet, TouchableOpacity, Dimensions, PanResponder, Animated } from "react-native";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import Output from '../Output/Output';
+import OutputBefore from '../Output/OutputBefore';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 const DRAWER_PEEK = SCREEN_HEIGHT * 0.05;
@@ -12,7 +12,7 @@ const VELOCITY_THRESHOLD = 0.9;
 export default function Drawer({
   isOutputVisible,
   translateY,
-  backdropOpacity,
+  backdropOpacity,    
   animateToPosition,
   currentQuestion,
   currentQuestionIndex,
@@ -91,7 +91,7 @@ export default function Drawer({
           </Text>
         </View>
 
-        <Output
+        <OutputBefore
           currentQuestion={currentQuestion}
           currentQuestionIndex={currentQuestionIndex}
           questionsData={questionsData}

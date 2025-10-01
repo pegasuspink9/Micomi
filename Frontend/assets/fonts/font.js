@@ -8,6 +8,7 @@ export const useFonts = () => {
     'GoldenAgeDark': require('./GoldenAgeDark.ttf'),
     'DynaPuff': require('./DynaPuff.ttf'),
     'MusicVibes': require('./MusicVibes.otf'),
+    'Oups': require('./Oups.otf'),
   });
 
   return fontsLoaded;

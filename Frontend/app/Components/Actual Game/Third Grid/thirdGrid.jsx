@@ -5,7 +5,7 @@ import GameButton from './components/GameButtons';
 import PotionGrid from './components/Potions/Potions';
 
 import { 
-  getMaxAnswers,
+  getMaxAnswers, // Add this import
   createAnswerSelectHandler,
   createNextQuestionHandler,
   createCheckAnswerHandler,
@@ -14,20 +14,18 @@ import {
 
 export default function ThirdGrid({ 
   currentQuestion, 
-  selectedAnswers = [], // Default to empty array
+  selectedAnswers = [],
   setSelectedAnswers,
   currentQuestionIndex = 0,
   setCurrentQuestionIndex,
   questionsData,
-  animateToPosition,
   setBorderColor,
-  hasShownOutput,
-  setHasShownOutput,
   setCorrectAnswerRef,
   challengeData,
-  gameState, // Direct access to game state
-  submitAnswer, // New prop for API submission
-  submitting = false // New prop for loading state
+  gameState,
+  submitAnswer,
+  submitting = false,
+  onCorrectAnswer // Callback to switch tab when answer is correct
 }) {
   
   // Safety check for currentQuestion
@@ -59,11 +57,9 @@ export default function ThirdGrid({
     currentQuestion,
     selectedAnswers,
     setBorderColor,
-    animateToPosition,
-    hasShownOutput,
-    setHasShownOutput,
     setCorrectAnswerRef,
-    submitAnswer // Pass the submit function
+    submitAnswer,
+    onCorrectAnswer // Pass the callback for automatic tab switching
   );
 
   const [showPotions, setShowPotions] = useState(false);

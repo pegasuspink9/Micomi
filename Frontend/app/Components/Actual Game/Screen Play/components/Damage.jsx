@@ -15,7 +15,7 @@ const FloatingDamageTicks = ({
   damage = 0,
   steps = 2,
   animated = true,
-  tickInterval = 200,
+  tickInterval = 50, // Faster intervals
   startDelay = 0,
   onTick = null,
   position = 'right', 
@@ -41,53 +41,55 @@ const FloatingDamageTicks = ({
     return arr;
   }
 
- useEffect(() => {
-  if (!damage || damage <= 0) return;
+  useEffect(() => {
+    if (!damage || damage <= 0) return;
 
-  // clear previous timers (avoid overlap)
-  timers.current.forEach(t => clearTimeout(t));
-  timers.current = [];
-
-  // Start the sequence after the provided startDelay
-  const startTimer = setTimeout(() => {
-    const ticks = splitDamage(Math.round(damage), steps);
-    const tickObjs = ticks.map(amount => ({
-      id: `${Date.now()}-${nextId.current++}`,
-      amount,
-    }));
-
-    setActiveTicks(prev => [...prev, ...tickObjs]);
-
-    tickObjs.forEach((tick, idx) => {
-      const startDelayForTick = idx * tickInterval;
-      const t = setTimeout(() => {
-        const totalAnimMs = 600;
-        const endTimer = setTimeout(() => {
-          setActiveTicks(curr => curr.filter(x => x.id !== tick.id));
-          if (typeof onTick === 'function') {
-            try {
-              onTick(tick.amount);
-            } catch (e) {
-              console.warn('onTick callback error', e);
-            }
-          }
-        }, totalAnimMs);
-
-        timers.current.push(endTimer);
-      }, startDelayForTick);
-
-      timers.current.push(t);
-    });
-  }, startDelay);
-
-  timers.current.push(startTimer);
-
-  return () => {
+    // clear previous timers (avoid overlap)
     timers.current.forEach(t => clearTimeout(t));
     timers.current = [];
-  };
-}, [damage, startDelay, trigger]);
 
+    // Start the sequence after the provided startDelay
+    const startTimer = setTimeout(() => {
+      const ticks = splitDamage(Math.round(damage), steps);
+      const tickObjs = ticks.map((amount, index) => ({
+        id: `${Date.now()}-${nextId.current++}`,
+        amount,
+        index, // Pass index for scatter calculation
+      }));
+
+      setActiveTicks(prev => [...prev, ...tickObjs]);
+
+      tickObjs.forEach((tick, idx) => {
+        const randomDelay = Math.random() * 100;
+        const startDelayForTick = idx * tickInterval + randomDelay;
+        
+        const t = setTimeout(() => {
+          const totalAnimMs = 1200 + Math.random() * 300; 
+          const endTimer = setTimeout(() => {
+            setActiveTicks(curr => curr.filter(x => x.id !== tick.id));
+            if (typeof onTick === 'function') {
+              try {
+                onTick(tick.amount);
+              } catch (e) {
+                console.warn('onTick callback error', e);
+              }
+            }
+          }, totalAnimMs);
+
+          timers.current.push(endTimer);
+        }, startDelayForTick);
+
+        timers.current.push(t);
+      });
+    }, startDelay);
+
+    timers.current.push(startTimer);
+
+    return () => {
+      timers.current.forEach(t => clearTimeout(t));
+      timers.current = [];
+    };
+  }, [damage, startDelay, trigger]);
 
   return (
     <View
@@ -97,11 +99,11 @@ const FloatingDamageTicks = ({
         position === 'left' ? styles.ticksContainerLeft : styles.ticksContainerRight,
       ]}
     >
-      {activeTicks.map((tickObj, index) => (
+      {activeTicks.map((tickObj) => (
         <TickItem
           key={tickObj.id}
           amount={tickObj.amount}
-          index={index}
+          index={tickObj.index}
           animated={animated}
         />
       ))}
@@ -111,6 +113,7 @@ const FloatingDamageTicks = ({
 
 const TickItem = ({ amount = 1, index = 0, animated = true }) => {
   const translateY = useRef(new Animated.Value(0)).current;
+  const translateX = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -120,30 +123,53 @@ const TickItem = ({ amount = 1, index = 0, animated = true }) => {
       return () => clearTimeout(t);
     }
 
+    // Generate random scattered positions
+    const randomAngle = Math.random() * 360; // Full 360-degree scatter
+    const scatterDistance = 30 + Math.random() * 60; // 30-90px scatter radius
+    
+    // Calculate final scattered positions
+    const finalX = Math.cos((randomAngle * Math.PI) / 180) * scatterDistance;
+    const finalY = Math.sin((randomAngle * Math.PI) / 180) * scatterDistance;
+
     Animated.parallel([
-      Animated.timing(translateY, {
-        toValue: -100 - Math.min(12 * index, 40),
-        duration: 5000,
+      Animated.timing(translateX, {
+        toValue: finalX,
+        duration: 800,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 5000,
-        easing: Easing.linear,
+      
+      // Simple movement to scattered position
+      Animated.timing(translateY, {
+        toValue: finalY,
+        duration: 800,
+        easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
+      
+      // Simple fade out
+      Animated.sequence([
+        Animated.delay(400), // Stay visible for a bit
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 800,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      ]),
+      
+      // Subtle scale effect
       Animated.sequence([
         Animated.timing(scale, {
-          toValue: 1.12,
-          duration: 5000,
+          toValue: 1.2,
+          duration: 200,
           easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
         Animated.timing(scale, {
           toValue: 1,
-          duration: 5000,
-          easing: Easing.out(Easing.quad),
+          duration: 1000,
+          easing: Easing.linear,
           useNativeDriver: true,
         }),
       ]),
@@ -155,7 +181,11 @@ const TickItem = ({ amount = 1, index = 0, animated = true }) => {
       style={[
         styles.tick,
         {
-          transform: [{ translateY }, { scale }],
+          transform: [
+            { translateX },
+            { translateY },
+            { scale }
+          ],
           opacity,
         },
       ]}
@@ -192,8 +222,6 @@ export default function Damage({
 
   return (
     <View style={[styles.container, containerPositionStyle, style]}>
-    
-
       {/* Floating ticks animate when `incoming` > 0 */}
       {incoming > 0 && (
         <FloatingDamageTicks
@@ -210,6 +238,7 @@ export default function Damage({
 
 const styles = StyleSheet.create({
   container: {
+    zIndex: 10,
     position: 'absolute',
     top: width * 0.15,
     alignItems: 'center',
@@ -243,35 +272,40 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
+  // Container for scattered damage numbers
   ticksContainer: {
     position: 'absolute',
-    width: 40,
+    width: 150, 
+    height: 150, 
     pointerEvents: 'none',
   },
   ticksContainerRight: {
-    top: width * 0.139,
-    right: width * -0.02,
-    alignItems: 'flex-start',
+    top: width * 0.05,
+    right: width * -0.1,
+    alignItems: 'center',
   },
   ticksContainerLeft: {
-    top: width * 0.150,
-    right: width * -0.1,
-    alignItems: 'flex-end',
+    top: width * 0.05,
+    left: width * -0.1, 
+    alignItems: 'center',
   },
 
   tick: {
-    position: 'relative',
-    marginVertical: 2,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    position: 'absolute',
+    top: 75,
+    left: 75, 
+    paddingHorizontal: 4,
+    paddingVertical: 2
   },
   
   tickText: {
     fontSize: 12,
     fontFamily: 'DynaPuff',
-    color: '#ff0000ff',
-    textShadowColor: 'rgba(0,0,0,0.45)',
+    fontWeight: 'bold',
+    color: '#8B0000', // Dark red color
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textShadowRadius: 3,
   },
 });
