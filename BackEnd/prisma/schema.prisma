@@ -165,6 +165,9 @@ model PlayerProgress {
   //streak tracking
   consecutive_corrects Int @default(0)
 
+  //collected player expected output
+  player_expected_output    Json?  @default("[]")
+
   player         Player   @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
   level          Level    @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
 

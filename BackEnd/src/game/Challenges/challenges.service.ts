@@ -301,6 +301,9 @@ export const submitChallengeService = async (
       currentTotalPoints: totalPoints,
       currentExpPoints: totalExp,
       coinsEarned: totalCoins,
+      playerOutputs: Array.isArray(freshProgress?.player_expected_output)
+        ? (freshProgress.player_expected_output as string[])
+        : [],
     };
 
     nextLevel = await LevelService.unlockNextLevel(
