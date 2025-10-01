@@ -24,27 +24,10 @@ export const previewLevel = async (playerId: number, levelId: number) => {
       map: true,
       challenges: true,
       potionShopByLevel: true,
+      lessons: true,
     },
   });
   if (!level) throw new Error("Level not found");
-
-  const enemy = await prisma.enemy.findFirst({
-    where: {
-      enemy_map: level.map.map_name,
-      enemy_difficulty: level.level_difficulty,
-    },
-  });
-  if (!enemy) throw new Error("Enemy not found for this level");
-
-  const selectedChar = await prisma.playerCharacter.findFirst({
-    where: { player_id: playerId, is_selected: true },
-    include: { character: true },
-  });
-  if (!selectedChar) throw new Error("No character selected");
-
-  const character = selectedChar.character;
-  const playerMaxHealth = Number(character.health ?? 0);
-  const enemyMaxHealth = ENEMY_HEALTH * Number(level.challenges.length ?? 0);
 
   const totalPoints = level.challenges.reduce(
     (sum, ch) => sum + Number(ch.points_reward ?? 0),
@@ -56,7 +39,6 @@ export const previewLevel = async (playerId: number, levelId: number) => {
   );
 
   const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
-
   const player = await prisma.player.findUnique({
     where: { player_id: playerId },
   });
@@ -73,10 +55,7 @@ export const previewLevel = async (playerId: number, levelId: number) => {
       where: { player_id: playerId },
     });
     const playerLevelPotions = await prisma.playerLevelPotion.findMany({
-      where: {
-        player_id: playerId,
-        level_id: levelId,
-      },
+      where: { player_id: playerId, level_id: levelId },
     });
 
     potionShop = potions
@@ -116,48 +95,113 @@ export const previewLevel = async (playerId: number, levelId: number) => {
       .filter(Boolean);
   }
 
-  return {
-    level: {
-      level_id: level.level_id,
-      level_number: level.level_number,
-      level_difficulty: level.level_difficulty,
-      level_title: level.level_title,
-      content: level.content,
-      total_points: totalPoints,
-      total_coins: totalCoins,
-    },
-    enemy: {
-      enemy_id: enemy.enemy_id,
-      enemy_name: enemy.enemy_name,
-      enemy_health: enemyMaxHealth,
-      enemy_idle: enemy.enemy_avatar,
-      enemy_run: enemy.enemy_run,
-      enemy_damage: enemy.enemy_damage,
-      enemy_attack: enemy.enemy_attack,
-      enemy_hurt: enemy.enemy_hurt,
-      enemy_dies: enemy.enemy_dies,
-      enemy_avatar: enemy.avatar_enemy,
-    },
-    character: {
-      character_id: character.character_id,
-      character_name: character.character_name,
-      character_health: playerMaxHealth,
-      character_damage: character.character_damage,
-      character_idle: character.avatar_image,
-      character_run: character.character_run,
-      character_attack: character.character_attacks,
-      character_hurt: character.character_hurt,
-      character_dies: character.character_dies,
-      character_avatar: character.character_avatar,
-    },
-    energy: energyStatus.energy,
-    timeToNextEnergyRestore: energyStatus.timeToNextRestore,
-    player_info: {
-      player_id: player.player_id,
-      player_coins: player.coins,
-    },
-    potionShop,
-  };
+  const lessons = await prisma.level.findFirst({
+    where: { level_id: levelId },
+    include: { lessons: true },
+  });
+
+  switch (level.level_type) {
+    case "micomiButton":
+      return {
+        level: {
+          level_id: level.level_id,
+          level_number: level.level_number,
+          level_difficulty: level.level_difficulty,
+          level_title: level.level_title,
+          level_type: level.level_type,
+          content: level.content,
+          total_points: totalPoints,
+          total_coins: totalCoins,
+        },
+        energy: energyStatus.energy,
+        timeToNextEnergyRestore: energyStatus.timeToNextRestore,
+        lessons,
+      };
+
+    case "shopButton":
+      return {
+        level: {
+          level_id: level.level_id,
+          level_number: level.level_number,
+          level_difficulty: level.level_difficulty,
+          level_title: level.level_title,
+          level_type: level.level_type,
+          content: level.content,
+          total_points: totalPoints,
+          total_coins: totalCoins,
+        },
+        enemy: null,
+        character: null,
+        energy: energyStatus.energy,
+        timeToNextEnergyRestore: energyStatus.timeToNextRestore,
+        player_info: {
+          player_id: player.player_id,
+          player_coins: player.coins,
+        },
+        potionShop,
+      };
+
+    case "enemyButton":
+    default: {
+      const enemy = await prisma.enemy.findFirst({
+        where: {
+          enemy_map: level.map.map_name,
+          enemy_difficulty: level.level_difficulty,
+        },
+      });
+      if (!enemy) throw new Error("Enemy not found for this level");
+
+      const selectedChar = await prisma.playerCharacter.findFirst({
+        where: { player_id: playerId, is_selected: true },
+        include: { character: true },
+      });
+      if (!selectedChar) throw new Error("No character selected");
+
+      const character = selectedChar.character;
+      const playerMaxHealth = Number(character.health ?? 0);
+      const enemyMaxHealth =
+        ENEMY_HEALTH * Number(level.challenges.length ?? 0);
+
+      return {
+        level: {
+          level_id: level.level_id,
+          level_number: level.level_number,
+          level_difficulty: level.level_difficulty,
+          level_title: level.level_title,
+          level_type: level.level_type,
+          content: level.content,
+          total_points: totalPoints,
+          total_coins: totalCoins,
+        },
+        enemy: {
+          enemy_id: enemy.enemy_id,
+          enemy_name: enemy.enemy_name,
+          enemy_health: enemyMaxHealth,
+          enemy_idle: enemy.enemy_avatar,
+          enemy_run: enemy.enemy_run,
+          enemy_damage: enemy.enemy_damage,
+          enemy_attack: enemy.enemy_attack,
+          enemy_hurt: enemy.enemy_hurt,
+          enemy_dies: enemy.enemy_dies,
+          enemy_avatar: enemy.avatar_enemy,
+        },
+        character: {
+          character_id: character.character_id,
+          character_name: character.character_name,
+          character_health: playerMaxHealth,
+          character_damage: character.character_damage,
+          character_idle: character.avatar_image,
+          character_run: character.character_run,
+          character_attack: character.character_attacks,
+          character_hurt: character.character_hurt,
+          character_dies: character.character_dies,
+          character_avatar: character.character_avatar,
+        },
+        energy: energyStatus.energy,
+        timeToNextEnergyRestore: energyStatus.timeToNextRestore,
+      };
+    }
+  }
 };
 
 export const enterLevel = async (playerId: number, levelId: number) => {
@@ -167,6 +211,8 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       include: {
         map: true,
         challenges: true,
+        lessons: true,
+        potionShopByLevel: true,
       },
     });
 
@@ -301,6 +347,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     level: {
       level_id: level.level_id,
       level_number: level.level_number,
+      level_type: level.level_type,
       level_difficulty: level.level_difficulty,
       level_title: level.level_title,
       content: level.content,

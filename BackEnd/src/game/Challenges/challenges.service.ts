@@ -208,19 +208,15 @@ export const submitChallengeService = async (
 
     message = generateDynamicMessage(
       true,
-      player.player_name,
+      character.character_name,
       hintUsed,
       updatedProgress.consecutive_corrects ?? 0,
-      fightResult.character_health ?? character.health, // playerHealth (use fightResult if available)
+      fightResult.character_health ?? character.health,
       character.health,
       isFinalChallenge,
       elapsed,
       enemy.enemy_name
     );
-
-    message = hintUsed
-      ? "Hint used! Revealed part of the correct answer."
-      : "Correct! You attacked the enemy.";
 
     if (!hintUsed) {
       await updateQuestProgress(playerId, QuestType.solve_challenge_no_hint, 1);
@@ -236,22 +232,15 @@ export const submitChallengeService = async (
 
     message = generateDynamicMessage(
       false,
-      player.player_name,
+      character.character_name,
       false,
       0,
-      fightResult.character_health ?? character.health, // playerHealth
+      fightResult.character_health ?? character.health,
       character.health,
       isFinalChallenge,
       elapsed,
       enemy.enemy_name
     );
-
-    if (updatedProgress.enemy_hp! <= 0) {
-      message =
-        "Wrong! You must answer this challenge correctly to complete the level.";
-    } else {
-      message = "Wrong! You'll see this challenge again later.";
-    }
   }
 
   const next = await getNextChallengeService(playerId, levelId);
