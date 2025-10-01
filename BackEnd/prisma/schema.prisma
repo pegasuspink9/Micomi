@@ -77,6 +77,7 @@ model Challenge {
   test_cases      Json?    @default("[]")
   options         Json?    @default("[]")
   expected_output Json?    @default("[]")
+  file_name       String?
 
   level          Level    @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
 }
@@ -97,6 +98,7 @@ model Enemy {
   enemy_dies        String?  @db.Text 
   enemy_run         String?  @db.Text
   enemy_hurt        String?  @db.Text
+  avatar_enemy      String?
 
   enemy_coins       Int?     @default(0)
   levels           Level[]
@@ -104,6 +106,7 @@ model Enemy {
 
 model Player {
   player_id            Int      @id @default(autoincrement())
+  player_name          String   @unique
   username             String   @unique
   email                String   @unique
   password             String
@@ -145,8 +148,8 @@ model PlayerProgress {
   completed_at   DateTime?
   challenge_start_time  DateTime?
 
-  enemy_hp       Int?     
-  player_hp      Int?     
+  enemy_hp   Int   @default(0)
+  player_hp  Int   @default(0)    
   battle_status  BattleStatus? @default(in_progress)
 
   //active potion effects during combat
@@ -158,6 +161,9 @@ model PlayerProgress {
 
   //for quest purpose
   took_damage   Boolean?  @default(false)
+
+  //streak tracking
+  consecutive_corrects Int @default(0)
 
   player         Player   @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
   level          Level    @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
@@ -182,6 +188,7 @@ model Character {
   character_run     String?   @db.Text
   character_hurt    String?   @db.Text
   character_dies    String?   @db.Text
+  character_avatar  String?
 
   user_coins        Int?      @default(0)
 
