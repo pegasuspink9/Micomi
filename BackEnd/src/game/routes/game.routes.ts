@@ -22,6 +22,7 @@ router.get(
   LevelController.previewLevelController
 );
 router.post(
+  //shop buy potion in level
   "/entryLevel/:playerId/:levelId/preview/buy-potion/:potionId",
   ShopController.buyPotion
 );
@@ -29,7 +30,14 @@ router.post(
   "/entryLevel/:playerId/:levelId",
   LevelController.enterLevelController
 );
-router.post("/unlockNewLevel", LevelController.unlockNextLevel);
+router.post(
+  "/entryLevel/:playerId/:levelId/preview/micomi-done", //for micomi level
+  LevelController.completeMicomiLevel
+);
+router.post(
+  "/entryLevel/:playerId/:levelId/preview/shop-done", //for potion shop level
+  LevelController.completeShopLevel
+);
 
 //Challenge route
 router.post(

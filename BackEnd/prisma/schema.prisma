@@ -160,13 +160,21 @@ model PlayerProgress {
   coins_earned         Int      @default(0)
 
   //for quest purpose
-  took_damage   Boolean?  @default(false)
+  took_damage   Boolean?  @default(false) 
 
   //streak tracking
   consecutive_corrects Int @default(0)
 
   //collected player expected output
   player_expected_output    Json?  @default("[]")
+
+  //micomi level done
+  done_micomi_level  Boolean? @default(false)
+
+  //potion shop level done
+  done_shop_level    Boolean? @default(false)
+
+  //potion
 
   player         Player   @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
   level          Level    @relation(fields: [level_id], references: [level_id], onDelete: Cascade)

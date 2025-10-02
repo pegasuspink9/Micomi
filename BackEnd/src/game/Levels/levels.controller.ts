@@ -61,6 +61,36 @@ export const unlockNextLevel = async (req: Request, res: Response) => {
     );
     return successResponse(res, result, "Unlocked new level");
   } catch (error) {
-    return errorResponse(res, null, "Level not unlocked yet.");
+    return errorResponse(res, error, "Level not unlocked yet.");
+  }
+};
+
+export const completeMicomiLevel = async (req: Request, res: Response) => {
+  try {
+    const playerId = Number(req.params.playerId);
+    const levelId = Number(req.params.levelId);
+
+    const result = await LevelService.completeMicomiLevel(playerId, levelId);
+
+    return successResponse(res, result, "Successfully unlocked next level.");
+  } catch (error) {
+    return errorResponse(res, error, "Failed to unlock next level.");
+  }
+};
+
+export const completeShopLevel = async (req: Request, res: Response) => {
+  try {
+    const playerId = Number(req.params.playerId);
+    const levelId = Number(req.params.levelId);
+
+    const result = await LevelService.completeShopLevel(playerId, levelId);
+
+    return successResponse(
+      res,
+      result,
+      "Done purchasing. You will not be able to buy potion in this level again."
+    );
+  } catch (error) {
+    return errorResponse(res, error, "Failed to unlock next level");
   }
 };
