@@ -1,8 +1,12 @@
+import { QuestType } from "@prisma/client";
 import { Request, Response } from "express";
-import { verifyRefreshToken, generateAccessToken } from "../utils/token";
 import { successResponse, errorResponse } from "../utils/response";
+import { verifyRefreshToken, generateAccessToken } from "../utils/token";
+import { updateQuestProgress } from "../src/game/Quests/quests.service";
+import { checkAchievements } from "../src/game/Achievements/achievements.service";
+import { updatePlayerActivity } from "../src/models/Player/player.service";
 
-export const refreshAccessToken = (req: Request, res: Response) => {
+export const refreshAccessToken = async (req: Request, res: Response) => {
   const refreshToken = req.cookies.refreshToken;
   if (!refreshToken) {
     return errorResponse(res, null, "No refresh token", 401);
@@ -14,6 +18,15 @@ export const refreshAccessToken = (req: Request, res: Response) => {
       id: decoded.id,
       role: decoded.role,
     });
+
+    const updatedPlayer = await updatePlayerActivity(decoded.id);
+
+    if (updatedPlayer) {
+      await updateQuestProgress(decoded.id, QuestType.login_days, 1);
+
+      await checkAchievements(decoded.id);
+    }
+
     return successResponse(
       res,
       { accessToken: newAccessToken },
