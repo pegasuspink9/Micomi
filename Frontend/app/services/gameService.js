@@ -1,11 +1,39 @@
 import { apiService } from './api';
+import { animationPreloader } from './animationPreloader';
 
 export const gameService = {
-  enterLevel: async (playerId, levelId) => {
+   enterLevel: async (playerId, levelId, onAnimationProgress = null, onDownloadProgress = null) => {
     try {
+      console.log(`🎮 Entering level ${levelId} for player ${playerId}...`);
+      
+      // Load cached animations on first call
+      await animationPreloader.loadCachedAnimations();
+      
       const response = await apiService.post(`/game/entryLevel/${playerId}/${levelId}`);
-      console.log(`🎮 Entered level ${levelId} for player ${playerId}:`, response);
-      return response.success ? response.data : response;
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to enter level');
+      }
+
+      console.log(`🎮 Level ${levelId} data received, starting forced animation download...`);
+      
+      // ✅ FORCE download all animations before proceeding
+      const downloadResult = await animationPreloader.downloadAllAnimations(
+        response.data,
+        onDownloadProgress,
+        onAnimationProgress
+      );
+
+      if (!downloadResult.success) {
+        console.warn('⚠️ Animation download failed, but continuing with game...');
+      } else {
+        console.log(`✅ All animations downloaded successfully: ${downloadResult.downloaded}/${downloadResult.total}`);
+      }
+
+      return {
+        ...response.data,
+        downloadStats: downloadResult // Include download info in response
+      };
     } catch (error) {
       console.error(`Failed to enter level ${levelId}:`, error);
       throw error;
@@ -22,137 +50,34 @@ export const gameService = {
         throw new Error('Missing required parameters: playerId, levelId, or challengeId');
       }
 
-      const payload = {
-        answer: selectedAnswers,
-      };
+      const payload = { answer: selectedAnswers };
       
-      // ENHANCED DIAGNOSTIC LOGGING
-      console.log('🔍 DETAILED SUBMIT ANSWER DIAGNOSTIC:');
-      console.log('==========================================');
-      console.log('  URL:', `/game/submit-challenge/${playerId}/${levelId}/${challengeId}`);
-      console.log('  Full URL would be:', `http://your-server/game/submit-challenge/${playerId}/${levelId}/${challengeId}`);
-      console.log('  Method: POST');
-      console.log('  Headers: Content-Type: application/json');
-      
-      console.log('  Raw Payload Object:', payload);
-      console.log('  Payload JSON String:', JSON.stringify(payload));
-      console.log('  Payload JSON String Length:', JSON.stringify(payload).length);
-      console.log('  Payload JSON Pretty:', JSON.stringify(payload, null, 2));
-      
-      console.log('  Selected Answers Analysis:');
-      console.log('    - Value:', selectedAnswers);
-      console.log('    - Type:', typeof selectedAnswers);
-      console.log('    - Is Array:', Array.isArray(selectedAnswers));
-      console.log('    - Length:', selectedAnswers?.length);
-      console.log('    - Each item:');
-      selectedAnswers.forEach((item, index) => {
-        console.log(`      [${index}]: "${item}" (type: ${typeof item}, length: ${item?.length || 'N/A'})`);
+      console.log('🔍 Submitting answer:', {
+        url: `/game/submit-challenge/${playerId}/${levelId}/${challengeId}`,
+        payload: selectedAnswers,
+        payloadSize: JSON.stringify(payload).length
       });
       
-      console.log('  Parameters Analysis:');
-      console.log('    - playerId:', playerId, '(type:', typeof playerId, ')');
-      console.log('    - levelId:', levelId, '(type:', typeof levelId, ')');
-      console.log('    - challengeId:', challengeId, '(type:', typeof challengeId, ')');
-      
-      // Create exact copy of what will be sent
-      const exactPayload = JSON.parse(JSON.stringify({ answer: selectedAnswers }));
-      console.log('  Exact payload that will be sent:', exactPayload);
-      console.log('  Serialized exactly as sent:', JSON.stringify(exactPayload));
-      
-      // Show byte analysis
-      const payloadBytes = new TextEncoder().encode(JSON.stringify(payload));
-      console.log('  Payload byte length:', payloadBytes.length);
-      console.log('  Payload first 50 bytes:', Array.from(payloadBytes.slice(0, 50)).map(b => b.toString(16)).join(' '));
-      
-      console.log('==========================================');
-      
-      // Make the API call
-      console.log('🚀 Making API call...');
       const startTime = Date.now();
-      
-      const response = await apiService.post(`/game/submit-challenge/${playerId}/${levelId}/${challengeId}`, 
+      const response = await apiService.post(
+        `/game/submit-challenge/${playerId}/${levelId}/${challengeId}`, 
         payload
       );
       
       const endTime = Date.now();
-      console.log(`✅ API call completed in ${endTime - startTime}ms`);
-      console.log(`🎮 Submitted answer for challenge ${challengeId}:`, response);
+      console.log(`✅ Answer submitted in ${endTime - startTime}ms`);
+      
+      // ✅ Don't preload animations on submission - they should already be loaded from entry
+      console.log('🎬 Skipping animation preload on submission - using cached animations');
       
       return response.success ? response.data : response;
     } catch (error) {
-      console.error(`❌ Failed to submit answer for challenge ${challengeId}:`, error);
-      
-      // ENHANCED ERROR ANALYSIS
-      console.log('🔍 ERROR ANALYSIS:');
-      console.log('==========================================');
-      console.log('  Error type:', error.constructor.name);
-      console.log('  Error message:', error.message);
-      
-      if (error.response) {
-        console.log('  Response Status:', error.response.status);
-        console.log('  Response Status Text:', error.response.statusText);
-        console.log('  Response Headers:', JSON.stringify(error.response.headers, null, 2));
-        console.log('  Response Data:', error.response.data);
-        
-        // Try to get more details about the 400 error
-        if (error.response.status === 400) {
-          console.log('  🚨 HTTP 400 BAD REQUEST DETAILS:');
-          console.log('    This means the server rejected the request format');
-          console.log('    Common causes:');
-          console.log('    - Invalid JSON syntax');
-          console.log('    - Missing required fields');
-          console.log('    - Wrong data types');
-          console.log('    - Invalid parameter values');
-          console.log('    - Server-side validation rules');
-          
-          if (error.response.data) {
-            console.log('  Server error response:', error.response.data);
-          }
-        }
-      } else if (error.request) {
-        console.log('  Request Object:', error.request);
-        console.log('  No response received from server');
-      } else {
-        console.log('  Request setup error:', error.message);
-      }
-      console.log('==========================================');
-      
+      console.error(`❌ Failed to submit answer:`, error);
       throw error;
     }
   },
 
-  // Test method to compare working vs failing requests
-  testAnswerFormats: async (playerId, levelId, challengeId, correctAnswers, incorrectAnswers) => {
-    console.log('🧪 TESTING DIFFERENT ANSWER FORMATS:');
-    console.log('==========================================');
-    
-    const testCases = [
-      { name: 'Correct answers (failing)', answers: correctAnswers },
-      { name: 'Incorrect answers (working)', answers: incorrectAnswers },
-      // Test variations
-      { name: 'Correct as single string', answers: correctAnswers.join(',') },
-      { name: 'Correct first item only', answers: [correctAnswers[0]] },
-      { name: 'Incorrect first item only', answers: [incorrectAnswers[0]] },
-    ];
-    
-    for (const testCase of testCases) {
-      console.log(`\n🧪 Testing: ${testCase.name}`);
-      try {
-        const payload = { answer: testCase.answers };
-        console.log('   Payload:', JSON.stringify(payload));
-        
-        // Don't actually send, just log what would be sent
-        console.log('   Would send to:', `/game/submit-challenge/${playerId}/${levelId}/${challengeId}`);
-        console.log('   Payload size:', JSON.stringify(payload).length, 'characters');
-        
-      } catch (error) {
-        console.log('   Error creating payload:', error.message);
-      }
-    }
-    console.log('==========================================');
-  },
-
-  // NEW: Unified game state extraction that handles both entry and submission responses
+  // Enhanced unified game state extraction
   extractUnifiedGameState: (responseData, isSubmission = false) => {
     try {
       if (!responseData) {
@@ -160,7 +85,7 @@ export const gameService = {
         return null;
       }
 
-      // Base game state structure with updated attribute names
+      // Base game state structure
       const gameState = {
         level: {
           level_id: responseData.level?.level_id || null,
@@ -175,7 +100,6 @@ export const gameService = {
           enemy_name: responseData.enemy?.enemy_name || null,
           enemy_health: responseData.enemy?.enemy_health || null,
           enemy_damage: responseData.enemy?.enemy_damage || null,
-          enemy_idle: responseData.enemy?.enemy_idle || null,
           enemy_max_health: responseData.enemy?.enemy_health,
           enemy_idle: responseData.enemy?.enemy_idle || null,
           enemy_run: responseData.enemy?.enemy_run || null,
@@ -190,8 +114,6 @@ export const gameService = {
           current_health: responseData.character?.character_health || null,
           max_health: responseData.character?.character_health || null,
           damage: responseData.character?.character_damage || [],
-          character_run: responseData.character?.character_run || null,
-          character_attack: responseData.character?.character_attack || null,
           character_idle: responseData.character?.character_idle || null,
           character_run: responseData.character?.character_run || null,
           character_attack: responseData.character?.character_attack || [],
@@ -248,7 +170,7 @@ export const gameService = {
         };
       }
 
-      // If this is a submission response, extract submission-specific data
+      // Handle submission data
       if (isSubmission) {
         gameState.submissionResult = {
           isCorrect: responseData.isCorrect || false,
@@ -261,7 +183,6 @@ export const gameService = {
             energy: responseData.fightResult.energy,
             timeToNextEnergyRestore: responseData.fightResult.timeToNextEnergyRestore,
             
-            // Character data from fightResul
             character: responseData.fightResult.character ? {
               character_id: responseData.fightResult.character.character_id,
               character_name: responseData.fightResult.character.character_name,
@@ -276,7 +197,6 @@ export const gameService = {
               character_max_health: responseData.fightResult.character.character_max_health,
             } : null,
             
-            // Enemy data from fightResult
             enemy: responseData.fightResult.enemy ? {
               enemy_id: responseData.fightResult.enemy.enemy_id,
               enemy_name: responseData.fightResult.enemy.enemy_name,
@@ -305,80 +225,44 @@ export const gameService = {
           nextLevel: responseData.nextLevel || null
         };
 
-        // Merge fight result data into main character state
+        // Merge fight result data back into main game state
         if (responseData.fightResult?.character?.character_health) {
           gameState.selectedCharacter.current_health = responseData.fightResult.character.character_health;
         }
-
         if (responseData.fightResult?.character?.character_max_health) {
           gameState.selectedCharacter.max_health = responseData.fightResult.character.character_max_health;
         }
-
-        if (responseData.fightResult?.character?.character_idle) {
-          gameState.selectedCharacter.character_idle = responseData.fightResult.character.character_idle;
-        }
-
-        if (responseData.fightResult?.character?.character_name) {
-          gameState.selectedCharacter.name = responseData.fightResult.character.character_name;
-        }
-
-        if (responseData.fightResult?.character?.character_damage) {
-          gameState.selectedCharacter.damage = responseData.fightResult.character.character_damage;
-        }
-
-        // Merge fight result data into main enemy state
         if (responseData.fightResult?.enemy?.enemy_health) {
           gameState.enemy.enemy_health = responseData.fightResult.enemy.enemy_health;
         }
-
-        if (responseData.fightResult?.enemy?.enemy_max_health) {
-          gameState.enemy.enemy_max_health = responseData.fightResult.enemy.enemy_max_health;
-        }
-
-        if (responseData.fightResult?.enemy?.enemy_idle) {
-          gameState.enemy.enemy_idle = responseData.fightResult.enemy.enemy_idle;
-        }
-
-        if (responseData.fightResult?.enemy?.enemy_name) {
-          gameState.enemy.enemy_name = responseData.fightResult.enemy.enemy_name;
-        }
-
-        if (responseData.fightResult?.enemy?.enemy_damage) {
-          gameState.enemy.enemy_damage = responseData.fightResult.enemy.enemy_damage;
-        }
-
-
-        // Update energy and timer from fight result if available
         if (responseData.fightResult?.energy !== undefined) {
           gameState.energy = responseData.fightResult.energy;
         }
-
-        if (responseData.fightResult?.timeToNextEnergyRestore !== undefined) {
-          gameState.timeToNextEnergyRestore = responseData.fightResult.timeToNextEnergyRestore;
-        }
       }
       
-      console.log(`✅ Unified game state extracted (${isSubmission ? 'submission' : 'entry'}):`, gameState);
+      console.log(`✅ Game state extracted (${isSubmission ? 'submission' : 'entry'}):`, {
+        hasLevel: !!gameState.level.level_id,
+        hasEnemy: !!gameState.enemy.enemy_id,
+        hasCharacter: !!gameState.selectedCharacter.character_id,
+        hasChallenge: !!gameState.currentChallenge?.id,
+        hasSubmission: !!gameState.submissionResult
+      });
+      
       return gameState;
       
     } catch (error) {
-      console.error('❌ Error extracting unified game state:', error);
+      console.error('❌ Error extracting game state:', error);
       return null;
     }
   },
 
-  // Legacy methods for backward compatibility
-  extractChallengeFromResponse: (responseData) => {
-    const gameState = gameService.extractUnifiedGameState(responseData, false);
-    return gameState?.currentChallenge || null;
+  // Get animation preload statistics
+  getAnimationStats: () => {
+    return animationPreloader.getPreloadStats();
   },
 
-  extractSubmissionResult: (responseData) => {
-    const gameState = gameService.extractUnifiedGameState(responseData, true);
-    return gameState?.submissionResult || null;
-  },
-
-  extractGameState: (responseData) => {
-    return gameService.extractUnifiedGameState(responseData, false);
+  // Clear animation cache
+  clearAnimationCache: () => {
+    animationPreloader.clearCache();
   }
 };

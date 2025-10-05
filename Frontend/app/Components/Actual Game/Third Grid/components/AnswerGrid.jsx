@@ -8,7 +8,7 @@ const AnswerGrid = ({
   options, 
   selectedAnswers = [],
   maxAnswers = 1,
-  onAnswerSelect 
+  onAnswerSelect
 }) => {
   const renderListItems = () => {
     // Early return if no options

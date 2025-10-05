@@ -314,34 +314,7 @@ export default function LeaderBoard({ route }) {
           onCorrectAnswer={handleCorrectAnswer}
         />
       )}
-      
-      <LevelModal 
-        visible={showModal}
-        levelId={1}
-        playerId={11}
-        onClose={() => setShowModal(false)}
-        onPlay={(levelData) => startGame(levelData)}
-      />
-
-      {/* Debug Interface */}
-      {__DEV__ && (
-        <>
-          {__DEV__ && showDebugPanel && (
-            <View style={styles.debugPanel}>
-              <View style={styles.debugHeader}>
-                <Text style={styles.debugTitle}>🛠️ Unified Game State Debug</Text>
-                <TouchableOpacity 
-                  style={styles.debugClose}
-                  onPress={() => setShowDebugPanel(false)}
-                >
-                  <Text style={styles.debugCloseText}>✕</Text>
-                </TouchableOpacity>
-              </View>
-              {renderUnifiedStateDebug()}
-            </View>
-          )}
-        </>
-      )}
+    
     </ImageBackground>
   );
 }

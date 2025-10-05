@@ -5,16 +5,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
     <Tabs
       screenOptions={{
         tabBarStyle: styles.tabBar,
         headerShown: false
       }}
     >
-    
-     
-        <Tabs.Screen
+      <Tabs.Screen
         name="Practice"
         options={{
           title: '',
@@ -66,14 +64,13 @@ export default function TabLayout() {
     </Tabs>
     </SafeAreaView>
   );
-  
 }
-
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'black',
+    paddingTop: 0,
   },
   tabBar:{
     backgroundColor: 'rgba(19, 140, 65, 0.23)',
@@ -89,5 +86,4 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
   }
-
 });

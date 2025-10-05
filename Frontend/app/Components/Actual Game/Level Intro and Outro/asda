@@ -1,0 +1,321 @@
+import { ImageBackground } from 'expo-image';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { View, Text, Modal, Pressable, StyleSheet, Dimensions, Image, Animated } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { levelService } from '../../../services/levelService';
+import { useRouter } from 'expo-router';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const LevelModal = ({ 
+  visible = false, // ✅ Fixed: Changed from true to false
+  onClose = () => {},
+  onPlay = () => {},
+  levelId = null,
+  playerId = 11,
+  levelData = null,
+  navigation = null 
+}) => {
+  const router = useRouter();
+  const [previewData, setPreviewData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [isAnimating, setIsAnimating] = useState(false); // ✅ Added missing state
+
+  // Animation refs
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(-100)).current;
+
+  useEffect(() => {
+    if (visible && levelId && !levelData) {
+      fetchLevelPreview();
+    }
+  }, [visible, levelId, levelData]);
+
+  useEffect(() => {
+    if (visible) {
+      startEntranceAnimation();
+    } else {
+      resetAnimations();
+    }
+  }, [visible]);
+
+  const handlePlayPress = useCallback(() => {
+    if (isAnimating) return;
+    
+    console.log('🎮 Play button pressed, navigating to GamePlay:', {
+      playerId,
+      levelId,
+      levelData: displayData
+    });
+
+    handleModalClose();
+
+    setTimeout(() => {
+      try {
+        router.push({
+          pathname: '/GamePlay', // ✅ Fixed: Use absolute path
+          params: {
+            playerId: playerId,
+            levelId: levelId,
+            levelData: JSON.stringify(displayData || {})
+          }
+        });
+      } catch (error) {
+        console.error('Navigation error:', error);
+        if (navigation) {
+          navigation.navigate('GamePlay', {
+            playerId: playerId,
+            levelId: levelId,
+            levelData: displayData
+          });
+        } else {
+          onPlay(displayData);
+        }
+      }
+    }, 100);
+  }, [isAnimating, playerId, levelId, displayData, handleModalClose, router, navigation, onPlay]);
+
+  const startEntranceAnimation = () => {
+    setIsAnimating(true); // ✅ Added
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 2,
+        useNativeDriver: true,
+      }),
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 20,
+        friction: 2,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsAnimating(false); // ✅ Added
+    });
+  };
+
+  const resetAnimations = () => {
+    scaleAnim.setValue(0);
+    rotateAnim.setValue(0);
+    opacityAnim.setValue(0);
+    slideAnim.setValue(-100);
+    setIsAnimating(false); // ✅ Added
+  };
+
+  const handleModalClose = () => {
+    setIsAnimating(true); // ✅ Added
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: -100,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsAnimating(false); // ✅ Added
+      onClose();
+    });
+  };
+
+  const fetchLevelPreview = async () => {
+    try {
+      setLoading(true); // ✅ Fixed: Was "setLuttonoading"
+      setError(null);
+      console.log(`🎮 Fetching level preview for level ${levelId}, player ${playerId}`);
+      
+      const response = await levelService.getLevelPreview(levelId);
+      console.log('📊 Level preview response:', response);
+      
+      if (response.success) {
+        setPreviewData(response.data);
+      } else {
+        setError('Failed to load level data');
+      }
+    } catch (err) {
+      console.error('❌ Error fetching level preview:', err);
+      setError('Failed to load level data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const displayData = previewData || levelData;
+  
+  if (!displayData && !loading) {
+    return null;
+  }
+
+  const mappedLevelData = displayData ? {
+    level_number: displayData.level?.level_number || 1,
+    level_type: displayData.enemy?.enemy_name || 'Unknown Enemy',
+    level_difficulty: displayData.level?.level_difficulty?.toUpperCase() || 'UNKNOWN',
+    level_title: displayData.level?.level_title || 'Untitled Level',
+    content: displayData.level?.content || 'No description available.',
+    points_reward: displayData.level?.total_points || 0,
+    coins_reward: displayData.level?.total_coins || 0,
+    is_unlocked: true,
+    enemy_name: displayData.enemy?.enemy_name || 'Unknown',
+    enemy_health: displayData.enemy?.enemy_health || 0,
+    enemy_damage: displayData.enemy?.enemy_damage || 0,
+    enemy_avatar: displayData.enemy?.enemy_avatar || null,
+    character_name: displayData.character?.character_name || 'Unknown',
+    character_health: displayData.character?.character_health || 0,
+    character_avatar: displayData.character?.character_avatar || null,
+    energy_cost: displayData.energy || 0,
+    player_coins: displayData.player_info?.player_coins || 0
+  } : {};
+
+  const rotateInterpolate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['15deg', '0deg'],
+  });
+
+  const scaleInterpolate = scaleAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0, 0.8, 1],
+  });
+
+  return (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="none"
+    >
+      {/* ... Keep all your existing JSX content exactly the same ... */}
+      <Animated.View 
+        style={[
+          styles.modalOverlay,
+          {
+            opacity: opacityAnim,
+          }
+        ]}
+      >
+        {loading && (
+          <Animated.View 
+            style={[
+              styles.loadingContainer,
+              {
+                opacity: opacityAnim,
+                transform: [{ scale: scaleAnim }],
+              }
+            ]}
+          >
+            <Text style={styles.loadingText}>Loading level data...</Text>
+          </Animated.View>
+        )}
+        
+        {error && (
+          <Animated.View 
+            style={[
+              styles.errorContainer,
+              {
+                opacity: opacityAnim,
+                transform: [{ scale: scaleAnim }],
+              }
+            ]}
+          >
+            <Text style={styles.errorText}>{error}</Text>
+            <Pressable style={styles.retryButton} onPress={fetchLevelPreview}>
+              <Text style={styles.retryText}>Retry</Text>
+            </Pressable>
+          </Animated.View>
+        )}
+
+        {displayData && (
+          <Animated.View 
+            style={[
+              styles.robotHead,
+              {
+                opacity: opacityAnim,
+                transform: [
+                  { scale: scaleInterpolate },
+                  { rotateX: rotateInterpolate },
+                  { translateY: slideAnim },
+                ],
+              }
+            ]}
+          >
+            {/* ... Keep all your modal content the same ... */}
+            
+            {/* ✅ Fixed: Close button should close modal, not navigate */}
+            <Pressable 
+              style={({ pressed }) => [
+                styles.closeButton,
+                pressed && styles.closeButtonPressed
+              ]}
+              onPress={handleModalClose} 
+            >
+              <Text style={styles.closeButtonText}>×</Text>
+            </Pressable>
+          </Animated.View>
+        )}
+
+        {displayData && !loading && !error && (
+          <Animated.View 
+            style={[
+              styles.playButtonContainer,
+              {
+                opacity: opacityAnim,
+                transform: [
+                  { scale: scaleAnim },
+                  { translateY: slideAnim },
+                ],
+              }
+            ]}
+          >
+            {/* ✅ Fixed: Play button should navigate to GamePlay */}
+            <Pressable 
+              style={({ pressed }) => [
+                styles.playButtonOuter,
+                pressed && styles.playButtonPressed
+              ]}
+              onPress={handlePlayPress}
+            >
+              <LinearGradient
+                colors={[
+                  'rgba(0, 159, 227, 0.76)',
+                  'rgba(0, 159, 227, 0.76)'
+                ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.playButtonMiddle}
+              >
+                <Text style={styles.playButtonText}>PLAY</Text>
+              </LinearGradient>
+            </Pressable>
+          </Animated.View>
+        )}
+      </Animated.View>
+    </Modal>
+  );
+};
+
+// Keep all your existing styles exactly the same
+const styles = StyleSheet.create({
+  // ... All your existing styles remain unchanged
+});
+
+export default LevelModal;

@@ -9,10 +9,14 @@ import { useMapData } from '../../../hooks/useMapData';
 import BushAnimations from '../RoadMapComponents/MapSpecialAnimations/Bush Effect/bushAnimation';
 import PopAnimations from '../RoadMapComponents/MapSpecialAnimations/Lava Effect/lavaPopAnimation';
 import SnowAndAutumnAnimations from "../RoadMapComponents/MapSpecialAnimations/Snow And Autumn Effect/snowAndAutumnFall";
+import { useNavigation } from '@react-navigation/native';
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
 export default function UniversalMapLevel() {
+
+   const navigation = useNavigation();
+
   const [backgroundCount, setBackgroundCount] = useState(5);
   
   const { mapName, mapId } = useLocalSearchParams();
@@ -251,12 +255,13 @@ export default function UniversalMapLevel() {
         {/* Level Buttons with Theme - Now using dynamic levels from backend */}
         <View style={styles.levelButtonsContainer}>
           <LevelButtons
-            lessons={levels} // Pass levels as lessons prop to LevelButtons component
+            lessons={levels} 
             handleLevelPress={handleLevelPress}
             screenHeight={screenHeight}
             screenWidth={screenWidth}
             theme={theme}
             mapType={mapName}
+            navigation={navigation}
           />
         </View>
       </ScrollView>

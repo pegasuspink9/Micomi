@@ -11,31 +11,26 @@ import { LinearGradient } from 'expo-linear-gradient';
 import LottieView from 'lottie-react-native';
 import { Dimensions } from 'react-native';
 
-
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
-
 
 const GRADIENT_THEMES = {
    'HTML': {
-    colors: ['#2d5a27', '#28f82f45'],
+    colors: ['#36962973', '#09ff000a'],
     locations: [0.15, 0.9]
   },
   'CSS': {
-    colors: ['#8b0000', '#ff003c41'], 
+    colors: ['#810c0c59', '#00000041'], 
     locations: [0.15, 0.9]
   },
   'JavaScript': {
-    colors: ['#1e3a8a', '#3b83f64a'],
+    colors: ['#1740c659', '#00000041'],
     locations: [0.15, 0.9]
   },
   'Computer': {
-    colors: ['#c13d00ff', '#d43b084a'],
+    colors: ['#c13d0059', '#d43b084a'],
     locations: [0.15, 0.9]
   }
 }
-
-
-
 
 export default function MapLandingPage() {
 
@@ -51,7 +46,6 @@ export default function MapLandingPage() {
       duration: 200,
       useNativeDriver: false,
     }).start(() => {
-      // Change gradient
       const newGradient = GRADIENT_THEMES[mapName] || GRADIENT_THEMES['HTML'];
       setCurrentGradient(newGradient);
       
@@ -63,41 +57,56 @@ export default function MapLandingPage() {
     });
   };
 
-
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={currentGradient.colors}
-        locations={currentGradient.locations}
-        start={[0, 0]}
-        end={[0, 1]}
-        style={styles.gradient}
+      {/* ✅ Background Image Layer */}
+      <ImageBackground
+        source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759495800/Gemini_Generated_Image_ugmdzwugmdzwugmd_krfzr6.png' }}
+        style={styles.backgroundImage}
+        resizeMode="cover"
       >
-        {/* Header */}
-        <MapHeader />
-
-        {/* Map Navigation */}
-         <LottieView
-            source={{ uri: 'https://lottie.host/6dc90492-37c5-4169-9db7-4a6f79ad0bf9/pR3Q6bxLZq.lottie' }}
-            style={styles.clouds}
-            resizeMode="cover"
-            autoPlay
-            loop
-            speed={0.8}
-          />
-        <MapNavigate onMapChange={handleGradientChange} />
-
-        {/* Footer*/}
-         <LottieView
+        {/* ✅ Gradient Overlay */}
+        <LinearGradient
+          colors={currentGradient.colors}
+          locations={currentGradient.locations}
+          start={[0, 0]}
+          end={[0, 1]}
+          style={styles.gradient}
+        >
+          {/* ✅ Lower Hills - Move to back layer */}
+          <LottieView
             source={{ uri: 'https://lottie.host/7a86b8d3-7b6b-4841-994d-3a12acb80eb1/1UKTK3rnbF.lottie' }}
             style={styles.lowerHills}
             resizeMode="contain"
             autoPlay
             loop
             speed={2}
+            pointerEvents="none"
           />
 
-      </LinearGradient>
+          {/* ✅ Clouds - Behind content */}
+          <LottieView
+            source={{ uri: 'https://lottie.host/6dc90492-37c5-4169-9db7-4a6f79ad0bf9/pR3Q6bxLZq.lottie' }}
+            style={styles.clouds}
+            resizeMode="cover"
+            autoPlay
+            loop
+            speed={0.8}
+            pointerEvents="none"
+          />
+
+          {/* Header - Higher z-index */}
+          <View style={styles.headerContainer}>
+            <MapHeader />
+          </View>
+
+          {/* Map Navigation - Highest z-index for touch events */}
+          <View style={styles.navigationContainer}>
+            <MapNavigate onMapChange={handleGradientChange} />
+          </View>
+
+        </LinearGradient>
+      </ImageBackground>
     </View>
   );
 }
@@ -106,23 +115,45 @@ const styles = StyleSheet.create({
   container: {
     flex: 1
   },
-  gradient: {
-    flex: 1
-  },
-  clouds: {
-    position: 'absolute',
-    top: 55,
-    left: 0,
+  backgroundImage: {
+    flex: 1,
     width: '100%',
-    height: '100%'
+    height: '100%',
   },
+  gradient: {
+    flex: 1,
+    position: 'relative', 
+  },
+  
+  // ✅ Background animations (lowest z-index)
   lowerHills: {
     position: 'absolute',
-    bottom: -50,                        // Bottom edge
-    left: 0,                          // Left edge
-    right: 0,                         // Right edge (ensures full width)
-    width: '100%',                    // Full screen width
-    height: Math.max(screenHeight * 0.50, 300), // Responsive height with minimum
-    zIndex: -1, 
-  }
+    bottom: -50,
+    left: 0,
+    right: 0,
+    width: '100%',
+    height: Math.max(screenHeight * 0.50, 300), 
+    opacity: 0.9,
+    zIndex: 1,
+  },
+  
+  clouds: {
+    position: 'absolute',
+    top: 60,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    zIndex: 2, 
+  },
+  
+  headerContainer: {
+    position: 'relative',
+    zIndex: 10, 
+  },
+  
+  navigationContainer: {
+    flex: 1,
+    position: 'relative',
+    zIndex: 20, // ✅ Highest z-index for touch events
+  },
 });

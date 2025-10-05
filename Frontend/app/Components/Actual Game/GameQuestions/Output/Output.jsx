@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { WebView } from 'react-native-webview';
 
@@ -14,6 +14,7 @@ const Output = ({
 }) => {
   const [htmlOutput, setHtmlOutput] = useState('');
 
+  // ✅ Memoize HTML generation function
   const generateHtmlOutput = useCallback(() => {
     if (!currentQuestion || !currentQuestion.question) {
       return '<html><body></body></html>';
@@ -67,24 +68,25 @@ const Output = ({
     }
   }, [generateHtmlOutput, showLiveHTML]);
 
-  const getStatusColor = () => {
-    if (isCorrect === null) return '#6c757d';
-    return isCorrect ? '#28a745' : '#dc3545';
-  };
+  // ✅ Memoize should show HTML decision
+  const shouldShowHTML = useMemo(() => 
+    showLiveHTML && currentQuestion && 
+    (currentQuestion.challenge_type === 'fill in the blank' || currentQuestion.challenge_type === 'code with guide'),
+    [showLiveHTML, currentQuestion]
+  );
 
-  const getStatusText = () => {
-    if (isCorrect === null) return "";
-    return isCorrect ? " ✓" : " ✗";
-  };
+  // ✅ Memoize event handlers
+  const handleWebViewError = useCallback((error) => {
+    console.log('WebView error:', error);
+  }, []);
 
-  // Determine if we should show HTML output
-  const shouldShowHTML = showLiveHTML && currentQuestion && 
-    (currentQuestion.challenge_type === 'fill in the blank' || currentQuestion.challenge_type === 'code with guide');
+  const handleWebViewLoad = useCallback(() => {
+    console.log('WebView loaded');
+  }, []);
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={styles.container}>
       {shouldShowHTML ? (
-        // Bigger HTML Output Display
         <View style={styles.webviewContainer}>
           <WebView
             source={{ html: htmlOutput }}
@@ -93,14 +95,13 @@ const Output = ({
             startInLoadingState={false}
             javaScriptEnabled={true}
             domStorageEnabled={true}
-            allowsInlineMediaPlaybook={true}
+            allowsInlineMediaPlayback={true}
             mediaPlaybackRequiresUserAction={false}
-            onError={(error) => console.log('WebView error:', error)}
-            onLoad={() => console.log('WebView loaded')}
+            onError={handleWebViewError}
+            onLoad={handleWebViewLoad}
           />
         </View>
       ) : (
-        // Bigger text output
         <ScrollView style={styles.outputContainer} showsVerticalScrollIndicator={false}>
           <Text style={styles.outputText}>
             {actualResult || ""}
@@ -111,34 +112,30 @@ const Output = ({
   );
 };
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     minHeight: SCREEN_HEIGHT * 1,
     height: '100%',
-  },
-  title: {
-    fontSize: 18, 
-    fontWeight: 'bold',
-    marginBottom: 12,
-    textAlign: 'center',
   },
   outputContainer: {
     flex: 1,
     backgroundColor: '#ffffff',
     borderRadius: 6,
-    padding: 15,
+    padding: 15, 
     borderWidth: 1,
     borderColor: '#e9ecef',
-    minHeight: SCREEN_HEIGHT * 0.35,
+    minHeight: SCREEN_HEIGHT * 0.35, 
   },
   outputText: {
-    fontSize: 16,
+    fontSize: 16, 
     color: '#495057',
-    fontFamily: 'monospace',
+    fontFamily: 'monospace', 
     lineHeight: 24, 
+    textAlign: 'left', 
   },
   webviewContainer: {
     flex: 1,
@@ -158,4 +155,13 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Output;
+export default React.memo(Output, (prevProps, nextProps) => {
+  return (
+    prevProps.actualResult === nextProps.actualResult &&
+    prevProps.isCorrect === nextProps.isCorrect &&
+    prevProps.showLiveHTML === nextProps.showLiveHTML &&
+    prevProps.currentQuestion?.question === nextProps.currentQuestion?.question &&
+    prevProps.currentQuestion?.challenge_type === nextProps.currentQuestion?.challenge_type &&
+    JSON.stringify(prevProps.selectedAnswers) === JSON.stringify(nextProps.selectedAnswers)
+  );
+});

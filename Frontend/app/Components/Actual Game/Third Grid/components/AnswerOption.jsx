@@ -11,7 +11,10 @@ const AnswerOption = ({
   onPress 
 }) => {
   return (
-    <View style={styles.buttonFrame}>
+    <View style={[
+      styles.buttonFrame,
+      isSelected && styles.buttonFrameSelected
+    ]}>
       <Pressable 
         style={({ pressed }) => [
           styles.listItemContainer,
@@ -22,7 +25,11 @@ const AnswerOption = ({
         onPress={() => !isDisabled && onPress(item)}
         disabled={isDisabled}
       >
-        <View style={styles.innerButton}>
+        <View style={[
+          styles.innerButton,
+          isSelected && styles.innerButtonSelected,
+          isDisabled && styles.innerButtonDisabled
+        ]}>
           <View style={styles.buttonHighlight} />
           <View style={styles.buttonShadow} />
           <Text style={[
@@ -31,7 +38,6 @@ const AnswerOption = ({
             isDisabled && styles.listItemTextDisabled 
           ]}>
             {item}
-            
           </Text>
         </View>
       </Pressable>
@@ -39,11 +45,13 @@ const AnswerOption = ({
   );
 };
 
+
 const styles = StyleSheet.create({
   buttonFrame: {
-    backgroundColor: '#000000ff', 
+    backgroundColor: '#000000ff', // ✅ Keep original color
+    borderRadius: SCREEN_WIDTH * 0.025, // ✅ Added from GameButton
     marginBottom: SCREEN_HEIGHT * 0.009,
-    shadowColor: '#1a365d',
+    shadowColor: '#000', // ✅ Updated from GameButton
     shadowOffset: {
       width: 0,
       height: 6,
@@ -51,32 +59,40 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 12,
-    // Outer 3D frame
+    // ✅ Updated border structure from GameButton
     borderTopWidth: 1,
-    borderTopColor: '#87ceeb',
+    borderTopColor: 'rgba(255, 255, 255, 0.3)',
     borderLeftWidth: 1,
-    borderLeftColor: '#87ceeb',
+    borderLeftColor: 'rgba(255, 255, 255, 0.3)',
     borderBottomWidth: 3,
-    borderBottomColor: '#1a365d',
+    borderBottomColor: 'rgba(0, 0, 0, 0.4)',
     borderRightWidth: 2,
-    borderRightColor: '#1a365d',
+    borderRightColor: 'rgba(0, 0, 0, 0.3)',
+  },
+
+  buttonFrameSelected: {
+    // ✅ Add glow for selected frame
+    shadowColor: '#0ea5e9',
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
   },
 
   listItemContainer: {
     width: SCREEN_WIDTH * 0.20,
+    borderRadius: SCREEN_WIDTH * 0.02, // ✅ Added from GameButton
     position: 'relative',
     overflow: 'hidden',
     
-    // Sky blue console button background
+    // ✅ Keep original colors
     backgroundColor: '#4a90e2',
     
-    // Console-style 3D borders
+    // ✅ Updated border structure from GameButton
     borderTopWidth: 2,
-    borderTopColor: '#93c5fd', // Light blue highlight
+    borderTopColor: '#93c5fd', // Keep original light blue highlight
     borderLeftWidth: 2,
     borderLeftColor: '#93c5fd',
     borderBottomWidth: 3,
-    borderBottomColor: '#1e3a8a', // Dark blue shadow
+    borderBottomColor: '#1e3a8a', // Keep original dark blue shadow
     borderRightWidth: 3,
     borderRightColor: '#1e3a8a',
     
@@ -93,19 +109,29 @@ const styles = StyleSheet.create({
   innerButton: {
     position: 'relative',
     alignItems: 'center',
-    paddingVertical: 3,
     justifyContent: 'center',
-    backgroundColor: '#014656ae', 
     borderRadius: SCREEN_WIDTH * 0.015,
+    paddingVertical: SCREEN_WIDTH * 0.009, // ✅ Updated from GameButton
+    paddingHorizontal: SCREEN_WIDTH * 0.015, // ✅ Added from GameButton
+    backgroundColor: '#014656ae', // ✅ Keep original color
     
+    // ✅ Keep GameButton's inner border structure
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.3)',
     borderLeftWidth: 1,
     borderLeftColor: 'rgba(255, 255, 255, 0.2)',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(30, 58, 138, 0.4)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.3)',
     borderRightWidth: 1,
-    borderRightColor: 'rgba(30, 58, 138, 0.3)',
+    borderRightColor: 'rgba(0, 0, 0, 0.2)',
+  },
+
+  innerButtonSelected: {
+    backgroundColor: '#014656ae', // ✅ Keep original but could be slightly different for selected
+  },
+
+  innerButtonDisabled: {
+    backgroundColor: '#b0b0b0', // ✅ From GameButton
   },
 
   buttonHighlight: {
@@ -126,14 +152,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '30%',
-    backgroundColor: 'rgba(30, 58, 138, 0.2)',
+    backgroundColor: 'rgba(0, 0, 0, 0.15)', 
     borderBottomLeftRadius: SCREEN_WIDTH * 0.015,
     borderBottomRightRadius: SCREEN_WIDTH * 0.015,
     pointerEvents: 'none',
   },
 
   listItemPressed: {
-    transform: [{ translateY: 1 }],
+    transform: [{ translateY: 0.5 }],
     backgroundColor: '#0044b1ff', 
     shadowOffset: {
       width: 0,
@@ -151,13 +177,13 @@ const styles = StyleSheet.create({
   },
 
   listItemSelected: {
-    backgroundColor: '#0ea5e9', 
+    backgroundColor: '#0ea5e9',
     borderTopColor: '#38bdf8',
     borderLeftColor: '#38bdf8',
     borderBottomColor: '#0c4a6e',
     borderRightColor: '#0c4a6e',
     
-    // Add glow effect for selected state
+    // ✅ Keep original glow effect
     shadowColor: '#0ea5e9',
     shadowOffset: {
       width: 0,
@@ -170,18 +196,20 @@ const styles = StyleSheet.create({
 
   listItemDisabled: {
     opacity: 0.4,
-    backgroundColor: '#2e78e0ff',
-    borderTopColor: '#94a3b8',
-    borderLeftColor: '#94a3b8',
-    borderBottomColor: '#334155',
-    borderRightColor: '#334155',
+    backgroundColor: '#8e8e93', // ✅ Updated from GameButton
+    borderTopColor: '#aeaeb2', // ✅ Updated from GameButton
+    borderLeftColor: '#aeaeb2',
+    borderBottomColor: '#636366', // ✅ Updated from GameButton
+    borderRightColor: '#636366',
   },
 
   listItemText: {
-    fontSize: SCREEN_WIDTH * 0.026,
+    fontSize: SCREEN_WIDTH * 0.031, // ✅ Updated from GameButton
     color: '#ffffff', 
     textAlign: 'center',
     fontFamily: 'DynaPuff', 
+    textShadowColor: 'rgba(0, 0, 0, 0.5)', // ✅ Updated from GameButton
+    textShadowOffset: { width: 1, height: 1 }, // ✅ Updated from GameButton
     textShadowRadius: 2,
     zIndex: 1,
   },
@@ -194,9 +222,18 @@ const styles = StyleSheet.create({
   },
 
   listItemTextDisabled: {
-    color: '#e2e8f0',
+    color: '#f2f2f7', // ✅ Updated from GameButton
     textShadowColor: 'rgba(0, 0, 0, 0.2)',
   },
 });
 
-export default AnswerOption;
+
+export default React.memo(AnswerOption, (prevProps, nextProps) => {
+  return (
+    prevProps.item === nextProps.item &&
+    prevProps.index === nextProps.index &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isDisabled === nextProps.isDisabled &&
+    prevProps.onPress === nextProps.onPress
+  );
+});

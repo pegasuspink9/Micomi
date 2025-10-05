@@ -299,12 +299,11 @@ const styles = StyleSheet.create({
   },
   
   tickText: {
-    fontSize: 12,
+    fontSize: 20,
     fontFamily: 'DynaPuff',
-    fontWeight: 'bold',
-    color: '#8B0000', // Dark red color
+    color: 'rgba(174, 7, 7, 0.77)', 
     textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowColor: 'rgba(0, 0, 0, 1)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },

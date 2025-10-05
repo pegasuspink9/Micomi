@@ -55,6 +55,7 @@ const Coin = ({
   return (
     <View style={styles.container}>
       <View style={styles.coinRow}>
+        <Image source={{ uri: 'https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd' }} style={styles.coinImage} />
         <Text style={styles.coinText}>{coins}</Text>
         <Animated.View
           style={[
@@ -66,7 +67,6 @@ const Coin = ({
             }
           ]}
         >
-           <Image source={{ uri: 'https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd' }} style={styles.coinImage} />
         </Animated.View>
       </View>
     </View>
@@ -76,16 +76,18 @@ const Coin = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: width * 0.18,
-    left: width * 0.007,
+    backgroundColor: 'rgba(252, 159, 20, 0.9)',
+    top: width * 0.1,
+    left: width * 0.1,
     alignItems: 'flex-end',
-    borderRadius: 8,
-    padding: 8,
-    maxWidth: width * 0.3,
+    borderRadius: 18,
+    paddingLeft: 20,
+    borderWidth: 2,
+    borderColor: '#ffffffff',
   },
   coinImage: {
-    width: width * 0.06, 
-    height: width * 0.06, 
+    width: width * 0.04, 
+    height: width * 0.04, 
     resizeMode: 'contain',
   },
   coinRow: {
@@ -93,10 +95,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   coinText: {
-    fontSize: 13,
-    fontFamily: 'monospace',
-    fontWeight: 'bold',
-    color: '#030303ff',
+    fontSize: 10,
+    fontFamily: 'DynaPuff',
+    color: '#ffffffff',
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,

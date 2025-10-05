@@ -1,4 +1,3 @@
-// ScreenPlay.js (fixed: character damage displayed on the RIGHT, enemy damage on the LEFT)
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { Animated } from 'react-native';
 import enemiesData from '../GameData/Enemy Game Data/EnemyGameData';
@@ -12,12 +11,12 @@ import Coin from './components/Coin';
 import Damage from './components/Damage';
 import Message from './components/Message';
 
-export default function ScreenPlay({ 
+const ScreenPlay = ({ 
   gameState,
   isPaused = false, 
   borderColor = 'white',
   onSubmissionAnimationComplete = null,
-}) {
+}) => {
   const [attackingEnemies] = useState(new Set());
   const [totalCoins, setTotalCoins] = useState(0);
   const [characterAnimationState, setCharacterAnimationState] = useState('idle');
@@ -25,42 +24,45 @@ export default function ScreenPlay({
 
   const enemies = useMemo(() => processEnemyData(enemiesData), []);
 
-  // NEW: per-enemy animation states (default to 'idle')
   const [enemyAnimationStates, setEnemyAnimationStates] = useState(() =>
     enemies.map(() => 'idle')
   );
 
   const lastSubmissionKeyRef = useRef(null);
+  
   const enemyPositions = useMemo(
     () => enemies.map(() => new Animated.Value(0)),
     [enemies.length]
   );
 
-  // Extract health values
-  const playerHealth = gameState.submissionResult?.fightResult?.character?.character_health
+  const playerHealth = useMemo(() => (
+    gameState.submissionResult?.fightResult?.character?.character_health
     ?? gameState.submissionResult?.levelStatus?.playerHealth
-    ?? gameState.selectedCharacter?.current_health;
+    ?? gameState.selectedCharacter?.current_health
+  ), [gameState]);
 
-  const playerMaxHealth = gameState.submissionResult?.fightResult?.character?.character_max_health
-    ?? gameState.selectedCharacter?.max_health;
+  const playerMaxHealth = useMemo(() => (
+    gameState.submissionResult?.fightResult?.character?.character_max_health
+    ?? gameState.selectedCharacter?.max_health
+  ), [gameState]);
 
-  const enemyHealth = (
+  const enemyHealth = useMemo(() => (
     gameState.submissionResult?.fightResult?.enemy?.enemy_health ??
     gameState.submissionResult?.levelStatus?.enemyHealth ??
     gameState.enemy?.enemy_health ??
     gameState.enemy?.enemy_max_health
-  );
+  ), [gameState]);
 
-  const enemyMaxHealth = (
+  const enemyMaxHealth = useMemo(() => (
     gameState.submissionResult?.fightResult?.enemy?.enemy_max_health ??
     gameState.submissionResult?.levelStatus?.enemyMaxHealth ??
     gameState.submissionResult?.levelStatus?.enemy_max_health ??
     gameState.enemy?.enemy_max_health ??
     gameState.enemy?.enemy_health 
-  );
+  ), [gameState]);
 
-  // Extract all character animations from gameState (player)
-  const characterAnimations = {
+  // ✅ Memoize character animations
+  const characterAnimations = useMemo(() => ({
     character_idle: gameState.submissionResult?.fightResult?.character?.character_idle 
       ?? gameState.selectedCharacter?.character_idle,
     character_attack: gameState.submissionResult?.fightResult?.character?.character_attack 
@@ -71,9 +73,13 @@ export default function ScreenPlay({
       ?? gameState.selectedCharacter?.character_run,
     character_dies: gameState.submissionResult?.fightResult?.character?.character_dies 
       ?? gameState.selectedCharacter?.character_dies,
-  };
+  }), [gameState]);
 
-  const coinsEarned = gameState.submissionResult?.levelStatus?.coinsEarned ?? 0;
+  // ✅ Memoize coins earned
+  const coinsEarned = useMemo(() => 
+    gameState.submissionResult?.levelStatus?.coinsEarned ?? 0, 
+    [gameState.submissionResult?.levelStatus?.coinsEarned]
+  );
   
   // Handle coin updates
   useEffect(() => {
@@ -86,45 +92,44 @@ export default function ScreenPlay({
     }
   }, [coinsEarned]);
 
-  const damageThisSubmission = gameState.submissionResult?.fightResult?.character?.character_damage;
-    
+  // ✅ Memoize damage values
+  const damageThisSubmission = useMemo(() => 
+    gameState.submissionResult?.fightResult?.character?.character_damage,
+    [gameState.submissionResult?.fightResult?.character?.character_damage]
+  );
 
-  const enemyDamageThisSubmission = gameState.submissionResult?.fightResult?.enemy?.enemy_damage;
-
-
-
+  const enemyDamageThisSubmission = useMemo(() => 
+    gameState.submissionResult?.fightResult?.enemy?.enemy_damage,
+    [gameState.submissionResult?.fightResult?.enemy?.enemy_damage]
+  );
 
   const [submissionSeq, setSubmissionSeq] = useState(0);
-    useEffect(() => {
-      // increment when a new submission result object arrives
-      if (gameState.submissionResult) {
-        setSubmissionSeq(s => s + 1);
-      }
-    }, [gameState.submissionResult]);
+  
+  useEffect(() => {
+    if (gameState.submissionResult) {
+      setSubmissionSeq(s => s + 1);
+    }
+  }, [gameState.submissionResult]);
 
-  // Handle character animation completion
+  // ✅ Memoize handlers
   const handleCharacterAnimationComplete = useCallback((completedAnimationState) => {
     console.log(`Character animation "${completedAnimationState}" completed`);
     
-    // Only handle completion for submission animations (attack, hurt, dies)
     if (!['attack', 'hurt', 'dies'].includes(completedAnimationState)) {
       return;
-    }
+    } 
     
-    // Set flag that submission animation is finished
     setIsPlayingSubmissionAnimation(false);
     
-    // Return to idle state after non-looping animations
     const shouldDie = playerHealth <= 0;
     
     if (shouldDie && completedAnimationState !== 'dies') {
       setCharacterAnimationState('dies');
-      setIsPlayingSubmissionAnimation(true); // Dies is also a submission animation
+      setIsPlayingSubmissionAnimation(true);
     } else if (!shouldDie && completedAnimationState !== 'idle') {
       setCharacterAnimationState('idle');
     }
     
-    // But only after hurt/attack animations, not dies (dies should not trigger next challenge)
     if (['attack', 'hurt'].includes(completedAnimationState)) {
       if (typeof onSubmissionAnimationComplete === 'function') {
         try {
@@ -137,13 +142,11 @@ export default function ScreenPlay({
     }
   }, [playerHealth, onSubmissionAnimationComplete]);
 
-  // Handler used when an enemy finishes a one-shot animation (attack/hurt/dies)
   const handleEnemyAnimationComplete = useCallback((index) => (completedAnimationState) => {
     console.log(`Enemy ${index} animation "${completedAnimationState}" completed`);
 
     setEnemyAnimationStates(prev => {
       const next = [...prev];
-      // if enemy died, keep dies; otherwise go to idle
       if (completedAnimationState === 'dies') {
         next[index] = 'dies';
       } else {
@@ -153,15 +156,13 @@ export default function ScreenPlay({
     });
   }, []);
 
-  // Determine character animation state based on game events (also set enemy states)
+  // Rest of useEffect logic remains the same...
   useEffect(() => {
-    // Don't change animation if we're already playing a submission animation
     if (isPlayingSubmissionAnimation) {
       console.log(`Skipping animation change - submission animation in progress`);
       return;
     }
 
-    // Check for death first (highest priority)
     if (playerHealth <= 0) {
       console.log(`Player died - setting dies animation`);
       setCharacterAnimationState('dies');
@@ -175,7 +176,7 @@ export default function ScreenPlay({
       : null;
 
     if (submission && lastSubmissionKeyRef.current !== submissionKey) {
-      lastSubmissionKeyRef.current = submissionKey; // mark as processed
+      lastSubmissionKeyRef.current = submissionKey;
 
       if (submission.isCorrect === true) {
         console.log(`Correct answer - setting player attack, enemy hurt`);
@@ -200,25 +201,26 @@ export default function ScreenPlay({
     }
   }, [gameState.submissionResult, playerHealth, isPlayingSubmissionAnimation, enemies]);
 
-  // Debug logging for character data
+  // ✅ Reduce debug logging frequency
   useEffect(() => {
-    console.log(`Character animations available:`, {
-      idle: !!characterAnimations.character_idle,
-      attack: !!characterAnimations.character_attack,
-      hurt: !!characterAnimations.character_hurt,
-      run: !!characterAnimations.character_run,
-      dies: !!characterAnimations.character_dies,
-    });
-    console.log(`Current animation state: ${characterAnimationState}`);
-    console.log(`Is playing submission animation: ${isPlayingSubmissionAnimation}`);
-    console.log(`Player health: ${playerHealth}/${playerMaxHealth}`);
-    console.log(`Enemy health: ${enemyHealth}/${enemyMaxHealth}`);
+    if (__DEV__ && Math.random() < 0.1) { // Only log 10% of the time
+      console.log(`Character animations available:`, {
+        idle: !!characterAnimations.character_idle,
+        attack: !!characterAnimations.character_attack,
+        hurt: !!characterAnimations.character_hurt,
+        run: !!characterAnimations.character_run,
+        dies: !!characterAnimations.character_dies,
+      });
+      console.log(`Current animation state: ${characterAnimationState}`);
+      console.log(`Is playing submission animation: ${isPlayingSubmissionAnimation}`);
+      console.log(`Player health: ${playerHealth}/${playerMaxHealth}`);
+      console.log(`Enemy health: ${enemyHealth}/${enemyMaxHealth}`);
+    }
   }, [characterAnimations, characterAnimationState, isPlayingSubmissionAnimation, playerHealth, playerMaxHealth, enemyHealth, enemyMaxHealth]);
 
   return (
     <GameContainer borderColor={borderColor}>
       <GameBackground isPaused={isPaused}>
-        {/* Enhanced DogCharacter with animation sequencing */}
         <DogCharacter 
           isPaused={isPaused} 
           characterAnimations={characterAnimations}
@@ -226,7 +228,6 @@ export default function ScreenPlay({
           onAnimationComplete={handleCharacterAnimationComplete}
         />
 
-        {/* Player Health */}
         <Life 
           health={playerHealth}
           maxHealth={playerMaxHealth}
@@ -234,10 +235,13 @@ export default function ScreenPlay({
             console.log(`Player health: ${newHealth}/${maxHealth}`)
           }
           animated={true}
-          position="left"   
+          position="left"
+          avatarUrl={gameState.submissionResult?.fightResult?.character?.character_avatar ?? 
+                    gameState.selectedCharacter?.character_avatar }
+          isEnemy={false}
+          borderColor="rgba(255, 255, 255, 0.8)"
         />
 
-        {/* Enemy Health */}
         <Life 
           health={enemyHealth}
           maxHealth={enemyMaxHealth}
@@ -246,9 +250,13 @@ export default function ScreenPlay({
           }
           animated={true}
           position="right"
+          avatarUrl={gameState.submissionResult?.fightResult?.enemy?.enemy_avatar ?? 
+             gameState.enemy?.enemy_avatar ??
+             "https://github.com/user-attachments/assets/a674f682-c784-447e-8c0a-a841f65b18ed"}
+          isEnemy={true}
+          borderColor="#F44336"
         />
-
-        {/* NOTE: swapped positions so character damage appears on the RIGHT and enemy damage on the LEFT */}
+        
         <Damage
           incoming={damageThisSubmission}
           animated={true}
@@ -265,25 +273,23 @@ export default function ScreenPlay({
           trigger={submissionSeq} 
         />
 
-
         <Message
           message={gameState.submissionResult?.message || ''}
           trigger={submissionSeq}
           duration={2400}
         />
 
-        {/* Coins */}
         <Coin 
           coins={totalCoins}
           onCoinsChange={(newCoins) => console.log(`Total coins display updated: ${newCoins}`)}
           animated={true}
         />
 
-        {/* Enemies */}
         {enemies.map((enemy, index) => {
           if (!enemyPositions[index]) return null;
 
-          const enemyAnimations = {
+          // ✅ Memoize enemy animations per enemy
+          const enemyAnimations = useMemo(() => ({
             character_idle:
               gameState.submissionResult?.fightResult?.enemy?.enemy_idle ??
               gameState.enemy?.enemy_idle ??
@@ -314,7 +320,7 @@ export default function ScreenPlay({
               enemy.character_dies ??
               enemy.enemy_dies ??
               enemy.dies,
-          };
+          }), [gameState, enemy]);
 
           return (
             <EnemyCharacter
@@ -333,4 +339,16 @@ export default function ScreenPlay({
       </GameBackground>
     </GameContainer>
   );
-}
+};
+
+// ✅ Memoize ScreenPlay with custom comparison
+export default React.memo(ScreenPlay, (prevProps, nextProps) => {
+  return (
+    prevProps.gameState?.submissionResult?.isCorrect === nextProps.gameState?.submissionResult?.isCorrect &&
+    prevProps.gameState?.selectedCharacter?.current_health === nextProps.gameState?.selectedCharacter?.current_health &&
+    prevProps.gameState?.enemy?.enemy_health === nextProps.gameState?.enemy?.enemy_health &&
+    prevProps.borderColor === nextProps.borderColor &&
+    prevProps.isPaused === nextProps.isPaused &&
+    prevProps.onSubmissionAnimationComplete === nextProps.onSubmissionAnimationComplete
+  );
+});

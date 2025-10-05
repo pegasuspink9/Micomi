@@ -9,6 +9,7 @@ export const useFonts = () => {
     'DynaPuff': require('./DynaPuff.ttf'),
     'MusicVibes': require('./MusicVibes.otf'),
     'Oups': require('./Oups.otf'),
+    'DoongaSlash': require('./Doonga Slash.ttf'),
   });
 
   return fontsLoaded;

@@ -1,12 +1,8 @@
-// components/Life.js
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, Animated, Dimensions, Image } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
-const { width } = Dimensions.get('window');
-
-// Each heart represents up to HEART_UNIT HP. Set to 20 to match your example.
-const HEART_UNIT = 100;
+const { width, height } = Dimensions.get('window');
 
 const Life = ({
   health = 0,
@@ -15,151 +11,233 @@ const Life = ({
   animated = true,
   position = 'left',
   borderColor = '#FFFFFF',
+  showNumbers = true,
+  avatarUrl = null,
+  isEnemy = false
 }) => {
   const effectiveMax = Math.max(0, Math.floor(maxHealth));
-  const heartsCount = effectiveMax > 0 ? Math.ceil(effectiveMax / HEART_UNIT) : 0;
-
-  // Ref to hold Animated.Values for each slot (preserved across re-renders)
-  const animatedValuesRef = useRef([]);
-  if (animatedValuesRef.current.length !== heartsCount) {
-    const preserved = animatedValuesRef.current.slice(0, heartsCount);
-    while (preserved.length < heartsCount) preserved.push(new Animated.Value(1));
-    animatedValuesRef.current = preserved;
-  }
-
-  // Use previous raw health to determine animations (kept raw for logic)
+  const displayHealth = Math.max(0, Math.min(health, effectiveMax));
+  
+  // Animation refs
+  const healthBarAnim = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  
   const [previousHealth, setPreviousHealth] = useState(health);
 
-  // Clamp displayHealth between 0 and effectiveMax
-  const displayHealth = Math.max(0, Math.min(health, effectiveMax));
-
-  // Build heart data based on heartsCount and displayHealth.
-  // The last heart uses the remaining unit (may be < HEART_UNIT).
-  const getHeartStates = () => {
-    const heartsData = [];
-    for (let i = 0; i < heartsCount; i++) {
-      const heartMin = i * HEART_UNIT;
-      const remainingForHeart = Math.max(0, effectiveMax - heartMin);
-      const unitForHeart = Math.min(HEART_UNIT, remainingForHeart);
-
-      const healthInHeart = Math.min(Math.max(displayHealth - heartMin, 0), unitForHeart);
-      const fillPercentage = unitForHeart > 0 ? healthInHeart / unitForHeart : 0;
-
-      let state = 'empty';
-      if (fillPercentage >= 0.75) state = 'full';
-      else if (fillPercentage >= 0.5) state = 'half';
-      else if (fillPercentage >= 0.25) state = 'quarter';
-      else state = 'empty';
-
-      heartsData.push({
-        index: i,
-        state,
-        isActive: fillPercentage > 0,
-        unitForHeart,
-        heartMin,
-      });
-    }
-    return heartsData;
+  const getAvatarUrl = () => {
+    if (avatarUrl) return avatarUrl;
+    
+    // Fallback defaults
+    return isEnemy 
+      ? "https://github.com/user-attachments/assets/a674f682-c784-447e-8c0a-a841f65b18ed"
+      : "https://github.com/user-attachments/assets/eced9b8f-eae0-48f5-bc05-d8d5ce018529";
   };
 
-  const heartsData = getHeartStates();
+  // Calculate health percentage for bar
+  const healthPercentage = effectiveMax > 0 ? (displayHealth / effectiveMax) * 100 : 0;
 
-  // Run animations and notify parent when health changes
+  // Determine health bar color based on percentage
+  const getHealthBarColors = () => {
+    if (healthPercentage > 60) {
+      return ['#4CAF50', '#8BC34A']; // Green
+    } else if (healthPercentage > 30) {
+      return ['#FF9800', '#FFC107']; // Orange
+    } else if (healthPercentage > 0) {
+      return ['#F44336', '#E91E63']; // Red
+    } else {
+      return ['#424242', '#616161']; // Gray for empty
+    }
+  };
+
+  const healthBarColors = getHealthBarColors();
+
+  // Run animations when health changes
   useEffect(() => {
     if (typeof onHealthChange === 'function') {
       onHealthChange(health, maxHealth);
     }
 
-    if (!animated) {
+    if (!animated || health === previousHealth) {
       setPreviousHealth(health);
       return;
     }
 
-    // nothing to animate if the numeric health didn't change
-    if (health === previousHealth) return;
-
-    const prevDisplay = Math.max(0, Math.min(previousHealth, effectiveMax));
-    const currDisplay = displayHealth;
     const isLoss = health < previousHealth;
+    const isGain = health > previousHealth;
 
-    heartsData.forEach((heart) => {
-      const idx = heart.index;
-      const anim = animatedValuesRef.current[idx];
-      if (!anim) return;
-
-      const wasActive = prevDisplay > heart.heartMin;
-      const nowActive = currDisplay > heart.heartMin;
-
-      // Lost health: heart went from active -> inactive
-      if (isLoss && wasActive && !nowActive) {
-        Animated.sequence([
-          Animated.timing(anim, { toValue: 1.3, duration: 160, useNativeDriver: true }),
-          Animated.timing(anim, { toValue: 0.8, duration: 200, useNativeDriver: true }),
-          Animated.timing(anim, { toValue: 1, duration: 140, useNativeDriver: true }),
-        ]).start();
-      } else if (!isLoss && !wasActive && nowActive) {
-        // Gained health: heart became active
-        Animated.sequence([
-          Animated.timing(anim, { toValue: 0.7, duration: 100, useNativeDriver: true }),
-          Animated.timing(anim, { toValue: 1.25, duration: 200, useNativeDriver: true }),
-          Animated.timing(anim, { toValue: 1, duration: 150, useNativeDriver: true }),
-        ]).start();
-      }
-    });
+    if (isLoss) {
+      // Health loss animation - shake and flash
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(scaleAnim, { 
+            toValue: 1.05, 
+            duration: 150, 
+            useNativeDriver: true 
+          }),
+          Animated.timing(healthBarAnim, { 
+            toValue: 0.3, 
+            duration: 150, 
+            useNativeDriver: false 
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(scaleAnim, { 
+            toValue: 0.98, 
+            duration: 200, 
+            useNativeDriver: true 
+          }),
+          Animated.timing(healthBarAnim, { 
+            toValue: 1, 
+            duration: 300, 
+            useNativeDriver: false 
+          }),
+        ]),
+        Animated.timing(scaleAnim, { 
+          toValue: 1, 
+          duration: 150, 
+          useNativeDriver: true 
+        }),
+      ]).start();
+    } else if (isGain) {
+      Animated.sequence([
+        Animated.timing(pulseAnim, { 
+          toValue: 1.08, 
+          duration: 200, 
+          useNativeDriver: true 
+        }),
+        Animated.timing(pulseAnim, { 
+          toValue: 1, 
+          duration: 300, 
+          useNativeDriver: true 
+        }),
+      ]).start();
+    }
 
     setPreviousHealth(health);
-  }, [health, maxHealth, animated, heartsData, displayHealth, effectiveMax, onHealthChange, previousHealth]);
+  }, [health, maxHealth, animated, previousHealth]);
 
-  const getHeartDisplay = (heartData) => {
-    const { state } = heartData;
-    switch (state) {
-      case 'full':
-        return { icon: 'heart', color: 'rgba(255, 2, 23, 1)' };
-      case 'half':
-        return { icon: 'heart-half', color: 'rgba(255, 107, 122, 1)' };
-      case 'quarter':
-        return { icon: 'heart-outline', color: 'rgba(255, 142, 149, 1)' };
-      case 'empty':
-      default:
-        return { icon: 'heart-outline', color: '#95A5A6' };
+  // Continuous pulse when health is critically low
+  useEffect(() => {
+    if (healthPercentage <= 20 && healthPercentage > 0) {
+      const lowHealthPulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.03,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      lowHealthPulse.start();
+      
+      return () => lowHealthPulse.stop();
     }
-  };
+  }, [healthPercentage]);
 
-  // If maxHealth is zero or negative, render nothing (you can change to show a bordered box instead)
-  if (heartsCount === 0) {
+  if (effectiveMax === 0) {
     return null;
   }
 
   return (
-    <View style={[
+    <Animated.View style={[
       styles.container,
-      position === 'left' ? styles.leftPosition : styles.rightPosition
+      position === 'left' ? styles.leftPosition : styles.rightPosition,
+      {
+        transform: [
+          { scale: Animated.multiply(scaleAnim, pulseAnim) }
+        ]
+      }
     ]}>
-      <View style={[styles.borderWrapper, { borderColor }]}>
-        <View style={styles.heartsRow}>
-          {heartsData.map((heartData) => {
-            const heartDisplay = getHeartDisplay(heartData);
-            const animValue = animatedValuesRef.current[heartData.index] || new Animated.Value(1);
+      <View style={styles.lifeContainer}>
+        <View style={[
+          styles.avatarContainer,
+          position === 'left' ? styles.leftAvatarPosition : styles.rightAvatarPosition
+        ]}>
+          <View style={styles.avatarCircle}>
+            <Image 
+              source={{ uri: getAvatarUrl() }}
+              style={[
+                styles.avatarImage,
+                isEnemy && position === 'right' && { transform: [{ translateX: -1 }] }
+              ]}
+              resizeMode="cover"
+            />
+          </View>
+      </View>
+       <View style={[
+            styles.healthBarContainer, 
+            { borderColor },
+            position === 'left' ? styles.leftHealthBarMargin : styles.rightHealthBarMargin
+          ]}>
+        {/* ✅ Background Track */}
 
-            return (
-              <Animated.View
-                key={heartData.index}
-                style={[
-                  styles.heartContainer,
-                  { transform: animated ? [{ scale: animValue }] : [{ scale: 1 }] }
-                ]}
-              >
-                <Ionicons
-                  name={heartDisplay.icon}
-                  size={15}
-                  color={heartDisplay.color}
-                />
-              </Animated.View>
-            );
-          })}
+        <View style={styles.healthBarTrack}>
+          {/* ✅ Health Fill with animated width */}
+          <Animated.View 
+            style={[
+              styles.healthBarFillContainer,
+              {
+                width: `${healthPercentage}%`,
+                opacity: healthBarAnim,
+              }
+            ]}
+          >
+            <LinearGradient
+              colors={healthBarColors}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.healthBarFill}
+            />
+          </Animated.View>
+
+          {/* ✅ Health Numbers Overlay */}
+          {showNumbers && (
+            <View style={styles.healthTextContainer}>
+              <Text style={styles.healthText}>
+                {displayHealth}/{effectiveMax}
+              </Text>
+            </View>
+          )}
+
+          {/* ✅ Critical Health Warning */}
+          {healthPercentage <= 20 && healthPercentage > 0 && (
+            <Animated.View 
+              style={[
+                styles.criticalWarning,
+                {
+                  opacity: pulseAnim.interpolate({
+                    inputRange: [1, 1.03],
+                    outputRange: [0.3, 0.8],
+                  })
+                }
+              ]} 
+            />
+          )}
         </View>
+
+        {/* ✅ Glow effect for different health states */}
+        <Animated.View 
+          style={[
+            styles.glowEffect,
+            {
+              shadowColor: healthPercentage <= 20 ? '#F44336' : 
+                          healthPercentage <= 40 ? '#FF9800' : '#4CAF50',
+              opacity: pulseAnim.interpolate({
+                inputRange: [1, 1.08],
+                outputRange: [0.3, 0.6],
+              })
+            }
+          ]} 
+        />
       </View>
     </View>
+    </Animated.View>
   );
 };
 
@@ -167,34 +245,177 @@ const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     top: width * 0.02,
-    borderRadius: 8,
-    padding: 1,
-    maxWidth: width * 0.52,
+    maxWidth: width * 0.4,
+    zIndex: 10,
   },
+  
   leftPosition: {
-    left: width * 0.002,
+    left: width * 0.02,
     alignItems: 'flex-start',
   },
+  
   rightPosition: {
-    right: width * 0.03,
+    right: width * 0.02,
     alignItems: 'flex-end',
   },
 
-  borderWrapper: {
-    paddingHorizontal: 11,
-    paddingVertical: 3,
-    borderRadius: 6,
+  // ✅ Main health bar container (capsule shape)
+  healthBarContainer: {
+  height: 20,
+  minWidth: 100,
+  borderRadius: 12,
+  borderWidth: 2,
+  backgroundColor: 'rgba(0, 0, 0, 1)',
+  overflow: 'visible',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 3 },
+  shadowOpacity: 0.3,
+  shadowRadius: 6,
+  elevation: 6,
+  position: 'relative',
+  marginTop: width * 0.01,
+  marginLeft: 20, 
+  
   },
 
-  heartsRow: {
-    flexDirection: 'row',
+  // ✅ Background track inside the capsule
+  healthBarTrack: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 10,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+
+  // ✅ Health fill container (animated width)
+  healthBarFillContainer: {
+    height: '100%',
+    borderRadius: 10,
+    overflow: 'hidden',
+
+  },
+
+  // ✅ Gradient health fill
+  healthBarFill: {
+    flex: 1,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+
+  // ✅ Health numbers overlay
+  healthTextContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
     alignItems: 'center',
-    flexWrap: 'wrap',
+    zIndex: 5,
   },
-  heartContainer: {
-    marginHorizontal: 2,
-    marginVertical: 1,
+
+  healthText: {
+    fontSize: 11,
+    fontFamily: 'DynaPuff',
+    color: '#FFF',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
+
+  // ✅ Critical health warning overlay
+  criticalWarning: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#F44336',
+    borderRadius: 10,
+    zIndex: 3,
+  },
+
+  // ✅ Glow effect around the health bar
+  glowEffect: {
+    position: 'absolute',
+    top: -4,
+    left: -4,
+    right: -4,
+    bottom: -4,
+    borderRadius: 16,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: -1,
+  },
+
+  leftAvatarPosition: {
+  left: 0, // Avatar on the left side
+  },
+
+  rightAvatarPosition: {
+    right: 0, // Avatar on the right side
+  },
+
+
+  lifeContainer:{
+    top: height * 0.01,
+  },
+
+  avatarContainer: {
+  position: 'absolute',
+  top: -2,
+  zIndex: 20,
+  },
+
+  leftHealthBarMargin: {
+  marginLeft: 20,
+  marginRight: 0,
+  },
+
+  rightHealthBarMargin: {
+  marginLeft: 0,
+  marginRight: 20, 
+  },
+
+
+  avatarCircle: {
+  width: 48,
+  height: 48,
+  borderRadius: 100,
+  borderWidth: 2,
+  borderColor: '#FFFFFF',
+  overflow: 'hidden',
+  backgroundColor: 'rgba(0, 0, 0, 1)',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.3,
+  shadowRadius: 4,
+  elevation: 4,
+},
+
+avatarImage: {
+  width: '100%',
+  height: '190%'
+},
+
+defaultAvatar: {
+  width: '100%',
+  height: '100%',
+  backgroundColor: '#4CAF50',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+
+avatarText: {
+  fontSize: 12,
+  color: '#FFF',
+},
 });
 
 export default Life;

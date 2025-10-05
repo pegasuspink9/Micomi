@@ -3,18 +3,37 @@ import { View, StyleSheet, Dimensions } from 'react-native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const GridContainer = ({ children }) => {
+const GridContainer = ({ children, lowerChildren }) => {
   return (
-    <View style={styles.thirdGrid}>
-      <View style={styles.outerFrame}>
-        <View style={styles.innerContent}>
-          <View style={styles.innerBorder}>
-            <View style={styles.backlightOverlay} />
-            <View style={styles.topHighlight} />
-            <View style={styles.bottomShadow} />
-            <View style={styles.leftHighlight} />
-            <View style={styles.rightShadow} />
-            {children}
+    <View style={styles.containerWrapper}>
+      {/* Main Grid */}
+      <View style={styles.thirdGrid}>
+        <View style={styles.outerFrame}>
+          <View style={styles.innerContent}>
+            <View style={styles.innerBorder}>
+              <View style={styles.backlightOverlay} />
+              <View style={styles.topHighlight} />
+              <View style={styles.bottomShadow} />
+              <View style={styles.leftHighlight} />
+              <View style={styles.rightShadow} />
+              {children}
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* ✅ New Lower Grid - Connected */}
+      <View style={styles.lowerGrid}>
+        <View style={styles.outerFrame}>
+          <View style={styles.innerContent}>
+            <View style={styles.innerBorder}>
+              <View style={styles.backlightOverlay} />
+              <View style={styles.topHighlight} />
+              <View style={styles.bottomShadow} />
+              <View style={styles.leftHighlight} />
+              <View style={styles.rightShadow} />
+              {lowerChildren}
+            </View>
           </View>
         </View>
       </View>
@@ -23,18 +42,33 @@ const GridContainer = ({ children }) => {
 };
 
 const styles = StyleSheet.create({
-  thirdGrid: {
+  containerWrapper: {
     position: 'absolute', 
-    bottom: 0,
     left: 0,
     right: 0,
+    height: SCREEN_HEIGHT * 0.32,
+    backgroundColor: 'transparent',
+ 
+  },
+
+  thirdGrid: {
     height: SCREEN_HEIGHT * 0.15,
+    backgroundColor: 'transparent',
+    marginBottom: SCREEN_WIDTH * -0.1, 
+    zIndex: 10,
+  },
+
+  // ✅ New lower grid with same styling
+  lowerGrid: {
+    height: SCREEN_HEIGHT * 0.12,
+    width: SCREEN_WIDTH * 0.7,
+    alignSelf: 'center',
     backgroundColor: 'transparent',
   },
 
   outerFrame: {
     flex: 1,
-    backgroundColor: '#052a53ff',
+    backgroundColor: '#b4bdc6ff',
     borderRadius: SCREEN_WIDTH * 0.03,
     padding: SCREEN_WIDTH * 0.004,
     shadowColor: '#052a53ff',

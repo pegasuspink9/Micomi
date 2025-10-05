@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   buttonFrame: {
     borderRadius: SCREEN_WIDTH * 0.025,
     position: 'absolute',
-    bottom: SCREEN_WIDTH * 0.028,
+    bottom: SCREEN_WIDTH * 0.005,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -128,12 +128,12 @@ const styles = StyleSheet.create({
   },
 
   leftPosition: {
-    left: SCREEN_WIDTH * 0.02,
+    left: SCREEN_WIDTH * 0.06,
     alignSelf: 'flex-start',
   },
 
   rightPosition: {
-    right: SCREEN_WIDTH * 0.02,
+    right: SCREEN_WIDTH * 0.06,
     alignSelf: 'flex-end',
   },
 
@@ -208,7 +208,6 @@ const styles = StyleSheet.create({
       height: 2,
     },
     shadowOpacity: 0.2,
-    // Pressed state - invert the 3D effect (same as AnswerOption)
     borderTopWidth: 3,
     borderLeftWidth: 3,
     borderBottomWidth: 1,

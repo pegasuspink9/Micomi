@@ -22,7 +22,6 @@ export default function GameQuestions({
     
     const challengeType = currentQuestion.challenge_type;
     if (challengeType === 'fill in the blank' || challengeType === 'code with guide') {
-      // Add a delay to ensure refs are properly set
       const timeoutId = setTimeout(() => {
         scrollToNextBlank(scrollViewRef, blankRefs, currentQuestion, selectedAnswers);
       }, 200);
@@ -43,9 +42,10 @@ export default function GameQuestions({
     }
 
     const parts = line.split('_');
-    let blankIndex = 0;
+    let localBlankIndex = 0;
     
     const blanksBeforeCurrent = calculateGlobalBlankIndex(currentQuestion, lineIndex);
+    const currentBlankIndex = selectedAnswers?.length || 0; // ✅ Current blank to highlight
     
     return (
       <Text style={styles.codeText}>
@@ -55,30 +55,29 @@ export default function GameQuestions({
             {partIndex < parts.length - 1 && (
               <View 
                 ref={(ref) => {
-                  // Only set ref if it's a valid component
                   if (ref) {
-                    const globalIndex = blanksBeforeCurrent + blankIndex;
+                    const globalIndex = blanksBeforeCurrent + localBlankIndex;
                     blankRefs.current[globalIndex] = ref;
                   }
-                  blankIndex++;
                 }}
                 style={[
                   styles.codeBlankContainer,
-                  blanksBeforeCurrent + blankIndex - 1 === (selectedAnswers?.length || 0) && styles.currentBlank
+                  // ✅ Fixed: Compare global blank index with current blank index
+                  (blanksBeforeCurrent + localBlankIndex) === currentBlankIndex && styles.currentBlank
                 ]}
               >
                 <Text style={styles.codeBlankText}>
-                  {selectedAnswers?.[getBlankIndex(lineIndex, partIndex)] || '_'}
+                  {selectedAnswers?.[blanksBeforeCurrent + localBlankIndex] || '_'}
                 </Text>
               </View>
             )}
+            {partIndex < parts.length - 2 && localBlankIndex++}
           </React.Fragment>
         ))}
       </Text>
     );
   };
 
-  // Safety check for currentQuestion
   if (!currentQuestion) {
     return (
       <View style={styles.secondGrid}>
@@ -91,55 +90,44 @@ export default function GameQuestions({
 
   return (
     <View style={styles.secondGrid}>
-      <ScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        bounces={true}
-      >
-        <View style={styles.questionContainer}>
-          {(currentQuestion.challenge_type === 'fill in the blank' || 
-            currentQuestion.challenge_type === 'code with guide' || 
-            currentQuestion.challenge_type === 'multiple choice') ? (
-            <CodeEditor 
-              currentQuestion={currentQuestion}
-              selectedAnswers={selectedAnswers}
-              getBlankIndex={getBlankIndex}
-              scrollViewRef={scrollViewRef}
-              blankRefs={blankRefs}
-              renderSyntaxHighlightedLine={renderSyntaxHighlightedLine}
-              onTabChange={handleTabChange}
-              activeTab={activeTab}
-            />
-          ) : (
-            <DocumentQuestion 
-              currentQuestion={currentQuestion}
-              selectedAnswers={selectedAnswers}
-            />
-          )}
-        </View>
-      </ScrollView>
+      <View style={styles.questionContainer}>
+        {(currentQuestion.challenge_type === 'fill in the blank' || 
+          currentQuestion.challenge_type === 'code with guide' || 
+          currentQuestion.challenge_type === 'multiple choice') ? (
+          <CodeEditor 
+            currentQuestion={currentQuestion}
+            selectedAnswers={selectedAnswers}
+            getBlankIndex={getBlankIndex}
+            scrollViewRef={scrollViewRef}
+            blankRefs={blankRefs}
+            renderSyntaxHighlightedLine={renderSyntaxHighlightedLine}
+            onTabChange={handleTabChange}
+            activeTab={activeTab}
+          />
+        ) : (
+          <DocumentQuestion 
+            currentQuestion={currentQuestion}
+            selectedAnswers={selectedAnswers}
+          />
+        )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   secondGrid: {
-    flexGrow: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'stretch',
+    flex: 1, 
+    minHeight: 0, 
   },
   questionContainer: {
     flex: 1,
     width: '100%',
-    justifyContent: 'flex-start', 
-    alignSelf: 'stretch',
+    minHeight: 0, 
+    maxHeight: '100%',
   },
   codeText: {
-    fontSize: SCREEN_WIDTH * 0.032,
+    fontSize: SCREEN_WIDTH * 0.03,
     lineHeight: 20,
     fontFamily: 'monospace',
   },
@@ -178,7 +166,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontFamily: 'monospace',
     fontWeight: 'bold',
-    fontSize: SCREEN_WIDTH * 0.035,
+    fontSize: SCREEN_WIDTH * 0.03,
     textAlign: 'center',
   },
   errorText: {

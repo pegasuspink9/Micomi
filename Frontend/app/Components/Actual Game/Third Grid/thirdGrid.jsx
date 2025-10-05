@@ -1,18 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { View } from 'react-native';
 import GridContainer from './components/GridContainer';
 import AnswerGrid from './components/AnswerGrid';
 import GameButton from './components/GameButtons';
 import PotionGrid from './components/Potions/Potions';
 
 import { 
-  getMaxAnswers, // Add this import
+  getMaxAnswers,
   createAnswerSelectHandler,
   createNextQuestionHandler,
   createCheckAnswerHandler,
   checkAnswer
 } from './utils/answerLogic';
 
-export default function ThirdGrid({ 
+const ThirdGrid = ({ 
   currentQuestion, 
   selectedAnswers = [],
   setSelectedAnswers,
@@ -25,91 +26,117 @@ export default function ThirdGrid({
   gameState,
   submitAnswer,
   submitting = false,
-  onCorrectAnswer // Callback to switch tab when answer is correct
-}) {
+  onCorrectAnswer
+}) => {
   
-  // Safety check for currentQuestion
   if (!currentQuestion) {
     console.warn('No currentQuestion provided to ThirdGrid');
     return null;
   }
   
-  const maxAnswers = getMaxAnswers(currentQuestion);
-  console.log('Max answers calculated:', { 
-    maxAnswers, 
-    challenge_type: currentQuestion.type || currentQuestion.challenge_type 
-  });
-
-  const handleAnswerSelect = createAnswerSelectHandler(
-    currentQuestion, 
-    selectedAnswers, 
-    setSelectedAnswers
+  // ✅ Memoize maxAnswers calculation
+  const maxAnswers = useMemo(() => getMaxAnswers(currentQuestion), [currentQuestion]);
+  
+  // ✅ Memoize handlers to prevent recreation
+  const handleAnswerSelect = useMemo(() => 
+    createAnswerSelectHandler(
+      currentQuestion, 
+      selectedAnswers, 
+      setSelectedAnswers
+    ), [currentQuestion, selectedAnswers, setSelectedAnswers]
   );
 
-  const handleNextQuestion = createNextQuestionHandler(
-    currentQuestionIndex,
-    questionsData,
-    setCurrentQuestionIndex,
-    setSelectedAnswers
+  const handleNextQuestion = useMemo(() => 
+    createNextQuestionHandler(
+      currentQuestionIndex,
+      questionsData,
+      setCurrentQuestionIndex,
+      setSelectedAnswers
+    ), [currentQuestionIndex, questionsData, setCurrentQuestionIndex, setSelectedAnswers]
   );
 
-  const handleCheckAnswer = createCheckAnswerHandler(
-    currentQuestion,
-    selectedAnswers,
-    setBorderColor,
-    setCorrectAnswerRef,
-    submitAnswer,
-    onCorrectAnswer // Pass the callback for automatic tab switching
+  const handleCheckAnswer = useMemo(() => 
+    createCheckAnswerHandler(
+      currentQuestion,
+      selectedAnswers,
+      setBorderColor,
+      setCorrectAnswerRef,
+      submitAnswer,
+      onCorrectAnswer
+    ), [currentQuestion, selectedAnswers, setBorderColor, setCorrectAnswerRef, submitAnswer, onCorrectAnswer]
   );
 
   const [showPotions, setShowPotions] = useState(false);
 
-  const togglePotions = () => {
+  // ✅ Memoize toggle function
+  const togglePotions = useCallback(() => {
     setShowPotions(!showPotions);
-  };
+  }, [showPotions]);
 
-  // Debug logging
+  // ✅ Memoize run button disabled state
+  const runButtonDisabled = useMemo(() => (
+    submitting || 
+    !Array.isArray(selectedAnswers) || 
+    selectedAnswers.length === 0
+  ), [submitting, selectedAnswers]);
+
+  // ✅ Memoize options array
+  const options = useMemo(() => currentQuestion.options || [], [currentQuestion.options]);
+
   console.log('ThirdGrid render:', {
     questionTitle: currentQuestion.title,
     challenge_type: currentQuestion.type || currentQuestion.challenge_type,
-    optionsLength: currentQuestion.options?.length,
+    optionsLength: options.length,
     selectedAnswersLength: selectedAnswers?.length,
     maxAnswers,
     submitting
   });
 
   return (
-    <GridContainer>
+    <GridContainer
+      lowerChildren={
+        <View style={{ flex: 1, position: 'relative' }}>
+          <GameButton 
+            title={submitting ? "Run" : "Run"}
+            position="right"
+            variant="primary"
+            onPress={handleCheckAnswer}
+            disabled={runButtonDisabled}
+          />
+
+          <GameButton 
+            title={showPotions ? "Keyboard" : "Potions"}
+            position="left"
+            variant="secondary"
+            onPress={togglePotions}
+            disabled={submitting}
+          />
+        </View>
+      }
+    >
       {showPotions ? (
         <PotionGrid />
       ) : (
         <AnswerGrid
-          options={currentQuestion.options || []}
+          options={options}
           selectedAnswers={selectedAnswers}
           maxAnswers={maxAnswers}
           onAnswerSelect={handleAnswerSelect}
         />
       )}
-      
-      <GameButton 
-        title={submitting ? "Submitting..." : "Run"}
-        position="right"
-        variant="primary"
-        onPress={handleCheckAnswer}
-        disabled={
-          submitting || 
-          !Array.isArray(selectedAnswers) || 
-          selectedAnswers.length === 0
-        }
-      />
-
-      <GameButton 
-        title={showPotions ? "Keyboard" : "Potions"}
-        position="left"
-        variant="secondary"
-        onPress={togglePotions}
-        disabled={submitting}
-      />
     </GridContainer>
   );
-}
+};
+
+// ✅ Memoize ThirdGrid with custom comparison
+export default React.memo(ThirdGrid, (prevProps, nextProps) => {
+  return (
+    prevProps.currentQuestion?.id === nextProps.currentQuestion?.id &&
+    prevProps.currentQuestion?.title === nextProps.currentQuestion?.title &&
+    JSON.stringify(prevProps.selectedAnswers) === JSON.stringify(nextProps.selectedAnswers) &&
+    prevProps.submitting === nextProps.submitting &&
+    prevProps.currentQuestionIndex === nextProps.currentQuestionIndex &&
+    prevProps.setSelectedAnswers === nextProps.setSelectedAnswers &&
+    prevProps.submitAnswer === nextProps.submitAnswer
+  );
+});

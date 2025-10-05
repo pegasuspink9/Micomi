@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { WebView } from 'react-native-webview';
 
@@ -10,10 +10,13 @@ const ExpectedOutput = ({
 }) => {
   const [htmlOutput, setHtmlOutput] = useState('');
   
-  // Get expected output from gameService data structure
-  const expectedResult = currentQuestion?.expected_output || "No expected output available";
+  // ✅ Memoize expected result
+  const expectedResult = useMemo(() => 
+    currentQuestion?.expected_output || "No expected output available",
+    [currentQuestion?.expected_output]
+  );
 
-  // Generate HTML output for WebView
+  // ✅ Memoize HTML generation function
   const generateHtmlOutput = useCallback(() => {
     if (!currentQuestion || !currentQuestion.expected_output) {
       return '<html><body><p>No expected output available</p></body></html>';
@@ -21,7 +24,6 @@ const ExpectedOutput = ({
 
     const questionType = currentQuestion.challenge_type;
     
-    // For non-HTML question types, show as plain text
     if (questionType !== 'fill in the blank' && questionType !== 'code with guide') {
       return `<html>
         <head>
@@ -44,7 +46,6 @@ const ExpectedOutput = ({
 
     let htmlCode = currentQuestion.expected_output;
 
-    // Ensure proper HTML structure with styling
     if (!htmlCode.includes('<!DOCTYPE')) {
       htmlCode = `<!DOCTYPE html>\n${htmlCode}`;
     }
@@ -76,14 +77,24 @@ const ExpectedOutput = ({
     setHtmlOutput(newHtmlOutput);
   }, [generateHtmlOutput]);
 
-  // Determine if we should show HTML output
-  const shouldShowHTML = currentQuestion && currentQuestion.expected_output;
+  // ✅ Memoize should show HTML decision
+  const shouldShowHTML = useMemo(() => 
+    currentQuestion && currentQuestion.expected_output,
+    [currentQuestion]
+  );
+
+  // ✅ Memoize event handlers
+  const handleWebViewError = useCallback((error) => {
+    console.log('ExpectedOutput WebView error:', error);
+  }, []);
+
+  const handleWebViewLoad = useCallback(() => {
+    console.log('ExpectedOutput WebView loaded');
+  }, []);
 
   return (
     <View style={styles.container}>
-      
       {shouldShowHTML ? (
-        // WebView for Expected Output
         <View style={styles.webviewContainer}>
           <WebView
             source={{ html: htmlOutput }}
@@ -94,12 +105,11 @@ const ExpectedOutput = ({
             domStorageEnabled={true}
             allowsInlineMediaPlayback={true}
             mediaPlaybackRequiresUserAction={false}
-            onError={(error) => console.log('ExpectedOutput WebView error:', error)}
-            onLoad={() => console.log('ExpectedOutput WebView loaded')}
+            onError={handleWebViewError}
+            onLoad={handleWebViewLoad}
           />
         </View>
       ) : (
-        // Fallback text display
         <ScrollView style={styles.outputContainer} showsVerticalScrollIndicator={false}>
           <Text style={styles.outputText}>
             {expectedResult}
@@ -152,4 +162,10 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ExpectedOutput;
+export default React.memo(ExpectedOutput, (prevProps, nextProps) => {
+  return (
+    prevProps.currentQuestion?.expected_output === nextProps.currentQuestion?.expected_output &&
+    prevProps.currentQuestion?.challenge_type === nextProps.currentQuestion?.challenge_type &&
+    prevProps.title === nextProps.title
+  );
+});

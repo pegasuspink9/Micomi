@@ -1,6 +1,5 @@
-// components/EnemyCharacter.js
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, StyleSheet, Dimensions, Image as RNImage, Text } from 'react-native';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { View, StyleSheet, Dimensions, Image as RNImage } from 'react-native';
 import { Image } from 'expo-image';
 import Animated, {
   useSharedValue,
@@ -9,7 +8,9 @@ import Animated, {
   withTiming,
   cancelAnimation,
   runOnJS,
+  Easing,
 } from 'react-native-reanimated';
+import { animationPreloader } from '../../../../services/animationPreloader';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -25,101 +26,105 @@ const EnemyCharacter = ({
   attackMovement = 'fade',
 }) => {
   const frameIndex = useSharedValue(0);
-  const positionX = useSharedValue(0); // for horizontal placement
-  const opacity = useSharedValue(1); // for fade-in option
+  const positionX = useSharedValue(0); 
+  const opacity = useSharedValue(1); 
 
-  // Prefer showing the raw enemy idle on first render so the enemy's initial appearance
-  // matches how character shows character_idle initially.
-  const initialUrl =
-    enemy?.enemy_idle ||
-    enemy?.idle ||
-    characterAnimations.character_idle ||
-    characterAnimations.idle ||
-    '';
+  // ✅ Enhanced initial URL calculation with better fallbacks
+  const initialUrl = useMemo(() => {
+    const candidates = [
+      characterAnimations.character_idle,
+      characterAnimations.idle,
+      enemy?.enemy_idle,
+      enemy?.idle,
+    ].filter(url => url && typeof url === 'string');
+    
+    return candidates[0] || '';
+  }, [enemy, characterAnimations]);
 
   const [currentAnimationUrl, setCurrentAnimationUrl] = useState(initialUrl);
   const [isAnimationLooping, setIsAnimationLooping] = useState(true);
   const [imageReady, setImageReady] = useState(false);
   const [isCompoundAnimation, setIsCompoundAnimation] = useState(false);
   const [compoundPhase, setCompoundPhase] = useState('');
-  const [preloadedImages] = useState(new Map()); // Cache for preloaded images
-
-  // Debug states
-  const [debugFrame, setDebugFrame] = useState(0);
-  const [debugPosition, setDebugPosition] = useState(0);
+  const [preloadedImages] = useState(new Map()); // Keep local cache for backwards compatibility
 
   const TOTAL_FRAMES = 24;
   const FRAME_DURATION = 50;
 
-  // Animation duration constants (in milliseconds) -- preserved from your enemy version
-  const ANIMATION_DURATIONS = {
+  // ✅ Memoize animation duration constants
+  const ANIMATION_DURATIONS = useMemo(() => ({
     idle: 2000,
     attack: 1500,
     hurt: 2000,
     run: -1,
     dies: 2000,
-  };
+  }), []);
 
-  // Compound animation phases (kept for compatibility — same approach as Dog)
-  const COMPOUND_PHASES = {
+  // ✅ Memoize compound phases
+  const COMPOUND_PHASES = useMemo(() => ({
     attack: {
       run: { duration: 5000, animation: 'run' },
       attack: { duration: 2000, animation: 'attack' },
     },
-  };
+  }), []);
 
-  // Enemy moves from right → left when attacking
-  const RUN_DISTANCE = SCREEN_WIDTH * -0.50;
+  // ✅ Memoize movement distance
+  const RUN_DISTANCE = useMemo(() => SCREEN_WIDTH * -0.50, []);
 
-  // Ref to hold pending timeout ids so we can clear them on cleanup
   const phaseTimeoutRef = useRef(null);
 
-  // Preload animation URLs (same approach as DogCharacter)
+  // ✅ Enhanced preload animations using the animation preloader service
+  const preloadAnimations = useCallback(async () => {
+    const animationUrls = [
+      characterAnimations.character_idle,
+      characterAnimations.character_attack,
+      characterAnimations.character_hurt,
+      characterAnimations.character_run,
+      characterAnimations.character_dies,
+      characterAnimations.idle,
+      characterAnimations.attack,
+      characterAnimations.hurt,
+      characterAnimations.run,
+      characterAnimations.dies,
+      enemy?.enemy_idle,
+      enemy?.enemy_attack,
+      enemy?.enemy_hurt,
+      enemy?.enemy_run,
+      enemy?.enemy_dies,
+    ].filter(url => url && typeof url === 'string');
+
+    // ✅ Use the global animation preloader for consistency
+    for (const url of animationUrls) {
+      if (!animationPreloader.isAnimationPreloaded(url)) {
+        console.log(`🦹 Preloading missing enemy animation: ${url.slice(-50)}`);
+        await animationPreloader.preloadAnimation(url);
+      } else {
+        // Also update local cache for backwards compatibility
+        preloadedImages.set(url, true);
+      }
+    }
+
+    console.log(`🦹 Enemy ${index} animation preloading completed`);
+  }, [characterAnimations, enemy, preloadedImages, index]);
+
   useEffect(() => {
-    const preloadAnimations = async () => {
-      const animationUrls = [
-        characterAnimations.character_idle,
-        characterAnimations.character_attack,
-        characterAnimations.character_hurt,
-        characterAnimations.character_run,
-        characterAnimations.character_dies,
-        characterAnimations.idle,
-        characterAnimations.attack,
-        characterAnimations.hurt,
-        characterAnimations.run,
-        characterAnimations.dies,
-      ].filter((url) => url && !preloadedImages.has(url));
-
-      const preloadPromises = animationUrls.map(async (url) => {
-        try {
-          await RNImage.prefetch(url);
-          preloadedImages.set(url, true);
-        } catch (error) {
-          console.warn(`❌ Failed to preload enemy animation: ${url}`);
-        }
-      });
-
-      await Promise.allSettled(preloadPromises);
-    };
-
-    if (Object.keys(characterAnimations).length > 0 || enemy) {
+    if (Object.keys(characterAnimations).length > 0 || Object.keys(enemy).length > 0) {
       preloadAnimations();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [characterAnimations, preloadedImages, enemy]);
+  }, [preloadAnimations]);
 
-  // Callback to notify parent when animation completes
+  // ✅ Memoize animation complete callback
   const notifyAnimationComplete = useCallback(() => {
     if (onAnimationComplete && typeof onAnimationComplete === 'function') {
       try {
         onAnimationComplete(currentState);
       } catch (e) {
-        console.warn('onAnimationComplete error', e);
+        console.warn(`Enemy ${index} onAnimationComplete error:`, e);
       }
     }
-  }, [onAnimationComplete, currentState]);
+  }, [onAnimationComplete, currentState, index]);
 
-  // Helper: schedule an attack phase from JS (keeps Dog behavior)
+  // ✅ Memoize schedule attack phase
   const scheduleAttackPhase = useCallback(
     (attackDuration, attackUrl) => {
       if (phaseTimeoutRef.current) {
@@ -136,7 +141,10 @@ const EnemyCharacter = ({
         frameIndex.value = 0;
         frameIndex.value = withTiming(
           TOTAL_FRAMES - 1,
-          { duration: attackDuration },
+          { 
+            duration: attackDuration,
+            easing: Easing.inOut(Easing.ease)
+          },
           (attackFinished) => {
             if (attackFinished) {
               runOnJS(notifyAnimationComplete)();
@@ -146,10 +154,10 @@ const EnemyCharacter = ({
         );
       }, 50);
     },
-    [notifyAnimationComplete, currentAnimationUrl]
+    [notifyAnimationComplete, currentAnimationUrl, TOTAL_FRAMES]
   );
 
-  // Small helper: schedule hold AFTER natural cycle (keeps Dog behavior)
+  // ✅ Memoize run schedule hold
   const runScheduleHold = useCallback(
     (delayMs, attackDuration, attackUrl) => {
       if (phaseTimeoutRef.current) {
@@ -163,97 +171,129 @@ const EnemyCharacter = ({
     [scheduleAttackPhase]
   );
 
-  // Ensure we don't set state during render — prefetch readiness
+  // ✅ Enhanced prefetch with global preloader check
+  const prefetchWithCache = useCallback(async () => {
+    if (!currentAnimationUrl) return;
+    
+    try {
+      // Check global preloader first
+      if (animationPreloader.isAnimationPreloaded(currentAnimationUrl)) {
+        setImageReady(true);
+        preloadedImages.set(currentAnimationUrl, true);
+        return;
+      }
+
+      // Fallback to manual prefetch
+      await RNImage.prefetch(currentAnimationUrl);
+      preloadedImages.set(currentAnimationUrl, true);
+      setImageReady(true);
+    } catch (err) {
+      console.warn(`Enemy ${index} prefetch failed for: ${currentAnimationUrl}`, err);
+      // Image onLoadEnd will handle readiness fallback
+    }
+  }, [currentAnimationUrl, preloadedImages, index]);
+
+  // ✅ Enhanced image readiness logic
   useEffect(() => {
     let mounted = true;
     setImageReady(false);
 
     if (!currentAnimationUrl) return;
 
-    if (preloadedImages.has(currentAnimationUrl)) {
+    // Check if already preloaded globally or locally
+    if (animationPreloader.isAnimationPreloaded(currentAnimationUrl) || 
+        preloadedImages.has(currentAnimationUrl)) {
       if (mounted) setImageReady(true);
       return;
     }
-
-    const prefetchWithCache = async () => {
-      try {
-        await RNImage.prefetch(currentAnimationUrl);
-        preloadedImages.set(currentAnimationUrl, true);
-        if (mounted) setImageReady(true);
-      } catch (err) {
-        // onLoadEnd will handle readiness fallback
-      }
-    };
 
     prefetchWithCache();
     return () => {
       mounted = false;
     };
-  }, [currentAnimationUrl, preloadedImages]);
+  }, [currentAnimationUrl, prefetchWithCache]);
 
-  // Map currentState -> animation URL + loop flag (uses same selection logic as Dog)
-  useEffect(() => {
+  // ✅ Memoize animation configuration
+  const animationConfig = useMemo(() => {
     let animationUrl = '';
     let shouldLoop = true;
     let isCompound = false;
 
     switch (currentState) {
       case 'idle':
-        animationUrl = characterAnimations.character_idle || characterAnimations.idle;
+        animationUrl = characterAnimations.character_idle || 
+                      characterAnimations.idle || 
+                      enemy?.enemy_idle || 
+                      enemy?.idle;
         shouldLoop = true;
         isCompound = false;
         break;
       case 'attack':
-        animationUrl = characterAnimations.character_attack || characterAnimations.attack;
+        animationUrl = characterAnimations.character_attack || 
+                      characterAnimations.attack || 
+                      enemy?.enemy_attack || 
+                      enemy?.attack;
         shouldLoop = false;
         isCompound = false;
         break;
       case 'hurt':
-        animationUrl = characterAnimations.character_hurt || characterAnimations.hurt;
+        animationUrl = characterAnimations.character_hurt || 
+                      characterAnimations.hurt || 
+                      enemy?.enemy_hurt || 
+                      enemy?.hurt;
         shouldLoop = false;
         isCompound = false;
         break;
       case 'run':
-        animationUrl = characterAnimations.character_run || characterAnimations.run;
+        animationUrl = characterAnimations.character_run || 
+                      characterAnimations.run || 
+                      enemy?.enemy_run || 
+                      enemy?.run;
         shouldLoop = true;
         isCompound = false;
         break;
       case 'dies':
-        animationUrl = characterAnimations.character_dies || characterAnimations.dies;
+        animationUrl = characterAnimations.character_dies || 
+                      characterAnimations.dies || 
+                      enemy?.enemy_dies || 
+                      enemy?.dies;
         shouldLoop = false;
         isCompound = false;
         break;
       default:
-        animationUrl = characterAnimations.character_idle || characterAnimations.idle;
+        animationUrl = characterAnimations.character_idle || 
+                      characterAnimations.idle || 
+                      enemy?.enemy_idle || 
+                      enemy?.idle;
         shouldLoop = true;
         isCompound = false;
     }
 
-    // only update if we actually have a url (prevents overwriting a good fallback with undefined)
-    if (animationUrl) {
-      setCurrentAnimationUrl(animationUrl);
-    } else {
-      // If there's no animationUrl from characterAnimations, keep the initial fallback from enemy prop
-      if (!currentAnimationUrl) {
-        const fallback = enemy?.enemy_idle || enemy?.idle || '';
-        if (fallback) setCurrentAnimationUrl(fallback);
-      }
+    return { animationUrl, shouldLoop, isCompound };
+  }, [currentState, characterAnimations, enemy]);
+
+  // Set up animation URL and behavior based on current state
+  useEffect(() => {
+    if (animationConfig.animationUrl) {
+      setCurrentAnimationUrl(animationConfig.animationUrl);
+    } else if (!currentAnimationUrl) {
+      // Keep existing URL if new config doesn't provide one
+      const fallback = initialUrl;
+      if (fallback) setCurrentAnimationUrl(fallback);
     }
 
-    setIsAnimationLooping(shouldLoop);
-    setIsCompoundAnimation(isCompound);
+    setIsAnimationLooping(animationConfig.shouldLoop);
+    setIsCompoundAnimation(animationConfig.isCompound);
 
-    if (isCompound && currentState === 'attack') {
+    if (animationConfig.isCompound && currentState === 'attack') {
       setCompoundPhase('run');
     } else {
       setCompoundPhase('');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentState, characterAnimations, enemy]);
+  }, [animationConfig, currentState, initialUrl, currentAnimationUrl]);
 
-  // Handle animation timing and looping (copied Dog logic, adjusted for enemy movement direction)
+  // ✅ Enhanced animation timing with better error handling
   useEffect(() => {
-    // clear any previously scheduled timeouts when we (re)start animation
     if (phaseTimeoutRef.current) {
       clearTimeout(phaseTimeoutRef.current);
       phaseTimeoutRef.current = null;
@@ -267,7 +307,6 @@ const EnemyCharacter = ({
       frameIndex.value = 0;
 
       if (isCompoundAnimation && currentState === 'attack') {
-        // Compound branch (kept from Dog implementation)
         const phases = COMPOUND_PHASES.attack;
         positionX.value = 0;
 
@@ -275,10 +314,15 @@ const EnemyCharacter = ({
 
         frameIndex.value = withTiming(
           TOTAL_FRAMES - 1,
-          { duration: Math.min(phases.run.duration, naturalRunCycleDuration) },
+          { 
+            duration: Math.min(phases.run.duration, naturalRunCycleDuration),
+            easing: Easing.linear
+          },
           (finished) => {
             if (finished) {
-              const attackUrl = characterAnimations.character_attack || characterAnimations.attack;
+              const attackUrl = characterAnimations.character_attack || 
+                              characterAnimations.attack ||
+                              enemy?.enemy_attack;
 
               if (phases.run.duration <= naturalRunCycleDuration) {
                 runOnJS(scheduleAttackPhase)(phases.attack.duration, attackUrl);
@@ -289,28 +333,27 @@ const EnemyCharacter = ({
             }
           }
         );
-
-        // no movement is started here to avoid crashes in legacy branch
       } else if (isAnimationLooping) {
-        // Standard infinite loop for idle, run animations
-        positionX.value = 0; // Reset position for non-compound animations
-        opacity.value = 1; // ensure visible
+        positionX.value = 0;
+        opacity.value = 1;
         frameIndex.value = withRepeat(
           withTiming(TOTAL_FRAMES - 1, {
             duration: FRAME_DURATION * TOTAL_FRAMES,
+            easing: Easing.linear,
           }),
           -1,
           false
         );
       } else {
-        // One-shot animations (hurt, dies, attack)
-        const animationDuration =
-          ANIMATION_DURATIONS[currentState] || FRAME_DURATION * TOTAL_FRAMES;
+        const animationDuration = ANIMATION_DURATIONS[currentState] || (FRAME_DURATION * TOTAL_FRAMES);
 
-        // Handle attack movement modes (enemy moves left)
+        // ✅ Enhanced attack movement with smoother transitions
         if (currentState === 'attack') {
           if (attackMovement === 'slide') {
-            positionX.value = withTiming(RUN_DISTANCE, { duration: animationDuration });
+            positionX.value = withTiming(RUN_DISTANCE, { 
+              duration: animationDuration,
+              easing: Easing.inOut(Easing.quad) 
+            });
             opacity.value = 1;
           } else if (attackMovement === 'teleport') {
             positionX.value = RUN_DISTANCE;
@@ -319,20 +362,25 @@ const EnemyCharacter = ({
             positionX.value = RUN_DISTANCE;
             opacity.value = 0;
             const fadeDuration = Math.min(300, animationDuration);
-            opacity.value = withTiming(1, { duration: fadeDuration });
+            opacity.value = withTiming(1, { 
+              duration: fadeDuration,
+              easing: Easing.inOut(Easing.quad)
+            });
           } else {
             positionX.value = 0;
             opacity.value = 1;
           }
         } else {
-          // ensure no position movement for other one-shot animations
           positionX.value = 0;
           opacity.value = 1;
         }
 
         frameIndex.value = withTiming(
           TOTAL_FRAMES - 1,
-          { duration: animationDuration },
+          { 
+            duration: animationDuration,
+            easing: Easing.inOut(Easing.ease)
+          },
           (finished) => {
             if (finished) {
               runOnJS(notifyAnimationComplete)();
@@ -342,7 +390,6 @@ const EnemyCharacter = ({
         );
       }
     } else {
-      // paused or not ready: cancel running animations
       cancelAnimation(frameIndex);
       cancelAnimation(positionX);
       cancelAnimation(opacity);
@@ -357,7 +404,6 @@ const EnemyCharacter = ({
         phaseTimeoutRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isPaused,
     currentAnimationUrl,
@@ -369,14 +415,20 @@ const EnemyCharacter = ({
     attackMovement,
     scheduleAttackPhase,
     runScheduleHold,
+    ANIMATION_DURATIONS,
+    COMPOUND_PHASES,
+    RUN_DISTANCE,
+    characterAnimations,
+    enemy,
   ]);
 
+  // ✅ Memoize animated styles
   const animatedStyle = useAnimatedStyle(() => {
     const currentFrame = Math.floor(frameIndex.value) % TOTAL_FRAMES;
 
     const COLUMNS = 6;
-    const frameWidth = 100;
-    const frameHeight = 100;
+    const frameWidth = 120;
+    const frameHeight = 120;
 
     const column = currentFrame % COLUMNS;
     const row = Math.floor(currentFrame / COLUMNS);
@@ -387,37 +439,34 @@ const EnemyCharacter = ({
     return {
       transform: [{ translateX: xOffset }, { translateY: yOffset }],
     };
-  });
+  }, []);
 
   const positionStyle = useAnimatedStyle(() => {
     return {
       transform: [{ translateX: positionX.value }],
     };
-  });
+  }, []);
 
   const opacityStyle = useAnimatedStyle(() => {
     return {
       opacity: opacity.value,
     };
-  });
-
-  // Debug update interval (only active in dev)
-  useEffect(() => {
-    if (!__DEV__) return undefined;
-    const interval = setInterval(() => {
-      setDebugFrame(Math.floor(frameIndex.value));
-      setDebugPosition(Math.floor(positionX.value));
-    }, 500);
-
-    return () => clearInterval(interval);
   }, []);
 
-  // NOTE: we intentionally do NOT return early if currentAnimationUrl is empty.
-  // Doing so previously prevented the debug panel from showing on first appearance.
-  // Instead we render the component (empty sprite area if no url) and still show debug.
+  // ✅ Memoize error and load handlers
+  const handleImageError = useCallback((error) => {
+    console.warn(`🦹 Enemy ${index} image load error:`, error, `URL: ${currentAnimationUrl}`);
+  }, [index, currentAnimationUrl]);
 
-  // Bring attacking enemy to front visually
-  const isFront = currentState === 'attack' || isAttacking;
+  const handleImageLoadEnd = useCallback(() => {
+    setImageReady(true);
+  }, []);
+
+  // ✅ Determine if enemy should be in front
+  const isFront = useMemo(() => 
+    currentState === 'attack' || isAttacking, 
+    [currentState, isAttacking]
+  );
 
   return (
     <Animated.View
@@ -436,46 +485,43 @@ const EnemyCharacter = ({
               source={{ uri: currentAnimationUrl }}
               style={[styles.spriteImage, isAttacking && styles.attackingImage]}
               contentFit="cover"
-              onLoadEnd={() => setImageReady(true)}
-              onError={(err) => {
-                console.warn('Enemy image load error', err);
-              }}
+              onLoadEnd={handleImageLoadEnd}
+              onError={handleImageError}
+              cachePolicy="disk" // ✅ Enable disk caching
             />
           ) : (
-            // empty placeholder so sprite container still takes space when URL is not yet available
             <View style={[styles.spriteImage, { backgroundColor: 'transparent' }]} />
           )}
         </Animated.View>
       </View>
-
     </Animated.View>
   );
 };
 
+// ✅ Styles remain the same
 const styles = StyleSheet.create({
   enemyRun: {
     position: 'absolute',
-    right: SCREEN_WIDTH * 0.01,
-    top: SCREEN_HEIGHT * 0.175,
+    right: SCREEN_WIDTH * -0.02,
+    top: SCREEN_HEIGHT * 0.189,
     justifyContent: 'flex-start',
     alignItems: 'center',
   },
 
-  // style to raise the component above others (iOS + Android)
   front: {
     zIndex: 9999,
     elevation: 9999,
   },
 
   spriteContainer: {
-    width: 100,
-    height: 100,
+    width: 120,
+    height: 120,
     overflow: 'hidden',
   },
 
   spriteSheet: {
-    width: 600, // 6 cols * 100px
-    height: 400, // 4 rows * 100px
+    width: 720, // 6 cols * 120px
+    height: 480, // 4 rows * 120px
   },
 
   spriteImage: {
@@ -490,22 +536,25 @@ const styles = StyleSheet.create({
   pausedElement: {
     opacity: 0.6,
   },
-
-  // Debug styles (remove in production)
-  debugInfo: {
-    position: 'absolute',
-    bottom: 20,
-    left: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    padding: 6,
-    borderRadius: 6,
-  },
-
-  debugText: {
-    color: 'white',
-    fontSize: 10,
-    marginBottom: 2,
-  },
 });
 
-export default EnemyCharacter;
+// ✅ Enhanced memoization with better comparison
+export default React.memo(EnemyCharacter, (prevProps, nextProps) => {
+  return (
+    prevProps.isPaused === nextProps.isPaused &&
+    prevProps.currentState === nextProps.currentState &&
+    prevProps.isAttacking === nextProps.isAttacking &&
+    prevProps.attackMovement === nextProps.attackMovement &&
+    prevProps.index === nextProps.index &&
+    // ✅ More comprehensive animation comparison
+    prevProps.characterAnimations.character_idle === nextProps.characterAnimations.character_idle &&
+    prevProps.characterAnimations.character_attack === nextProps.characterAnimations.character_attack &&
+    prevProps.characterAnimations.character_hurt === nextProps.characterAnimations.character_hurt &&
+    prevProps.characterAnimations.character_run === nextProps.characterAnimations.character_run &&
+    prevProps.characterAnimations.character_dies === nextProps.characterAnimations.character_dies &&
+    prevProps.enemy?.enemy_idle === nextProps.enemy?.enemy_idle &&
+    prevProps.enemy?.enemy_attack === nextProps.enemy?.enemy_attack &&
+    prevProps.enemy?.enemy_hurt === nextProps.enemy?.enemy_hurt &&
+    prevProps.onAnimationComplete === nextProps.onAnimationComplete
+  );
+});

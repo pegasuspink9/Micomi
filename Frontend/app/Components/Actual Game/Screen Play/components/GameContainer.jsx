@@ -24,16 +24,13 @@ const GameContainer = ({ children, borderColor }) => {
 const styles = StyleSheet.create({
   outerFrame: {
     borderRadius: SCREEN_WIDTH * 0.11,
-    backgroundColor: '#0b7cfdc4', 
+    backgroundColor: '#000000c4', 
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 15,
     },
-
-    
   },
-
   container: {
     zIndex: 1,
     borderWidth: 3,

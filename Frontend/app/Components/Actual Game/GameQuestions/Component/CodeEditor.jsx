@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, Dimensions, Pressable, Keyboard } from 'react-native';
 import Output from '../Output/Output';
 import ExpectedOutput from '../Output/ExpectedOutput';
@@ -19,8 +19,10 @@ const CodeEditor = ({
   activeTab: externalActiveTab
 }) => {
   const [activeTab, setActiveTab] = useState('code');
-  const codeText = currentQuestion.question || '';
-  const lines = codeText.split('\n');
+  
+  // ✅ Memoize code text and lines
+  const codeText = useMemo(() => currentQuestion.question || '', [currentQuestion.question]);
+  const lines = useMemo(() => codeText.split('\n'), [codeText]);
 
   useEffect(() => {
     if (externalActiveTab && externalActiveTab !== activeTab) {
@@ -29,9 +31,10 @@ const CodeEditor = ({
         Keyboard.dismiss();
       }
     }
-  }, [externalActiveTab]);
+  }, [externalActiveTab, activeTab]);
 
-  const handleTabChange = (tabName) => {
+  // ✅ Memoize tab change handler
+  const handleTabChange = useCallback((tabName) => {
     if (tabName === 'output' || tabName === 'expected') {
       Keyboard.dismiss();
     }
@@ -40,9 +43,10 @@ const CodeEditor = ({
     if (onTabChange) {
       onTabChange(tabName);
     }
-  };
+  }, [onTabChange]);
 
-  const renderTabContent = () => {
+  // ✅ Memoize tab content rendering
+  const renderTabContent = useCallback(() => {
     switch (activeTab) {
       case 'code':
         return (
@@ -93,7 +97,12 @@ const CodeEditor = ({
       default:
         return null;
     }
-  };
+  }, [activeTab, lines, renderSyntaxHighlightedLine, currentQuestion, selectedAnswers, userOutput, isCorrect, scrollViewRef]);
+
+  // ✅ Memoize tab press handlers
+  const handleCodeTabPress = useCallback(() => handleTabChange('code'), [handleTabChange]);
+  const handleOutputTabPress = useCallback(() => handleTabChange('output'), [handleTabChange]);
+  const handleExpectedTabPress = useCallback(() => handleTabChange('expected'), [handleTabChange]);
 
   return (
     <View style={styles.editorContainer}>
@@ -104,10 +113,9 @@ const CodeEditor = ({
           <View style={[styles.windowButton, { backgroundColor: '#27ca3f' }]} />
         </View>
 
-        {/* Updated Web-like Tabs */}
         <View style={styles.tabsContainer}>
           <Pressable
-            onPress={() => handleTabChange('code')}
+            onPress={handleCodeTabPress}
             style={[
               styles.webTab,
               activeTab === 'code' && styles.webTabActive,
@@ -123,7 +131,7 @@ const CodeEditor = ({
           </Pressable>
 
           <Pressable
-            onPress={() => handleTabChange('output')}
+            onPress={handleOutputTabPress}
             style={[
               styles.webTab,
               activeTab === 'output' && styles.webTabActive
@@ -138,7 +146,7 @@ const CodeEditor = ({
           </Pressable>
 
           <Pressable
-            onPress={() => handleTabChange('expected')}
+            onPress={handleExpectedTabPress}
             style={[
               styles.webTab,
               activeTab === 'expected' && styles.webTabActive,
@@ -157,7 +165,6 @@ const CodeEditor = ({
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* Tab Content with seamless connection */}
       <View style={styles.contentArea}>
         {renderTabContent()}
       </View>
@@ -165,11 +172,12 @@ const CodeEditor = ({
   );
 };
 
+
 const styles = StyleSheet.create({
-  editorContainer: {
+    editorContainer: {
     backgroundColor: '#1e1e1e32',
     borderRadius: 12,
-    flex: 1,
+    flex: 1, 
     width: '100%',
     overflow: 'hidden',
     borderTopWidth: 2,
@@ -185,6 +193,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 12,
     elevation: 16,
+    minHeight: 0, 
   },
   editorHeader: {
     backgroundColor: '#2d2d30',
@@ -297,12 +306,12 @@ const styles = StyleSheet.create({
     flex: 1,
     borderTopWidth: 1,
     borderTopColor: '#1a1a1a',
+     minHeight: 0,
   },
 
   codeContainer: {
     backgroundColor: '#000d2f99',
     paddingVertical: 12,
-    maxHeight: SCREEN_HEIGHT * 0.30,
     borderTopWidth: 0, // Remove top border for seamless connection
     borderLeftWidth: 1,
     borderLeftColor: '#0a0a0a',
@@ -383,4 +392,15 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CodeEditor;
+export default React.memo(CodeEditor, (prevProps, nextProps) => {
+  return (
+    prevProps.currentQuestion?.question === nextProps.currentQuestion?.question &&
+    JSON.stringify(prevProps.selectedAnswers) === JSON.stringify(nextProps.selectedAnswers) &&
+    prevProps.activeTab === nextProps.activeTab &&
+    prevProps.userOutput === nextProps.userOutput &&
+    prevProps.expectedOutput === nextProps.expectedOutput &&
+    prevProps.isCorrect === nextProps.isCorrect &&
+    prevProps.onTabChange === nextProps.onTabChange &&
+    prevProps.renderSyntaxHighlightedLine === nextProps.renderSyntaxHighlightedLine
+  );
+});
