@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
   enemyRun: {
     position: 'absolute',
     right: SCREEN_WIDTH * -0.02,
-    top: SCREEN_HEIGHT * 0.189,
+    top: SCREEN_HEIGHT * 0.16,
     justifyContent: 'flex-start',
     alignItems: 'center',
   },

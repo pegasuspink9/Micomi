@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
   dogRun: {
     position: 'absolute',
     left: SCREEN_WIDTH * -0.02 ,
-    top: SCREEN_HEIGHT * 0.20,
+    top: SCREEN_HEIGHT * 0.17,
     justifyContent: 'flex-start',
     alignItems: 'center',
     zIndex: 10,

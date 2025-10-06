@@ -11,7 +11,7 @@ export default function RoadMapLandPage() {
   const { mapName } = useLocalSearchParams();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.headerOverlay}>
         <MapHeader />
       </View>
@@ -19,7 +19,7 @@ export default function RoadMapLandPage() {
       <View style={styles.body}>
         <UniversalMapLevel />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

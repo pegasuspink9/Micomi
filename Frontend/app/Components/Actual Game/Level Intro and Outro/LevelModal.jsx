@@ -748,7 +748,6 @@ const LevelModal = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.85)', // ✅ Slightly darker for better contrast
     justifyContent: 'center',
     alignItems: 'center',
   },

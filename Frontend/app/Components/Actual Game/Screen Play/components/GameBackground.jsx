@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ff6b6b',
     position: 'relative',
     overflow: 'hidden',
-    minHeight: SCREEN_HEIGHT * 0.37, 
+    minHeight: SCREEN_HEIGHT * 0.34, 
   },
   
   spriteContainer: {
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     position: 'relative',
     zIndex: 2,
-    minHeight: SCREEN_HEIGHT * 0.37,
+    minHeight: SCREEN_HEIGHT * 0.34,
   },
   
 });
