@@ -36,6 +36,18 @@ export async function updateProgressForChallenge(
 
   let wrongChallenges = (progress.wrong_challenges ?? []) as number[];
 
+  let newExpectedOutput = progress.player_expected_output ?? [];
+
+  if (isCorrect && !alreadyAnsweredCorrectly) {
+    const challengeExpected = challenge.expected_output ?? [];
+    newExpectedOutput = [
+      ...(Array.isArray(newExpectedOutput) ? newExpectedOutput : []),
+      ...(Array.isArray(challengeExpected)
+        ? challengeExpected
+        : [challengeExpected]),
+    ];
+  }
+
   if (isCorrect) {
     wrongChallenges = wrongChallenges.filter((id) => id !== challengeId);
     consecutiveCorrects += 1;
@@ -63,6 +75,7 @@ export async function updateProgressForChallenge(
     data: {
       player_answer: newAnswers,
       wrong_challenges: wrongChallenges,
+      player_expected_output: newExpectedOutput,
       attempts: { increment: 1 },
       consecutive_corrects: consecutiveCorrects,
     },

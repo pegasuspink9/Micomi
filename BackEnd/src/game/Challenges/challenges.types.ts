@@ -23,6 +23,7 @@ export interface CompletionRewards {
   currentTotalPoints?: number;
   currentExpPoints?: number;
   coinsEarned?: number;
+  playerOutputs?: string[] | null;
 }
 
 export interface SubmitChallengeControllerResult

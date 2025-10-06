@@ -56,9 +56,6 @@ export const submitChallenge = async (req: Request, res: Response) => {
       levelStatus: {
         ...result.levelStatus,
         isCompleted: isLevelCompleted,
-        battleWon,
-        battleLost,
-        canProceed,
         showFeedback: canProceed,
         playerHealth: result.levelStatus.playerHealth,
         enemyHealth: result.levelStatus.enemyHealth,

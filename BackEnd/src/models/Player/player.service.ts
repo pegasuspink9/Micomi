@@ -2,9 +2,10 @@ import { PrismaClient } from "@prisma/client";
 import { hashPassword, comparePassword } from "../../../utils/hash";
 import { generateAccessToken } from "../../../utils/token";
 import { PlayerCreateInput, PlayerLoginInput } from "./player.types";
-import { isSameDay } from "../../../helper/dateTimeHelper";
+import { checkAchievements } from "../../game/Achievements/achievements.service";
 import { updateQuestProgress } from "../../game/Quests/quests.service";
 import { QuestType } from "@prisma/client";
+import { differenceInCalendarDays } from "date-fns";
 
 const prisma = new PrismaClient();
 
@@ -29,10 +30,11 @@ export const createPlayer = async (data: PlayerCreateInput) => {
   const hashedPassword = await hashPassword(data.password);
   const newPlayer = await prisma.player.create({
     data: {
+      player_name: data.player_name,
       email: data.email,
       username: data.username,
       password: hashedPassword,
-      created_at: data.created_at || new Date(),
+      created_at: new Date(),
       last_active: new Date(),
       days_logged_in: 0,
     },
@@ -65,7 +67,7 @@ export const updatePlayer = async (
   player_id: number,
   data: Partial<PlayerCreateInput>
 ) => {
-  const { last_active, days_logged_in, password, ...safeData } = data;
+  const { password, ...safeData } = data;
   const updateData: any = {
     ...safeData,
     last_active: new Date(),
@@ -94,31 +96,60 @@ export const loginPlayer = async ({ email, password }: PlayerLoginInput) => {
     return null;
   }
 
-  const now = new Date();
-  const shouldIncrementDays =
-    !player.last_active || !isSameDay(now, player.last_active);
+  const updatedPlayer = await updatePlayerActivity(player.player_id);
 
-  const updatedPlayer = await prisma.player.update({
-    where: { player_id: player.player_id },
-    data: {
-      last_active: now,
-      days_logged_in: shouldIncrementDays
-        ? player.days_logged_in + 1
-        : player.days_logged_in,
-    },
-  });
-
-  if (shouldIncrementDays) {
+  if (updatedPlayer) {
     await updateQuestProgress(player.player_id, QuestType.login_days, 1);
+    await checkAchievements(player.player_id);
   }
 
   const token = generateAccessToken({ id: player.player_id, role: "player" });
+
   return {
     token,
     player: {
       id: player.player_id,
       email: player.email,
-      days_logged_in: updatedPlayer.days_logged_in,
+      days_logged_in: updatedPlayer?.days_logged_in,
+      current_streak: updatedPlayer?.current_streak,
+      longest_streak: updatedPlayer?.longest_streak,
     },
   };
 };
+
+export async function updatePlayerActivity(playerId: number) {
+  const player = await prisma.player.findUnique({
+    where: { player_id: playerId },
+  });
+  if (!player) return null;
+
+  const now = new Date();
+  const diffDays = player.last_active
+    ? differenceInCalendarDays(now, player.last_active)
+    : null;
+
+  let { days_logged_in, current_streak, longest_streak } = player;
+
+  if (diffDays === null) {
+    days_logged_in = 1;
+    current_streak = 1;
+    longest_streak = 1;
+  } else if (diffDays === 1) {
+    days_logged_in += 1;
+    current_streak += 1;
+    longest_streak = Math.max(longest_streak, current_streak);
+  } else if (diffDays > 1) {
+    days_logged_in += 1;
+    current_streak = 1;
+  }
+
+  return prisma.player.update({
+    where: { player_id: playerId },
+    data: {
+      last_active: now,
+      days_logged_in,
+      current_streak,
+      longest_streak,
+    },
+  });
+}

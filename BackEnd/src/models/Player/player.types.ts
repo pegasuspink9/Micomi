@@ -7,7 +7,7 @@ export interface PlayerCreateInput {
   email: string;
   password: string;
   username: string;
-  player_name?: string;
+  player_name: string;
 }
 
 export interface PlayerUpdateInput {
