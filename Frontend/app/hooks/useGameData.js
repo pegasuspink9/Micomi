@@ -258,6 +258,47 @@ export const useGameData = (playerId, levelId) => {
     }
   }, [playerId, levelId]);
 
+  const enterNextLevel = useCallback(async (playerId, nextLevelId) => {
+    try {
+      console.log(`🚀 Entering next level ${nextLevelId} for player ${playerId}...`);
+      
+      setLoading(true);
+      setError(null);
+      setAnimationsLoading(true);
+      setDownloadProgress({ loaded: 0, total: 0, progress: 0, currentUrl: '' });
+      setIndividualAnimationProgress({ url: '', progress: 0 });
+
+      // ✅ Use enterLevel API for next level
+      const data = await gameService.enterLevel(
+        playerId, 
+        nextLevelId,
+        handleAnimationProgress,
+        handleDownloadProgress
+      );
+      
+      if (data) {
+        const extractedGameState = gameService.extractUnifiedGameState(data, false);
+        if (extractedGameState) {
+          setGameState(extractedGameState);
+          console.log('✅ Next level loaded successfully');
+        } else {
+          throw new Error('Failed to extract game state from next level response');
+        }
+      } else {
+        throw new Error('No data received from next level API');
+      }
+      
+    } catch (err) {
+      console.error('❌ Enter next level failed:', err);
+      setError(err.message || 'Failed to load next level');
+    } finally {
+      setLoading(false);
+      setAnimationsLoading(false);
+      setDownloadProgress({ loaded: 0, total: 0, progress: 0, currentUrl: '' });
+      setIndividualAnimationProgress({ url: '', progress: 0 });
+    }
+  }, [handleAnimationProgress, handleDownloadProgress]);
+
     const refetchGameData = () => {
     pendingSubmissionRef.current = null;
     setWaitingForAnimation(false);
@@ -280,11 +321,11 @@ export const useGameData = (playerId, levelId) => {
     submitting,
     waitingForAnimation,
     
-    // ✅ Enhanced animation loading states
     animationsLoading,
-    downloadProgress,        // Overall download progress
+    downloadProgress,       
     individualAnimationProgress, 
     retryLevel,
+    enterNextLevel,
     
     refetchGameData: fetchGameData,
     submitAnswer,

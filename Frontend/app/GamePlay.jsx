@@ -7,7 +7,8 @@ import ThirdGrid from '../app/Components/Actual Game/Third Grid/thirdGrid';
 import { useGameData } from './hooks/useGameData';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import CombatVSModal from './Components/Actual Game/Game Display Entrance/GameDisplayEntrance';
-import GameOverModal from './Components/GameOver/GameOver'
+import GameOverModal from './Components/GameOver And Win/GameOver';
+import LevelCompletionModal from './Components/GameOver And Win/LevelCompletionModal'; 
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -35,11 +36,13 @@ export default function GamePlay() {
   const [selectedBlankIndex, setSelectedBlankIndex] = useState(0); 
   const [showVSModal, setShowVSModal] = useState(true);
   const [showGameOver, setShowGameOver] = useState(false);
+  const [showLevelCompletion, setShowLevelCompletion] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
-  const gameOverTimeoutRef = useRef(null); // ✅ Add timeout ref
-  const hasTriggeredGameOver = useRef(false); // ✅ Add flag to prevent multiple triggers
+  const [isLoadingNextLevel, setIsLoadingNextLevel] = useState(false); 
+  const gameOverTimeoutRef = useRef(null);
+  const hasTriggeredGameOver = useRef(false);
+  const hasTriggeredLevelCompletion = useRef(false);
 
-  // API data with properly parsed parameters
   const { 
     gameState,   
     loading, 
@@ -47,6 +50,7 @@ export default function GamePlay() {
     submitting,
     refetchGameData,
     retryLevel,
+    enterNextLevel, 
     submitAnswer,
     waitingForAnimation, 
     onAnimationComplete,
@@ -64,19 +68,22 @@ export default function GamePlay() {
 
   // ✅ Reset states when new challenge loads
   useEffect(() => {
-    if (currentChallenge && !loading && !animationsLoading && isRetrying) {
-      console.log('✅ Retry completed - new challenge data loaded');
+    if (currentChallenge && !loading && !animationsLoading && (isRetrying || isLoadingNextLevel)) {
+      console.log('✅ Level data loaded successfully');
       setIsRetrying(false);
+      setIsLoadingNextLevel(false);
       setShowGameOver(false);
-      hasTriggeredGameOver.current = false; // ✅ Reset the trigger flag
+      setShowLevelCompletion(false);
+      hasTriggeredGameOver.current = false;
+      hasTriggeredLevelCompletion.current = false;
       
-      // ✅ Clear any pending timeouts
+      // Clear any pending timeouts
       if (gameOverTimeoutRef.current) {
         clearTimeout(gameOverTimeoutRef.current);
         gameOverTimeoutRef.current = null;
       }
     }
-  }, [currentChallenge, loading, animationsLoading, isRetrying]);
+  }, [currentChallenge, loading, animationsLoading, isRetrying, isLoadingNextLevel]);
 
   const handleVSComplete = () => {
     setShowVSModal(false);
@@ -108,55 +115,133 @@ export default function GamePlay() {
 
   const handleEnemyComplete = useCallback(() => {
     setSelectedAnswers([]);
-    setBorderColor('white');
+    setBorderColor('white'); 
     setActiveGameTab('code');
     setSelectedBlankIndex(0);
   }, []);
 
-  // ✅ Fixed GameOver detection - prevent multiple triggers
   useEffect(() => {
     if (gameState?.submissionResult?.fightResult?.status === 'lost' &&
         gameState?.submissionResult?.fightResult?.character?.character_health === 0 &&
-        !hasTriggeredGameOver.current && !showGameOver && !isRetrying) { // ✅ Prevent multiple triggers
+        !hasTriggeredGameOver.current && !showGameOver && !isRetrying) {
       
       console.log('🎮 Character died - waiting for death animations to complete...');
-      hasTriggeredGameOver.current = true; // ✅ Set flag to prevent retriggering
+      hasTriggeredGameOver.current = true;
       
-      // ✅ Store timeout reference
       gameOverTimeoutRef.current = setTimeout(() => {
         console.log('🎮 Showing GameOver modal after animations');
         setShowGameOver(true);
-      }, 4000); // ✅ Increased time for enemy attack + character death
+      }, 4000);
     }
-  }, [gameState?.submissionResult?.fightResult]); // ✅ Only depend on fightResult
+  }, [gameState?.submissionResult?.fightResult]);
+
+  useEffect(() => {
+  const submissionResult = gameState?.submissionResult;
+  const fightResult = submissionResult?.fightResult;
+  
+  console.log('🎉 Level Completion Check:', {
+    status: fightResult?.status,
+    enemyHealth: fightResult?.enemy?.enemy_health,
+    hasCompletionRewards: !!submissionResult?.completionRewards,
+    hasNextLevel: !!submissionResult?.nextLevel,
+    hasTriggered: hasTriggeredLevelCompletion.current,
+    showLevelCompletion: showLevelCompletion,
+    isLoadingNextLevel: isLoadingNextLevel
+  });
+
+  // ✅ Only detect level completion, don't set timeout here
+  if (fightResult?.status === 'won' &&
+      fightResult?.enemy?.enemy_health === 0 &&
+      !hasTriggeredLevelCompletion.current && 
+      !showLevelCompletion && 
+      !isLoadingNextLevel) {
+    
+    console.log('🎉 Level completed - enemy defeated, waiting for animations to complete...');
+    console.log('🏆 Completion rewards:', submissionResult?.completionRewards);
+    console.log('🚀 Next level:', submissionResult?.nextLevel);
+    
+    hasTriggeredLevelCompletion.current = true;
+    // ✅ Remove the setTimeout - let animations complete naturally
+  }
+}, [gameState?.submissionResult?.fightResult, showLevelCompletion, isLoadingNextLevel]);
+
+
+const handleAnimationCompletionForLevelCompletion = useCallback(() => {
+  if (hasTriggeredLevelCompletion.current && !showLevelCompletion) {
+    console.log('🎉 All animations completed - showing Level Completion modal');
+    setShowLevelCompletion(true);
+  }
+}, [showLevelCompletion]);
+
+const handleAnimationComplete = useCallback(() => {
+  console.log('🎬 Animation sequence completed');
+  
+  if (hasTriggeredLevelCompletion.current) {
+    handleAnimationCompletionForLevelCompletion();
+  } else {
+    onAnimationComplete?.();
+  }
+}, [onAnimationComplete, handleAnimationCompletionForLevelCompletion]);
+
+
 
   // ✅ Updated retry handler
   const handleRetry = useCallback(() => {
     console.log('🔄 Retrying level - calling entryLevel API to reset data...');
     
-    // ✅ Clear any pending game over
     if (gameOverTimeoutRef.current) {
       clearTimeout(gameOverTimeoutRef.current);
       gameOverTimeoutRef.current = null;
     }
     
     setIsRetrying(true);
-    hasTriggeredGameOver.current = false; // ✅ Reset trigger flag
+    hasTriggeredGameOver.current = false;
+    hasTriggeredLevelCompletion.current = false;
     retryLevel();
   }, [retryLevel]);
+
+  // ✅ Handle next level navigation
+  const handleNextLevel = useCallback(async () => {
+    const nextLevelId = gameState?.submissionResult?.nextLevel?.level_id;
+    
+    if (!nextLevelId) {
+      console.error('❌ No next level ID available');
+      return;
+    }
+
+    console.log(`🚀 Loading next level: ${nextLevelId}`);
+    
+    if (gameOverTimeoutRef.current) {
+      clearTimeout(gameOverTimeoutRef.current);
+      gameOverTimeoutRef.current = null;
+    }
+    
+    setIsLoadingNextLevel(true);
+    hasTriggeredLevelCompletion.current = false;
+    
+    try {
+      await enterNextLevel(playerId, nextLevelId);
+      console.log('✅ Next level loaded successfully');
+    } catch (error) {
+      console.error('❌ Failed to load next level:', error);
+      setIsLoadingNextLevel(false);
+    }
+  }, [gameState?.submissionResult?.nextLevel?.level_id, playerId, enterNextLevel]);
 
   const handleHome = useCallback(() => {
     console.log('🏠 Going home...');
     
-    // ✅ Clear any pending game over
     if (gameOverTimeoutRef.current) {
       clearTimeout(gameOverTimeoutRef.current);
       gameOverTimeoutRef.current = null;
     }
     
     setShowGameOver(false);
+    setShowLevelCompletion(false); 
     setIsRetrying(false);
-    hasTriggeredGameOver.current = false; // ✅ Reset trigger flag
+    setIsLoadingNextLevel(false);
+    hasTriggeredGameOver.current = false;
+    hasTriggeredLevelCompletion.current = false;
     router.back();
   }, [router]);
 
@@ -197,7 +282,7 @@ export default function GamePlay() {
     setSelectedAnswers(answers);
   }, []);
 
-  // ✅ Show loading during retry but keep GameOver modal visible in background
+  // ✅ Show loading during retry or next level loading
   if (loading || animationsLoading) {
     return (
       <>
@@ -206,7 +291,7 @@ export default function GamePlay() {
           source={{uri: 'https://github.com/user-attachments/assets/dc83a36e-eb2e-4fa5-b4e7-0eab9ff65abc'}}
           style={styles.container}
         >
-          {/* ✅ Show GameOver modal in background if it was visible */}
+          {/* ✅ Show modals in background if they were visible */}
           <GameOverModal
             visible={showGameOver}
             onRetry={handleRetry}
@@ -216,12 +301,26 @@ export default function GamePlay() {
             isRetrying={isRetrying} 
           />
 
+          <LevelCompletionModal
+            visible={showLevelCompletion}
+            onRetry={handleRetry}
+            onHome={handleHome}
+            onNextLevel={handleNextLevel}
+            completionRewards={gameState?.submissionResult?.completionRewards}
+            nextLevel={gameState?.submissionResult?.nextLevel}
+            characterName={gameState?.selectedCharacter?.name || 'Character'}
+            enemyName={gameState?.enemy?.enemy_name || 'Enemy'}
+            isLoading={isLoadingNextLevel}
+          />
+
           {/* ✅ Loading overlay */}
           <View style={[styles.container, styles.centerContent]}>
             <ActivityIndicator size="large" color="#ffffff" />
             
             {isRetrying ? (
               <Text style={styles.loadingText}>Restarting level...</Text>
+            ) : isLoadingNextLevel ? (
+              <Text style={styles.loadingText}>Loading next level...</Text>
             ) : loading ? (
               <Text style={styles.loadingText}>Loading challenge...</Text>
             ) : (
@@ -304,19 +403,7 @@ export default function GamePlay() {
     );
   }
 
-  if (!currentChallenge && !showGameOver && !isRetrying) {
-    return (
-      <>
-        <StatusBar hidden={true} />
-        <View style={[styles.container, styles.centerContent]}>
-          <Text style={styles.errorText}>No challenge data available</Text>
-          <TouchableOpacity style={styles.exitButton} onPress={handleExitGame}>
-            <Text style={styles.exitText}>Exit Game</Text>
-          </TouchableOpacity>
-        </View>
-      </>
-    );
-  }
+
 
   return (
     <>
@@ -325,7 +412,7 @@ export default function GamePlay() {
         source={{uri: 'https://github.com/user-attachments/assets/dc83a36e-eb2e-4fa5-b4e7-0eab9ff65abc'}}
         style={styles.container}
       >
-        {/* ✅ GameOver Modal - always rendered, visible when showGameOver is true */}
+        {/* ✅ GameOver Modal */}
         <GameOverModal
           visible={showGameOver}
           onRetry={handleRetry}
@@ -333,6 +420,19 @@ export default function GamePlay() {
           characterName={gameState?.selectedCharacter?.name || 'Character'}
           enemyName={gameState?.enemy?.enemy_name || 'Enemy'}
           isRetrying={isRetrying} 
+        />
+
+        {/* ✅ Level Completion Modal */}
+        <LevelCompletionModal
+          visible={showLevelCompletion}
+          onRetry={handleRetry}
+          onHome={handleHome}
+          onNextLevel={handleNextLevel}
+          completionRewards={gameState?.submissionResult?.completionRewards}
+          nextLevel={gameState?.submissionResult?.nextLevel}
+          characterName={gameState?.selectedCharacter?.name || 'Character'}
+          enemyName={gameState?.enemy?.enemy_name || 'Enemy'}
+          isLoading={isLoadingNextLevel}
         />
 
         {/* ✅ Only render game content if we have currentChallenge */}
@@ -347,7 +447,7 @@ export default function GamePlay() {
                 currentQuestionIndex={0}
                 onAllowEnemyCompletion={handleAllowEnemyCompletion}
                 onSetCorrectAnswer={handleSetCorrectAnswer}
-                onSubmissionAnimationComplete={onAnimationComplete}
+                onSubmissionAnimationComplete={handleAnimationComplete}
               />
             </View>
 

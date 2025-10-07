@@ -257,9 +257,20 @@ export const gameService = {
             enemyHealth: responseData.levelStatus.enemyHealth || 0,
             coinsEarned: responseData.levelStatus.coinsEarned || 0
           } : null,
-          
-          nextLevel: responseData.nextLevel || null
+
+        completionRewards: responseData.completionRewards ? {
+            feedbackMessage: responseData.completionRewards.feedbackMessage || null,
+            currentTotalPoints: responseData.completionRewards.currentTotalPoints || 0,
+            currentExpPoints: responseData.completionRewards.currentExpPoints || 0
+          } : null,
+
+        nextLevel: responseData.nextLevel ? {
+            level_id: responseData.nextLevel.level_id,
+            level_number: responseData.nextLevel.level_number,
+            is_unlocked: responseData.nextLevel.is_unlocked || false
+          } : null
         };
+
 
         // Merge fight result data back into main game state
         if (responseData.fightResult?.character?.character_health) {
@@ -276,12 +287,15 @@ export const gameService = {
         }
       }
       
+        
       console.log(`✅ Game state extracted (${isSubmission ? 'submission' : 'entry'}):`, {
         hasLevel: !!gameState.level.level_id,
         hasEnemy: !!gameState.enemy.enemy_id,
         hasCharacter: !!gameState.selectedCharacter.character_id,
         hasChallenge: !!gameState.currentChallenge?.id,
-        hasSubmission: !!gameState.submissionResult
+        hasSubmission: !!gameState.submissionResult,
+        hasCompletionRewards: !!(isSubmission && gameState.submissionResult?.completionRewards),
+        hasNextLevel: !!(isSubmission && gameState.submissionResult?.nextLevel)
       });
       
       return gameState;
