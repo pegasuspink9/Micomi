@@ -211,7 +211,54 @@ export const useGameData = (playerId, levelId) => {
     fetchGameData();
   }, [playerId, levelId]);
 
-  const refetchGameData = () => {
+
+
+  const retryLevel = useCallback(async () => {
+    try {
+      console.log(`🔄 Starting level retry for player ${playerId}, level ${levelId}...`);
+      
+      setLoading(true);
+      setError(null);
+      setAnimationsLoading(true);
+      setDownloadProgress({ loaded: 0, total: 0, progress: 0, currentUrl: null });
+      setIndividualAnimationProgress({ url: null, loaded: 0, total: 0, progress: 0 });
+
+      // ✅ Use retryLevel instead of enterLevel for clearer logging
+      const data = await gameService.retryLevel(
+        playerId, 
+        levelId,
+        (progress) => {
+          setIndividualAnimationProgress(progress);
+        },
+        (progress) => {
+          setDownloadProgress(progress);
+        }
+      );
+      
+      if (data) {
+        const extractedGameState = gameService.extractUnifiedGameState(data, false);
+        if (extractedGameState) {
+          setGameState(extractedGameState);
+          console.log('✅ Level retried successfully with fresh data');
+        } else {
+          throw new Error('Failed to extract game state from retry response');
+        }
+      } else {
+        throw new Error('No data received from retry level API');
+      }
+      
+    } catch (err) {
+      console.error('❌ Retry level failed:', err);
+      setError(err.message || 'Failed to retry level');
+    } finally {
+      setLoading(false);
+      setAnimationsLoading(false);
+      setDownloadProgress({ loaded: 0, total: 0, progress: 0, currentUrl: null });
+      setIndividualAnimationProgress({ url: null, loaded: 0, total: 0, progress: 0 });
+    }
+  }, [playerId, levelId]);
+
+    const refetchGameData = () => {
     pendingSubmissionRef.current = null;
     setWaitingForAnimation(false);
     setAnimationsLoading(true);
@@ -236,9 +283,10 @@ export const useGameData = (playerId, levelId) => {
     // ✅ Enhanced animation loading states
     animationsLoading,
     downloadProgress,        // Overall download progress
-    individualAnimationProgress, // Current animation being downloaded
+    individualAnimationProgress, 
+    retryLevel,
     
-    refetchGameData,
+    refetchGameData: fetchGameData,
     submitAnswer,
     onAnimationComplete: handleAnimationComplete,
   };

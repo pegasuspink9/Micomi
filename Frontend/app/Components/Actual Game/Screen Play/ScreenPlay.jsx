@@ -21,6 +21,7 @@ const ScreenPlay = ({
   const [totalCoins, setTotalCoins] = useState(0);
   const [characterAnimationState, setCharacterAnimationState] = useState('idle');
   const [isPlayingSubmissionAnimation, setIsPlayingSubmissionAnimation] = useState(false);
+  
 
   const enemies = useMemo(() => processEnemyData(enemiesData), []);
 
@@ -112,7 +113,7 @@ const ScreenPlay = ({
   }, [gameState.submissionResult]);
 
   // ✅ Memoize handlers
-  const handleCharacterAnimationComplete = useCallback((completedAnimationState) => {
+const handleCharacterAnimationComplete = useCallback((completedAnimationState) => {
     console.log(`Character animation "${completedAnimationState}" completed`);
     
     if (!['attack', 'hurt', 'dies'].includes(completedAnimationState)) {
@@ -121,15 +122,26 @@ const ScreenPlay = ({
     
     setIsPlayingSubmissionAnimation(false);
     
-    const shouldDie = playerHealth <= 0;
-    
-    if (shouldDie && completedAnimationState !== 'dies') {
+    // ✅ Check if character should die AFTER hurt animation completes
+    if (completedAnimationState === 'hurt' && playerHealth <= 0) {
+      console.log('🐕 Character hurt animation completed, but health is 0 - setting dies animation');
       setCharacterAnimationState('dies');
       setIsPlayingSubmissionAnimation(true);
-    } else if (!shouldDie && completedAnimationState !== 'idle') {
+      return;
+    }
+    
+    // ✅ Stay in dies state if character died
+    if (completedAnimationState === 'dies') {
+      console.log('🐕 Character death animation completed - staying in dies state');
+      return;
+    }
+    
+    // ✅ Return to idle if character is alive
+    if (playerHealth > 0 && completedAnimationState !== 'idle') {
       setCharacterAnimationState('idle');
     }
     
+    // ✅ Notify parent of animation completion
     if (['attack', 'hurt'].includes(completedAnimationState)) {
       if (typeof onSubmissionAnimationComplete === 'function') {
         try {
@@ -142,31 +154,27 @@ const ScreenPlay = ({
     }
   }, [playerHealth, onSubmissionAnimationComplete]);
 
-  const handleEnemyAnimationComplete = useCallback((index) => (completedAnimationState) => {
+
+   const handleEnemyAnimationComplete = useCallback((index) => (completedAnimationState) => {
     console.log(`Enemy ${index} animation "${completedAnimationState}" completed`);
 
     setEnemyAnimationStates(prev => {
       const next = [...prev];
       if (completedAnimationState === 'dies') {
-        next[index] = 'dies';
-      } else {
+        next[index] = 'dies'; // ✅ Stay in dies state
+      } else if (completedAnimationState === 'attack' && enemyHealth > 0) {
+        next[index] = 'idle'; // ✅ Return to idle after attack
+      } else if (enemyHealth > 0) {
         next[index] = 'idle';
       }
       return next;
     });
-  }, []);
+  }, [enemyHealth]);
 
   // Rest of useEffect logic remains the same...
-  useEffect(() => {
+ useEffect(() => {
     if (isPlayingSubmissionAnimation) {
       console.log(`Skipping animation change - submission animation in progress`);
-      return;
-    }
-
-    if (playerHealth <= 0) {
-      console.log(`Player died - setting dies animation`);
-      setCharacterAnimationState('dies');
-      setIsPlayingSubmissionAnimation(true);
       return;
     }
 
@@ -175,6 +183,7 @@ const ScreenPlay = ({
       ? `${submission.isCorrect}-${submission.attempts || 0}-${submission.fightResult?.character?.character_health ?? ''}-${submission.fightResult?.enemy?.enemy_health ?? ''}`
       : null;
 
+    // ✅ PRIORITY 1: Handle new submissions FIRST (including final enemy attack)
     if (submission && lastSubmissionKeyRef.current !== submissionKey) {
       lastSubmissionKeyRef.current = submissionKey;
 
@@ -184,22 +193,34 @@ const ScreenPlay = ({
         setEnemyAnimationStates(prev => prev.map(() => 'hurt'));
         setIsPlayingSubmissionAnimation(true);
       } else if (submission.isCorrect === false) {
-        console.log(`Wrong answer - setting player hurt, enemy attack`);
-        setCharacterAnimationState('hurt');
+        // ✅ ALWAYS play enemy attack first, even if character health is 0
+        console.log(`Wrong answer - setting enemy attack, player hurt (health: ${playerHealth})`);
         setEnemyAnimationStates(prev => prev.map(() => 'attack'));
+        
+        // ✅ Set character to hurt FIRST, dies will be handled after enemy attack completes
+        setCharacterAnimationState('hurt');
         setIsPlayingSubmissionAnimation(true);
       }
       return;
     }
 
-    if (!submission && characterAnimationState !== 'idle') {
+    // ✅ PRIORITY 2: Handle character death ONLY if no submission is being processed
+    if (!submission && playerHealth <= 0 && characterAnimationState !== 'dies') {
+      console.log(`Player died - setting dies animation`);
+      setCharacterAnimationState('dies');
+      setIsPlayingSubmissionAnimation(true);
+      return;
+    }
+
+    // ✅ PRIORITY 3: Reset to idle if no submission and character is alive
+    if (!submission && characterAnimationState !== 'idle' && playerHealth > 0) {
       console.log(`No submission result - setting idle animation`);
       setCharacterAnimationState('idle');
       setIsPlayingSubmissionAnimation(false);
       lastSubmissionKeyRef.current = null;
       setEnemyAnimationStates(enemies.map(() => 'idle'));
     }
-  }, [gameState.submissionResult, playerHealth, isPlayingSubmissionAnimation, enemies]);
+  }, [gameState.submissionResult, playerHealth, isPlayingSubmissionAnimation, enemies, characterAnimationState]);
 
   // ✅ Reduce debug logging frequency
   useEffect(() => {

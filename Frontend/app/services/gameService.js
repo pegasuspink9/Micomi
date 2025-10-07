@@ -32,7 +32,7 @@ export const gameService = {
 
       return {
         ...response.data,
-        downloadStats: downloadResult // Include download info in response
+        downloadStats: downloadResult 
       };
     } catch (error) {
       console.error(`Failed to enter level ${levelId}:`, error);
@@ -73,6 +73,42 @@ export const gameService = {
       return response.success ? response.data : response;
     } catch (error) {
       console.error(`❌ Failed to submit answer:`, error);
+      throw error;
+    }
+  },
+
+  retryLevel: async (playerId, levelId, onAnimationProgress = null, onDownloadProgress = null) => {
+    try {
+      console.log(`🔄 RETRYING level ${levelId} for player ${playerId} - resetting to zero...`);
+      
+      await animationPreloader.loadCachedAnimations();
+      
+      const response = await apiService.post(`/game/entryLevel/${playerId}/${levelId}`);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to retry level');
+      }
+
+      console.log(`🎮 Level ${levelId} RETRY data received, starting forced animation download...`);
+      
+      const downloadResult = await animationPreloader.downloadAllAnimations(
+        response.data,
+        onDownloadProgress,
+        onAnimationProgress
+      );
+
+      if (!downloadResult.success) {
+        console.warn('⚠️ Animation download failed on retry, but continuing with game...');
+      } else {
+        console.log(`✅ All animations downloaded successfully on retry: ${downloadResult.downloaded}/${downloadResult.total}`);
+      }
+
+      return {
+        ...response.data,
+        downloadStats: downloadResult 
+      };
+    } catch (error) {
+      console.error(`Failed to retry level ${levelId}:`, error);
       throw error;
     }
   },

@@ -29,7 +29,7 @@ model Map {
   levels           Level[]
 }
 
-model Lesson {  //Micomi level
+model Lesson {
   lesson_id          Int    @id @default(autoincrement())
   level_id           Int
   lesson_title       String
@@ -49,7 +49,6 @@ model Level {
   level_type           String
   level_title          String?
   enemy_id             Int?
-
   challenges           Challenge[]
   lessons              Lesson[]
   enemy                Enemy?              @relation(fields: [enemy_id], references: [enemy_id], onDelete: Cascade)
@@ -67,7 +66,7 @@ model Challenge {
   points_reward   Int     @default(0)
   coins_reward    Int     @default(0)
   hint            String
-  challenge_type  String  //Easy: multiple choice and fill in the blank. Hard: code with guide.
+  challenge_type  String
   guide           String?
   correct_answer  Json    @default("[]")
   test_cases      Json?   @default("[]")
@@ -87,41 +86,33 @@ model Enemy {
   enemy_skills      String
   enemy_health      Int
   enemy_damage      Int
-  enemy_map         String  //to determine what map is this enemy (HTML, CSS, JavaScript, Computer)
-  
-  enemy_coins       Int?    @default(0)
-
-  //animations
+  enemy_map         String
   enemy_attack      String?
+  enemy_coins       Int?    @default(0)
   enemy_dies        String?
   enemy_hurt        String?
   enemy_run         String?
-  avatar_enemy      String?  //idle animation
-
+  avatar_enemy      String?
   levels            Level[]
 }
 
 model Player {
   player_id          Int                 @id @default(autoincrement())
-  player_name        String              @unique
   username           String              @unique
   email              String              @unique
   password           String
-  total_points       Int                 @default(0)        //point given after completing the level (sum of all points per challenge (only the first won))
-  created_at         DateTime            @default(now())    //point given after completing the level plus the exp points from quest
+  total_points       Int                 @default(0)
+  created_at         DateTime            @default(now())
   last_active        DateTime?
   days_logged_in     Int                 @default(0)
   coins              Int                 @default(100)
   exp_points         Int                 @default(0)
   level              Int                 @default(1)
-
   energy             Int                 @default(25)
   energy_reset_at    DateTime?
-
-   //for quest and achievement streak tracker
+  player_name        String              @unique
   current_streak     Int                 @default(0)
   longest_streak     Int                 @default(0)
-
   playerAchievements PlayerAchievement[]
   ownedCharacters    PlayerCharacter[]
   ownedLevelPotions  PlayerLevelPotion[]
@@ -147,29 +138,14 @@ model PlayerProgress {
   player_hp              Int           @default(0)
   challenge_start_time   DateTime?
   wrong_challenges       Json          @default("[]")
-
-  //active potion effects during combat
   has_freeze_effect      Boolean       @default(false)
   has_strong_effect      Boolean       @default(false)
-
-  //track kuwens during combat
   coins_earned           Int           @default(0)
-
-  //for quest purpose
   took_damage            Boolean?      @default(false)
-
-  //streak tracking
   consecutive_corrects   Int           @default(0)
-
-  //collected player expected output
   player_expected_output Json?         @default("[]")
-
-   //micomi level done
   done_micomi_level      Boolean?      @default(false)
-
-  //potion shop level done
   done_shop_level        Boolean?      @default(false)
-
   level                  Level         @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
   player                 Player        @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
 
@@ -180,6 +156,7 @@ model PlayerProgress {
 model Character {
   character_id      Int               @id @default(autoincrement())
   character_name    String
+  avatar_image      String?
   character_type    String
   weapon_name       String
   weapon_skill      String
@@ -189,12 +166,9 @@ model Character {
   character_dies    String?
   character_hurt    String?
   user_coins        Int?              @default(0)
-
-  //animations
-  avatar_image      String?           //idle 
-  character_damage  Json?             @default("[]") // 30, 40, 50
+  character_damage  Json?             @default("[]")
   character_run     String?
-  character_attacks Json?             @default("[]") //["basic_attack", "second_attack", "special_attack"] animation links
+  character_attacks Json?             @default("[]")
   character_avatar  String?
   characterShop     CharacterShop?
   playerCharacter   PlayerCharacter[]
@@ -247,7 +221,7 @@ model PlayerLevelPotion {
 model PotionShopByLevel {
   potion_shop_by_level_id Int   @id @default(autoincrement())
   level_id                Int   @unique
-  potions_avail           Json  @default("[]") //["health","strong", "freeze", "hint"]
+  potions_avail           Json  @default("[]")
   health_quantity         Int   @default(0)
   strong_quantity         Int   @default(0)
   freeze_quantity         Int   @default(0)
@@ -312,22 +286,20 @@ model PlayerQuest {
 }
 
 enum QuestType {
-  defeat_enemy //already in the combat
-  buy_potion //already in the shop
-  unlock_character //already in the shop
-  complete_lesson //not yet implemented
-  solve_challenge //already in the combat
-  spend_coins //already in the shop
-  earn_exp //already in the combat (giving of rewards)
-  login_days //up for testing
-
-  //newly added
+  defeat_enemy
+  buy_potion
+  unlock_character
+  complete_lesson
+  solve_challenge
+  spend_coins
+  earn_exp
+  login_days
   reach_level
-  use_potion //already in the shop
-  solve_challenge_no_hint //already in the challenge
-  defeat_enemy_full_hp //already in combat
-  perfect_level //already in the combat
-  defeat_boss //already in the shop
+  use_potion
+  solve_challenge_no_hint
+  defeat_enemy_full_hp
+  perfect_level
+  defeat_boss
 }
 
 enum PotionType {
@@ -343,7 +315,7 @@ enum DifficultyLevel {
   hard
   expert
   final
-  null //micomi and potion shop level
+  null
 }
 
 enum BattleStatus {

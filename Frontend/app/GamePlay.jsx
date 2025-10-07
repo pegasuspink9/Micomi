@@ -7,6 +7,7 @@ import ThirdGrid from '../app/Components/Actual Game/Third Grid/thirdGrid';
 import { useGameData } from './hooks/useGameData';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import CombatVSModal from './Components/Actual Game/Game Display Entrance/GameDisplayEntrance';
+import GameOverModal from './Components/GameOver/GameOver'
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -31,37 +32,12 @@ export default function GamePlay() {
   const [borderColor, setBorderColor] = useState('white');
   const [activeGameTab, setActiveGameTab] = useState('code');
   const [showDebugPanel, setShowDebugPanel] = useState(false);
-  const [selectedBlankIndex, setSelectedBlankIndex] = useState(0); // ✅ Add selected blank state
-
+  const [selectedBlankIndex, setSelectedBlankIndex] = useState(0); 
   const [showVSModal, setShowVSModal] = useState(true);
-
-  useEffect(() => {
-  if (gameState && !animationsLoading && !loading && !showVSModal) {
-    setShowVSModal(true);
-  }
-  }, [gameState, animationsLoading, loading, showVSModal]);
-
-  const handleVSComplete = () => {
-  setShowVSModal(false);
-  // Continue with normal game flow
-  };
-
-
-  const handleGameTabChange = useCallback((tabName) => {
-    setActiveGameTab(tabName);
-  }, []);
-
-  const handleCorrectAnswer = useCallback(() => {
-    setActiveGameTab('output');
-  }, []);
-
-  // ✅ Handle blank selection
-  const handleBlankSelect = useCallback((blankIndex) => {
-    console.log('🎯 Blank selected in GamePlay:', blankIndex);
-    setSelectedBlankIndex(blankIndex);
-  }, []);
-
-  const shouldHideThirdGrid = activeGameTab === 'output' || activeGameTab === 'expected';
+  const [showGameOver, setShowGameOver] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const gameOverTimeoutRef = useRef(null); // ✅ Add timeout ref
+  const hasTriggeredGameOver = useRef(false); // ✅ Add flag to prevent multiple triggers
 
   // API data with properly parsed parameters
   const { 
@@ -70,6 +46,7 @@ export default function GamePlay() {
     error, 
     submitting,
     refetchGameData,
+    retryLevel,
     submitAnswer,
     waitingForAnimation, 
     onAnimationComplete,
@@ -85,12 +62,47 @@ export default function GamePlay() {
   const allowEnemyCompletionRef = useRef(null);
   const setCorrectAnswerRef = useRef(null);
 
+  // ✅ Reset states when new challenge loads
+  useEffect(() => {
+    if (currentChallenge && !loading && !animationsLoading && isRetrying) {
+      console.log('✅ Retry completed - new challenge data loaded');
+      setIsRetrying(false);
+      setShowGameOver(false);
+      hasTriggeredGameOver.current = false; // ✅ Reset the trigger flag
+      
+      // ✅ Clear any pending timeouts
+      if (gameOverTimeoutRef.current) {
+        clearTimeout(gameOverTimeoutRef.current);
+        gameOverTimeoutRef.current = null;
+      }
+    }
+  }, [currentChallenge, loading, animationsLoading, isRetrying]);
+
+  const handleVSComplete = () => {
+    setShowVSModal(false);
+  };
+
+  const handleGameTabChange = useCallback((tabName) => {
+    setActiveGameTab(tabName);
+  }, []);
+
+  const handleCorrectAnswer = useCallback(() => {
+    setActiveGameTab('output');
+  }, []);
+
+  const handleBlankSelect = useCallback((blankIndex) => {
+    console.log('🎯 Blank selected in GamePlay:', blankIndex);
+    setSelectedBlankIndex(blankIndex);
+  }, []);
+
+  const shouldHideThirdGrid = activeGameTab === 'output' || activeGameTab === 'expected';
+
   useEffect(() => {
     if (currentChallenge) {
       setSelectedAnswers([]);
       setBorderColor('white');
       setActiveGameTab('code');
-      setSelectedBlankIndex(0); // ✅ Reset selected blank
+      setSelectedBlankIndex(0);
     }
   }, [currentChallenge?.id]);
 
@@ -98,7 +110,64 @@ export default function GamePlay() {
     setSelectedAnswers([]);
     setBorderColor('white');
     setActiveGameTab('code');
-    setSelectedBlankIndex(0); // ✅ Reset selected blank
+    setSelectedBlankIndex(0);
+  }, []);
+
+  // ✅ Fixed GameOver detection - prevent multiple triggers
+  useEffect(() => {
+    if (gameState?.submissionResult?.fightResult?.status === 'lost' &&
+        gameState?.submissionResult?.fightResult?.character?.character_health === 0 &&
+        !hasTriggeredGameOver.current && !showGameOver && !isRetrying) { // ✅ Prevent multiple triggers
+      
+      console.log('🎮 Character died - waiting for death animations to complete...');
+      hasTriggeredGameOver.current = true; // ✅ Set flag to prevent retriggering
+      
+      // ✅ Store timeout reference
+      gameOverTimeoutRef.current = setTimeout(() => {
+        console.log('🎮 Showing GameOver modal after animations');
+        setShowGameOver(true);
+      }, 4000); // ✅ Increased time for enemy attack + character death
+    }
+  }, [gameState?.submissionResult?.fightResult]); // ✅ Only depend on fightResult
+
+  // ✅ Updated retry handler
+  const handleRetry = useCallback(() => {
+    console.log('🔄 Retrying level - calling entryLevel API to reset data...');
+    
+    // ✅ Clear any pending game over
+    if (gameOverTimeoutRef.current) {
+      clearTimeout(gameOverTimeoutRef.current);
+      gameOverTimeoutRef.current = null;
+    }
+    
+    setIsRetrying(true);
+    hasTriggeredGameOver.current = false; // ✅ Reset trigger flag
+    retryLevel();
+  }, [retryLevel]);
+
+  const handleHome = useCallback(() => {
+    console.log('🏠 Going home...');
+    
+    // ✅ Clear any pending game over
+    if (gameOverTimeoutRef.current) {
+      clearTimeout(gameOverTimeoutRef.current);
+      gameOverTimeoutRef.current = null;
+    }
+    
+    setShowGameOver(false);
+    setIsRetrying(false);
+    hasTriggeredGameOver.current = false; // ✅ Reset trigger flag
+    router.back();
+  }, [router]);
+
+  // ✅ Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (gameOverTimeoutRef.current) {
+        clearTimeout(gameOverTimeoutRef.current);
+        gameOverTimeoutRef.current = null;
+      }
+    };
   }, []);
 
   const handleAllowEnemyCompletion = useCallback((allowCompletionFn) => {
@@ -124,20 +193,95 @@ export default function GamePlay() {
     router.back();
   }, [router]);
 
-  // ✅ Memoize setSelectedAnswers to prevent re-renders
   const memoizedSetSelectedAnswers = useCallback((answers) => {
     setSelectedAnswers(answers);
   }, []);
 
-  // Loading state
-  if (loading) {
+  // ✅ Show loading during retry but keep GameOver modal visible in background
+  if (loading || animationsLoading) {
     return (
       <>
         <StatusBar hidden={true} />
-        <View style={[styles.container, styles.centerContent]}>
-          <ActivityIndicator size="large" color="#ffffff" />
-          <Text style={styles.loadingText}>Loading challenge...</Text>
-        </View>
+        <ImageBackground 
+          source={{uri: 'https://github.com/user-attachments/assets/dc83a36e-eb2e-4fa5-b4e7-0eab9ff65abc'}}
+          style={styles.container}
+        >
+          {/* ✅ Show GameOver modal in background if it was visible */}
+          <GameOverModal
+            visible={showGameOver}
+            onRetry={handleRetry}
+            onHome={handleHome}
+            characterName={gameState?.selectedCharacter?.name || 'Character'}
+            enemyName={gameState?.enemy?.enemy_name || 'Enemy'}
+            isRetrying={isRetrying} 
+          />
+
+          {/* ✅ Loading overlay */}
+          <View style={[styles.container, styles.centerContent]}>
+            <ActivityIndicator size="large" color="#ffffff" />
+            
+            {isRetrying ? (
+              <Text style={styles.loadingText}>Restarting level...</Text>
+            ) : loading ? (
+              <Text style={styles.loadingText}>Loading challenge...</Text>
+            ) : (
+              <View style={styles.downloadContainer}>
+                <Text style={styles.loadingText}>Downloading animations...</Text>
+                
+                {downloadProgress.total > 0 && (
+                  <View style={styles.progressSection}>
+                    <Text style={styles.progressLabel}>
+                      Overall Progress: {downloadProgress.loaded}/{downloadProgress.total}
+                    </Text>
+                    <View style={styles.progressBar}>
+                      <View 
+                        style={[
+                          styles.progressFill, 
+                          { width: `${Math.round(downloadProgress.progress * 100)}%` }
+                        ]} 
+                      />
+                    </View>
+                    <Text style={styles.progressPercentage}>
+                      {Math.round(downloadProgress.progress * 100)}%
+                    </Text>
+                  </View>
+                )}
+                
+                {individualAnimationProgress.url && (
+                  <View style={styles.progressSection}>
+                    <Text style={styles.currentAnimationText}>
+                      Downloading: ...{individualAnimationProgress.url}
+                    </Text>
+                    <View style={styles.progressBar}>
+                      <View 
+                        style={[
+                          styles.progressFill, 
+                          { 
+                            width: `${Math.round(individualAnimationProgress.progress * 100)}%`,
+                            backgroundColor: '#4dabf7' 
+                          }
+                        ]} 
+                      />
+                    </View>
+                    <Text style={styles.progressPercentage}>
+                      {Math.round(individualAnimationProgress.progress * 100)}%
+                    </Text>
+                  </View>
+                )}
+                
+                {downloadProgress.currentUrl && (
+                  <Text style={styles.currentUrlText}>
+                    Current: ...{downloadProgress.currentUrl}
+                  </Text>
+                )}
+                
+                <Text style={styles.downloadHint}>
+                  📥 Downloading animations for smooth gameplay...
+                </Text>
+              </View>
+            )}
+          </View>
+        </ImageBackground>
       </>
     );
   }
@@ -160,8 +304,7 @@ export default function GamePlay() {
     );
   }
 
-  // No challenge data
-  if (!currentChallenge) {
+  if (!currentChallenge && !showGameOver && !isRetrying) {
     return (
       <>
         <StatusBar hidden={true} />
@@ -175,80 +318,6 @@ export default function GamePlay() {
     );
   }
 
-
-  if (loading || animationsLoading) {
-    return (
-      <>
-        <StatusBar hidden={true} />
-        <View style={[styles.container, styles.centerContent]}>
-          <ActivityIndicator size="large" color="#ffffff" />
-          
-          {loading ? (
-            <Text style={styles.loadingText}>Loading challenge...</Text>
-          ) : (
-            <View style={styles.downloadContainer}>
-              <Text style={styles.loadingText}>Downloading animations...</Text>
-              
-              {/* Overall Progress */}
-              {downloadProgress.total > 0 && (
-                <View style={styles.progressSection}>
-                  <Text style={styles.progressLabel}>
-                    Overall Progress: {downloadProgress.loaded}/{downloadProgress.total}
-                  </Text>
-                  <View style={styles.progressBar}>
-                    <View 
-                      style={[
-                        styles.progressFill, 
-                        { width: `${Math.round(downloadProgress.progress * 100)}%` }
-                      ]} 
-                    />
-                  </View>
-                  <Text style={styles.progressPercentage}>
-                    {Math.round(downloadProgress.progress * 100)}%
-                  </Text>
-                </View>
-              )}
-              
-              {/* Individual Animation Progress */}
-              {individualAnimationProgress.url && (
-                <View style={styles.progressSection}>
-                  <Text style={styles.currentAnimationText}>
-                    Downloading: ...{individualAnimationProgress.url}
-                  </Text>
-                  <View style={styles.progressBar}>
-                    <View 
-                      style={[
-                        styles.progressFill, 
-                        { 
-                          width: `${Math.round(individualAnimationProgress.progress * 100)}%`,
-                          backgroundColor: '#4dabf7' 
-                        }
-                      ]} 
-                    />
-                  </View>
-                  <Text style={styles.progressPercentage}>
-                    {Math.round(individualAnimationProgress.progress * 100)}%
-                  </Text>
-                </View>
-              )}
-              
-              {/* Download Status */}
-              {downloadProgress.currentUrl && (
-                <Text style={styles.currentUrlText}>
-                  Current: ...{downloadProgress.currentUrl}
-                </Text>
-              )}
-              
-              <Text style={styles.downloadHint}>
-                📥 Downloading animations for smooth gameplay...
-              </Text>
-            </View>
-          )}
-        </View>
-      </>
-    );
-  }
-
   return (
     <>
       <StatusBar hidden={true} />
@@ -256,73 +325,67 @@ export default function GamePlay() {
         source={{uri: 'https://github.com/user-attachments/assets/dc83a36e-eb2e-4fa5-b4e7-0eab9ff65abc'}}
         style={styles.container}
       >
+        {/* ✅ GameOver Modal - always rendered, visible when showGameOver is true */}
+        <GameOverModal
+          visible={showGameOver}
+          onRetry={handleRetry}
+          onHome={handleHome}
+          characterName={gameState?.selectedCharacter?.name || 'Character'}
+          enemyName={gameState?.enemy?.enemy_name || 'Enemy'}
+          isRetrying={isRetrying} 
+        />
 
-     
-        {/* Exit Button */}
-        {/* <TouchableOpacity style={styles.exitGameButton} onPress={handleExitGame}>
-          <Text style={styles.exitGameText}>←</Text>
-        </TouchableOpacity> */}
-
-        {/* ✅ Fixed Layout Structure */}
-        <View style={styles.gameLayoutContainer}>
-          {/* ScreenPlay - Fixed height */}
-          <View style={styles.screenPlayContainer}>
-            <ScreenPlay 
-              gameState={gameState}
-              isPaused={false}
-              borderColor={borderColor}
-              onEnemyComplete={handleEnemyComplete}
-              currentQuestionIndex={0}
-              onAllowEnemyCompletion={handleAllowEnemyCompletion}
-              onSetCorrectAnswer={handleSetCorrectAnswer}
-              onSubmissionAnimationComplete={onAnimationComplete}
-            />
-          </View>
-
-          <View style={[
-            styles.gameQuestionsContainer,
-            shouldHideThirdGrid && styles.gameQuestionsContainerExpanded
-          ]}>
-            <GameQuestions 
-              currentQuestion={currentChallenge || { timeLimit: 0 }}
-              selectedAnswers={selectedAnswers}
-              getBlankIndex={getBlankIndex}
-              onTabChange={handleGameTabChange}
-              activeTab={activeGameTab}
-              onBlankSelect={handleBlankSelect} // ✅ Pass blank select handler
-            />
-          </View>
-
-           {!shouldHideThirdGrid && (
-            <View style={styles.thirdGridContainer}>
-              <ThirdGrid 
-                currentQuestion={currentChallenge || { timeLimit: 0 }}
-                selectedAnswers={selectedAnswers}
-                setSelectedAnswers={memoizedSetSelectedAnswers} // ✅ Use memoized setter
+        {/* ✅ Only render game content if we have currentChallenge */}
+        {currentChallenge && (
+          <View style={styles.gameLayoutContainer}>
+            <View style={styles.screenPlayContainer}>
+              <ScreenPlay 
+                gameState={gameState}
+                isPaused={false}
+                borderColor={borderColor}
+                onEnemyComplete={handleEnemyComplete}
                 currentQuestionIndex={0}
-                setCurrentQuestionIndex={() => {}}
-                setBorderColor={setBorderColor}
-                setCorrectAnswerRef={setCorrectAnswerRef}
-                getBlankIndex={getBlankIndex}
-                challengeData={currentChallenge}
-                submitAnswer={submitAnswer}
-                submitting={submitting}
-                onCorrectAnswer={handleCorrectAnswer}
-                selectedBlankIndex={selectedBlankIndex} // ✅ Pass selected blank index
+                onAllowEnemyCompletion={handleAllowEnemyCompletion}
+                onSetCorrectAnswer={handleSetCorrectAnswer}
+                onSubmissionAnimationComplete={onAnimationComplete}
               />
             </View>
-          )}
 
-          {/* <CombatVSModal
-          visible={showVSModal} // ✅ This will always be true now
-          onComplete={handleVSComplete}
-          character={gameState?.selectedCharacter}
-          enemy={gameState?.enemy}
-          duration={10000} // ✅ Increased duration for testing (10 seconds)
-          /> */}
+            <View style={[
+              styles.gameQuestionsContainer,
+              shouldHideThirdGrid && styles.gameQuestionsContainerExpanded
+            ]}>
+              <GameQuestions 
+                currentQuestion={currentChallenge}
+                selectedAnswers={selectedAnswers}
+                getBlankIndex={getBlankIndex}
+                onTabChange={handleGameTabChange}
+                activeTab={activeGameTab}
+                onBlankSelect={handleBlankSelect}
+              />
+            </View>
 
-        </View>
-
+            {!shouldHideThirdGrid && (
+              <View style={styles.thirdGridContainer}>
+                <ThirdGrid 
+                  currentQuestion={currentChallenge}
+                  selectedAnswers={selectedAnswers}
+                  setSelectedAnswers={memoizedSetSelectedAnswers}
+                  currentQuestionIndex={0}
+                  setCurrentQuestionIndex={() => {}}
+                  setBorderColor={setBorderColor}
+                  setCorrectAnswerRef={setCorrectAnswerRef}
+                  getBlankIndex={getBlankIndex}
+                  challengeData={currentChallenge}
+                  submitAnswer={submitAnswer}
+                  submitting={submitting}
+                  onCorrectAnswer={handleCorrectAnswer}
+                  selectedBlankIndex={selectedBlankIndex} 
+                />
+              </View>
+            )}
+          </View>
+        )}
       </ImageBackground>
     </>
   );
