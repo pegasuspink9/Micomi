@@ -154,6 +154,8 @@ model PlayerProgress {
 
   //track kuwens during combat
   coins_earned           Int           @default(0)
+  total_points_earned           Int           @default(0)
+  total_exp_points_earned           Int           @default(0)
 
   //for quest purpose
   took_damage            Boolean?      @default(false)

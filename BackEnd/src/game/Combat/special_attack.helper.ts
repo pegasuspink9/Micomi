@@ -57,6 +57,8 @@ export async function updateProgressForChallenge(
       data: {
         wrong_challenges: wrongChallenges,
         coins_earned: { increment: challenge.coins_reward },
+        total_points_earned: { increment: challenge.points_reward },
+        total_exp_points_earned: { increment: challenge.points_reward },
       },
     });
   } else {

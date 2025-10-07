@@ -21,8 +21,8 @@ export interface SubmitChallengeServiceResult {
 
 export interface CompletionRewards {
   feedbackMessage?: string | null;
-  currentTotalPoints?: number;
-  currentExpPoints?: number;
+  totalPointsEarned?: number;
+  totalExpPointsEarned?: number;
   coinsEarned?: number;
   playerOutputs?: string[] | null;
 }
@@ -44,4 +44,7 @@ export interface LevelStatus {
   playerHealth: number;
   enemyHealth: number;
   coinsEarned: number;
+  totalPointsEarned: number;
+  totalExpPointsEarned: number;
+  playerOutputs: string[] | null;
 }

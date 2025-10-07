@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { submitChallengeService } from "./challenges.service";
-import { SubmitChallengeControllerResult } from "./challenges.types";
 import { successResponse, errorResponse } from "../../../utils/response";
 import { PrismaClient } from "@prisma/client";
+import { SubmitChallengeControllerResult } from "./challenges.types";
 
 const prisma = new PrismaClient();
 
@@ -32,12 +32,6 @@ export const submitChallenge = async (req: Request, res: Response) => {
       answer
     );
 
-    console.log("CONTROLLER - Final result health values:");
-    console.log("- levelStatus.playerHealth:", result.levelStatus.playerHealth);
-    console.log("- levelStatus.enemyHealth:", result.levelStatus.enemyHealth);
-    console.log("- fightResult.charHealth:", result.fightResult?.charHealth);
-    console.log("- fightResult.enemyHealth:", result.fightResult?.enemyHealth);
-
     const freshProgress = await prisma.playerProgress.findUnique({
       where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
     });
@@ -57,9 +51,9 @@ export const submitChallenge = async (req: Request, res: Response) => {
         ...result.levelStatus,
         isCompleted: isLevelCompleted,
         showFeedback: canProceed,
-        playerHealth: result.levelStatus.playerHealth,
-        enemyHealth: result.levelStatus.enemyHealth,
       },
+      completionRewards: result.completionRewards ?? undefined,
+      nextLevel: result.nextLevel ?? null,
     };
 
     let message = "Challenge successfully submitted.";
@@ -69,26 +63,25 @@ export const submitChallenge = async (req: Request, res: Response) => {
     } else if (canProceed) {
       message = "Level completed! Well done, warrior!";
 
-      const [level, player] = await Promise.all([
-        prisma.level.findUnique({
-          where: { level_id: levelId },
-          select: {
-            feedback_message: true,
-            map_id: true,
-            level_number: true,
-          },
-        }),
-        prisma.player.findUnique({
-          where: { player_id: playerId },
-          select: { total_points: true, exp_points: true },
-        }),
-      ]);
+      const level = await prisma.level.findUnique({
+        where: { level_id: levelId },
+        select: {
+          feedback_message: true,
+          map_id: true,
+          level_number: true,
+        },
+      });
 
-      if (level && player) {
+      if (level) {
         enhancedResult.completionRewards = {
-          feedbackMessage: level.feedback_message,
-          currentTotalPoints: player.total_points,
-          currentExpPoints: player.exp_points,
+          feedbackMessage:
+            result.completionRewards?.feedbackMessage ??
+            level.feedback_message ??
+            `Level ${level.level_number} completed!`,
+          coinsEarned: result.levelStatus?.coinsEarned ?? 0,
+          totalPointsEarned: result.levelStatus?.totalPointsEarned ?? 0,
+          totalExpPointsEarned: result.levelStatus?.totalExpPointsEarned ?? 0,
+          playerOutputs: result.levelStatus?.playerOutputs ?? [],
         };
 
         const nextLevel = await prisma.level.findFirst({
@@ -111,6 +104,7 @@ export const submitChallenge = async (req: Request, res: Response) => {
 
     return successResponse(res, enhancedResult, message);
   } catch (error) {
+    console.error("Error in submitChallenge:", error);
     return errorResponse(
       res,
       "Challenge submission failed.",

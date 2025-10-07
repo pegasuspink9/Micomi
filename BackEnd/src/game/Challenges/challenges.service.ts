@@ -116,6 +116,8 @@ export const submitChallengeService = async (
         enemy_hp: enemyMaxHealth,
         player_hp: character.health,
         coins_earned: 0,
+        total_points_earned: 0,
+        total_exp_points_earned: 0,
         consecutive_corrects: 0,
       },
     });
@@ -290,28 +292,9 @@ export const submitChallengeService = async (
       data: { is_completed: true, completed_at: new Date() },
     });
 
-    const totalExp = level.challenges.reduce(
-      (sum, c) => sum + c.points_reward,
-      0
-    );
-    const totalPoints = level.challenges.reduce(
-      (sum, c) => sum + c.points_reward,
-      0
-    );
-    const totalCoins = level.challenges.reduce(
-      (sum, c) => sum + c.coins_reward,
-      0
-    );
-
     completionRewards = {
       feedbackMessage:
         level.feedback_message ?? `You completed Level ${level.level_number}!`,
-      currentTotalPoints: totalPoints,
-      currentExpPoints: totalExp,
-      coinsEarned: totalCoins,
-      playerOutputs: Array.isArray(freshProgress?.player_expected_output)
-        ? (freshProgress.player_expected_output as string[])
-        : [],
     };
 
     nextLevel = await LevelService.unlockNextLevel(
@@ -322,6 +305,11 @@ export const submitChallengeService = async (
   }
 
   const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
+
+  const rawPlayerOutputs = freshProgress?.player_expected_output;
+  const playerOutputs: string[] | null = Array.isArray(rawPlayerOutputs)
+    ? (rawPlayerOutputs as string[])
+    : null;
 
   return {
     isCorrect,
@@ -337,6 +325,9 @@ export const submitChallengeService = async (
         fightResult?.charHealth ?? freshProgress?.player_hp ?? character.health,
       enemyHealth: fightResult?.enemyHealth ?? enemyMaxHealth,
       coinsEarned: freshProgress?.coins_earned ?? 0,
+      totalPointsEarned: freshProgress?.total_points_earned ?? 0,
+      totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
+      playerOutputs,
     },
     completionRewards,
     nextLevel,
