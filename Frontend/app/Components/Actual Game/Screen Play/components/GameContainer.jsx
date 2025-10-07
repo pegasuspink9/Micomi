@@ -31,19 +31,7 @@ const styles = StyleSheet.create({
       height: 15,
     },
   },
-  container: {
-    zIndex: 1,
-    borderWidth: 3,
-    borderColor: '#052a53ff',
-    borderRadius: SCREEN_WIDTH * 0.1,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.8,
-    shadowRadius: 20,
-    elevation: 25,
 
-  },
 
   innerBorderContainer: {
     borderWidth: 6,

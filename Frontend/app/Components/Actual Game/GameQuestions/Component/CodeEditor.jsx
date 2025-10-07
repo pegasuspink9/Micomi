@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, Dimensions, Pressable, Keyboard } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, Keyboard } from 'react-native';
 import Output from '../Output/Output';
 import ExpectedOutput from '../Output/ExpectedOutput';
-
-const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
+import { 
+  scale, 
+  scaleWidth, 
+  scaleHeight, 
+  scaleFont,
+  RESPONSIVE 
+} from '../../../Responsiveness/gameResponsive';
 
 const CodeEditor = ({
   currentQuestion,
@@ -172,109 +177,98 @@ const CodeEditor = ({
   );
 };
 
-
 const styles = StyleSheet.create({
-    editorContainer: {
+  editorContainer: {
     backgroundColor: '#1e1e1e32',
-    borderRadius: 12,
+    borderRadius: RESPONSIVE.borderRadius.lg, 
     flex: 1, 
     width: '100%',
     overflow: 'hidden',
-    borderTopWidth: 2,
+    borderTopWidth: scale(2), // ✅ Responsive
     borderTopColor: '#4a4a4a',
-    borderLeftWidth: 2,
+    borderLeftWidth: scale(2), // ✅ Responsive
     borderLeftColor: '#3a3a3a',
-    borderBottomWidth: 4,
+    borderBottomWidth: scale(4), // ✅ Responsive
     borderBottomColor: '#0a0a0a',
-    borderRightWidth: 3,
+    borderRightWidth: scale(3), // ✅ Responsive
     borderRightColor: '#1a1a1a',
-    shadowColor: '#000',
-    shadowOffset: { width: 3, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 16,
+    ...RESPONSIVE.shadow.heavy, // ✅ Responsive shadow
     minHeight: 0, 
   },
+
   editorHeader: {
     backgroundColor: '#2d2d30',
     flexDirection: 'row',
-    alignItems: 'flex-end', // Align tabs to bottom of header
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 0, // Remove bottom padding for seamless tabs
-    borderTopWidth: 1,
+    alignItems: 'flex-end',
+    paddingHorizontal: RESPONSIVE.margin.md, // ✅ Responsive
+    paddingTop: RESPONSIVE.margin.sm, // ✅ Responsive
+    paddingBottom: 0,
+    borderTopWidth: scale(1), // ✅ Responsive
     borderTopColor: '#505050',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 8,
+    ...RESPONSIVE.shadow.medium, // ✅ Responsive shadow
   },
+
   windowControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8, // Add space from tabs
+    marginBottom: RESPONSIVE.margin.sm, // ✅ Responsive
   },
+
   windowButton: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 8,
-    borderTopWidth: 1,
+    width: scale(12), // ✅ Responsive
+    height: scale(12), // ✅ Responsive
+    borderRadius: scale(6), // ✅ Responsive
+    marginRight: RESPONSIVE.margin.sm, // ✅ Responsive
+    borderTopWidth: scale(1), // ✅ Responsive
     borderTopColor: 'rgba(255, 255, 255, 0.3)',
-    borderBottomWidth: 1,
+    borderBottomWidth: scale(1), // ✅ Responsive
     borderBottomColor: 'rgba(0, 0, 0, 0.5)',
     shadowColor: '#000',
-    shadowOffset: { width: 1, height: 2 },
+    shadowOffset: { width: scale(1), height: scale(2) }, // ✅ Responsive
     shadowOpacity: 0.4,
-    shadowRadius: 2,
+    shadowRadius: scale(2), // ✅ Responsive
     elevation: 4,
   },
 
-  // Web-like Tab Container
   tabsContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    marginLeft: 12,
-    height: 32, // Fixed height for tabs
+    marginLeft: RESPONSIVE.margin.md, // ✅ Responsive
+    height: scale(32), // ✅ Responsive
   },
 
-  // Web-like Tab Styles
   webTab: {
     backgroundColor: '#3c3c3c',
-    paddingHorizontal: 5,
-    paddingVertical: 8,
-    marginRight: 2,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
+    paddingHorizontal: scale(12), // ✅ Responsive
+    paddingVertical: RESPONSIVE.margin.sm, // ✅ Responsive
+    marginRight: scale(2), // ✅ Responsive
+    borderTopLeftRadius: RESPONSIVE.borderRadius.sm, // ✅ Responsive
+    borderTopRightRadius: RESPONSIVE.borderRadius.sm, // ✅ Responsive
+    borderTopWidth: scale(1), // ✅ Responsive
+    borderLeftWidth: scale(1), // ✅ Responsive
+    borderRightWidth: scale(1), // ✅ Responsive
     borderTopColor: '#555',
     borderLeftColor: '#555',
     borderRightColor: '#555',
-    minWidth: 80,
+    minWidth: scaleWidth(80), // ✅ Responsive
     alignItems: 'center',
     justifyContent: 'center',
-    // Shadow for inactive tabs
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -1 },
+    shadowOffset: { width: 0, height: scale(-1) }, // ✅ Responsive
     shadowOpacity: 0.2,
-    shadowRadius: 2,
+    shadowRadius: scale(2), // ✅ Responsive
     elevation: 1,
   },
   
   webTabActive: {
-    backgroundColor: '#000d2f99', // Match content background
+    backgroundColor: '#000d2f99',
     borderTopColor: '#1177bb',
     borderLeftColor: '#1177bb',
     borderRightColor: '#1177bb',
-    // Remove shadow for active tab
     shadowOpacity: 0,
     elevation: 3,
     zIndex: 10,
-    // Make active tab slightly taller
-    marginBottom: -2,
+    marginBottom: scale(-2), // ✅ Responsive
   },
 
   webTabFirst: {
@@ -287,7 +281,7 @@ const styles = StyleSheet.create({
 
   webTabText: {
     color: '#d1d5d9',
-    fontSize: SCREEN_WIDTH * 0.025,
+    fontSize: 10, // ✅ Responsive
     fontFamily: 'DynaPuff',
     fontWeight: '500',
   },
@@ -301,95 +295,100 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Content area with seamless connection to active tab
   contentArea: {
     flex: 1,
-    borderTopWidth: 1,
+    borderTopWidth: scale(1), // ✅ Responsive
     borderTopColor: '#1a1a1a',
-     minHeight: 0,
+    minHeight: 0,
   },
 
   codeContainer: {
     backgroundColor: '#000d2f99',
-    paddingVertical: 12,
-    borderTopWidth: 0, // Remove top border for seamless connection
-    borderLeftWidth: 1,
+    paddingVertical: RESPONSIVE.margin.md, // ✅ Responsive
+    borderTopWidth: 0,
+    borderLeftWidth: scale(1), // ✅ Responsive
     borderLeftColor: '#0a0a0a',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
+    shadowOffset: { width: 0, height: scale(-2) }, // ✅ Responsive
     shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowRadius: scale(4), // ✅ Responsive
     elevation: 2,
   },
+
   codeLine: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    minHeight: 20,
-    paddingVertical: 2,
+    minHeight: scale(20), // ✅ Responsive
+    paddingVertical: scale(2), // ✅ Responsive
   },
+
   lineNumberContainer: {
-    minWidth: 50,
+    minWidth: scaleWidth(50), // ✅ Responsive
     alignItems: 'center',
-    borderTopWidth: 1,
+    borderTopWidth: scale(1), // ✅ Responsive
     borderTopColor: '#3a3a3a',
-    borderLeftWidth: 1,
+    borderLeftWidth: scale(1), // ✅ Responsive
     borderLeftColor: '#2a2a2a',
     shadowColor: '#000',
-    shadowOffset: { width: 1, height: 0 },
+    shadowOffset: { width: scale(1), height: 0 }, // ✅ Responsive
     shadowOpacity: 0.3,
-    shadowRadius: 2,
+    shadowRadius: scale(2), // ✅ Responsive
     elevation: 3,
   },
+
   lineNumber: {
     color: '#ffffff7e',
-    fontSize: SCREEN_WIDTH * 0.032,
+    fontSize: RESPONSIVE.fontSize.xs, // ✅ Responsive
     fontFamily: 'monospace',
     fontWeight: '400',
   },
+
   lineContent: {
     flex: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: RESPONSIVE.margin.md, // ✅ Responsive
   },
+
   scrollContentContainer: {
     flexGrow: 1,
-    paddingBottom: 20,
+    paddingBottom: scale(20), // ✅ Responsive
   },
+
   outputContainer: {
     backgroundColor: '#ffffff',
     flex: 1,
-    maxHeight: SCREEN_HEIGHT * 0.30,
+    maxHeight: scaleHeight(250), // ✅ Responsive
   },
+
   outputHeader: {
     backgroundColor: '#f8f9fa',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
+    paddingHorizontal: RESPONSIVE.margin.lg, // ✅ Responsive
+    paddingVertical: RESPONSIVE.margin.sm, // ✅ Responsive
+    borderBottomWidth: scale(1), // ✅ Responsive
     borderBottomColor: '#e9ecef',
   },
+
   outputTitle: {
-    fontSize: 14,
+    fontSize: RESPONSIVE.fontSize.md, 
     fontWeight: '600',
     color: '#495057',
   },
+
   outputContent: {
     flex: 1,
     backgroundColor: '#ffffff',
   },
+
   outputScrollContent: {
     flexGrow: 1,
-    padding: 16,
+    padding: RESPONSIVE.margin.lg, // ✅ Responsive
   },
+
   browserViewport: {
     flex: 1,
     backgroundColor: '#ffffff',
-    minHeight: 100,
+    minHeight: scale(100), 
   },
-  outputText: {
-    fontSize: 14,
-    color: '#212529',
-    lineHeight: 20,
-    fontFamily: 'System',
-  },
+
 });
 
 export default React.memo(CodeEditor, (prevProps, nextProps) => {

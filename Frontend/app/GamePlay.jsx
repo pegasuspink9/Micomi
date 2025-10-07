@@ -335,22 +335,18 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   
-  // ✅ New layout container
   gameLayoutContainer: {
     flex: 1,
     flexDirection: 'column',
   },
 
-  // ✅ Fixed height for ScreenPlay
   screenPlayContainer: {
-    height: SCREEN_HEIGHT * 0.41, 
+    height: SCREEN_HEIGHT * 0.38, 
   },
 
-  // ✅ Flexible but constrained GameQuestions
   gameQuestionsContainer: {
     flex: 1,
-    minHeight: 0, 
-    maxHeight: SCREEN_HEIGHT * 0.47, 
+    minHeight: 0,
   },
 
    gameQuestionsContainerExpanded: {
@@ -358,7 +354,7 @@ const styles = StyleSheet.create({
   },
 
   thirdGridContainer: {
-    height: SCREEN_HEIGHT * 0.1,
+    height: SCREEN_HEIGHT * 0.25,
   },
 
   centerContent: { 

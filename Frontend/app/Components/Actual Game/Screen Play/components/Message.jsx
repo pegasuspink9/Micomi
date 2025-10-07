@@ -1,20 +1,14 @@
-// Message.js
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Animated, Text, Dimensions } from 'react-native';
+import { View, StyleSheet, Animated, Text } from 'react-native';
+import { 
+  scale, 
+  scaleWidth, 
+  scaleHeight, 
+  scaleFont, 
+  RESPONSIVE, 
+  SCREEN 
+} from '../../../Responsiveness/gameResponsive';
 
-const { width } = Dimensions.get('window');
-
-/**
- * Message component
- *
- * Props:
- * - message: string - text to show
- * - visible: boolean - whether to show (optional; message presence will auto-show)
- * - duration: ms - how long to keep visible before auto-hide (default 2000)
- * - animated: boolean - enable animations (default true)
- * - trigger: number - optional monotonic value to force re-show even if `message` is identical
- * - onHide: fn - optional callback when message hides
- */
 export default function Message({
   message = '',
   visible,
@@ -24,19 +18,402 @@ export default function Message({
   onHide = null,
 }) {
   const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
+  const translateX = useRef(new Animated.Value(0)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
   const hideTimerRef = useRef(null);
   const [isShown, setIsShown] = useState(false);
+  const [currentAnimation, setCurrentAnimation] = useState(0);
 
-  // POP animation tuning (change these to taste)
-  const POP_START = 4.6;       // start very big
-  const POP_OVERSHOOT = 0.5;   // quick undershoot snap
-  const POP_SETTLE = 0.9;      // final settled scale
-  const POP_FAST_MS = 250;     // fast shrink duration
-  const POP_SETTLE_MS = 190;   // settle duration
-  const FADE_IN_MS = 210;      // opacity fade in
+  // ✅ HIGH-ENERGY GAMING ANIMATIONS 🔥
+  const ANIMATIONS = {
+    // Animation 1: EXPLOSIVE BURST 💥
+    0: {
+      name: 'EXPLOSIVE BURST',
+      show: () => {
+        opacity.setValue(0);
+        scaleAnim.setValue(0.1);
+        translateY.setValue(0);
+        translateX.setValue(0);
+        rotateAnim.setValue(0);
+        glowAnim.setValue(0);
+        pulseAnim.setValue(1);
 
-  // show/hide handler
+        Animated.parallel([
+          // Explosive scale burst
+          Animated.sequence([
+            Animated.timing(scaleAnim, {
+              toValue: 2.5,
+              duration: 80,
+              useNativeDriver: true,
+            }),
+            Animated.timing(scaleAnim, {
+              toValue: 0.8,
+              duration: 120,
+              useNativeDriver: true,
+            }),
+            Animated.spring(scaleAnim, {
+              toValue: 1,
+              tension: 300,
+              friction: 6,
+              useNativeDriver: true,
+            }),
+          ]),
+          // Flash opacity
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+          // Glow effect
+          Animated.timing(glowAnim, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      },
+      hide: () => {
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 2.0,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          setIsShown(false);
+          if (typeof onHide === 'function') onHide();
+        });
+      }
+    },
+
+    // Animation 2: POWER SLIDE IMPACT 💨
+    1: {
+      name: 'POWER SLIDE',
+      show: () => {
+        opacity.setValue(0);
+        scaleAnim.setValue(1.5);
+        translateY.setValue(0);
+        translateX.setValue(scaleWidth(400));
+        rotateAnim.setValue(0);
+        glowAnim.setValue(0);
+
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          // High-speed slide with overshoot
+          Animated.sequence([
+            Animated.timing(translateX, {
+              toValue: -scaleWidth(30),
+              duration: 200,
+              useNativeDriver: true,
+            }),
+            Animated.spring(translateX, {
+              toValue: 0,
+              tension: 250,
+              friction: 8,
+              useNativeDriver: true,
+            }),
+          ]),
+          // Scale impact
+          Animated.sequence([
+            Animated.timing(scaleAnim, {
+              toValue: 0.7,
+              duration: 180,
+              useNativeDriver: true,
+            }),
+            Animated.spring(scaleAnim, {
+              toValue: 1,
+              tension: 200,
+              friction: 7,
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.timing(glowAnim, {
+            toValue: 1,
+            duration: 250,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      },
+      hide: () => {
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: 120,
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateX, {
+            toValue: -scaleWidth(300),
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          setIsShown(false);
+          if (typeof onHide === 'function') onHide();
+        });
+      }
+    },
+
+    // Animation 3: SHOCKWAVE PULSE ⚡
+    2: {
+      name: 'SHOCKWAVE',
+      show: () => {
+        opacity.setValue(0);
+        scaleAnim.setValue(0.2);
+        translateY.setValue(scaleHeight(100));
+        translateX.setValue(0);
+        rotateAnim.setValue(0);
+        glowAnim.setValue(0);
+        pulseAnim.setValue(1);
+
+        Animated.parallel([
+          // Drop and bounce impact
+          Animated.sequence([
+            Animated.timing(translateY, {
+              toValue: scaleHeight(10),
+              duration: 150,
+              useNativeDriver: true,
+            }),
+            Animated.spring(translateY, {
+              toValue: 0,
+              tension: 400,
+              friction: 6,
+              useNativeDriver: true,
+            }),
+          ]),
+          // Shockwave scale
+          Animated.sequence([
+            Animated.timing(scaleAnim, {
+              toValue: 1.8,
+              duration: 100,
+              useNativeDriver: true,
+            }),
+            Animated.timing(scaleAnim, {
+              toValue: 0.9,
+              duration: 120,
+              useNativeDriver: true,
+            }),
+            Animated.spring(scaleAnim, {
+              toValue: 1,
+              tension: 350,
+              friction: 8,
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 180,
+            useNativeDriver: true,
+          }),
+          // Continuous pulse
+          Animated.loop(
+            Animated.sequence([
+              Animated.timing(pulseAnim, {
+                toValue: 1.05,
+                duration: 300,
+                useNativeDriver: true,
+              }),
+              Animated.timing(pulseAnim, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+              }),
+            ])
+          ),
+        ]).start();
+      },
+      hide: () => {
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateY, {
+            toValue: -scaleHeight(80),
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          setIsShown(false);
+          if (typeof onHide === 'function') onHide();
+        });
+      }
+    },
+
+    // Animation 4: TURBO SPIN DASH 🌪️
+    3: {
+      name: 'TURBO SPIN',
+      show: () => {
+        opacity.setValue(0);
+        scaleAnim.setValue(0.3);
+        translateY.setValue(0);
+        translateX.setValue(0);
+        rotateAnim.setValue(0);
+        glowAnim.setValue(0);
+
+        Animated.parallel([
+          // Rapid spin entrance
+          Animated.timing(rotateAnim, {
+            toValue: 3,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          // Scale burst
+          Animated.sequence([
+            Animated.timing(scaleAnim, {
+              toValue: 1.6,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+            Animated.spring(scaleAnim, {
+              toValue: 1,
+              tension: 180,
+              friction: 6,
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 250,
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      },
+      hide: () => {
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 0.1,
+            duration: 250,
+            useNativeDriver: true,
+          }),
+          Animated.timing(rotateAnim, {
+            toValue: 6,
+            duration: 250,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          setIsShown(false);
+          if (typeof onHide === 'function') onHide();
+        });
+      }
+    },
+
+    // Animation 5: MEGA SLAM 🔨
+    4: {
+      name: 'MEGA SLAM',
+      show: () => {
+        opacity.setValue(0);
+        scaleAnim.setValue(0.1);
+        translateY.setValue(-scaleHeight(200));
+        translateX.setValue(0);
+        rotateAnim.setValue(-0.3);
+        glowAnim.setValue(0);
+
+        Animated.parallel([
+          // Slam down with massive impact
+          Animated.sequence([
+            Animated.timing(translateY, {
+              toValue: scaleHeight(20),
+              duration: 250,
+              useNativeDriver: true,
+            }),
+            Animated.spring(translateY, {
+              toValue: 0,
+              tension: 500,
+              friction: 8,
+              useNativeDriver: true,
+            }),
+          ]),
+          // Rotation straighten
+          Animated.spring(rotateAnim, {
+            toValue: 0,
+            tension: 200,
+            friction: 10,
+            useNativeDriver: true,
+          }),
+          // Massive scale impact
+          Animated.sequence([
+            Animated.timing(scaleAnim, {
+              toValue: 2.2,
+              duration: 150,
+              useNativeDriver: true,
+            }),
+            Animated.timing(scaleAnim, {
+              toValue: 0.8,
+              duration: 100,
+              useNativeDriver: true,
+            }),
+            Animated.spring(scaleAnim, {
+              toValue: 1,
+              tension: 250,
+              friction: 7,
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      },
+      hide: () => {
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 0.2,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateY, {
+            toValue: scaleHeight(150),
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          setIsShown(false);
+          if (typeof onHide === 'function') onHide();
+        });
+      }
+    }
+  };
+
+  // ✅ Random animation selector
+  const selectRandomAnimation = () => {
+    const randomIndex = Math.floor(Math.random() * Object.keys(ANIMATIONS).length);
+    setCurrentAnimation(randomIndex);
+    console.log(`🔥 POWER ANIMATION: ${ANIMATIONS[randomIndex].name}!`);
+    return randomIndex;
+  };
+
+  // show/hide handlers
   const show = () => {
     if (hideTimerRef.current) {
       clearTimeout(hideTimerRef.current);
@@ -45,33 +422,16 @@ export default function Message({
     setIsShown(true);
 
     if (animated) {
-      opacity.setValue(0);
-      scale.setValue(POP_START);
-
-      Animated.parallel([
-        // opacity in
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: FADE_IN_MS,
-          useNativeDriver: true,
-        }),
-        // pop sequence: big -> quick shrink -> settle
-        Animated.sequence([
-          Animated.timing(scale, {
-            toValue: POP_OVERSHOOT,
-            duration: POP_FAST_MS,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, {
-            toValue: POP_SETTLE,
-            duration: POP_SETTLE_MS,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]).start();
+      const animIndex = selectRandomAnimation();
+      ANIMATIONS[animIndex].show();
     } else {
       opacity.setValue(1);
-      scale.setValue(1);
+      scaleAnim.setValue(1);
+      translateY.setValue(0);
+      translateX.setValue(0);
+      rotateAnim.setValue(0);
+      glowAnim.setValue(0);
+      pulseAnim.setValue(1);
     }
 
     // schedule hide
@@ -86,21 +446,7 @@ export default function Message({
       hideTimerRef.current = null;
     }
     if (animated) {
-      Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 0,
-          duration: 160,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scale, {
-          toValue: 0.96,
-          duration: 160,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setIsShown(false);
-        if (typeof onHide === 'function') onHide();
-      });
+      ANIMATIONS[currentAnimation].hide();
     } else {
       setIsShown(false);
       if (typeof onHide === 'function') onHide();
@@ -125,14 +471,46 @@ export default function Message({
 
   if (!isShown) return null;
 
+  // ✅ Rotation interpolation
+  const rotateInterpolate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  // ✅ Glow effect interpolation
+  const glowOpacity = glowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 0.8],
+  });
+
   return (
     <View style={styles.viewport} pointerEvents="none">
+      {/* ✅ Glow effect background */}
+      <Animated.View
+        style={[
+          styles.glowEffect,
+          {
+            opacity: glowOpacity,
+            transform: [
+              { scale: Animated.multiply(scaleAnim, 1.2) },
+              { translateX: translateX },
+              { translateY: translateY },
+            ],
+          },
+        ]}
+      />
+      
       <Animated.View
         style={[
           styles.badge,
           {
             opacity: opacity,
-            transform: [{ scale: scale }],
+            transform: [
+              { scale: Animated.multiply(scaleAnim, pulseAnim) },
+              { translateX: translateX },
+              { translateY: translateY },
+              { rotate: rotateInterpolate },
+            ],
           },
         ]}
       >
@@ -147,7 +525,7 @@ export default function Message({
 const styles = StyleSheet.create({
   viewport: {
     position: 'absolute',
-    top: width * 0.15,
+    top: scaleHeight(80),
     left: 0,
     right: 0,
     alignItems: 'center',
@@ -155,18 +533,15 @@ const styles = StyleSheet.create({
     zIndex: 999,
   },
 
-  badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    width: width * 0.7,
-    alignItems: 'center',
-  },
+
+
   messageText: {
-    color: '#010371ff',
-    fontSize: 16,
+    color: '#094385ff',
+    fontSize: RESPONSIVE.fontSize.lg,
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: scaleFont(22),
     fontFamily: 'Oups',
-    textDecorationColor: '#fafafaff',
+    textShadowRadius: scale(10),
+    letterSpacing: scale(1), 
   },
 });

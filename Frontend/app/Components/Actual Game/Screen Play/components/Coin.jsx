@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Animated, Text, Dimensions, Image } from 'react-native';
-
-const { width } = Dimensions.get('window');
+import { View, StyleSheet, Animated, Text, Image } from 'react-native';
+import { 
+  scale, 
+  scaleWidth, 
+  scaleHeight, 
+  RESPONSIVE 
+} from '../../../Responsiveness/gameResponsive';
 
 const Coin = ({ 
   coins = 0,
@@ -77,17 +81,17 @@ const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     backgroundColor: 'rgba(252, 159, 20, 0.9)',
-    top: width * 0.1,
-    left: width * 0.1,
+    top: scaleHeight(38),
+    left: scaleWidth(32),
     alignItems: 'flex-end',
-    borderRadius: 18,
-    paddingLeft: 20,
-    borderWidth: 2,
+    borderRadius: RESPONSIVE.borderRadius.lg, 
+    paddingLeft: RESPONSIVE.margin.xl, 
+    borderWidth: scale(2),
     borderColor: '#ffffffff',
   },
   coinImage: {
-    width: width * 0.04, 
-    height: width * 0.04, 
+    width: scale(16),
+    height: scale(16),
     resizeMode: 'contain',
   },
   coinRow: {
@@ -95,15 +99,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   coinText: {
-    fontSize: 10,
+    fontSize: RESPONSIVE.fontSize.xs, 
     fontFamily: 'DynaPuff',
     color: '#ffffffff',
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textShadowOffset: { width: scale(1), height: scale(1) }, 
+    textShadowRadius: scale(2),
   },
   coinContainer: {
-    marginLeft: 2,
+    marginLeft: scale(2), 
   },
 });
 

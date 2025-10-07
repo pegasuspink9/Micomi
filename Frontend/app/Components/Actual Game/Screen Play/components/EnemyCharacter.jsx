@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { View, StyleSheet, Dimensions, Image as RNImage } from 'react-native';
+import { View, StyleSheet, Image as RNImage } from 'react-native';
 import { Image } from 'expo-image';
 import Animated, {
   useSharedValue,
@@ -11,8 +11,14 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { animationPreloader } from '../../../../services/animationPreloader';
-
-const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
+import { 
+  scale, 
+  scaleWidth, 
+  scaleHeight,
+  RESPONSIVE,
+  getDeviceType,
+  SCREEN
+} from '../../../Responsiveness/gameResponsive';
 
 const EnemyCharacter = ({
   isPaused,
@@ -28,6 +34,11 @@ const EnemyCharacter = ({
   const frameIndex = useSharedValue(0);
   const positionX = useSharedValue(0); 
   const opacity = useSharedValue(1); 
+
+  // ✅ Responsive sprite dimensions
+  const SPRITE_SIZE = useMemo(() => scale(160), []);
+  const SPRITE_COLUMNS = 6;
+  const SPRITE_ROWS = 4;
 
   // ✅ Enhanced initial URL calculation with better fallbacks
   const initialUrl = useMemo(() => {
@@ -46,12 +57,12 @@ const EnemyCharacter = ({
   const [imageReady, setImageReady] = useState(false);
   const [isCompoundAnimation, setIsCompoundAnimation] = useState(false);
   const [compoundPhase, setCompoundPhase] = useState('');
-  const [preloadedImages] = useState(new Map()); // Keep local cache for backwards compatibility
+  const [preloadedImages] = useState(new Map());
 
   const TOTAL_FRAMES = 24;
   const FRAME_DURATION = 50;
 
-  // ✅ Memoize animation duration constants
+  // ✅ Memoize responsive constants
   const ANIMATION_DURATIONS = useMemo(() => ({
     idle: 2000,
     attack: 1500,
@@ -60,7 +71,6 @@ const EnemyCharacter = ({
     dies: 2000,
   }), []);
 
-  // ✅ Memoize compound phases
   const COMPOUND_PHASES = useMemo(() => ({
     attack: {
       run: { duration: 5000, animation: 'run' },
@@ -68,8 +78,20 @@ const EnemyCharacter = ({
     },
   }), []);
 
-  // ✅ Memoize movement distance
-  const RUN_DISTANCE = useMemo(() => SCREEN_WIDTH * -0.50, []);
+  const RUN_DISTANCE = useMemo(() => {
+    const deviceType = getDeviceType();
+    
+    switch (deviceType) {
+      case 'tablet':
+        return -(SCREEN.width * 0.6); 
+      case 'large-phone':
+        return -(SCREEN.width * 0.8);
+      case 'small-phone':
+        return -(SCREEN.width * 0.9); 
+      default:
+        return -(SCREEN.width * 0.5);
+    }
+  }, []);
 
   const phaseTimeoutRef = useRef(null);
 
@@ -93,13 +115,11 @@ const EnemyCharacter = ({
       enemy?.enemy_dies,
     ].filter(url => url && typeof url === 'string');
 
-    // ✅ Use the global animation preloader for consistency
     for (const url of animationUrls) {
       if (!animationPreloader.isAnimationPreloaded(url)) {
         console.log(`🦹 Preloading missing enemy animation: ${url.slice(-50)}`);
         await animationPreloader.preloadAnimation(url);
       } else {
-        // Also update local cache for backwards compatibility
         preloadedImages.set(url, true);
       }
     }
@@ -157,7 +177,6 @@ const EnemyCharacter = ({
     [notifyAnimationComplete, currentAnimationUrl, TOTAL_FRAMES]
   );
 
-  // ✅ Memoize run schedule hold
   const runScheduleHold = useCallback(
     (delayMs, attackDuration, attackUrl) => {
       if (phaseTimeoutRef.current) {
@@ -176,31 +195,26 @@ const EnemyCharacter = ({
     if (!currentAnimationUrl) return;
     
     try {
-      // Check global preloader first
       if (animationPreloader.isAnimationPreloaded(currentAnimationUrl)) {
         setImageReady(true);
         preloadedImages.set(currentAnimationUrl, true);
         return;
       }
 
-      // Fallback to manual prefetch
       await RNImage.prefetch(currentAnimationUrl);
       preloadedImages.set(currentAnimationUrl, true);
       setImageReady(true);
     } catch (err) {
       console.warn(`Enemy ${index} prefetch failed for: ${currentAnimationUrl}`, err);
-      // Image onLoadEnd will handle readiness fallback
     }
   }, [currentAnimationUrl, preloadedImages, index]);
 
-  // ✅ Enhanced image readiness logic
   useEffect(() => {
     let mounted = true;
     setImageReady(false);
 
     if (!currentAnimationUrl) return;
 
-    // Check if already preloaded globally or locally
     if (animationPreloader.isAnimationPreloaded(currentAnimationUrl) || 
         preloadedImages.has(currentAnimationUrl)) {
       if (mounted) setImageReady(true);
@@ -277,7 +291,6 @@ const EnemyCharacter = ({
     if (animationConfig.animationUrl) {
       setCurrentAnimationUrl(animationConfig.animationUrl);
     } else if (!currentAnimationUrl) {
-      // Keep existing URL if new config doesn't provide one
       const fallback = initialUrl;
       if (fallback) setCurrentAnimationUrl(fallback);
     }
@@ -347,7 +360,6 @@ const EnemyCharacter = ({
       } else {
         const animationDuration = ANIMATION_DURATIONS[currentState] || (FRAME_DURATION * TOTAL_FRAMES);
 
-        // ✅ Enhanced attack movement with smoother transitions
         if (currentState === 'attack') {
           if (attackMovement === 'slide') {
             positionX.value = withTiming(RUN_DISTANCE, { 
@@ -422,24 +434,20 @@ const EnemyCharacter = ({
     enemy,
   ]);
 
-  // ✅ Memoize animated styles
+  // ✅ Memoize animated styles with responsive dimensions
   const animatedStyle = useAnimatedStyle(() => {
     const currentFrame = Math.floor(frameIndex.value) % TOTAL_FRAMES;
 
-    const COLUMNS = 6;
-    const frameWidth = 120;
-    const frameHeight = 120;
+    const column = currentFrame % SPRITE_COLUMNS;
+    const row = Math.floor(currentFrame / SPRITE_COLUMNS);
 
-    const column = currentFrame % COLUMNS;
-    const row = Math.floor(currentFrame / COLUMNS);
-
-    const xOffset = -(column * frameWidth);
-    const yOffset = -(row * frameHeight);
+    const xOffset = -(column * SPRITE_SIZE);
+    const yOffset = -(row * SPRITE_SIZE);
 
     return {
       transform: [{ translateX: xOffset }, { translateY: yOffset }],
     };
-  }, []);
+  }, [SPRITE_SIZE]);
 
   const positionStyle = useAnimatedStyle(() => {
     return {
@@ -462,7 +470,6 @@ const EnemyCharacter = ({
     setImageReady(true);
   }, []);
 
-  // ✅ Determine if enemy should be in front
   const isFront = useMemo(() => 
     currentState === 'attack' || isAttacking, 
     [currentState, isAttacking]
@@ -478,8 +485,11 @@ const EnemyCharacter = ({
         isFront && styles.front,
       ]}
     >
-      <View style={styles.spriteContainer}>
-        <Animated.View style={[styles.spriteSheet, animatedStyle]}>
+      <View style={[styles.spriteContainer, { width: SPRITE_SIZE, height: SPRITE_SIZE }]}>
+        <Animated.View style={[styles.spriteSheet, animatedStyle, {
+          width: SPRITE_SIZE * SPRITE_COLUMNS,
+          height: SPRITE_SIZE * SPRITE_ROWS,
+        }]}>
           {currentAnimationUrl ? (
             <Image
               source={{ uri: currentAnimationUrl }}
@@ -487,7 +497,7 @@ const EnemyCharacter = ({
               contentFit="cover"
               onLoadEnd={handleImageLoadEnd}
               onError={handleImageError}
-              cachePolicy="disk" // ✅ Enable disk caching
+              cachePolicy="disk"
             />
           ) : (
             <View style={[styles.spriteImage, { backgroundColor: 'transparent' }]} />
@@ -498,12 +508,12 @@ const EnemyCharacter = ({
   );
 };
 
-// ✅ Styles remain the same
+// ✅ Responsive styles
 const styles = StyleSheet.create({
   enemyRun: {
     position: 'absolute',
-    right: SCREEN_WIDTH * -0.02,
-    top: SCREEN_HEIGHT * 0.16,
+    right: scaleWidth(-8), // ✅ Responsive positioning
+    top: scaleHeight(119), // ✅ Responsive positioning
     justifyContent: 'flex-start',
     alignItems: 'center',
   },
@@ -514,14 +524,11 @@ const styles = StyleSheet.create({
   },
 
   spriteContainer: {
-    width: 120,
-    height: 120,
     overflow: 'hidden',
   },
 
   spriteSheet: {
-    width: 720, // 6 cols * 120px
-    height: 480, // 4 rows * 120px
+    // Dimensions set dynamically in component
   },
 
   spriteImage: {
@@ -538,7 +545,6 @@ const styles = StyleSheet.create({
   },
 });
 
-// ✅ Enhanced memoization with better comparison
 export default React.memo(EnemyCharacter, (prevProps, nextProps) => {
   return (
     prevProps.isPaused === nextProps.isPaused &&
@@ -546,7 +552,6 @@ export default React.memo(EnemyCharacter, (prevProps, nextProps) => {
     prevProps.isAttacking === nextProps.isAttacking &&
     prevProps.attackMovement === nextProps.attackMovement &&
     prevProps.index === nextProps.index &&
-    // ✅ More comprehensive animation comparison
     prevProps.characterAnimations.character_idle === nextProps.characterAnimations.character_idle &&
     prevProps.characterAnimations.character_attack === nextProps.characterAnimations.character_attack &&
     prevProps.characterAnimations.character_hurt === nextProps.characterAnimations.character_hurt &&

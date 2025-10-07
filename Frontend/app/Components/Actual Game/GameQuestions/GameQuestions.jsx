@@ -4,6 +4,7 @@ import CodeEditor from './Component/CodeEditor';
 import DocumentQuestion from './Component/DocumentQuestion';
 import { renderHighlightedText } from './utils/syntaxHighligther';
 import { scrollToNextBlank, calculateGlobalBlankIndex } from './utils/blankHelper';
+import { scale, RESPONSIVE } from '../../Responsiveness/gameResponsive';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -127,9 +128,9 @@ const styles = StyleSheet.create({
     maxHeight: '100%',
   },
   codeText: {
-    fontSize: SCREEN_WIDTH * 0.03,
-    lineHeight: 20,
+    lineHeight: SCREEN_HEIGHT * 0.03,
     fontFamily: 'monospace',
+    fontSize: RESPONSIVE.fontSize.md, 
   },
   codeBlankContainer: {
     backgroundColor: '#0e639c',
