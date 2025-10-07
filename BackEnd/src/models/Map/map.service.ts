@@ -49,8 +49,8 @@ export const getMapById = async (req: Request, res: Response) => {
 
 export const createMap = async (req: Request, res: Response) => {
   try {
-    const data: MapCreateInput = req.body;
-    const map = await prisma.map.create({ data });
+    const data: MapCreateInput[] = req.body;
+    const map = await prisma.map.createMany({ data });
 
     return successResponse(res, map, "Map created", 201);
   } catch (error) {

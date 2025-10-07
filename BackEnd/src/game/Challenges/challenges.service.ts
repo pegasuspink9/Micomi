@@ -7,6 +7,7 @@ import { updateQuestProgress } from "../../game/Quests/quests.service";
 import { updateProgressForChallenge } from "../Combat/special_attack.helper";
 import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
 import { generateDynamicMessage } from "../../../helper/gamePlayMessageHelper";
+import { getBaseEnemyHp } from "../Combat/combat.service";
 import {
   SubmitChallengeControllerResult,
   CompletionRewards,
@@ -19,8 +20,6 @@ const arraysEqual = (a: string[], b: string[]): boolean => {
   const setB = new Set(b);
   return setA.size === setB.size && [...setA].every((val) => setB.has(val));
 };
-
-const ENEMY_HEALTH = 30;
 
 const isTimedChallengeType = (type: string) =>
   ["multiple choice", "fill in the blank"].includes(type);
@@ -96,7 +95,7 @@ export const submitChallengeService = async (
   const character = player.ownedCharacters[0]?.character;
   if (!character) throw new Error("No selected character found");
 
-  const enemyMaxHealth = ENEMY_HEALTH * (level.challenges?.length ?? 1);
+  const enemyMaxHealth = getBaseEnemyHp(level);
 
   let currentProgress = await prisma.playerProgress.findUnique({
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
@@ -193,7 +192,7 @@ export const submitChallengeService = async (
   let fightResult: any;
   let message: string = "Challenge submitted.";
 
-  const isFinalChallenge = updatedProgress.enemy_hp <= ENEMY_HEALTH;
+  const isFinalChallenge = updatedProgress.enemy_hp <= getBaseEnemyHp(level);
 
   if (isCorrect) {
     fightResult = await CombatService.fightEnemy(
@@ -236,6 +235,18 @@ export const submitChallengeService = async (
       false,
       0,
       fightResult.character_health ?? character.health,
+      character.health,
+      isFinalChallenge,
+      elapsed,
+      enemy.enemy_name
+    );
+
+    message = generateDynamicMessage(
+      false,
+      character.character_name,
+      hintUsed,
+      updatedProgress.consecutive_corrects ?? 0,
+      0,
       character.health,
       isFinalChallenge,
       elapsed,
@@ -370,6 +381,10 @@ const getNextChallengeEasy = async (progress: any) => {
 
     if (!nextChallenge && wrongChallenges.length > 0) {
       nextChallenge = getNextWrongChallenge(progress, level, wrongChallenges);
+    }
+
+    if (!playerAlive) {
+      nextChallenge = null;
     }
   } else {
     if (playerAlive) {

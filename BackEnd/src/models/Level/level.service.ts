@@ -73,9 +73,9 @@ export const getLevelChallenges = async (req: Request, res: Response) => {
 };
 
 export const createLevel = async (req: Request, res: Response) => {
-  const data: LevelCreateInput = req.body;
+  const data: LevelCreateInput[] = req.body;
   try {
-    const level = await prisma.level.create({ data });
+    const level = await prisma.level.createMany({ data });
 
     return successResponse(res, level, "Level created", 201);
   } catch (error) {
