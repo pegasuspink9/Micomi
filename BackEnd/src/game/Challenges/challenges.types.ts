@@ -15,6 +15,7 @@ export interface SubmitChallengeServiceResult {
   attempts: number;
   fightResult: FightResult;
   message: string;
+  audio: string[];
   nextChallenge: unknown | null;
 }
 

@@ -191,8 +191,7 @@ export const submitChallengeService = async (
 
   let fightResult: any;
   let message: string = "Challenge submitted.";
-
-  const isFinalChallenge = updatedProgress.enemy_hp <= getBaseEnemyHp(level);
+  let audioResponse: string[] = [];
 
   if (isCorrect) {
     fightResult = await CombatService.fightEnemy(
@@ -205,17 +204,20 @@ export const submitChallengeService = async (
       wasEverWrong
     );
 
-    message = generateDynamicMessage(
+    const { text, audio } = generateDynamicMessage(
       true,
       character.character_name,
       hintUsed,
       updatedProgress.consecutive_corrects ?? 0,
       fightResult.character_health ?? character.health,
       character.health,
-      isFinalChallenge,
       elapsed,
-      enemy.enemy_name
+      enemy.enemy_name,
+      fightResult.enemy_health ?? enemy.enemy_health
     );
+
+    message = text;
+    audioResponse = audio;
 
     if (!hintUsed) {
       await updateQuestProgress(playerId, QuestType.solve_challenge_no_hint, 1);
@@ -229,29 +231,24 @@ export const submitChallengeService = async (
       challengeId
     );
 
-    message = generateDynamicMessage(
+    const { text, audio } = generateDynamicMessage(
       false,
       character.character_name,
       false,
       0,
-      fightResult.character_health ?? character.health,
+      fightResult.charHealth ??
+        fightResult.character?.character_health ??
+        currentProgress.player_hp,
       character.health,
-      isFinalChallenge,
       elapsed,
-      enemy.enemy_name
+      enemy.enemy_name,
+      fightResult.enemyHealth ??
+        fightResult.enemy?.enemy_health ??
+        enemy.enemy_health
     );
 
-    message = generateDynamicMessage(
-      false,
-      character.character_name,
-      hintUsed,
-      updatedProgress.consecutive_corrects ?? 0,
-      0,
-      character.health,
-      isFinalChallenge,
-      elapsed,
-      enemy.enemy_name
-    );
+    message = text;
+    audioResponse = audio;
   }
 
   const next = await getNextChallengeService(playerId, levelId);
@@ -332,6 +329,7 @@ export const submitChallengeService = async (
     fightResult,
     message,
     nextChallenge,
+    audio: audioResponse,
     levelStatus: {
       isCompleted: allCompleted,
       showFeedback: allCompleted,
