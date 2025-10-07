@@ -34,8 +34,8 @@ export const getLessonById = async (req: Request, res: Response) => {
 
 export const createLesson = async (req: Request, res: Response) => {
   try {
-    const data: LessonCreateInput = req.body;
-    const lesson = await prisma.lesson.create({ data });
+    const data: LessonCreateInput[] = req.body;
+    const lesson = await prisma.lesson.createMany({ data });
 
     return successResponse(res, lesson, "Lesson created", 201);
   } catch (error) {

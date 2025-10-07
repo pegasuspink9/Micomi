@@ -10,13 +10,12 @@ import {
 import { ChallengeDTO } from "./levels.types";
 import * as EnergyService from "../Energy/energy.service";
 import { formatTimer } from "../../../helper/dateTimeHelper";
+import { getBaseEnemyHp } from "../Combat/combat.service";
 import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
 
 const prisma = new PrismaClient();
 
 const randomize = <T>(arr: T[]) => [...arr].sort(() => Math.random() - 0.5);
-
-const ENEMY_HEALTH = 30;
 
 export const previewLevel = async (playerId: number, levelId: number) => {
   const level = await prisma.level.findUnique({
@@ -170,8 +169,7 @@ export const previewLevel = async (playerId: number, levelId: number) => {
 
       const character = selectedChar.character;
       const playerMaxHealth = Number(character.health ?? 0);
-      const enemyMaxHealth =
-        ENEMY_HEALTH * Number(level.challenges.length ?? 0);
+      const enemyMaxHealth = getBaseEnemyHp(level);
 
       return {
         level: {
@@ -241,7 +239,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       throw new Error(
         "Easy levels can only have 'multiple choice' or 'fill in the blank' challenges"
       );
-    level.challenges = randomize(level.challenges);
+    level.challenges = level.challenges;
   }
 
   const enemy: Enemy | null = await prisma.enemy.findFirst({
@@ -295,7 +293,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
 
   const character = selectedChar.character;
   const playerMaxHealth = character.health;
-  const enemyMaxHealth = ENEMY_HEALTH * level.challenges.length;
+  const enemyMaxHealth = getBaseEnemyHp(level);
 
   console.log("🔄 ENTERING LEVEL - Health Reset:");
   console.log("- Player max health:", playerMaxHealth);
@@ -399,45 +397,85 @@ export const unlockNextLevel = async (
   currentLevelNumber: number
 ) => {
   const nextLevel = await prisma.level.findFirst({
-    where: {
-      map_id: mapId,
-      level_number: currentLevelNumber + 1,
-    },
+    where: { map_id: mapId, level_number: currentLevelNumber + 1 },
   });
 
-  if (!nextLevel) return null;
+  if (nextLevel) {
+    if (!nextLevel.is_unlocked) {
+      await prisma.level.update({
+        where: { level_id: nextLevel.level_id },
+        data: { is_unlocked: true },
+      });
+    }
 
-  if (!nextLevel.is_unlocked) {
-    await prisma.level.update({
-      where: { level_id: nextLevel.level_id },
-      data: { is_unlocked: true },
-    });
-  }
-
-  const existingProgress = await prisma.playerProgress.findFirst({
-    where: { player_id: playerId, level_id: nextLevel.level_id },
-  });
-
-  if (!existingProgress) {
-    await prisma.playerProgress.create({
-      data: {
+    await prisma.playerProgress.upsert({
+      where: {
+        player_id_level_id: {
+          player_id: playerId,
+          level_id: nextLevel.level_id,
+        },
+      },
+      update: {},
+      create: {
         player_id: playerId,
         level_id: nextLevel.level_id,
         current_level: nextLevel.level_number,
         attempts: 0,
         player_answer: {},
-        completed_at: null,
         challenge_start_time: new Date(),
       },
     });
+
+    await prisma.player.update({
+      where: { player_id: playerId },
+      data: { level: nextLevel.level_id },
+    });
+
+    return nextLevel;
   }
 
-  await prisma.player.update({
-    where: { player_id: playerId },
-    data: { level: nextLevel.level_id },
+  const currentMap = await prisma.map.findUnique({ where: { map_id: mapId } });
+  if (!currentMap) return null;
+
+  const mapProgression: Record<string, string | null> = {
+    HTML: "CSS",
+    CSS: "JavaScript",
+    JavaScript: null,
+    Computer: null,
+  };
+
+  const nextMapName = mapProgression[currentMap.map_name] ?? null;
+  if (!nextMapName) return null;
+
+  const nextMap = await prisma.map.findFirst({
+    where: { map_name: nextMapName },
+  });
+  if (!nextMap) return null;
+
+  if (!nextMap.is_active) {
+    await prisma.map.update({
+      where: { map_id: nextMap.map_id },
+      data: { is_active: true },
+    });
+  }
+
+  const firstLevel = await prisma.level.findFirst({
+    where: { map_id: nextMap.map_id },
+    orderBy: { level_number: "asc" },
   });
 
-  return nextLevel;
+  if (firstLevel && !firstLevel.is_unlocked) {
+    await prisma.level.update({
+      where: { level_id: firstLevel.level_id },
+      data: { is_unlocked: true },
+    });
+  }
+
+  console.log(
+    `Progressed from ${currentMap.map_name} → ${nextMap.map_name} (unlocked first level)`
+  );
+
+  return firstLevel ?? null;
 };
 
 export const completeMicomiLevel = async (

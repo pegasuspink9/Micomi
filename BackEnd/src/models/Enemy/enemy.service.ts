@@ -36,8 +36,8 @@ export const getEnemyById = async (req: Request, res: Response) => {
 
 export const createEnemy = async (req: Request, res: Response) => {
   try {
-    const data: EnemyCreateInput = req.body;
-    const enemy = await prisma.enemy.create({ data });
+    const data: EnemyCreateInput[] = req.body;
+    const enemy = await prisma.enemy.createMany({ data });
 
     return successResponse(res, enemy, "Enemy created", 201);
   } catch (error) {

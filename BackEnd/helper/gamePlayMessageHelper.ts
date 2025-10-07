@@ -12,6 +12,7 @@ export const generateDynamicMessage = (
   const lowHealth = playerHealth <= playerMaxHealth * 0.2;
   const streak = consecutiveCorrects >= 3 ? consecutiveCorrects : 0;
   const quickAnswer = elapsed < 3;
+  const lost = playerHealth === 0;
 
   const correctMessages = {
     base: [
@@ -148,28 +149,6 @@ export const generateDynamicMessage = (
       `Regroup, ${characterName}!`,
       `Shake it off, ${characterName}!`,
     ],
-    lowHealth: [
-      `${enemyName} is weakening!`,
-      `Finish ${enemyName} now!`,
-      `${enemyName} can’t last!`,
-      `${enemyName} is crumbling!`,
-      `End ${enemyName} soon!`,
-      `${enemyName} falters fast!`,
-      `${enemyName} is trembling!`,
-      `${enemyName}'s days are numbered!`,
-      `${enemyName} won’t hold out!`,
-      `${enemyName} nearly finished!`,
-      `${enemyName} close to defeat!`,
-      `Crush ${enemyName} quickly!`,
-      `${enemyName} slipping away!`,
-      `Endgame for ${enemyName}!`,
-      `Final blow coming!`,
-      `Collapse awaits ${enemyName}!`,
-      `${enemyName} is fading!`,
-      `${enemyName} about to fall!`,
-      `Weakness shows in ${enemyName}!`,
-      `${enemyName} won’t survive!`,
-    ],
     final: [
       `Almost there, ${characterName}!`,
       `So close to glory, ${characterName}!`,
@@ -191,6 +170,38 @@ export const generateDynamicMessage = (
       `History is yours, ${characterName}!`,
       `Last chance, ${characterName}!`,
     ],
+    lost: [
+      `Better luck next time, ${characterName}.`,
+      `Fell in combat, ${characterName}.`,
+      `Victory slipped away, ${characterName}.`,
+      `Not strong enough, ${characterName}.`,
+      `Defeated this round, ${characterName}.`,
+      `${enemyName} proved superior.`,
+      `This battle lost, ${characterName}.`,
+      `Could not prevail, ${characterName}.`,
+      `Try again, ${characterName}!`,
+      `No match for ${enemyName}.`,
+      `Overwhelmed by ${enemyName}.`,
+      `Failed to win, ${characterName}.`,
+      `A tough loss, ${characterName}.`,
+      `The day lost, ${characterName}.`,
+      `${enemyName} was too much.`,
+      `The journey ends here, ${characterName}.`,
+      `Rest in peace, ${characterName}.`,
+      `Fallen in battle, ${characterName}.`,
+      `Your adventure is over, ${characterName}.`,
+      `${characterName} met their end.`,
+      `Silence falls on ${characterName}.`,
+      `No more fights, ${characterName}.`,
+      `Perished by ${enemyName}'s hand.`,
+      `The ultimate defeat, ${characterName}.`,
+      `A hero's demise, ${characterName}.`,
+      `Darkness consumes ${characterName}.`,
+      `Until next time, ${characterName}.`,
+      `Game over, ${characterName}.`,
+      `${characterName} is no more.`,
+      `The final breath, ${characterName}.`,
+    ],
   };
 
   if (isCorrect) {
@@ -208,10 +219,10 @@ export const generateDynamicMessage = (
     return messages[Math.floor(Math.random() * messages.length)];
   } else {
     let messages = wrongMessages.base;
-    if (lowHealth) {
-      messages = wrongMessages.lowHealth;
-    } else if (isFinalChallenge) {
+    if (isFinalChallenge) {
       messages = wrongMessages.final;
+    } else if (lost) {
+      messages = wrongMessages.lost;
     }
 
     return messages[Math.floor(Math.random() * messages.length)];
