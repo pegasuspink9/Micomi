@@ -23,6 +23,29 @@ export const getPlayerById = (player_id: number) =>
     include: {
       playerProgress: true,
       playerAchievements: true,
+      ownedCharacters: true,
+      ownedPotions: true,
+      playerQuests: true,
+    },
+  });
+
+export const getPlayerProfile = (player_id: number) =>
+  prisma.player.findUnique({
+    where: { player_id },
+    select: {
+      player_name: true,
+      username: true,
+      coins: true,
+      current_streak: true,
+      exp_points: true,
+      playerProgress: true,
+      playerAchievements: true,
+      ownedCharacters: {
+        where: { is_selected: true },
+        include: { character: true },
+      },
+      ownedPotions: true,
+      playerQuests: true,
     },
   });
 

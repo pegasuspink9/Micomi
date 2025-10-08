@@ -15,6 +15,8 @@ export interface CharacterCreateInput {
   character_run?: string;
 
   character_avatar?: string;
+  hero_lottie?: string;
+  character_image_dispaly?: string;
 
   user_coins?: number;
 
@@ -35,6 +37,8 @@ export interface CharacterUpdateInput {
   character_attack?: string;
 
   character_avatar?: string;
+  hero_lottie?: string;
+  character_image_dispaly?: string;
 
   user_coins?: number;
 

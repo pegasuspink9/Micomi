@@ -50,7 +50,7 @@ export const createShopCharacter = async (req: Request, res: Response) => {
   } catch (error) {
     return errorResponse(
       res,
-      null,
+      error,
       "Failed to create character in the shop",
       400
     );
@@ -69,7 +69,7 @@ export const updateShopCharacter = async (req: Request, res: Response) => {
   } catch (error) {
     return errorResponse(
       res,
-      null,
+      error,
       "Failed to update the character in the shop",
       400
     );

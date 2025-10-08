@@ -188,16 +188,19 @@ model Character {
   health            Int
   is_purchased      Boolean           @default(false)
   is_selected       Boolean           @default(false)
-  character_dies    String?
-  character_hurt    String?
   user_coins        Int?              @default(0)
 
   //animations
+  character_dies    String?
+  character_hurt    String?
   avatar_image      String?           //idle 
   character_damage  Json?             @default("[]") // 30, 40, 50
   character_run     String?
   character_attacks Json?             @default("[]") //["basic_attack", "second_attack", "special_attack"] animation links
-  character_avatar  String?
+  character_avatar  String?           //character icon
+  character_image_display   String?   
+  hero_lottie       String?
+
   characterShop     CharacterShop?
   playerCharacter   PlayerCharacter[]
 }
