@@ -219,6 +219,7 @@ model PlayerAchievement {
   player_id             Int
   achievement_id        Int
   earned_at             DateTime
+  is_owned              Boolean     @default(false)
   achievement           Achievement @relation(fields: [achievement_id], references: [achievement_id])
   player                Player      @relation(fields: [player_id], references: [player_id])
 

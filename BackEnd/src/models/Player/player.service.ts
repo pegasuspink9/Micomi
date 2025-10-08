@@ -29,8 +29,8 @@ export const getPlayerById = (player_id: number) =>
     },
   });
 
-export const getPlayerProfile = (player_id: number) =>
-  prisma.player.findUnique({
+export const getPlayerProfile = async (player_id: number) => {
+  const player = await prisma.player.findUnique({
     where: { player_id },
     select: {
       player_name: true,
@@ -38,16 +38,96 @@ export const getPlayerProfile = (player_id: number) =>
       coins: true,
       current_streak: true,
       exp_points: true,
-      playerProgress: true,
-      playerAchievements: true,
       ownedCharacters: {
         where: { is_selected: true },
-        include: { character: true },
+        include: {
+          character: {
+            select: { character_name: true, character_image_display: true },
+          },
+        },
       },
-      ownedPotions: true,
-      playerQuests: true,
+      ownedPotions: { include: { potion: true } },
+      playerAchievements: {
+        include: { achievement: true },
+      },
+      playerQuests: {
+        include: { quest: true },
+      },
     },
   });
+
+  if (!player) return null;
+
+  const [quests, achievements] = await Promise.all([
+    prisma.quest.findMany(),
+    prisma.achievement.findMany(),
+  ]);
+
+  const playerQuestMap = new Map(
+    player.playerQuests.map((pq) => [pq.quest_id, pq])
+  );
+
+  const mergedQuests = quests.map((quest) => {
+    const pq = playerQuestMap.get(quest.quest_id);
+    return {
+      ...quest,
+      is_completed: pq?.is_completed ?? false,
+      is_claimed: pq?.is_claimed ?? false,
+      current_value: pq?.current_value ?? 0,
+    };
+  });
+
+  const playerAchievementMap = new Map(
+    player.playerAchievements.map((pa) => [pa.achievement_id, pa])
+  );
+
+  const mergedAchievements = achievements.map((achievement) => {
+    const pa = playerAchievementMap.get(achievement.achievement_id);
+    return {
+      ...achievement,
+      is_owned: pa?.is_owned ?? false,
+      earned_at: pa?.earned_at ?? null,
+    };
+  });
+
+  const progress = await prisma.playerProgress.findMany({
+    where: { player_id },
+    include: {
+      level: {
+        include: {
+          map: {
+            select: { map_id: true, map_name: true, is_active: true },
+          },
+        },
+      },
+    },
+  });
+
+  const mapsPlayed = new Map<number, string>();
+  for (const p of progress) {
+    const map = p.level.map;
+    if (map) mapsPlayed.set(map.map_id, map.map_name);
+  }
+
+  if (mapsPlayed.size === 0) {
+    const activeMaps = await prisma.map.findMany({
+      where: { is_active: true },
+      select: { map_id: true, map_name: true },
+    });
+
+    for (const m of activeMaps) {
+      mapsPlayed.set(m.map_id, m.map_name);
+    }
+  }
+
+  return {
+    ...player,
+    playerQuests: mergedQuests,
+    playerAchievements: mergedAchievements,
+    totalActiveMaps: mapsPlayed.size,
+    mapsPlayed: Array.from(mapsPlayed.values()),
+  };
+};
 
 export const createPlayer = async (data: PlayerCreateInput) => {
   const hashedPassword = await hashPassword(data.password);
