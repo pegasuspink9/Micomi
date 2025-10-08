@@ -27,9 +27,9 @@ export default function CharacterProfile() {
   const currentHero = heroData[selectedHero];
 
   const attributeData = [
-    { style: styles.heroRole, icon: currentHero.roleIcon, text: `Role:\n${currentHero.role}` },
+    { style: styles.heroRole, icon: currentHero.roleIcon, text: `Role:\n${currentHero.character_type}` },
     { style: styles.health, icon: URLS.healthIcon, text: "Health:", number: currentHero.health },
-    { style: styles.skill, icon: currentHero.damageIcon, text: "Damage:", number: currentHero.damage }
+    { style: styles.skill, icon: currentHero.damageIcon, text: "Damage:", number: currentHero.character_damage }
   ];
 
   const handleCharacterAnimationFinish = () => {
@@ -45,7 +45,6 @@ export default function CharacterProfile() {
       // Start screen label animation first
       screenLabelRef.current?.startAnimation();
       
-      // Then start attribute animations
       setTimeout(() => {
         attributePanelRef.current?.startAnimations();
       }, 500);
@@ -57,7 +56,7 @@ export default function CharacterProfile() {
     setHeroData(prevData => {
       const newData = { ...prevData };
       Object.keys(newData).forEach(key => {
-        newData[key] = { ...newData[key], isSelected: key === heroName };
+        newData[key] = { ...newData[key], is_selected: key === heroName };
       });
       return newData;
     });
@@ -66,7 +65,7 @@ export default function CharacterProfile() {
   const handlePurchase = () => {
     setHeroData(prevData => ({
       ...prevData,
-      [selectedHero]: { ...prevData[selectedHero], isPurchased: true }
+      [selectedHero]: { ...prevData[selectedHero], is_purchased: true }
     }));
     setShowBuyModal(false);
   };
@@ -85,7 +84,7 @@ export default function CharacterProfile() {
       onPress={() => handleHeroSelection(heroName)}
     >
       <ImageBackground
-        source={{ uri: heroData[heroName].characterImage }}
+        source={{ uri: heroData[heroName].character_avatar }}
         resizeMode="cover"
         style={styles.heroBoxBackground}
       >
@@ -112,7 +111,7 @@ export default function CharacterProfile() {
             {/* Screen Label */}
             <ScreenLabel 
               ref={screenLabelRef}
-              heroName={currentHero.name}
+              heroName={currentHero.character_name}
               selectedHero={selectedHero}
               styles={styles}
             />
@@ -175,7 +174,7 @@ export default function CharacterProfile() {
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Confirm Purchase</Text>
             <Text style={styles.modalText}>
-              Do you want to buy {currentHero.name} for {currentHero.buy} coins?
+              Do you want to buy {currentHero.character_name} for {currentHero.character_price} coins?
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity 
@@ -186,7 +185,7 @@ export default function CharacterProfile() {
               </TouchableOpacity>
               <TouchableOpacity style={styles.confirmButton} onPress={handlePurchase}>
                 <Image source={{ uri: URLS.coin }} style={styles.modalCoinIcon} />
-                <Text style={styles.confirmButtonText}>Buy {currentHero.buy}</Text>
+                <Text style={styles.confirmButtonText}>Buy {currentHero.character_price}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -196,9 +195,7 @@ export default function CharacterProfile() {
   );
 }
 
-// Keep your existing styles here...
 const styles = StyleSheet.create({
-  // ... your existing styles remain the same
   container: {
     flex: 1,
     backgroundColor: '#000000ff',

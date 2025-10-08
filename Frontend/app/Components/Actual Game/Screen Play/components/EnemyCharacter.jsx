@@ -142,7 +142,7 @@ const EnemyCharacter = ({
     }
   }, [onAnimationComplete, currentState, index]);
 
-const handleInternalAnimationComplete = useCallback((completedAnimationState) => {
+  const handleInternalAnimationComplete = useCallback((completedAnimationState) => {
   console.log(`🦹 Enemy ${index} internal animation "${completedAnimationState}" completed`);
   
   if (completedAnimationState === 'hurt') {
