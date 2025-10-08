@@ -165,16 +165,10 @@ const ScreenPlay = ({
   }, [playerHealth, onSubmissionAnimationComplete]);
 
 
-const handleEnemyAnimationComplete = useCallback((index) => (completedAnimationState) => {
+ const handleEnemyAnimationComplete = useCallback((index) => (completedAnimationState) => {
   console.log(`Enemy ${index} animation "${completedAnimationState}" completed`);
 
-  // ✅ Check if enemy should die AFTER hurt animation completes
-  if (completedAnimationState === 'hurt' && enemyHealth <= 0) {
-    console.log('🦹 Enemy hurt animation completed, but health is 0 - setting dies animation');
-    setEnemyAnimationStates(prev => prev.map(() => 'dies'));
-    setIsPlayingSubmissionAnimation(true);
-    return;
-  }
+
 
   if (completedAnimationState === 'dies') {
     console.log('🦹 Enemy death animation completed - enemy defeated!');
@@ -187,17 +181,17 @@ const handleEnemyAnimationComplete = useCallback((index) => (completedAnimationS
     }
   }
     
-    setEnemyAnimationStates(prev => {
-      const next = [...prev];
-      if (completedAnimationState === 'dies') {
-        next[index] = 'dies'; 
-      } else if (completedAnimationState === 'attack' && enemyHealth > 0) {
-        next[index] = 'idle'
-      } else if (enemyHealth > 0) {
-        next[index] = 'idle';
-      }
-      return next;
-    });
+  setEnemyAnimationStates(prev => {
+    const next = [...prev];
+    if (completedAnimationState === 'dies') {
+      next[index] = 'dies'; 
+    } else if (completedAnimationState === 'attack' && enemyHealth > 0) {
+      next[index] = 'idle';
+    } else if (enemyHealth > 0) {
+      next[index] = 'idle';
+    }
+    return next;
+  });
 }, [enemyHealth, onSubmissionAnimationComplete]);
 
 useEffect(() => {
@@ -261,6 +255,42 @@ useEffect(() => {
       console.log(`Enemy health: ${enemyHealth}/${enemyMaxHealth}`);
     }
   }, [characterAnimations, characterAnimationState, isPlayingSubmissionAnimation, playerHealth, playerMaxHealth, enemyHealth, enemyMaxHealth]);
+
+  
+        const enemyAnimations = useMemo(() => ({
+          character_idle:
+            gameState.submissionResult?.fightResult?.enemy?.enemy_idle ??
+            gameState.enemy?.enemy_idle ??
+            enemies[0]?.character_idle ??
+            enemies[0]?.enemy_idle ??
+            enemies[0]?.idle,
+          character_attack:
+            gameState.submissionResult?.fightResult?.enemy?.enemy_attack ??
+            gameState.enemy?.enemy_attack ??
+            enemies[0]?.character_attack ??
+            enemies[0]?.enemy_attack ??
+            enemies[0]?.attack,
+          character_hurt:
+            gameState.submissionResult?.fightResult?.enemy?.enemy_hurt ??
+            gameState.enemy?.enemy_hurt ??
+            enemies[0]?.character_hurt ??
+            enemies[0]?.enemy_hurt ??
+            enemies[0]?.hurt,
+          character_run:
+            gameState.submissionResult?.fightResult?.enemy?.enemy_run ??
+            gameState.enemy?.enemy_run ??
+            enemies[0]?.character_run ??
+            enemies[0]?.enemy_run ??
+            enemies[0]?.run,
+          character_dies:
+            gameState.submissionResult?.fightResult?.enemy?.enemy_dies ??
+            gameState.enemy?.enemy_dies ??
+            enemies[0]?.character_dies ??
+            enemies[0]?.enemy_dies ??
+            enemies[0]?.dies,
+          enemy_health: enemyHealth
+        }), [gameState, enemies, enemyHealth]);
+
 
   return (
     <GameContainer borderColor={borderColor}>
@@ -330,41 +360,7 @@ useEffect(() => {
         />
 
         {enemies.map((enemy, index) => {
-          if (!enemyPositions[index]) return null;
-
-          // ✅ Memoize enemy animations per enemy
-          const enemyAnimations = useMemo(() => ({
-            character_idle:
-              gameState.submissionResult?.fightResult?.enemy?.enemy_idle ??
-              gameState.enemy?.enemy_idle ??
-              enemy.character_idle ??
-              enemy.enemy_idle ??
-              enemy.idle,
-            character_attack:
-              gameState.submissionResult?.fightResult?.enemy?.enemy_attack ??
-              gameState.enemy?.enemy_attack ??
-              enemy.character_attack ??
-              enemy.enemy_attack ??
-              enemy.attack,
-            character_hurt:
-              gameState.submissionResult?.fightResult?.enemy?.enemy_hurt ??
-              gameState.enemy?.enemy_hurt ??
-              enemy.character_hurt ??
-              enemy.enemy_hurt ??
-              enemy.hurt,
-            character_run:
-              gameState.submissionResult?.fightResult?.enemy?.enemy_run ??
-              gameState.enemy?.enemy_run ??
-              enemy.character_run ??
-              enemy.enemy_run ??
-              enemy.run,
-            character_dies:
-              gameState.submissionResult?.fightResult?.enemy?.enemy_dies ??
-              gameState.enemy?.enemy_dies ??
-              enemy.character_dies ??
-              enemy.enemy_dies ??
-              enemy.dies,
-          }), [gameState, enemy]);
+        if (!enemyPositions[index]) return null;
 
           return (
             <EnemyCharacter

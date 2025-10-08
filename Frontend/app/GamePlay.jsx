@@ -140,7 +140,7 @@ export default function GamePlay() {
   const fightResult = submissionResult?.fightResult;
   
   console.log('🎉 Level Completion Check:', {
-    status: fightResult?.status,
+    status: fightResult?.status, 
     enemyHealth: fightResult?.enemy?.enemy_health,
     hasCompletionRewards: !!submissionResult?.completionRewards,
     hasNextLevel: !!submissionResult?.nextLevel,

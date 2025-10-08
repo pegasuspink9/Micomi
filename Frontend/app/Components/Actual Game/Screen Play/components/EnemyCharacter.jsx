@@ -35,12 +35,10 @@ const EnemyCharacter = ({
   const positionX = useSharedValue(0); 
   const opacity = useSharedValue(1); 
 
-  // ✅ Responsive sprite dimensions
   const SPRITE_SIZE = useMemo(() => scale(160), []);
   const SPRITE_COLUMNS = 6;
   const SPRITE_ROWS = 4;
 
-  // ✅ Enhanced initial URL calculation with better fallbacks
   const initialUrl = useMemo(() => {
     const candidates = [
       characterAnimations.character_idle,
@@ -64,7 +62,7 @@ const EnemyCharacter = ({
 
   // ✅ Memoize responsive constants
   const ANIMATION_DURATIONS = useMemo(() => ({
-    idle: 2000,
+    idle: -1,
     attack: 1500,
     hurt: 2000,
     run: -1,
@@ -143,6 +141,66 @@ const EnemyCharacter = ({
       }
     }
   }, [onAnimationComplete, currentState, index]);
+
+const handleInternalAnimationComplete = useCallback((completedAnimationState) => {
+  console.log(`🦹 Enemy ${index} internal animation "${completedAnimationState}" completed`);
+  
+  if (completedAnimationState === 'hurt') {
+    // ✅ Get current enemy health from characterAnimations (passed from ScreenPlay)
+    const currentEnemyHealth = characterAnimations?.enemy_health ?? 0;
+      
+    if (currentEnemyHealth <= 0) {
+      console.log('🦹 Enemy hurt animation completed, but health is 0 - setting dies animation');
+      
+      // Update animation URL to dies animation
+      const diesUrl = characterAnimations.character_dies || 
+                     characterAnimations.dies || 
+                     enemy?.enemy_dies || 
+                     enemy?.dies;
+      
+      if (diesUrl) {
+        setCurrentAnimationUrl(diesUrl);
+        setIsAnimationLooping(false);
+        
+        // Start dies animation after short delay
+        setTimeout(() => {
+          frameIndex.value = 0;
+          const diesDuration = ANIMATION_DURATIONS.dies || 2000;
+          
+          frameIndex.value = withTiming(
+            TOTAL_FRAMES - 1,
+            { 
+              duration: diesDuration,
+              easing: Easing.inOut(Easing.ease)
+            },
+            (diesFinished) => {
+              if (diesFinished) {
+                console.log('🦹 Enemy dies animation completed');
+                runOnJS(notifyAnimationComplete)();
+                frameIndex.value = TOTAL_FRAMES - 1; // Stay on last frame
+              }
+            }
+          );
+        }, 100);
+      }
+      return; // Don't call external callback yet
+    } else {
+      // ✅ Enemy is still alive after hurt - call external callback to return to idle
+      console.log('🦹 Enemy hurt animation completed, enemy still alive - returning to idle');
+      notifyAnimationComplete(); // This will trigger the parent to set state back to 'idle'
+    }
+  } else {
+    // ✅ For other animations, call external callback
+    notifyAnimationComplete();
+  }
+}, [
+  index, 
+  characterAnimations, 
+  enemy, 
+  notifyAnimationComplete, 
+  ANIMATION_DURATIONS, 
+  TOTAL_FRAMES
+]);
 
   // ✅ Memoize schedule attack phase
   const scheduleAttackPhase = useCallback(
@@ -305,136 +363,145 @@ const EnemyCharacter = ({
     }
   }, [animationConfig, currentState, initialUrl, currentAnimationUrl]);
 
-  // ✅ Enhanced animation timing with better error handling
-  useEffect(() => {
-    if (phaseTimeoutRef.current) {
-      clearTimeout(phaseTimeoutRef.current);
-      phaseTimeoutRef.current = null;
-    }
+ useEffect(() => {
+  if (phaseTimeoutRef.current) {
+    clearTimeout(phaseTimeoutRef.current);
+    phaseTimeoutRef.current = null;
+  }
 
-    if (!isPaused && currentAnimationUrl && imageReady) {
-      cancelAnimation(frameIndex);
-      cancelAnimation(positionX);
-      cancelAnimation(opacity);
+  if (!isPaused && currentAnimationUrl && imageReady) {
+    cancelAnimation(frameIndex);
+    cancelAnimation(positionX);
+    cancelAnimation(opacity);
 
-      frameIndex.value = 0;
+    frameIndex.value = 0;
 
-      if (isCompoundAnimation && currentState === 'attack') {
-        const phases = COMPOUND_PHASES.attack;
-        positionX.value = 0;
+    if (isCompoundAnimation && currentState === 'attack') {
+      const phases = COMPOUND_PHASES.attack;
+      positionX.value = 0;
 
-        const naturalRunCycleDuration = FRAME_DURATION * TOTAL_FRAMES;
+      const naturalRunCycleDuration = FRAME_DURATION * TOTAL_FRAMES;
 
-        frameIndex.value = withTiming(
-          TOTAL_FRAMES - 1,
-          { 
-            duration: Math.min(phases.run.duration, naturalRunCycleDuration),
-            easing: Easing.linear
-          },
-          (finished) => {
-            if (finished) {
-              const attackUrl = characterAnimations.character_attack || 
-                              characterAnimations.attack ||
-                              enemy?.enemy_attack;
+      frameIndex.value = withTiming(
+        TOTAL_FRAMES - 1,
+        { 
+          duration: Math.min(phases.run.duration, naturalRunCycleDuration),
+          easing: Easing.linear
+        },
+        (finished) => {
+          if (finished) {
+            const attackUrl = characterAnimations.character_attack || 
+                            characterAnimations.attack ||
+                            enemy?.enemy_attack;
 
-              if (phases.run.duration <= naturalRunCycleDuration) {
-                runOnJS(scheduleAttackPhase)(phases.attack.duration, attackUrl);
-              } else {
-                const remainingDuration = phases.run.duration - naturalRunCycleDuration;
-                runOnJS(runScheduleHold)(remainingDuration, phases.attack.duration, attackUrl);
-              }
+            if (phases.run.duration <= naturalRunCycleDuration) {
+              runOnJS(scheduleAttackPhase)(phases.attack.duration, attackUrl);
+            } else {
+              const remainingDuration = phases.run.duration - naturalRunCycleDuration;
+              runOnJS(runScheduleHold)(remainingDuration, phases.attack.duration, attackUrl);
             }
           }
-        );
-      } else if (isAnimationLooping) {
-        positionX.value = 0;
-        opacity.value = 1;
-        frameIndex.value = withRepeat(
-          withTiming(TOTAL_FRAMES - 1, {
-            duration: FRAME_DURATION * TOTAL_FRAMES,
-            easing: Easing.linear,
-          }),
-          -1,
-          false
-        );
-      } else {
-        const animationDuration = ANIMATION_DURATIONS[currentState] || (FRAME_DURATION * TOTAL_FRAMES);
+        }
+      );
+    } else if (isAnimationLooping) {
+      positionX.value = 0;
+      opacity.value = 1;
+      frameIndex.value = withRepeat(
+        withTiming(TOTAL_FRAMES - 1, {
+          duration: FRAME_DURATION * TOTAL_FRAMES,
+          easing: Easing.linear,
+        }),
+        -1,
+        false
+      );
+    } else {
+      const animationDuration = ANIMATION_DURATIONS[currentState] || (FRAME_DURATION * TOTAL_FRAMES);
 
-        if (currentState === 'attack') {
-          if (attackMovement === 'slide') {
-            positionX.value = withTiming(RUN_DISTANCE, { 
-              duration: animationDuration,
-              easing: Easing.inOut(Easing.quad) 
-            });
-            opacity.value = 1;
-          } else if (attackMovement === 'teleport') {
-            positionX.value = RUN_DISTANCE;
-            opacity.value = 1;
-          } else if (attackMovement === 'fade') {
-            positionX.value = RUN_DISTANCE;
-            opacity.value = 0;
-            const fadeDuration = Math.min(300, animationDuration);
-            opacity.value = withTiming(1, { 
-              duration: fadeDuration,
-              easing: Easing.inOut(Easing.quad)
-            });
-          } else {
-            positionX.value = 0;
-            opacity.value = 1;
-          }
+      if (currentState === 'attack') {
+        if (attackMovement === 'slide') {
+          positionX.value = withTiming(RUN_DISTANCE, { 
+            duration: animationDuration,
+            easing: Easing.inOut(Easing.quad) 
+          });
+          opacity.value = 1;
+        } else if (attackMovement === 'teleport') {
+          positionX.value = RUN_DISTANCE;
+          opacity.value = 1;
+        } else if (attackMovement === 'fade') {
+          positionX.value = RUN_DISTANCE;
+          opacity.value = 0;
+          const fadeDuration = Math.min(300, animationDuration);
+          opacity.value = withTiming(1, { 
+            duration: fadeDuration,
+            easing: Easing.inOut(Easing.quad)
+          });
         } else {
           positionX.value = 0;
           opacity.value = 1;
         }
+      } else {
+        positionX.value = 0;
+        opacity.value = 1;
+      }
 
-        frameIndex.value = withTiming(
-          TOTAL_FRAMES - 1,
-          { 
-            duration: animationDuration,
-            easing: Easing.inOut(Easing.ease)
-          },
-          (finished) => {
-            if (finished) {
+      frameIndex.value = withTiming(
+        TOTAL_FRAMES - 1,
+        { 
+          duration: animationDuration,
+          easing: Easing.inOut(Easing.ease)
+        },
+        (finished) => {
+          if (finished) {
+            // ✅ Use internal handler for hurt → dies logic, external for others
+            if (currentState === 'hurt') {
+              runOnJS(handleInternalAnimationComplete)(currentState);
+            } else if (currentState === 'dies') {
+              // ✅ For dies animation, call external callback and stay on last frame
+              runOnJS(notifyAnimationComplete)();
+              frameIndex.value = TOTAL_FRAMES - 1; // Stay on last frame
+            } else {
+              // ✅ For other animations, call callback and reset to first frame
               runOnJS(notifyAnimationComplete)();
               frameIndex.value = 0;
             }
           }
-        );
-      }
-    } else {
-      cancelAnimation(frameIndex);
-      cancelAnimation(positionX);
-      cancelAnimation(opacity);
+        }
+      );
     }
+  } else {
+    cancelAnimation(frameIndex);
+    cancelAnimation(positionX);
+    cancelAnimation(opacity);
+  }
 
-    return () => {
-      cancelAnimation(frameIndex);
-      cancelAnimation(positionX);
-      cancelAnimation(opacity);
-      if (phaseTimeoutRef.current) {
-        clearTimeout(phaseTimeoutRef.current);
-        phaseTimeoutRef.current = null;
-      }
-    };
-  }, [
-    isPaused,
-    currentAnimationUrl,
-    isAnimationLooping,
-    currentState,
-    notifyAnimationComplete,
-    imageReady,
-    isCompoundAnimation,
-    attackMovement,
-    scheduleAttackPhase,
-    runScheduleHold,
-    ANIMATION_DURATIONS,
-    COMPOUND_PHASES,
-    RUN_DISTANCE,
-    characterAnimations,
-    enemy,
-  ]);
+  return () => {
+    cancelAnimation(frameIndex);
+    cancelAnimation(positionX);
+    cancelAnimation(opacity);
+    if (phaseTimeoutRef.current) {
+      clearTimeout(phaseTimeoutRef.current);
+      phaseTimeoutRef.current = null;
+    }
+  };
+}, [
+  isPaused,
+  currentAnimationUrl,
+  isAnimationLooping,
+  currentState,
+  notifyAnimationComplete,
+  handleInternalAnimationComplete,
+  imageReady,
+  isCompoundAnimation,
+  attackMovement,
+  scheduleAttackPhase,
+  runScheduleHold,
+  ANIMATION_DURATIONS,
+  COMPOUND_PHASES,
+  RUN_DISTANCE,
+  characterAnimations,
+  enemy,
+]);
 
-  // ✅ Memoize animated styles with responsive dimensions
   const animatedStyle = useAnimatedStyle(() => {
     const currentFrame = Math.floor(frameIndex.value) % TOTAL_FRAMES;
 
