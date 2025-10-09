@@ -215,7 +215,9 @@ export const submitChallengeService = async (
       character.health,
       elapsed,
       enemy.enemy_name,
-      fightResult.enemy_health ?? enemy.enemy_health
+      fightResult.enemyHealth ??
+        fightResult.enemy?.enemy_health ??
+        currentProgress.enemy_hp
     );
 
     message = text;
@@ -246,7 +248,7 @@ export const submitChallengeService = async (
       enemy.enemy_name,
       fightResult.enemyHealth ??
         fightResult.enemy?.enemy_health ??
-        enemy.enemy_health
+        currentProgress.enemy_hp
     );
 
     message = text;
@@ -318,17 +320,23 @@ export const submitChallengeService = async (
     message,
     nextChallenge,
     audio: audioResponse,
-    levelStatus: {
-      isCompleted: allCompleted,
-      showFeedback: allCompleted,
-      playerHealth:
-        fightResult?.charHealth ?? freshProgress?.player_hp ?? character.health,
-      enemyHealth: fightResult?.enemyHealth ?? enemyMaxHealth,
-      coinsEarned: freshProgress?.coins_earned ?? 0,
-      totalPointsEarned: freshProgress?.total_points_earned ?? 0,
-      totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
-      playerOutputs,
-    },
+    ...(allCompleted
+      ? {
+          levelStatus: {
+            isCompleted: true,
+            showFeedback: true,
+            playerHealth:
+              fightResult?.charHealth ??
+              freshProgress?.player_hp ??
+              character.health,
+            enemyHealth: fightResult?.enemyHealth ?? enemyMaxHealth,
+            coinsEarned: freshProgress?.coins_earned ?? 0,
+            totalPointsEarned: freshProgress?.total_points_earned ?? 0,
+            totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
+            playerOutputs,
+          },
+        }
+      : null),
     completionRewards,
     nextLevel,
     energy: energyStatus.energy,

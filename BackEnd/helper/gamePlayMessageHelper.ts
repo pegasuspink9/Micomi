@@ -12,7 +12,7 @@ export const generateDynamicMessage = (
   const lowHealth = playerHealth <= 50 && playerHealth > 0;
   const streak = consecutiveCorrects >= 3 ? consecutiveCorrects : 0;
   const quickAnswer = elapsed < 3;
-  const enemyLowHealth = enemyHealth <= 30;
+  const enemyLowHealth = enemyHealth <= 30 && enemyHealth > 0;
 
   const correctMessages = {
     base: [
@@ -225,6 +225,7 @@ export const generateDynamicMessage = (
     if (hintUsed) messageList = correctMessages.hint;
     else if (streak > 0) messageList = correctMessages.streak;
     else if (quickAnswer) messageList = correctMessages.quick;
+    else if (lowHealth) messageList = correctMessages.lowHealth;
     else if (enemyLowHealth) messageList = correctMessages.final;
     else messageList = correctMessages.base;
   } else {

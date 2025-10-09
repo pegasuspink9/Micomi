@@ -29,7 +29,7 @@ export interface CompletionRewards {
 
 export interface SubmitChallengeControllerResult
   extends SubmitChallengeServiceResult {
-  levelStatus: LevelStatus;
+  levelStatus?: LevelStatus;
   completionRewards?: CompletionRewards;
   nextLevel?: {
     level_id: number;
