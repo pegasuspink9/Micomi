@@ -29,6 +29,19 @@ export const getPlayerById = async (req: Request, res: Response) => {
   }
 };
 
+/*GET all player profile*/
+export const getPlayerProfile = async (req: Request, res: Response) => {
+  try {
+    const result = await PlayerService.getPlayerProfile(Number(req.params.id));
+    if (!result) {
+      return errorResponse(res, null, "Player not found", 404);
+    }
+    return successResponse(res, result, "Player found");
+  } catch (error) {
+    return errorResponse(res, error, "Failed to fetch player");
+  }
+};
+
 /*POST a player*/
 export const createPlayer = async (req: Request, res: Response) => {
   try {

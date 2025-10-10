@@ -102,6 +102,7 @@ export const checkAchievements = async (playerId: number) => {
     player_id: number;
     achievement_id: number;
     earned_at: Date;
+    is_owned: boolean;
   }[] = [];
 
   for (const achievement of achievements) {
@@ -148,6 +149,7 @@ export const checkAchievements = async (playerId: number) => {
         player_id: playerId,
         achievement_id: achievement.achievement_id,
         earned_at: new Date(),
+        is_owned: true,
       });
     }
   }

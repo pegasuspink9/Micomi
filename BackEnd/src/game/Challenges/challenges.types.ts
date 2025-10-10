@@ -15,20 +15,21 @@ export interface SubmitChallengeServiceResult {
   attempts: number;
   fightResult: FightResult;
   message: string;
+  audio: string[];
   nextChallenge: unknown | null;
 }
 
 export interface CompletionRewards {
   feedbackMessage?: string | null;
-  currentTotalPoints?: number;
-  currentExpPoints?: number;
+  totalPointsEarned?: number;
+  totalExpPointsEarned?: number;
   coinsEarned?: number;
   playerOutputs?: string[] | null;
 }
 
 export interface SubmitChallengeControllerResult
   extends SubmitChallengeServiceResult {
-  levelStatus: LevelStatus;
+  levelStatus?: LevelStatus;
   completionRewards?: CompletionRewards;
   nextLevel?: {
     level_id: number;
@@ -43,4 +44,7 @@ export interface LevelStatus {
   playerHealth: number;
   enemyHealth: number;
   coinsEarned: number;
+  totalPointsEarned: number;
+  totalExpPointsEarned: number;
+  playerOutputs: string[] | null;
 }

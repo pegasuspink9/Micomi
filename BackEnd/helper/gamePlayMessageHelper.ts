@@ -5,14 +5,14 @@ export const generateDynamicMessage = (
   consecutiveCorrects: number,
   playerHealth: number,
   playerMaxHealth: number,
-  isFinalChallenge: boolean,
   elapsed: number,
-  enemyName: string
-): string => {
-  const lowHealth = playerHealth <= playerMaxHealth * 0.2;
+  enemyName: string,
+  enemyHealth: number
+): { text: string; audio: string[] } => {
+  const lowHealth = playerHealth <= 50 && playerHealth > 0;
   const streak = consecutiveCorrects >= 3 ? consecutiveCorrects : 0;
   const quickAnswer = elapsed < 3;
-  const lost = playerHealth === 0;
+  const enemyLowHealth = enemyHealth <= 30 && enemyHealth > 0;
 
   const correctMessages = {
     base: [
@@ -82,28 +82,6 @@ export const generateDynamicMessage = (
       `Swift genius, ${characterName}!`,
       `Rapid thinker, ${characterName}!`,
     ],
-    lowHealth: [
-      `Hang in there, ${characterName}!`,
-      `You're battered but brilliant, ${characterName}!`,
-      `Tough spot, ${characterName}`,
-      `Stand tall, ${characterName}!`,
-      `${enemyName} won’t win!`,
-      `Endure it, ${characterName}!`,
-      `Still fighting, ${characterName}!`,
-      `Stay strong, ${characterName}!`,
-      `Last push, ${characterName}!`,
-      `Resilient as ever, ${characterName}!`,
-      `Push through, ${characterName}!`,
-      `Refuse to fall, ${characterName}!`,
-      `Defy the odds, ${characterName}!`,
-      `Never surrender, ${characterName}!`,
-      `Keep battling, ${characterName}!`,
-      `Stay fierce, ${characterName}!`,
-      `Hero’s grit, ${characterName}!`,
-      `Dig deep, ${characterName}!`,
-      `Fight on, ${characterName}!`,
-      `Undaunted, ${characterName}!`,
-    ],
     hint: [
       `Clever use of the hint, ${characterName}!`,
       `You uncovered the secret ${characterName}!`,
@@ -125,30 +103,6 @@ export const generateDynamicMessage = (
       `Brain over brawn, ${characterName}!`,
       `Secret unlocked, ${characterName}!`,
     ],
-  };
-
-  const wrongMessages = {
-    base: [
-      `Oof, close one, ${characterName}!`,
-      `Not quite, ${characterName}!`,
-      `Tough break, ${characterName}!`,
-      `Missed it, ${characterName}!`,
-      `${enemyName} got lucky!`,
-      `Shake it, ${characterName}!`,
-      `Next time, ${characterName}!`,
-      `Don’t give up, ${characterName}!`,
-      `Stay sharp, ${characterName}!`,
-      `Keep trying, ${characterName}!`,
-      `You’ll get it, ${characterName}!`,
-      `That was tricky, ${characterName}!`,
-      `Learn and strike back, ${characterName}!`,
-      `Stay focused, ${characterName}!`,
-      `No worries, ${characterName}!`,
-      `Bounce back, ${characterName}!`,
-      `Almost had it, ${characterName}!`,
-      `Regroup, ${characterName}!`,
-      `Shake it off, ${characterName}!`,
-    ],
     final: [
       `Almost there, ${characterName}!`,
       `So close to glory, ${characterName}!`,
@@ -169,6 +123,67 @@ export const generateDynamicMessage = (
       `Endgame move, ${characterName}!`,
       `History is yours, ${characterName}!`,
       `Last chance, ${characterName}!`,
+    ],
+    lowHealth: [
+      `Hang in there, ${characterName}!`,
+      `You're battered but brilliant, ${characterName}!`,
+      `Tough spot, ${characterName}`,
+      `Stand tall, ${characterName}!`,
+      `Endure it, ${characterName}!`,
+      `Still fighting, ${characterName}!`,
+      `Stay strong, ${characterName}!`,
+      `Resilient as ever, ${characterName}!`,
+      `Push through, ${characterName}!`,
+      `Refuse to fall, ${characterName}!`,
+      `Defy the odds, ${characterName}!`,
+      `Never surrender, ${characterName}!`,
+      `Keep battling, ${characterName}!`,
+      `Stay fierce, ${characterName}!`,
+      `Dig deep, ${characterName}!`,
+      `Fight on, ${characterName}!`,
+      `Undaunted, ${characterName}!`,
+    ],
+  };
+
+  const wrongMessages = {
+    base: [
+      `Not quite, ${characterName}!`,
+      `Tough break, ${characterName}!`,
+      `Missed it, ${characterName}!`,
+      `${enemyName} got lucky!`,
+      `Shake it, ${characterName}!`,
+      `Next time, ${characterName}!`,
+      `Don’t give up, ${characterName}!`,
+      `Stay sharp, ${characterName}!`,
+      `Keep trying, ${characterName}!`,
+      `You’ll get it, ${characterName}!`,
+      `That was tricky, ${characterName}!`,
+      `Learn and strike back, ${characterName}!`,
+      `Stay focused, ${characterName}!`,
+      `No worries, ${characterName}!`,
+      `Bounce back, ${characterName}!`,
+      `Almost had it, ${characterName}!`,
+      `Regroup, ${characterName}!`,
+      `Shake it off, ${characterName}!`,
+    ],
+    lowHealth: [
+      `Hang in there, ${characterName}!`,
+      `You're battered but brilliant, ${characterName}!`,
+      `Tough spot, ${characterName}`,
+      `Stand tall, ${characterName}!`,
+      `Endure it, ${characterName}!`,
+      `Still fighting, ${characterName}!`,
+      `Stay strong, ${characterName}!`,
+      `Resilient as ever, ${characterName}!`,
+      `Push through, ${characterName}!`,
+      `Refuse to fall, ${characterName}!`,
+      `Defy the odds, ${characterName}!`,
+      `Never surrender, ${characterName}!`,
+      `Keep battling, ${characterName}!`,
+      `Stay fierce, ${characterName}!`,
+      `Dig deep, ${characterName}!`,
+      `Fight on, ${characterName}!`,
+      `Undaunted, ${characterName}!`,
     ],
     lost: [
       `Better luck next time, ${characterName}.`,
@@ -204,27 +219,34 @@ export const generateDynamicMessage = (
     ],
   };
 
+  let messageList: string[];
+
   if (isCorrect) {
-    let messages = correctMessages.base;
-    if (hintUsed) {
-      messages = correctMessages.hint;
-    } else if (streak > 0) {
-      messages = correctMessages.streak;
-    } else if (quickAnswer) {
-      messages = correctMessages.quick;
-    } else if (lowHealth) {
-      messages = correctMessages.lowHealth;
-    }
-
-    return messages[Math.floor(Math.random() * messages.length)];
+    if (hintUsed) messageList = correctMessages.hint;
+    else if (streak > 0) messageList = correctMessages.streak;
+    else if (quickAnswer) messageList = correctMessages.quick;
+    else if (lowHealth) messageList = correctMessages.lowHealth;
+    else if (enemyLowHealth) messageList = correctMessages.final;
+    else messageList = correctMessages.base;
   } else {
-    let messages = wrongMessages.base;
-    if (isFinalChallenge) {
-      messages = wrongMessages.final;
-    } else if (lost) {
-      messages = wrongMessages.lost;
-    }
-
-    return messages[Math.floor(Math.random() * messages.length)];
+    if (playerHealth <= 0) messageList = wrongMessages.lost;
+    else if (lowHealth) messageList = wrongMessages.lowHealth;
+    else messageList = wrongMessages.base;
   }
+
+  const selectedText =
+    messageList[Math.floor(Math.random() * messageList.length)];
+
+  const cleanMessage = selectedText
+    .replace(new RegExp(characterName, "gi"), "")
+    .replace(new RegExp(enemyName, "gi"), "")
+    .replace(/[^\w\s]/g, "")
+    .trim();
+
+  const audioFiles = [`${cleanMessage}.mp3`, `${characterName}.mp3`];
+
+  return {
+    text: selectedText,
+    audio: audioFiles,
+  };
 };

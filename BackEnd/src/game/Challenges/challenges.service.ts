@@ -116,6 +116,8 @@ export const submitChallengeService = async (
         enemy_hp: enemyMaxHealth,
         player_hp: character.health,
         coins_earned: 0,
+        total_points_earned: 0,
+        total_exp_points_earned: 0,
         consecutive_corrects: 0,
       },
     });
@@ -191,8 +193,7 @@ export const submitChallengeService = async (
 
   let fightResult: any;
   let message: string = "Challenge submitted.";
-
-  const isFinalChallenge = updatedProgress.enemy_hp <= getBaseEnemyHp(level);
+  let audioResponse: string[] = [];
 
   if (isCorrect) {
     fightResult = await CombatService.fightEnemy(
@@ -205,17 +206,22 @@ export const submitChallengeService = async (
       wasEverWrong
     );
 
-    message = generateDynamicMessage(
+    const { text, audio } = generateDynamicMessage(
       true,
       character.character_name,
       hintUsed,
       updatedProgress.consecutive_corrects ?? 0,
       fightResult.character_health ?? character.health,
       character.health,
-      isFinalChallenge,
       elapsed,
-      enemy.enemy_name
+      enemy.enemy_name,
+      fightResult.enemyHealth ??
+        fightResult.enemy?.enemy_health ??
+        currentProgress.enemy_hp
     );
+
+    message = text;
+    audioResponse = audio;
 
     if (!hintUsed) {
       await updateQuestProgress(playerId, QuestType.solve_challenge_no_hint, 1);
@@ -229,29 +235,24 @@ export const submitChallengeService = async (
       challengeId
     );
 
-    message = generateDynamicMessage(
+    const { text, audio } = generateDynamicMessage(
       false,
       character.character_name,
       false,
       0,
-      fightResult.character_health ?? character.health,
+      fightResult.charHealth ??
+        fightResult.character?.character_health ??
+        currentProgress.player_hp,
       character.health,
-      isFinalChallenge,
       elapsed,
-      enemy.enemy_name
+      enemy.enemy_name,
+      fightResult.enemyHealth ??
+        fightResult.enemy?.enemy_health ??
+        currentProgress.enemy_hp
     );
 
-    message = generateDynamicMessage(
-      false,
-      character.character_name,
-      hintUsed,
-      updatedProgress.consecutive_corrects ?? 0,
-      0,
-      character.health,
-      isFinalChallenge,
-      elapsed,
-      enemy.enemy_name
-    );
+    message = text;
+    audioResponse = audio;
   }
 
   const next = await getNextChallengeService(playerId, levelId);
@@ -293,28 +294,9 @@ export const submitChallengeService = async (
       data: { is_completed: true, completed_at: new Date() },
     });
 
-    const totalExp = level.challenges.reduce(
-      (sum, c) => sum + c.points_reward,
-      0
-    );
-    const totalPoints = level.challenges.reduce(
-      (sum, c) => sum + c.points_reward,
-      0
-    );
-    const totalCoins = level.challenges.reduce(
-      (sum, c) => sum + c.coins_reward,
-      0
-    );
-
     completionRewards = {
       feedbackMessage:
         level.feedback_message ?? `You completed Level ${level.level_number}!`,
-      currentTotalPoints: totalPoints,
-      currentExpPoints: totalExp,
-      coinsEarned: totalCoins,
-      playerOutputs: Array.isArray(freshProgress?.player_expected_output)
-        ? (freshProgress.player_expected_output as string[])
-        : [],
     };
 
     nextLevel = await LevelService.unlockNextLevel(
@@ -326,20 +308,35 @@ export const submitChallengeService = async (
 
   const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
 
+  const rawPlayerOutputs = freshProgress?.player_expected_output;
+  const playerOutputs: string[] | null = Array.isArray(rawPlayerOutputs)
+    ? (rawPlayerOutputs as string[])
+    : null;
+
   return {
     isCorrect,
     attempts: freshProgress?.attempts ?? updatedProgress.attempts,
     fightResult,
     message,
     nextChallenge,
-    levelStatus: {
-      isCompleted: allCompleted,
-      showFeedback: allCompleted,
-      playerHealth:
-        fightResult?.charHealth ?? freshProgress?.player_hp ?? character.health,
-      enemyHealth: fightResult?.enemyHealth ?? enemyMaxHealth,
-      coinsEarned: freshProgress?.coins_earned ?? 0,
-    },
+    audio: audioResponse,
+    ...(allCompleted
+      ? {
+          levelStatus: {
+            isCompleted: true,
+            showFeedback: true,
+            playerHealth:
+              fightResult?.charHealth ??
+              freshProgress?.player_hp ??
+              character.health,
+            enemyHealth: fightResult?.enemyHealth ?? enemyMaxHealth,
+            coinsEarned: freshProgress?.coins_earned ?? 0,
+            totalPointsEarned: freshProgress?.total_points_earned ?? 0,
+            totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
+            playerOutputs,
+          },
+        }
+      : null),
     completionRewards,
     nextLevel,
     energy: energyStatus.energy,
