@@ -303,30 +303,65 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
   });
 
-  if (existingProgress) {
-    await prisma.playerProgress.delete({
-      where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
+  const isReEnteringCompleted = existingProgress?.is_completed === true;
+
+  let progress;
+  if (!existingProgress) {
+    // First time: Create fresh
+    progress = await prisma.playerProgress.create({
+      data: {
+        player_id: playerId,
+        level_id: levelId,
+        current_level: level.level_number,
+        attempts: 0,
+        player_answer: {},
+        completed_at: null,
+        challenge_start_time: new Date(),
+        player_hp: playerMaxHealth,
+        enemy_hp: enemyMaxHealth,
+        battle_status: BattleStatus.in_progress,
+        is_completed: false,
+        wrong_challenges: [],
+        coins_earned: 0,
+        total_points_earned: 0,
+        total_exp_points_earned: 0,
+        consecutive_corrects: 0,
+        took_damage: false,
+        has_strong_effect: false,
+        has_freeze_effect: false,
+      },
     });
-    console.log("- Deleted existing progress");
+    console.log(`Created new progress for level ${levelId}`);
+  } else if (isReEnteringCompleted) {
+    // Replay: Reset gameplay, preserve completion
+    progress = await prisma.playerProgress.update({
+      where: { progress_id: existingProgress.progress_id },
+      data: {
+        attempts: 0,
+        player_answer: {},
+        wrong_challenges: [],
+        player_hp: playerMaxHealth,
+        enemy_hp: enemyMaxHealth,
+        battle_status: BattleStatus.in_progress,
+        challenge_start_time: new Date(),
+        consecutive_corrects: 0,
+        took_damage: false,
+        has_strong_effect: false,
+        has_freeze_effect: false,
+        coins_earned: 0,
+        total_points_earned: 0,
+        total_exp_points_earned: 0,
+        // Preserve: is_completed, completed_at
+      },
+    });
+    console.log(`Reset progress for replay of completed level ${levelId}`);
+  } else {
+    // In-progress: Resume as-is
+    progress = existingProgress;
+    console.log(`Resuming in-progress level ${levelId}`);
   }
 
-  const progress = await prisma.playerProgress.create({
-    data: {
-      player_id: playerId,
-      level_id: levelId,
-      current_level: level.level_number,
-      attempts: 0,
-      player_answer: {},
-      completed_at: null,
-      challenge_start_time: new Date(),
-      player_hp: playerMaxHealth,
-      enemy_hp: enemyMaxHealth,
-      battle_status: "in_progress",
-      is_completed: false,
-      wrong_challenges: [],
-    },
-  });
-
+  // Re-fetch verification (common to all cases)
   const verification = await prisma.playerProgress.findUnique({
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
   });
@@ -352,6 +387,10 @@ export const enterLevel = async (playerId: number, levelId: number) => {
   const firstChallenge = challengesWithTimer[0] ?? null;
   const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
 
+  // Use progress (or verification as fallback) for health in return
+  const currentEnemyHealth = progress.enemy_hp ?? enemyMaxHealth;
+  const currentPlayerHealth = progress.player_hp ?? playerMaxHealth;
+
   return {
     level: {
       level_id: level.level_id,
@@ -364,7 +403,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     enemy: {
       enemy_id: enemy.enemy_id,
       enemy_name: enemy.enemy_name,
-      enemy_health: enemyMaxHealth,
+      enemy_health: currentEnemyHealth,
       enemy_idle: enemy.enemy_avatar,
       enemy_run: enemy.enemy_run,
       enemy_damage: enemy.enemy_damage,
@@ -376,7 +415,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     character: {
       character_id: character.character_id,
       character_name: character.character_name,
-      character_health: playerMaxHealth,
+      character_health: currentPlayerHealth,
       character_damage: character.character_damage,
       character_idle: character.avatar_image,
       character_run: character.character_run,
