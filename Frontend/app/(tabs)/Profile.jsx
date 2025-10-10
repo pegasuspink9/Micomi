@@ -1,18 +1,33 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Text, View, StyleSheet, TouchableOpacity, Animated, ImageBackground, Dimensions, Modal, Image } from "react-native";
-import LottieView from "lottie-react-native";
+import React, { useState, useRef } from "react";
+import { Text, View, StyleSheet, TouchableOpacity, Animated, ImageBackground, Dimensions, Modal, Image, ActivityIndicator, Alert } from "react-native";
 import MapHeader from '../Components/Map/mapHeader';
 import CharacterDisplay from '../Components/Character/CharacterDisplay';
 import ActionButton from '../Components/Character/ActionButton';
 import AttributePanel from '../Components/Character/AttributePanel';
 import ScreenLabel from '../Components/Character/ScreenLabel';
-import { HERO_DATA, URLS } from '../Components/Character/CharacterData';
+import { URLS } from '../Components/Character/CharacterData';
+import { useCharacterSelection } from '../hooks/useCharacterSelection';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function CharacterProfile() {
-  const [heroData, setHeroData] = useState(HERO_DATA);
-  const [selectedHero, setSelectedHero] = useState('Gino');
+  const playerId = 11; // You can get this from context or props
+  
+  const {
+    charactersData,
+    selectedHero,
+    currentHero,
+    loading,
+    error,
+    purchasing,
+    selecting,
+    selectCharacter,
+    purchaseCharacter,
+    loadCharacters,
+    clearError,
+    getHeroNames
+  } = useCharacterSelection(playerId);
+
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [showStaticImage, setShowStaticImage] = useState(false);
   const [isCharacterAnimating, setIsCharacterAnimating] = useState(true);
@@ -24,13 +39,11 @@ export default function CharacterProfile() {
   const screenLabelRef = useRef(null);
   const attributePanelRef = useRef(null);
 
-  const currentHero = heroData[selectedHero];
-
-  const attributeData = [
+  const attributeData = currentHero ? [
     { style: styles.heroRole, icon: currentHero.roleIcon, text: `Role:\n${currentHero.character_type}` },
     { style: styles.health, icon: URLS.healthIcon, text: "Health:", number: currentHero.health },
     { style: styles.skill, icon: currentHero.damageIcon, text: "Damage:", number: currentHero.character_damage }
-  ];
+  ] : [];
 
   const handleCharacterAnimationFinish = () => {
     setIsCharacterAnimating(false);
@@ -51,47 +64,90 @@ export default function CharacterProfile() {
     });
   };
 
-  const handleHeroSelection = (heroName) => {
-    setSelectedHero(heroName);
-    setHeroData(prevData => {
-      const newData = { ...prevData };
-      Object.keys(newData).forEach(key => {
-        newData[key] = { ...newData[key], is_selected: key === heroName };
-      });
-      return newData;
-    });
+  const handleHeroSelection = async (heroName) => {
+    try {
+      await selectCharacter(heroName);
+    } catch (error) {
+      Alert.alert('Selection Error', error.message);
+    }
   };
 
-  const handlePurchase = () => {
-    setHeroData(prevData => ({
-      ...prevData,
-      [selectedHero]: { ...prevData[selectedHero], is_purchased: true }
-    }));
-    setShowBuyModal(false);
+  const handlePurchase = async () => {
+    if (!currentHero) return;
+
+    try {
+      await purchaseCharacter(selectedHero);
+      setShowBuyModal(false);
+      Alert.alert('Success', `${currentHero.character_name} has been purchased!`);
+    } catch (error) {
+      Alert.alert('Purchase Error', error.message);
+    }
   };
 
-  useEffect(() => {
-    setShowStaticImage(false);
-    setIsCharacterAnimating(true);
-    backgroundOpacity.setValue(1);
+  React.useEffect(() => {
+    if (selectedHero) {
+      setShowStaticImage(false);
+      setIsCharacterAnimating(true);
+      backgroundOpacity.setValue(1);
+    }
   }, [selectedHero]);
 
   // Render functions
-  const renderHeroBox = (heroName) => (
-    <TouchableOpacity
-      key={heroName}
-      style={[styles.heroBox, selectedHero === heroName && styles.selectedHeroBox]}
-      onPress={() => handleHeroSelection(heroName)}
-    >
-      <ImageBackground
-        source={{ uri: heroData[heroName].character_avatar }}
-        resizeMode="cover"
-        style={styles.heroBoxBackground}
+  const renderHeroBox = (heroName) => {
+    const hero = charactersData[heroName];
+    if (!hero) return null;
+
+    return (
+      
+      <TouchableOpacity
+        key={heroName}
+        style={[styles.heroBox, selectedHero === heroName && styles.selectedHeroBox]}
+        onPress={() => handleHeroSelection(heroName)}
+        disabled={selecting}
       >
-        <Text style={styles.heroBoxTxt}>{heroName}</Text>
+        <ImageBackground source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760064111/Untitled_design_3_ghewno.png' }} style={styles.heroBoxBorder} resizeMode="contain">
+        <ImageBackground
+          source={{ uri: hero.character_avatar }}
+          resizeMode="cover"
+          style={styles.heroBoxBackground}
+        >
+          <Text style={styles.heroBoxTxt}>{heroName}</Text>
+        </ImageBackground>
       </ImageBackground>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color="#ffffff" />
+        <Text style={styles.loadingText}>Loading Characters...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <Text style={styles.errorText}>Error: {error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={() => {
+          clearError();
+          loadCharacters();
+        }}>
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (!currentHero) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <Text style={styles.errorText}>No character data available</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -99,13 +155,13 @@ export default function CharacterProfile() {
         <MapHeader />
       </View>
 
-      <View style={styles.topSection}>
-        <ImageBackground 
-          source={{ uri: URLS.background }} 
-          resizeMode="cover" 
-          opacity={0.7} 
-          style={styles.characterMainBackground}
-        >
+      <ImageBackground 
+        source={{ uri: URLS.background }} 
+        resizeMode="cover" 
+        opacity={0.7} 
+        style={styles.fullBackground}
+      >
+        <View style={styles.topSection}>
           <View style={styles.contentContainer}>
             
             {/* Screen Label */}
@@ -137,6 +193,7 @@ export default function CharacterProfile() {
                 onShowBuyModal={setShowBuyModal}
                 coinIcon={URLS.coin}
                 styles={styles}
+                disabled={selecting || purchasing}
               />
 
               {/* Attribute Panel */}
@@ -148,18 +205,13 @@ export default function CharacterProfile() {
               />
             </View>
           </View>
-        </ImageBackground>
-      </View>
+        </View>
 
-      {/* Bottom Character Selection */}
-      <ImageBackground 
-        source={{ uri: URLS.bottomBar }} 
-        resizeMode="cover" 
-        style={styles.bottomBar} 
-        opacity={0.6}
-      >
-        <View style={styles.characterSelection}>
-          {Object.keys(heroData).map(renderHeroBox)}
+        {/* Bottom Character Selection */}
+        <View style={styles.bottomBar}>
+          <View style={styles.characterSelection}>
+            {getHeroNames().map(renderHeroBox)}
+          </View>
         </View>
       </ImageBackground>
 
@@ -180,12 +232,23 @@ export default function CharacterProfile() {
               <TouchableOpacity 
                 style={styles.cancelButton} 
                 onPress={() => setShowBuyModal(false)}
+                disabled={purchasing}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.confirmButton} onPress={handlePurchase}>
-                <Image source={{ uri: URLS.coin }} style={styles.modalCoinIcon} />
-                <Text style={styles.confirmButtonText}>Buy {currentHero.character_price}</Text>
+              <TouchableOpacity 
+                style={styles.confirmButton} 
+                onPress={handlePurchase}
+                disabled={purchasing}
+              >
+                {purchasing ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <>
+                    <Image source={{ uri: URLS.coin }} style={styles.modalCoinIcon} />
+                    <Text style={styles.confirmButtonText}>Buy {currentHero.character_price}</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -196,6 +259,35 @@ export default function CharacterProfile() {
 }
 
 const styles = StyleSheet.create({
+   centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: 'white',
+    fontSize: screenWidth * 0.05,
+    fontFamily: 'Computerfont',
+    marginTop: 20,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: screenWidth * 0.05,
+    fontFamily: 'Computerfont',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: 'rgba(0, 93, 200, 0.8)',
+    padding: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: screenWidth * 0.045,
+    fontFamily: 'Computerfont',
+  },
   container: {
     flex: 1,
     backgroundColor: '#000000ff',
@@ -203,6 +295,11 @@ const styles = StyleSheet.create({
   headerContainer: {
     position: 'absolute',
     zIndex: 100
+  },
+    fullBackground: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
   topSection: {
     flex: 0.85
@@ -213,7 +310,9 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     top: screenHeight * 0.06,
-    alignItems: 'center'
+    alignItems: 'center',
+    
+    marginTop: screenHeight * 0.05,
   },
   characterBackground: {
     width: screenWidth,
@@ -262,13 +361,12 @@ const styles = StyleSheet.create({
     height: screenWidth * 0.8,
     top: screenHeight * 0.13,
   },
-  bottomBar: {
+    bottomBar: {
     flex: 0.17,
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: screenHeight * 0.02,
-    backgroundColor: 'rgba(0, 0, 0, 1)'
   },
   attributeText: {
     borderWidth: 2,
@@ -314,16 +412,21 @@ const styles = StyleSheet.create({
   },
   heroBox: {
     width: screenWidth * 0.20,
-    height: screenHeight * 0.15,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    zIndex: 2,
     borderRadius: 8,
     overflow: 'hidden',
     marginTop: screenHeight * 0.02,
   },
+   heroBoxBorder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 5,
+    width: '100%',
+    height: '100%',
+  },
   selectedHeroBox: {
-    borderColor: '#3172ffff',
-    borderWidth: 3,
+    width: screenWidth * 0.22,
+    height: screenHeight * 0.17,
     shadowColor: '#3172ffff',
     shadowOffset: { width: 30, height: 0 },
     shadowOpacity: 1,
@@ -332,17 +435,19 @@ const styles = StyleSheet.create({
   },
   heroBoxBackground: {
     width: '100%',
-    height: '100%',
+    height: '85%',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: -1,
   },
+ 
   heroBoxTxt: {
     color: 'white',
-    fontSize: screenWidth * 0.050,
+    fontSize: screenWidth * 0.040,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     width: '100%',
     marginTop: screenHeight * 0.12,
-    fontFamily: 'Computerfont',
+    fontFamily: 'MusicVibes',
     textAlign: 'center',
   },
   heroRoleIcon: {

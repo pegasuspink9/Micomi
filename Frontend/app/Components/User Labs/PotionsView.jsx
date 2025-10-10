@@ -7,9 +7,11 @@ import {
   ScrollView,
   StyleSheet,
   SafeAreaView,
-  Modal
+  Modal,
+  ImageBackground
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { usePlayerProfile } from '../../hooks/usePlayerProfile';
 import {
   scale,
   wp,
@@ -17,94 +19,23 @@ import {
   layoutHelpers,
 } from '../Responsiveness/gameResponsive';
 
-// Mock extended potions data
-const allPotionsData = [
-  { 
-    id: 1, 
-    name: "Health Potion", 
-    count: 12, 
-    icon: "https://via.placeholder.com/80x80/ff4444/FFFFFF?text=HP", 
-    color: "#ff4444",
-    description: "Restores 50 HP instantly",
-    rarity: "Common",
-    effect: "+50 Health",
-    duration: "Instant"
-  },
-  { 
-    id: 2, 
-    name: "Mana Potion", 
-    count: 8, 
-    icon: "https://via.placeholder.com/80x80/4444ff/FFFFFF?text=MP", 
-    color: "#4444ff",
-    description: "Restores 30 MP instantly",
-    rarity: "Common",
-    effect: "+30 Mana",
-    duration: "Instant"
-  },
-  { 
-    id: 3, 
-    name: "Strength Potion", 
-    count: 3, 
-    icon: "https://via.placeholder.com/80x80/ff8800/FFFFFF?text=STR", 
-    color: "#ff8800",
-    description: "Increases damage for 5 minutes",
-    rarity: "Rare",
-    effect: "+25% Damage",
-    duration: "5 minutes"
-  },
-  { 
-    id: 4, 
-    name: "Speed Potion", 
-    count: 5, 
-    icon: "https://via.placeholder.com/80x80/00ff00/000000?text=SPD", 
-    color: "#00ff00",
-    description: "Increases movement speed temporarily",
-    rarity: "Uncommon",
-    effect: "+30% Speed",
-    duration: "3 minutes"
-  },
-  { 
-    id: 5, 
-    name: "Invisibility Potion", 
-    count: 1, 
-    icon: "https://via.placeholder.com/80x80/888888/FFFFFF?text=INV", 
-    color: "#888888",
-    description: "Become invisible to enemies",
-    rarity: "Epic",
-    effect: "Stealth Mode",
-    duration: "30 seconds"
-  },
-  { 
-    id: 6, 
-    name: "Fire Resistance", 
-    count: 7, 
-    icon: "https://via.placeholder.com/80x80/ff6600/FFFFFF?text=FR", 
-    color: "#ff6600",
-    description: "Immune to fire damage",
-    rarity: "Uncommon",
-    effect: "Fire Immunity",
-    duration: "2 minutes"
-  },
-];
-
 export default function PotionsView() {
   const router = useRouter();
+  const playerId = 11;
+  const { playerData, loading } = usePlayerProfile(playerId);
   const [selectedPotion, setSelectedPotion] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  const getRarityColor = (rarity) => {
-    switch (rarity) {
-      case 'Common': return '#CCCCCC';
-      case 'Uncommon': return '#4CAF50';
-      case 'Rare': return '#2196F3';
-      case 'Epic': return '#9C27B0';
-      case 'Legendary': return '#FF9800';
-      default: return '#CCCCCC';
-    }
-  };
+  if (loading || !playerData) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.loadingText}>Loading potions...</Text>
+      </SafeAreaView>
+    );
+  }
 
   const getTotalPotions = () => {
-    return allPotionsData.reduce((total, potion) => total + potion.count, 0);
+    return playerData.potions.reduce((total, potion) => total + potion.count, 0);
   };
 
   const handlePotionPress = (potion) => {
@@ -114,168 +45,176 @@ export default function PotionsView() {
 
   const handleUsePotion = () => {
     if (selectedPotion && selectedPotion.count > 0) {
-      // Logic to use potion would go here
       console.log(`Used ${selectedPotion.name}`);
       setShowModal(false);
     }
   };
 
+  const getBackgroundColor = (name) => {
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes('health')) return 'rgba(156, 167, 83, 0.66)';
+    if (lowerName.includes('mana')) return 'rgba(29, 29, 85, 0.8)'; 
+    if (lowerName.includes('strength')) return 'rgba(121, 94, 14, 0.8)';
+    if (lowerName.includes('freeze')) return 'rgba(68, 68, 255, 0.8)';
+    if (lowerName.includes('hint')) return 'rgba(0, 255, 0, 0.8)';
+    return 'rgba(156, 39, 176, 0.8)'; 
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Potion Inventory</Text>
-        <View style={styles.headerStats}>
-          <Text style={styles.statsText}>{getTotalPotions()}</Text>
-        </View>
-      </View>
-
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {/* Summary */}
-        <View style={styles.summarySection}>
-          <Text style={styles.summaryTitle}>Total Potions: {getTotalPotions()}</Text>
-          <Text style={styles.summarySubtext}>Tap a potion to view details and use</Text>
-        </View>
-
-        {/* Potions Grid */}
-        <View style={styles.potionsGrid}>
-          {allPotionsData.map((potion) => (
-            <PotionCard 
-              key={potion.id} 
-              potion={potion} 
-              onPress={() => handlePotionPress(potion)}
-            />
-          ))}
-        </View>
-
-        <View style={{ height: layoutHelpers.gap.xl }} />
-      </ScrollView>
-
-      {/* Potion Detail Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={showModal}
-        onRequestClose={() => setShowModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            {selectedPotion && (
-              <>
-                <View style={[styles.modalHeader, { borderColor: selectedPotion.color }]}>
-                  <Image 
-                    source={{ uri: selectedPotion.icon }} 
-                    style={styles.modalIcon}
-                    resizeMode="contain"
-                  />
-                  <Text style={styles.modalTitle}>{selectedPotion.name}</Text>
-                  <View style={[styles.rarityBadge, { backgroundColor: getRarityColor(selectedPotion.rarity) }]}>
-                    <Text style={styles.rarityText}>{selectedPotion.rarity}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.modalContent}>
-                  <Text style={styles.modalDescription}>{selectedPotion.description}</Text>
-                  
-                  <View style={styles.detailsContainer}>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Effect:</Text>
-                      <Text style={[styles.detailValue, { color: selectedPotion.color }]}>
-                        {selectedPotion.effect}
-                      </Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Duration:</Text>
-                      <Text style={styles.detailValue}>{selectedPotion.duration}</Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>In Stock:</Text>
-                      <Text style={styles.detailValue}>{selectedPotion.count}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.modalButtons}>
-                    <TouchableOpacity 
-                      style={styles.cancelButton} 
-                      onPress={() => setShowModal(false)}
-                    >
-                      <Text style={styles.cancelButtonText}>Close</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[
-                        styles.useButton, 
-                        { 
-                          backgroundColor: selectedPotion.count > 0 ? selectedPotion.color : '#666',
-                          opacity: selectedPotion.count > 0 ? 1 : 0.5
-                        }
-                      ]} 
-                      onPress={handleUsePotion}
-                      disabled={selectedPotion.count === 0}
-                    >
-                      <Text style={styles.useButtonText}>
-                        {selectedPotion.count > 0 ? 'Use Potion' : 'Out of Stock'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </>
-            )}
+      <ImageBackground source={{ uri: playerData.containerBackground }} style={styles.backgroundContainer} resizeMode="cover">
+        <View style={styles.backgroundOverlay} />
+        
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Text style={styles.backButtonText}>← Back</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Potion Inventory</Text>
+          <View style={styles.headerStats}>
+            <Text style={styles.statsText}>{getTotalPotions()}</Text>
           </View>
         </View>
-      </Modal>
+
+        <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          {/* Summary */}
+          <View style={styles.summarySection}>
+            <Text style={styles.summaryTitle}>Total Potions: {getTotalPotions()}</Text>
+            <Text style={styles.summarySubtext}>Tap a potion to view details</Text>
+          </View>
+
+          {/* Potions Grid */}
+          <View style={styles.potionsGrid}>
+            {playerData.potions.map((potion) => (
+              <PotionCard 
+                key={potion.id} 
+                potion={potion} 
+                onPress={() => handlePotionPress(potion)}
+                backgroundColor={getBackgroundColor(potion.name)}
+              />
+            ))}
+          </View>
+
+          <View style={{ height: layoutHelpers.gap.xl }} />
+        </ScrollView>
+
+        {/* Potion Detail Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={showModal}
+          onRequestClose={() => setShowModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              {selectedPotion && (
+                <>
+                  <View style={[styles.modalHeader, { borderColor: selectedPotion.color }]}>
+                    <Image 
+                      source={{ uri: selectedPotion.icon }} 
+                      style={styles.modalIcon}
+                      resizeMode="contain"
+                    />
+                    <Text style={styles.modalTitle}>{selectedPotion.name}</Text>
+                  </View>
+
+                  <View style={styles.modalContent}>
+                    <Text style={styles.modalDescription}>{selectedPotion.description}</Text>
+                    
+                    <View style={styles.detailsContainer}>
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Type:</Text>
+                        <Text style={[styles.detailValue, { color: selectedPotion.color }]}>
+                          {selectedPotion.type}
+                        </Text>
+                      </View>
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Price:</Text>
+                        <Text style={styles.detailValue}>{selectedPotion.price} coins</Text>
+                      </View>
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>In Stock:</Text>
+                        <Text style={styles.detailValue}>{selectedPotion.count}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.modalButtons}>
+                      <TouchableOpacity 
+                        style={styles.cancelButton} 
+                        onPress={() => setShowModal(false)}
+                      >
+                        <Text style={styles.cancelButtonText}>Close</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={[
+                          styles.useButton, 
+                          { 
+                            backgroundColor: selectedPotion.count > 0 ? selectedPotion.color : '#666',
+                            opacity: selectedPotion.count > 0 ? 1 : 0.5
+                          }
+                        ]} 
+                        onPress={handleUsePotion}
+                        disabled={selectedPotion.count === 0}
+                      >
+                        <Text style={styles.useButtonText}>
+                          {selectedPotion.count > 0 ? 'Use Potion' : 'Out of Stock'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </>
+              )}
+            </View>
+          </View>
+        </Modal>
+      </ImageBackground>
     </SafeAreaView>
   );
 }
 
-const PotionCard = ({ potion, onPress }) => {
-  const rarityColor = getRarityColor(potion.rarity);
-  
+const PotionCard = ({ potion, onPress, backgroundColor }) => {
   return (
     <TouchableOpacity 
-      style={[styles.potionCard, { borderColor: potion.color }]}
+      style={styles.potionCardContainer}
       onPress={onPress}
     >
-      <View style={[styles.rarityIndicator, { backgroundColor: rarityColor }]} />
-      
-      <Image 
-        source={{ uri: potion.icon }} 
-        style={styles.potionIcon}
-        resizeMode="contain"
-      />
-      
-      <Text style={styles.potionName}>{potion.name}</Text>
-      
-      <View style={[styles.countBadge, { backgroundColor: potion.color }]}>
-        <Text style={styles.countText}>{potion.count}</Text>
-      </View>
-      
-      <View style={styles.rarityContainer}>
-        <Text style={[styles.rarityLabel, { color: rarityColor }]}>
-          {potion.rarity}
-        </Text>
+      <View style={styles.potionCardShadow} />
+      <View style={[styles.potionCard, { backgroundColor }]}>
+        <Image 
+          source={{ uri: potion.icon }} 
+          style={styles.potionIcon}
+          resizeMode="contain"
+        />
+        
+        <Text style={styles.potionName}>{potion.name}</Text>
+        
+        <View style={[styles.countBadge, { backgroundColor: potion.color }]}>
+          <Text style={styles.countText}>{potion.count}</Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
-};
-
-const getRarityColor = (rarity) => {
-  switch (rarity) {
-    case 'Common': return '#CCCCCC';
-    case 'Uncommon': return '#4CAF50';
-    case 'Rare': return '#2196F3';
-    case 'Epic': return '#9C27B0';
-    case 'Legendary': return '#FF9800';
-    default: return '#CCCCCC';
-  }
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
+  },
+  backgroundContainer: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  backgroundOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.54)', 
+  },
+  loadingText: {
+    color: 'white',
+    fontSize: RESPONSIVE.fontSize.md,
+    textAlign: 'center',
+    marginTop: 50,
   },
   header: {
     flexDirection: 'row',
@@ -284,30 +223,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: RESPONSIVE.margin.lg,
     paddingVertical: RESPONSIVE.margin.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
   },
   backButton: {
     padding: RESPONSIVE.margin.sm,
   },
   backButtonText: {
-    color: '#4CAF50',
+    color: '#2ee7ffff',
     fontSize: RESPONSIVE.fontSize.md,
+    fontFamily: 'GoldenAge',
     fontWeight: 'bold',
   },
   headerTitle: {
     fontSize: RESPONSIVE.fontSize.xl,
     color: 'white',
+    fontFamily: 'MusicVibes',
     fontWeight: 'bold',
   },
   headerStats: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(46, 231, 255, 0.2)',
     paddingHorizontal: RESPONSIVE.margin.md,
     paddingVertical: RESPONSIVE.margin.sm,
     borderRadius: RESPONSIVE.borderRadius.md,
+    borderWidth: 1,
+    borderColor: '#2ee7ffff',
   },
   statsText: {
-    color: '#FFD700',
+    color: '#2ee7ffff',
     fontSize: RESPONSIVE.fontSize.md,
+    fontFamily: 'FunkySign',
     fontWeight: 'bold',
   },
   scrollContainer: {
@@ -321,36 +265,51 @@ const styles = StyleSheet.create({
   summaryTitle: {
     fontSize: RESPONSIVE.fontSize.lg,
     color: 'white',
+    fontFamily: 'MusicVibes',
     fontWeight: 'bold',
     marginBottom: layoutHelpers.gap.xs,
   },
   summarySubtext: {
     fontSize: RESPONSIVE.fontSize.sm,
     color: '#888',
+    fontFamily: 'DynaPuff',
   },
   potionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    paddingHorizontal: layoutHelpers.gap.md,
+  },
+  potionCardContainer: {
+    width: wp(40),
+    marginBottom: layoutHelpers.gap.md,
+    position: 'relative',
+  },
+  potionCardShadow: {
+    position: 'absolute',
+    top: scale(4),
+    left: scale(1),
+    right: -scale(1),
+    bottom: -scale(15),
+    backgroundColor: 'rgba(255, 255, 255, 1)',
+    borderRadius: RESPONSIVE.borderRadius.lg,
+    zIndex: 1,
   },
   potionCard: {
-    width: wp(45),
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: RESPONSIVE.borderRadius.lg,
     padding: RESPONSIVE.margin.md,
-    marginBottom: layoutHelpers.gap.md,
     borderWidth: 2,
+    borderColor: '#dfdfdfff',
+    shadowColor: '#ffffffff',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.8,
+    shadowRadius: 5,
+    elevation: 8,
+    zIndex: 2,
     position: 'relative',
     alignItems: 'center',
-  },
-  rarityIndicator: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: scale(4),
-    borderTopLeftRadius: RESPONSIVE.borderRadius.lg,
-    borderTopRightRadius: RESPONSIVE.borderRadius.lg,
+    height: scale(140),
+    justifyContent: 'center',
   },
   potionIcon: {
     width: scale(60),
@@ -359,10 +318,12 @@ const styles = StyleSheet.create({
   },
   potionName: {
     fontSize: RESPONSIVE.fontSize.sm,
-    color: 'white',
+    color: 'rgba(53, 53, 53, 1)',
     textAlign: 'center',
-    marginBottom: layoutHelpers.gap.sm,
+    fontFamily: 'FunkySign',
     fontWeight: 'bold',
+    position: 'absolute',
+    bottom: scale(10),
   },
   countBadge: {
     position: 'absolute',
@@ -373,16 +334,10 @@ const styles = StyleSheet.create({
     borderRadius: RESPONSIVE.borderRadius.sm,
   },
   countText: {
-    fontSize: RESPONSIVE.fontSize.xs,
+    fontSize: RESPONSIVE.fontSize.sm,
     fontWeight: 'bold',
     color: 'white',
-  },
-  rarityContainer: {
-    alignItems: 'center',
-  },
-  rarityLabel: {
-    fontSize: RESPONSIVE.fontSize.xs,
-    fontWeight: 'bold',
+    fontFamily: 'FunkySign',
   },
   // Modal Styles
   modalOverlay: {
@@ -392,18 +347,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContainer: {
-    backgroundColor: 'rgba(15, 15, 15, 0.95)',
+    backgroundColor: 'rgba(27, 98, 124, 0.95)',
     borderRadius: RESPONSIVE.borderRadius.xl,
     width: wp(85),
     maxHeight: '80%',
     borderWidth: 2,
-    borderColor: '#333',
+    borderColor: '#dfdfdfff',
   },
   modalHeader: {
     alignItems: 'center',
     padding: RESPONSIVE.margin.lg,
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
     borderTopLeftRadius: RESPONSIVE.borderRadius.xl,
     borderTopRightRadius: RESPONSIVE.borderRadius.xl,
   },
@@ -415,17 +370,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: RESPONSIVE.fontSize.xl,
     color: 'white',
-    fontWeight: 'bold',
-    marginBottom: layoutHelpers.gap.sm,
-  },
-  rarityBadge: {
-    paddingHorizontal: RESPONSIVE.margin.md,
-    paddingVertical: RESPONSIVE.margin.sm,
-    borderRadius: RESPONSIVE.borderRadius.md,
-  },
-  rarityText: {
-    fontSize: RESPONSIVE.fontSize.sm,
-    color: 'white',
+    fontFamily: 'MusicVibes',
     fontWeight: 'bold',
   },
   modalContent: {
@@ -434,6 +379,7 @@ const styles = StyleSheet.create({
   modalDescription: {
     fontSize: RESPONSIVE.fontSize.md,
     color: '#ccc',
+    fontFamily: 'DynaPuff',
     textAlign: 'center',
     marginBottom: layoutHelpers.gap.lg,
   },
@@ -449,10 +395,12 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: RESPONSIVE.fontSize.md,
     color: '#888',
+    fontFamily: 'FunkySign',
   },
   detailValue: {
     fontSize: RESPONSIVE.fontSize.md,
     color: 'white',
+    fontFamily: 'FunkySign',
     fontWeight: 'bold',
   },
   modalButtons: {
@@ -469,6 +417,7 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: 'white',
     fontSize: RESPONSIVE.fontSize.md,
+    fontFamily: 'FunkySign',
     fontWeight: 'bold',
   },
   useButton: {
@@ -480,6 +429,7 @@ const styles = StyleSheet.create({
   useButtonText: {
     color: 'white',
     fontSize: RESPONSIVE.fontSize.md,
+    fontFamily: 'FunkySign',
     fontWeight: 'bold',
   },
 });

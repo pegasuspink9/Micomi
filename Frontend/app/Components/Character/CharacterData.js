@@ -66,7 +66,7 @@ export const HERO_DATA = {
 };
 
 export const URLS = {
-  background: "https://github.com/user-attachments/assets/3bc21bd9-3cdc-48f5-ac18-dbee09e6368c",
+  background: "https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760085427/LabBackground_qc0ew6.png",
   characterBackground: "https://lottie.host/b3ebb5e0-3eda-4aad-82a3-a7428cbe0aa5/mvEeQ5rDi1.lottie",
   bottomBar: "https://github.com/user-attachments/assets/a913b8b6-2df5-4f08-b746-eb5a277f955a",
   coin: "https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd",

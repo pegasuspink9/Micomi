@@ -6,9 +6,11 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  SafeAreaView
+  SafeAreaView,
+  ImageBackground
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { usePlayerProfile } from '../../hooks/usePlayerProfile';
 import {
   scale,
   scaleWidth,
@@ -19,144 +21,141 @@ import {
   layoutHelpers,
 } from '../Responsiveness/gameResponsive';
 
-// Mock extended badges data
-const allBadgesData = [
-  { id: 1, name: "First Victory", description: "Win your first battle", icon: "https://via.placeholder.com/80x80/FFD700/000000?text=🏆", earned: true, earnedDate: "2024-01-15", rarity: "Common" },
-  { id: 2, name: "Streak Master", description: "Login for 10 consecutive days", icon: "https://via.placeholder.com/80x80/FF4444/FFFFFF?text=🔥", earned: true, earnedDate: "2024-01-20", rarity: "Rare" },
-  { id: 3, name: "Coin Collector", description: "Collect 10,000 coins", icon: "https://via.placeholder.com/80x80/FFD700/000000?text=💰", earned: false, earnedDate: null, rarity: "Epic" },
-  { id: 4, name: "Explorer", description: "Discover 5 new maps", icon: "https://via.placeholder.com/80x80/4CAF50/FFFFFF?text=🗺️", earned: true, earnedDate: "2024-01-25", rarity: "Uncommon" },
-  { id: 5, name: "Dragon Slayer", description: "Defeat the Ancient Dragon", icon: "https://via.placeholder.com/80x80/8B0000/FFFFFF?text=🐉", earned: false, earnedDate: null, rarity: "Legendary" },
-  { id: 6, name: "Speed Runner", description: "Complete a level under 30 seconds", icon: "https://via.placeholder.com/80x80/00CED1/000000?text=⚡", earned: true, earnedDate: "2024-01-18", rarity: "Rare" },
-  { id: 7, name: "Champion", description: "Win 100 battles", icon: "https://via.placeholder.com/80x80/FFD700/000000?text=👑", earned: false, earnedDate: null, rarity: "Epic" },
-  { id: 8, name: "Treasure Hunter", description: "Find 50 hidden treasures", icon: "https://via.placeholder.com/80x80/8B4513/FFFFFF?text=📦", earned: true, earnedDate: "2024-01-22", rarity: "Uncommon" },
-];
-
 export default function BadgesView() {
   const router = useRouter();
+  const playerId = 11;
+  const { playerData, loading } = usePlayerProfile(playerId);
 
-  const getRarityColor = (rarity) => {
-    switch (rarity) {
-      case 'Common': return '#CCCCCC';
-      case 'Uncommon': return '#4CAF50';
-      case 'Rare': return '#2196F3';
-      case 'Epic': return '#9C27B0';
-      case 'Legendary': return '#FF9800';
-      default: return '#CCCCCC';
-    }
-  };
+  if (loading || !playerData) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.loadingText}>Loading badges...</Text>
+      </SafeAreaView>
+    );
+  }
 
-  const earnedBadges = allBadgesData.filter(badge => badge.earned);
-  const unearnedBadges = allBadgesData.filter(badge => !badge.earned);
+  const earnedBadges = playerData.badges.filter(badge => badge.earned);
+  const unearnedBadges = playerData.badges.filter(badge => !badge.earned);
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Badge Collection</Text>
-        <View style={styles.headerStats}>
-          <Text style={styles.statsText}>{earnedBadges.length}/{allBadgesData.length}</Text>
-        </View>
-      </View>
-
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {/* Progress Bar */}
-        <View style={styles.progressSection}>
-          <Text style={styles.progressLabel}>Collection Progress</Text>
-          <View style={styles.progressBarContainer}>
-            <View 
-              style={[
-                styles.progressBar, 
-                { width: `${(earnedBadges.length / allBadgesData.length) * 100}%` }
-              ]} 
-            />
-          </View>
-          <Text style={styles.progressText}>
-            {Math.round((earnedBadges.length / allBadgesData.length) * 100)}% Complete
-          </Text>
-        </View>
-
-        {/* Earned Badges */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Earned Badges ({earnedBadges.length})</Text>
-          <View style={styles.badgesGrid}>
-            {earnedBadges.map((badge) => (
-              <BadgeCard key={badge.id} badge={badge} />
-            ))}
+      <ImageBackground source={{ uri: playerData.containerBackground }} style={styles.backgroundContainer} resizeMode="cover">
+        <View style={styles.backgroundOverlay} />
+        
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Text style={styles.backButtonText}>← Back</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Badge Collection</Text>
+          <View style={styles.headerStats}>
+            <Text style={styles.statsText}>{earnedBadges.length}/{playerData.badges.length}</Text>
           </View>
         </View>
 
-        {/* Unearned Badges */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Locked Badges ({unearnedBadges.length})</Text>
-          <View style={styles.badgesGrid}>
-            {unearnedBadges.map((badge) => (
-              <BadgeCard key={badge.id} badge={badge} />
-            ))}
+        <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          {/* Progress Bar */}
+          <View style={styles.progressSection}>
+            <Text style={styles.progressLabel}>Collection Progress</Text>
+            <View style={styles.progressBarContainer}>
+              <View 
+                style={[
+                  styles.progressBar, 
+                  { width: `${(earnedBadges.length / playerData.badges.length) * 100}%` }
+                ]} 
+              />
+            </View>
+            <Text style={styles.progressText}>
+              {Math.round((earnedBadges.length / playerData.badges.length) * 100)}% Complete
+            </Text>
           </View>
-        </View>
 
-        <View style={{ height: layoutHelpers.gap.xl }} />
-      </ScrollView>
+          {/* Earned Badges */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Earned Badges ({earnedBadges.length})</Text>
+            <View style={styles.badgesGrid}>
+              {earnedBadges.map((badge) => (
+                <BadgeCard key={badge.id} badge={badge} />
+              ))}
+            </View>
+          </View>
+
+          {/* Unearned Badges */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Locked Badges ({unearnedBadges.length})</Text>
+            <View style={styles.badgesGrid}>
+              {unearnedBadges.map((badge) => (
+                <BadgeCard key={badge.id} badge={badge} />
+              ))}
+            </View>
+          </View>
+
+          <View style={{ height: layoutHelpers.gap.xl }} />
+        </ScrollView>
+      </ImageBackground>
     </SafeAreaView>
   );
 }
 
 const BadgeCard = ({ badge }) => {
-  const rarityColor = getRarityColor(badge.rarity);
-  
   return (
-    <TouchableOpacity style={[
+    <View style={[
       styles.badgeCard,
-      { 
-        opacity: badge.earned ? 1 : 0.5,
-        borderColor: rarityColor 
-      }
+      { opacity: badge.earned ? 1 : 0.5 }
     ]}>
-      <View style={[styles.rarityBorder, { backgroundColor: rarityColor }]}>
-        <Text style={styles.rarityText}>{badge.rarity}</Text>
+      <View style={styles.badgeCardShadow} />
+      <View style={styles.badgeCardContent}>
+        <ImageBackground 
+          source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760065969/Untitled_design_6_ioccva.png' }} 
+          style={styles.border} 
+          resizeMode="contain"
+        >
+          <Image 
+            source={{ uri: badge.icon }} 
+            style={styles.badgeIconImage}
+            resizeMode="contain"
+          />
+        </ImageBackground>
+        
+        <Text style={styles.badgeName}>{badge.name}</Text>
+        <Text style={styles.badgeDescription}>{badge.description}</Text>
+        
+        {badge.earned ? (
+          <View style={styles.earnedContainer}>
+            <Text style={styles.earnedText}>✓ Earned</Text>
+            {badge.earnedDate && (
+              <Text style={styles.earnedDate}>{badge.earnedDate}</Text>
+            )}
+          </View>
+        ) : (
+          <View style={styles.lockedContainer}>
+            <Text style={styles.lockedText}>🔒 Locked</Text>
+          </View>
+        )}
       </View>
-      
-      <Image 
-        source={{ uri: badge.icon }} 
-        style={styles.badgeIcon}
-        resizeMode="contain"
-      />
-      
-      <Text style={styles.badgeName}>{badge.name}</Text>
-      <Text style={styles.badgeDescription}>{badge.description}</Text>
-      
-      {badge.earned ? (
-        <View style={styles.earnedContainer}>
-          <Text style={styles.earnedText}>✓ Earned</Text>
-          <Text style={styles.earnedDate}>{badge.earnedDate}</Text>
-        </View>
-      ) : (
-        <View style={styles.lockedContainer}>
-          <Text style={styles.lockedText}>🔒 Locked</Text>
-        </View>
-      )}
-    </TouchableOpacity>
+    </View>
   );
-};
-
-const getRarityColor = (rarity) => {
-  switch (rarity) {
-    case 'Common': return '#CCCCCC';
-    case 'Uncommon': return '#4CAF50';
-    case 'Rare': return '#2196F3';
-    case 'Epic': return '#9C27B0';
-    case 'Legendary': return '#FF9800';
-    default: return '#CCCCCC';
-  }
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
+  },
+  backgroundContainer: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  backgroundOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.54)', 
+  },
+  loadingText: {
+    color: 'white',
+    fontSize: RESPONSIVE.fontSize.md,
+    textAlign: 'center',
+    marginTop: 50,
   },
   header: {
     flexDirection: 'row',
@@ -165,30 +164,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: RESPONSIVE.margin.lg,
     paddingVertical: RESPONSIVE.margin.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
   },
   backButton: {
     padding: RESPONSIVE.margin.sm,
   },
   backButtonText: {
-    color: '#4CAF50',
+    color: '#2ee7ffff',
     fontSize: RESPONSIVE.fontSize.md,
+    fontFamily: 'GoldenAge',
     fontWeight: 'bold',
   },
   headerTitle: {
     fontSize: RESPONSIVE.fontSize.xl,
     color: 'white',
+    fontFamily: 'MusicVibes',
     fontWeight: 'bold',
   },
   headerStats: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(46, 231, 255, 0.2)',
     paddingHorizontal: RESPONSIVE.margin.md,
     paddingVertical: RESPONSIVE.margin.sm,
     borderRadius: RESPONSIVE.borderRadius.md,
+    borderWidth: 1,
+    borderColor: '#2ee7ffff',
   },
   statsText: {
-    color: '#FFD700',
+    color: '#2ee7ffff',
     fontSize: RESPONSIVE.fontSize.md,
+    fontFamily: 'FunkySign',
     fontWeight: 'bold',
   },
   scrollContainer: {
@@ -202,6 +206,7 @@ const styles = StyleSheet.create({
   progressLabel: {
     fontSize: RESPONSIVE.fontSize.lg,
     color: 'white',
+    fontFamily: 'MusicVibes',
     marginBottom: layoutHelpers.gap.sm,
   },
   progressBarContainer: {
@@ -214,12 +219,13 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#2ee7ffff',
     borderRadius: scale(6),
   },
   progressText: {
     fontSize: RESPONSIVE.fontSize.md,
-    color: '#4CAF50',
+    color: '#2ee7ffff',
+    fontFamily: 'FunkySign',
     fontWeight: 'bold',
   },
   section: {
@@ -228,8 +234,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: RESPONSIVE.fontSize.lg,
     color: 'white',
+    fontFamily: 'MusicVibes',
     fontWeight: 'bold',
     marginBottom: layoutHelpers.gap.md,
+    textShadowColor: '#000000ff',
   },
   badgesGrid: {
     flexDirection: 'row',
@@ -238,43 +246,62 @@ const styles = StyleSheet.create({
   },
   badgeCard: {
     width: wp(45),
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: RESPONSIVE.borderRadius.lg,
-    padding: RESPONSIVE.margin.md,
     marginBottom: layoutHelpers.gap.md,
-    borderWidth: 2,
     position: 'relative',
   },
-  rarityBorder: {
+  badgeCardShadow: {
     position: 'absolute',
-    top: 0,
-    right: 0,
-    paddingHorizontal: scale(8),
-    paddingVertical: scale(4),
-    borderTopRightRadius: RESPONSIVE.borderRadius.lg,
-    borderBottomLeftRadius: RESPONSIVE.borderRadius.md,
+    top: scale(4),
+    left: scale(1),
+    right: -scale(1),
+    bottom: -scale(15),
+    backgroundColor: 'rgba(218, 218, 218, 1)',
+    borderRadius: RESPONSIVE.borderRadius.lg,
+    zIndex: 1,
   },
-  rarityText: {
-    fontSize: RESPONSIVE.fontSize.xs,
-    color: 'white',
-    fontWeight: 'bold',
+  badgeCardContent: {
+    backgroundColor: 'rgba(27, 98, 124, 0.93)',
+    borderRadius: RESPONSIVE.borderRadius.lg,
+    padding: RESPONSIVE.margin.md,
+    borderWidth: 2,
+    borderColor: '#dfdfdfff',
+    shadowColor: '#ffffffff',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.8,
+    shadowRadius: 5,
+    elevation: 8,
+    zIndex: 2,
+    position: 'relative',
+    alignItems: 'center',
   },
-  badgeIcon: {
-    width: scale(60),
-    height: scale(60),
-    alignSelf: 'center',
+  border: {
+    width: scale(80), 
+    height: scale(80), 
+    justifyContent: 'center', 
+    alignItems: 'center',
     marginBottom: layoutHelpers.gap.sm,
+  },
+  badgeIconImage: {
+    width: scale(120),
+    height: scale(120),
+    shadowColor: '#000000',
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.6,
+    shadowRadius: 2,
+    elevation: 3,
   },
   badgeName: {
     fontSize: RESPONSIVE.fontSize.md,
     color: 'white',
+    fontFamily: 'FunkySign',
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: layoutHelpers.gap.xs,
   },
   badgeDescription: {
     fontSize: RESPONSIVE.fontSize.sm,
-    color: '#888',
+    color: '#ccc',
+    fontFamily: 'DynaPuff',
     textAlign: 'center',
     marginBottom: layoutHelpers.gap.sm,
   },
@@ -284,11 +311,13 @@ const styles = StyleSheet.create({
   earnedText: {
     fontSize: RESPONSIVE.fontSize.sm,
     color: '#4CAF50',
+    fontFamily: 'FunkySign',
     fontWeight: 'bold',
   },
   earnedDate: {
     fontSize: RESPONSIVE.fontSize.xs,
     color: '#888',
+    fontFamily: 'DynaPuff',
   },
   lockedContainer: {
     alignItems: 'center',
@@ -296,6 +325,7 @@ const styles = StyleSheet.create({
   lockedText: {
     fontSize: RESPONSIVE.fontSize.sm,
     color: '#888',
+    fontFamily: 'FunkySign',
     fontWeight: 'bold',
   },
 });

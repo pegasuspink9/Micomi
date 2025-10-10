@@ -5,9 +5,12 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  SafeAreaView
+  SafeAreaView,
+  ImageBackground,
+  Image
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { usePlayerProfile } from '../../hooks/usePlayerProfile';
 import {
   scale,
   wp,
@@ -15,28 +18,19 @@ import {
   layoutHelpers,
 } from '../Responsiveness/gameResponsive';
 
-// Mock extended quests data
-const allQuestsData = {
-  daily: [
-    { id: 1, title: "Complete 5 Battles", description: "Win 5 battles in any game mode", progress: 3, total: 5, reward: "100 Coins", timeLeft: "5h 23m" },
-    { id: 2, title: "Collect 500 Coins", description: "Gather coins from battles and treasures", progress: 350, total: 500, reward: "50 EXP", timeLeft: "5h 23m" },
-    { id: 3, title: "Use 3 Potions", description: "Consume any type of potions", progress: 1, total: 3, reward: "Health Potion", timeLeft: "5h 23m" },
-  ],
-  weekly: [
-    { id: 4, title: "Defeat Boss Enemy", description: "Defeat any boss in the game", progress: 0, total: 1, reward: "Rare Badge", timeLeft: "3d 12h" },
-    { id: 5, title: "Complete 25 Battles", description: "Win 25 battles this week", progress: 12, total: 25, reward: "500 Coins", timeLeft: "3d 12h" },
-    { id: 6, title: "Explore 3 New Maps", description: "Discover new areas", progress: 1, total: 3, reward: "Map Fragment", timeLeft: "3d 12h" },
-  ],
-  main: [
-    { id: 7, title: "Collect 1000 Coins", description: "Accumulate 1000 coins total", progress: 750, total: 1000, reward: "Epic Weapon", timeLeft: "No Limit" },
-    { id: 8, title: "Reach Level 10", description: "Gain enough EXP to reach level 10", progress: 7, total: 10, reward: "Character Unlock", timeLeft: "No Limit" },
-    { id: 9, title: "Master All Skills", description: "Unlock and upgrade all character skills", progress: 4, total: 8, reward: "Legendary Badge", timeLeft: "No Limit" },
-  ]
-};
-
 export default function QuestsView() {
   const router = useRouter();
+  const playerId = 11;
+  const { playerData, loading } = usePlayerProfile(playerId);
   const [activeTab, setActiveTab] = useState('daily');
+
+  if (loading || !playerData) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.loadingText}>Loading quests...</Text>
+      </SafeAreaView>
+    );
+  }
 
   const getTypeColor = (type) => {
     switch (type) {
@@ -47,61 +41,72 @@ export default function QuestsView() {
     }
   };
 
+  // Group quests by type
+  const questsByType = {
+    daily: playerData.quests.filter(quest => quest.type === 'daily'),
+    weekly: playerData.quests.filter(quest => quest.type === 'weekly'),
+    main: playerData.quests.filter(quest => quest.type === 'main')
+  };
+
   const getTotalQuests = () => {
-    return Object.values(allQuestsData).flat().length;
+    return playerData.quests.length;
   };
 
   const getCompletedQuests = () => {
-    return Object.values(allQuestsData).flat().filter(quest => quest.progress >= quest.total).length;
+    return playerData.quests.filter(quest => quest.is_completed).length;
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Quests & Missions</Text>
-        <View style={styles.headerStats}>
-          <Text style={styles.statsText}>{getCompletedQuests()}/{getTotalQuests()}</Text>
-        </View>
-      </View>
-
-      {/* Tab Navigation */}
-      <View style={styles.tabContainer}>
-        {Object.keys(allQuestsData).map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[
-              styles.tab,
-              { 
-                backgroundColor: activeTab === tab ? getTypeColor(tab) : 'rgba(255, 255, 255, 0.1)',
-                borderColor: getTypeColor(tab)
-              }
-            ]}
-            onPress={() => setActiveTab(tab)}
-          >
-            <Text style={[
-              styles.tabText,
-              { color: activeTab === tab ? 'white' : getTypeColor(tab) }
-            ]}>
-              {tab.charAt(0).toUpperCase() + tab.slice(1)} ({allQuestsData[tab].length})
-            </Text>
+      <ImageBackground source={{ uri: playerData.containerBackground }} style={styles.backgroundContainer} resizeMode="cover">
+        <View style={styles.backgroundOverlay} />
+        
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Text style={styles.backButtonText}>← Back</Text>
           </TouchableOpacity>
-        ))}
-      </View>
+          <Text style={styles.headerTitle}>Quests & Missions</Text>
+          <View style={styles.headerStats}>
+            <Text style={styles.statsText}>{getCompletedQuests()}/{getTotalQuests()}</Text>
+          </View>
+        </View>
 
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {/* Quest List */}
-        <View style={styles.questsList}>
-          {allQuestsData[activeTab].map((quest) => (
-            <QuestCard key={quest.id} quest={quest} type={activeTab} />
+        {/* Tab Navigation */}
+        <View style={styles.tabContainer}>
+          {Object.keys(questsByType).map((tab) => (
+            <TouchableOpacity
+              key={tab}
+              style={[
+                styles.tab,
+                { 
+                  backgroundColor: activeTab === tab ? getTypeColor(tab) : 'rgba(255, 255, 255, 0.1)',
+                  borderColor: getTypeColor(tab)
+                }
+              ]}
+              onPress={() => setActiveTab(tab)}
+            >
+              <Text style={[
+                styles.tabText,
+                { color: activeTab === tab ? 'white' : getTypeColor(tab) }
+              ]}>
+                {tab.charAt(0).toUpperCase() + tab.slice(1)} ({questsByType[tab].length})
+              </Text>
+            </TouchableOpacity>
           ))}
         </View>
 
-        <View style={{ height: layoutHelpers.gap.xl }} />
-      </ScrollView>
+        <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          {/* Quest List */}
+          <View style={styles.questsList}>
+            {questsByType[activeTab].map((quest) => (
+              <QuestCard key={quest.id} quest={quest} type={activeTab} />
+            ))}
+          </View>
+
+          <View style={{ height: layoutHelpers.gap.xl }} />
+        </ScrollView>
+      </ImageBackground>
     </SafeAreaView>
   );
 }
@@ -109,69 +114,80 @@ export default function QuestsView() {
 const QuestCard = ({ quest, type }) => {
   const progressPercentage = (quest.progress / quest.total) * 100;
   const typeColor = getTypeColor(type);
-  const isCompleted = quest.progress >= quest.total;
+  const isCompleted = quest.is_completed;
   
   return (
-    <TouchableOpacity style={[
-      styles.questCard,
-      { 
-        borderColor: typeColor,
-        opacity: isCompleted ? 1 : 0.9 
-      }
-    ]}>
-      {/* Quest Header */}
-      <View style={styles.questHeader}>
-        <View style={styles.questTitleContainer}>
+    <View style={styles.questCardContainer}>
+      <View style={styles.questCardShadow} />
+      <View style={[
+        styles.questCard,
+        { 
+          borderColor: typeColor,
+          opacity: isCompleted ? 1 : 0.9 
+        }
+      ]}>
+        {/* Rewards Section - Left */}
+        <View style={styles.questRewardsSection}>
+          <View style={styles.rewardItem}>
+            <Image 
+              source={{ uri: "https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd" }}
+              style={styles.rewardIcon}
+              resizeMode="contain"
+            />
+            <Text style={styles.rewardAmount}>{quest.reward_coins}</Text>
+          </View>
+        </View>
+
+        {/* Quest Info Section - Middle */}
+        <View style={styles.questInfoSection}>
           <Text style={styles.questTitle}>{quest.title}</Text>
           <Text style={[styles.questType, { color: typeColor }]}>
             {type.toUpperCase()}
           </Text>
+          <Text style={styles.questDescription}>{quest.description}</Text>
+          
+          {/* Progress Bar */}
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBarBackground}>
+              <View 
+                style={[
+                  styles.progressBarFill, 
+                  { 
+                    width: `${progressPercentage}%`,
+                    backgroundColor: isCompleted ? '#4CAF50' : typeColor
+                  }
+                ]} 
+              />
+            </View>
+            <Text style={styles.progressText}>
+              {quest.progress}/{quest.total}
+            </Text>
+          </View>
         </View>
-        <View style={styles.timeContainer}>
-          <Text style={styles.timeLeft}>⏱️ {quest.timeLeft}</Text>
-        </View>
-      </View>
 
-      {/* Quest Description */}
-      <Text style={styles.questDescription}>{quest.description}</Text>
-
-      {/* Progress Section */}
-      <View style={styles.progressSection}>
-        <View style={styles.progressInfo}>
-          <Text style={styles.progressText}>
-            Progress: {quest.progress}/{quest.total}
-          </Text>
-          <Text style={styles.progressPercentage}>
-            {Math.round(progressPercentage)}%
-          </Text>
-        </View>
-        
-        <View style={styles.progressBarContainer}>
-          <View 
+        {/* Claim Button Section - Right */}
+        <View style={styles.claimSection}>
+          <TouchableOpacity 
             style={[
-              styles.progressBar, 
-              { 
-                width: `${progressPercentage}%`, 
-                backgroundColor: typeColor 
-              }
-            ]} 
-          />
+              styles.claimButton,
+              { backgroundColor: isCompleted ? '#4CAF50' : '#666' }
+            ]}
+            disabled={!isCompleted}
+          >
+            <Text style={styles.claimButtonText}>
+              {isCompleted ? (quest.is_claimed ? 'Claimed' : 'Claim') : 'Locked'}
+            </Text>
+          </TouchableOpacity>
         </View>
-      </View>
 
-      {/* Reward Section */}
-      <View style={styles.rewardSection}>
-        <Text style={styles.rewardLabel}>Reward:</Text>
-        <Text style={styles.rewardText}>{quest.reward}</Text>
+        {/* Completion Status */}
+        {isCompleted && (
+          <View style={styles.completedOverlay}>
+            <Text style={styles.completedText}>✓ COMPLETED</Text>
+          </View>
+        )}
       </View>
-
-      {/* Completion Status */}
-      {isCompleted && (
-        <View style={styles.completedOverlay}>
-          <Text style={styles.completedText}>✓ COMPLETED</Text>
-        </View>
-      )}
-    </TouchableOpacity>
+    </View>
   );
 };
 
@@ -189,6 +205,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0a0a0a',
   },
+  backgroundContainer: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  backgroundOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.54)', 
+  },
+  loadingText: {
+    color: 'white',
+    fontSize: RESPONSIVE.fontSize.md,
+    textAlign: 'center',
+    marginTop: 50,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -196,30 +227,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: RESPONSIVE.margin.lg,
     paddingVertical: RESPONSIVE.margin.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
   },
   backButton: {
     padding: RESPONSIVE.margin.sm,
   },
   backButtonText: {
-    color: '#4CAF50',
+    color: '#2ee7ffff',
     fontSize: RESPONSIVE.fontSize.md,
+    fontFamily: 'GoldenAge',
     fontWeight: 'bold',
   },
   headerTitle: {
     fontSize: RESPONSIVE.fontSize.xl,
     color: 'white',
+    fontFamily: 'MusicVibes',
     fontWeight: 'bold',
   },
   headerStats: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(46, 231, 255, 0.2)',
     paddingHorizontal: RESPONSIVE.margin.md,
     paddingVertical: RESPONSIVE.margin.sm,
     borderRadius: RESPONSIVE.borderRadius.md,
+    borderWidth: 1,
+    borderColor: '#2ee7ffff',
   },
   statsText: {
-    color: '#FFD700',
+    color: '#2ee7ffff',
     fontSize: RESPONSIVE.fontSize.md,
+    fontFamily: 'FunkySign',
     fontWeight: 'bold',
   },
   tabContainer: {
@@ -238,6 +274,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: RESPONSIVE.fontSize.sm,
+    fontFamily: 'FunkySign',
     fontWeight: 'bold',
   },
   scrollContainer: {
@@ -247,85 +284,120 @@ const styles = StyleSheet.create({
   questsList: {
     paddingVertical: RESPONSIVE.margin.sm,
   },
-  questCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: RESPONSIVE.borderRadius.lg,
-    padding: RESPONSIVE.margin.lg,
+  questCardContainer: {
+    width: '100%',
     marginBottom: layoutHelpers.gap.md,
-    borderWidth: 2,
     position: 'relative',
   },
-  questHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: layoutHelpers.gap.sm,
+  questCardShadow: {
+    position: 'absolute',
+    top: scale(4),
+    left: scale(1),
+    right: -scale(1),
+    bottom: -scale(15),
+    backgroundColor: 'rgba(218, 218, 218, 1)',
+    borderRadius: RESPONSIVE.borderRadius.lg,
+    zIndex: 1,
   },
-  questTitleContainer: {
+  questCard: {
+    backgroundColor: 'rgba(27, 98, 124, 0.93)',
+    borderRadius: RESPONSIVE.borderRadius.lg,
+    padding: RESPONSIVE.margin.lg,
+    borderWidth: 2,
+    borderColor: '#dfdfdfff',
+    shadowColor: '#ffffffff',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.8,
+    shadowRadius: 5,
+    elevation: 8,
+    zIndex: 2,
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  questRewardsSection: {
+    width: scale(60),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rewardItem: {
+    alignItems: 'center',
+  },
+  rewardIcon: {
+    width: scale(30),
+    height: scale(30),
+    marginBottom: layoutHelpers.gap.xs,
+  },
+  rewardAmount: {
+    fontSize: RESPONSIVE.fontSize.sm,
+    color: '#FFD700',
+    fontFamily: 'FunkySign',
+    fontWeight: 'bold',
+  },
+  questInfoSection: {
     flex: 1,
+    paddingHorizontal: layoutHelpers.gap.md,
   },
   questTitle: {
     fontSize: RESPONSIVE.fontSize.md,
     color: 'white',
+    fontFamily: 'FunkySign',
     fontWeight: 'bold',
     marginBottom: layoutHelpers.gap.xs,
   },
   questType: {
-    fontSize: RESPONSIVE.fontSize.xs,
+    fontSize: RESPONSIVE.fontSize.sm,
+    fontFamily: 'FunkySign',
     fontWeight: 'bold',
-  },
-  timeContainer: {
-    alignItems: 'flex-end',
-  },
-  timeLeft: {
-    fontSize: RESPONSIVE.fontSize.xs,
-    color: '#888',
+    marginBottom: layoutHelpers.gap.xs,
   },
   questDescription: {
     fontSize: RESPONSIVE.fontSize.sm,
     color: '#ccc',
-    marginBottom: layoutHelpers.gap.md,
+    fontFamily: 'DynaPuff',
+    marginBottom: layoutHelpers.gap.sm,
   },
-  progressSection: {
-    marginBottom: layoutHelpers.gap.md,
-  },
-  progressInfo: {
+  progressContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: layoutHelpers.gap.xs,
+    justifyContent: 'space-between',
+  },
+  progressBarBackground: {
+    flex: 1,
+    height: scale(8),
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: scale(4),
+    marginRight: layoutHelpers.gap.sm,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: scale(4),
+    minWidth: '2%',
   },
   progressText: {
     fontSize: RESPONSIVE.fontSize.sm,
     color: 'white',
-  },
-  progressPercentage: {
-    fontSize: RESPONSIVE.fontSize.sm,
-    color: '#4CAF50',
+    fontFamily: 'FunkySign',
     fontWeight: 'bold',
+    minWidth: scale(40),
+    textAlign: 'right',
   },
-  progressBarContainer: {
-    height: scale(8),
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: scale(4),
-    overflow: 'hidden',
-  },
-  progressBar: {
-    height: '100%',
-    borderRadius: scale(4),
-  },
-  rewardSection: {
-    flexDirection: 'row',
+  claimSection: {
+    width: scale(80),
     alignItems: 'center',
   },
-  rewardLabel: {
-    fontSize: RESPONSIVE.fontSize.sm,
-    color: '#888',
-    marginRight: layoutHelpers.gap.sm,
+  claimButton: {
+    paddingHorizontal: scale(16),
+    paddingVertical: scale(8),
+    borderRadius: RESPONSIVE.borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  rewardText: {
+  claimButtonText: {
     fontSize: RESPONSIVE.fontSize.sm,
-    color: '#FFD700',
+    color: 'white',
+    fontFamily: 'FunkySign',
     fontWeight: 'bold',
   },
   completedOverlay: {
@@ -341,6 +413,7 @@ const styles = StyleSheet.create({
   completedText: {
     fontSize: RESPONSIVE.fontSize.xs,
     color: 'white',
+    fontFamily: 'FunkySign',
     fontWeight: 'bold',
   },
 });

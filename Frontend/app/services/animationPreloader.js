@@ -11,7 +11,6 @@ class AnimationPreloader {
     this.cacheDirectory = FileSystem.documentDirectory + 'animations/';
   }
 
-  // ✅ Create cache directory if it doesn't exist
   async ensureCacheDirectory() {
     const dirInfo = await FileSystem.getInfoAsync(this.cacheDirectory);
     if (!dirInfo.exists) {

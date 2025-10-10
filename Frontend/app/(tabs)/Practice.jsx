@@ -6,7 +6,8 @@ import {
   ScrollView, 
   TouchableOpacity,
   StyleSheet,
-  ImageBackground
+  ImageBackground,
+  ActivityIndicator
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -21,50 +22,52 @@ import {
   layoutHelpers,
 } from '../Components/Responsiveness/gameResponsive';
 import { useRouter } from 'expo-router';
-
-const userData = {
-  heroSelected: {
-    name: "Gino",
-    avatar: "https://github.com/user-attachments/assets/eced9b8f-eae0-48f5-bc05-d8d5ce018529",
-  },
-  playerName: "DragonSlayer",
-  username: "@player123",
-  coins: 15420,
-  daysLogin: 45,
-  currentStreak: 12,
-  expPoints: 8750,
-  mapsOpened: 8,
-  badges: [
-    { id: 1, name: "First Victory", icon: "https://res.cloudinary.com/dpbocuozx/image/upload/v1759991977/Knowledge_Keeper_iti1jc.png", earned: true },
-    { id: 2, name: "Streak Master", icon: "https://res.cloudinary.com/dpbocuozx/image/upload/v1759991977/Wake_and_Bake_xmqmyd.png", earned: true },
-    { id: 3, name: "Coin Collector", icon: "https://res.cloudinary.com/dpbocuozx/image/upload/v1759991975/PC_Eater_wmkvhi.png", earned: false },
-    { id: 4, name: "Explorer", icon: "https://res.cloudinary.com/dpbocuozx/image/upload/v1759991976/Collector_ndqhrw.png", earned: true },
-  ],
-  quests: [
-    { id: 1, title: "Complete 5 Battles", progress: 3, total: 5, type: "daily" },
-    { id: 2, title: "Defeat Boss Enemy", progress: 1, total: 1, type: "weekly" },
-    { id: 3, title: "Collect 1000 Coins", progress: 1000, total: 1000, type: "main" },
-  ],
-  potions: [
-    { id: 1, name: "Health", count: 12, icon: "https://github.com/user-attachments/assets/1fb726a5-f63d-44f4-8e33-8d9c961940ff", color: "#ff4444" },
-    { id: 2, name: "Mana", count: 8, icon: "https://github.com/user-attachments/assets/d2a4ab58-2d5d-4e35-80b2-71e591bdd297", color: "#4444ff" },
-    { id: 3, name: "Strength", count: 3, icon: "https://github.com/user-attachments/assets/3264eb79-0afd-4987-8c64-6d46b0fc03a0", color: "#ff8800" },
-  ],
-  statsIcons: {
-    coins: "https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd",
-    daysLogin: "https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd",
-    currentStreak: "https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd",
-    expPoints: "https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd",
-    mapsOpened: "https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd"
-  },
-  background: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759900156/474821932-3bc21bd9-3cdc-48f5-ac18-dbee09e6368c_1_twmle9.png',
-  containerBackground: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg'
-};
+import { usePlayerProfile } from '../hooks/usePlayerProfile';
 
 export default function Practice() {
+  const playerId = 11; // You can get this from context or props
+  const {
+    playerData,
+    loading,
+    error,
+    loadPlayerProfile,
+    clearError
+  } = usePlayerProfile(playerId);
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color="#ffffff" />
+        <Text style={styles.loadingText}>Loading Profile...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <Text style={styles.errorText}>Error: {error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={() => {
+          clearError();
+          loadPlayerProfile();
+        }}>
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (!playerData) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <Text style={styles.errorText}>No player data available</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <ImageBackground source={{ uri: userData.containerBackground }} style={styles.ImageBackgroundContainer} resizeMode="cover">
+      <ImageBackground source={{ uri: playerData.containerBackground }} style={styles.ImageBackgroundContainer} resizeMode="cover">
 
       <View style={styles.backgroundOverlay} />
       <ScrollView 
@@ -72,32 +75,33 @@ export default function Practice() {
         showsVerticalScrollIndicator={false}
       >
         {/* Hero Selected Header */}
-        <HeroSelectedSection hero={userData.heroSelected} />
+        <HeroSelectedSection hero={playerData.heroSelected} background={playerData.background} />
         
         {/* Player Info Section */}
         <PlayerInfoSection 
-          playerName={userData.playerName}
-          username={userData.username}
+          playerName={playerData.playerName}
+          username={playerData.username}
         />
         
         {/* Stats Grid Section */}
         <StatsGridSection 
-          coins={userData.coins}
-          daysLogin={userData.daysLogin}
-          currentStreak={userData.currentStreak}
-          expPoints={userData.expPoints}
-          mapsOpened={userData.mapsOpened}
+          coins={playerData.coins}
+          daysLogin={playerData.daysLogin}
+          currentStreak={playerData.currentStreak}
+          expPoints={playerData.expPoints}
+          mapsOpened={playerData.mapsOpened}
+          statsIcons={playerData.statsIcons}
         />
         
         {/* Badges Section */}
-        <BadgesSection badges={userData.badges} />
+        <BadgesSection badges={playerData.badges} />
 
         
         {/* Potions Section */}
-        <PotionsSection potions={userData.potions} />
+        <PotionsSection potions={playerData.potions} />
         
         {/* Quests Section */}
-        <QuestsSection quests={userData.quests} />
+        <QuestsSection quests={playerData.quests} />
         
         
         {/* Bottom Spacing */}
@@ -109,9 +113,9 @@ export default function Practice() {
 }
 
 // Hero Selected Component
-const HeroSelectedSection = ({ hero }) => (
+const HeroSelectedSection = ({ hero, background }) => (
   <View style={styles.heroSection}>
-    <ImageBackground source={{ uri: userData.background }} style={styles.heroSelectionBackground}>
+    <ImageBackground source={{ uri: background }} style={styles.heroSelectionBackground}>
     <View style={styles.heroContainer}>
       <Image 
         source={{ uri: hero.avatar }} 
@@ -135,28 +139,28 @@ const PlayerInfoSection = ({ playerName, username }) => (
 );
 
 // Stats Grid Component
-const StatsGridSection = ({ coins, daysLogin, currentStreak, expPoints, mapsOpened }) => (
+const StatsGridSection = ({ coins, daysLogin, currentStreak, expPoints, mapsOpened, statsIcons }) => (
   <View style={styles.statsSection}>
     <Text style={[styles.sectionTitle, { textAlign: 'center' }]}>Overview</Text>
     <View style={styles.statsGrid}>
       <StatCard 
-        icon={userData.statsIcons.coins}
+        icon={statsIcons.coins}
         label="Coins" 
         value={coins.toLocaleString()} 
       />
     
       <StatCard 
-        icon={userData.statsIcons.currentStreak}
-        label=" Streak" 
+        icon={statsIcons.currentStreak}
+        label="Streak" 
         value={currentStreak} 
       />
       <StatCard 
-        icon={userData.statsIcons.expPoints}
+        icon={statsIcons.expPoints}
         label="EXP Points" 
         value={expPoints.toLocaleString()} 
       />
       <StatCard 
-        icon={userData.statsIcons.mapsOpened}
+        icon={statsIcons.mapsOpened}
         label="Maps" 
         value={mapsOpened} 
       />
@@ -208,11 +212,10 @@ const BadgesSection = ({ badges }) => {
   );
 };
 
-
 const BadgeCard = ({ badge }) => (
   <View style={[
     styles.badgeCard,
-    { opacity: badge.earned ? 1 : 0.5 }
+    { opacity: badge.earned ? 1 : 0.1 }
   ]}>
     <ImageBackground source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760065969/Untitled_design_6_ioccva.png' }} style={styles.border} resizeMode="contain">
     <Image 
@@ -263,7 +266,7 @@ const QuestCard = ({ quest }) => {
               style={styles.rewardIcon}
               resizeMode="contain"
             />
-            <Text style={styles.rewardAmount}>100</Text>
+            <Text style={styles.rewardAmount}>{quest.reward_coins}</Text>
           </View>
         </View>
 
@@ -318,7 +321,7 @@ const PotionsSection = ({ potions }) => {
   return (
     <View style={styles.potionsSection}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Potions </Text>
+        <Text style={styles.sectionTitle}>Potions</Text>
         <TouchableOpacity 
           onPress={() => router.push('/Components/User Labs/PotionsView')}
           style={styles.viewAllButton}
@@ -340,7 +343,9 @@ const PotionCard = ({ potion }) => {
     const lowerName = name.toLowerCase();
     if (lowerName.includes('health')) return 'rgba(156, 167, 83, 0.66)';
     if (lowerName.includes('mana')) return 'rgba(29, 29, 85, 0.8)'; 
-    if (lowerName.includes('strength')) return 'rgba(121, 94, 14, 0.8)'; 
+    if (lowerName.includes('strength')) return 'rgba(121, 94, 14, 0.8)';
+    if (lowerName.includes('freeze')) return 'rgba(68, 68, 255, 0.8)';
+    if (lowerName.includes('hint')) return 'rgba(0, 255, 0, 0.8)';
     return 'rgba(156, 39, 176, 0.8)'; 
   };
 
@@ -363,6 +368,38 @@ const PotionCard = ({ potion }) => {
 };
 
 const styles = StyleSheet.create({
+  // Add loading/error styles
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: 'white',
+    fontSize: RESPONSIVE.fontSize.md,
+    fontFamily: 'Computerfont',
+    marginTop: 20,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: RESPONSIVE.fontSize.md,
+    fontFamily: 'Computerfont',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: 'rgba(0, 93, 200, 0.8)',
+    padding: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: RESPONSIVE.fontSize.sm,
+    fontFamily: 'Computerfont',
+  },
+
+  // ... keep all your existing styles ...
   container: {
     flex: 1
   },
@@ -453,9 +490,6 @@ const styles = StyleSheet.create({
     marginBottom: layoutHelpers.gap.xl,
   },
 
-
-  
-  
   sectionTitle: {
     fontSize: RESPONSIVE.fontSize.xxl,
     color: 'white',
@@ -561,7 +595,6 @@ const styles = StyleSheet.create({
     marginBottom: layoutHelpers.gap.md,
   },
 
-
   viewAllButton: {
     paddingHorizontal: scale(12),
     paddingVertical: scale(6),
@@ -573,7 +606,6 @@ const styles = StyleSheet.create({
     color: '#ffffffff',
     fontFamily: 'GoldenAge',
   },
-
 
   badgesScrollView: {
     flexDirection: 'row',
@@ -619,7 +651,6 @@ const styles = StyleSheet.create({
     padding: layoutHelpers.gap.xl,
   },
   
-  
    questCard: {
     backgroundColor: 'rgba(27, 98, 124, 0.93)',
     borderRadius: RESPONSIVE.borderRadius.md,
@@ -661,7 +692,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-  
   questInfoSection: {
     flex: 1,
     paddingHorizontal: layoutHelpers.gap.md,
@@ -697,7 +727,6 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
 
-
     questTitle: {
     fontSize: RESPONSIVE.fontSize.md,
     color: '#ffffff',
@@ -711,7 +740,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: layoutHelpers.gap.sm,
   },
-
 
     claimSection: {
     width: scale(80),
@@ -732,8 +760,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-
-
   questCardContainer: {
     width: '100%',
     height: scaleHeight(80),
@@ -743,8 +769,6 @@ const styles = StyleSheet.create({
     
   },
 
-  
-  
   questCardShadow: {
     position: 'absolute',
     top: scale(4),
@@ -756,9 +780,6 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
 
-  
-
-  
   // Potions Section Styles
   potionsSection: {
     marginBottom: layoutHelpers.gap.xl,
@@ -816,7 +837,6 @@ potionIconImage: {
     shadowRadius: 3,
     elevation: 4,
   },
-
 
    potionName: {
     fontSize: RESPONSIVE.fontSize.sm,
