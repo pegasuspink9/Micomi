@@ -21,7 +21,6 @@ export const HERO_DATA = {
     is_purchased: true,
     is_selected: false
   },
-  
   Leon: {
     character_name: "Leon",
     character_type: "Tank",
