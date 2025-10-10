@@ -11,7 +11,7 @@ import { useCharacterSelection } from '../hooks/useCharacterSelection';
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function CharacterProfile() {
-  const playerId = 11; // You can get this from context or props
+  const playerId = 11;
   
   const {
     charactersData,
@@ -25,7 +25,8 @@ export default function CharacterProfile() {
     purchaseCharacter,
     loadCharacters,
     clearError,
-    getHeroNames
+    getHeroNames,
+    changeDisplayedCharacter // Add this from the hook
   } = useCharacterSelection(playerId);
 
   const [showBuyModal, setShowBuyModal] = useState(false);
@@ -55,7 +56,6 @@ export default function CharacterProfile() {
     }).start(() => {
       setShowStaticImage(true);
       
-      // Start screen label animation first
       screenLabelRef.current?.startAnimation();
       
       setTimeout(() => {
@@ -64,11 +64,17 @@ export default function CharacterProfile() {
     });
   };
 
-  const handleHeroSelection = async (heroName) => {
+  const handleHeroViewing = (heroName) => {
+    console.log(`👁️ Viewing character: ${heroName}`);
+    changeDisplayedCharacter(heroName);
+  };
+
+  const handleCharacterSelection = async (heroName) => {
     try {
+      console.log(`🎯 Attempting to select character: ${heroName}`);
       await selectCharacter(heroName);
     } catch (error) {
-      Alert.alert('Selection Error', error.message);
+      console.error('Selection Error:', error);
     }
   };
 
@@ -76,11 +82,26 @@ export default function CharacterProfile() {
     if (!currentHero) return;
 
     try {
-      await purchaseCharacter(selectedHero);
+      console.log(`🛒 Initiating purchase for ${currentHero.character_name} (Shop ID: ${currentHero.characterShopId})`);
+      
+      const response = await purchaseCharacter(selectedHero);
       setShowBuyModal(false);
-      Alert.alert('Success', `${currentHero.character_name} has been purchased!`);
+      
+      Alert.alert(
+        'Purchase Successful! 🎉', 
+        response.message || `${currentHero.character_name} has been purchased!`,
+        [{ text: 'OK', style: 'default' }]
+      );
+      
+      console.log('✅ Purchase completed successfully:', response);
+      
     } catch (error) {
-      Alert.alert('Purchase Error', error.message);
+      console.error('❌ Purchase failed:', error);
+      Alert.alert(
+        'Purchase Failed', 
+        error.message || 'Unable to purchase character. Please try again.',
+        [{ text: 'OK', style: 'destructive' }]
+      );
     }
   };
 
@@ -92,40 +113,43 @@ export default function CharacterProfile() {
     }
   }, [selectedHero]);
 
-  // Render functions
+  // Updated renderHeroBox function
   const renderHeroBox = (heroName) => {
     const hero = charactersData[heroName];
     if (!hero) return null;
 
+    const isCurrentlyViewed = selectedHero === heroName;
+    const isActuallySelected = hero.is_selected;
+
     return (
-      
       <TouchableOpacity
         key={heroName}
-        style={[styles.heroBox, selectedHero === heroName && styles.selectedHeroBox]}
-        onPress={() => handleHeroSelection(heroName)}
+        style={[
+          styles.heroBox, 
+          isCurrentlyViewed && styles.viewedHeroBox,
+          isActuallySelected 
+        ]}
+        onPress={() => handleHeroViewing(heroName)} // Now properly calls the viewing function
         disabled={selecting}
       >
-        <ImageBackground source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760064111/Untitled_design_3_ghewno.png' }} style={styles.heroBoxBorder} resizeMode="contain">
-        <ImageBackground
-          source={{ uri: hero.character_avatar }}
-          resizeMode="cover"
-          style={styles.heroBoxBackground}
+        <ImageBackground 
+          source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760064111/Untitled_design_3_ghewno.png' }} 
+          style={styles.heroBoxBorder} 
+          resizeMode="contain"
         >
-          <Text style={styles.heroBoxTxt}>{heroName}</Text>
+          <ImageBackground
+            source={{ uri: hero.character_avatar }}
+            resizeMode="cover"
+            style={styles.heroBoxBackground}
+          >
+            <Text style={styles.heroBoxTxt}>{heroName}</Text>
+            
+          </ImageBackground>
         </ImageBackground>
-      </ImageBackground>
       </TouchableOpacity>
     );
   };
 
-  if (loading) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color="#ffffff" />
-        <Text style={styles.loadingText}>Loading Characters...</Text>
-      </View>
-    );
-  }
 
   if (error) {
     return (
@@ -189,11 +213,12 @@ export default function CharacterProfile() {
 
               <ActionButton
                 currentHero={currentHero}
-                onHeroSelection={handleHeroSelection}
+                onSelectCharacter={handleCharacterSelection}
                 onShowBuyModal={setShowBuyModal}
                 coinIcon={URLS.coin}
                 styles={styles}
                 disabled={selecting || purchasing}
+                selecting={selecting}
               />
 
               {/* Attribute Panel */}
@@ -226,7 +251,8 @@ export default function CharacterProfile() {
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Confirm Purchase</Text>
             <Text style={styles.modalText}>
-              Do you want to buy {currentHero.character_name} for {currentHero.character_price} coins?
+              Do you want to buy {currentHero.character_name} 
+              {currentHero.character_price > 0 ? ` for ${currentHero.character_price} coins` : ''}?
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity 
@@ -410,13 +436,31 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     marginTop: screenHeight * 0.01,
   },
-  heroBox: {
+   heroBox: {
     width: screenWidth * 0.20,
     zIndex: 2,
     borderRadius: 8,
     overflow: 'hidden',
     marginTop: screenHeight * 0.02,
   },
+    viewedHeroBox: {
+    width: screenWidth * 0.21,
+    height: screenHeight * 0.16,
+    shadowColor: '#ffffff',
+    shadowOffset: { width: 10, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 1,
+    elevation: 10,
+    
+    borderWidth: 2,
+    borderColor: '#02b7ffff',
+    shadowOffset: { width: 30, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 1,
+    elevation: 30,
+  },
+
+
    heroBoxBorder: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -424,21 +468,46 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  selectedHeroBox: {
-    width: screenWidth * 0.22,
-    height: screenHeight * 0.17,
-    shadowColor: '#3172ffff',
-    shadowOffset: { width: 30, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 1,
-    elevation: 30,
+
+  selectionIndicator: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: '#4CAF50',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
+
+  selectionIndicatorText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+
+    selectButton: {
+    position: 'absolute',
+    top: screenHeight * 0.5,
+    borderWidth: 2,
+    padding: 5,
+    borderColor: 'rgba(255, 255, 255, 1)',
+    borderRadius: 30,
+    backgroundColor: 'rgba(3, 63, 116, 0.94)',
+    width: screenWidth * 0.4,
+    
+  },
+
+
   heroBoxBackground: {
     width: '100%',
     height: '85%',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: -1,
+    shadowColor: '#4CAF50',
+    
   },
  
   heroBoxTxt: {
@@ -446,6 +515,9 @@ const styles = StyleSheet.create({
     fontSize: screenWidth * 0.040,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     width: '100%',
+    position: 'absolute',
+    bottom: 0,
+    paddingVertical: 2,
     marginTop: screenHeight * 0.12,
     fontFamily: 'MusicVibes',
     textAlign: 'center',

@@ -13,11 +13,13 @@ export const characterService = {
     }
   },
 
-  // Purchase character
-  purchaseCharacter: async (characterShopId) => {
+  // Purchase character - Updated to use correct endpoint
+  purchaseCharacter: async (playerId, characterShopId) => {
     try {
-      const response = await apiService.post(`/shop/character/${characterShopId}/purchase`);
-      console.log(`💰 Character purchase response for shop ID ${characterShopId}:`, response);
+      const response = await apiService.post(`/game/buy-character/${playerId}`, {
+        characterShopId: characterShopId
+      });
+      console.log(`💰 Character purchase response for Player ID ${playerId}, Character Shop ID ${characterShopId}:`, response);
       return response.success ? response.data : response;
     } catch (error) {
       console.error('Failed to purchase character:', error);
@@ -26,7 +28,7 @@ export const characterService = {
   },
   
   // Select character
-    selectCharacter: async (playerId, characterId) => {
+  selectCharacter: async (playerId, characterId) => {
     try {
       const response = await apiService.post(`/shop/select-character/${playerId}/${characterId}`);
       console.log(`✅ Character selection response for Player ID ${playerId}, Character ID ${characterId}:`, response);
@@ -55,7 +57,7 @@ export const characterService = {
         character_damage: Array.isArray(character.character_damage) ? 
           Math.round(character.character_damage.reduce((a, b) => a + b, 0) / character.character_damage.length) : 
           character.character_damage,
-        character_price: 0, // Assuming purchased characters don't have a price
+        character_price: character.character_price || 0, // Add character price from API
         character_avatar: character.character_avatar,
         damageIcon: characterService.getDamageIcon(character.character_type),
         character_image_display: character.character_image_display,
@@ -73,7 +75,9 @@ export const characterService = {
         character_run: character.character_run,
         character_dies: character.character_dies,
         character_hurt: character.character_hurt,
-        avatar_image: character.avatar_image
+        avatar_image: character.avatar_image,
+        // Store characterShopId for purchase (same as character_id based on your requirement)
+        characterShopId: character.character_id
       };
     });
     

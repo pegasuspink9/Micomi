@@ -3,7 +3,7 @@ import { characterService } from '../services/characterService';
 
 export const useCharacterSelection = (playerId = 11) => { 
   const [charactersData, setCharactersData] = useState({});
-  const [selectedHero, setSelectedHero] = useState('');
+  const [selectedHero, setSelectedHero] = useState(''); // This is for display/viewing
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [purchasing, setPurchasing] = useState(false);
@@ -20,16 +20,17 @@ export const useCharacterSelection = (playerId = 11) => {
       
       setCharactersData(transformedData);
       
-      // Set selected hero
-      const selectedCharacter = characterService.getSelectedCharacter(transformedData);
-      if (selectedCharacter) {
-        setSelectedHero(selectedCharacter.character_name);
-        console.log(`✅ Selected character found: ${selectedCharacter.character_name}`);
+      // Set the actually selected character from backend for display
+      const actuallySelectedCharacter = characterService.getSelectedCharacter(transformedData);
+      if (actuallySelectedCharacter) {
+        setSelectedHero(actuallySelectedCharacter.character_name);
+        console.log(`✅ Actually selected character from backend: ${actuallySelectedCharacter.character_name}`);
       } else {
+        // If no character is selected in backend, show first available for viewing
         const firstHero = Object.keys(transformedData)[0];
         if (firstHero) {
           setSelectedHero(firstHero);
-          console.log(`📍 No selected character, defaulting to: ${firstHero}`);
+          console.log(`📍 No selected character in backend, showing first for viewing: ${firstHero}`);
         }
       }
       
@@ -43,7 +44,7 @@ export const useCharacterSelection = (playerId = 11) => {
     }
   }, [playerId]);
 
-  // Purchase character - This might not be needed for player characters
+  // Purchase character
   const purchaseCharacter = useCallback(async (heroName) => {
     try {
       setPurchasing(true);
@@ -54,22 +55,20 @@ export const useCharacterSelection = (playerId = 11) => {
         throw new Error('Character not found');
       }
 
-      console.log(`💰 Purchasing character: ${heroName} (character ID: ${hero.character_id})`);
-      // Note: You might need to update this endpoint for purchasing player characters
-      await characterService.purchaseCharacter(hero.character_id);
+      if (hero.is_purchased) {
+        throw new Error('Character already purchased');
+      }
+
+      console.log(`💰 Purchasing character: ${heroName} (Player ID: ${playerId}, Character Shop ID: ${hero.characterShopId})`);
       
-      // Update local state
-      setCharactersData(prevData => ({
-        ...prevData,
-        [heroName]: { ...prevData[heroName], is_purchased: true }
-      }));
+      const response = await characterService.purchaseCharacter(playerId, hero.characterShopId);
       
-      console.log(`✅ Character ${heroName} purchased successfully`);
+      console.log(`✅ Purchase successful:`, response);
       
-      // Reload characters to get updated data
+      // Reload characters to get updated data from server
       await loadCharacters();
       
-      return true;
+      return response;
     } catch (err) {
       setError(err.message);
       console.error('Error purchasing character:', err);
@@ -77,9 +76,9 @@ export const useCharacterSelection = (playerId = 11) => {
     } finally {
       setPurchasing(false);
     }
-  }, [charactersData, loadCharacters]);
+  }, [charactersData, playerId, loadCharacters]);
 
-  // Select character - Updated to use correct endpoint with playerId and characterId
+  // Select character - This actually calls the API and updates backend
   const selectCharacter = useCallback(async (heroName) => {
     try {
       setSelecting(true);
@@ -90,42 +89,51 @@ export const useCharacterSelection = (playerId = 11) => {
         throw new Error('Character not found');
       }
 
-      if (hero.is_purchased) {
-        console.log(`🎯 Selecting character: ${heroName} (Player ID: ${playerId}, Character ID: ${hero.character_id})`);
-        // Call API to select character with playerId and characterId
-        const response = await characterService.selectCharacter(playerId, hero.character_id);
-        
-        // Update local state
-        setCharactersData(prevData => {
-          const newData = { ...prevData };
-          Object.keys(newData).forEach(key => {
-            newData[key] = { ...newData[key], is_selected: key === heroName };
-          });
-          return newData;
-        });
-        
-        console.log(`✅ Character ${heroName} selected successfully:`, response.message);
+      if (!hero.is_purchased) {
+        throw new Error('Character must be purchased first');
       }
+
+      if (hero.is_selected) {
+        throw new Error('Character is already selected');
+      }
+
+      console.log(`🎯 Selecting character: ${heroName} (Player ID: ${playerId}, Character ID: ${hero.character_id})`);
       
-      // Update selected hero in state (for display purposes)
-      setSelectedHero(heroName);
+      // Call API to select character
+      const response = await characterService.selectCharacter(playerId, hero.character_id);
       
-      return true;
+      console.log(`✅ Character ${heroName} selected successfully:`, response);
+      
+      // Reload characters to get updated selection state from server
+      await loadCharacters();
+      
+      return response;
     } catch (err) {
       setError(err.message);
       console.error('Error selecting character:', err);
-      // Still update the display even if API call fails
-      setSelectedHero(heroName);
       throw err;
     } finally {
       setSelecting(false);
     }
-  }, [charactersData, playerId]);
+  }, [charactersData, playerId, loadCharacters]);
 
-  // Get current hero data
+  // Change displayed character (for viewing, not selecting)
+  const changeDisplayedCharacter = useCallback((heroName) => {
+    if (charactersData[heroName]) {
+      setSelectedHero(heroName);
+      console.log(`👁️ Changed displayed character to: ${heroName}`);
+    }
+  }, [charactersData]);
+
+  // Get current hero data (what's being displayed)
   const getCurrentHero = useCallback(() => {
     return charactersData[selectedHero] || null;
   }, [charactersData, selectedHero]);
+
+  // Get actually selected hero from backend
+  const getActuallySelectedHero = useCallback(() => {
+    return characterService.getSelectedCharacter(charactersData);
+  }, [charactersData]);
 
   // Get purchased heroes
   const getPurchasedHeroes = useCallback(() => {
@@ -148,7 +156,7 @@ export const useCharacterSelection = (playerId = 11) => {
     return hero ? hero.is_purchased : false;
   }, [charactersData]);
 
-  // Check if character is selected
+  // Check if character is actually selected in backend
   const isCharacterSelected = useCallback((heroName) => {
     const hero = charactersData[heroName];
     return hero ? hero.is_selected : false;
@@ -167,8 +175,9 @@ export const useCharacterSelection = (playerId = 11) => {
   return {
     // Data
     charactersData,
-    selectedHero,
+    selectedHero, // This is what's being displayed/viewed
     currentHero: getCurrentHero(),
+    actuallySelectedHero: getActuallySelectedHero(), // This is what's actually selected in backend
     
     // States
     loading,
@@ -179,7 +188,8 @@ export const useCharacterSelection = (playerId = 11) => {
     // Actions
     loadCharacters,
     purchaseCharacter,
-    selectCharacter,
+    selectCharacter, // This calls the API to actually select
+    changeDisplayedCharacter, // This just changes what's being viewed
     clearError,
     
     // Getters

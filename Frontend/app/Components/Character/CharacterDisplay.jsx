@@ -1,12 +1,12 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 import { View, Image, Animated } from 'react-native';
-import LottieView from 'lottie-react-native';
 import {
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
   withTiming,
   Easing,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import ReanimatedAnimated from 'react-native-reanimated'; 
 
@@ -18,10 +18,10 @@ export default function CharacterDisplay({
   styles 
 }) {
   const imageOpacity = useRef(new Animated.Value(0)).current;
-  const lottieOpacity = useRef(new Animated.Value(1)).current;
   const entranceOpacity = useRef(new Animated.Value(0)).current;
 
   const frameIndex = useSharedValue(0);
+  const animationStarted = useRef(false);
 
   const SPRITE_COLUMNS = 8;
   const SPRITE_ROWS = 6;
@@ -33,35 +33,44 @@ export default function CharacterDisplay({
   }, [styles.characterImage]);
 
   useEffect(() => {
-    lottieOpacity.setValue(1);
+    cancelAnimation(frameIndex);
+    animationStarted.current = false;
+    
     imageOpacity.setValue(0);
     entranceOpacity.setValue(0);
+    frameIndex.value = 0;
 
     Animated.timing(entranceOpacity, {
       toValue: 1,
-      duration: 4000,
+      duration: 1000,
       useNativeDriver: true,
-    }).start();
-  }, [selectedHero]);
-
-  const handleAnimationFinish = () => {
-    Animated.parallel([
-      Animated.timing(lottieOpacity, { toValue: 0, duration: 500, useNativeDriver: true }),
-      Animated.timing(imageOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
-    ]).start(() => {
-      onAnimationFinish();
-      
-      // ✅ Start sprite animation immediately after image becomes visible
-      frameIndex.value = withRepeat(
-        withTiming(TOTAL_FRAMES - 1, {
-          duration: FRAME_DURATION * TOTAL_FRAMES,
-          easing: Easing.linear,
-        }),
-        -1,
-        true
-      );
+    }).start(() => {
+      Animated.timing(imageOpacity, { 
+        toValue: 1, 
+        duration: 500, 
+        useNativeDriver: true 
+      }).start(() => {
+        onAnimationFinish();
+        
+        if (!animationStarted.current) {
+          animationStarted.current = true;
+          frameIndex.value = withRepeat(
+            withTiming(TOTAL_FRAMES - 1, {
+              duration: FRAME_DURATION * TOTAL_FRAMES,
+              easing: Easing.linear,
+            }),
+            -1,
+            true
+          );
+        }
+      });
     });
-  };
+
+    return () => {
+      cancelAnimation(frameIndex);
+      animationStarted.current = false;
+    };
+  }, [selectedHero, currentHero?.character_id]); 
 
   const spriteAnimatedStyle = useAnimatedStyle(() => {
     const currentFrame = Math.floor(frameIndex.value) % TOTAL_FRAMES;
@@ -77,34 +86,17 @@ export default function CharacterDisplay({
     };
   }, [spriteSize, SPRITE_COLUMNS]);
 
+  // Don't render if no hero data
+  if (!currentHero?.character_image_display) {
+    return <View style={styles.characterDisplay} />;
+  }
+
   return (
     <View style={styles.characterDisplay}>
       <Animated.View style={{ 
         position: 'absolute', 
-        opacity: Animated.multiply(lottieOpacity, entranceOpacity) 
+        opacity: Animated.multiply(imageOpacity, entranceOpacity) 
       }}>
-        <LottieView
-          key={selectedHero}
-          source={{ uri: currentHero.character_hero_lottie }}
-          style={[
-            styles.characterImage, 
-            { 
-              mixBlendMode: 'screen', 
-              backgroundColor: 'transparent',
-              ...(currentHero.heroLottieStyle || {})
-            }
-          ]}
-          autoPlay={true}
-          loop={false}
-          speed={-1}
-          resizeMode='contain'
-          cacheComposition={true}
-          renderMode='HARDWARE'
-          onAnimationFinish={handleAnimationFinish}
-        />
-      </Animated.View>
-
-      <Animated.View style={{ position: 'absolute', opacity: imageOpacity }}>
         <View style={[
           styles.characterImage, 
           { backgroundColor: 'transparent', overflow: 'hidden' }
