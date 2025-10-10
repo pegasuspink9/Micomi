@@ -287,23 +287,32 @@ export const submitChallengeService = async (
 
   let completionRewards: CompletionRewards | undefined = undefined;
   let nextLevel: SubmitChallengeControllerResult["nextLevel"] = null;
+  const wasFirstCompletion = allCompleted && !freshProgress?.is_completed;
 
-  if (allCompleted && !freshProgress?.is_completed) {
-    await prisma.playerProgress.update({
-      where: { progress_id: currentProgress.progress_id },
-      data: { is_completed: true, completed_at: new Date() },
-    });
+  if (allCompleted) {
+    if (wasFirstCompletion) {
+      await prisma.playerProgress.update({
+        where: { progress_id: currentProgress.progress_id },
+        data: { is_completed: true, completed_at: new Date() },
+      });
 
-    completionRewards = {
-      feedbackMessage:
-        level.feedback_message ?? `You completed Level ${level.level_number}!`,
-    };
+      completionRewards = {
+        feedbackMessage:
+          level.feedback_message ??
+          `You completed Level ${level.level_number}!`,
+      };
 
-    nextLevel = await LevelService.unlockNextLevel(
-      playerId,
-      level.map_id,
-      level.level_number
-    );
+      nextLevel = await LevelService.unlockNextLevel(
+        playerId,
+        level.map_id,
+        level.level_number
+      );
+    } else {
+      const baseMessage = `You've mastered Level ${level.level_number}!`;
+      completionRewards = {
+        feedbackMessage: `${baseMessage} This level was already completed, so no additional rewards are given—great job practicing and honing your skills!`,
+      };
+    }
   }
 
   const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
@@ -320,23 +329,17 @@ export const submitChallengeService = async (
     message,
     nextChallenge,
     audio: audioResponse,
-    ...(allCompleted
-      ? {
-          levelStatus: {
-            isCompleted: true,
-            showFeedback: true,
-            playerHealth:
-              fightResult?.charHealth ??
-              freshProgress?.player_hp ??
-              character.health,
-            enemyHealth: fightResult?.enemyHealth ?? enemyMaxHealth,
-            coinsEarned: freshProgress?.coins_earned ?? 0,
-            totalPointsEarned: freshProgress?.total_points_earned ?? 0,
-            totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
-            playerOutputs,
-          },
-        }
-      : null),
+    levelStatus: {
+      isCompleted: allCompleted,
+      showFeedback: true,
+      playerHealth:
+        fightResult?.charHealth ?? freshProgress?.player_hp ?? character.health,
+      enemyHealth: fightResult?.enemyHealth ?? enemyMaxHealth,
+      coinsEarned: freshProgress?.coins_earned ?? 0,
+      totalPointsEarned: freshProgress?.total_points_earned ?? 0,
+      totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
+      playerOutputs,
+    },
     completionRewards,
     nextLevel,
     energy: energyStatus.energy,

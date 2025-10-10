@@ -24,15 +24,65 @@ export const getAllCharactersInShop = async (req: Request, res: Response) => {
 
 /* GET all player characters */
 export const getAllPlayerCharacter = async (req: Request, res: Response) => {
-  const id = Number(req.params.playerId);
+  const playerId = Number(req.params.playerId);
+
   try {
-    const playerCharacters = await prisma.playerCharacter.findMany({
-      where: { player_id: id },
-      include: { player: true, character: true },
+    const player = await prisma.player.findUnique({
+      where: { player_id: playerId },
+      select: {
+        player_id: true,
+        username: true,
+        coins: true,
+      },
     });
-    return successResponse(res, playerCharacters, "Player characters fetched");
+
+    if (!player) {
+      return errorResponse(res, null, "Player not found", 404);
+    }
+
+    const allCharacters = await prisma.character.findMany();
+
+    const ownedCharacters = await prisma.playerCharacter.findMany({
+      where: { player_id: playerId },
+      include: { character: true },
+    });
+
+    const combinedData = allCharacters.map((character) => {
+      const owned = ownedCharacters.find(
+        (pc) => pc.character_id === character.character_id
+      );
+
+      if (owned) {
+        return {
+          player_character_id: owned.player_character_id,
+          player_id: owned.player_id,
+          character_id: owned.character_id,
+          is_purchased: owned.is_purchased,
+          is_selected: owned.is_selected,
+          player: player,
+          character: owned.character,
+        };
+      }
+
+      return {
+        player_character_id: null,
+        player_id: player.player_id,
+        character_id: character.character_id,
+        is_purchased: false,
+        is_selected: false,
+        player: player,
+        character: character,
+      };
+    });
+
+    const sortedData = combinedData.sort(
+      (a, b) => a.character_id - b.character_id
+    );
+
+    return successResponse(res, sortedData, "Player characters fetched");
   } catch (error) {
-    return errorResponse(res, null, "Player characters not found", 404);
+    console.error(error);
+    return errorResponse(res, null, "Failed to fetch player characters", 500);
   }
 };
 

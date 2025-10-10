@@ -339,18 +339,9 @@ export async function fightEnemy(
           status = BattleStatus.won;
 
           if (!progress.is_completed) {
-            const totalExp = level.challenges.reduce(
-              (sum, c) => sum + c.points_reward,
-              0
-            );
-            const totalPoints = level.challenges.reduce(
-              (sum, c) => sum + c.points_reward,
-              0
-            );
-            const totalCoins = level.challenges.reduce(
-              (sum, c) => sum + c.coins_reward,
-              0
-            );
+            const totalExp = progress.total_exp_points_earned ?? 0;
+            const totalPoints = progress.total_points_earned ?? 0;
+            const totalCoins = progress.coins_earned ?? 0;
 
             await updateQuestProgress(playerId, QuestType.defeat_enemy, 1);
 
@@ -698,18 +689,9 @@ export async function fightBossEnemy(
           status = BattleStatus.won;
 
           if (!progress.is_completed) {
-            const totalExp = level.challenges.reduce(
-              (sum, c) => sum + c.points_reward,
-              0
-            );
-            const totalPoints = level.challenges.reduce(
-              (sum, c) => sum + c.points_reward,
-              0
-            );
-            const totalCoins = level.challenges.reduce(
-              (sum, c) => sum + c.coins_reward,
-              0
-            );
+            const totalExp = progress.total_exp_points_earned ?? 0;
+            const totalPoints = progress.total_points_earned ?? 0;
+            const totalCoins = progress.coins_earned ?? 0;
 
             await updateQuestProgress(playerId, QuestType.defeat_enemy, 1);
 
