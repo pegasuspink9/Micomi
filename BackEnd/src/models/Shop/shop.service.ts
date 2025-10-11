@@ -28,7 +28,6 @@ export const getAllPlayerCharacter = async (req: Request, res: Response) => {
   const playerId = Number(req.params.playerId);
 
   try {
-    // ✅ Get player info
     const player = await prisma.player.findUnique({
       where: { player_id: playerId },
       select: {
@@ -42,36 +41,37 @@ export const getAllPlayerCharacter = async (req: Request, res: Response) => {
       return errorResponse(res, null, "Player not found", 404);
     }
 
-    // ✅ Get all characters (with price info)
     const allCharacters = await prisma.character.findMany({
       include: {
         characterShop: {
-          select: { character_price: true },
+          select: {
+            character_shop_id: true,
+            character_price: true,
+          },
         },
       },
     });
 
-    // ✅ Get owned characters
     const ownedCharacters = await prisma.playerCharacter.findMany({
       where: { player_id: playerId },
       include: {
         character: {
           include: {
             characterShop: {
-              select: { character_price: true },
+              select: {
+                character_shop_id: true,
+                character_price: true,
+              },
             },
           },
         },
       },
     });
 
-    // ✅ Combine data
     const combinedData = allCharacters.map((character) => {
       const owned = ownedCharacters.find(
         (pc) => pc.character_id === character.character_id
       );
-
-      const price = character.characterShop?.character_price ?? 0;
 
       if (owned) {
         return {
@@ -83,12 +83,10 @@ export const getAllPlayerCharacter = async (req: Request, res: Response) => {
           player,
           character: {
             ...owned.character,
-            character_price: price,
           },
         };
       }
 
-      // Not purchased
       return {
         player_character_id: null,
         player_id: player.player_id,
@@ -98,7 +96,6 @@ export const getAllPlayerCharacter = async (req: Request, res: Response) => {
         player,
         character: {
           ...character,
-          character_price: price,
         },
       };
     });
