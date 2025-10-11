@@ -321,7 +321,7 @@ enum QuestType {
   defeat_enemy //already in the combat
   buy_potion //already in the shop
   unlock_character //already in the shop
-  complete_lesson //not yet implemented
+  complete_lesson //already in the level service
   solve_challenge //already in the combat
   spend_coins //already in the shop
   earn_exp //already in the combat (giving of rewards)

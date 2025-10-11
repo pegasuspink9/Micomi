@@ -6,12 +6,14 @@ import {
   PlayerCharacter,
   Enemy,
   BattleStatus,
+  QuestType,
 } from "@prisma/client";
 import { ChallengeDTO } from "./levels.types";
 import * as EnergyService from "../Energy/energy.service";
 import { formatTimer } from "../../../helper/dateTimeHelper";
 import { getBaseEnemyHp } from "../Combat/combat.service";
 import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
+import { updateQuestProgress } from "../Quests/quests.service";
 
 const prisma = new PrismaClient();
 
@@ -307,7 +309,6 @@ export const enterLevel = async (playerId: number, levelId: number) => {
 
   let progress;
   if (!existingProgress) {
-    // First time: Create fresh
     progress = await prisma.playerProgress.create({
       data: {
         player_id: playerId,
@@ -333,7 +334,6 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     });
     console.log(`Created new progress for level ${levelId}`);
   } else if (isReEnteringCompleted) {
-    // Replay: Reset gameplay, preserve completion
     progress = await prisma.playerProgress.update({
       where: { progress_id: existingProgress.progress_id },
       data: {
@@ -351,17 +351,14 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         coins_earned: 0,
         total_points_earned: 0,
         total_exp_points_earned: 0,
-        // Preserve: is_completed, completed_at
       },
     });
     console.log(`Reset progress for replay of completed level ${levelId}`);
   } else {
-    // In-progress: Resume as-is
     progress = existingProgress;
     console.log(`Resuming in-progress level ${levelId}`);
   }
 
-  // Re-fetch verification (common to all cases)
   const verification = await prisma.playerProgress.findUnique({
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
   });
@@ -377,6 +374,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       ) {
         timeLimit = CHALLENGE_TIME_LIMIT;
       }
+
       return {
         ...ch,
         timer: formatTimer(timeLimit),
@@ -387,9 +385,12 @@ export const enterLevel = async (playerId: number, levelId: number) => {
   const firstChallenge = challengesWithTimer[0] ?? null;
   const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
 
-  // Use progress (or verification as fallback) for health in return
   const currentEnemyHealth = progress.enemy_hp ?? enemyMaxHealth;
   const currentPlayerHealth = progress.player_hp ?? playerMaxHealth;
+
+  const correctAnswerLength = Array.isArray(firstChallenge?.correct_answer)
+    ? firstChallenge.correct_answer.length
+    : 0;
 
   return {
     level: {
@@ -427,6 +428,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     currentChallenge: firstChallenge,
     energy: energyStatus.energy,
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
+    correct_answer_length: correctAnswerLength,
   };
 };
 
@@ -559,6 +561,8 @@ export const completeMicomiLevel = async (
     level.map_id,
     level.level_number
   );
+
+  await updateQuestProgress(playerId, QuestType.complete_lesson, 1);
 
   return {
     message: "Micomi level completed",
