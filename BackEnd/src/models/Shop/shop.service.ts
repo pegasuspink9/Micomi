@@ -5,6 +5,7 @@ import {
   ShopCharacterUpdateInput,
   ShopPotionCreateInput,
   ShopPotionUpdateInput,
+  isPurchasedEdit,
 } from "./shop.types";
 import { errorResponse, successResponse } from "../../../utils/response";
 
@@ -27,6 +28,7 @@ export const getAllPlayerCharacter = async (req: Request, res: Response) => {
   const playerId = Number(req.params.playerId);
 
   try {
+    // ✅ Get player info
     const player = await prisma.player.findUnique({
       where: { player_id: playerId },
       select: {
@@ -40,17 +42,36 @@ export const getAllPlayerCharacter = async (req: Request, res: Response) => {
       return errorResponse(res, null, "Player not found", 404);
     }
 
-    const allCharacters = await prisma.character.findMany();
-
-    const ownedCharacters = await prisma.playerCharacter.findMany({
-      where: { player_id: playerId },
-      include: { character: true },
+    // ✅ Get all characters (with price info)
+    const allCharacters = await prisma.character.findMany({
+      include: {
+        characterShop: {
+          select: { character_price: true },
+        },
+      },
     });
 
+    // ✅ Get owned characters
+    const ownedCharacters = await prisma.playerCharacter.findMany({
+      where: { player_id: playerId },
+      include: {
+        character: {
+          include: {
+            characterShop: {
+              select: { character_price: true },
+            },
+          },
+        },
+      },
+    });
+
+    // ✅ Combine data
     const combinedData = allCharacters.map((character) => {
       const owned = ownedCharacters.find(
         (pc) => pc.character_id === character.character_id
       );
+
+      const price = character.characterShop?.character_price ?? 0;
 
       if (owned) {
         return {
@@ -59,19 +80,26 @@ export const getAllPlayerCharacter = async (req: Request, res: Response) => {
           character_id: owned.character_id,
           is_purchased: owned.is_purchased,
           is_selected: owned.is_selected,
-          player: player,
-          character: owned.character,
+          player,
+          character: {
+            ...owned.character,
+            character_price: price,
+          },
         };
       }
 
+      // Not purchased
       return {
         player_character_id: null,
         player_id: player.player_id,
         character_id: character.character_id,
         is_purchased: false,
         is_selected: false,
-        player: player,
-        character: character,
+        player,
+        character: {
+          ...character,
+          character_price: price,
+        },
       };
     });
 
@@ -213,5 +241,34 @@ export const deletePotion = async (req: Request, res: Response) => {
     return successResponse(res, null, "Potion in the shop deleted");
   } catch (error) {
     return errorResponse(res, null, "Failed to delete potion in the shop", 400);
+  }
+};
+
+//temporary
+export const editIsPurchased = async (req: Request, res: Response) => {
+  const id = Number(req.params.playerCharacterId);
+
+  if (isNaN(id)) {
+    return errorResponse(res, null, "Invalid player_character_id", 400);
+  }
+
+  try {
+    const updateIsPurchased = await prisma.playerCharacter.update({
+      where: { player_character_id: id },
+      data: { is_purchased: req.body.is_purchased },
+    });
+
+    return successResponse(
+      res,
+      updateIsPurchased,
+      "is_purchased updated successfully"
+    );
+  } catch (error: any) {
+    console.error(error);
+    return errorResponse(
+      res,
+      error.message || error,
+      "Failed to update is_purchased"
+    );
   }
 };

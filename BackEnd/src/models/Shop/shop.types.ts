@@ -23,3 +23,9 @@ export interface ShopCharacterUpdateInput {
   character_id?: number;
   character_price?: number;
 }
+
+//temporary
+export interface isPurchasedEdit {
+  is_purchased?: boolean;
+  is_selected?: boolean;
+}
