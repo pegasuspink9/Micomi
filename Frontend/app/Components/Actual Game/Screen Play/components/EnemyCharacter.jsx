@@ -584,8 +584,8 @@ const EnemyCharacter = ({
 const styles = StyleSheet.create({
   enemyRun: {
     position: 'absolute',
-    right: scaleWidth(-8), // ✅ Responsive positioning
-    top: scaleHeight(126), // ✅ Responsive positioning
+    right: scaleWidth(-8),
+    top: scaleHeight(126),
     justifyContent: 'flex-start',
     alignItems: 'center',
   },
