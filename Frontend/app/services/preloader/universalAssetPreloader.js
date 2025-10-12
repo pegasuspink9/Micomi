@@ -9,7 +9,7 @@ class UniversalAssetPreloader {
     this.downloadQueue = new Map();
     this.isDownloading = false;
     this.cacheDirectory = FileSystem.documentDirectory + 'gameAssets/';
-    this.maxConcurrentDownloads = 3; // Prevent overwhelming the device
+    this.maxConcurrentDownloads = 3; 
   }
 
   // ✅ Create cache directory structure

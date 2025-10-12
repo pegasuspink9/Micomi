@@ -3,7 +3,7 @@ import { Animated } from 'react-native';
 import enemiesData from '../GameData/Enemy Game Data/EnemyGameData';
 import GameContainer from './components/GameContainer';
 import GameBackground from './components/GameBackground';
-import DogCharacter from './components/DogCharacter';
+import DogCharacter from './components/Character';
 import EnemyCharacter from './components/EnemyCharacter';
 import { processEnemyData } from './utils/gameStateHelper';
 import Life from './components/Life';
