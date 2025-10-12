@@ -75,6 +75,9 @@ export async function getFightSetup(playerId: number, levelId: number) {
         player_hp: selectedCharacter.health,
         battle_status: BattleStatus.in_progress,
         challenge_start_time: new Date(),
+        consecutive_corrects: 0,
+        consecutive_wrongs: 0,
+        has_reversed_curse: false,
       },
     });
   }
@@ -541,10 +544,10 @@ export async function fightBossEnemy(
   if (!character) throw new Error("Character not found");
 
   const challengeCount = level.challenges?.length ?? 1;
-  const scaledEnemyMaxHealth = ENEMY_HEALTH * challengeCount;
+  const scaledEnemyMaxHealth = BOSS_ENEMY_HEALTH * challengeCount; // Fixed to use BOSS_ENEMY_HEALTH for boss levels
 
-  console.log("DEBUG Combat Service:");
-  console.log("- Enemy base health:", ENEMY_HEALTH);
+  console.log("DEBUG Combat Service (Boss):");
+  console.log("- Enemy base health:", BOSS_ENEMY_HEALTH);
   console.log("- Number of challenges:", challengeCount);
   console.log("- Calculated scaled health:", scaledEnemyMaxHealth);
   console.log("- FRESH Progress enemy_hp from DB:", progress.enemy_hp);
@@ -578,6 +581,8 @@ export async function fightBossEnemy(
   let enemy_idle: string | null = null;
   let enemy_run: string | null = null;
   let character_run: string | null = null;
+  let enemy_attack_type: string | null = null;
+  let enemy_special_skill: string | null = null;
 
   character_run = character.character_run || null;
   character_idle = character.avatar_image || null;
@@ -760,7 +765,14 @@ export async function fightBossEnemy(
       charHealth = Math.max(charHealth - enemy_damage, 0);
       enemy_idle = enemy.enemy_avatar || null;
       enemy_run = enemy.enemy_run || null;
-      enemy_attack = enemy.enemy_attack || null;
+      if (progress.has_reversed_curse) {
+        enemy_attack_type = "special attack";
+        enemy_special_skill = enemy.special_skill || null;
+        console.log("- Reversed curse active: using special skill attack");
+      } else {
+        enemy_attack_type = "basic attack";
+        enemy_attack = enemy.enemy_attack || null;
+      }
       character_hurt = character.character_hurt || null;
       console.log(
         "- Enemy dealt",
@@ -810,7 +822,7 @@ export async function fightBossEnemy(
     playerId
   );
 
-  console.log("Final result:");
+  console.log("Final result (Boss):");
   console.log("- Enemy health:", enemyHealth);
   console.log("- Enemy max health:", scaledEnemyMaxHealth);
   console.log("- Player health:", charHealth);
@@ -822,7 +834,9 @@ export async function fightBossEnemy(
       enemy_name: enemy.enemy_name,
       enemy_idle,
       enemy_run,
+      enemy_attack_type,
       enemy_attack,
+      enemy_special_skill,
       enemy_hurt,
       enemy_dies,
       enemy_damage,

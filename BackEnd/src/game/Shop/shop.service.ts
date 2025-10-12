@@ -185,14 +185,20 @@ export const buyCharacter = async (
 export const usePotion = async (
   playerId: number,
   levelId: number,
-  potionId: number
+  playerPotionId: number
 ) => {
-  const potionShop = await prisma.potionShop.findUnique({
-    where: { potion_shop_id: potionId },
+  const playerPotion = await prisma.playerPotion.findUnique({
+    where: { player_potion_id: playerPotionId },
+    include: { potion: true },
   });
-  if (!potionShop) throw new Error("Potion not found");
 
-  const potionType = potionShop.potion_type;
+  if (!playerPotion) throw new Error("Potion not found in your inventory");
+  if (playerPotion.player_id !== playerId)
+    throw new Error("You don’t own this potion");
+  if (playerPotion.quantity <= 0)
+    throw new Error("No remaining quantity for this potion");
+
+  const potionType = playerPotion.potion.potion_type;
 
   const progress = await prisma.playerProgress.findUnique({
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
@@ -207,17 +213,8 @@ export const usePotion = async (
       },
     },
   });
-  if (!progress) throw new Error("No active progress found for this level");
 
-  const playerPotion = await prisma.playerPotion.findFirst({
-    where: {
-      player_id: playerId,
-      potion_shop_id: potionId,
-      quantity: { gt: 0 },
-    },
-    include: { potion: true },
-  });
-  if (!playerPotion) throw new Error("Potion not available");
+  if (!progress) throw new Error("No active progress found for this level");
 
   const updates: any[] = [];
 
@@ -260,7 +257,7 @@ export const usePotion = async (
 
   updates.push(
     prisma.playerPotion.update({
-      where: { player_potion_id: playerPotion.player_potion_id },
+      where: { player_potion_id: playerPotionId },
       data: { quantity: { decrement: 1 } },
     })
   );

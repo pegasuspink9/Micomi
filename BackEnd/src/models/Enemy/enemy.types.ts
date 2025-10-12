@@ -14,6 +14,8 @@ export interface EnemyCreateInput {
   enemy_hurt?: string;
   avatar_enemy?: string;
 
+  special_skill?: string;
+
   enemy_coins?: number;
 }
 
@@ -31,8 +33,9 @@ export interface EnemyUpdateInput {
   enemy_dies?: string;
   enemy_run?: string;
   enemy_hurt?: string;
-
   avatar_enemy?: string;
+
+  special_skill?: string;
 
   enemy_coins?: number;
 }

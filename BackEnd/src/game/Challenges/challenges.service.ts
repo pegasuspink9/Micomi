@@ -21,6 +21,8 @@ const arraysEqual = (a: string[], b: string[]): boolean => {
   return setA.size === setB.size && [...setA].every((val) => setB.has(val));
 };
 
+const reverseString = (str: string): string => str.split("").reverse().join("");
+
 const isTimedChallengeType = (type: string) =>
   ["multiple choice", "fill in the blank"].includes(type);
 
@@ -119,6 +121,8 @@ export const submitChallengeService = async (
         total_points_earned: 0,
         total_exp_points_earned: 0,
         consecutive_corrects: 0,
+        consecutive_wrongs: 0,
+        has_reversed_curse: false,
       },
     });
   }
@@ -131,7 +135,19 @@ export const submitChallengeService = async (
   const now = new Date();
   const elapsed = (now.getTime() - challengeStart.getTime()) / 1000;
 
-  const correctAnswer = challenge.correct_answer as string[];
+  let correctAnswer = challenge.correct_answer as string[];
+  const rawCorrectAnswer = [...correctAnswer];
+
+  let effectiveCorrectAnswer = correctAnswer;
+  if (
+    currentProgress.has_reversed_curse &&
+    enemy.enemy_name === "King Grimnir"
+  ) {
+    effectiveCorrectAnswer = rawCorrectAnswer.map(reverseString);
+    console.log(
+      `- Reversal curse active for King Grimnir: correct answers reversed for comparison`
+    );
+  }
 
   let finalAnswer = answer;
   let hintUsed = false;
@@ -146,11 +162,11 @@ export const submitChallengeService = async (
     });
 
     if (hintPotion) {
-      if (correctAnswer.length > 0) {
+      if (effectiveCorrectAnswer.length > 0) {
         if (challenge.challenge_type === "multiple choice") {
-          finalAnswer = [correctAnswer[0]];
+          finalAnswer = [effectiveCorrectAnswer[0]];
         } else if (challenge.challenge_type === "fill in the blank") {
-          finalAnswer = [correctAnswer[0]];
+          finalAnswer = [effectiveCorrectAnswer[0]];
         }
 
         await prisma.playerPotion.update({
@@ -160,7 +176,7 @@ export const submitChallengeService = async (
 
         hintUsed = true;
         console.log(
-          `- Hint potion activated: revealing only part of the correct answer (${correctAnswer[0]})`
+          `- Hint potion activated: revealing only part of the effective correct answer (${effectiveCorrectAnswer[0]})`
         );
       }
     } else {
@@ -170,7 +186,7 @@ export const submitChallengeService = async (
     }
   }
 
-  const isCorrect = arraysEqual(finalAnswer, correctAnswer);
+  const isCorrect = arraysEqual(finalAnswer, effectiveCorrectAnswer);
 
   let wasEverWrong = false;
   if (isCorrect) {
@@ -459,6 +475,10 @@ const getNextChallengeHard = async (progress: any) => {
         nextChallenge = challenge || null;
       }
     }
+  }
+
+  if (!playerAlive) {
+    nextChallenge = null;
   }
 
   return wrapWithTimer(progress, nextChallenge);

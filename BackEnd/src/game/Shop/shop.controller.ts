@@ -29,10 +29,14 @@ export const buyCharacter = async (req: Request, res: Response) => {
 export const usePotion = async (req: Request, res: Response) => {
   const playerId = Number(req.params.playerId);
   const levelId = Number(req.params.levelId);
-  const potionId = Number(req.params.potionId);
+  const playerPotionId = Number(req.params.playerPotionId);
 
   try {
-    const result = await ShopService.usePotion(playerId, levelId, potionId);
+    const result = await ShopService.usePotion(
+      playerId,
+      levelId,
+      playerPotionId
+    );
     return successResponse(res, result, `${result.potionType} potion used`);
   } catch (error) {
     return errorResponse(res, null, (error as Error).message, 400);

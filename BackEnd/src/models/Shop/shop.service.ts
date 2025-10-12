@@ -180,20 +180,30 @@ export const getAllPotionsInShop = async (req: Request, res: Response) => {
 /* GET all player potions */
 export const getAllPlayerPotions = async (req: Request, res: Response) => {
   try {
-    const { playerId } = req.params;
+    const playerId = Number(req.params.playerId);
 
-    const playerPotions = await prisma.playerPotion.findMany({
-      where: { player_id: Number(playerId) },
+    const allPotions = await prisma.potionShop.findMany({
       include: {
-        potion: true,
+        buyers: {
+          where: { player_id: playerId },
+        },
       },
     });
 
-    if (!playerPotions || playerPotions.length === 0) {
-      return errorResponse(res, null, "No potions found for this player", 404);
-    }
+    const formatted = allPotions.map((potion) => {
+      const playerPotion = potion.buyers[0];
+      return {
+        player_potion_id: playerPotion?.player_potion_id ?? null,
+        potion_shop_id: potion.potion_shop_id,
+        potion_type: potion.potion_type,
+        potion_description: potion.potion_description,
+        potion_price: potion.potion_price,
+        potion_url: potion.potion_url,
+        quantity: playerPotion?.quantity ?? 0,
+      };
+    });
 
-    return successResponse(res, playerPotions, "Player potions fetched");
+    return successResponse(res, formatted, "Player potions fetched");
   } catch (error) {
     console.error(error);
     return errorResponse(res, null, "Failed to fetch player potions", 500);

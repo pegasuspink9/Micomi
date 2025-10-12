@@ -192,6 +192,7 @@ export const previewLevel = async (playerId: number, levelId: number) => {
           enemy_run: enemy.enemy_run,
           enemy_damage: enemy.enemy_damage,
           enemy_attack: enemy.enemy_attack,
+          enemy_special_attack: enemy.special_skill,
           enemy_hurt: enemy.enemy_hurt,
           enemy_dies: enemy.enemy_dies,
           enemy_avatar: enemy.avatar_enemy,
@@ -306,9 +307,14 @@ export const enterLevel = async (playerId: number, levelId: number) => {
   });
 
   const isReEnteringCompleted = existingProgress?.is_completed === true;
+  const isLostState =
+    existingProgress &&
+    existingProgress.player_hp <= 0 &&
+    !existingProgress.is_completed;
 
   let progress;
   if (!existingProgress) {
+    // New progress: create
     progress = await prisma.playerProgress.create({
       data: {
         player_id: playerId,
@@ -327,12 +333,40 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         total_points_earned: 0,
         total_exp_points_earned: 0,
         consecutive_corrects: 0,
+        consecutive_wrongs: 0,
+        has_reversed_curse: false,
         took_damage: false,
         has_strong_effect: false,
         has_freeze_effect: false,
       },
     });
     console.log(`Created new progress for level ${levelId}`);
+  } else if (isLostState) {
+    // Lost state: update existing to reset (aligns with easy level retry behavior)
+    progress = await prisma.playerProgress.update({
+      where: { progress_id: existingProgress.progress_id },
+      data: {
+        attempts: 0,
+        player_answer: {},
+        wrong_challenges: [],
+        completed_at: null,
+        challenge_start_time: new Date(),
+        player_hp: playerMaxHealth,
+        enemy_hp: enemyMaxHealth,
+        battle_status: BattleStatus.in_progress,
+        is_completed: false,
+        coins_earned: 0,
+        total_points_earned: 0,
+        total_exp_points_earned: 0,
+        consecutive_corrects: 0,
+        consecutive_wrongs: 0,
+        has_reversed_curse: false,
+        took_damage: false,
+        has_strong_effect: false,
+        has_freeze_effect: false,
+      },
+    });
+    console.log(`Reset progress for lost state in level ${levelId}`);
   } else if (isReEnteringCompleted) {
     progress = await prisma.playerProgress.update({
       where: { progress_id: existingProgress.progress_id },
@@ -345,6 +379,8 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         battle_status: BattleStatus.in_progress,
         challenge_start_time: new Date(),
         consecutive_corrects: 0,
+        consecutive_wrongs: 0,
+        has_reversed_curse: false,
         took_damage: false,
         has_strong_effect: false,
         has_freeze_effect: false,
@@ -409,6 +445,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       enemy_run: enemy.enemy_run,
       enemy_damage: enemy.enemy_damage,
       enemy_attack: enemy.enemy_attack,
+      enemy_special_attack: enemy.special_skill,
       enemy_hurt: enemy.enemy_hurt,
       enemy_dies: enemy.enemy_dies,
       enemy_avatar: enemy.avatar_enemy,
@@ -620,11 +657,11 @@ export const completeShopLevel = async (playerId: number, levelId: number) => {
     return bought < limit;
   });
 
-  if (notCompleted) {
-    throw new Error(
-      "Player has not yet bought all limited potions for this level"
-    );
-  }
+  // if (notCompleted) {
+  //   throw new Error(
+  //     "Player has not yet bought all limited potions for this level"
+  //   );
+  // }
 
   const progress = await prisma.playerProgress.upsert({
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
