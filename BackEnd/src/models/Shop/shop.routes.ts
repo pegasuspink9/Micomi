@@ -33,4 +33,10 @@ router.post("/create-potion", ShopService.createPotion);
 router.put("/update-potion/:id", ShopService.updatePotion);
 router.delete("/delete-potion/:id", ShopService.deletePotion);
 
+//temporary
+router.put(
+  "/update-isPurchased/:playerCharacterId",
+  ShopService.editIsPurchased
+);
+
 export default router;

@@ -322,6 +322,10 @@ export const submitChallengeService = async (
     ? (rawPlayerOutputs as string[])
     : null;
 
+  const correctAnswerLength = Array.isArray(nextChallenge?.correct_answer)
+    ? nextChallenge.correct_answer.length
+    : 0;
+
   return {
     isCorrect,
     attempts: freshProgress?.attempts ?? updatedProgress.attempts,
@@ -344,6 +348,7 @@ export const submitChallengeService = async (
     nextLevel,
     energy: energyStatus.energy,
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
+    correct_answer_length: correctAnswerLength,
   };
 };
 
@@ -353,12 +358,23 @@ export const getNextChallengeService = async (
 ) => {
   const progress = await prisma.playerProgress.findUnique({
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
-    include: { level: { include: { challenges: true } } },
+    include: {
+      level: {
+        include: { challenges: true },
+      },
+    },
   });
+
   if (!progress) throw new Error("Player progress not found");
   if (!progress.level) throw new Error("Level not found");
 
-  return getNextChallengeEasy(progress);
+  const level = progress.level;
+
+  if (level.level_difficulty === "hard" || level.level_difficulty === "final") {
+    return getNextChallengeHard(progress);
+  } else {
+    return getNextChallengeEasy(progress);
+  }
 };
 
 const getNextChallengeEasy = async (progress: any) => {
@@ -383,9 +399,7 @@ const getNextChallengeEasy = async (progress: any) => {
       nextChallenge = getNextWrongChallenge(progress, level, wrongChallenges);
     }
 
-    if (!playerAlive) {
-      nextChallenge = null;
-    }
+    if (!playerAlive) nextChallenge = null;
   } else {
     if (playerAlive) {
       nextChallenge =
@@ -395,6 +409,54 @@ const getNextChallengeEasy = async (progress: any) => {
 
       if (!nextChallenge && wrongChallenges.length > 0) {
         nextChallenge = getNextWrongChallenge(progress, level, wrongChallenges);
+      }
+    }
+  }
+
+  return wrapWithTimer(progress, nextChallenge);
+};
+
+const getNextChallengeHard = async (progress: any) => {
+  const { level } = progress;
+
+  const wrongChallenges = (progress.wrong_challenges as number[] | null) ?? [];
+  const answeredIds = Object.keys(
+    (progress.player_answer as Record<string, string[]> | null) ?? {}
+  ).map(Number);
+
+  const enemyDefeated = progress.enemy_hp <= 0;
+  const playerAlive = progress.player_hp > 0;
+  let nextChallenge: Challenge | null = null;
+
+  if (!enemyDefeated) {
+    nextChallenge =
+      level.challenges.find(
+        (c: Challenge) => !answeredIds.includes(c.challenge_id)
+      ) || null;
+
+    if (!nextChallenge && wrongChallenges.length > 0) {
+      const firstWrongId = wrongChallenges[0];
+      nextChallenge =
+        level.challenges.find(
+          (c: Challenge) => c.challenge_id === firstWrongId
+        ) || null;
+    }
+
+    if (!playerAlive) nextChallenge = null;
+  } else {
+    if (playerAlive && wrongChallenges.length > 0) {
+      const firstWrongId = wrongChallenges[0];
+      const challenge = level.challenges.find(
+        (c: Challenge) => c.challenge_id === firstWrongId
+      );
+
+      const isStillWrong = !arraysEqual(
+        progress.player_answer?.[firstWrongId.toString()] ?? [],
+        challenge?.correct_answer ?? []
+      );
+
+      if (isStillWrong) {
+        nextChallenge = challenge || null;
       }
     }
   }
@@ -416,7 +478,6 @@ function getNextWrongChallenge(
   });
 
   const currentWrongs = [...new Set(filteredWrongs)];
-
   if (currentWrongs.length === 0) return null;
 
   const totalChallenges = level.challenges.length;
@@ -424,7 +485,6 @@ function getNextWrongChallenge(
   const idx = cyclingAttempts % currentWrongs.length;
 
   const id = currentWrongs[idx];
-
   const challenge = level.challenges.find(
     (c: Challenge) => c.challenge_id === id
   );
@@ -432,57 +492,10 @@ function getNextWrongChallenge(
   return challenge || null;
 }
 
-const getNextChallengeHard = async (progress: any) => {
-  //for Hard level
-  const { level } = progress;
-
-  const wrongChallenges = (progress.wrong_challenges as number[] | null) ?? [];
-  const answeredIds = Object.keys(
-    (progress.player_answer as Record<string, string[]> | null) ?? {}
-  ).map(Number);
-
-  const enemyDefeated = progress.enemy_hp <= 0;
-  let nextChallenge: Challenge | null = null;
-
-  if (!enemyDefeated) {
-    nextChallenge =
-      level.challenges.find(
-        (c: Challenge) => !answeredIds.includes(c.challenge_id)
-      ) || null;
-
-    if (!nextChallenge && wrongChallenges.length > 0) {
-      const firstWrongId = wrongChallenges[0];
-      nextChallenge =
-        level.challenges.find(
-          (c: Challenge) => c.challenge_id === firstWrongId
-        ) || null;
-    }
-  } else {
-    if (wrongChallenges.length > 0) {
-      const firstWrongId = wrongChallenges.find(
-        (id) =>
-          !arraysEqual(
-            progress.player_answer?.[id.toString()] ?? [],
-            level.challenges.find((c: Challenge) => c.challenge_id === id)
-              ?.correct_answer ?? []
-          )
-      );
-      if (firstWrongId) {
-        nextChallenge =
-          level.challenges.find(
-            (c: Challenge) => c.challenge_id === firstWrongId
-          ) || null;
-      }
-    }
-  }
-
-  return wrapWithTimer(progress, nextChallenge);
-};
-
 const wrapWithTimer = async (progress: any, challenge: Challenge | null) => {
   if (!challenge) return { nextChallenge: null };
 
-  const challengeStart = new Date(progress.challenge_start_time!);
+  const challengeStart = new Date(progress.challenge_start_time ?? Date.now());
   const elapsed = (Date.now() - challengeStart.getTime()) / 1000;
   const timeRemaining = Math.max(0, CHALLENGE_TIME_LIMIT - elapsed);
 

@@ -36,15 +36,16 @@ export interface SubmitChallengeControllerResult
     level_number: number;
     is_unlocked: boolean;
   } | null;
+  correct_answer_length?: number;
 }
 
 export interface LevelStatus {
   isCompleted: boolean;
   showFeedback: boolean;
-  playerHealth: number;
-  enemyHealth: number;
-  coinsEarned: number;
-  totalPointsEarned: number;
-  totalExpPointsEarned: number;
-  playerOutputs: string[] | null;
+  playerHealth?: number;
+  enemyHealth?: number;
+  coinsEarned?: number;
+  totalPointsEarned?: number;
+  totalExpPointsEarned?: number;
+  playerOutputs?: string[] | null;
 }
