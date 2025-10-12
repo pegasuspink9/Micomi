@@ -19,7 +19,7 @@ const GameBackground = ({ children, isPaused }) => {
   const COLUMNS = 5; 
   const ROWS = 4;   
   const TOTAL_FRAMES = COLUMNS * ROWS; 
-  const FRAME_DURATION = 100; // milliseconds per frame
+  const FRAME_DURATION = 100;
   const TOTAL_ANIMATION_DURATION = FRAME_DURATION * TOTAL_FRAMES;
 
   useEffect(() => {
@@ -49,10 +49,9 @@ const animatedSpriteStyle = useAnimatedStyle(() => {
   const column = currentFrame % COLUMNS;
   const row = Math.floor(currentFrame / COLUMNS);
   
-  const frameWidthPercent = 100 / COLUMNS; // 20% per frame
-  const frameHeightPercent = 100 / ROWS;   // 25% per frame
+  const frameWidthPercent = 100 / COLUMNS; 
+  const frameHeightPercent = 100 / ROWS;   
   
-  // ✅ Position the sprite sheet so only the current frame is visible
   const xOffset = -(column * frameWidthPercent);
   const yOffset = -(row * frameHeightPercent);
   
