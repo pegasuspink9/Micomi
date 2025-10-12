@@ -10,7 +10,7 @@ import Animated, {
   runOnJS,
   Easing,
 } from 'react-native-reanimated';
-import { animationPreloader } from '../../../../services/preloader/animationPreloader';
+import { universalAssetPreloader } from '../../../../services/preloader/universalAssetPreloader';
 import { 
   scale, 
   scaleWidth, 
@@ -35,7 +35,7 @@ const EnemyCharacter = ({
   const positionX = useSharedValue(0); 
   const opacity = useSharedValue(1); 
 
-  const SPRITE_SIZE = useMemo(() => scale(160), []);
+  const SPRITE_SIZE = useMemo(() => scale(150), []);
   const SPRITE_COLUMNS = 6;
   const SPRITE_ROWS = 4;
 
@@ -93,7 +93,7 @@ const EnemyCharacter = ({
 
   const phaseTimeoutRef = useRef(null);
 
-  // ✅ Enhanced preload animations using the animation preloader service
+  // ✅ Enhanced preload animations using universalAssetPreloader
   const preloadAnimations = useCallback(async () => {
     const animationUrls = [
       characterAnimations.character_idle,
@@ -114,10 +114,15 @@ const EnemyCharacter = ({
     ].filter(url => url && typeof url === 'string');
 
     for (const url of animationUrls) {
-      if (!animationPreloader.isAnimationPreloaded(url)) {
-        console.log(`🦹 Preloading missing enemy animation: ${url.slice(-50)}`);
-        await animationPreloader.preloadAnimation(url);
+      // ✅ Check if already downloaded by universalAssetPreloader
+      const cachedPath = universalAssetPreloader.getCachedAssetPath(url);
+      if (cachedPath !== url) {
+        // Already cached
+        preloadedImages.set(url, true);
+        console.log(`🦹 Enemy animation already cached: ${url.slice(-50)}`);
       } else {
+        console.log(`🦹 Enemy animation using original URL: ${url.slice(-50)}`);
+        // Still use the original URL if not cached, but mark as checked
         preloadedImages.set(url, true);
       }
     }
@@ -248,20 +253,26 @@ const EnemyCharacter = ({
     [scheduleAttackPhase]
   );
 
-  // ✅ Enhanced prefetch with global preloader check
+  // ✅ Updated prefetch using universalAssetPreloader
   const prefetchWithCache = useCallback(async () => {
     if (!currentAnimationUrl) return;
     
     try {
-      if (animationPreloader.isAnimationPreloaded(currentAnimationUrl)) {
+      // ✅ Check if already cached by universalAssetPreloader
+      const cachedPath = universalAssetPreloader.getCachedAssetPath(currentAnimationUrl);
+      if (cachedPath !== currentAnimationUrl) {
+        // Already cached, mark as ready
         setImageReady(true);
         preloadedImages.set(currentAnimationUrl, true);
+        console.log(`🦹 Using cached enemy animation: ${currentAnimationUrl.slice(-50)}`);
         return;
       }
 
+      // ✅ If not cached, try to prefetch the original URL
       await RNImage.prefetch(currentAnimationUrl);
       preloadedImages.set(currentAnimationUrl, true);
       setImageReady(true);
+      console.log(`🦹 Prefetched enemy animation: ${currentAnimationUrl.slice(-50)}`);
     } catch (err) {
       console.warn(`Enemy ${index} prefetch failed for: ${currentAnimationUrl}`, err);
     }
@@ -273,8 +284,9 @@ const EnemyCharacter = ({
 
     if (!currentAnimationUrl) return;
 
-    if (animationPreloader.isAnimationPreloaded(currentAnimationUrl) || 
-        preloadedImages.has(currentAnimationUrl)) {
+    // ✅ Check if already cached or preloaded
+    const cachedPath = universalAssetPreloader.getCachedAssetPath(currentAnimationUrl);
+    if (cachedPath !== currentAnimationUrl || preloadedImages.has(currentAnimationUrl)) {
       if (mounted) setImageReady(true);
       return;
     }
@@ -292,57 +304,50 @@ const EnemyCharacter = ({
     let isCompound = false;
 
     switch (currentState) {
-      case 'idle':
-        animationUrl = characterAnimations.character_idle || 
-                      characterAnimations.idle || 
-                      enemy?.enemy_idle || 
-                      enemy?.idle;
-        shouldLoop = true;
-        isCompound = false;
-        break;
-      case 'attack':
-        animationUrl = characterAnimations.character_attack || 
-                      characterAnimations.attack || 
-                      enemy?.enemy_attack || 
-                      enemy?.attack;
-        shouldLoop = false;
-        isCompound = false;
-        break;
-      case 'hurt':
-        animationUrl = characterAnimations.character_hurt || 
-                      characterAnimations.hurt || 
-                      enemy?.enemy_hurt || 
-                      enemy?.hurt;
-        shouldLoop = false;
-        isCompound = false;
-        break;
-      case 'run':
-        animationUrl = characterAnimations.character_run || 
-                      characterAnimations.run || 
-                      enemy?.enemy_run || 
-                      enemy?.run;
-        shouldLoop = true;
-        isCompound = false;
-        break;
-      case 'dies':
-        animationUrl = characterAnimations.character_dies || 
-                      characterAnimations.dies || 
-                      enemy?.enemy_dies || 
-                      enemy?.dies;
-        shouldLoop = false;
-        isCompound = false;
-        break;
-      default:
-        animationUrl = characterAnimations.character_idle || 
-                      characterAnimations.idle || 
-                      enemy?.enemy_idle || 
-                      enemy?.idle;
-        shouldLoop = true;
-        isCompound = false;
-    }
+    case 'idle':
+      // ✅ URLs are already transformed to use cached paths from gameService
+      animationUrl = characterAnimations.character_idle || characterAnimations.idle;
+      shouldLoop = true;
+      isCompound = false;
+      break;
+    case 'attack':
+      let attackUrl = '';
+      if (Array.isArray(characterAnimations.character_attack)) {
+        const attackAnimations = characterAnimations.character_attack.filter(url => url && typeof url === 'string');
+        if (attackAnimations.length > 0) {
+          attackUrl = attackAnimations[0]; // ✅ Already transformed
+        }
+      } else if (typeof characterAnimations.character_attack === 'string' && characterAnimations.character_attack) {
+        attackUrl = characterAnimations.character_attack; // ✅ Already transformed
+      }
+      
+      animationUrl = attackUrl;
+      shouldLoop = false;
+      isCompound = false;
+      break;
+    case 'hurt':
+      animationUrl = characterAnimations.character_hurt || characterAnimations.hurt; // ✅ Already transformed
+      shouldLoop = false;
+      isCompound = false;
+      break;
+    case 'run':
+      animationUrl = characterAnimations.character_run || characterAnimations.run; // ✅ Already transformed
+      shouldLoop = true;
+      isCompound = false;
+      break;
+    case 'dies':
+      animationUrl = characterAnimations.character_dies || characterAnimations.dies; // ✅ Already transformed
+      shouldLoop = false;
+      isCompound = false;
+      break;
+    default:
+      animationUrl = characterAnimations.character_idle || characterAnimations.idle; // ✅ Already transformed
+      shouldLoop = true;
+      isCompound = false;
+  }
 
-    return { animationUrl, shouldLoop, isCompound };
-  }, [currentState, characterAnimations, enemy]);
+  return { animationUrl, shouldLoop, isCompound };
+  }, [currentState, characterAnimations]);
 
   // Set up animation URL and behavior based on current state
   useEffect(() => {
@@ -580,7 +585,7 @@ const styles = StyleSheet.create({
   enemyRun: {
     position: 'absolute',
     right: scaleWidth(-8), // ✅ Responsive positioning
-    top: scaleHeight(119), // ✅ Responsive positioning
+    top: scaleHeight(126), // ✅ Responsive positioning
     justifyContent: 'flex-start',
     alignItems: 'center',
   },

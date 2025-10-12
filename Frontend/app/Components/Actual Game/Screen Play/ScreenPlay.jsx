@@ -328,7 +328,7 @@ useEffect(() => {
              gameState.enemy?.enemy_avatar ??
              "https://github.com/user-attachments/assets/a674f682-c784-447e-8c0a-a841f65b18ed"}
           isEnemy={true}
-          borderColor="#F44336"
+          borderColor="#ffffffff"
         />
         
         <Damage

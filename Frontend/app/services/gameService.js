@@ -1,13 +1,13 @@
 import { apiService } from './api';
-import { animationPreloader } from './preloader/animationPreloader';
+import { universalAssetPreloader } from './preloader/universalAssetPreloader';
 
 export const gameService = {
-   enterLevel: async (playerId, levelId, onAnimationProgress = null, onDownloadProgress = null) => {
+  enterLevel: async (playerId, levelId, onAnimationProgress = null, onDownloadProgress = null) => {
     try {
       console.log(`🎮 Entering level ${levelId} for player ${playerId}...`);
       
       // Load cached animations on first call
-      await animationPreloader.loadCachedAnimations();
+      await universalAssetPreloader.loadCachedAssets('game_animations');
       
       const response = await apiService.post(`/game/entryLevel/${playerId}/${levelId}`);
       
@@ -17,8 +17,8 @@ export const gameService = {
 
       console.log(`🎮 Level ${levelId} data received, starting forced animation download...`);
       
-      // ✅ FORCE download all animations before proceeding
-      const downloadResult = await animationPreloader.downloadAllAnimations(
+      // ✅ Use universalAssetPreloader instead of animationPreloader
+      const downloadResult = await universalAssetPreloader.downloadGameAnimationAssets(
         response.data,
         onDownloadProgress,
         onAnimationProgress
@@ -30,8 +30,11 @@ export const gameService = {
         console.log(`✅ All animations downloaded successfully: ${downloadResult.downloaded}/${downloadResult.total}`);
       }
 
+      // ✅ Transform game state to use cached paths
+      const gameStateWithCache = universalAssetPreloader.transformGameStateWithCache(response.data);
+
       return {
-        ...response.data,
+        ...gameStateWithCache,
         downloadStats: downloadResult 
       };
     } catch (error) {
@@ -67,10 +70,12 @@ export const gameService = {
       const endTime = Date.now();
       console.log(`✅ Answer submitted in ${endTime - startTime}ms`);
       
-      // ✅ Don't preload animations on submission - they should already be loaded from entry
-      console.log('🎬 Skipping animation preload on submission - using cached animations');
+      // ✅ Transform response data to use cached paths
+      const responseWithCache = universalAssetPreloader.transformGameStateWithCache(response.success ? response.data : response);
       
-      return response.success ? response.data : response;
+      console.log('🎬 Using cached animations for submission response');
+      
+      return responseWithCache;
     } catch (error) {
       console.error(`❌ Failed to submit answer:`, error);
       throw error;
@@ -81,7 +86,7 @@ export const gameService = {
     try {
       console.log(`🔄 RETRYING level ${levelId} for player ${playerId} - resetting to zero...`);
       
-      await animationPreloader.loadCachedAnimations();
+      await universalAssetPreloader.loadCachedAssets('game_animations');
       
       const response = await apiService.post(`/game/entryLevel/${playerId}/${levelId}`);
       
@@ -91,20 +96,31 @@ export const gameService = {
 
       console.log(`🎮 Level ${levelId} RETRY data received, starting forced animation download...`);
       
-      const downloadResult = await animationPreloader.downloadAllAnimations(
-        response.data,
-        onDownloadProgress,
-        onAnimationProgress
-      );
+      const cacheStatus = await universalAssetPreloader.areGameAnimationAssetsCached(response.data);
+      
+      let downloadResult = { success: true, downloaded: 0, total: 0 };
+      
+      if (!cacheStatus.cached) {
+        console.log(`📦 Need to download ${cacheStatus.missing} missing animation assets for retry`);
+        downloadResult = await universalAssetPreloader.downloadGameAnimationAssets(
+          response.data,
+          onDownloadProgress,
+          onAnimationProgress
+        );
 
-      if (!downloadResult.success) {
-        console.warn('⚠️ Animation download failed on retry, but continuing with game...');
+        if (!downloadResult.success) {
+          console.warn('⚠️ Animation download failed on retry, but continuing with game...');
+        } else {
+          console.log(`✅ All animations downloaded successfully on retry: ${downloadResult.downloaded}/${downloadResult.total}`);
+        }
       } else {
-        console.log(`✅ All animations downloaded successfully on retry: ${downloadResult.downloaded}/${downloadResult.total}`);
+        console.log('✅ All animations already cached for retry');
       }
 
+      const gameStateWithCache = universalAssetPreloader.transformGameStateWithCache(response.data);
+
       return {
-        ...response.data,
+        ...gameStateWithCache,
         downloadStats: downloadResult 
       };
     } catch (error) {
@@ -288,17 +304,19 @@ export const gameService = {
       }
       
         
-      console.log(`✅ Game state extracted (${isSubmission ? 'submission' : 'entry'}):`, {
-        hasLevel: !!gameState.level.level_id,
-        hasEnemy: !!gameState.enemy.enemy_id,
-        hasCharacter: !!gameState.selectedCharacter.character_id,
-        hasChallenge: !!gameState.currentChallenge?.id,
-        hasSubmission: !!gameState.submissionResult,
-        hasCompletionRewards: !!(isSubmission && gameState.submissionResult?.completionRewards),
-        hasNextLevel: !!(isSubmission && gameState.submissionResult?.nextLevel)
+            const gameStateWithCache = universalAssetPreloader.transformGameStateWithCache(gameState);
+      
+      console.log(`✅ Game state extracted and cached (${isSubmission ? 'submission' : 'entry'}):`, {
+        hasLevel: !!gameStateWithCache.level.level_id,
+        hasEnemy: !!gameStateWithCache.enemy.enemy_id,
+        hasCharacter: !!gameStateWithCache.selectedCharacter.character_id,
+        hasChallenge: !!gameStateWithCache.currentChallenge?.id,
+        hasSubmission: !!gameStateWithCache.submissionResult,
+        hasCompletionRewards: !!(isSubmission && gameStateWithCache.submissionResult?.completionRewards),
+        hasNextLevel: !!(isSubmission && gameStateWithCache.submissionResult?.nextLevel)
       });
       
-      return gameState;
+      return gameStateWithCache;
       
     } catch (error) {
       console.error('❌ Error extracting game state:', error);
@@ -306,13 +324,11 @@ export const gameService = {
     }
   },
 
-  // Get animation preload statistics
-  getAnimationStats: () => {
-    return animationPreloader.getPreloadStats();
+   getAnimationStats: () => {
+    return universalAssetPreloader.getDownloadStats();
   },
 
-  // Clear animation cache
   clearAnimationCache: () => {
-    animationPreloader.clearCache();
+    universalAssetPreloader.clearCategoryCache('game_animations');
   }
 };

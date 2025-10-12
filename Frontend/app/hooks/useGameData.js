@@ -8,30 +8,28 @@ export const useGameData = (playerId, levelId) => {
   const [submitting, setSubmitting] = useState(false);
   const [waitingForAnimation, setWaitingForAnimation] = useState(false);
   
-  // ✅ Enhanced animation states with download progress
   const [animationsLoading, setAnimationsLoading] = useState(true);
   const [downloadProgress, setDownloadProgress] = useState({ loaded: 0, total: 0, progress: 0, currentUrl: '' });
   const [individualAnimationProgress, setIndividualAnimationProgress] = useState({ url: '', progress: 0 });
 
+
   const pendingSubmissionRef = useRef(null);
   const animationTimeoutRef = useRef(null);
 
-  // ✅ Download progress handler
-  const handleDownloadProgress = useCallback((progress) => {
+   const handleDownloadProgress = useCallback((progress) => {
     setDownloadProgress({
       ...progress,
-      currentUrl: progress.currentUrl?.slice(-30) || ''
+      currentUrl: progress.currentAsset?.name || progress.currentUrl?.slice(-30) || ''
     });
     console.log(`📥 Download progress: ${progress.loaded}/${progress.total} (${Math.round(progress.progress * 100)}%)`);
   }, []);
 
-  // ✅ Individual animation download progress
   const handleAnimationProgress = useCallback((animationProgress) => {
     setIndividualAnimationProgress({
-      url: animationProgress.url?.slice(-30) || '',
+      url: animationProgress.name || animationProgress.url?.slice(-30) || '',
       progress: animationProgress.progress || 0,
       currentIndex: animationProgress.currentIndex,
-      totalAnimations: animationProgress.totalAnimations
+      totalAnimations: animationProgress.totalAssets || animationProgress.totalAnimations
     });
   }, []);
 
@@ -53,7 +51,6 @@ export const useGameData = (playerId, levelId) => {
       
       console.log(`🎮 Fetching game data and downloading animations for player ${playerId}, level ${levelId}`);
       
-      // ✅ Pass both progress handlers to gameService
       const responseData = await gameService.enterLevel(
         playerId, 
         levelId, 

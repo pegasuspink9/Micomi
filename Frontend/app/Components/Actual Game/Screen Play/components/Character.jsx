@@ -11,7 +11,7 @@ import Animated, {
   runOnJS,
   Easing,
 } from 'react-native-reanimated';
-import { animationPreloader } from '../../../../services/preloader/animationPreloader';
+import { universalAssetPreloader } from '../../../../services/preloader/universalAssetPreloader';
 
 import { 
   scale, 
@@ -35,7 +35,7 @@ const DogCharacter = ({
   const blinkOpacity = useSharedValue(1);
 
   // ✅ Responsive sprite dimensions
-  const SPRITE_SIZE = useMemo(() => scale(130), []);
+  const SPRITE_SIZE = useMemo(() => scale(128), []);
   const SPRITE_COLUMNS = 6;
   const SPRITE_ROWS = 4;
 
@@ -90,7 +90,7 @@ const DogCharacter = ({
 
   const phaseTimeoutRef = useRef(null);
 
-  // ✅ Enhanced preload animations using the animation preloader service
+  // ✅ Enhanced preload animations using universalAssetPreloader
   const preloadAnimations = useCallback(async () => {
     const animationUrls = [
       characterAnimations.character_idle,
@@ -108,10 +108,15 @@ const DogCharacter = ({
     }
 
     for (const url of animationUrls) {
-      if (!animationPreloader.isAnimationPreloaded(url)) {
-        console.log(`🎬 Preloading missing character animation: ${url.slice(-50)}`);
-        await animationPreloader.preloadAnimation(url);
+      // ✅ Check if already downloaded by universalAssetPreloader
+      const cachedPath = universalAssetPreloader.getCachedAssetPath(url);
+      if (cachedPath !== url) {
+        // Already cached
+        preloadedImages.set(url, true);
+        console.log(`🎬 Character animation already cached: ${url.slice(-50)}`);
       } else {
+        console.log(`🎬 Character animation using original URL: ${url.slice(-50)}`);
+        // Still use the original URL if not cached, but mark as checked
         preloadedImages.set(url, true);
       }
     }
@@ -199,19 +204,26 @@ const DogCharacter = ({
     [scheduleAttackPhase]
   );
 
+  // ✅ Updated prefetch using universalAssetPreloader
   const prefetchWithCache = useCallback(async () => {
     if (!currentAnimationUrl) return;
     
     try {
-      if (animationPreloader.isAnimationPreloaded(currentAnimationUrl)) {
+      // ✅ Check if already cached by universalAssetPreloader
+      const cachedPath = universalAssetPreloader.getCachedAssetPath(currentAnimationUrl);
+      if (cachedPath !== currentAnimationUrl) {
+        // Already cached, mark as ready
         setImageReady(true);
         preloadedImages.set(currentAnimationUrl, true);
+        console.log(`🐕 Using cached character animation: ${currentAnimationUrl.slice(-50)}`);
         return;
       }
 
+      // ✅ If not cached, try to prefetch the original URL
       await RNImage.prefetch(currentAnimationUrl);
       preloadedImages.set(currentAnimationUrl, true);
       setImageReady(true);
+      console.log(`🐕 Prefetched character animation: ${currentAnimationUrl.slice(-50)}`);
     } catch (err) {
       console.warn(`🐕 Character prefetch failed for: ${currentAnimationUrl}`, err);
     }
@@ -223,8 +235,9 @@ const DogCharacter = ({
 
     if (!currentAnimationUrl) return;
 
-    if (animationPreloader.isAnimationPreloaded(currentAnimationUrl) || 
-        preloadedImages.has(currentAnimationUrl)) {
+    // ✅ Check if already cached or preloaded
+    const cachedPath = universalAssetPreloader.getCachedAssetPath(currentAnimationUrl);
+    if (cachedPath !== currentAnimationUrl || preloadedImages.has(currentAnimationUrl)) {
       if (mounted) setImageReady(true);
       return;
     }
@@ -244,43 +257,43 @@ const DogCharacter = ({
 
     switch (currentState) {
       case 'idle':
-        const idleUrl = characterAnimations.character_idle || characterAnimations.idle;
-        animationUrl = idleUrl ? animationPreloader.getCachedAnimationPath(idleUrl) : '';
+        // ✅ URLs are already transformed to use cached paths from gameService
+        animationUrl = characterAnimations.character_idle || characterAnimations.idle;
         shouldLoop = true;
         isCompound = false;
         break;
       case 'attack':
-        let attackUrl = '';
-        if (Array.isArray(characterAnimations.character_attack)) {
-          const attackAnimations = characterAnimations.character_attack.filter(url => url && typeof url === 'string');
-          if (attackAnimations.length > 0) {
-            attackUrl = attackAnimations[0];
-          }
-        } else if (typeof characterAnimations.character_attack === 'string' && characterAnimations.character_attack) {
-          attackUrl = characterAnimations.character_attack;
+       let attackUrl = '';
+      if (Array.isArray(characterAnimations.character_attack)) {
+        const attackAnimations = characterAnimations.character_attack.filter(url => url && typeof url === 'string');
+        if (attackAnimations.length > 0) {
+          attackUrl = attackAnimations[0]; // ✅ Already transformed
         }
-        
-        animationUrl = attackUrl ? animationPreloader.getCachedAnimationPath(attackUrl) : '';
-        shouldLoop = false;
-        isCompound = false;
-        break;
+      } else if (typeof characterAnimations.character_attack === 'string' && characterAnimations.character_attack) {
+        attackUrl = characterAnimations.character_attack; // ✅ Already transformed
+      }
+      
+      animationUrl = attackUrl;
+      shouldLoop = false;
+      isCompound = false;
+      break;
       case 'hurt':
-        animationUrl = characterAnimations.character_hurt || characterAnimations.hurt;
+        animationUrl = characterAnimations.character_hurt || characterAnimations.hurt; // ✅ Already transformed
         shouldLoop = false;
         isCompound = false;
-        break;
+      break;
       case 'run':
-        animationUrl = characterAnimations.character_run || characterAnimations.run;
+        animationUrl = characterAnimations.character_run || characterAnimations.run; // ✅ Already transformed
         shouldLoop = true;
         isCompound = false;
         break;
       case 'dies':
-        animationUrl = characterAnimations.character_dies || characterAnimations.dies;
+        animationUrl = characterAnimations.character_dies || characterAnimations.dies; // ✅ Already transformed
         shouldLoop = false;
         isCompound = false;
         break;
       default:
-        animationUrl = characterAnimations.character_idle || characterAnimations.idle;
+        animationUrl = characterAnimations.character_idle || characterAnimations.idle; // ✅ Already transformed
         shouldLoop = true;
         isCompound = false;
     }

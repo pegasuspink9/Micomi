@@ -31,7 +31,6 @@ class UniversalAssetPreloader {
     // Handle different hosts and ensure proper file extensions
     let finalFileName = fileName;
     if (!fileName.includes('.')) {
-      // If no extension, try to determine from URL or use default
       if (url.includes('cloudinary')) {
         finalFileName += '.png'; // Cloudinary usually serves images
       } else if (url.includes('github')) {  
@@ -322,6 +321,427 @@ class UniversalAssetPreloader {
     console.log(`📦 Extracted ${uniqueAssets.length} player profile assets`);
     return uniqueAssets;
   }
+
+  extractGameAnimationAssets(gameState) {
+    const assets = [];
+    
+    if (!gameState) return assets;
+
+    // Character animations
+    if (gameState.character || gameState.selectedCharacter) {
+      const char = gameState.character || gameState.selectedCharacter;
+      
+      const charAnimations = [
+        { url: char.character_idle, name: 'character_idle', type: 'animation' },
+        { url: char.character_run, name: 'character_run', type: 'animation' },
+        { url: char.character_hurt, name: 'character_hurt', type: 'animation' },
+        { url: char.character_dies, name: 'character_dies', type: 'animation' }
+      ];
+
+      // Handle character_attack array
+      if (Array.isArray(char.character_attack)) {
+        char.character_attack.forEach((attackUrl, index) => {
+          if (attackUrl) {
+            charAnimations.push({
+              url: attackUrl,
+              name: `character_attack_${index}`,
+              type: 'animation'
+            });
+          }
+        });
+      } else if (char.character_attack) {
+        charAnimations.push({
+          url: char.character_attack,
+          name: 'character_attack',
+          type: 'animation'
+        });
+      }
+
+      // Filter out null/undefined URLs and add character context
+      charAnimations
+        .filter(asset => asset.url && typeof asset.url === 'string')
+        .forEach(asset => {
+          assets.push({
+            ...asset,
+            characterName: char.character_name || char.name,
+            characterId: char.character_id,
+            category: 'game_animations'
+          });
+        });
+    }
+
+    // Enemy animations
+    if (gameState.enemy) {
+      const enemy = gameState.enemy;
+      
+      const enemyAnimations = [
+        { url: enemy.enemy_idle, name: 'enemy_idle', type: 'animation' },
+        { url: enemy.enemy_run, name: 'enemy_run', type: 'animation' },
+        { url: enemy.enemy_attack, name: 'enemy_attack', type: 'animation' },
+        { url: enemy.enemy_hurt, name: 'enemy_hurt', type: 'animation' },
+        { url: enemy.enemy_dies, name: 'enemy_dies', type: 'animation' }
+      ];
+
+      // Filter out null/undefined URLs and add enemy context
+      enemyAnimations
+        .filter(asset => asset.url && typeof asset.url === 'string')
+        .forEach(asset => {
+          assets.push({
+            ...asset,
+            enemyName: enemy.enemy_name,
+            enemyId: enemy.enemy_id,
+            category: 'game_animations'
+          });
+        });
+    }
+
+    // Fight result animations (from submission data)
+    if (gameState.submissionResult?.fightResult) {
+      const fightChar = gameState.submissionResult.fightResult.character;
+      const fightEnemy = gameState.submissionResult.fightResult.enemy;
+      
+      if (fightChar) {
+        const fightCharAnimations = [
+          { url: fightChar.character_idle, name: 'fight_character_idle', type: 'animation' },
+          { url: fightChar.character_run, name: 'fight_character_run', type: 'animation' },
+          { url: fightChar.character_hurt, name: 'fight_character_hurt', type: 'animation' },
+          { url: fightChar.character_dies, name: 'fight_character_dies', type: 'animation' }
+        ];
+
+        if (Array.isArray(fightChar.character_attack)) {
+          fightChar.character_attack.forEach((url, index) => {
+            if (url) {
+              fightCharAnimations.push({
+                url: url,
+                name: `fight_character_attack_${index}`,
+                type: 'animation'
+              });
+            }
+          });
+        } else if (fightChar.character_attack) {
+          fightCharAnimations.push({
+            url: fightChar.character_attack,
+            name: 'fight_character_attack',
+            type: 'animation'
+          });
+        }
+
+        fightCharAnimations
+          .filter(asset => asset.url && typeof asset.url === 'string')
+          .forEach(asset => {
+            assets.push({
+              ...asset,
+              characterName: fightChar.character_name,
+              characterId: fightChar.character_id,
+              category: 'game_animations'
+            });
+          });
+      }
+      
+      if (fightEnemy) {
+        const fightEnemyAnimations = [
+          { url: fightEnemy.enemy_idle, name: 'fight_enemy_idle', type: 'animation' },
+          { url: fightEnemy.enemy_run, name: 'fight_enemy_run', type: 'animation' },
+          { url: fightEnemy.enemy_attack, name: 'fight_enemy_attack', type: 'animation' },
+          { url: fightEnemy.enemy_hurt, name: 'fight_enemy_hurt', type: 'animation' },
+          { url: fightEnemy.enemy_dies, name: 'fight_enemy_dies', type: 'animation' }
+        ];
+
+        fightEnemyAnimations
+          .filter(asset => asset.url && typeof asset.url === 'string')
+          .forEach(asset => {
+            assets.push({
+              ...asset,
+              enemyName: fightEnemy.enemy_name,
+              enemyId: fightEnemy.enemy_id,
+              category: 'game_animations'
+            });
+          });
+      }
+    }
+
+    // Remove duplicates based on URL
+    const uniqueAssets = assets.filter((asset, index, self) => 
+      index === self.findIndex(a => a.url === asset.url)
+    );
+
+    console.log(`📦 Extracted ${uniqueAssets.length} game animation assets`);
+    return uniqueAssets;
+  }
+
+  async downloadGameAnimationAssets(gameState, onProgress = null, onAssetComplete = null) {
+    if (this.isDownloading) {
+      console.warn('⚠️ Asset downloading already in progress');
+      return { success: false, reason: 'already_downloading' };
+    }
+
+    this.isDownloading = true;
+    
+    try {
+      console.log('📦 Starting game animation asset download...');
+      
+      const assets = this.extractGameAnimationAssets(gameState);
+      console.log(`📦 Found ${assets.length} game animation assets to download`);
+
+      if (assets.length === 0) {
+        console.log('📦 No game animation assets to download');
+        this.isDownloading = false;
+        return { success: true, downloaded: 0, total: 0 };
+      }
+
+      const startTime = Date.now();
+      let successCount = 0;
+      const results = [];
+
+      // Download assets with controlled concurrency
+      for (let i = 0; i < assets.length; i += this.maxConcurrentDownloads) {
+        const batch = assets.slice(i, i + this.maxConcurrentDownloads);
+        
+        const batchPromises = batch.map(async (asset, batchIndex) => {
+          const globalIndex = i + batchIndex;
+          
+          // Individual asset progress callback
+          if (onAssetComplete) {
+            onAssetComplete({
+              url: asset.url,
+              name: asset.name,
+              type: asset.type,
+              category: asset.category,
+              characterName: asset.characterName,
+              enemyName: asset.enemyName,
+              progress: 0,
+              currentIndex: globalIndex,
+              totalAssets: assets.length
+            });
+          }
+
+          const result = await this.downloadSingleAsset(
+            asset.url, 
+            asset.category, 
+            (downloadProgress) => {
+              // Individual asset download progress
+              if (onAssetComplete) {
+                onAssetComplete({
+                  url: asset.url,
+                  name: asset.name,
+                  type: asset.type,
+                  category: asset.category,
+                  characterName: asset.characterName,
+                  enemyName: asset.enemyName,
+                  progress: downloadProgress.progress,
+                  currentIndex: globalIndex,
+                  totalAssets: assets.length,
+                  bytesWritten: downloadProgress.bytesWritten,
+                  totalBytes: downloadProgress.totalBytes
+                });
+              }
+            }
+          );
+          
+          if (result.success) {
+            successCount++;
+          }
+          
+          const assetResult = { asset, result };
+          results.push(assetResult);
+          
+          // Overall progress callback
+          if (onProgress) {
+            onProgress({
+              loaded: results.length,
+              total: assets.length,
+              progress: results.length / assets.length,
+              successCount,
+              currentAsset: asset,
+              category: 'game_animations'
+            });
+          }
+
+          return assetResult;
+        });
+
+        // Wait for current batch to complete before starting next batch
+        await Promise.all(batchPromises);
+      }
+
+      const totalTime = Date.now() - startTime;
+      this.isDownloading = false;
+
+      // Save cache info to AsyncStorage
+      try {
+        const cacheKey = 'gameAnimationAssets';
+        const cacheInfo = {
+          downloadedAt: Date.now(),
+          category: 'game_animations',
+          assets: Array.from(this.downloadedAssets.entries()).filter(([url, info]) => 
+            info.category === 'game_animations'
+          ),
+          totalAssets: successCount
+        };
+        await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheInfo));
+        console.log(`💾 Saved game animation asset cache info to storage`);
+      } catch (error) {
+        console.warn('⚠️ Failed to save cache info to AsyncStorage:', error);
+      }
+
+      console.log(`📦 Game animation asset download completed: ${successCount}/${assets.length} in ${totalTime}ms`);
+      
+      return {
+        success: true,
+        downloaded: successCount,
+        total: assets.length,
+        totalTime,
+        results,
+        category: 'game_animations',
+        failedAssets: results
+          .filter(r => !r.result.success)
+          .map(r => r.asset)
+      };
+
+    } catch (error) {
+      console.error('❌ Error downloading game animation assets:', error);
+      this.isDownloading = false;
+      throw error;
+    }
+  }
+
+    async areGameAnimationAssetsCached(gameState) {
+    const assets = this.extractGameAnimationAssets(gameState);
+    
+    if (assets.length === 0) {
+      return { cached: true, total: 0, available: 0 };
+    }
+
+    let availableCount = 0;
+    for (const asset of assets) {
+      const assetInfo = this.downloadedAssets.get(asset.url);
+      if (assetInfo && assetInfo.localPath) {
+        const fileInfo = await FileSystem.getInfoAsync(assetInfo.localPath);
+        if (fileInfo.exists && fileInfo.size > 0) {
+          availableCount++;
+        }
+      }
+    }
+
+    const cached = availableCount === assets.length;
+    console.log(`🔍 Game animation assets cache check: ${availableCount}/${assets.length} available`);
+    
+    return {
+      cached,
+      total: assets.length,
+      available: availableCount,
+      missing: assets.length - availableCount,
+      missingAssets: assets
+        .filter(asset => !this.downloadedAssets.has(asset.url))
+        .map(asset => ({ url: asset.url, name: asset.name, type: asset.type }))
+    };
+  }
+
+  transformGameStateWithCache(gameState) {
+    if (!gameState) return gameState;
+
+    const transformedGameState = { ...gameState };
+    
+    // Transform character animations
+    if (transformedGameState.selectedCharacter) {
+      const character = transformedGameState.selectedCharacter;
+      
+      const animationFields = [
+        'character_idle',
+        'character_run',
+        'character_hurt',
+        'character_dies'
+      ];
+      
+      animationFields.forEach(field => {
+        if (character[field]) {
+          character[field] = this.getCachedAssetPath(character[field]);
+        }
+      });
+      
+      // Handle character_attack array
+      if (Array.isArray(character.character_attack)) {
+        character.character_attack = character.character_attack.map(url => 
+          url ? this.getCachedAssetPath(url) : url
+        );
+      } else if (character.character_attack) {
+        character.character_attack = this.getCachedAssetPath(character.character_attack);
+      }
+    }
+
+    // Transform enemy animations
+    if (transformedGameState.enemy) {
+      const enemy = transformedGameState.enemy;
+      
+      const enemyAnimationFields = [
+        'enemy_idle',
+        'enemy_run',
+        'enemy_attack',
+        'enemy_hurt',
+        'enemy_dies'
+      ];
+      
+      enemyAnimationFields.forEach(field => {
+        if (enemy[field]) {
+          enemy[field] = this.getCachedAssetPath(enemy[field]);
+        }
+      });
+    }
+
+    // Transform fight result animations
+    if (transformedGameState.submissionResult?.fightResult) {
+      const fightResult = transformedGameState.submissionResult.fightResult;
+      
+      if (fightResult.character) {
+        const fightChar = fightResult.character;
+        
+        const charFields = [
+          'character_idle',
+          'character_run',
+          'character_hurt',
+          'character_dies'
+        ];
+        
+        charFields.forEach(field => {
+          if (fightChar[field]) {
+            fightChar[field] = this.getCachedAssetPath(fightChar[field]);
+          }
+        });
+        
+        // Handle character_attack array
+        if (Array.isArray(fightChar.character_attack)) {
+          fightChar.character_attack = fightChar.character_attack.map(url => 
+            url ? this.getCachedAssetPath(url) : url
+          );
+        } else if (fightChar.character_attack) {
+          fightChar.character_attack = this.getCachedAssetPath(fightChar.character_attack);
+        }
+      }
+      
+      if (fightResult.enemy) {
+        const fightEnemy = fightResult.enemy;
+        
+        const enemyFields = [
+          'enemy_idle',
+          'enemy_run',
+          'enemy_attack',
+          'enemy_hurt',
+          'enemy_dies'
+        ];
+        
+        enemyFields.forEach(field => {
+          if (fightEnemy[field]) {
+            fightEnemy[field] = this.getCachedAssetPath(fightEnemy[field]);
+          }
+        });
+      }
+    }
+
+    return transformedGameState;
+  }
+
+
+
 
 
 
