@@ -14,7 +14,7 @@ import {
 import LottieView from 'lottie-react-native';
 import { useRouter } from 'expo-router';
 import { useMapData } from '../../hooks/useMapData'; 
-import { mapAssetPreloader } from '../../services/mapAssetPreloader';
+import { mapAssetPreloader } from '../../services/preloader/mapAssetPreloader';
 import { MAP_THEMES, DEFAULT_THEME } from '../RoadMap/MapLevel/MapDatas/mapData'; // ✅ Import theme data
 
 const { width, height } = Dimensions.get('window');

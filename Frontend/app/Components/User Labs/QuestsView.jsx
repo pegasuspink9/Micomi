@@ -17,12 +17,34 @@ import {
   RESPONSIVE,
   layoutHelpers,
 } from '../Responsiveness/gameResponsive';
+import AssetDownloadProgress from '../RoadMap/LoadingState/assetDownloadProgress';
 
 export default function QuestsView() {
   const router = useRouter();
   const playerId = 11;
-  const { playerData, loading } = usePlayerProfile(playerId);
+  const { playerData, loading, assetsLoading, assetsProgress } = usePlayerProfile(playerId);
   const [activeTab, setActiveTab] = useState('daily');
+
+  if (assetsLoading) {
+    return (
+      <>
+        <SafeAreaView style={styles.container}>
+          <ImageBackground 
+            source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' }} 
+            style={styles.backgroundContainer} 
+            resizeMode="cover"
+          >
+            <View style={styles.backgroundOverlay} />
+          </ImageBackground>
+        </SafeAreaView>
+        <AssetDownloadProgress
+          visible={assetsLoading}
+          progress={assetsProgress}
+          currentAsset={assetsProgress.currentAsset}
+        />
+      </>
+    );
+  }
 
   if (loading || !playerData) {
     return (

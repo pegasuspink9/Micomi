@@ -11,7 +11,8 @@ import Animated, {
   runOnJS,
   Easing,
 } from 'react-native-reanimated';
-import { animationPreloader } from '../../../../services/animationPreloader';
+import { animationPreloader } from '../../../../services/preloader/animationPreloader';
+
 import { 
   scale, 
   scaleWidth, 

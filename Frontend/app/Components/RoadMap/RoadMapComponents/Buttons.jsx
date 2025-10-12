@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { DEFAULT_THEME } from '../MapLevel/MapDatas/mapData';
 import LevelModal from '../../Actual Game/Level Intro and Outro/LevelModal';
 import { useLevelData } from '../../../hooks/useLevelData';
-import { mapAssetPreloader } from '../../../services/mapAssetPreloader'; 
+import { mapAssetPreloader } from '../../../services/preloader/mapAssetPreloader'; 
 
 const { height: defaultHeight, width: defaultWidth } = Dimensions.get('window');
 

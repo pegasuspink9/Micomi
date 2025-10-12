@@ -7,6 +7,7 @@ import AttributePanel from '../Components/Character/AttributePanel';
 import ScreenLabel from '../Components/Character/ScreenLabel';
 import { URLS } from '../Components/Character/CharacterData';
 import { useCharacterSelection } from '../hooks/useCharacterSelection';
+import AssetDownloadProgress from "../Components/RoadMap/LoadingState/assetDownloadProgress";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -21,12 +22,15 @@ export default function CharacterProfile() {
     error,
     purchasing,
     selecting,
+    // Add these two properties that were missing
+    assetsLoading,
+    assetsProgress,
     selectCharacter,
     purchaseCharacter,
     loadCharacters,
     clearError,
     getHeroNames,
-    changeDisplayedCharacter // Add this from the hook
+    changeDisplayedCharacter
   } = useCharacterSelection(playerId);
 
   const [showBuyModal, setShowBuyModal] = useState(false);
@@ -73,6 +77,7 @@ export default function CharacterProfile() {
     try {
       console.log(`🎯 Attempting to select character: ${heroName}`);
       await selectCharacter(heroName);
+      
     } catch (error) {
       console.error('Selection Error:', error);
     }
@@ -129,7 +134,7 @@ export default function CharacterProfile() {
           isCurrentlyViewed && styles.viewedHeroBox,
           isActuallySelected 
         ]}
-        onPress={() => handleHeroViewing(heroName)} // Now properly calls the viewing function
+        onPress={() => handleHeroViewing(heroName)}
         disabled={selecting}
       >
         <ImageBackground 
@@ -143,14 +148,13 @@ export default function CharacterProfile() {
             style={styles.heroBoxBackground}
           >
             <Text style={styles.heroBoxTxt}>{heroName}</Text>
-            
           </ImageBackground>
         </ImageBackground>
       </TouchableOpacity>
     );
   };
 
-
+  // Handle loading states
   if (error) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -161,6 +165,40 @@ export default function CharacterProfile() {
         }}>
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Show asset download progress first
+  if (assetsLoading) {
+    return (
+      <>
+        <View style={styles.container}>
+          <View style={styles.headerContainer}>
+            <MapHeader />
+          </View>
+          <ImageBackground 
+            source={{ uri: URLS.background }} 
+            resizeMode="cover" 
+            opacity={0.7} 
+            style={styles.fullBackground}
+          />
+        </View>
+        <AssetDownloadProgress
+          visible={assetsLoading}
+          progress={assetsProgress}
+          currentAsset={assetsProgress.currentAsset}
+        />
+      </>
+    );
+  }
+
+  // Show general loading (if not asset loading)
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color="#ffffff" />
+        <Text style={styles.loadingText}>Loading Characters...</Text>
       </View>
     );
   }
@@ -284,8 +322,9 @@ export default function CharacterProfile() {
   );
 }
 
+// ... styles remain the same ...
 const styles = StyleSheet.create({
-   centered: {
+  centered: {
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -322,7 +361,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     zIndex: 100
   },
-    fullBackground: {
+  fullBackground: {
     flex: 1,
     width: '100%',
     height: '100%',
@@ -387,7 +426,7 @@ const styles = StyleSheet.create({
     height: screenWidth * 0.8,
     top: screenHeight * 0.13,
   },
-    bottomBar: {
+  bottomBar: {
     flex: 0.17,
     width: '100%',
     justifyContent: 'center',
@@ -436,14 +475,14 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     marginTop: screenHeight * 0.01,
   },
-   heroBox: {
+  heroBox: {
     width: screenWidth * 0.20,
     zIndex: 2,
     borderRadius: 8,
     overflow: 'hidden',
     marginTop: screenHeight * 0.02,
   },
-    viewedHeroBox: {
+  viewedHeroBox: {
     width: screenWidth * 0.21,
     height: screenHeight * 0.16,
     shadowColor: '#ffffff',
@@ -459,16 +498,13 @@ const styles = StyleSheet.create({
     shadowRadius: 1,
     elevation: 30,
   },
-
-
-   heroBoxBorder: {
+  heroBoxBorder: {
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 5,
     width: '100%',
     height: '100%',
   },
-
   selectionIndicator: {
     position: 'absolute',
     top: 5,
@@ -480,14 +516,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   selectionIndicatorText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
   },
-
-    selectButton: {
+  selectButton: {
     position: 'absolute',
     top: screenHeight * 0.5,
     borderWidth: 2,
@@ -496,10 +530,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     backgroundColor: 'rgba(3, 63, 116, 0.94)',
     width: screenWidth * 0.4,
-    
   },
-
-
   heroBoxBackground: {
     width: '100%',
     height: '85%',
@@ -507,9 +538,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: -1,
     shadowColor: '#4CAF50',
-    
   },
- 
   heroBoxTxt: {
     color: 'white',
     fontSize: screenWidth * 0.040,
@@ -529,16 +558,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     transform: [{ rotate: '20deg' }],
     opacity: 0.9
-  },
-  selectButton: {
-    position: 'absolute',
-    top: screenHeight * 0.5,
-    borderWidth: 2,
-    padding: 5,
-    borderColor: 'rgba(255, 255, 255, 1)',
-    borderRadius: 30,
-    backgroundColor: 'rgba(3, 63, 116, 0.94)',
-    width: screenWidth * 0.4,
   },
   buyButton: {
     position: 'absolute',

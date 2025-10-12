@@ -1,7 +1,8 @@
 import { apiService } from './api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const characterService = {
-  // Get player characters - Updated endpoint
+  // Get player characters
   getPlayerCharacters: async (playerId) => {
     try {
       const response = await apiService.get(`/shop/player-characters/${playerId}`);
@@ -13,7 +14,7 @@ export const characterService = {
     }
   },
 
-  // Purchase character - Updated to use correct endpoint
+  // Purchase character 
   purchaseCharacter: async (playerId, characterShopId) => {
     try {
       const response = await apiService.post(`/game/buy-character/${playerId}`, {
@@ -27,11 +28,17 @@ export const characterService = {
     }
   },
   
-  // Select character
-  selectCharacter: async (playerId, characterId) => {
+    // Select character
+    selectCharacter: async (playerId, characterId) => {
     try {
       const response = await apiService.post(`/shop/select-character/${playerId}/${characterId}`);
       console.log(`✅ Character selection response for Player ID ${playerId}, Character ID ${characterId}:`, response);
+      
+      if (response.success) {
+        await AsyncStorage.setItem('character_selection_updated', Date.now().toString());
+        console.log('💾 Character selection saved to storage');
+      }
+      
       return response.success ? response.data : response;
     } catch (error) {
       console.error('Failed to select character:', error);
@@ -39,7 +46,17 @@ export const characterService = {
     }
   },
 
-  // Transform API data to match component structure - Updated for new response format
+    getLastSelectionUpdate: async () => {
+    try {
+      const timestamp = await AsyncStorage.getItem('character_selection_updated');
+      return timestamp ? parseInt(timestamp) : 0;
+    } catch (error) {
+      console.error('Failed to get selection update time:', error);
+      return 0;
+    }
+  },
+
+  // Transform API data to match component structure - FIXED to use correct is_purchased field
   transformCharacterData: (apiData) => {
     const transformedData = {};
     
@@ -57,7 +74,7 @@ export const characterService = {
         character_damage: Array.isArray(character.character_damage) ? 
           Math.round(character.character_damage.reduce((a, b) => a + b, 0) / character.character_damage.length) : 
           character.character_damage,
-        character_price: character.character_price || 0, // Add character price from API
+        character_price: character.character_price || 100, // Default price if not provided
         character_avatar: character.character_avatar,
         damageIcon: characterService.getDamageIcon(character.character_type),
         character_image_display: character.character_image_display,
@@ -66,8 +83,9 @@ export const characterService = {
           width: 375 * 1.4, // screenWidth * 1.4
           height: 812 * 1.4, // screenHeight * 1.4
         },
-        is_purchased: item.is_purchased,
-        is_selected: item.is_selected,
+        // FIXED: Use is_purchased from the top-level item, not from character object
+        is_purchased: item.is_purchased, // This is the correct field
+        is_selected: item.is_selected,   // This is also from top-level
         weapon_name: character.weapon_name,
         weapon_skill: character.weapon_skill,
         user_coins: character.user_coins,

@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { characterService } from '../services/characterService';
+import { universalAssetPreloader } from '../services/preloader/universalAssetPreloader';
+
 
 export const useCharacterSelection = (playerId = 11) => { 
   const [charactersData, setCharactersData] = useState({});
@@ -8,33 +10,51 @@ export const useCharacterSelection = (playerId = 11) => {
   const [error, setError] = useState(null);
   const [purchasing, setPurchasing] = useState(false);
   const [selecting, setSelecting] = useState(false);
-
+  const [assetsLoading, setAssetsLoading] = useState(false);
+  const [assetsProgress, setAssetsProgress] = useState({ loaded: 0, total: 0, progress: 0 });
+  
   const loadCharacters = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
       console.log(`🦸‍♂️ Loading player characters for player ID: ${playerId}...`);
+      
+      // First, load cached assets
+      await universalAssetPreloader.loadCachedAssets('characters');
+      
+      // Get character data from API
       const apiData = await characterService.getPlayerCharacters(playerId);
       const transformedData = characterService.transformCharacterData(apiData);
       
-      setCharactersData(transformedData);
+      // Check if assets are cached
+      const cacheStatus = await universalAssetPreloader.areCharacterAssetsCached(transformedData);
+      console.log(`📦 Asset cache status:`, cacheStatus);
+      
+      // If not all assets are cached, download them
+      if (!cacheStatus.cached) {
+        console.log(`📦 Need to download ${cacheStatus.missing} missing assets`);
+        await downloadCharacterAssets(transformedData);
+      }
+      
+      // Transform data to use cached paths
+      const dataWithCachedPaths = universalAssetPreloader.transformCharacterDataWithCache(transformedData);
+      setCharactersData(dataWithCachedPaths);
       
       // Set the actually selected character from backend for display
-      const actuallySelectedCharacter = characterService.getSelectedCharacter(transformedData);
+      const actuallySelectedCharacter = characterService.getSelectedCharacter(dataWithCachedPaths);
       if (actuallySelectedCharacter) {
         setSelectedHero(actuallySelectedCharacter.character_name);
         console.log(`✅ Actually selected character from backend: ${actuallySelectedCharacter.character_name}`);
       } else {
-        // If no character is selected in backend, show first available for viewing
-        const firstHero = Object.keys(transformedData)[0];
+        const firstHero = Object.keys(dataWithCachedPaths)[0];
         if (firstHero) {
           setSelectedHero(firstHero);
           console.log(`📍 No selected character in backend, showing first for viewing: ${firstHero}`);
         }
       }
       
-      return transformedData;
+      return dataWithCachedPaths;
     } catch (err) {
       setError(err.message);
       console.error('Failed to load characters:', err);
@@ -44,8 +64,67 @@ export const useCharacterSelection = (playerId = 11) => {
     }
   }, [playerId]);
 
+  const downloadCharacterAssets = useCallback(async (charactersData) => {
+    try {
+      setAssetsLoading(true);
+      setAssetsProgress({ loaded: 0, total: 0, progress: 0 });
+      
+      console.log('📦 Starting character asset download...');
+      
+      const result = await universalAssetPreloader.downloadCharacterAssets(
+        charactersData,
+        // Overall progress callback
+        (progress) => {
+          setAssetsProgress({
+            loaded: progress.loaded,
+            total: progress.total,
+            progress: progress.progress,
+            successCount: progress.successCount,
+            currentAsset: progress.currentAsset
+          });
+        },
+        // Individual asset callback
+        (assetProgress) => {
+          console.log(`📦 Downloading ${assetProgress.characterName} - ${assetProgress.name}: ${Math.round(assetProgress.progress * 100)}%`);
+        }
+      );
+      
+      if (result.success) {
+        console.log(`✅ Successfully downloaded ${result.downloaded}/${result.total} character assets`);
+        
+        if (result.failedAssets.length > 0) {
+          console.warn(`⚠️ Failed to download ${result.failedAssets.length} assets:`, result.failedAssets);
+        }
+      } else {
+        throw new Error('Failed to download character assets');
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('❌ Error downloading character assets:', error);
+      setError(`Failed to download assets: ${error.message}`);
+      throw error;
+    } finally {
+      setAssetsLoading(false);
+    }
+  }, []);
+
+   // Force refresh assets
+    const refreshAssets = useCallback(async () => {
+    if (Object.keys(charactersData).length > 0) {
+      console.log('🔄 Refreshing character assets...');
+      // Clear current cache and re-download
+      await universalAssetPreloader.clearCategoryCache('characters');
+      await downloadCharacterAssets(charactersData);
+      
+      // Reload characters with new cached paths
+      await loadCharacters();
+    }
+  }, [charactersData, downloadCharacterAssets, loadCharacters]);
+
+
   // Purchase character
-  const purchaseCharacter = useCallback(async (heroName) => {
+ const purchaseCharacter = useCallback(async (heroName) => {
     try {
       setPurchasing(true);
       setError(null);
@@ -77,7 +156,7 @@ export const useCharacterSelection = (playerId = 11) => {
       setPurchasing(false);
     }
   }, [charactersData, playerId, loadCharacters]);
-
+  
   // Select character - This actually calls the API and updates backend
   const selectCharacter = useCallback(async (heroName) => {
     try {
@@ -175,9 +254,9 @@ export const useCharacterSelection = (playerId = 11) => {
   return {
     // Data
     charactersData,
-    selectedHero, // This is what's being displayed/viewed
+    selectedHero, 
     currentHero: getCurrentHero(),
-    actuallySelectedHero: getActuallySelectedHero(), // This is what's actually selected in backend
+    actuallySelectedHero: getActuallySelectedHero(), 
     
     // States
     loading,
@@ -185,12 +264,15 @@ export const useCharacterSelection = (playerId = 11) => {
     purchasing,
     selecting,
     
-    // Actions
+      // Actions
     loadCharacters,
     purchaseCharacter,
-    selectCharacter, // This calls the API to actually select
-    changeDisplayedCharacter, // This just changes what's being viewed
+    selectCharacter,
+    changeDisplayedCharacter,
+    downloadCharacterAssets,
+    refreshAssets,
     clearError,
+    
     
     // Getters
     getPurchasedHeroes,

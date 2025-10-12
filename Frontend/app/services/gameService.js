@@ -1,5 +1,5 @@
 import { apiService } from './api';
-import { animationPreloader } from './animationPreloader';
+import { animationPreloader } from './preloader/animationPreloader';
 
 export const gameService = {
    enterLevel: async (playerId, levelId, onAnimationProgress = null, onDownloadProgress = null) => {

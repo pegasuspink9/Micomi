@@ -12,7 +12,6 @@ export default function ActionButton({
 }) {
   if (!currentHero) return null;
 
-  // Show buy button if character is not purchased
   if (!currentHero.is_purchased) {
     return (
       <TouchableOpacity
@@ -21,12 +20,12 @@ export default function ActionButton({
         disabled={disabled}
       >
         <Image source={{ uri: coinIcon }} style={styles.coinIcon} />
-        <Text style={styles.buttonText}>Buy {currentHero.character_price}</Text>
+        <Text style={styles.buttonText}>{currentHero.character_price}</Text>
       </TouchableOpacity>
     );
   }
 
-  // Show "Selected" for currently selected character (non-clickable)
+  
   if (currentHero.is_selected) {
     return (
       <View style={[
@@ -38,7 +37,6 @@ export default function ActionButton({
     );
   }
 
-  // Show select button for purchased but not selected characters
   return (
     <TouchableOpacity
       style={styles.selectButton}

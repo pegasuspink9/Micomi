@@ -18,11 +18,11 @@ import {
   RESPONSIVE,
   layoutHelpers,
 } from '../Responsiveness/gameResponsive';
-
+import AssetDownloadProgress from '../../Components/RoadMap/LoadingState/assetDownloadProgress';
 export default function PotionsView() {
   const router = useRouter();
   const playerId = 11;
-  const { playerData, loading } = usePlayerProfile(playerId);
+  const { playerData, loading, assetsLoading, assetsProgress } = usePlayerProfile(playerId);
   const [selectedPotion, setSelectedPotion] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
@@ -31,6 +31,27 @@ export default function PotionsView() {
       <SafeAreaView style={styles.container}>
         <Text style={styles.loadingText}>Loading potions...</Text>
       </SafeAreaView>
+    );
+  }
+
+    if (assetsLoading) {
+    return (
+      <>
+        <SafeAreaView style={styles.container}>
+          <ImageBackground 
+            source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' }} 
+            style={styles.backgroundContainer} 
+            resizeMode="cover"
+          >
+            <View style={styles.backgroundOverlay} />
+          </ImageBackground>
+        </SafeAreaView>
+        <AssetDownloadProgress
+          visible={assetsLoading}
+          progress={assetsProgress}
+          currentAsset={assetsProgress.currentAsset}
+        />
+      </>
     );
   }
 

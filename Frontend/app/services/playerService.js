@@ -100,8 +100,8 @@ export const playerService = {
   getPotionColor: (potionType) => {
     const colorMap = {
       'health': '#ff4444',
-      'freeze': '#4444ff',
-      'hint': '#00ff00',
+      'freeze': '#4444ffb4',
+      'hint': '#054d0571',
       'mana': '#4444ff',
       'strength': '#ff8800',
       'speed': '#00ff88'

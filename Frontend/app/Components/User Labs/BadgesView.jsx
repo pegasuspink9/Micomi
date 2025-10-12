@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { usePlayerProfile } from '../../hooks/usePlayerProfile';
+import AssetDownloadProgress from '../../Components/RoadMap/LoadingState/assetDownloadProgress';
 import {
   scale,
   scaleWidth,
@@ -19,12 +20,35 @@ import {
   hp,
   RESPONSIVE,
   layoutHelpers,
+  assetsLoading, 
+  assetsProgress 
 } from '../Responsiveness/gameResponsive';
 
 export default function BadgesView() {
   const router = useRouter();
   const playerId = 11;
-  const { playerData, loading } = usePlayerProfile(playerId);
+  const { playerData, loading, assetsLoading, assetsProgress } = usePlayerProfile(playerId);
+
+  if (assetsLoading) {
+    return (
+      <>
+        <SafeAreaView style={styles.container}>
+          <ImageBackground 
+            source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' }} 
+            style={styles.backgroundContainer} 
+            resizeMode="cover"
+          >
+            <View style={styles.backgroundOverlay} />
+          </ImageBackground>
+        </SafeAreaView>
+        <AssetDownloadProgress
+          visible={assetsLoading}
+          progress={assetsProgress}
+          currentAsset={assetsProgress.currentAsset}
+        />
+      </>
+    );
+  }
 
   if (loading || !playerData) {
     return (

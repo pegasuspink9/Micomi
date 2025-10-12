@@ -10,6 +10,7 @@ import {
   ActivityIndicator
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AssetDownloadProgress from '../Components/RoadMap/LoadingState/assetDownloadProgress';
 import {
   scale,
   scaleWidth,
@@ -30,6 +31,8 @@ export default function Practice() {
     playerData,
     loading,
     error,
+    assetsLoading,
+    assetsProgress,
     loadPlayerProfile,
     clearError
   } = usePlayerProfile(playerId);
@@ -40,6 +43,27 @@ export default function Practice() {
         <ActivityIndicator size="large" color="#ffffff" />
         <Text style={styles.loadingText}>Loading Profile...</Text>
       </View>
+    );
+  }
+
+   if (assetsLoading) {
+    return (
+      <>
+        <View style={styles.container}>
+          <ImageBackground 
+            source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' }} 
+            style={styles.ImageBackgroundContainer} 
+            resizeMode="cover"
+          >
+            <View style={styles.backgroundOverlay} />
+          </ImageBackground>
+        </View>
+        <AssetDownloadProgress
+          visible={assetsLoading}
+          progress={assetsProgress}
+          currentAsset={assetsProgress.currentAsset}
+        />
+      </>
     );
   }
 
@@ -64,6 +88,8 @@ export default function Practice() {
       </View>
     );
   }
+
+  
 
   return (
     <View style={styles.container}>
@@ -341,11 +367,11 @@ const PotionsSection = ({ potions }) => {
 const PotionCard = ({ potion }) => {
   const getBackgroundColor = (name) => {
     const lowerName = name.toLowerCase();
-    if (lowerName.includes('health')) return 'rgba(156, 167, 83, 0.66)';
-    if (lowerName.includes('mana')) return 'rgba(29, 29, 85, 0.8)'; 
-    if (lowerName.includes('strength')) return 'rgba(121, 94, 14, 0.8)';
-    if (lowerName.includes('freeze')) return 'rgba(68, 68, 255, 0.8)';
-    if (lowerName.includes('hint')) return 'rgba(0, 255, 0, 0.8)';
+    if (lowerName.includes('health')) return 'rgba(106, 119, 21, 0.66)';
+    if (lowerName.includes('mana')) return 'rgba(12, 12, 128, 0.8)'; 
+    if (lowerName.includes('strength')) return 'rgba(104, 83, 19, 0.8)';
+    if (lowerName.includes('freeze')) return 'rgba(12, 12, 131, 0.8)';
+    if (lowerName.includes('hint')) return 'rgba(1, 81, 1, 0.8)';
     return 'rgba(156, 39, 176, 0.8)'; 
   };
 
