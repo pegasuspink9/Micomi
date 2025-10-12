@@ -689,7 +689,6 @@ class UniversalAssetPreloader {
     return url; // Fallback to original URL
   }
 
-  // ✅ Batch get cached paths for multiple URLs
   getCachedAssetPaths(urls) {
     const paths = {};
     urls.forEach(url => {
@@ -698,7 +697,6 @@ class UniversalAssetPreloader {
     return paths;
   }
 
-  // ✅ Load cached assets from storage
   async loadCachedAssets(category = 'characters') {
     try {
       await this.ensureCacheDirectory(category);
@@ -749,7 +747,6 @@ class UniversalAssetPreloader {
     }
   }
 
-  // ✅ Check if character assets are fully cached
   async areCharacterAssetsCached(charactersData) {
     const assets = this.extractCharacterAssets(charactersData);
     
@@ -782,7 +779,6 @@ class UniversalAssetPreloader {
     };
   }
 
-  // ✅ Transform character data to use cached paths
   transformCharacterDataWithCache(charactersData) {
     const transformedData = { ...charactersData };
     
