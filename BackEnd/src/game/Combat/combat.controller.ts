@@ -49,8 +49,12 @@ export const performFight = async (req: Request, res: Response) => {
 
       result = await CombatService.fightEnemy(
         parsedPlayerId,
-        parsedLevelId,
-        isCorrect
+        level.enemy.enemy_id,
+        isCorrect,
+        0, // elapsedSeconds (mock for direct fight)
+        undefined, // challengeId
+        undefined, // alreadyAnsweredCorrectly
+        undefined // wasEverWrong
       );
     } else if (level_difficulty === "hard" || level_difficulty === "final") {
       if (typeof correctCount !== "number" || typeof totalCount !== "number") {
@@ -62,11 +66,16 @@ export const performFight = async (req: Request, res: Response) => {
         );
       }
 
+      // Assuming correctCount/totalCount map to isCorrect logic; adjust as needed
+      const isCorrectForBoss = correctCount / totalCount > 0.5; // Example logic; customize
       result = await CombatService.fightBossEnemy(
         parsedPlayerId,
-        parsedLevelId,
-        correctCount,
-        totalCount
+        level.enemy.enemy_id,
+        isCorrectForBoss,
+        0, // elapsedSeconds (mock)
+        undefined, // challengeId
+        undefined, // alreadyAnsweredCorrectly
+        undefined // wasEverWrong
       );
 
       if (level_difficulty === "final" && result.status === "won") {

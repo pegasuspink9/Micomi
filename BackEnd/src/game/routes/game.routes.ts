@@ -6,6 +6,7 @@ import * as AchievementController from "../Achievements/achievements.controller"
 import * as LevelController from "../Levels/levels.controller";
 import * as MapController from "../Maps/maps.controller";
 import * as LeaderboardController from "../Leaderboard/leaderboard.controller";
+import * as ModelShopService from "../../models/Shop/shop.service";
 import {
   authenticate,
   requirePlayer,
@@ -47,8 +48,9 @@ router.post(
 
 //Shop routes
 router.post("/buy-character/:playerId", ShopController.buyCharacter);
+router.get("/potion/:playerId", ModelShopService.getAllPlayerPotions);
 router.post(
-  "/use-potion/:playerId/:levelId/:potionId",
+  "/potion/:playerId/:levelId/:playerPotionId",
   ShopController.usePotion
 );
 
