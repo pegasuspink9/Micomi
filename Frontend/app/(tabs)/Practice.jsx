@@ -248,18 +248,20 @@ const styles = StyleSheet.create({
 
   // Grid
   gridWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  cardCell: {
-    width: SCREEN_WIDTH * 0.40,
-    marginBottom: SCREEN_WIDTH * 0.05,
-  },
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      paddingHorizontal: scaleWidth(8),
+    },
+   cardCell: {
+     width: '32%',    
+     marginBottom: scaleHeight(12),
+    },
 
   // Potion frame styling (from Potions.jsx, adapted)
   potionFrame: {
     width: SCREEN_WIDTH * 0.30,
-    height: SCREEN_WIDTH * 0.30,
+    aspectRatio: 0.8,
     borderRadius: SCREEN_WIDTH * 0.03,
     padding: 2,
     shadowColor: '#000',
