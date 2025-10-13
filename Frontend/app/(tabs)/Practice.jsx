@@ -21,25 +21,23 @@ import {
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const POTION_DATA = [
-  { id: 1, name: 'Health', price: 250, quantity: 5, image: 'https://github.com/user-attachments/assets/2f3f2308-5b02-4f7c-9f6b-2b15e992c111' },
-  { id: 2, name: 'Mana', price: 200, quantity: 3, image: 'https://github.com/user-attachments/assets/2f3f2308-5b02-4f7c-9f6b-2b15e992c111' },
-  { id: 3, name: 'Strong', price: 400, quantity: 1, image: 'https://github.com/user-attachments/assets/2f3f2308-5b02-4f7c-9f6b-2b15e992c111' },
-  { id: 4, name: 'Freeze', price: 300, quantity: 0, image: 'https://github.com/user-attachments/assets/2f3f2308-5b02-4f7c-9f6b-2b15e992c111' },
-  { id: 5, name: 'Speed', price: 350, quantity: 7, image: 'https://github.com/user-attachments/assets/2f3f2308-5b02-4f7c-9f6b-2b15e992c111' },
-  { id: 6, name: 'Hint', price: 150, quantity: 2, image: 'https://github.com/user-attachments/assets/2f3f2308-5b02-4f7c-9f6b-2b15e992c111' },
+  { id: 1, name: 'Love',  price: 250, quantity: 5, image: 'https://github.com/user-attachments/assets/765b1917-5b6a-4156-9d38-0acbdbfc909a', description: 'A warm elixir that momentarily boosts charm and empathy.' },
+  { id: 2, name: 'Mana',  price: 200, quantity: 3, image: 'https://github.com/user-attachments/assets/d2a4ab58-2d5d-4e35-80b2-71e591bdd297', description: 'Restores magical energy; ideal for spellcasting in long encounters.' },
+  { id: 3, name: 'Strong', price: 400, quantity: 1, image: 'https://github.com/user-attachments/assets/3264eb79-0afd-4987-8c64-6d46b0fc03a0', description: 'Temporarily increases physical strength and melee damage.' },
+  { id: 4, name: 'Freeze', price: 300, quantity: 0, image: 'https://github.com/user-attachments/assets/3264eb79-0afd-4987-8c64-6d46b0fc03a0', description: 'Emits a chilling vapor that slows enemies for a short duration.' },
+  { id: 5, name: 'Speed', price: 350, quantity: 7, image: 'https://github.com/user-attachments/assets/d2a4ab58-2d5d-4e35-80b2-71e591bdd297', description: 'Sharpens reflexes and movement speed for quick maneuvers.' },
+  { id: 6, name: 'Hint',  price: 150, quantity: 2, image: 'https://github.com/user-attachments/assets/d2a4ab58-2d5d-4e35-80b2-71e591bdd297', description: 'A subtle whisper of guidance—reveals a helpful hint for puzzles.' },
 ];
 
 const getPotionColors = (name) => {
-  const colorMap = {
-    Health: { background: 'rgba(220, 38, 38, 1)', border: '#dc2626', frameColor: '#991b1b', innerColor: '#f87171', pressedColor: '#b91c1c' },
-    Strong: { background: 'rgba(245, 159, 11, 1)', border: '#f59e0b', frameColor: '#d97706', innerColor: '#fbbf24', pressedColor: '#ea580c' },
-    Hint: { background: 'rgba(37, 100, 235, 1)', border: '#2563eb', frameColor: '#1d4ed8', innerColor: '#60a5fa', pressedColor: '#1e40af' },
-    Mana: { background: 'rgba(0, 213, 255, 0.44)', border: '#00d5ff', frameColor: '#0891b2', innerColor: '#22d3ee', pressedColor: '#0e7490' },
-    Freeze: { background: 'rgba(168, 85, 247, 0.8)', border: '#a855f7', frameColor: '#7c3aed', innerColor: '#c4b5fd', pressedColor: '#6d28d9' },
-    Speed: { background: 'rgba(34, 197, 94, 0.8)', border: '#22c55e', frameColor: '#16a34a', innerColor: '#86efac', pressedColor: '#15803d' },
-    Immune: { background: 'rgba(156, 163, 175, 0.8)', border: '#9ca3af', frameColor: '#6b7280', innerColor: '#d1d5db', pressedColor: '#4b5563' },
+  const brown = '#943f02ff';
+  return {
+    background: brown,
+    border: brown,
+    frameColor: brown,
+    innerColor: brown,
+    pressedColor: brown,
   };
-  return colorMap[name] || { background: 'rgba(0, 213, 255, 0.44)', border: '#00d5ff', frameColor: '#0891b2', innerColor: '#22d3ee', pressedColor: '#0e7490' };
 };
 
 export default function Practice() {
@@ -69,15 +67,20 @@ export default function Practice() {
             style={styles.ImageBackgroundBottom}
             resizeMode="contain"
           >
-            {/* Absolute overlay for Potions inside the bottom ImageBackground */}
-            <View style={styles.potionsOverlay}>
-              {selected ? (
-                <DetailView selected={selected} onBack={() => setSelected(null)} />
-              ) : (
-                <PotionsGrid data={POTION_DATA} onSelect={(p) => p.quantity > 0 && setSelected(p)} />
-              )}
-            </View>
           </ImageBackground>
+
+          {/* potionsOverlay now always renders the grid.
+              When a potion is selected we also render DetailView as an overlay,
+              so the grid remains visible while the details are shown. */}
+          <View style={styles.potionsOverlay}>
+            <PotionsGrid data={POTION_DATA} onSelect={(p) => p.quantity > 0 && setSelected(p)} />
+
+            {selected && (
+              <View style={styles.detailOverlay}>
+                <DetailView selected={selected} onBack={() => setSelected(null)} />
+              </View>
+            )}
+          </View>
         </View>
       </ImageBackground>
     </View>
@@ -132,10 +135,6 @@ function PotionsGrid({ data, onSelect }) {
                 </View>
               </View>
             </Pressable>
-            <View style={styles.metaRow}>
-              <Text style={styles.metaText}>Price: {potion.price}</Text>
-              <Text style={styles.metaText}>Qty: {potion.quantity}</Text>
-            </View>
           </View>
         );
       })}
@@ -166,12 +165,9 @@ function DetailView({ selected, onBack }) {
             <View style={styles.potionSlotContent}>
               <View style={styles.potionHighlight} />
               <View style={styles.potionShadow} />
-              <Image source={{ uri: selected.image }} style={styles.potionImage} />
-              <View style={styles.countContainer}>
-                <Text style={styles.countText}>{selected.quantity}</Text>
-              </View>
-              <View style={styles.nameContainer}>
-                <Text style={styles.nameText}>{selected.name}</Text>
+              <Image source={{ uri: selected.image }} style={styles.potionImageDetail} />
+              <View style={styles.countContainerDetail}>
+                <Text style={styles.countTextDetail}>{selected.quantity}</Text>
               </View>
             </View>
           </View>
@@ -181,19 +177,27 @@ function DetailView({ selected, onBack }) {
       <View style={styles.detailInfo}>
         <Text style={styles.detailTitle}>{selected.name} Potion</Text>
         <Text style={styles.detailText}>Price: {selected.price} coins</Text>
-        <Text style={styles.detailText}>Quantity: {selected.quantity}</Text>
+
+        {/* ADDED: description below the price (comes from POTION_DATA) */}
+        <Text style={styles.detailDescription}>{selected.description}</Text>
+
       </View>
 
       <View style={styles.detailActions}>
         <TouchableOpacity
-          style={[styles.buyButton, { backgroundColor: isOut ? '#666' : '#22c55e' }]}
+          style={[styles.buyButton, isOut ? styles.keyDisabled : styles.keyActive]}
           disabled={isOut}
           onPress={onBack}
         >
-          <Text style={styles.actionText}>{isOut ? 'Out of Stock' : 'Buy'}</Text>
+          <Text style={[styles.actionText, styles.keyText]}>{isOut ? 'Out of Stock' : 'Buy'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Text style={styles.actionText}>Back</Text>
+
+        <TouchableOpacity
+          style={[styles.backButton, styles.keyActive]}
+          activeOpacity={0.9}
+          onPress={onBack}
+        >
+          <Text style={[styles.actionText, styles.keyText]}>Back</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -214,7 +218,7 @@ const styles = StyleSheet.create({
     height: scaleHeight(390),
   },
   ImageBackgroundBottom: {
-    width: scaleWidth(810),
+    width: scaleWidth(700),
     height: scaleHeight(810),
     alignContent: 'center',
     top: scaleHeight(130),
@@ -227,7 +231,7 @@ const styles = StyleSheet.create({
     height: hp(40),
     justifyContent: 'center',
     alignItems: 'center',
-    borderBottomWidth: scale(2),
+    borderBottomWidth: scale(20),
     borderBottomColor: 'rgba(255, 255, 255, 0.3)',
   },
   bottomFrame: {
@@ -236,32 +240,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // Absolute overlay area for potions inside the bottom image
   potionsOverlay: {
     position: 'absolute',
-    left: scaleWidth(60),
-    right: scaleWidth(60),
-    top: scaleHeight(40),
-    bottom: scaleHeight(80),
+    zIndex: 100,
     justifyContent: 'center',
+    marginTop: scaleHeight(-130)
+  },
+
+  detailOverlay: {
+    position: 'absolute',
+    right: scaleWidth(68),
+    top: scaleHeight(6),
+    zIndex: 200,
+    alignItems: 'center',
   },
 
   // Grid
   gridWrap: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      paddingHorizontal: scaleWidth(8),
-    },
-   cardCell: {
-     width: '32%',    
-     marginBottom: scaleHeight(12),
-    },
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: scaleWidth(30),
+  },
+  cardCell: {
+    width: '30%',    
+    marginBottom: scaleHeight(20),
+    alignItems: 'center',
+  },
 
-  // Potion frame styling (from Potions.jsx, adapted)
   potionFrame: {
-    width: SCREEN_WIDTH * 0.30,
-    aspectRatio: 0.8,
+    width: scaleWidth(100),
+    aspectRatio: scaleWidth(140) / scaleHeight(200),
     borderRadius: SCREEN_WIDTH * 0.03,
     padding: 2,
     shadowColor: '#000',
@@ -305,7 +314,7 @@ const styles = StyleSheet.create({
   potionSlotContent: {
     flex: 1,
     borderRadius: SCREEN_WIDTH * 0.015,
-    backgroundColor: '#10075380',
+    backgroundColor: '#ffffff7b',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -336,27 +345,49 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: SCREEN_WIDTH * 0.015,
   },
   potionImage: {
-    width: '70%',
-    height: '55%',
+    position: 'absolute',
+    width: scaleWidth(120),
+    height: scaleHeight(200),
     borderRadius: 8,
     zIndex: 2,
     resizeMode: 'contain',
+  },
+  potionImageDetail:{
+    position: 'absolute',
+    width: scaleWidth(200),
+    height: scaleHeight(200),
+    borderRadius: 8,
   },
   potionImageDisabled: {
     opacity: 0.3,
   },
   countContainer: {
     position: 'absolute',
-    top: 2,
-    right: 2,
-    borderRadius: 6,
-    minWidth: 14,
-    height: 14,
+    top: 0,
+    right: 0,
+    borderBottomLeftRadius: 10,
+    minWidth: scaleWidth(30),
+    height: scaleHeight(24),
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#fff',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(112, 63, 0, 1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.5,
+    shadowRadius: 1,
+    elevation: 3,
+    zIndex: 3,
+  },
+  countContainerDetail:{
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    borderBottomLeftRadius: 10,
+    minWidth: scaleWidth(50),
+    height: scaleHeight(30),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(112, 63, 0, 1)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.5,
@@ -369,28 +400,29 @@ const styles = StyleSheet.create({
     borderColor: '#666',
   },
   countText: {
-    color: '#ffffff',
-    fontSize: 9,
+    color: 'white',
+    fontSize: SCREEN_WIDTH * 0.03,
     fontFamily: 'DynaPuff',
-    fontWeight: 'bold',
+  },
+  countTextDetail: {
+    color: 'white',
+    fontSize: SCREEN_WIDTH * 0.05,
+    fontFamily: 'DynaPuff',
   },
   nameContainer: {
     position: 'absolute',
-    bottom: 2,
-    left: 2,
-    right: 2,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    borderRadius: 4,
-    paddingVertical: 1,
-    paddingHorizontal: 2,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopLeftRadius: SCREEN_WIDTH * 0.03,
+    borderTopRightRadius: SCREEN_WIDTH * 0.03,
     zIndex: 3,
   },
   nameText: {
-    color: '#ffffff94',
-    fontSize: 10,
+    color: '#fbf7f794',
+    fontSize: SCREEN_WIDTH * 0.03,
     fontFamily: 'DynaPuff',
     textAlign: 'center',
-    fontWeight: 'bold',
   },
   nameTextDisabled: {
     color: '#666',
@@ -408,48 +440,88 @@ const styles = StyleSheet.create({
 
   // Detail view
   detailCard: {
-    flex: 1,
-    borderWidth: 2,
+    top: scaleHeight(-20),
+    borderWidth: scale(4),
     borderRadius: 12,
+    width: scaleWidth(250),
     padding: 12,
-    backgroundColor: 'rgba(16, 7, 83, 0.5)',
+    backgroundColor: 'rgba(87, 32, 5, 1)',
     alignItems: 'center',
   },
   detailInfo: {
     marginTop: 12,
     marginBottom: 8,
-    alignSelf: 'stretch',
+    alignSelf: 'flex-start',
+    marginLeft: SCREEN_WIDTH * 0.07
   },
   detailTitle: {
-    color: '#fff',
-    fontSize: 20,
+    color: '#ffffffff',
+    fontSize: SCREEN_WIDTH * 0.04,
     fontFamily: 'DynaPuff',
     marginBottom: 4,
   },
   detailText: {
-    color: '#fff',
-    fontSize: 14,
+    color: '#bcbcbcff',
+    fontSize: SCREEN_WIDTH * 0.03,
     fontFamily: 'DynaPuff',
   },
+
+  /* ADDED: description style shown under the price in DetailView */
+  detailDescription: {
+    color: '#e9e1d9ff',
+    fontSize: SCREEN_WIDTH * 0.028,
+    fontFamily: 'DynaPuff',
+    marginTop: 6,
+    marginBottom: 6,
+    lineHeight: SCREEN_WIDTH * 0.04,
+    maxWidth: scaleWidth(200),
+  },
+
   detailActions: {
     flexDirection: 'row',
     gap: 10,
     marginTop: 8,
     alignSelf: 'stretch',
   },
+
+  /* KEYBOARD-LIKE BUTTON STYLES */
+  keyActive: {
+    backgroundColor: '#ffffffff',          
+    borderColor: '#8f0000ff',
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: -1, height: 3 }, 
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 4,
+    transform: [{ translateY: 0 }],        
+  },
+  keyDisabled: {
+    backgroundColor: '#e1e1e1',
+    borderColor: '#bfbfbf',
+  },
+  keyText: {
+    color: '#111827',                    
+    fontWeight: '700',
+  },
+
   buyButton: {
     flex: 1,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 6,
     alignItems: 'center',
+    marginRight: scaleWidth(6),
   },
   backButton: {
     flex: 1,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 6,
     alignItems: 'center',
-    backgroundColor: '#2563eb',
+    borderWidth: 3,
+    borderColor: '#000000ff',
+    backgroundColor: '#f3f4f6',
   },
+
   actionText: {
     color: '#fff',
     fontSize: 14,
