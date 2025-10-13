@@ -5,7 +5,8 @@ import {
   StyleSheet, 
   Dimensions, 
   Image,
-  Pressable
+  Pressable,
+  ScrollView
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -19,9 +20,10 @@ const PotionGrid = ({
     { id: 3, name: 'Hint', count: 2, image: 'https://github.com/user-attachments/assets/1fb726a5-f63d-44f4-8e33-8d9c961940ff' },
     { id: 4, name: 'Immune', count: 2, image: 'https://github.com/user-attachments/assets/d2a4ab58-2d5d-4e35-80b2-71e591bdd297' },
   ],
-  onPotionPress
+  onPotionPress,
+  selectedPotion = null,
+  loadingPotions = false
 }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
 
   const getPotionColors = (name) => {
     const colorMap = {
@@ -53,6 +55,27 @@ const PotionGrid = ({
         innerColor: '#22d3ee',
         pressedColor: '#0e7490'
       },
+      'Freeze': {
+        background: 'rgba(168, 85, 247, 0.8)', 
+        border: '#a855f7',
+        frameColor: '#7c3aed',
+        innerColor: '#c4b5fd',
+        pressedColor: '#6d28d9'
+      },
+      'Speed': {
+        background: 'rgba(34, 197, 94, 0.8)', 
+        border: '#22c55e',
+        frameColor: '#16a34a',
+        innerColor: '#86efac',
+        pressedColor: '#15803d'
+      },
+      'Immune': {
+        background: 'rgba(156, 163, 175, 0.8)', 
+        border: '#9ca3af',
+        frameColor: '#6b7280',
+        innerColor: '#d1d5db',
+        pressedColor: '#4b5563'
+      },
     };
     
     return colorMap[name] || {
@@ -64,125 +87,124 @@ const PotionGrid = ({
     };
   };
 
-  const PotionSlot = ({ potion, isEmpty = false }) => {
-    const colors = potion ? getPotionColors(potion.name) : getPotionColors('default');
-    
+  const PotionSlot = ({ potion }) => {
+    const colors = getPotionColors(potion.name);
+    const isSelected = selectedPotion && selectedPotion.id === potion.id;
+    const isOutOfStock = potion.count === 0;
+
     return (
-    <View style={[
-      styles.potionFrame,
-      { backgroundColor: colors.frameColor },
-      isEmpty && styles.emptySlot,
-      potion && potion.count === 0 && styles.outOfStockSlot
-    ]}>
-      <Pressable 
-        style={({ pressed }) => [
-          styles.potionSlot,
-          {
-            backgroundColor: colors.border,
-            borderTopColor: colors.innerColor,
-            borderLeftColor: colors.innerColor,
-            borderBottomColor: colors.frameColor,
-            borderRightColor: colors.frameColor,
-          },
-          pressed && !isEmpty && potion && potion.count > 0 && [
-            styles.potionSlotPressed,
-            { backgroundColor: colors.pressedColor }
-          ]
-        ]}
-        onPress={() => potion && potion.count > 0 && onPotionPress && onPotionPress(potion)}
-        disabled={!potion || potion.count === 0}
-      >
-        
-       
-
-        <View style={styles.potionSlotInner}>
-          <View style={styles.potionSlotContent}>
-            <View style={styles.potionHighlight} />
-            <View style={styles.potionShadow} />
-            
-            {/* Decorative dots */}
-            <View style={styles.dotsContainer}>
-              <View style={[styles.dot, styles.dotTopLeft]} />
-              <View style={[styles.dot, styles.dotTopRight]} />
-              <View style={[styles.dot, styles.dotBottomLeft]} />
-              <View style={[styles.dot, styles.dotBottomRight]} />
-            </View>
-            
-            {!isEmpty && potion && (
-              <>
-                <Image 
-                  source={{ uri: potion.image }} 
-                  style={[
-                    styles.potionImage,
-                    potion.count === 0 && styles.potionImageDisabled
-                  ]}
-                />
-                <View style={[
-                  styles.countContainer,
-                  potion.count === 0 && styles.countContainerDisabled
-                ]}>
-                  <Text style={styles.countText}>{potion.count}</Text>
-                </View>
-              </>
-            )}
-          </View>
-        </View>
-      </Pressable>
-    </View>
-    );
-  };
-
-  // Compute pixel positions so arrows sit just outside the centered potion container
-  const CONTAINER_PCT = 0.12;
-  const CONTAINER_WIDTH = SCREEN_WIDTH * CONTAINER_PCT;
-  const ARROW_SIZE = SCREEN_WIDTH * 0.1; 
-  const GAP = 10; // small gap between potion frame and arrow
-
-  const leftArrowLeft = (SCREEN_WIDTH / 3.2) - (CONTAINER_WIDTH / 2) - GAP;
-  const rightArrowLeft = (SCREEN_WIDTH / 2) + (CONTAINER_WIDTH / 2) + GAP;
-
-  const createSingleView = () => {
-    const potion = potions && potions.length > 0 ? potions[currentIndex] : null;
-    return (
-      <View style={styles.singleWrapper}>
-        <View style={styles.singleSlotContainer}>
-          <PotionSlot potion={potion} isEmpty={!potion} />
-        </View>
-
-        {/* Left arrow - absolutely positioned just outside left edge */}
-        <Pressable
+      <View style={[
+        styles.potionFrame,
+        { backgroundColor: colors.frameColor },
+        isOutOfStock && styles.outOfStockSlot,
+        isSelected && styles.selectedPotionFrame 
+      ]}>
+        <Pressable 
           style={({ pressed }) => [
-            styles.arrowButton,
-            { left: leftArrowLeft, width: ARROW_SIZE, height: ARROW_SIZE, marginTop: -(ARROW_SIZE/2) },
-            currentIndex === 0 && styles.arrowDisabled,
-            pressed && styles.arrowPressed
+            styles.potionSlot,
+            {
+              backgroundColor: colors.border,
+              borderTopColor: colors.innerColor,
+              borderLeftColor: colors.innerColor,
+              borderBottomColor: colors.frameColor,
+              borderRightColor: colors.frameColor,
+            },
+            pressed && !isOutOfStock && [
+              styles.potionSlotPressed,
+              { backgroundColor: colors.pressedColor }
+            ],
+            isSelected && styles.selectedPotionSlot 
           ]}
-          onPress={() => currentIndex > 0 && setCurrentIndex(currentIndex - 1)}
-          disabled={currentIndex === 0}
+          onPress={() => !isOutOfStock && onPotionPress && onPotionPress(potion)}
+          disabled={isOutOfStock || loadingPotions}
         >
-            <Image source={{uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945991/469163197-5f2b8e72-f49e-4f06-8b76-40b580289d54_mf5hcw.png'}}  style={[styles.arrowImage, styles.flippedHorizontal]}  />
-        </Pressable>
-
-        {/* Right arrow - absolutely positioned just outside right edge */}
-        <Pressable
-          style={({ pressed }) => [
-            styles.arrowButton,
-            { left: rightArrowLeft, width: ARROW_SIZE, height: ARROW_SIZE, marginTop: -(ARROW_SIZE/2) },
-            currentIndex >= (potions.length - 1) && styles.arrowDisabled,
-            pressed && styles.arrowPressed
-          ]}
-          onPress={() => currentIndex < (potions.length - 1) && setCurrentIndex(currentIndex + 1)}
-          disabled={currentIndex >= (potions.length - 1)}
-        > 
-        <Image source={{uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945991/469163197-5f2b8e72-f49e-4f06-8b76-40b580289d54_mf5hcw.png'}} style={styles.arrowImage} />
+          <View style={styles.potionSlotInner}>
+            <View style={[
+              styles.potionSlotContent,
+              isSelected && styles.selectedPotionContent
+            ]}>
+              <View style={styles.potionHighlight} />
+              <View style={styles.potionShadow} />
+              
+              {/* Decorative dots */}
+              <View style={styles.dotsContainer}>
+                <View style={[styles.dot, styles.dotTopLeft]} />
+                <View style={[styles.dot, styles.dotTopRight]} />
+                <View style={[styles.dot, styles.dotBottomLeft]} />
+                <View style={[styles.dot, styles.dotBottomRight]} />
+              </View>
+              
+              <Image 
+                source={{ uri: potion.image }} 
+                style={[
+                  styles.potionImage,
+                  isOutOfStock && styles.potionImageDisabled
+                ]}
+              />
+              
+              <View style={[
+                styles.countContainer,
+                isOutOfStock && styles.countContainerDisabled,
+                isSelected && styles.selectedCountContainer 
+              ]}>
+                <Text style={[
+                  styles.countText,
+                  isSelected && styles.selectedCountText 
+                ]}>
+                  {potion.count}
+                </Text>
+              </View>
+              
+              {/* Potion name label */}
+              <View style={styles.nameContainer}>
+                <Text style={[
+                  styles.nameText,
+                  isSelected && styles.selectedNameText,
+                  isOutOfStock && styles.nameTextDisabled
+                ]}>
+                  {potion.name}
+                </Text>
+              </View>
+            </View>
+          </View>
         </Pressable>
       </View>
     );
   };
 
+  // Loading state
+  if (loadingPotions) {
+    return (
+      <View style={[styles.gridContainer, styles.centerContent]}>
+        <Text style={styles.loadingText}>Loading potions...</Text>
+      </View>
+    );
+  }
+
+  // Empty state
+  if (!potions || potions.length === 0) {
+    return (
+      <View style={[styles.gridContainer, styles.centerContent]}>
+        <Text style={styles.emptyText}>No potions available</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.gridContainer}>
-      {createSingleView()}
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.gridScrollContainer}
+        style={styles.scrollView}
+      >
+        <View style={styles.potionGrid}>
+          {potions.map((potion, index) => (
+            <View key={potion.id || index} style={styles.potionSlotWrapper}>
+              <PotionSlot potion={potion} />
+            </View>
+          ))}
+        </View>
+      </ScrollView>
     </View>
   );
 };
@@ -190,68 +212,40 @@ const PotionGrid = ({
 const styles = StyleSheet.create({
   gridContainer: {
     flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-evenly',
-    alignItems: 'flex-start',
     paddingTop: SCREEN_WIDTH * 0.02,
   },
 
-  arrowImage:{
-    width: SCREEN_WIDTH * 0.2,
-    height: SCREEN_WIDTH * 0.2,
-    resizeMode: 'contain',
-  },
-
-  flippedHorizontal: {
-    transform: [{ scaleX: -1 }],
-  },
-
-  // wrapper centers the potionFrame; arrows are absolutely positioned to sit centered vertically near it
-  singleWrapper: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
+  centerContent: {
     justifyContent: 'center',
-    position: 'relative',
+    alignItems: 'center',
+  },
+
+  scrollView: {
+    flex: 1,
+  },
+
+  gridScrollContainer: {
+    paddingHorizontal: SCREEN_WIDTH * 0.04,
     paddingVertical: SCREEN_WIDTH * 0.02,
   },
 
-  singleSlotContainer: {
-    width: '22%', 
-    alignItems: 'center',
-    justifyContent: 'center',
+  potionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
 
-  arrowButton: {
-    // size set dynamically to keep same visual size; base visuals kept here
-    borderRadius: SCREEN_WIDTH * 0.02,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 6,
-    position: 'absolute',
-  },
-
-  arrowText: {
-    fontSize: 22,
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-
-  arrowDisabled: {
-    opacity: 0.3,
-  },
-
-  arrowPressed: {
-    transform: [{ translateY: 1 }],
+  potionSlotWrapper: {
+    width: '48%', // Two columns with some spacing
+    marginBottom: SCREEN_WIDTH * 0.04,
   },
 
   potionFrame: {
     width: '100%',
-    aspectRatio: 1,
+    aspectRatio: 0.75, // Slightly taller than square
     borderRadius: SCREEN_WIDTH * 0.03,
     padding: 2,
-    marginBottom: SCREEN_WIDTH * 0.02,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -260,7 +254,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 12,
-    // Outer 3D frame (same as AnswerOption)
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.3)',
     borderLeftWidth: 1,
@@ -306,12 +299,8 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
   },
 
-  emptySlot: {
-    opacity: 0.3,
-  },
-
   outOfStockSlot: {
-    opacity: 0.6,
+    opacity: 0.4,
   },
 
   potionSlotInner: {
@@ -403,47 +392,122 @@ const styles = StyleSheet.create({
   },
 
   potionImage: {
-    width: '100%',
-    height: SCREEN_WIDTH * 0.19,
-    borderRadius: 30,
+    width: '70%',
+    height: '55%',
+    borderRadius: 8,
     zIndex: 2,
+    resizeMode: 'contain',
   },
 
   potionImageDisabled: {
-    opacity: 0.5,
-  },
-
-
-
-
-  potionNameDisabled: {
-    color: '#888',
+    opacity: 0.3,
   },
 
   countContainer: {
     position: 'absolute',
-    top: 3,
-    right: 3,
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
+    top: 2,
+    right: 2,
+    borderRadius: 6,
+    minWidth: 14,
+    height: 14,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#fff',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.5,
-    shadowRadius: 2,
-    elevation: 5,
+    shadowRadius: 1,
+    elevation: 3,
     zIndex: 3,
   },
 
+  countContainerDisabled: {
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    borderColor: '#666',
+  },
 
   countText: {
+    color: '#ffffff',
+    fontSize: 9,
+    fontFamily: 'DynaPuff',
+    fontWeight: 'bold',
+  },
+
+  // Name container
+  nameContainer: {
+    position: 'absolute',
+    bottom: 2,
+    left: 2,
+    right: 2,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    borderRadius: 4,
+    paddingVertical: 1,
+    paddingHorizontal: 2,
+    zIndex: 3,
+  },
+
+  nameText: {
     color: '#ffffff94',
-    fontSize: 10,
-    fontFamily: 'DynaPuff', 
+    fontSize: 8,
+    fontFamily: 'DynaPuff',
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+
+  nameTextDisabled: {
+    color: '#666',
+  },
+
+  // Selected styles
+  selectedPotionFrame: {
+    borderTopColor: 'rgba(255, 255, 255, 0.8)',
+    borderLeftColor: 'rgba(255, 255, 255, 0.8)',
+    borderBottomColor: 'rgba(255, 255, 255, 0.3)',
+    borderRightColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#fff',
+    shadowOpacity: 0.6,
+    transform: [{ scale: 1.05 }],
+  },
+
+  selectedPotionSlot: {
+    borderTopColor: 'rgba(255, 255, 255, 0.9)',
+    borderLeftColor: 'rgba(255, 255, 255, 0.9)',
+  },
+
+  selectedPotionContent: {
+    borderTopColor: 'rgba(255, 255, 255, 0.4)',
+    borderLeftColor: 'rgba(255, 255, 255, 0.3)',
+  },
+
+  selectedCountContainer: {
+    borderColor: '#ffeb3b',
+    shadowColor: '#ffeb3b',
+    backgroundColor: 'rgba(255, 235, 59, 0.9)',
+  },
+
+  selectedCountText: {
+    color: '#000',
+    fontWeight: 'bold',
+  },
+
+  selectedNameText: {
+    color: '#ffeb3b',
+    fontWeight: 'bold',
+  },
+
+  // Loading and empty states
+  loadingText: {
+    color: '#ffffff94',
+    fontSize: 16,
+    fontFamily: 'DynaPuff',
+  },
+
+  emptyText: {
+    color: '#ffffff94',
+    fontSize: 14,
+    fontFamily: 'DynaPuff',
   },
 });
 
