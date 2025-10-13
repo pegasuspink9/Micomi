@@ -58,6 +58,14 @@ export default function GamePlay() {
     animationProgress,
     downloadProgress,
     individualAnimationProgress,
+
+    potions,
+    selectedPotion,
+    loadingPotions,
+    usingPotion,
+    usePotion,
+    selectPotion,
+    clearSelectedPotion,
   } = useGameData(playerId, levelId);
 
   const currentChallenge = gameState?.currentChallenge;
@@ -85,13 +93,40 @@ export default function GamePlay() {
     }
   }, [currentChallenge, loading, animationsLoading, isRetrying, isLoadingNextLevel]);
 
+  const handlePotionPress = useCallback(async (potion) => {
+    if (selectedPotion && selectedPotion.id === potion.id) {
+      // If clicking the same potion, use it
+      console.log('🧪 Using selected potion:', potion.name);
+      
+      const result = await usePotion(potion.player_potion_id);
+      
+      if (result.success) {
+        console.log(`🧪 ${potion.name} potion used successfully!`);
+        // Optionally show success message
+      } else {
+        console.error('Failed to use potion:', result.error);
+        // Optionally show error message
+      }
+    } else {
+      // Select the potion
+      selectPotion(potion);
+      console.log('🧪 Potion selected:', potion.name);
+    }
+  }, [selectedPotion, usePotion, selectPotion]);
+
+
+
   const handleVSComplete = () => {
     setShowVSModal(false);
   };
 
   const handleGameTabChange = useCallback((tabName) => {
     setActiveGameTab(tabName);
-  }, []);
+    if (selectedPotion) {
+      clearSelectedPotion();
+    }
+  }, [selectedPotion, clearSelectedPotion]);
+
 
   const handleCorrectAnswer = useCallback(() => {
     setActiveGameTab('output');
@@ -481,6 +516,11 @@ const handleAnimationComplete = useCallback(() => {
                   submitting={submitting}
                   onCorrectAnswer={handleCorrectAnswer}
                   selectedBlankIndex={selectedBlankIndex} 
+                   potions={potions}
+                  selectedPotion={selectedPotion}
+                  onPotionPress={handlePotionPress}
+                  loadingPotions={loadingPotions}
+                  usingPotion={usingPotion}
                 />
               </View>
             )}

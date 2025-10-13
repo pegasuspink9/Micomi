@@ -303,8 +303,8 @@ export const gameService = {
         }
       }
       
-        
-            const gameStateWithCache = universalAssetPreloader.transformGameStateWithCache(gameState);
+  
+      const gameStateWithCache = universalAssetPreloader.transformGameStateWithCache(gameState);
       
       console.log(`✅ Game state extracted and cached (${isSubmission ? 'submission' : 'entry'}):`, {
         hasLevel: !!gameStateWithCache.level.level_id,
@@ -323,6 +323,69 @@ export const gameService = {
       return null;
     }
   },
+
+   getPlayerPotions: async (playerId) => {
+    try {
+      console.log(`🧪 Fetching potions for player ${playerId}...`);
+      
+      const response = await apiService.get(`/game/potion/${playerId}`);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to fetch potions');
+      }
+
+      // Transform API response to match component structure
+      const transformedPotions = response.data.map(potion => ({
+        id: potion.player_potion_id,
+        name: gameService.getPotionDisplayName(potion.potion_type),
+        count: potion.quantity,
+        image: potion.potion_url,
+        type: potion.potion_type,
+        description: potion.potion_description,
+        price: potion.potion_price,
+        player_potion_id: potion.player_potion_id,
+        potion_shop_id: potion.potion_shop_id
+      }));
+
+      console.log(`🧪 Found ${transformedPotions.length} potions for player ${playerId}`);
+      return { success: true, data: transformedPotions };
+    } catch (error) {
+      console.error(`Failed to fetch potions for player ${playerId}:`, error);
+      throw error;
+    }
+  },
+
+    usePotion: async (playerId, levelId, playerPotionId) => {
+    try {
+      console.log(`🧪 Using potion ${playerPotionId} for player ${playerId} in level ${levelId}...`);
+      
+      const response = await apiService.post(`/game/potion/${playerId}/${levelId}/${playerPotionId}`);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to use potion');
+      }
+
+      console.log(`🧪 Potion used successfully:`, response.data);
+      return response;
+    } catch (error) {
+      console.error(`Failed to use potion ${playerPotionId}:`, error);
+      throw error;
+    }
+  },
+
+    getPotionDisplayName: (potionType) => {
+    const typeMap = {
+      'health': 'Health',
+      'hint': 'Hint',
+      'strength': 'Strong',
+      'mana': 'Mana',
+      'freeze': 'Freeze',
+      'speed': 'Speed',
+      'immune': 'Immune'
+    };
+    return typeMap[potionType] || potionType.charAt(0).toUpperCase() + potionType.slice(1);
+  },
+  
 
    getAnimationStats: () => {
     return universalAssetPreloader.getDownloadStats();

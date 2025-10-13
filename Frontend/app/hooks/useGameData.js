@@ -7,6 +7,14 @@ export const useGameData = (playerId, levelId) => {
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [waitingForAnimation, setWaitingForAnimation] = useState(false);
+
+  //potions states
+  const [potions, setPotions] = useState([]);
+  const [selectedPotion, setSelectedPotion] = useState(null);
+  const [loadingPotions, setLoadingPotions] = useState(false);
+  const [usingPotion, setUsingPotion] = useState(false);
+
+
   
   const [animationsLoading, setAnimationsLoading] = useState(true);
   const [downloadProgress, setDownloadProgress] = useState({ loaded: 0, total: 0, progress: 0, currentUrl: '' });
@@ -296,6 +304,72 @@ export const useGameData = (playerId, levelId) => {
     }
   }, [handleAnimationProgress, handleDownloadProgress]);
 
+  
+
+ const fetchPotions = useCallback(async () => {
+    if (!playerId) return;
+    
+    try {
+      setLoadingPotions(true);
+      const result = await gameService.getPlayerPotions(playerId);
+      setPotions(result.data || []);
+      console.log('🧪 Potions loaded successfully');
+    } catch (error) {
+      console.error('Failed to fetch potions:', error);
+      setPotions([]);
+    } finally {
+      setLoadingPotions(false);
+    }
+  }, [playerId]);
+
+  const usePotion = useCallback(async (playerPotionId) => {
+    if (!playerId || !levelId || usingPotion) return;
+    
+    try {
+      setUsingPotion(true);
+      console.log(`🧪 Using potion ${playerPotionId}...`);
+      
+      const result = await gameService.usePotion(playerId, levelId, playerPotionId);
+      
+      if (result.success) {
+        // Update local potion count
+        setPotions(prev => prev.map(potion => 
+          potion.player_potion_id === playerPotionId 
+            ? { ...potion, count: result.data.remaining }
+            : potion
+        ));
+        
+        setSelectedPotion(null);
+        console.log(`🧪 Potion used: ${result.data.message}`);
+        return { success: true, data: result.data };
+      }
+    } catch (error) {
+      console.error('Failed to use potion:', error);
+      return { success: false, error: error.message };
+    } finally {
+      setUsingPotion(false);
+    }
+  }, [playerId, levelId, usingPotion]);
+
+
+  const selectPotion = useCallback((potion) => {
+    setSelectedPotion(potion);
+    console.log('🧪 Potion selected:', potion.name);
+  }, []);
+
+  const clearSelectedPotion = useCallback(() => {
+    setSelectedPotion(null);
+  }, []);
+
+   useEffect(() => {
+    fetchPotions();
+  }, [fetchPotions]);
+
+
+
+
+
+
     const refetchGameData = () => {
     pendingSubmissionRef.current = null;
     setWaitingForAnimation(false);
@@ -327,5 +401,15 @@ export const useGameData = (playerId, levelId) => {
     refetchGameData: fetchGameData,
     submitAnswer,
     onAnimationComplete: handleAnimationComplete,
+
+    //potions
+    potions,
+    selectedPotion,
+    loadingPotions,
+    usingPotion,
+    usePotion,
+    selectPotion,
+    clearSelectedPotion,
+    fetchPotions,
   };
 };

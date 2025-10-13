@@ -26,7 +26,12 @@ const ThirdGrid = ({
   gameState,
   submitAnswer,
   submitting = false,
-  onCorrectAnswer
+  onCorrectAnswer,
+  potions = [],
+  selectedPotion = null,
+  onPotionPress,
+  loadingPotions = false,
+  usingPotion = false,
 }) => {
   
   if (!currentQuestion) {
@@ -73,12 +78,22 @@ const ThirdGrid = ({
     setShowPotions(!showPotions);
   }, [showPotions]);
 
-  // ✅ Memoize run button disabled state
   const runButtonDisabled = useMemo(() => (
     submitting || 
-    !Array.isArray(selectedAnswers) || 
-    selectedAnswers.length === 0
-  ), [submitting, selectedAnswers]);
+    usingPotion ||
+    (!selectedPotion && (!Array.isArray(selectedAnswers) || selectedAnswers.length === 0))
+  ), [submitting, usingPotion, selectedPotion, selectedAnswers]);
+
+  const runButtonTitle = useMemo(() => {
+    if (usingPotion) return "Using...";
+    if (selectedPotion) return "Use Potion";
+    if (submitting) return "Running...";
+    return "Run";
+  }, [usingPotion, selectedPotion, submitting]);
+
+  const runButtonVariant = useMemo(() => {
+    return selectedPotion ? "info" : "primary";
+  }, [selectedPotion]);
 
   // ✅ Memoize options array
   const options = useMemo(() => currentQuestion.options || [], [currentQuestion.options]);
@@ -97,10 +112,10 @@ const ThirdGrid = ({
       lowerChildren={
         <View style={{ flex: 1, position: 'relative' }}>
           <GameButton 
-            title={submitting ? "Run" : "Run"}
+            title={runButtonTitle}
             position="right"
-            variant="primary"
-            onPress={handleCheckAnswer}
+            variant={runButtonVariant}
+            onPress={selectedPotion ? () => onPotionPress?.(selectedPotion) : handleCheckAnswer}
             disabled={runButtonDisabled}
           />
 
@@ -109,13 +124,18 @@ const ThirdGrid = ({
             position="left"
             variant="secondary"
             onPress={togglePotions}
-            disabled={submitting}
+            disabled={submitting || usingPotion}
           />
         </View>
       }
     >
       {showPotions ? (
-        <PotionGrid />
+        <PotionGrid 
+          potions={potions}
+          onPotionPress={onPotionPress}
+          selectedPotion={selectedPotion}
+          loadingPotions={loadingPotions}
+        />
       ) : (
         <AnswerGrid
           options={options}
