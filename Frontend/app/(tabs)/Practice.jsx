@@ -1,889 +1,457 @@
-import React from "react";
+import React, { useState } from "react";
 import { 
   Text, 
   View, 
-  Image, 
-  ScrollView, 
-  TouchableOpacity,
   StyleSheet,
   ImageBackground,
-  ActivityIndicator
+  Dimensions,
+  Image,
+  Pressable,
+  ScrollView,
+  TouchableOpacity,
 } from "react-native";
-import { SafeAreaView } from 'react-native-safe-area-context';
-import AssetDownloadProgress from '../Components/RoadMap/LoadingState/assetDownloadProgress';
 import {
   scale,
   scaleWidth,
   scaleHeight,
-  scaleFont,
-  wp,
   hp,
-  SCREEN,
   RESPONSIVE,
-  layoutHelpers,
 } from '../Components/Responsiveness/gameResponsive';
-import { useRouter } from 'expo-router';
-import { usePlayerProfile } from '../hooks/usePlayerProfile';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const POTION_DATA = [
+  { id: 1, name: 'Health', price: 250, quantity: 5, image: 'https://github.com/user-attachments/assets/2f3f2308-5b02-4f7c-9f6b-2b15e992c111' },
+  { id: 2, name: 'Mana', price: 200, quantity: 3, image: 'https://github.com/user-attachments/assets/2f3f2308-5b02-4f7c-9f6b-2b15e992c111' },
+  { id: 3, name: 'Strong', price: 400, quantity: 1, image: 'https://github.com/user-attachments/assets/2f3f2308-5b02-4f7c-9f6b-2b15e992c111' },
+  { id: 4, name: 'Freeze', price: 300, quantity: 0, image: 'https://github.com/user-attachments/assets/2f3f2308-5b02-4f7c-9f6b-2b15e992c111' },
+  { id: 5, name: 'Speed', price: 350, quantity: 7, image: 'https://github.com/user-attachments/assets/2f3f2308-5b02-4f7c-9f6b-2b15e992c111' },
+  { id: 6, name: 'Hint', price: 150, quantity: 2, image: 'https://github.com/user-attachments/assets/2f3f2308-5b02-4f7c-9f6b-2b15e992c111' },
+];
+
+const getPotionColors = (name) => {
+  const colorMap = {
+    Health: { background: 'rgba(220, 38, 38, 1)', border: '#dc2626', frameColor: '#991b1b', innerColor: '#f87171', pressedColor: '#b91c1c' },
+    Strong: { background: 'rgba(245, 159, 11, 1)', border: '#f59e0b', frameColor: '#d97706', innerColor: '#fbbf24', pressedColor: '#ea580c' },
+    Hint: { background: 'rgba(37, 100, 235, 1)', border: '#2563eb', frameColor: '#1d4ed8', innerColor: '#60a5fa', pressedColor: '#1e40af' },
+    Mana: { background: 'rgba(0, 213, 255, 0.44)', border: '#00d5ff', frameColor: '#0891b2', innerColor: '#22d3ee', pressedColor: '#0e7490' },
+    Freeze: { background: 'rgba(168, 85, 247, 0.8)', border: '#a855f7', frameColor: '#7c3aed', innerColor: '#c4b5fd', pressedColor: '#6d28d9' },
+    Speed: { background: 'rgba(34, 197, 94, 0.8)', border: '#22c55e', frameColor: '#16a34a', innerColor: '#86efac', pressedColor: '#15803d' },
+    Immune: { background: 'rgba(156, 163, 175, 0.8)', border: '#9ca3af', frameColor: '#6b7280', innerColor: '#d1d5db', pressedColor: '#4b5563' },
+  };
+  return colorMap[name] || { background: 'rgba(0, 213, 255, 0.44)', border: '#00d5ff', frameColor: '#0891b2', innerColor: '#22d3ee', pressedColor: '#0e7490' };
+};
 
 export default function Practice() {
-  const playerId = 11; // You can get this from context or props
-  const {
-    playerData,
-    loading,
-    error,
-    assetsLoading,
-    assetsProgress,
-    loadPlayerProfile,
-    clearError
-  } = usePlayerProfile(playerId);
-
-  if (loading) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color="#ffffff" />
-        <Text style={styles.loadingText}>Loading Profile...</Text>
-      </View>
-    );
-  }
-
-   if (assetsLoading) {
-    return (
-      <>
-        <View style={styles.container}>
-          <ImageBackground 
-            source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' }} 
-            style={styles.ImageBackgroundContainer} 
-            resizeMode="cover"
-          >
-            <View style={styles.backgroundOverlay} />
-          </ImageBackground>
-        </View>
-        <AssetDownloadProgress
-          visible={assetsLoading}
-          progress={assetsProgress}
-          currentAsset={assetsProgress.currentAsset}
-        />
-      </>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <Text style={styles.errorText}>Error: {error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={() => {
-          clearError();
-          loadPlayerProfile();
-        }}>
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  if (!playerData) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <Text style={styles.errorText}>No player data available</Text>
-      </View>
-    );
-  }
-
-  
+  const [selected, setSelected] = useState(null);
 
   return (
     <View style={styles.container}>
-      <ImageBackground source={{ uri: playerData.containerBackground }} style={styles.ImageBackgroundContainer} resizeMode="cover">
-
-      <View style={styles.backgroundOverlay} />
-      <ScrollView 
-        style={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
+      <ImageBackground 
+        source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' }} 
+        style={styles.ImageBackgroundContainer} 
+        resizeMode="cover"
       >
-        {/* Hero Selected Header */}
-        <HeroSelectedSection hero={playerData.heroSelected} background={playerData.background} />
+        <View style={styles.backgroundOverlay} />
         
-        {/* Player Info Section */}
-        <PlayerInfoSection 
-          playerName={playerData.playerName}
-          username={playerData.username}
-        />
-        
-        {/* Stats Grid Section */}
-        <StatsGridSection 
-          coins={playerData.coins}
-          daysLogin={playerData.daysLogin}
-          currentStreak={playerData.currentStreak}
-          expPoints={playerData.expPoints}
-          mapsOpened={playerData.mapsOpened}
-          statsIcons={playerData.statsIcons}
-        />
-        
-        {/* Badges Section */}
-        <BadgesSection badges={playerData.badges} />
-
-        
-        {/* Potions Section */}
-        <PotionsSection potions={playerData.potions} />
-        
-        {/* Quests Section */}
-        <QuestsSection quests={playerData.quests} />
-        
-        
-        {/* Bottom Spacing */}
-        <View style={{ height: layoutHelpers.gap.xl }} />
-      </ScrollView>
-    </ImageBackground>
-    </View>
-  );
-}
-
-// Hero Selected Component
-const HeroSelectedSection = ({ hero, background }) => (
-  <View style={styles.heroSection}>
-    <ImageBackground source={{ uri: background }} style={styles.heroSelectionBackground}>
-    <View style={styles.heroContainer}>
-      <Image 
-        source={{ uri: hero.avatar }} 
-        style={styles.heroAvatar}
-      />
-      <View style={styles.heroInfo}>
-        <Text style={styles.heroLabel}>Selected Hero</Text>
-        <Text style={styles.heroName}>{hero.name}</Text>
-      </View>
-    </View>
-    </ImageBackground>
-  </View>
-);
-
-// Player Info Component
-const PlayerInfoSection = ({ playerName, username }) => (
-  <View style={styles.playerSection}>
-    <Text style={styles.playerName}>{playerName}</Text>
-    <Text style={styles.username}>{username}</Text>
-  </View>
-);
-
-// Stats Grid Component
-const StatsGridSection = ({ coins, daysLogin, currentStreak, expPoints, mapsOpened, statsIcons }) => (
-  <View style={styles.statsSection}>
-    <Text style={[styles.sectionTitle, { textAlign: 'center' }]}>Overview</Text>
-    <View style={styles.statsGrid}>
-      <StatCard 
-        icon={statsIcons.coins}
-        label="Coins" 
-        value={coins.toLocaleString()} 
-      />
-    
-      <StatCard 
-        icon={statsIcons.currentStreak}
-        label="Streak" 
-        value={currentStreak} 
-      />
-      <StatCard 
-        icon={statsIcons.expPoints}
-        label="EXP Points" 
-        value={expPoints.toLocaleString()} 
-      />
-      <StatCard 
-        icon={statsIcons.mapsOpened}
-        label="Maps" 
-        value={mapsOpened} 
-      />
-    </View>
-  </View>
-);
-
-// Stat Card Component
-const StatCard = ({ icon, label, value, color }) => (
-  <View style={styles.statCardContainer}>
-    <View style={styles.statCardShadow} />
-    <View style={[styles.statCard]}>
-      <View style={styles.statCardTopRow}>
-        <Image 
-          source={{ uri: icon }} 
-          style={styles.statIconImage}
-          resizeMode="contain"
-        />
-        <Text style={styles.statValue}>{value}</Text>
-        
-      <Text style={styles.statLabel}>{label}</Text>
-      </View>
-    </View>
-  </View>
-);
-
-const BadgesSection = ({ badges }) => {
-  const router = useRouter();
-  
-  return (
-    <View style={styles.badgesSection}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Badges</Text>
-        <TouchableOpacity 
-          onPress={() => router.push('/Components/User Labs/BadgesView')}
-          style={styles.viewAllButton}
-        >
-          <Text style={styles.viewAllText}>View All</Text>
-        </TouchableOpacity>
-      </View>
-      <View 
-        style={styles.badgesScrollView}
-      >
-        {badges.slice(0, 3).map((badge) => ( 
-          <BadgeCard key={badge.id} badge={badge} />
-        ))}
-      </View>
-    </View>
-  );
-};
-
-const BadgeCard = ({ badge }) => (
-  <View style={[
-    styles.badgeCard,
-    { opacity: badge.earned ? 1 : 0.1 }
-  ]}>
-    <ImageBackground source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760065969/Untitled_design_6_ioccva.png' }} style={styles.border} resizeMode="contain">
-    <Image 
-      source={{ uri: badge.icon }} 
-      style={styles.badgeIconImage}
-      resizeMode="contain"
-    />
-    </ImageBackground>
-  </View>
-);
-
-const QuestsSection = ({ quests }) => {
-  const router = useRouter();
-  
-  return (
-    <View style={styles.questsSection}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Quests & Missions</Text>
-        <TouchableOpacity 
-          onPress={() => router.push('/Components/User Labs/QuestsView')}
-          style={styles.viewAllButton}
-        >
-          <Text style={styles.viewAllText}>View All</Text>
-        </TouchableOpacity>
-      </View>
-      {quests.slice(0, 2).map((quest) => ( 
-        <QuestCard key={quest.id} quest={quest} />
-      ))}
-    </View>
-  );
-};
-
-const QuestCard = ({ quest }) => {
-  const isComplete = quest.progress >= quest.total;
-  const typeColor = quest.type === 'daily' ? '#4CAF50' : 
-                   quest.type === 'weekly' ? '#FF9800' : '#2196F3';
-  const progressPercentage = (quest.progress / quest.total) * 100;
-  
-  return (
-    <View style={styles.questCardContainer}>
-      <View style={styles.questCardShadow} />
-      <View style={styles.questCard}>
-        {/* Rewards Section - Left */}
-        <View style={styles.questRewardsSection}>
-          <View style={styles.rewardItem}>
-            <Image 
-              source={{ uri: "https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd" }}
-              style={styles.rewardIcon}
-              resizeMode="contain"
-            />
-            <Text style={styles.rewardAmount}>{quest.reward_coins}</Text>
-          </View>
+        {/* Top Frame - 40% */}
+        <View style={styles.topFrame}>
+          <ImageBackground 
+            source={{ uri: 'https://res.cloudinary.com/dpbocuozx/image/upload/v1760335389/file_000000000af46209afeffe89e7b90925_ypagkm.png' }} 
+            style={styles.ImageBackgroundTop} 
+          />
         </View>
-
-        {/* Quest Info Section - Middle */}
-        <View style={styles.questInfoSection}>
-          <Text style={styles.questTitle}>{quest.title}</Text>
-          <Text style={[styles.questType, { color: typeColor }]}>
-            {quest.type.toUpperCase()}
-          </Text>
-          
-          {/* Progress Bar */}
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBarBackground}>
-              <View 
-                style={[
-                  styles.progressBarFill, 
-                  { 
-                    width: `${progressPercentage}%`,
-                    backgroundColor: isComplete ? '#4CAF50' : '#FF9800'
-                  }
-                ]} 
-              />
-            </View>
-            <Text style={styles.progressText}>
-              {quest.progress}/{quest.total}
-            </Text>
-          </View>
-        </View>
-
-        {/* Claim Button Section - Right */}
-        <View style={styles.claimSection}>
-          <TouchableOpacity 
-            style={[
-              styles.claimButton,
-              { backgroundColor: isComplete ? '#4CAF50' : '#999999' }
-            ]}
-            disabled={!isComplete}
+        
+        {/* Bottom Frame - 60% */}
+        <View style={styles.bottomFrame}>
+          <ImageBackground 
+            source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760334965/shop_holder_deydxu.png' }} 
+            style={styles.ImageBackgroundBottom}
+            resizeMode="contain"
           >
-            <Text style={styles.claimButtonText}>
-              {isComplete ? 'Claim' : 'Locked'}
-            </Text>
-          </TouchableOpacity>
+            {/* Absolute overlay for Potions inside the bottom ImageBackground */}
+            <View style={styles.potionsOverlay}>
+              {selected ? (
+                <DetailView selected={selected} onBack={() => setSelected(null)} />
+              ) : (
+                <PotionsGrid data={POTION_DATA} onSelect={(p) => p.quantity > 0 && setSelected(p)} />
+              )}
+            </View>
+          </ImageBackground>
         </View>
-      </View>
-    </View>
-  );
-};
-
-const PotionsSection = ({ potions }) => {
-  const router = useRouter();
-  
-  return (
-    <View style={styles.potionsSection}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Potions</Text>
-        <TouchableOpacity 
-          onPress={() => router.push('/Components/User Labs/PotionsView')}
-          style={styles.viewAllButton}
-        >
-          <Text style={styles.viewAllText}>View All</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.potionsGrid} >
-        {potions.slice(0, 4).map((potion) => ( 
-          <PotionCard key={potion.id} potion={potion} />
-        ))}
-      </View>
+      </ImageBackground>
     </View>
   );
 }
 
-const PotionCard = ({ potion }) => {
-  const getBackgroundColor = (name) => {
-    const lowerName = name.toLowerCase();
-    if (lowerName.includes('health')) return 'rgba(106, 119, 21, 0.66)';
-    if (lowerName.includes('mana')) return 'rgba(12, 12, 128, 0.8)'; 
-    if (lowerName.includes('strength')) return 'rgba(104, 83, 19, 0.8)';
-    if (lowerName.includes('freeze')) return 'rgba(12, 12, 131, 0.8)';
-    if (lowerName.includes('hint')) return 'rgba(1, 81, 1, 0.8)';
-    return 'rgba(156, 39, 176, 0.8)'; 
-  };
+function PotionsGrid({ data, onSelect }) {
+  return (
+    <ScrollView 
+      contentContainerStyle={styles.gridWrap}
+      showsVerticalScrollIndicator={false}
+    >
+      {data.map((potion) => {
+        const colors = getPotionColors(potion.name);
+        const isOut = potion.quantity === 0;
+        return (
+          <View key={potion.id} style={styles.cardCell}>
+            <Pressable
+              onPress={() => !isOut && onSelect(potion)}
+              disabled={isOut}
+              style={({ pressed }) => [
+                styles.potionFrame,
+                { backgroundColor: colors.frameColor },
+                isOut && styles.outOfStockSlot,
+                pressed && { transform: [{ translateY: 1 }] },
+              ]}
+            >
+              <View
+                style={[
+                  styles.potionSlot,
+                  {
+                    backgroundColor: colors.border,
+                    borderTopColor: colors.innerColor,
+                    borderLeftColor: colors.innerColor,
+                    borderBottomColor: colors.frameColor,
+                    borderRightColor: colors.frameColor,
+                  },
+                ]}
+              >
+                <View style={styles.potionSlotInner}>
+                  <View style={styles.potionSlotContent}>
+                    <View style={styles.potionHighlight} />
+                    <View style={styles.potionShadow} />
+                    <Image source={{ uri: potion.image }} style={[styles.potionImage, isOut && styles.potionImageDisabled]} />
+                    <View style={[styles.countContainer, isOut && styles.countContainerDisabled]}>
+                      <Text style={styles.countText}>{potion.quantity}</Text>
+                    </View>
+                    <View style={styles.nameContainer}>
+                      <Text style={[styles.nameText, isOut && styles.nameTextDisabled]}>{potion.name}</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            </Pressable>
+            <View style={styles.metaRow}>
+              <Text style={styles.metaText}>Price: {potion.price}</Text>
+              <Text style={styles.metaText}>Qty: {potion.quantity}</Text>
+            </View>
+          </View>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
+function DetailView({ selected, onBack }) {
+  const colors = getPotionColors(selected.name);
+  const isOut = selected.quantity === 0;
 
   return (
-    <View style={styles.potionCardContainer}>
-      <View style={styles.potionCardShadow} />
-      <View style={[styles.potionCard, { backgroundColor: getBackgroundColor(potion.name) }]}>
-        <Image 
-          source={{ uri: potion.icon }} 
-          style={styles.potionIconImage}
-          resizeMode="contain"
-        />
-        <Text style={styles.potionName}>{potion.name}</Text>
-        <View style={styles.potionCount}>
-          <Text style={styles.potionCountText}>{potion.count}</Text>
+    <View style={[styles.detailCard, { borderColor: colors.border }]}>
+      <View style={[styles.potionFrame, { backgroundColor: colors.frameColor, width: SCREEN_WIDTH * 0.45, height: SCREEN_WIDTH * 0.55 }]}>
+        <View
+          style={[
+            styles.potionSlot,
+            {
+              backgroundColor: colors.border,
+              borderTopColor: colors.innerColor,
+              borderLeftColor: colors.innerColor,
+              borderBottomColor: colors.frameColor,
+              borderRightColor: colors.frameColor,
+            },
+          ]}
+        >
+          <View style={styles.potionSlotInner}>
+            <View style={styles.potionSlotContent}>
+              <View style={styles.potionHighlight} />
+              <View style={styles.potionShadow} />
+              <Image source={{ uri: selected.image }} style={styles.potionImage} />
+              <View style={styles.countContainer}>
+                <Text style={styles.countText}>{selected.quantity}</Text>
+              </View>
+              <View style={styles.nameContainer}>
+                <Text style={styles.nameText}>{selected.name}</Text>
+              </View>
+            </View>
+          </View>
         </View>
+      </View>
+
+      <View style={styles.detailInfo}>
+        <Text style={styles.detailTitle}>{selected.name} Potion</Text>
+        <Text style={styles.detailText}>Price: {selected.price} coins</Text>
+        <Text style={styles.detailText}>Quantity: {selected.quantity}</Text>
+      </View>
+
+      <View style={styles.detailActions}>
+        <TouchableOpacity
+          style={[styles.buyButton, { backgroundColor: isOut ? '#666' : '#22c55e' }]}
+          disabled={isOut}
+          onPress={onBack}
+        >
+          <Text style={styles.actionText}>{isOut ? 'Out of Stock' : 'Buy'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+          <Text style={styles.actionText}>Back</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  // Add loading/error styles
-  centered: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: 'white',
-    fontSize: RESPONSIVE.fontSize.md,
-    fontFamily: 'Computerfont',
-    marginTop: 20,
-  },
-  errorText: {
-    color: 'red',
-    fontSize: RESPONSIVE.fontSize.md,
-    fontFamily: 'Computerfont',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  retryButton: {
-    backgroundColor: 'rgba(0, 93, 200, 0.8)',
-    padding: 15,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-  },
-  retryButtonText: {
-    color: 'white',
-    fontSize: RESPONSIVE.fontSize.sm,
-    fontFamily: 'Computerfont',
-  },
-
-  // ... keep all your existing styles ...
   container: {
     flex: 1
   },
   ImageBackgroundContainer: {
-    resizeMode: 'cover',
     width: '100%',
     height: '100%',
+    alignContent: 'center',
+  },
+  ImageBackgroundTop:{
+    width: scaleWidth(390),
+    height: scaleHeight(390),
+  },
+  ImageBackgroundBottom: {
+    width: scaleWidth(810),
+    height: scaleHeight(810),
+    alignContent: 'center',
+    top: scaleHeight(130),
   },
   backgroundOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.54)', 
   },
-  scrollContainer: {
-    flex: 1
-  },
-  
-  // Hero Section Styles
-  heroSection: {
-    marginTop: layoutHelpers.gap.xl,
-    marginBottom: layoutHelpers.gap.lg,
-    
-  },
-  heroContainer: {
-    flexDirection: 'row',
+  topFrame: {
+    height: hp(40),
+    justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: RESPONSIVE.borderRadius.lg,
-    borderColor: '#2ee7ffff',
-    borderWidth: 2,
-    height: scaleHeight(200),
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    
+    borderBottomWidth: scale(2),
+    borderBottomColor: 'rgba(255, 255, 255, 0.3)',
   },
-
-  heroSelectionBackground:{
-    overflow: 'hidden', 
-    borderRadius: RESPONSIVE.borderRadius.lg,
-  },
-  heroAvatar: {
-    width: scaleWidth(200),
-    height: scaleWidth(300),
-    marginRight: RESPONSIVE.margin.lg,
-    position: 'absolute',
-    marginTop: scaleHeight(100),
-  },
-  heroInfo: {
-    flex: 1,
-    position: 'absolute',
-    right: 9
-  },
-  heroLabel: {
-    fontSize: RESPONSIVE.fontSize.sm,
-    color: '#ffffffff',
-    fontFamily: 'GoldenAge',
-    marginBottom: layoutHelpers.gap.xs,
-  },
-  heroName: {
-    fontSize: RESPONSIVE.fontSize.xxl + 40,
-    fontFamily: 'GoldenAge',
-    color: '#ffffffff',
-  },
-  
-  // Player Info Styles
-  playerSection: {
-    alignItems: 'flex-start',
-    left: layoutHelpers.gap.xl,
-    top: scaleHeight(5),
-    marginBottom: layoutHelpers.gap.lg,
-  },
-  playerName: {
-    fontSize: RESPONSIVE.fontSize.header,
-    fontFamily: 'MusicVibes',
-    color: 'white',
-    marginBottom: layoutHelpers.gap.xs,
-    textShadowColor: '#000000ff',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
-    elevation: 0,
-  },
-  username: {
-    fontSize: RESPONSIVE.fontSize.md,
-    color: '#c2c2c2ff',
-    fontFamily: 'DynaPuff',
-    marginBottom: layoutHelpers.gap.xl + 2,
-  },
-  
-  // Stats Section Styles
-  statsSection: {
-    marginBottom: layoutHelpers.gap.xl,
-  },
-
-  sectionTitle: {
-    fontSize: RESPONSIVE.fontSize.xxl,
-    color: 'white',
-    fontFamily: 'MusicVibes',
-    marginBottom: layoutHelpers.gap.md,
-    textShadowColor: '#000000ff',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    padding: RESPONSIVE.margin.md,
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingHorizontal: layoutHelpers.gap.xl + 10,
-  },
-  statCardContainer: {
-    width: wp(40),
-    height: scaleHeight(50),
-    borderRadius: RESPONSIVE.borderRadius.xl,
-    marginBottom: layoutHelpers.gap.xl + 10,
-    position: 'relative',
-  },
-
-  statCardShadow: {
-    position: 'absolute',
-    top: scale(4),
-    left: scale(1),
-    right: -scale(1),
-    bottom: -scale(15),
-    backgroundColor: 'rgba(218, 218, 218, 1)',
-    borderRadius: RESPONSIVE.borderRadius.md,
-    zIndex: 1,
-  },
-
-  statCard: {
-    backgroundColor: 'rgba(27, 98, 124, 0.93)',
-    borderRadius: RESPONSIVE.borderRadius.md,
-    padding: RESPONSIVE.margin.lg,
-    paddingBottom: RESPONSIVE.margin.xl + 10,
-    borderWidth: 2,
-    borderColor: '#dfdfdfff',
-
-    shadowColor: '#ffffffff',
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 0.8,
-    shadowRadius: 5,
-    elevation: 8,
-    zIndex: 2,
-    position: 'relative',
-  },
-
-   statCardTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  bottomFrame: {
+    height: hp(60),
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: layoutHelpers.gap.md,
   },
 
-  statValue: {
-    fontSize: RESPONSIVE.fontSize.xl+ 3,
-    fontFamily: 'FunkySign',
-    color: '#ffffffff',
-    elevation: 5,
-    left: scale(45),
+  // Absolute overlay area for potions inside the bottom image
+  potionsOverlay: {
     position: 'absolute',
-  },
-  
-   statIconImage: {
-    overflow:'hidden',
-    position: 'absolute',
-    top: -scale(18),
-    left: -scale(10),
-     width: scaleWidth(60),
-    height: scaleWidth(60),
-    shadowColor: '#000000',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 3,
-    elevation: 5,
+    left: scaleWidth(60),
+    right: scaleWidth(60),
+    top: scaleHeight(40),
+    bottom: scaleHeight(80),
+    justifyContent: 'center',
   },
 
-  statLabel: {
-    fontSize: RESPONSIVE.fontSize.sm + 2,
-    color: '#ffffff',
-    textAlign: 'center',
-    fontFamily: 'FunkySign',
-    textShadowColor: '#000000',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
-    elevation: 4,
-    position: 'absolute',
-    top: 12,
-    left: scale(45),
-  },
-  
-  // Badges Section Styles
-  badgesSection: {
-    padding: layoutHelpers.gap.xl,
-  },
-
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: layoutHelpers.gap.md,
-  },
-
-  viewAllButton: {
-    paddingHorizontal: scale(12),
-    paddingVertical: scale(6),
-    borderColor: '#2ee7ffff',
-  },
-
-  viewAllText: {
-    fontSize: RESPONSIVE.fontSize.sm,
-    color: '#ffffffff',
-    fontFamily: 'GoldenAge',
-  },
-
-  badgesScrollView: {
+  // Grid
+  gridWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    borderWidth: 2,
-    borderRadius: 10,
-    backgroundColor: 'rgba(1, 1, 40, 0.48)',
   },
-  badgeCard: {
-    alignItems: 'center',
+  cardCell: {
+    width: SCREEN_WIDTH * 0.40,
+    marginBottom: SCREEN_WIDTH * 0.05,
+  },
+
+  // Potion frame styling (from Potions.jsx, adapted)
+  potionFrame: {
+    width: SCREEN_WIDTH * 0.30,
+    height: SCREEN_WIDTH * 0.30,
+    borderRadius: SCREEN_WIDTH * 0.03,
+    padding: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.3)',
+    borderLeftWidth: 1,
+    borderLeftColor: 'rgba(255, 255, 255, 0.3)',
+    borderBottomWidth: 3,
+    borderBottomColor: 'rgba(0, 0, 0, 0.4)',
     borderRightWidth: 2,
+    borderRightColor: 'rgba(0, 0, 0, 0.3)',
   },
-   badgeIconImage: {
-    width: scale(170),
-    height: scale(170),
-    top: scale(-2),
-    shadowColor: '#000000',
-    shadowOffset: { width: 1, height: 1 },
-    shadowOpacity: 0.6,
-    shadowRadius: 2,
+  potionSlot: {
+    flex: 1,
+    borderRadius: SCREEN_WIDTH * 0.025,
+    position: 'relative',
+    overflow: 'visible',
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderBottomWidth: 3,
+    borderRightWidth: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 10,
+  },
+  outOfStockSlot: {
+    opacity: 0.4,
+  },
+  potionSlotInner: {
+    flex: 1,
+    borderRadius: SCREEN_WIDTH * 0.02,
+    padding: 2,
+    overflow: 'hidden',
+  },
+  potionSlotContent: {
+    flex: 1,
+    borderRadius: SCREEN_WIDTH * 0.015,
+    backgroundColor: '#10075380',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+    borderLeftWidth: 1,
+    borderLeftColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.3)',
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(0, 0, 0, 0.2)',
+  },
+  potionHighlight: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0,
+    height: '40%',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderTopLeftRadius: SCREEN_WIDTH * 0.015,
+    borderTopRightRadius: SCREEN_WIDTH * 0.015,
+  },
+  potionShadow: {
+    position: 'absolute',
+    bottom: 0, left: 0, right: 0,
+    height: '30%',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderBottomLeftRadius: SCREEN_WIDTH * 0.015,
+    borderBottomRightRadius: SCREEN_WIDTH * 0.015,
+  },
+  potionImage: {
+    width: '70%',
+    height: '55%',
+    borderRadius: 8,
+    zIndex: 2,
+    resizeMode: 'contain',
+  },
+  potionImageDisabled: {
+    opacity: 0.3,
+  },
+  countContainer: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    borderRadius: 6,
+    minWidth: 14,
+    height: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#fff',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.5,
+    shadowRadius: 1,
     elevation: 3,
-    overflow: 'hidden',
+    zIndex: 3,
   },
-  border:{
-    width: scale(120), height: scale(120), justifyContent: 'center', alignItems: 'center',
-    pointerEvents: 'none',
+  countContainerDisabled: {
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    borderColor: '#666',
   },
-  badgeName: {
-    fontSize: RESPONSIVE.fontSize.sm,
-    color: 'white',
+  countText: {
+    color: '#ffffff',
+    fontSize: 9,
+    fontFamily: 'DynaPuff',
+    fontWeight: 'bold',
+  },
+  nameContainer: {
+    position: 'absolute',
+    bottom: 2,
+    left: 2,
+    right: 2,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    borderRadius: 4,
+    paddingVertical: 1,
+    paddingHorizontal: 2,
+    zIndex: 3,
+  },
+  nameText: {
+    color: '#ffffff94',
+    fontSize: 10,
+    fontFamily: 'DynaPuff',
     textAlign: 'center',
-    marginBottom: layoutHelpers.gap.xs,
-  },
-  badgeEarned: {
-    fontSize: RESPONSIVE.fontSize.md,
-    color: '#4CAF50',
     fontWeight: 'bold',
   },
-  
-   questsSection: {
-    marginBottom: layoutHelpers.gap.xl,
-    padding: layoutHelpers.gap.xl,
+  nameTextDisabled: {
+    color: '#666',
   },
-  
-   questCard: {
-    backgroundColor: 'rgba(27, 98, 124, 0.93)',
-    borderRadius: RESPONSIVE.borderRadius.md,
-    padding: RESPONSIVE.margin.lg,
+  metaRow: {
+    marginTop: 6,
     flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#dfdfdfff',
-    shadowColor: '#ffffffff',
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 0.8,
-    shadowRadius: 5,
-    elevation: 8,
-    zIndex: 2,
-    position: 'relative',
-    height: '100%',
-  },
-
-   questRewardsSection: {
-    width: scale(60),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  rewardItem: {
-    alignItems: 'center',
-  },
-
-  rewardIcon: {
-    width: scale(30),
-    height: scale(30),
-    marginBottom: layoutHelpers.gap.xs,
-  },
-
-    rewardAmount: {
-    fontSize: RESPONSIVE.fontSize.sm,
-    color: '#FFD700',
-    fontFamily: 'FunkySign',
-    fontWeight: 'bold',
-  },
-
-  questInfoSection: {
-    flex: 1,
-    paddingHorizontal: layoutHelpers.gap.md,
-  },
-
-    progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
   },
+  metaText: {
+    color: '#fff',
+    fontSize: 12,
+    fontFamily: 'DynaPuff',
+  },
 
-  progressBarBackground: {
+  // Detail view
+  detailCard: {
     flex: 1,
-    height: scale(8),
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: scale(4),
-    marginRight: layoutHelpers.gap.sm,
-    overflow: 'hidden',
-  },
-
-  progressBarFill: {
-    height: '100%',
-    borderRadius: scale(4),
-    minWidth: '2%',
-  },
-
-  progressText: {
-    fontSize: RESPONSIVE.fontSize.sm,
-    color: '#ffffff',
-    fontFamily: 'FunkySign',
-    fontWeight: 'bold',
-    minWidth: scale(40),
-    textAlign: 'right',
-  },
-
-    questTitle: {
-    fontSize: RESPONSIVE.fontSize.md,
-    color: '#ffffff',
-    fontFamily: 'FunkySign',
-    marginBottom: layoutHelpers.gap.xs,
-  },
-
-  questType: {
-    fontSize: RESPONSIVE.fontSize.sm,
-    fontFamily: 'FunkySign',
-    fontWeight: 'bold',
-    marginBottom: layoutHelpers.gap.sm,
-  },
-
-    claimSection: {
-    width: scale(80),
-    alignItems: 'center',
-  },
-
-   claimButton: {
-    paddingHorizontal: scale(16),
-    paddingVertical: scale(8),
-    borderRadius: RESPONSIVE.borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-    claimButtonText: {
-    fontSize: RESPONSIVE.fontSize.sm,
-    color: '#ffffff',
-    fontFamily: 'FunkySign',
-    fontWeight: 'bold',
-  },
-
-  questCardContainer: {
-    width: '100%',
-    height: scaleHeight(80),
-    borderRadius: RESPONSIVE.borderRadius.xl,
-    marginBottom: layoutHelpers.gap.md,
-    position: 'relative',
-    
-  },
-
-  questCardShadow: {
-    position: 'absolute',
-    top: scale(4),
-    left: scale(1),
-    right: -scale(1),
-    bottom: -scale(15),
-    backgroundColor: 'rgba(218, 218, 218, 1)',
-    borderRadius: RESPONSIVE.borderRadius.md,
-    zIndex: 1,
-  },
-
-  // Potions Section Styles
-  potionsSection: {
-    marginBottom: layoutHelpers.gap.xl,
-    padding: layoutHelpers.gap.xl,
-  },
-  potionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingHorizontal: layoutHelpers.gap.xl + 20,
-  },
-  
-  potionCard: {
-    borderRadius: RESPONSIVE.borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#dfdfdfff',
-    shadowColor: '#ffffffff',
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 0.8,
-    shadowRadius: 5,
-    elevation: 8,
-    zIndex: 2,
-    position: 'relative',
-    height: '100%',
-  },
-
-  potionCardContainer: {
-    width: wp(20),
-    height: scaleHeight(120),
-    borderRadius: RESPONSIVE.borderRadius.xl,
-    position: 'relative',
-  },
-
-   potionCardShadow: {
-    position: 'absolute',
-    top: scale(4),
-    left: scale(1),
-    right: -scale(1),
-    bottom: -scale(15),
-    backgroundColor: 'rgba(255, 255, 255, 1)',
-    borderRadius: RESPONSIVE.borderRadius.md,
-    zIndex: 1,
-  },
-
-potionIconImage: {
-    width: scale(100),
-    position: 'absolute',
-    height: scale(100),
+    borderRadius: 12,
+    padding: 12,
+    backgroundColor: 'rgba(16, 7, 83, 0.5)',
     alignItems: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.7,
-    shadowRadius: 3,
-    elevation: 4,
   },
-
-   potionName: {
-    fontSize: RESPONSIVE.fontSize.sm,
-    color: 'rgba(53, 53, 53, 1)',
-    textAlign: 'center',
-    position: 'absolute',
-    bottom: -15,
-    fontFamily: 'FunkySign',
+  detailInfo: {
+    marginTop: 12,
+    marginBottom: 8,
+    alignSelf: 'stretch',
   },
-   potionCount: {
-    paddingHorizontal: scale(10),
-    paddingVertical: scale(4), 
-    top: 0,
-    position: 'absolute',
-    right:0,
+  detailTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontFamily: 'DynaPuff',
+    marginBottom: 4,
   },
-  
-    potionCountText: {
-    fontSize: RESPONSIVE.fontSize.md,
-    color: 'white',
-    fontFamily: 'FunkySign',
-
+  detailText: {
+    color: '#fff',
+    fontSize: 14,
+    fontFamily: 'DynaPuff',
+  },
+  detailActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8,
+    alignSelf: 'stretch',
+  },
+  buyButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  backButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    backgroundColor: '#2563eb',
+  },
+  actionText: {
+    color: '#fff',
+    fontSize: 14,
+    fontFamily: 'DynaPuff',
+    fontWeight: 'bold',
   },
 });

@@ -1,188 +1,62 @@
-import React, { useState, useRef } from "react";
-import { Text, View, StyleSheet, TouchableOpacity, Animated, ImageBackground, Dimensions, Modal, Image, ActivityIndicator, Alert } from "react-native";
-import MapHeader from '../Components/Map/mapHeader';
-import CharacterDisplay from '../Components/Character/CharacterDisplay';
-import ActionButton from '../Components/Character/ActionButton';
-import AttributePanel from '../Components/Character/AttributePanel';
-import ScreenLabel from '../Components/Character/ScreenLabel';
-import { URLS } from '../Components/Character/CharacterData';
-import { useCharacterSelection } from '../hooks/useCharacterSelection';
-import AssetDownloadProgress from "../Components/RoadMap/LoadingState/assetDownloadProgress";
+import React from "react";
+import { 
+  Text, 
+  View, 
+  Image, 
+  ScrollView, 
+  TouchableOpacity,
+  StyleSheet,
+  ImageBackground,
+  ActivityIndicator
+} from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
+import AssetDownloadProgress from '../Components/RoadMap/LoadingState/assetDownloadProgress';
+import {
+  scale,
+  scaleWidth,
+  scaleHeight,
+  scaleFont,
+  wp,
+  hp,
+  SCREEN,
+  RESPONSIVE,
+  layoutHelpers,
+} from '../Components/Responsiveness/gameResponsive';
+import { useRouter } from 'expo-router';
+import { usePlayerProfile } from '../hooks/usePlayerProfile';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-
-export default function CharacterProfile() {
-  const playerId = 11;
-  
+export default function Practice() {
+  const playerId = 11; // You can get this from context or props
   const {
-    charactersData,
-    selectedHero,
-    currentHero,
+    playerData,
     loading,
     error,
-    purchasing,
-    selecting,
-    // Add these two properties that were missing
     assetsLoading,
     assetsProgress,
-    selectCharacter,
-    purchaseCharacter,
-    loadCharacters,
-    clearError,
-    getHeroNames,
-    changeDisplayedCharacter
-  } = useCharacterSelection(playerId);
+    loadPlayerProfile,
+    clearError
+  } = usePlayerProfile(playerId);
 
-  const [showBuyModal, setShowBuyModal] = useState(false);
-  const [showStaticImage, setShowStaticImage] = useState(false);
-  const [isCharacterAnimating, setIsCharacterAnimating] = useState(true);
-
-  // Animation refs
-  const backgroundOpacity = useRef(new Animated.Value(1)).current;
-  
-  // Refs for child components
-  const screenLabelRef = useRef(null);
-  const attributePanelRef = useRef(null);
-
-  const attributeData = currentHero ? [
-    { style: styles.heroRole, icon: currentHero.roleIcon, text: `Role:\n${currentHero.character_type}` },
-    { style: styles.health, icon: URLS.healthIcon, text: "Health:", number: currentHero.health },
-    { style: styles.skill, icon: currentHero.damageIcon, text: "Damage:", number: currentHero.character_damage }
-  ] : [];
-
-  const handleCharacterAnimationFinish = () => {
-    setIsCharacterAnimating(false);
-    
-    Animated.timing(backgroundOpacity, { 
-      toValue: 0, 
-      duration: 500, 
-      useNativeDriver: true 
-    }).start(() => {
-      setShowStaticImage(true);
-      
-      screenLabelRef.current?.startAnimation();
-      
-      setTimeout(() => {
-        attributePanelRef.current?.startAnimations();
-      }, 500);
-    });
-  };
-
-  const handleHeroViewing = (heroName) => {
-    console.log(`👁️ Viewing character: ${heroName}`);
-    changeDisplayedCharacter(heroName);
-  };
-
-  const handleCharacterSelection = async (heroName) => {
-    try {
-      console.log(`🎯 Attempting to select character: ${heroName}`);
-      await selectCharacter(heroName);
-      
-    } catch (error) {
-      console.error('Selection Error:', error);
-    }
-  };
-
-  const handlePurchase = async () => {
-    if (!currentHero) return;
-
-    try {
-      console.log(`🛒 Initiating purchase for ${currentHero.character_name} (Shop ID: ${currentHero.characterShopId})`);
-      
-      const response = await purchaseCharacter(selectedHero);
-      setShowBuyModal(false);
-      
-      Alert.alert(
-        'Purchase Successful! 🎉', 
-        response.message || `${currentHero.character_name} has been purchased!`,
-        [{ text: 'OK', style: 'default' }]
-      );
-      
-      console.log('✅ Purchase completed successfully:', response);
-      
-    } catch (error) {
-      console.error('❌ Purchase failed:', error);
-      Alert.alert(
-        'Purchase Failed', 
-        error.message || 'Unable to purchase character. Please try again.',
-        [{ text: 'OK', style: 'destructive' }]
-      );
-    }
-  };
-
-  React.useEffect(() => {
-    if (selectedHero) {
-      setShowStaticImage(false);
-      setIsCharacterAnimating(true);
-      backgroundOpacity.setValue(1);
-    }
-  }, [selectedHero]);
-
-  // Updated renderHeroBox function
-  const renderHeroBox = (heroName) => {
-    const hero = charactersData[heroName];
-    if (!hero) return null;
-
-    const isCurrentlyViewed = selectedHero === heroName;
-    const isActuallySelected = hero.is_selected;
-
-    return (
-      <TouchableOpacity
-        key={heroName}
-        style={[
-          styles.heroBox, 
-          isCurrentlyViewed && styles.viewedHeroBox,
-          isActuallySelected 
-        ]}
-        onPress={() => handleHeroViewing(heroName)}
-        disabled={selecting}
-      >
-        <ImageBackground 
-          source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760064111/Untitled_design_3_ghewno.png' }} 
-          style={styles.heroBoxBorder} 
-          resizeMode="contain"
-        >
-          <ImageBackground
-            source={{ uri: hero.character_avatar }}
-            resizeMode="cover"
-            style={styles.heroBoxBackground}
-          >
-            <Text style={styles.heroBoxTxt}>{heroName}</Text>
-          </ImageBackground>
-        </ImageBackground>
-      </TouchableOpacity>
-    );
-  };
-
-  // Handle loading states
-  if (error) {
+  if (loading) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <Text style={styles.errorText}>Error: {error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={() => {
-          clearError();
-          loadCharacters();
-        }}>
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
+        <ActivityIndicator size="large" color="#ffffff" />
+        <Text style={styles.loadingText}>Loading Profile...</Text>
       </View>
     );
   }
 
-  // Show asset download progress first
-  if (assetsLoading) {
+   if (assetsLoading) {
     return (
       <>
         <View style={styles.container}>
-          <View style={styles.headerContainer}>
-            <MapHeader />
-          </View>
           <ImageBackground 
-            source={{ uri: URLS.background }} 
-            resizeMode="cover" 
-            opacity={0.7} 
-            style={styles.fullBackground}
-          />
+            source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' }} 
+            style={styles.ImageBackgroundContainer} 
+            resizeMode="cover"
+          >
+            <View style={styles.backgroundOverlay} />
+          </ImageBackground>
         </View>
         <AssetDownloadProgress
           visible={assetsLoading}
@@ -193,150 +67,359 @@ export default function CharacterProfile() {
     );
   }
 
-  // Show general loading (if not asset loading)
-  if (loading) {
+  if (error) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color="#ffffff" />
-        <Text style={styles.loadingText}>Loading Characters...</Text>
+        <Text style={styles.errorText}>Error: {error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={() => {
+          clearError();
+          loadPlayerProfile();
+        }}>
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
-  if (!currentHero) {
+  if (!playerData) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <Text style={styles.errorText}>No character data available</Text>
+        <Text style={styles.errorText}>No player data available</Text>
       </View>
     );
   }
+
+  
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <MapHeader />
-      </View>
+      <ImageBackground source={{ uri: playerData.containerBackground }} style={styles.ImageBackgroundContainer} resizeMode="cover">
 
-      <ImageBackground 
-        source={{ uri: URLS.background }} 
-        resizeMode="cover" 
-        opacity={0.7} 
-        style={styles.fullBackground}
+      <View style={styles.backgroundOverlay} />
+      <ScrollView 
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.topSection}>
-          <View style={styles.contentContainer}>
-            
-            {/* Screen Label */}
-            <ScreenLabel 
-              ref={screenLabelRef}
-              heroName={currentHero.character_name}
-              selectedHero={selectedHero}
-              styles={styles}
-            />
+        {/* Hero Selected Header */}
+        <HeroSelectedSection hero={playerData.heroSelected} background={playerData.background} />
+        
+        {/* Player Info Section */}
+        <PlayerInfoSection 
+          playerName={playerData.playerName}
+          username={playerData.username}
+        />
+        
+        {/* Stats Grid Section */}
+        <StatsGridSection 
+          coins={playerData.coins}
+          daysLogin={playerData.daysLogin}
+          currentStreak={playerData.currentStreak}
+          expPoints={playerData.expPoints}
+          mapsOpened={playerData.mapsOpened}
+          statsIcons={playerData.statsIcons}
+        />
+        
+        {/* Badges Section */}
+        <BadgesSection badges={playerData.badges} />
 
-            {/* Background Animation */}
-            <Animated.View style={{ opacity: backgroundOpacity }}>
-              
-            </Animated.View>
-
-            {/* Character Display */}
-            <View style={styles.characterContainer}>
-              <CharacterDisplay
-                currentHero={currentHero}
-                selectedHero={selectedHero}
-                isCharacterAnimating={isCharacterAnimating}
-                onAnimationFinish={handleCharacterAnimationFinish}
-                styles={styles}
-              />
-
-              <ActionButton
-                currentHero={currentHero}
-                onSelectCharacter={handleCharacterSelection}
-                onShowBuyModal={setShowBuyModal}
-                coinIcon={URLS.coin}
-                styles={styles}
-                disabled={selecting || purchasing}
-                selecting={selecting}
-              />
-
-              {/* Attribute Panel */}
-              <AttributePanel
-                ref={attributePanelRef}
-                attributeData={attributeData}
-                selectedHero={selectedHero}
-                styles={styles}
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* Bottom Character Selection */}
-        <View style={styles.bottomBar}>
-          <View style={styles.characterSelection}>
-            {getHeroNames().map(renderHeroBox)}
-          </View>
-        </View>
-      </ImageBackground>
-
-      {/* Purchase Modal */}
-      <Modal 
-        animationType="fade" 
-        transparent={true} 
-        visible={showBuyModal} 
-        onRequestClose={() => setShowBuyModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Confirm Purchase</Text>
-            <Text style={styles.modalText}>
-              Do you want to buy {currentHero.character_name} 
-              {currentHero.character_price > 0 ? ` for ${currentHero.character_price} coins` : ''}?
-            </Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity 
-                style={styles.cancelButton} 
-                onPress={() => setShowBuyModal(false)}
-                disabled={purchasing}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.confirmButton} 
-                onPress={handlePurchase}
-                disabled={purchasing}
-              >
-                {purchasing ? (
-                  <ActivityIndicator size="small" color="white" />
-                ) : (
-                  <>
-                    <Image source={{ uri: URLS.coin }} style={styles.modalCoinIcon} />
-                    <Text style={styles.confirmButtonText}>Buy {currentHero.character_price}</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        
+        {/* Potions Section */}
+        <PotionsSection potions={playerData.potions} />
+        
+        {/* Quests Section */}
+        <QuestsSection quests={playerData.quests} />
+        
+        
+        {/* Bottom Spacing */}
+        <View style={{ height: layoutHelpers.gap.xl }} />
+      </ScrollView>
+    </ImageBackground>
     </View>
   );
 }
 
-// ... styles remain the same ...
+// Hero Selected Component - Make it pressable
+const HeroSelectedSection = ({ hero, background }) => {
+  const router = useRouter();
+  
+  const handleHeroPress = () => {
+    router.push('/Components/CharacterSelection/CharacterSelect');
+  };
+
+  return (
+    <TouchableOpacity 
+      style={styles.heroSection}
+      onPress={handleHeroPress}
+      activeOpacity={0.8}
+    >
+      <ImageBackground source={{ uri: background }} style={styles.heroSelectionBackground}>
+        <View style={styles.heroContainer}>
+          <Image 
+            source={{ uri: hero.avatar }} 
+            style={styles.heroAvatar}
+          />
+          <View style={styles.heroInfo}>
+            <Text style={styles.heroLabel}>Selected Hero</Text>
+            <Text style={styles.heroName}>{hero.name}</Text>
+          </View>
+        </View>
+      </ImageBackground>
+    </TouchableOpacity>
+  );
+};
+
+// Player Info Component
+const PlayerInfoSection = ({ playerName, username }) => (
+  <View style={styles.playerSection}>
+    <Text style={styles.playerName}>{playerName}</Text>
+    <Text style={styles.username}>{username}</Text>
+  </View>
+);
+
+// Stats Grid Component
+const StatsGridSection = ({ coins, daysLogin, currentStreak, expPoints, mapsOpened, statsIcons }) => (
+  <View style={styles.statsSection}>
+    <Text style={[styles.sectionTitle, { textAlign: 'center' }]}>Overview</Text>
+    <View style={styles.statsGrid}>
+      <StatCard 
+        icon={statsIcons.coins}
+        label="Coins" 
+        value={coins.toLocaleString()} 
+      />
+    
+      <StatCard 
+        icon={statsIcons.currentStreak}
+        label="Streak" 
+        value={currentStreak} 
+      />
+      <StatCard 
+        icon={statsIcons.expPoints}
+        label="EXP Points" 
+        value={expPoints.toLocaleString()} 
+      />
+      <StatCard 
+        icon={statsIcons.mapsOpened}
+        label="Maps" 
+        value={mapsOpened} 
+      />
+    </View>
+  </View>
+);
+
+// Stat Card Component
+const StatCard = ({ icon, label, value, color }) => (
+  <View style={styles.statCardContainer}>
+    <View style={styles.statCardShadow} />
+    <View style={[styles.statCard]}>
+      <View style={styles.statCardTopRow}>
+        <Image 
+          source={{ uri: icon }} 
+          style={styles.statIconImage}
+          resizeMode="contain"
+        />
+        <Text style={styles.statValue}>{value}</Text>
+        
+      <Text style={styles.statLabel}>{label}</Text>
+      </View>
+    </View>
+  </View>
+);
+
+const BadgesSection = ({ badges }) => {
+  const router = useRouter();
+  
+  return (
+    <View style={styles.badgesSection}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Badges</Text>
+        <TouchableOpacity 
+          onPress={() => router.push('/Components/User Labs/BadgesView')}
+          style={styles.viewAllButton}
+        >
+          <Text style={styles.viewAllText}>View All</Text>
+        </TouchableOpacity>
+      </View>
+      <View 
+        style={styles.badgesScrollView}
+      >
+        {badges.slice(0, 3).map((badge) => ( 
+          <BadgeCard key={badge.id} badge={badge} />
+        ))}
+      </View>
+    </View>
+  );
+};
+
+const BadgeCard = ({ badge }) => (
+  <View style={[
+    styles.badgeCard,
+    { opacity: badge.earned ? 1 : 0.1 }
+  ]}>
+    <ImageBackground source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760065969/Untitled_design_6_ioccva.png' }} style={styles.border} resizeMode="contain">
+    <Image 
+      source={{ uri: badge.icon }} 
+      style={styles.badgeIconImage}
+      resizeMode="contain"
+    />
+    </ImageBackground>
+  </View>
+);
+
+const QuestsSection = ({ quests }) => {
+  const router = useRouter();
+  
+  return (
+    <View style={styles.questsSection}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Quests & Missions</Text>
+        <TouchableOpacity 
+          onPress={() => router.push('/Components/User Labs/QuestsView')}
+          style={styles.viewAllButton}
+        >
+          <Text style={styles.viewAllText}>View All</Text>
+        </TouchableOpacity>
+      </View>
+      {quests.slice(0, 2).map((quest) => ( 
+        <QuestCard key={quest.id} quest={quest} />
+      ))}
+    </View>
+  );
+};
+
+const QuestCard = ({ quest }) => {
+  const isComplete = quest.progress >= quest.total;
+  const typeColor = quest.type === 'daily' ? '#4CAF50' : 
+                   quest.type === 'weekly' ? '#FF9800' : '#2196F3';
+  const progressPercentage = (quest.progress / quest.total) * 100;
+  
+  return (
+    <View style={styles.questCardContainer}>
+      <View style={styles.questCardShadow} />
+      <View style={styles.questCard}>
+        {/* Rewards Section - Left */}
+        <View style={styles.questRewardsSection}>
+          <View style={styles.rewardItem}>
+            <Image 
+              source={{ uri: "https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd" }}
+              style={styles.rewardIcon}
+              resizeMode="contain"
+            />
+            <Text style={styles.rewardAmount}>{quest.reward_coins}</Text>
+          </View>
+        </View>
+
+        {/* Quest Info Section - Middle */}
+        <View style={styles.questInfoSection}>
+          <Text style={styles.questTitle}>{quest.title}</Text>
+          <Text style={[styles.questType, { color: typeColor }]}>
+            {quest.type.toUpperCase()}
+          </Text>
+          
+          {/* Progress Bar */}
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBarBackground}>
+              <View 
+                style={[
+                  styles.progressBarFill, 
+                  { 
+                    width: `${progressPercentage}%`,
+                    backgroundColor: isComplete ? '#4CAF50' : '#FF9800'
+                  }
+                ]} 
+              />
+            </View>
+            <Text style={styles.progressText}>
+              {quest.progress}/{quest.total}
+            </Text>
+          </View>
+        </View>
+
+        {/* Claim Button Section - Right */}
+        <View style={styles.claimSection}>
+          <TouchableOpacity 
+            style={[
+              styles.claimButton,
+              { backgroundColor: isComplete ? '#4CAF50' : '#999999' }
+            ]}
+            disabled={!isComplete}
+          >
+            <Text style={styles.claimButtonText}>
+              {isComplete ? 'Claim' : 'Locked'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const PotionsSection = ({ potions }) => {
+  const router = useRouter();
+  
+  return (
+    <View style={styles.potionsSection}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Potions</Text>
+        <TouchableOpacity 
+          onPress={() => router.push('/Components/User Labs/PotionsView')}
+          style={styles.viewAllButton}
+        >
+          <Text style={styles.viewAllText}>View All</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.potionsGrid} >
+        {potions.slice(0, 4).map((potion) => ( 
+          <PotionCard key={potion.id} potion={potion} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const PotionCard = ({ potion }) => {
+  const getBackgroundColor = (name) => {
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes('health')) return 'rgba(106, 119, 21, 0.66)';
+    if (lowerName.includes('mana')) return 'rgba(12, 12, 128, 0.8)'; 
+    if (lowerName.includes('strength')) return 'rgba(104, 83, 19, 0.8)';
+    if (lowerName.includes('freeze')) return 'rgba(12, 12, 131, 0.8)';
+    if (lowerName.includes('hint')) return 'rgba(1, 81, 1, 0.8)';
+    return 'rgba(156, 39, 176, 0.8)'; 
+  };
+
+  return (
+    <View style={styles.potionCardContainer}>
+      <View style={styles.potionCardShadow} />
+      <View style={[styles.potionCard, { backgroundColor: getBackgroundColor(potion.name) }]}>
+        <Image 
+          source={{ uri: potion.icon }} 
+          style={styles.potionIconImage}
+          resizeMode="contain"
+        />
+        <Text style={styles.potionName}>{potion.name}</Text>
+        <View style={styles.potionCount}>
+          <Text style={styles.potionCountText}>{potion.count}</Text>
+        </View>
+      </View>
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
+  // Add loading/error styles
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
     color: 'white',
-    fontSize: screenWidth * 0.05,
+    fontSize: RESPONSIVE.fontSize.md,
     fontFamily: 'Computerfont',
     marginTop: 20,
   },
   errorText: {
     color: 'red',
-    fontSize: screenWidth * 0.05,
+    fontSize: RESPONSIVE.fontSize.md,
     fontFamily: 'Computerfont',
     textAlign: 'center',
     marginBottom: 20,
@@ -350,304 +433,469 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     color: 'white',
-    fontSize: screenWidth * 0.045,
+    fontSize: RESPONSIVE.fontSize.sm,
     fontFamily: 'Computerfont',
   },
+
+  // ... keep all your existing styles ...
   container: {
-    flex: 1,
-    backgroundColor: '#000000ff',
+    flex: 1
   },
-  headerContainer: {
-    position: 'absolute',
-    zIndex: 100
-  },
-  fullBackground: {
-    flex: 1,
+  ImageBackgroundContainer: {
+    resizeMode: 'cover',
     width: '100%',
     height: '100%',
   },
-  topSection: {
-    flex: 0.85
+  backgroundOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.54)', 
   },
-  characterMainBackground: {
-    flex: 1,
-    width: '100%'
+  scrollContainer: {
+    flex: 1
   },
-  contentContainer: {
-    top: screenHeight * 0.06,
-    alignItems: 'center',
+  
+  // Hero Section Styles
+  heroSection: {
+    marginTop: layoutHelpers.gap.xl,
+    marginBottom: layoutHelpers.gap.lg,
     
-    marginTop: screenHeight * 0.05,
   },
-  characterBackground: {
-    width: screenWidth,
-    height: screenHeight,
-    alignSelf: 'center',
-    top: screenHeight * -0.1,
+  heroContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: RESPONSIVE.borderRadius.lg,
+    borderColor: '#2ee7ffff',
+    borderWidth: 2,
+    height: scaleHeight(200),
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    
+  },
+
+  heroSelectionBackground:{
+    overflow: 'hidden', 
+    borderRadius: RESPONSIVE.borderRadius.lg,
+  },
+  heroAvatar: {
+    width: scaleWidth(200),
+    height: scaleWidth(300),
+    marginRight: RESPONSIVE.margin.lg,
     position: 'absolute',
+    marginTop: scaleHeight(100),
   },
-  characterContainer: {
-    height: screenHeight * 0.4,
-    marginTop: screenHeight * 0.08,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  characterDisplay: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-    height: '100%',
-  },
-  screenLabel: {
+  heroInfo: {
+    flex: 1,
     position: 'absolute',
-    top: screenHeight * -0.11,
-    width: screenWidth * 0.6,
-    height: screenHeight * 0.6,
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
+    right: 9
   },
-  screenLabelText: {
-    color: 'rgba(255, 255, 255, 1)',
-    fontSize: screenWidth * 0.15,
+  heroLabel: {
+    fontSize: RESPONSIVE.fontSize.sm,
+    color: '#ffffffff',
     fontFamily: 'GoldenAge',
-    textAlign: 'center',
+    marginBottom: layoutHelpers.gap.xs,
   },
-  attributePanel: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: screenWidth * 0.25,
-    height: screenHeight * 0.3,
-    top: screenHeight * 0.15
+  heroName: {
+    fontSize: RESPONSIVE.fontSize.xxl + 40,
+    fontFamily: 'GoldenAge',
+    color: '#ffffffff',
   },
-  characterImage: {
-    width: screenWidth * 0.8,
-    height: screenWidth * 0.8,
-    top: screenHeight * 0.13,
+  
+  // Player Info Styles
+  playerSection: {
+    alignItems: 'flex-start',
+    left: layoutHelpers.gap.xl,
+    top: scaleHeight(5),
+    marginBottom: layoutHelpers.gap.lg,
   },
-  bottomBar: {
-    flex: 0.17,
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: screenHeight * 0.02,
-  },
-  attributeText: {
-    borderWidth: 2,
-    borderColor: 'rgba(106, 191, 244, 1)',
-    width: '100%',
-    top: screenHeight * 0.02,
-    height: screenHeight * 0.08,
-    borderRadius: 10,
-    paddingLeft: screenWidth * 0.02,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(3, 67, 112, 0.74)'
-  },
-  attributeTextContent: {
-    fontFamily: 'Computerfont',
-    fontSize: screenWidth * 0.042,
-    color: 'white',
-    textShadowRadius: 10,
-  },
-  attributeTextContentNumber: {
-    fontSize: screenWidth * 0.09,
-    color: 'white',
-    textAlign: 'left',
-    top: screenHeight * -0.01,
-    fontFamily: 'Computerfont',
-  },
-  heroRole: {
-    marginLeft: screenWidth * -0.60,
-  },
-  health: {
-    marginLeft: screenWidth * 0.60,
-  },
-  skill: {
-    marginBottom: screenHeight * 0.015,
-    marginLeft: screenWidth * -0.60,
-  },
-  characterSelection: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    alignItems: 'center',
-    width: '100%',
-    flexWrap: 'wrap',
-    marginTop: screenHeight * 0.01,
-  },
-  heroBox: {
-    width: screenWidth * 0.20,
-    zIndex: 2,
-    borderRadius: 8,
-    overflow: 'hidden',
-    marginTop: screenHeight * 0.02,
-  },
-  viewedHeroBox: {
-    width: screenWidth * 0.21,
-    height: screenHeight * 0.16,
-    shadowColor: '#ffffff',
-    shadowOffset: { width: 10, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 1,
-    elevation: 10,
-    
-    borderWidth: 2,
-    borderColor: '#02b7ffff',
-    shadowOffset: { width: 30, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 1,
-    elevation: 30,
-  },
-  heroBoxBorder: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 5,
-    width: '100%',
-    height: '100%',
-  },
-  selectionIndicator: {
-    position: 'absolute',
-    top: 5,
-    right: 5,
-    backgroundColor: '#4CAF50',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  selectionIndicatorText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  selectButton: {
-    position: 'absolute',
-    top: screenHeight * 0.5,
-    borderWidth: 2,
-    padding: 5,
-    borderColor: 'rgba(255, 255, 255, 1)',
-    borderRadius: 30,
-    backgroundColor: 'rgba(3, 63, 116, 0.94)',
-    width: screenWidth * 0.4,
-  },
-  heroBoxBackground: {
-    width: '100%',
-    height: '85%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: -1,
-    shadowColor: '#4CAF50',
-  },
-  heroBoxTxt: {
-    color: 'white',
-    fontSize: screenWidth * 0.040,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    width: '100%',
-    position: 'absolute',
-    bottom: 0,
-    paddingVertical: 2,
-    marginTop: screenHeight * 0.12,
+  playerName: {
+    fontSize: RESPONSIVE.fontSize.header,
     fontFamily: 'MusicVibes',
-    textAlign: 'center',
+    color: 'white',
+    marginBottom: layoutHelpers.gap.xs,
+    textShadowColor: '#000000ff',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
+    elevation: 0,
   },
-  heroRoleIcon: {
-    width: screenWidth * 0.2,
-    height: screenWidth * 0.2,
-    marginLeft: screenWidth * 0.08,
-    position: 'absolute',
-    transform: [{ rotate: '20deg' }],
-    opacity: 0.9
+  username: {
+    fontSize: RESPONSIVE.fontSize.md,
+    color: '#c2c2c2ff',
+    fontFamily: 'DynaPuff',
+    marginBottom: layoutHelpers.gap.xl + 2,
   },
-  buyButton: {
-    position: 'absolute',
-    top: screenHeight * 0.5,
-    borderWidth: 2,
-    padding: 5,
-    borderColor: 'rgba(255, 255, 255, 1)',
-    borderRadius: 30,
-    backgroundColor: 'rgba(3, 63, 116, 0.94)',
-    width: screenWidth * 0.4,
+  
+  // Stats Section Styles
+  statsSection: {
+    marginBottom: layoutHelpers.gap.xl,
+  },
+
+  sectionTitle: {
+    fontSize: RESPONSIVE.fontSize.xxl,
+    color: 'white',
+    fontFamily: 'MusicVibes',
+    marginBottom: layoutHelpers.gap.md,
+    textShadowColor: '#000000ff',
+  },
+  statsGrid: {
     flexDirection: 'row',
-    justifyContent: 'center'
+    padding: RESPONSIVE.margin.md,
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: layoutHelpers.gap.xl + 10,
   },
-  buttonText: {
-    fontSize: screenWidth * 0.06,
-    color: 'white',
-    fontFamily: 'Computerfont',
-    textAlign: 'center',
+  statCardContainer: {
+    width: wp(40),
+    height: scaleHeight(50),
+    borderRadius: RESPONSIVE.borderRadius.xl,
+    marginBottom: layoutHelpers.gap.xl + 10,
+    position: 'relative',
   },
-  coinIcon: {
-    width: screenWidth * 0.07,
-    height: screenWidth * 0.07,
+
+  statCardShadow: {
+    position: 'absolute',
+    top: scale(4),
+    left: scale(1),
+    right: -scale(1),
+    bottom: -scale(15),
+    backgroundColor: 'rgba(218, 218, 218, 1)',
+    borderRadius: RESPONSIVE.borderRadius.md,
+    zIndex: 1,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    backgroundColor: 'rgba(3, 63, 116, 0.6)',
-    borderRadius: 20,
-    padding: screenWidth * 0.08,
-    width: screenWidth * 0.8,
-    alignItems: 'center',
+
+  statCard: {
+    backgroundColor: 'rgba(27, 98, 124, 0.93)',
+    borderRadius: RESPONSIVE.borderRadius.md,
+    padding: RESPONSIVE.margin.lg,
+    paddingBottom: RESPONSIVE.margin.xl + 10,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.8)',
+    borderColor: '#dfdfdfff',
+
+    shadowColor: '#ffffffff',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.8,
+    shadowRadius: 5,
+    elevation: 8,
+    zIndex: 2,
+    position: 'relative',
   },
-  modalTitle: {
-    fontSize: screenWidth * 0.07,
-    fontFamily: 'Computerfont',
-    color: 'white',
-    marginBottom: screenHeight * 0.02,
-    textAlign: 'center',
-  },
-  modalText: {
-    fontSize: screenWidth * 0.05,
-    fontFamily: 'Computerfont',
-    color: 'white',
-    textAlign: 'center',
-    marginBottom: screenHeight * 0.03,
-  },
-  modalButtons: {
+
+   statCardTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '100%',
-  },
-  cancelButton: {
-    backgroundColor: 'rgba(255, 0, 0, 0.48)',
-    padding: screenHeight * 0.015,
-    borderRadius: 15,
-    flex: 0.4,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
+    marginBottom: layoutHelpers.gap.md,
   },
-  confirmButton: {
-    backgroundColor: 'rgba(0, 93, 200, 0.59)',
-    padding: screenHeight * 0.015,
-    borderRadius: 15,
-    flex: 0.55,
+
+  statValue: {
+    fontSize: RESPONSIVE.fontSize.xl+ 3,
+    fontFamily: 'FunkySign',
+    color: '#ffffffff',
+    elevation: 5,
+    left: scale(45),
+    position: 'absolute',
+  },
+  
+   statIconImage: {
+    overflow:'hidden',
+    position: 'absolute',
+    top: -scale(18),
+    left: -scale(10),
+     width: scaleWidth(60),
+    height: scaleWidth(60),
+    shadowColor: '#000000',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 3,
+    elevation: 5,
+  },
+
+  statLabel: {
+    fontSize: RESPONSIVE.fontSize.sm + 2,
+    color: '#ffffff',
+    textAlign: 'center',
+    fontFamily: 'FunkySign',
+    textShadowColor: '#000000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+    elevation: 4,
+    position: 'absolute',
+    top: 12,
+    left: scale(45),
+  },
+  
+  // Badges Section Styles
+  badgesSection: {
+    padding: layoutHelpers.gap.xl,
+  },
+
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: layoutHelpers.gap.md,
+  },
+
+  viewAllButton: {
+    paddingHorizontal: scale(12),
+    paddingVertical: scale(6),
+    borderColor: '#2ee7ffff',
+  },
+
+  viewAllText: {
+    fontSize: RESPONSIVE.fontSize.sm,
+    color: '#ffffffff',
+    fontFamily: 'GoldenAge',
+  },
+
+  badgesScrollView: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    borderWidth: 2,
+    borderRadius: 10,
+    backgroundColor: 'rgba(1, 1, 40, 0.48)',
+  },
+  badgeCard: {
+    alignItems: 'center',
+    borderRightWidth: 2,
+  },
+   badgeIconImage: {
+    width: scale(170),
+    height: scale(170),
+    top: scale(-2),
+    shadowColor: '#000000',
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.6,
+    shadowRadius: 2,
+    elevation: 3,
+    overflow: 'hidden',
+  },
+  border:{
+    width: scale(120), height: scale(120), justifyContent: 'center', alignItems: 'center',
+    pointerEvents: 'none',
+  },
+  badgeName: {
+    fontSize: RESPONSIVE.fontSize.sm,
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: layoutHelpers.gap.xs,
+  },
+  badgeEarned: {
+    fontSize: RESPONSIVE.fontSize.md,
+    color: '#4CAF50',
+    fontWeight: 'bold',
+  },
+  
+   questsSection: {
+    marginBottom: layoutHelpers.gap.xl,
+    padding: layoutHelpers.gap.xl,
+  },
+  
+   questCard: {
+    backgroundColor: 'rgba(27, 98, 124, 0.93)',
+    borderRadius: RESPONSIVE.borderRadius.md,
+    padding: RESPONSIVE.margin.lg,
     flexDirection: 'row',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#dfdfdfff',
+    shadowColor: '#ffffffff',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.8,
+    shadowRadius: 5,
+    elevation: 8,
+    zIndex: 2,
+    position: 'relative',
+    height: '100%',
+  },
+
+   questRewardsSection: {
+    width: scale(60),
+    alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
   },
-  cancelButtonText: {
+
+  rewardItem: {
+    alignItems: 'center',
+  },
+
+  rewardIcon: {
+    width: scale(30),
+    height: scale(30),
+    marginBottom: layoutHelpers.gap.xs,
+  },
+
+    rewardAmount: {
+    fontSize: RESPONSIVE.fontSize.sm,
+    color: '#FFD700',
+    fontFamily: 'FunkySign',
+    fontWeight: 'bold',
+  },
+
+  questInfoSection: {
+    flex: 1,
+    paddingHorizontal: layoutHelpers.gap.md,
+  },
+
+    progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  progressBarBackground: {
+    flex: 1,
+    height: scale(8),
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: scale(4),
+    marginRight: layoutHelpers.gap.sm,
+    overflow: 'hidden',
+  },
+
+  progressBarFill: {
+    height: '100%',
+    borderRadius: scale(4),
+    minWidth: '2%',
+  },
+
+  progressText: {
+    fontSize: RESPONSIVE.fontSize.sm,
+    color: '#ffffff',
+    fontFamily: 'FunkySign',
+    fontWeight: 'bold',
+    minWidth: scale(40),
+    textAlign: 'right',
+  },
+
+    questTitle: {
+    fontSize: RESPONSIVE.fontSize.md,
+    color: '#ffffff',
+    fontFamily: 'FunkySign',
+    marginBottom: layoutHelpers.gap.xs,
+  },
+
+  questType: {
+    fontSize: RESPONSIVE.fontSize.sm,
+    fontFamily: 'FunkySign',
+    fontWeight: 'bold',
+    marginBottom: layoutHelpers.gap.sm,
+  },
+
+    claimSection: {
+    width: scale(80),
+    alignItems: 'center',
+  },
+
+   claimButton: {
+    paddingHorizontal: scale(16),
+    paddingVertical: scale(8),
+    borderRadius: RESPONSIVE.borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+    claimButtonText: {
+    fontSize: RESPONSIVE.fontSize.sm,
+    color: '#ffffff',
+    fontFamily: 'FunkySign',
+    fontWeight: 'bold',
+  },
+
+  questCardContainer: {
+    width: '100%',
+    height: scaleHeight(80),
+    borderRadius: RESPONSIVE.borderRadius.xl,
+    marginBottom: layoutHelpers.gap.md,
+    position: 'relative',
+    
+  },
+
+  questCardShadow: {
+    position: 'absolute',
+    top: scale(4),
+    left: scale(1),
+    right: -scale(1),
+    bottom: -scale(15),
+    backgroundColor: 'rgba(218, 218, 218, 1)',
+    borderRadius: RESPONSIVE.borderRadius.md,
+    zIndex: 1,
+  },
+
+  // Potions Section Styles
+  potionsSection: {
+    marginBottom: layoutHelpers.gap.xl,
+    padding: layoutHelpers.gap.xl,
+  },
+  potionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: layoutHelpers.gap.xl + 20,
+  },
+  
+  potionCard: {
+    borderRadius: RESPONSIVE.borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#dfdfdfff',
+    shadowColor: '#ffffffff',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.8,
+    shadowRadius: 5,
+    elevation: 8,
+    zIndex: 2,
+    position: 'relative',
+    height: '100%',
+  },
+
+  potionCardContainer: {
+    width: wp(20),
+    height: scaleHeight(120),
+    borderRadius: RESPONSIVE.borderRadius.xl,
+    position: 'relative',
+  },
+
+   potionCardShadow: {
+    position: 'absolute',
+    top: scale(4),
+    left: scale(1),
+    right: -scale(1),
+    bottom: -scale(15),
+    backgroundColor: 'rgba(255, 255, 255, 1)',
+    borderRadius: RESPONSIVE.borderRadius.md,
+    zIndex: 1,
+  },
+
+potionIconImage: {
+    width: scale(100),
+    position: 'absolute',
+    height: scale(100),
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.7,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+
+   potionName: {
+    fontSize: RESPONSIVE.fontSize.sm,
+    color: 'rgba(53, 53, 53, 1)',
+    textAlign: 'center',
+    position: 'absolute',
+    bottom: -15,
+    fontFamily: 'FunkySign',
+  },
+   potionCount: {
+    paddingHorizontal: scale(10),
+    paddingVertical: scale(4), 
+    top: 0,
+    position: 'absolute',
+    right:0,
+  },
+  
+    potionCountText: {
+    fontSize: RESPONSIVE.fontSize.md,
     color: 'white',
-    fontSize: screenWidth * 0.045,
-    fontFamily: 'Computerfont',
-  },
-  confirmButtonText: {
-    color: 'white',
-    fontSize: screenWidth * 0.045,
-    fontFamily: 'Computerfont',
-    marginLeft: 5,
-  },
-  modalCoinIcon: {
-    width: screenWidth * 0.05,
-    height: screenWidth * 0.05,
+    fontFamily: 'FunkySign',
+
   },
 });

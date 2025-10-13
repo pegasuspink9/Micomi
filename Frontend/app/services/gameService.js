@@ -381,7 +381,8 @@ export const gameService = {
       'mana': 'Mana',
       'freeze': 'Freeze',
       'speed': 'Speed',
-      'immune': 'Immune'
+      'immune': 'Immune',
+      'example': 'Example',
     };
     return typeMap[potionType] || potionType.charAt(0).toUpperCase() + potionType.slice(1);
   },
