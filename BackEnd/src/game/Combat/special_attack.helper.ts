@@ -22,6 +22,12 @@ export async function updateProgressForChallenge(
   });
   if (!challenge) throw new Error("Challenge not found");
 
+  const level = await prisma.level.findUnique({
+    where: { level_id: progress.level_id },
+  });
+  const isHardOrFinal =
+    level?.level_difficulty === "hard" || level?.level_difficulty === "final";
+
   const existingAnswers = (progress.player_answer ?? {}) as Record<
     string,
     string[]
@@ -42,12 +48,24 @@ export async function updateProgressForChallenge(
 
   if (isCorrect && !alreadyAnsweredCorrectly && !progress.is_completed) {
     const challengeExpected = challenge.expected_output ?? [];
-    newExpectedOutput = [
-      ...(Array.isArray(newExpectedOutput) ? newExpectedOutput : []),
-      ...(Array.isArray(challengeExpected)
-        ? challengeExpected
-        : [challengeExpected]),
-    ];
+    if (isHardOrFinal) {
+      newExpectedOutput = [
+        ...(Array.isArray(newExpectedOutput) ? newExpectedOutput : []),
+        ...(Array.isArray(challengeExpected)
+          ? challengeExpected
+          : [challengeExpected]),
+      ];
+      console.log(
+        `Appended expected output for hard/final challenge ${challengeId}:`,
+        challengeExpected
+      );
+      console.log(
+        "Cumulative player_expected_output after append:",
+        newExpectedOutput
+      );
+    } else {
+      console.log(`Skipped append for easy challenge ${challengeId}`);
+    }
   }
 
   let updateData: any = {
@@ -83,15 +101,15 @@ export async function updateProgressForChallenge(
     consecutiveCorrects = 0;
     consecutiveWrongs += 1;
 
-    const level = await prisma.level.findUnique({
+    const levelForCurse = await prisma.level.findUnique({
       where: { level_id: progress.level_id },
       include: { map: true },
     });
-    if (level) {
+    if (levelForCurse) {
       const enemy = await prisma.enemy.findFirst({
         where: {
-          enemy_map: level.map.map_name,
-          enemy_difficulty: level.level_difficulty,
+          enemy_map: levelForCurse.map.map_name,
+          enemy_difficulty: levelForCurse.level_difficulty,
         },
       });
       if (enemy && enemy.enemy_name === "King Grimnir") {

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import * as ShopService from "./shop.service";
 import { errorResponse, successResponse } from "../../../utils/response";
+import { SubmitChallengeControllerResult } from "../Challenges/challenges.types";
 
 export const buyPotion = async (req: Request, res: Response) => {
   try {
@@ -29,15 +30,27 @@ export const buyCharacter = async (req: Request, res: Response) => {
 export const usePotion = async (req: Request, res: Response) => {
   const playerId = Number(req.params.playerId);
   const levelId = Number(req.params.levelId);
-  const playerPotionId = Number(req.params.playerPotionId);
+  const challengeId = Number(req.params.challengeId);
+  const { playerPotionId } = req.body;
+
+  if (!playerPotionId || isNaN(Number(playerPotionId))) {
+    return errorResponse(res, null, "playerPotionId is required in body", 400);
+  }
+
+  const parsedPlayerPotionId = Number(playerPotionId);
 
   try {
-    const result = await ShopService.usePotion(
+    const result = (await ShopService.usePotion(
       playerId,
       levelId,
-      playerPotionId
+      challengeId,
+      parsedPlayerPotionId
+    )) as SubmitChallengeControllerResult;
+    return successResponse(
+      res,
+      result,
+      `${(result as any).potionType ?? "Unknown"} potion used`
     );
-    return successResponse(res, result, `${result.potionType} potion used`);
   } catch (error) {
     return errorResponse(res, null, (error as Error).message, 400);
   }
