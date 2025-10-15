@@ -16,9 +16,50 @@ export const getAllMaps = async (req: Request, res: Response) => {
         },
       },
     });
-    return successResponse(res, maps, "All maps fetched");
+
+    return successResponse(
+      res,
+      {
+        data: maps,
+        audio: [
+          "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353796/Navigation_sxwh2g.mp3",
+        ],
+      },
+      "All maps fetched"
+    );
   } catch (error) {
     return errorResponse(res, error, "Failed to fetch maps");
+  }
+};
+
+export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
+  try {
+    const { playerId } = req.params;
+
+    const maps = await prisma.map.findMany({
+      where: { player_id: Number(playerId) },
+      include: {
+        levels: {
+          where: { player_id: Number(playerId) },
+          include: {
+            challenges: true,
+          },
+        },
+      },
+    });
+
+    return successResponse(
+      res,
+      {
+        data: maps,
+        audio: [
+          "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353796/Navigation_sxwh2g.mp3",
+        ],
+      },
+      "All maps for this player fetched"
+    );
+  } catch (error) {
+    return errorResponse(res, error, "Failed to fetch maps for this player");
   }
 };
 
@@ -27,11 +68,17 @@ export const getMapById = async (req: Request, res: Response) => {
   try {
     const map = await prisma.map.findUnique({
       where: { map_id: id },
-      select: {
-        map_id: true,
+      include: {
         levels: {
           orderBy: {
             level_number: "asc",
+          },
+          include: {
+            challenges: true,
+            playerProgress: true,
+            lessons: true,
+            potionShopByLevel: true,
+            map: true,
           },
         },
       },
@@ -41,7 +88,22 @@ export const getMapById = async (req: Request, res: Response) => {
       return errorResponse(res, null, "Map not found", 404);
     }
 
-    return successResponse(res, map, "Map found");
+    map.levels.sort((a, b) => {
+      const aNum = a.level_number ?? Infinity;
+      const bNum = b.level_number ?? Infinity;
+      return aNum - bNum;
+    });
+
+    return successResponse(
+      res,
+      {
+        data: map,
+        audio: [
+          "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353796/Navigation_sxwh2g.mp3",
+        ],
+      },
+      "Map found"
+    );
   } catch (error) {
     return errorResponse(res, error, "Failed to fetch map", 500);
   }

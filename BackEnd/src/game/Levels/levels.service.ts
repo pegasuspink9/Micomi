@@ -151,6 +151,9 @@ export const previewLevel = async (playerId: number, levelId: number) => {
           player_coins: player.coins,
         },
         potionShop,
+        audio: [
+          "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353798/Shop_fjlttd.ogg",
+        ],
       };
 
     case "enemyButton":
@@ -211,6 +214,9 @@ export const previewLevel = async (playerId: number, levelId: number) => {
         },
         energy: energyStatus.energy,
         timeToNextEnergyRestore: energyStatus.timeToNextRestore,
+        audio: [
+          "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353796/Navigation_sxwh2g.mp3",
+        ],
       };
     }
   }
@@ -314,7 +320,6 @@ export const enterLevel = async (playerId: number, levelId: number) => {
 
   let progress;
   if (!existingProgress) {
-    // New progress: create
     progress = await prisma.playerProgress.create({
       data: {
         player_id: playerId,
@@ -342,7 +347,6 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     });
     console.log(`Created new progress for level ${levelId}`);
   } else if (isLostState) {
-    // Lost state: update existing to reset (aligns with easy level retry behavior)
     progress = await prisma.playerProgress.update({
       where: { progress_id: existingProgress.progress_id },
       data: {

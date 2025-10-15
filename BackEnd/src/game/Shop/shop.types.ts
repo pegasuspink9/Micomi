@@ -4,10 +4,10 @@ export interface FightResult {
     enemy_id: number;
     enemy_name: string;
     enemy_idle: string | null;
-    enemy_run: string | null;
-    enemy_attack: string | null;
-    enemy_hurt: string | null;
-    enemy_dies: string | null;
+    enemy_run: null;
+    enemy_attack: null;
+    enemy_hurt: null;
+    enemy_dies: null;
     enemy_damage: number;
     enemy_health: number;
     enemy_max_health: number;
@@ -18,12 +18,12 @@ export interface FightResult {
     character_id: number;
     character_name: string;
     character_idle: string | null;
-    character_run: string | null;
-    character_attack_type: string | null;
-    character_attack: string | null;
-    character_hurt: string | null;
-    character_dies: string;
-    character_damage: number | number[];
+    character_run: null;
+    character_attack_type: null;
+    character_attack: null;
+    character_hurt: null;
+    character_dies: null;
+    character_damage: number[] | null;
     character_health: number;
     character_max_health: number;
   };
@@ -59,12 +59,11 @@ export interface SubmitChallengeControllerResult
     is_unlocked: boolean;
   } | null;
   correct_answer_length?: number;
-  potionResult?: {
-    potionType: string;
-    remainingQuantity: number;
-    appliedImmediately: boolean;
-    newPlayerHealth?: number;
-  };
+  potionType?: string;
+  remainingQuantity?: number;
+  appliedImmediately?: boolean;
+  energy?: number;
+  timeToNextEnergyRestore?: string | null;
 }
 
 export interface LevelStatus {
