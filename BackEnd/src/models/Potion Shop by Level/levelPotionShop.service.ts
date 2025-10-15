@@ -54,7 +54,7 @@ export const updateLevelPotionShop = async (req: Request, res: Response) => {
   try {
     const data: LevelPotionShopUpdateInput = req.body;
     const updatedLevelPotionShop = await prisma.potionShopByLevel.update({
-      where: { level_id: id },
+      where: { potion_shop_by_level_id: id },
       data,
     });
     return successResponse(
@@ -70,7 +70,9 @@ export const updateLevelPotionShop = async (req: Request, res: Response) => {
 export const deleteLevelPotionShop = async (req: Request, res: Response) => {
   const id = Number(req.params.id);
   try {
-    await prisma.potionShopByLevel.delete({ where: { level_id: id } });
+    await prisma.potionShopByLevel.delete({
+      where: { potion_shop_by_level_id: id },
+    });
     return successResponse(res, null, "Level potion shop deleted");
   } catch (error) {
     return errorResponse(res, error, "Failed to delete level potion shop", 400);

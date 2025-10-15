@@ -47,10 +47,14 @@ router.post(
 );
 
 //Shop routes
+router.get(
+  "/player-characters/:playerId",
+  ModelShopService.getAllPlayerCharacter
+);
 router.post("/buy-character/:playerId", ShopController.buyCharacter);
 router.get("/potion/:playerId", ModelShopService.getAllPlayerPotions);
 router.post(
-  "/potion/:playerId/:levelId/:playerPotionId",
+  "/submit-challenge/:playerId/:levelId/:challengeId/use-potion",
   ShopController.usePotion
 );
 

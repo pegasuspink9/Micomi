@@ -73,31 +73,31 @@ export const getAllPlayerCharacter = async (req: Request, res: Response) => {
         (pc) => pc.character_id === character.character_id
       );
 
-      if (owned) {
-        return {
-          player_character_id: owned.player_character_id,
-          player_id: owned.player_id,
-          character_id: owned.character_id,
-          is_purchased: owned.is_purchased,
-          is_selected: owned.is_selected,
-          player,
-          character: {
-            ...owned.character,
-          },
-        };
-      }
+      const shopInfo =
+        character.characterShop || owned?.character.characterShop;
 
-      return {
-        player_character_id: null,
+      const baseItem = {
+        character_shop_id: shopInfo?.character_shop_id ?? null,
         player_id: player.player_id,
         character_id: character.character_id,
-        is_purchased: false,
-        is_selected: false,
+        is_purchased: owned?.is_purchased ?? false,
+        is_selected: owned?.is_selected ?? false,
+        character_price: shopInfo?.character_price ?? null,
         player,
         character: {
           ...character,
+          characterShop: undefined,
         },
+        audio: [
+          "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353798/Shop_fjlttd.ogg",
+        ],
       };
+
+      if (owned) {
+        (baseItem as any)["player_character_id"] = owned.player_character_id;
+      }
+
+      return baseItem;
     });
 
     const sortedData = combinedData.sort(

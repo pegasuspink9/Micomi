@@ -15,10 +15,13 @@ import {
  
 const prisma = new PrismaClient();
 
-const arraysEqual = (a: string[], b: string[]): boolean => {
-  const setA = new Set(a);
-  const setB = new Set(b);
-  return setA.size === setB.size && [...setA].every((val) => setB.has(val));
+const multisetEqual = (a: string[], b: string[]): boolean => {
+  if (a.length !== b.length) return false;
+  const countA: Record<string, number> = {};
+  const countB: Record<string, number> = {};
+  for (const item of a) countA[item] = (countA[item] || 0) + 1;
+  for (const item of b) countB[item] = (countB[item] || 0) + 1;
+  return Object.keys(countA).every((key) => countA[key] === countB[key]);
 };
 
 const reverseString = (str: string): string => str.split("").reverse().join("");
@@ -186,7 +189,7 @@ export const submitChallengeService = async (
     }
   }
 
-  const isCorrect = arraysEqual(finalAnswer, effectiveCorrectAnswer);
+  const isCorrect = multisetEqual(finalAnswer, effectiveCorrectAnswer);
 
   let wasEverWrong = false;
   if (isCorrect) {
@@ -212,8 +215,9 @@ export const submitChallengeService = async (
   let audioResponse: string[] = [];
 
   if (isCorrect) {
-    fightResult = await CombatService.fightEnemy(
+    fightResult = await CombatService.handleFight(
       playerId,
+      levelId,
       enemy.enemy_id,
       true,
       elapsed,
@@ -243,8 +247,9 @@ export const submitChallengeService = async (
       await updateQuestProgress(playerId, QuestType.solve_challenge_no_hint, 1);
     }
   } else {
-    fightResult = await CombatService.fightEnemy(
+    fightResult = await CombatService.handleFight(
       playerId,
+      levelId,
       enemy.enemy_id,
       false,
       elapsed,
@@ -444,36 +449,47 @@ const getNextChallengeHard = async (progress: any) => {
   const playerAlive = progress.player_hp > 0;
   let nextChallenge: Challenge | null = null;
 
-  if (!enemyDefeated) {
-    nextChallenge =
-      level.challenges.find(
-        (c: Challenge) => !answeredIds.includes(c.challenge_id)
-      ) || null;
+  const stillWrongChallenges = wrongChallenges
+    .map((id: number) => {
+      const ans = progress.player_answer?.[id.toString()] ?? [];
+      const challenge = level.challenges.find(
+        (c: Challenge) => c.challenge_id === id
+      );
+      if (!multisetEqual(ans, challenge?.correct_answer ?? [])) {
+        return id;
+      }
+      return null;
+    })
+    .filter((id): id is number => id !== null);
 
-    if (!nextChallenge && wrongChallenges.length > 0) {
-      const firstWrongId = wrongChallenges[0];
+  if (!enemyDefeated) {
+    if (stillWrongChallenges.length > 0) {
+      const firstStillWrongId = stillWrongChallenges[0];
       nextChallenge =
         level.challenges.find(
-          (c: Challenge) => c.challenge_id === firstWrongId
+          (c: Challenge) => c.challenge_id === firstStillWrongId
+        ) || null;
+      console.log(
+        `Stuck on still-wrong challenge ${firstStillWrongId} until correct`
+      );
+    } else {
+      nextChallenge =
+        level.challenges.find(
+          (c: Challenge) => !answeredIds.includes(c.challenge_id)
         ) || null;
     }
 
     if (!playerAlive) nextChallenge = null;
   } else {
-    if (playerAlive && wrongChallenges.length > 0) {
-      const firstWrongId = wrongChallenges[0];
-      const challenge = level.challenges.find(
-        (c: Challenge) => c.challenge_id === firstWrongId
+    if (playerAlive && stillWrongChallenges.length > 0) {
+      const firstStillWrongId = stillWrongChallenges[0];
+      nextChallenge =
+        level.challenges.find(
+          (c: Challenge) => c.challenge_id === firstStillWrongId
+        ) || null;
+      console.log(
+        `Stuck on still-wrong challenge ${firstStillWrongId} in bonus round until correct`
       );
-
-      const isStillWrong = !arraysEqual(
-        progress.player_answer?.[firstWrongId.toString()] ?? [],
-        challenge?.correct_answer ?? []
-      );
-
-      if (isStillWrong) {
-        nextChallenge = challenge || null;
-      }
     }
   }
 
@@ -494,7 +510,7 @@ function getNextWrongChallenge(
     const challenge = level.challenges.find(
       (c: Challenge) => c.challenge_id === id
     );
-    return !arraysEqual(ans, challenge?.correct_answer ?? []);
+    return !multisetEqual(ans, challenge?.correct_answer ?? []);
   });
 
   const currentWrongs = [...new Set(filteredWrongs)];
