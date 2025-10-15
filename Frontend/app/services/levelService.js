@@ -12,6 +12,7 @@ export const levelService = {
     }
   },
 
+
   // Get specific level by ID
   getLevelById: async (levelId) => {
     try {
@@ -33,9 +34,25 @@ export const levelService = {
     }
   },
 
-  
+  buyPotion: async (playerId, levelId, potionId) => {
+    try {
+      console.log(`🛒 Attempting to buy potion ${potionId} for player ${playerId} in level ${levelId}`);
+      
+      const response = await apiService.post(`/game/entryLevel/${playerId}/${levelId}/preview/buy-potion/${potionId}`);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to buy potion');
+      }
+      
+      console.log(`🛒 Potion purchase successful:`, response);
+      return response;
+    } catch (error) {
+      console.error(`Failed to buy potion ${potionId}:`, error);
+      throw error;
+    }
+  },
 
-  
+
   // Update level progress
   updateLevelProgress: async (playerId, levelId, progressData) => {
     try {

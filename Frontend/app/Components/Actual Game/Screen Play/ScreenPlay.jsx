@@ -21,7 +21,8 @@ const ScreenPlay = ({
   const [totalCoins, setTotalCoins] = useState(0);
   const [characterAnimationState, setCharacterAnimationState] = useState('idle');
   const [isPlayingSubmissionAnimation, setIsPlayingSubmissionAnimation] = useState(false);
-  
+  const [victoryAnimationPhase, setVictoryAnimationPhase] = useState('idle'); 
+  const victoryTimeoutRef = useRef(null);
 
   const enemies = useMemo(() => processEnemyData(enemiesData), []);
 
@@ -62,7 +63,7 @@ const ScreenPlay = ({
     gameState.enemy?.enemy_health 
   ), [gameState]);
 
-  // ✅ Memoize character animations
+
   const characterAnimations = useMemo(() => ({
     character_idle: gameState.submissionResult?.fightResult?.character?.character_idle 
       ?? gameState.selectedCharacter?.character_idle,
@@ -76,11 +77,43 @@ const ScreenPlay = ({
       ?? gameState.selectedCharacter?.character_dies,
   }), [gameState]);
 
-  // ✅ Memoize coins earned
   const coinsEarned = useMemo(() => 
     gameState.submissionResult?.levelStatus?.coinsEarned ?? 0, 
     [gameState.submissionResult?.levelStatus?.coinsEarned]
   );
+
+useEffect(() => {
+  const fightResult = gameState?.submissionResult?.fightResult;
+  
+  if (fightResult?.status === 'won' && 
+      fightResult?.enemy?.enemy_health === 0 &&
+      victoryAnimationPhase === 'idle') {
+    
+    console.log('🎉 Victory detected - starting celebration sequence');
+    setVictoryAnimationPhase('celebrating');
+    
+    // ✅ Fix: Use setCharacterAnimationState instead of setCharacterState
+    setCharacterAnimationState('idle');
+    
+    victoryTimeoutRef.current = setTimeout(() => {
+      console.log('🎉 Celebration complete - notifying animation completion');
+      setVictoryAnimationPhase('waiting');
+      
+      if (onSubmissionAnimationComplete) {
+        onSubmissionAnimationComplete();
+      }
+    }, 3000); 
+  }
+  
+  return () => {
+    if (victoryTimeoutRef.current) {
+      clearTimeout(victoryTimeoutRef.current);
+      victoryTimeoutRef.current = null;
+    }
+  };
+}, [gameState?.submissionResult?.fightResult, victoryAnimationPhase, onSubmissionAnimationComplete]);
+
+
   
   // Handle coin updates
   useEffect(() => {
@@ -124,75 +157,107 @@ const ScreenPlay = ({
     }
   }, [gameState.submissionResult]);
 
-    const handleCharacterAnimationComplete = useCallback((completedAnimationState) => {
-        console.log(`Character animation "${completedAnimationState}" completed`);
-    
-    if (!['attack', 'hurt', 'dies'].includes(completedAnimationState)) {
-      return;
-    } 
-    
+const handleCharacterAnimationComplete = useCallback((animationState) => {
+  console.log(`🎬 Character ${animationState} animation completed`);
+  
+  const fightResult = gameState?.submissionResult?.fightResult;
+  
+  // ✅ Handle attack completion in victory scenario
+  if (animationState === 'attack' && 
+      fightResult?.status === 'won' && 
+      fightResult?.enemy?.enemy_health === 0) {
+    console.log('🎉 Character attack completed, enemy defeated - starting celebration');
+    setCharacterAnimationState('idle');
     setIsPlayingSubmissionAnimation(false);
+    return;
+  }
+  
+  // ✅ Handle hurt animation completion
+  if (animationState === 'hurt') {
+    const characterHealth = fightResult?.character?.character_health ?? playerHealth;
     
-    // ✅ Check if character should die AFTER hurt animation completes
-    if (completedAnimationState === 'hurt' && playerHealth <= 0) {
-      console.log('🐕 Character hurt animation completed, but health is 0 - setting dies animation');
+    if (characterHealth <= 0) {
+      console.log('💀 Character hurt completed, health is 0 - transitioning to dies');
       setCharacterAnimationState('dies');
-      setIsPlayingSubmissionAnimation(true);
-      return;
-    }
-    
-    // ✅ Stay in dies state if character died
-    if (completedAnimationState === 'dies') {
-      console.log('🐕 Character death animation completed - staying in dies state');
-      return;
-    }
-    
-    // ✅ Return to idle if character is alive
-    if (playerHealth > 0 && completedAnimationState !== 'idle') {
+      return; // Don't reset isPlayingSubmissionAnimation yet
+    } else {
+      console.log('🩸 Character hurt completed, still alive - returning to idle');
       setCharacterAnimationState('idle');
-    }
-    
-    if (['attack', 'hurt'].includes(completedAnimationState)) {
-      if (typeof onSubmissionAnimationComplete === 'function') {
-        try {
-          console.log(`Notifying parent that animation sequence is complete`);
-          onSubmissionAnimationComplete();
-        } catch (error) {
-          console.warn('Error calling onSubmissionAnimationComplete:', error);
-        }
-      }
-    }
-  }, [playerHealth, onSubmissionAnimationComplete]);
-
-
- const handleEnemyAnimationComplete = useCallback((index) => (completedAnimationState) => {
-  console.log(`Enemy ${index} animation "${completedAnimationState}" completed`);
-
-
-
-  if (completedAnimationState === 'dies') {
-    console.log('🦹 Enemy death animation completed - enemy defeated!');
-    
-    if (typeof onSubmissionAnimationComplete === 'function') {
-      console.log('📢 Notifying parent that enemy death sequence is complete');
-      setTimeout(() => {
-        onSubmissionAnimationComplete();
-      }, 500);
+      setIsPlayingSubmissionAnimation(false);
+      return;
     }
   }
+  
+  if (animationState === 'dies') {
+    console.log('💀 Character dies animation completed - staying on last frame');
+    setIsPlayingSubmissionAnimation(false);
     
-  setEnemyAnimationStates(prev => {
-    const next = [...prev];
-    if (completedAnimationState === 'dies') {
-      next[index] = 'dies'; 
-    } else if (completedAnimationState === 'attack' && enemyHealth > 0) {
-      next[index] = 'idle';
-    } else if (enemyHealth > 0) {
-      next[index] = 'idle';
+    // Trigger game over after delay
+    setTimeout(() => {
+      if (onSubmissionAnimationComplete) {
+        onSubmissionAnimationComplete();
+      }
+    }, 1000);
+    return;
+  }
+  
+  if (animationState !== 'idle') {
+    setCharacterAnimationState('idle');
+    setIsPlayingSubmissionAnimation(false);
+  }
+}, [gameState?.submissionResult?.fightResult, playerHealth, onSubmissionAnimationComplete]);
+
+
+const handleEnemyAnimationComplete = useCallback((index) => {
+  return (animationState) => {
+    console.log(`🎬 Enemy ${index} ${animationState} animation completed`);
+    
+    const fightResult = gameState?.submissionResult?.fightResult;
+    
+    if (animationState === 'hurt') {
+      const enemyHealth = fightResult?.enemy?.enemy_health ?? 0;
+      
+      if (enemyHealth <= 0) {
+        console.log('🦹 Enemy hurt completed, health is 0 - transitioning to dies');
+        setEnemyAnimationStates(prev => prev.map((state, i) => i === index ? 'dies' : state));
+        return; // Don't reset isPlayingSubmissionAnimation yet
+      } else {
+        console.log('🦹 Enemy hurt completed, still alive - returning to idle');
+        setEnemyAnimationStates(prev => prev.map((state, i) => i === index ? 'idle' : state));
+        setIsPlayingSubmissionAnimation(false);
+        return;
+      }
     }
-    return next;
-  });
-}, [enemyHealth, onSubmissionAnimationComplete]);
+    
+    // ✅ Handle enemy dies animation
+    if (animationState === 'dies') {
+      console.log('💀 Enemy dies animation completed - staying on last frame');
+      setIsPlayingSubmissionAnimation(false);
+      // Enemy stays in dies state, character will handle victory celebration
+      return;
+    }
+    
+    // ✅ Handle enemy attack animation
+    if (animationState === 'attack') {
+      console.log('🦹 Enemy attack completed - returning to idle');
+      setEnemyAnimationStates(prev => prev.map((state, i) => i === index ? 'idle' : state));
+      // Don't reset isPlayingSubmissionAnimation - let character hurt animation complete first
+      return;
+    }
+  };
+}, [gameState?.submissionResult?.fightResult]);
+
+// ✅ Reset victory phase when new challenge loads
+useEffect(() => {
+  setVictoryAnimationPhase('idle');
+  
+  return () => {
+    if (victoryTimeoutRef.current) {
+      clearTimeout(victoryTimeoutRef.current);
+      victoryTimeoutRef.current = null;
+    }
+  };
+}, [gameState?.currentChallenge?.id]);
 
 useEffect(() => {
   if (isPlayingSubmissionAnimation) {
@@ -209,34 +274,50 @@ useEffect(() => {
     lastSubmissionKeyRef.current = submissionKey;
 
     if (submission.isCorrect === true) {
-      console.log(`Correct answer - setting player attack`);
+      console.log(`✅ Correct answer - character attacks enemy`);
       setCharacterAnimationState('attack');
       
-      console.log('🦹 Enemy hurt animation first');
-      setEnemyAnimationStates(prev => prev.map(() => 'hurt'));
+      // ✅ Enemy gets hurt first, then check if dies
+      const enemyHealth = submission.fightResult?.enemy?.enemy_health ?? enemyHealth;
+      if (enemyHealth <= 0) {
+        console.log('🦹 Enemy will die from this attack');
+        setEnemyAnimationStates(prev => prev.map(() => 'hurt')); // hurt first, dies will be triggered by animation complete
+      } else {
+        console.log('🦹 Enemy gets hurt but survives');
+        setEnemyAnimationStates(prev => prev.map(() => 'hurt'));
+      }
       setIsPlayingSubmissionAnimation(true);
     } else if (submission.isCorrect === false) {
-      console.log(`Wrong answer - setting enemy attack, player hurt (health: ${playerHealth})`);
+      console.log(`❌ Wrong answer - enemy attacks character`);
+      
       setEnemyAnimationStates(prev => prev.map(() => 'attack'));
-      setCharacterAnimationState('hurt');
+      
+      const characterHealth = submission.fightResult?.character?.character_health ?? playerHealth;
+      
+      if (characterHealth <= 0) {
+        console.log('💀 Character will die from this attack');
+        setCharacterAnimationState('hurt'); // hurt first, dies will be triggered by animation complete
+      } else {
+        console.log('🩸 Character gets hurt but survives');
+        setCharacterAnimationState('hurt');
+      }
       setIsPlayingSubmissionAnimation(true);
     }
     return;
   }
 
-  if (!submission && playerHealth <= 0 && characterAnimationState !== 'dies') {
-    console.log(`Player died - setting dies animation`);
+  if (playerHealth <= 0 && characterAnimationState !== 'dies' && !isPlayingSubmissionAnimation) {
+    console.log(`💀 Player health is 0 - transitioning to dies animation`);
     setCharacterAnimationState('dies');
     setIsPlayingSubmissionAnimation(true);
     return;
   }
 
-  if (!submission && characterAnimationState !== 'idle' && playerHealth > 0) {
-    console.log(`No submission result - setting idle animation`);
+  if (!submission && characterAnimationState !== 'idle' && playerHealth > 0 && !isPlayingSubmissionAnimation) {
+    console.log(`🧘 No submission result - returning to idle`);
     setCharacterAnimationState('idle');
-    setIsPlayingSubmissionAnimation(false);
-    lastSubmissionKeyRef.current = null;
     setEnemyAnimationStates(enemies.map(() => 'idle'));
+    lastSubmissionKeyRef.current = null;
   }
 }, [gameState.submissionResult, playerHealth, isPlayingSubmissionAnimation, enemies, characterAnimationState]);
 

@@ -176,7 +176,6 @@ export const layoutHelpers = {
   },
 };
 
-// ✅ Export everything for easy import
 export default {
   scale,
   scaleWidth,

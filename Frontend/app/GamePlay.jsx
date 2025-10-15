@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { View, StyleSheet, Dimensions, ImageBackground, Text, ActivityIndicator, TouchableOpacity, ScrollView } from "react-native";
+import { View, StyleSheet, Dimensions, ImageBackground, Text, ActivityIndicator, TouchableOpacity, ScrollView, TurboModuleRegistry } from "react-native";
 import { StatusBar } from 'expo-status-bar';
 import ScreenPlay from '../app/Components/Actual Game/Screen Play/ScreenPlay';
 import GameQuestions from '../app/Components/Actual Game/GameQuestions/GameQuestions';
@@ -32,9 +32,8 @@ export default function GamePlay() {
   const [selectedAnswers, setSelectedAnswers] = useState([]);
   const [borderColor, setBorderColor] = useState('white');
   const [activeGameTab, setActiveGameTab] = useState('code');
-  const [showDebugPanel, setShowDebugPanel] = useState(false);
   const [selectedBlankIndex, setSelectedBlankIndex] = useState(0); 
-  const [showVSModal, setShowVSModal] = useState(true);
+  const [showVSModal, setShowVSModal] = useState(false);
   const [showGameOver, setShowGameOver] = useState(false);
   const [showLevelCompletion, setShowLevelCompletion] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
@@ -155,22 +154,27 @@ export default function GamePlay() {
     setSelectedBlankIndex(0);
   }, []);
 
-  useEffect(() => {
-    if (gameState?.submissionResult?.fightResult?.status === 'lost' &&
-        gameState?.submissionResult?.fightResult?.character?.character_health === 0 &&
-        !hasTriggeredGameOver.current && !showGameOver && !isRetrying) {
-      
-      console.log('🎮 Character died - waiting for death animations to complete...');
-      hasTriggeredGameOver.current = true;
-      
-      gameOverTimeoutRef.current = setTimeout(() => {
-        console.log('🎮 Showing GameOver modal after animations');
-        setShowGameOver(true);
-      }, 4000);
-    }
-  }, [gameState?.submissionResult?.fightResult]);
+useEffect(() => {
+  const fightResult = gameState?.submissionResult?.fightResult;
+  
+  if (fightResult?.status === 'lost' &&
+      fightResult?.character?.character_health === 0 &&
+      !hasTriggeredGameOver.current && 
+      !showGameOver && 
+      !isRetrying &&
+      !waitingForAnimation) { 
+    
+    console.log('💀 Character died - all animations complete, showing GameOver modal');
+    hasTriggeredGameOver.current = true;
+    
+    gameOverTimeoutRef.current = setTimeout(() => {
+      console.log('💀 Showing GameOver modal');
+      setShowGameOver(true);
+    }, 1000);
+  }
+}, [gameState?.submissionResult?.fightResult, showGameOver, isRetrying, waitingForAnimation]);
 
-  useEffect(() => {
+useEffect(() => {
   const submissionResult = gameState?.submissionResult;
   const fightResult = submissionResult?.fightResult;
   
@@ -181,44 +185,56 @@ export default function GamePlay() {
     hasNextLevel: !!submissionResult?.nextLevel,
     hasTriggered: hasTriggeredLevelCompletion.current,
     showLevelCompletion: showLevelCompletion,
-    isLoadingNextLevel: isLoadingNextLevel
+    isLoadingNextLevel: isLoadingNextLevel,
+    waitingForAnimation: waitingForAnimation
   });
 
-  // ✅ Only detect level completion, don't set timeout here
   if (fightResult?.status === 'won' &&
       fightResult?.enemy?.enemy_health === 0 &&
       !hasTriggeredLevelCompletion.current && 
       !showLevelCompletion && 
-      !isLoadingNextLevel) {
+      !isLoadingNextLevel &&
+      !waitingForAnimation) { // ✅ This ensures animations finished
     
-    console.log('🎉 Level completed - enemy defeated, waiting for animations to complete...');
-    console.log('🏆 Completion rewards:', submissionResult?.completionRewards);
-    console.log('🚀 Next level:', submissionResult?.nextLevel);
-    
+    console.log('🎉 Level completed - all animations finished, showing modal');
     hasTriggeredLevelCompletion.current = true;
-    // ✅ Remove the setTimeout - let animations complete naturally
+    
+  
+    setTimeout(() => {
+      console.log('🎉 Showing Level Completion modal');
+      setShowLevelCompletion(true);
+    }, 500); 
   }
-}, [gameState?.submissionResult?.fightResult, showLevelCompletion, isLoadingNextLevel]);
+}, [gameState?.submissionResult?.fightResult, showLevelCompletion, isLoadingNextLevel, waitingForAnimation]);
 
 
-const handleAnimationCompletionForLevelCompletion = useCallback(() => {
-  if (hasTriggeredLevelCompletion.current && !showLevelCompletion) {
-    console.log('🎉 All animations completed - showing Level Completion modal');
-    setShowLevelCompletion(true);
-  }
-}, [showLevelCompletion]);
+// const handleAnimationCompletionForLevelCompletion = useCallback(() => {
+//   if (hasTriggeredLevelCompletion.current && !showLevelCompletion) {
+//     console.log('🎉 All animations completed - showing Level Completion modal');
+//     setShowLevelCompletion(true);
+//   }
+// }, [showLevelCompletion]);
+
+// const handleAnimationComplete = useCallback(() => {
+//   console.log('🎬 Animation sequence completed');
+  
+//   if (hasTriggeredLevelCompletion.current) {
+//     handleAnimationCompletionForLevelCompletion();
+//   } else {
+//     onAnimationComplete?.();
+//   }
+// }, [onAnimationComplete, handleAnimationCompletionForLevelCompletion]);
+
 
 const handleAnimationComplete = useCallback(() => {
-  console.log('🎬 Animation sequence completed');
+  console.log('🎬 All animation sequences completed');
   
-  if (hasTriggeredLevelCompletion.current) {
-    handleAnimationCompletionForLevelCompletion();
-  } else {
-    onAnimationComplete?.();
-  }
-}, [onAnimationComplete, handleAnimationCompletionForLevelCompletion]);
-
-
+  // ✅ Call the original animation complete handler from useGameData
+  onAnimationComplete?.();
+  
+  // The level completion modal will show automatically via the useEffect above
+  // once waitingForAnimation becomes false
+}, [onAnimationComplete]);
 
   // ✅ Updated retry handler
   const handleRetry = useCallback(() => {
@@ -317,7 +333,6 @@ const handleAnimationComplete = useCallback(() => {
     setSelectedAnswers(answers);
   }, []);
 
-  // ✅ Show loading during retry or next level loading
   if (loading || animationsLoading) {
     return (
       <>
@@ -326,7 +341,6 @@ const handleAnimationComplete = useCallback(() => {
           source={{uri: 'https://github.com/user-attachments/assets/dc83a36e-eb2e-4fa5-b4e7-0eab9ff65abc'}}
           style={styles.container}
         >
-          {/* ✅ Show modals in background if they were visible */}
           <GameOverModal
             visible={showGameOver}
             onRetry={handleRetry}
@@ -438,99 +452,95 @@ const handleAnimationComplete = useCallback(() => {
     );
   }
 
+  
 
+return (
+  <>
+    <StatusBar hidden={true} />
+    <ImageBackground 
+      source={{uri: 'https://github.com/user-attachments/assets/dc83a36e-eb2e-4fa5-b4e7-0eab9ff65abc'}}
+      style={styles.container}
+    >
+      {currentChallenge && (
+        <View style={styles.gameLayoutContainer}>
+          <View style={styles.screenPlayContainer}>
+            <ScreenPlay 
+              gameState={gameState}
+              isPaused={false}
+              borderColor={borderColor}
+              onEnemyComplete={handleEnemyComplete}
+              currentQuestionIndex={0}
+              onAllowEnemyCompletion={handleAllowEnemyCompletion}
+              onSetCorrectAnswer={handleSetCorrectAnswer}
+              onSubmissionAnimationComplete={handleAnimationComplete}
+            />
+          </View>
 
-  return (
-    <>
-      <StatusBar hidden={true} />
-      <ImageBackground 
-        source={{uri: 'https://github.com/user-attachments/assets/dc83a36e-eb2e-4fa5-b4e7-0eab9ff65abc'}}
-        style={styles.container}
-      >
-        {/* ✅ GameOver Modal */}
-        <GameOverModal
-          visible={showGameOver}
-          onRetry={handleRetry}
-          onHome={handleHome}
-          characterName={gameState?.selectedCharacter?.name || 'Character'}
-          enemyName={gameState?.enemy?.enemy_name || 'Enemy'}
-          isRetrying={isRetrying} 
-        />
+          <View style={[
+            styles.gameQuestionsContainer,
+            shouldHideThirdGrid && styles.gameQuestionsContainerExpanded
+          ]}>
+            <GameQuestions 
+              currentQuestion={currentChallenge}
+              selectedAnswers={selectedAnswers}
+              getBlankIndex={getBlankIndex}
+              onTabChange={handleGameTabChange}
+              activeTab={activeGameTab}
+              onBlankSelect={handleBlankSelect}
+            />
+          </View>
 
-        {/* ✅ Level Completion Modal */}
-        <LevelCompletionModal
-          visible={showLevelCompletion}
-          onRetry={handleRetry}
-          onHome={handleHome}
-          onNextLevel={handleNextLevel}
-          completionRewards={gameState?.submissionResult?.completionRewards}
-          nextLevel={gameState?.submissionResult?.nextLevel}
-          characterName={gameState?.selectedCharacter?.name || 'Character'}
-          enemyName={gameState?.enemy?.enemy_name || 'Enemy'}
-          isLoading={isLoadingNextLevel}
-        />
-
-        {/* ✅ Only render game content if we have currentChallenge */}
-        {currentChallenge && (
-          <View style={styles.gameLayoutContainer}>
-            <View style={styles.screenPlayContainer}>
-              <ScreenPlay 
-                gameState={gameState}
-                isPaused={false}
-                borderColor={borderColor}
-                onEnemyComplete={handleEnemyComplete}
-                currentQuestionIndex={0}
-                onAllowEnemyCompletion={handleAllowEnemyCompletion}
-                onSetCorrectAnswer={handleSetCorrectAnswer}
-                onSubmissionAnimationComplete={handleAnimationComplete}
-              />
-            </View>
-
-            <View style={[
-              styles.gameQuestionsContainer,
-              shouldHideThirdGrid && styles.gameQuestionsContainerExpanded
-            ]}>
-              <GameQuestions 
+          {!shouldHideThirdGrid && (
+            <View style={styles.thirdGridContainer}>
+              <ThirdGrid 
                 currentQuestion={currentChallenge}
                 selectedAnswers={selectedAnswers}
+                setSelectedAnswers={memoizedSetSelectedAnswers}
+                currentQuestionIndex={0}
+                setCurrentQuestionIndex={() => {}}
+                setBorderColor={setBorderColor}
+                setCorrectAnswerRef={setCorrectAnswerRef}
                 getBlankIndex={getBlankIndex}
-                onTabChange={handleGameTabChange}
-                activeTab={activeGameTab}
-                onBlankSelect={handleBlankSelect}
+                challengeData={currentChallenge}
+                submitAnswer={submitAnswer}
+                submitting={submitting}
+                onCorrectAnswer={handleCorrectAnswer}
+                selectedBlankIndex={selectedBlankIndex} 
+                potions={potions}
+                selectedPotion={selectedPotion}
+                onPotionPress={handlePotionPress}
+                loadingPotions={loadingPotions}
+                usingPotion={usingPotion}
               />
             </View>
+          )}
+        </View>
+      )}
+    </ImageBackground>
 
-            {!shouldHideThirdGrid && (
-              <View style={styles.thirdGridContainer}>
-                <ThirdGrid 
-                  currentQuestion={currentChallenge}
-                  selectedAnswers={selectedAnswers}
-                  setSelectedAnswers={memoizedSetSelectedAnswers}
-                  currentQuestionIndex={0}
-                  setCurrentQuestionIndex={() => {}}
-                  setBorderColor={setBorderColor}
-                  setCorrectAnswerRef={setCorrectAnswerRef}
-                  getBlankIndex={getBlankIndex}
-                  challengeData={currentChallenge}
-                  submitAnswer={submitAnswer}
-                  submitting={submitting}
-                  onCorrectAnswer={handleCorrectAnswer}
-                  selectedBlankIndex={selectedBlankIndex} 
-                   potions={potions}
-                  selectedPotion={selectedPotion}
-                  onPotionPress={handlePotionPress}
-                  loadingPotions={loadingPotions}
-                  usingPotion={usingPotion}
-                />
-              </View>
-            )}
-          </View>
-        )}
-      </ImageBackground>
-    </>
-  );
-}
+    <GameOverModal
+      visible={showGameOver}
+      onRetry={handleRetry}
+      onHome={handleHome}
+      characterName={gameState?.selectedCharacter?.name || 'Character'}
+      enemyName={gameState?.enemy?.enemy_name || 'Enemy'}
+      isRetrying={isRetrying} 
+    />
 
+    <LevelCompletionModal
+      visible={showLevelCompletion}
+      onRetry={handleRetry}
+      onHome={handleHome}
+      onNextLevel={handleNextLevel}
+      completionRewards={gameState?.submissionResult?.completionRewards}
+      nextLevel={gameState?.submissionResult?.nextLevel}
+      characterName={gameState?.selectedCharacter?.name || 'Character'}
+      enemyName={gameState?.enemy?.enemy_name || 'Enemy'}
+      isLoading={isLoadingNextLevel}
+    />
+  </>
+);
+};
 
 const styles = StyleSheet.create({
   container: { 
@@ -613,7 +623,7 @@ const styles = StyleSheet.create({
 
   exitGameButton: {
     position: 'absolute',
-    top: 20, // ✅ Adjusted for status bar hidden
+    top: 20, 
     left: 20,
     width: 40,
     height: 40,

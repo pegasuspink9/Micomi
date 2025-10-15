@@ -80,6 +80,31 @@ export const useLevelData = () => {
     }
   };
 
+  const buyPotion = async (playerId, levelId, potionId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log(`🛒 Buying potion ${potionId} for player ${playerId} in level ${levelId}`);
+      const response = await levelService.buyPotion(playerId, levelId, potionId);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to buy potion');
+      }
+      
+      console.log('🛒 Potion purchase response:', response);
+      return response;
+      
+    } catch (err) {
+      console.error('❌ Error buying potion:', err);
+      setError(err.message || 'Failed to buy potion');
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   const clearError = () => setError(null);
 
   return {
@@ -88,6 +113,7 @@ export const useLevelData = () => {
     getLevelById,
     getLevelPreview,
     getLevelsByMapId,
-    clearError
+    clearError,
+    buyPotion
   };
 };

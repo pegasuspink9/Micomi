@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { characterService } from '../services/characterService';
 import { universalAssetPreloader } from '../services/preloader/universalAssetPreloader';
+import {VIDEO_ASSETS} from '../Components/Character/CharacterData';
+
+
 
 
 export const useCharacterSelection = (playerId = 11) => { 
@@ -13,32 +16,40 @@ export const useCharacterSelection = (playerId = 11) => {
   const [assetsLoading, setAssetsLoading] = useState(false);
   const [assetsProgress, setAssetsProgress] = useState({ loaded: 0, total: 0, progress: 0 });
   
-  const loadCharacters = useCallback(async () => {
+ const loadCharacters = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
       console.log(`🦸‍♂️ Loading player characters for player ID: ${playerId}...`);
       
-      // First, load cached assets
+      // First, load cached assets (including videos)
       await universalAssetPreloader.loadCachedAssets('characters');
+      await universalAssetPreloader.loadCachedAssets('ui_videos'); // ✅ Load video cache
       
       // Get character data from API
       const apiData = await characterService.getPlayerCharacters(playerId);
       const transformedData = characterService.transformCharacterData(apiData);
       
-      // Check if assets are cached
-      const cacheStatus = await universalAssetPreloader.areCharacterAssetsCached(transformedData);
-      console.log(`📦 Asset cache status:`, cacheStatus);
+      // ✅ Check both character assets and video assets cache status
+      const characterCacheStatus = await universalAssetPreloader.areCharacterAssetsCached(transformedData);
+      const videoCacheStatus = await universalAssetPreloader.areVideoAssetsCached([
+        { url: VIDEO_ASSETS.characterSelectBackground, name: 'character_select_background', type: 'video' }
+      ]);
+      
+      console.log(`📦 Character assets cache status:`, characterCacheStatus);
+      console.log(`📹 Video assets cache status:`, videoCacheStatus);
       
       // If not all assets are cached, download them
-      if (!cacheStatus.cached) {
-        console.log(`📦 Need to download ${cacheStatus.missing} missing assets`);
-        await downloadCharacterAssets(transformedData);
+      if (!characterCacheStatus.cached || !videoCacheStatus.cached) {
+        console.log(`📦 Need to download missing assets - Characters: ${characterCacheStatus.missing}, Videos: ${videoCacheStatus.missing}`);
+        await downloadAllAssets(transformedData);
       }
       
-      // Transform data to use cached paths
-      const dataWithCachedPaths = universalAssetPreloader.transformCharacterDataWithCache(transformedData);
+      // Transform data to use cached paths (including videos)
+      let dataWithCachedPaths = universalAssetPreloader.transformCharacterDataWithCache(transformedData);
+      dataWithCachedPaths = universalAssetPreloader.transformVideoDataWithCache(dataWithCachedPaths);
+      
       setCharactersData(dataWithCachedPaths);
       
       // Set the actually selected character from backend for display
@@ -63,6 +74,106 @@ export const useCharacterSelection = (playerId = 11) => {
       setLoading(false);
     }
   }, [playerId]);
+
+  const downloadAllAssets = useCallback(async (charactersData) => {
+    try {
+      setAssetsLoading(true);
+      setAssetsProgress({ loaded: 0, total: 0, progress: 0 });
+      
+      console.log('📦 Starting all assets download (videos + character assets)...');
+      
+      // ✅ Step 1: Download video assets first (high priority)
+      console.log('📹 Step 1: Downloading video assets...');
+      const videoAssets = [
+        {
+          url: VIDEO_ASSETS.characterSelectBackground,
+          name: 'character_select_background',
+          type: 'video',
+          category: 'ui_videos',
+          priority: 'high'
+        }
+      ];
+      
+      const videoResult = await universalAssetPreloader.downloadVideoAssets(
+        videoAssets,
+        // Overall video progress (20% of total progress)
+        (progress) => {
+          setAssetsProgress(prev => ({
+            ...prev,
+            loaded: progress.loaded,
+            total: progress.total + 50, // Estimate total including character assets
+            progress: progress.progress * 0.2, // Videos take 20% of total
+            currentAsset: { 
+              name: 'Background Video', 
+              type: 'video',
+              progress: progress.progress 
+            }
+          }));
+        },
+        // Individual video asset progress
+        (assetProgress) => {
+          console.log(`📹 Downloading video: ${assetProgress.name} - ${Math.round(assetProgress.progress * 100)}%`);
+        }
+      );
+      
+      if (videoResult.success) {
+        console.log(`📹 Video download completed: ${videoResult.downloaded}/${videoResult.total}`);
+      }
+      
+      // ✅ Step 2: Download character assets
+      console.log('📦 Step 2: Downloading character assets...');
+      const characterResult = await universalAssetPreloader.downloadCharacterAssets(
+        charactersData,
+        // Overall character progress (80% of remaining progress)
+        (progress) => {
+          setAssetsProgress(prev => ({
+            ...prev,
+            loaded: (videoResult.downloaded || 0) + progress.loaded,
+            total: (videoResult.total || 0) + progress.total,
+            progress: 0.2 + (progress.progress * 0.8), // Characters take 80% after videos
+            successCount: (videoResult.downloaded || 0) + progress.successCount,
+            currentAsset: progress.currentAsset
+          }));
+        },
+        // Individual character asset progress
+        (assetProgress) => {
+          console.log(`📦 Downloading ${assetProgress.characterName} - ${assetProgress.name}: ${Math.round(assetProgress.progress * 100)}%`);
+        }
+      );
+      
+      if (characterResult.success) {
+        console.log(`📦 Character assets download completed: ${characterResult.downloaded}/${characterResult.total}`);
+        
+        if (characterResult.failedAssets.length > 0) {
+          console.warn(`⚠️ Failed to download ${characterResult.failedAssets.length} character assets:`, characterResult.failedAssets);
+        }
+      }
+      
+      // ✅ Combined result
+      const totalDownloaded = (videoResult.downloaded || 0) + (characterResult.downloaded || 0);
+      const totalAssets = (videoResult.total || 0) + (characterResult.total || 0);
+      
+      console.log(`✅ All assets download completed: ${totalDownloaded}/${totalAssets}`);
+      
+      return {
+        success: videoResult.success && characterResult.success,
+        videoResult,
+        characterResult,
+        totalDownloaded,
+        totalAssets
+      };
+      
+    } catch (error) {
+      console.error('❌ Error downloading all assets:', error);
+      setError(`Failed to download assets: ${error.message}`);
+      throw error;
+    } finally {
+      setAssetsLoading(false);
+    }
+  }, []);
+
+
+
 
   const downloadCharacterAssets = useCallback(async (charactersData) => {
     try {
@@ -109,18 +220,63 @@ export const useCharacterSelection = (playerId = 11) => {
     }
   }, []);
 
-   // Force refresh assets
-    const refreshAssets = useCallback(async () => {
+  const refreshAssets = useCallback(async () => {
     if (Object.keys(charactersData).length > 0) {
-      console.log('🔄 Refreshing character assets...');
-      // Clear current cache and re-download
+      console.log('🔄 Refreshing all assets (videos + characters)...');
+      
+      // Clear both character and video caches
       await universalAssetPreloader.clearCategoryCache('characters');
-      await downloadCharacterAssets(charactersData);
+      await universalAssetPreloader.clearCategoryCache('ui_videos');
+      
+      // Re-download all assets
+      await downloadAllAssets(charactersData);
       
       // Reload characters with new cached paths
       await loadCharacters();
     }
-  }, [charactersData, downloadCharacterAssets, loadCharacters]);
+  }, [charactersData, downloadAllAssets, loadCharacters]);
+
+   const downloadVideoAssets = useCallback(async () => {
+    try {
+      setAssetsLoading(true);
+      
+      const videoAssets = [
+        {
+          url: VIDEO_ASSETS.characterSelectBackground,
+          name: 'character_select_background',
+          type: 'video',
+          category: 'ui_videos',
+          priority: 'high'
+        }
+      ];
+      
+      const result = await universalAssetPreloader.downloadVideoAssets(
+        videoAssets,
+        (progress) => {
+          setAssetsProgress({
+            loaded: progress.loaded,
+            total: progress.total,
+            progress: progress.progress,
+            currentAsset: { name: 'Background Video', type: 'video' }
+          });
+        }
+      );
+      
+      return result;
+    } catch (error) {
+      console.error('❌ Error downloading video assets:', error);
+      throw error;
+    } finally {
+      setAssetsLoading(false);
+    }
+  }, []);
+
+  const isVideoAssetCached = useCallback(async () => {
+    const videoCacheStatus = await universalAssetPreloader.areVideoAssetsCached([
+      { url: VIDEO_ASSETS.characterSelectBackground, name: 'character_select_background', type: 'video' }
+    ]);
+    return videoCacheStatus.cached;
+  }, []);
 
 
   // Purchase character
@@ -263,6 +419,8 @@ export const useCharacterSelection = (playerId = 11) => {
     error,
     purchasing,
     selecting,
+    assetsLoading,
+    assetsProgress, 
     
       // Actions
     loadCharacters,
@@ -270,6 +428,8 @@ export const useCharacterSelection = (playerId = 11) => {
     selectCharacter,
     changeDisplayedCharacter,
     downloadCharacterAssets,
+    downloadAllAssets, 
+    downloadVideoAssets,
     refreshAssets,
     clearError,
     
@@ -280,6 +440,7 @@ export const useCharacterSelection = (playerId = 11) => {
     getHeroNames,
     isCharacterPurchased,
     isCharacterSelected,
+    isVideoAssetCached,
   };
 };
 

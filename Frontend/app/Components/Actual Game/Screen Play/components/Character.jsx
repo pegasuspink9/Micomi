@@ -47,11 +47,11 @@ const DogCharacter = ({
   const [preloadedImages] = useState(new Map());
 
   const TOTAL_FRAMES = 24;
-  const FRAME_DURATION = 120;
+  const FRAME_DURATION = 90;
 
   // ✅ Responsive animation constants
   const ANIMATION_DURATIONS = useMemo(() => ({
-    idle: 2000,
+    idle: 1000,
     attack: 3000, 
     hurt: 2000,
     run: -1,
@@ -362,9 +362,26 @@ const DogCharacter = ({
             }
           }
         );
-      } else if (isAnimationLooping) {
-        positionX.value = START_POSITION;
-        opacity.value = 1;
+      }  else if (isAnimationLooping) {
+      positionX.value = START_POSITION;
+      opacity.value = 1;
+      
+      // ✅ Don't loop dies animation
+      if (currentState === 'dies') {
+        frameIndex.value = withTiming(
+          TOTAL_FRAMES - 1,
+          { 
+            duration: ANIMATION_DURATIONS.dies || 2000,
+            easing: Easing.inOut(Easing.ease)
+          },
+          (finished) => {
+            if (finished) {
+              runOnJS(notifyAnimationComplete)();
+              frameIndex.value = TOTAL_FRAMES - 1; // ✅ Stay on last frame
+            }
+          }
+        );
+      } else {
         frameIndex.value = withRepeat(
           withTiming(TOTAL_FRAMES - 1, {
             duration: FRAME_DURATION * TOTAL_FRAMES,
@@ -373,8 +390,9 @@ const DogCharacter = ({
           -1,
           false
         );
-      } else {
-        if (currentState === 'attack') {
+      }
+    } else {
+      if (currentState === 'attack') {
           positionX.value = START_POSITION;
           opacity.value = 1;
           
@@ -433,11 +451,16 @@ const DogCharacter = ({
               easing: Easing.inOut(Easing.ease)
             },
             (finished) => {
-              if (finished) {
+            if (finished) {
+              if (currentState === 'dies') {
+                runOnJS(notifyAnimationComplete)();
+                frameIndex.value = TOTAL_FRAMES - 1;
+              } else {
                 runOnJS(notifyAnimationComplete)();
                 frameIndex.value = 0;
               }
             }
+          } 
           );
         }
       }

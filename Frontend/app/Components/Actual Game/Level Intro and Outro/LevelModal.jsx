@@ -659,6 +659,17 @@ const LevelModal = ({
                 </ImageBackground>
               </View>
             </View>
+
+             <Pressable 
+                style={({ pressed }) => [
+                  styles.closeButton,
+                  pressed && styles.closeButtonPressed
+                ]}
+                onPress={handleModalClose}
+                disabled={isAnimating}
+              >
+                <Text style={styles.closeButtonText}>×</Text>
+              </Pressable>
             
             {/* ✅ Smooth close button */}
             <Animated.View
@@ -673,16 +684,7 @@ const LevelModal = ({
                 ]
               }}
             >
-              <Pressable 
-                style={({ pressed }) => [
-                  styles.closeButton,
-                  pressed && styles.closeButtonPressed
-                ]}
-                onPress={handleModalClose}
-                disabled={isAnimating}
-              >
-                <Text style={styles.closeButtonText}>×</Text>
-              </Pressable>
+             
             </Animated.View>
           </Animated.View>
         )}
@@ -1283,10 +1285,10 @@ const styles = StyleSheet.create({
 
   closeButton: {
     position: 'absolute',
-    top: SCREEN_HEIGHT * -0.45,
+    top: SCREEN_HEIGHT * 0.02,
     right: SCREEN_WIDTH * 0.02,
-    width: 38, // ✅ Slightly larger
-    height: 38, // ✅ Slightly larger
+    width: 38,
+    height: 38, 
     borderRadius: 19,
     backgroundColor: '#ef4444',
     justifyContent: 'center',
@@ -1294,7 +1296,7 @@ const styles = StyleSheet.create({
     shadowColor: '#dc2626',
     shadowOffset: {
       width: 0,
-      height: 8, // ✅ More shadow
+      height: 8,
     },
     shadowOpacity: 0.5, // ✅ More shadow opacity
     shadowRadius: 12, // ✅ Larger shadow radius

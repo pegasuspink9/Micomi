@@ -362,8 +362,7 @@ export default function MapNavigate({ onMapChange }) {
           </View>
         </View>
       </View>
-
-      {/* ✅ Asset Download Progress Modal */}
+      
       <Modal
         visible={downloadModalVisible}
         transparent={true}
@@ -377,7 +376,6 @@ export default function MapNavigate({ onMapChange }) {
               style={styles.downloadModalBackground}
               resizeMode="cover"
             >
-              {/* ✅ Header */}
               <View style={styles.downloadModalHeader}>
                 <Text style={styles.downloadModalTitle}>Preparing {downloadProgress.mapName}</Text>
                 <Text style={styles.downloadModalSubtitle}>Downloading theme assets...</Text>

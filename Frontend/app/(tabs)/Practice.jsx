@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Text, 
   View, 
@@ -9,6 +9,8 @@ import {
   Pressable,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import {
   scale,
@@ -17,17 +19,43 @@ import {
   hp,
   RESPONSIVE,
 } from '../Components/Responsiveness/gameResponsive';
+import { useLevelData } from '../hooks/useLevelData';
+import { universalAssetPreloader } from '../services/preloader/universalAssetPreloader';
+import { Video } from 'expo-av';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const POTION_DATA = [
-  { id: 1, name: 'Love',  price: 250, quantity: 5, image: 'https://github.com/user-attachments/assets/765b1917-5b6a-4156-9d38-0acbdbfc909a', description: 'A warm elixir that momentarily boosts charm and empathy.' },
-  { id: 2, name: 'Mana',  price: 200, quantity: 3, image: 'https://github.com/user-attachments/assets/d2a4ab58-2d5d-4e35-80b2-71e591bdd297', description: 'Restores magical energy; ideal for spellcasting in long encounters.' },
-  { id: 3, name: 'Strong', price: 400, quantity: 1, image: 'https://github.com/user-attachments/assets/3264eb79-0afd-4987-8c64-6d46b0fc03a0', description: 'Temporarily increases physical strength and melee damage.' },
-  { id: 4, name: 'Freeze', price: 300, quantity: 0, image: 'https://github.com/user-attachments/assets/3264eb79-0afd-4987-8c64-6d46b0fc03a0', description: 'Emits a chilling vapor that slows enemies for a short duration.' },
-  { id: 5, name: 'Speed', price: 350, quantity: 7, image: 'https://github.com/user-attachments/assets/d2a4ab58-2d5d-4e35-80b2-71e591bdd297', description: 'Sharpens reflexes and movement speed for quick maneuvers.' },
-  { id: 6, name: 'Hint',  price: 150, quantity: 2, image: 'https://github.com/user-attachments/assets/d2a4ab58-2d5d-4e35-80b2-71e591bdd297', description: 'A subtle whisper of guidance—reveals a helpful hint for puzzles.' },
-];
+// ✅ Transform API data to component format
+const transformPotionData = (potionShop = []) => {
+  return potionShop.map(potion => ({
+    id: potion.potion_id,
+    name: getPotionDisplayName(potion.potion_type),
+    price: potion.potion_price,
+    quantity: potion.player_owned_quantity,
+    image: potion.potion_url,
+    description: potion.description,
+    type: potion.potion_type,
+    limit: potion.limit,
+    boughtInLevel: potion.boughtInLevel,
+    remainToBuy: potion.remainToBuy,
+    // Additional API fields
+    potion_id: potion.potion_id,
+  }));
+};
+
+// ✅ Helper function for display names
+const getPotionDisplayName = (potionType) => {
+  const typeMap = {
+    'health': 'Health',
+    'hint': 'Hint',
+    'strong': 'Strong',
+    'mana': 'Mana',
+    'freeze': 'Freeze',
+    'speed': 'Speed',
+    'immune': 'Immune'
+  };
+  return typeMap[potionType] || potionType.charAt(0).toUpperCase() + potionType.slice(1);
+};
 
 const getPotionColors = (name) => {
   const brown = '#943f02ff';
@@ -42,6 +70,182 @@ const getPotionColors = (name) => {
 
 export default function Practice() {
   const [selected, setSelected] = useState(null);
+  const [potions, setPotions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [playerCoins, setPlayerCoins] = useState(0);
+  const [assetsLoading, setAssetsLoading] = useState(false);
+  const [buyingPotion, setBuyingPotion] = useState(false); 
+  const { getLevelPreview, buyPotion } = useLevelData(); 
+  const DEFAULT_PLAYER_ID = 11;
+  const DEFAULT_LEVEL_ID = 3; 
+
+  const fetchPotionData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log(`🧪 Fetching potion shop for player ${DEFAULT_PLAYER_ID}, level ${DEFAULT_LEVEL_ID}`);
+      
+      const response = await getLevelPreview(DEFAULT_LEVEL_ID, DEFAULT_PLAYER_ID);
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to fetch potion shop');
+      }
+
+      const { potionShop, player_info } = response.data;
+      
+      // Transform and set potion data
+      const transformedPotions = transformPotionData(potionShop);
+      setPotions(transformedPotions);
+      setPlayerCoins(player_info?.player_coins || 0);
+      
+      console.log(`🧪 Loaded ${transformedPotions.length} potions from shop`);
+
+      // ✅ Preload potion images (only if not already loading)
+      if (transformedPotions.length > 0 && !assetsLoading) {
+        setAssetsLoading(true);
+        await preloadPotionAssets(transformedPotions);
+        setAssetsLoading(false);
+      }
+
+    } catch (err) {
+      console.error('❌ Error fetching potion data:', err);
+      setError(err.message || 'Failed to load potion shop');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPotionData();
+  }, []);
+
+  const handleBuyPotion = async (potion) => {
+  if (buyingPotion) return; // Prevent multiple purchases
+
+  setBuyingPotion(true);
+  setError(null);
+
+  try {
+    const response = await buyPotion(DEFAULT_PLAYER_ID, DEFAULT_LEVEL_ID, potion.potion_id);
+
+    if (response.success) {
+      console.log('🛒 Purchase successful!', response);
+
+      await fetchPotionData();
+
+      // Close detail view
+      setSelected(null);
+    } else {
+      console.error('❌ Purchase failed:', response.error || response);
+      setError(response.error || 'Purchase failed');
+    }
+  } catch (purchaseError) {
+    console.error('❌ Purchase failed:', purchaseError);
+    setError(purchaseError.message || 'Unable to complete purchase. Please try again.');
+  } finally {
+    setBuyingPotion(false);
+  }
+};
+
+  // ✅ Preload potion assets (unchanged)
+  const preloadPotionAssets = async (potionData) => {
+    try {
+      console.log('🧪 Starting potion asset preloading...');
+      
+      const assets = potionData
+        .filter(potion => potion.image && typeof potion.image === 'string')
+        .map(potion => ({
+          url: potion.image,
+          name: `potion_${potion.type}`,
+          type: 'image',
+          category: 'potion_shop',
+          potionId: potion.id,
+          potionType: potion.type,
+          potionName: potion.name
+        }));
+
+      console.log(`🧪 Found ${assets.length} potion assets to preload`);
+
+      if (assets.length === 0) return;
+
+      const results = await Promise.allSettled(
+        assets.map(asset => 
+          universalAssetPreloader.downloadSingleAsset(
+            asset.url,
+            asset.category,
+            (progress) => {
+              console.log(`🧪 Downloading ${asset.potionName}: ${Math.round(progress.progress * 100)}%`);
+            }
+          )
+        )
+      );
+
+      const successful = results.filter(result => result.status === 'fulfilled' && result.value.success);
+      console.log(`🧪 Preloaded ${successful.length}/${assets.length} potion assets`);
+
+    } catch (error) {
+      console.error('❌ Error preloading potion assets:', error);
+    }
+  };
+
+  const getCachedImagePath = (url) => {
+    return universalAssetPreloader.getCachedAssetPath(url);
+  };
+
+  // ✅ Enhanced retry function
+  const handleRetry = () => {
+    setError(null);
+    fetchPotionData();
+  };
+
+  // ✅ Loading state with buying indicator
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ImageBackground 
+          source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' }} 
+          style={styles.ImageBackgroundContainer} 
+          resizeMode="cover"
+        >
+          <View style={styles.backgroundOverlay} />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#fff" />
+            <Text style={styles.loadingText}>
+              {buyingPotion ? "Processing Purchase..." : "Loading Potion Shop..."}
+            </Text>
+            {assetsLoading && (
+              <Text style={styles.subLoadingText}>Preparing assets...</Text>
+            )}
+          </View>
+        </ImageBackground>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <ImageBackground 
+          source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' }} 
+          style={styles.ImageBackgroundContainer} 
+          resizeMode="cover"
+        >
+          <View style={styles.backgroundOverlay} />
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>❌ {error}</Text>
+            <TouchableOpacity 
+              style={styles.retryButton}
+              onPress={handleRetry} // ✅ Use proper retry function
+            >
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        </ImageBackground>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -54,11 +258,16 @@ export default function Practice() {
         
         {/* Top Frame - 40% */}
         <View style={styles.topFrame}>
-          <ImageBackground 
-            source={{ uri: 'https://res.cloudinary.com/dpbocuozx/image/upload/v1760335389/file_000000000af46209afeffe89e7b90925_ypagkm.png' }} 
-            style={styles.ImageBackgroundTop} 
+        <Video
+            source={{ uri: 'https://res.cloudinary.com/dpbocuozx/video/upload/v1760423233/lv_0_20251014141918_dvsmzk.mp4' }}
+            style={styles.ImageBackgroundTop}
+            shouldPlay
+            isLooping
+            resizeMode="contain"
+            useNativeControls={false}
+            isMuted={true}
           />
-        </View>
+          </View>
         
         {/* Bottom Frame - 60% */}
         <View style={styles.bottomFrame}>
@@ -69,25 +278,35 @@ export default function Practice() {
           >
           </ImageBackground>
 
-          {/* potionsOverlay now always renders the grid.
-              When a potion is selected we also render DetailView as an overlay,
-              so the grid remains visible while the details are shown. */}
           <View style={styles.potionsOverlay}>
-            <PotionsGrid data={POTION_DATA} onSelect={(p) => p.quantity > 0 && setSelected(p)} />
+            <PotionsGrid 
+              data={potions} 
+              onSelect={(p) => setSelected(p)}
+              getCachedImagePath={getCachedImagePath}
+            />
 
             {selected && (
               <View style={styles.detailOverlay}>
-                <DetailView selected={selected} onBack={() => setSelected(null)} />
+                <DetailView 
+                  selected={selected} 
+                  onBack={() => setSelected(null)}
+                  playerCoins={playerCoins}
+                  getCachedImagePath={getCachedImagePath}
+                  onBuy={handleBuyPotion} 
+                  buyingPotion={buyingPotion}
+                />
               </View>
             )}
           </View>
         </View>
+
       </ImageBackground>
     </View>
   );
 }
 
-function PotionsGrid({ data, onSelect }) {
+// ✅ Updated PotionsGrid (unchanged)
+function PotionsGrid({ data, onSelect, getCachedImagePath }) {
   return (
     <ScrollView 
       contentContainerStyle={styles.gridWrap}
@@ -96,11 +315,12 @@ function PotionsGrid({ data, onSelect }) {
       {data.map((potion) => {
         const colors = getPotionColors(potion.name);
         const isOut = potion.quantity === 0;
+        const cachedImagePath = getCachedImagePath(potion.image);
+        
         return (
           <View key={potion.id} style={styles.cardCell}>
             <Pressable
-              onPress={() => !isOut && onSelect(potion)}
-              disabled={isOut}
+              onPress={() => onSelect(potion)} // ✅ Allow selecting any potion
               style={({ pressed }) => [
                 styles.potionFrame,
                 { backgroundColor: colors.frameColor },
@@ -124,17 +344,30 @@ function PotionsGrid({ data, onSelect }) {
                   <View style={styles.potionSlotContent}>
                     <View style={styles.potionHighlight} />
                     <View style={styles.potionShadow} />
-                    <Image source={{ uri: potion.image }} style={[styles.potionImage, isOut && styles.potionImageDisabled]} />
+                    
+                    <Image 
+                      source={{ uri: cachedImagePath }} 
+                      style={[styles.potionImage, isOut && styles.potionImageDisabled]} 
+                    />
+                    
                     <View style={[styles.countContainer, isOut && styles.countContainerDisabled]}>
-                      <Text style={styles.countText}>{potion.quantity}</Text>
+                      <Text style={styles.shopInfoText}>
+                          {potion.remainToBuy}/{potion.limit}
+                      </Text>
                     </View>
                     <View style={styles.nameContainer}>
-                      <Text style={[styles.nameText, isOut && styles.nameTextDisabled]}>{potion.name}</Text>
+                      <Text style={[styles.nameText, isOut && styles.nameTextDisabled]}>
+                        {potion.name}
+                      </Text>
                     </View>
                   </View>
                 </View>
               </View>
             </Pressable>
+            
+            <View style={styles.shopInfo}>
+               <Text style={styles.countText}>Stock: {potion.quantity}</Text>
+            </View>
           </View>
         );
       })}
@@ -142,13 +375,20 @@ function PotionsGrid({ data, onSelect }) {
   );
 }
 
-function DetailView({ selected, onBack }) {
+// ✅ Updated DetailView with buy functionality
+function DetailView({ selected, onBack, playerCoins, getCachedImagePath, onBuy, buyingPotion }) {
   const colors = getPotionColors(selected.name);
   const isOut = selected.quantity === 0;
+  const cannotBuy = selected.remainToBuy === 0 || playerCoins < selected.price;
+  const cachedImagePath = getCachedImagePath(selected.image);
 
   return (
     <View style={[styles.detailCard, { borderColor: colors.border }]}>
-      <View style={[styles.potionFrame, { backgroundColor: colors.frameColor, width: SCREEN_WIDTH * 0.45, height: SCREEN_WIDTH * 0.55 }]}>
+      <View style={[styles.potionFrame, { 
+        backgroundColor: colors.frameColor, 
+        width: SCREEN_WIDTH * 0.45, 
+        height: SCREEN_WIDTH * 0.55 
+      }]}>
         <View
           style={[
             styles.potionSlot,
@@ -165,7 +405,12 @@ function DetailView({ selected, onBack }) {
             <View style={styles.potionSlotContent}>
               <View style={styles.potionHighlight} />
               <View style={styles.potionShadow} />
-              <Image source={{ uri: selected.image }} style={styles.potionImageDetail} />
+              
+              <Image 
+                source={{ uri: cachedImagePath }} 
+                style={styles.potionImageDetail} 
+              />
+              
               <View style={styles.countContainerDetail}>
                 <Text style={styles.countTextDetail}>{selected.quantity}</Text>
               </View>
@@ -177,25 +422,32 @@ function DetailView({ selected, onBack }) {
       <View style={styles.detailInfo}>
         <Text style={styles.detailTitle}>{selected.name} Potion</Text>
         <Text style={styles.detailText}>Price: {selected.price} coins</Text>
-
-        {/* ADDED: description below the price (comes from POTION_DATA) */}
+        <Text style={styles.detailText}>Owned: {selected.quantity}</Text>
+        <Text style={styles.detailText}>Can buy: {selected.remainToBuy}/{selected.limit}</Text>
         <Text style={styles.detailDescription}>{selected.description}</Text>
-
       </View>
 
       <View style={styles.detailActions}>
         <TouchableOpacity
-          style={[styles.buyButton, isOut ? styles.keyDisabled : styles.keyActive]}
-          disabled={isOut}
-          onPress={onBack}
+          style={[
+            styles.buyButton, 
+            cannotBuy || buyingPotion ? styles.keyDisabled : styles.keyActive 
+          ]}
+          disabled={cannotBuy || buyingPotion} // ✅ Disable when buying
+          onPress={() => onBuy(selected)} 
         >
-          <Text style={[styles.actionText, styles.keyText]}>{isOut ? 'Out of Stock' : 'Buy'}</Text>
+          <Text style={[styles.actionText, styles.keyText]}>
+            {buyingPotion ? 'Buying...' : 
+             selected.remainToBuy === 0 ? 'Limit Reached' : 
+             playerCoins < selected.price ? 'Not Enough Coins' : 'Buy'}
+          </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
+        <TouchableOpacity 
           style={[styles.backButton, styles.keyActive]}
           activeOpacity={0.9}
           onPress={onBack}
+          disabled={buyingPotion} // ✅ Disable back button while buying
         >
           <Text style={[styles.actionText, styles.keyText]}>Back</Text>
         </TouchableOpacity>
@@ -205,6 +457,117 @@ function DetailView({ selected, onBack }) {
 }
 
 const styles = StyleSheet.create({
+  // ...existing styles...
+
+  // ✅ Add purchase overlay styles
+  purchaseOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+
+  purchaseModal: {
+    backgroundColor: 'rgba(16, 7, 83, 0.9)',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#ffd700',
+  },
+
+  purchaseText: {
+    color: '#fff',
+    fontSize: SCREEN_WIDTH * 0.04,
+    fontFamily: 'DynaPuff',
+    marginTop: 12,
+    textAlign: 'center',
+  },
+
+  // ...keep all existing styles...
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  loadingText: {
+    color: '#fff',
+    fontSize: SCREEN_WIDTH * 0.04,
+    fontFamily: 'DynaPuff',
+    marginTop: 16,
+  },
+
+  subLoadingText: {
+    color: '#ffffff94',
+    fontSize: SCREEN_WIDTH * 0.03,
+    fontFamily: 'DynaPuff',
+    marginTop: 8,
+  },
+
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+
+  errorText: {
+    color: '#ff6b6b',
+    fontSize: SCREEN_WIDTH * 0.04,
+    fontFamily: 'DynaPuff',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+
+  retryButton: {
+    backgroundColor: '#2563eb',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+
+  retryText: {
+    color: '#fff',
+    fontSize: SCREEN_WIDTH * 0.035,
+    fontFamily: 'DynaPuff',
+  },
+
+  coinsContainer: {
+    position: 'absolute',
+    top: scaleHeight(20),
+    right: scaleWidth(20),
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#ffd700',
+  },
+
+  coinsText: {
+    color: '#ffd700',
+    fontSize: SCREEN_WIDTH * 0.035,
+    fontFamily: 'DynaPuff'
+  },
+
+  shopInfo: {
+    marginTop: 4,
+    alignItems: 'center',
+  },
+
+  shopInfoText: {
+    color: '#ffffff94',
+    fontSize: SCREEN_WIDTH * 0.025,
+    fontFamily: 'DynaPuff',
+    textAlign: 'center',
+  },
+
   container: {
     flex: 1
   },
@@ -214,8 +577,8 @@ const styles = StyleSheet.create({
     alignContent: 'center',
   },
   ImageBackgroundTop:{
-    width: scaleWidth(390),
-    height: scaleHeight(390),
+    width: scaleWidth(460),
+    height: scaleHeight(400),
   },
   ImageBackgroundBottom: {
     width: scaleWidth(700),
@@ -255,7 +618,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // Grid
   gridWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -287,6 +649,8 @@ const styles = StyleSheet.create({
     borderRightWidth: 2,
     borderRightColor: 'rgba(0, 0, 0, 0.3)',
   },
+
+  
   potionSlot: {
     flex: 1,
     borderRadius: SCREEN_WIDTH * 0.025,
@@ -438,13 +802,12 @@ const styles = StyleSheet.create({
     fontFamily: 'DynaPuff',
   },
 
-  // Detail view
   detailCard: {
-    top: scaleHeight(-20),
+    padding: 10,
+    top: scaleHeight(-100),
     borderWidth: scale(4),
     borderRadius: 12,
     width: scaleWidth(250),
-    padding: 12,
     backgroundColor: 'rgba(87, 32, 5, 1)',
     alignItems: 'center',
   },
@@ -466,12 +829,12 @@ const styles = StyleSheet.create({
     fontFamily: 'DynaPuff',
   },
 
-  /* ADDED: description style shown under the price in DetailView */
   detailDescription: {
     color: '#e9e1d9ff',
-    fontSize: SCREEN_WIDTH * 0.028,
+    fontSize: SCREEN_WIDTH * 0.025,
     fontFamily: 'DynaPuff',
     marginTop: 6,
+    textAlign: 'justify',
     marginBottom: 6,
     lineHeight: SCREEN_WIDTH * 0.04,
     maxWidth: scaleWidth(200),
@@ -479,12 +842,13 @@ const styles = StyleSheet.create({
 
   detailActions: {
     flexDirection: 'row',
-    gap: 10,
     marginTop: 8,
-    alignSelf: 'stretch',
+    width: scaleWidth(180),
+    alignSelf: 'center',
+    gap:10
+    
   },
 
-  /* KEYBOARD-LIKE BUTTON STYLES */
   keyActive: {
     backgroundColor: '#ffffffff',          
     borderColor: '#8f0000ff',
@@ -501,8 +865,8 @@ const styles = StyleSheet.create({
     borderColor: '#bfbfbf',
   },
   keyText: {
-    color: '#111827',                    
-    fontWeight: '700',
+    fontFamily: 'DynaPuff',
+    color: '#111827',   
   },
 
   buyButton: {
@@ -525,7 +889,6 @@ const styles = StyleSheet.create({
   actionText: {
     color: '#fff',
     fontSize: 14,
-    fontFamily: 'DynaPuff',
-    fontWeight: 'bold',
+    fontFamily: 'DynaPuff'
   },
 });

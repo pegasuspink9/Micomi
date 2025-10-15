@@ -5,9 +5,12 @@ import CharacterDisplay from '../../Components/Character/CharacterDisplay';
 import ActionButton from '../../Components/Character/ActionButton';
 import AttributePanel from '../../Components/Character/AttributePanel';
 import ScreenLabel from '../../Components/Character/ScreenLabel';
-import { URLS } from '../../Components/Character/CharacterData';
+import { URLS, VIDEO_ASSETS } from '../../Components/Character/CharacterData';
 import { useCharacterSelection } from '../../hooks/useCharacterSelection';
 import AssetDownloadProgress from '../../Components/RoadMap/LoadingState/assetDownloadProgress';
+import { Video } from 'expo-av';
+import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
+import {gameResponsive, hp, scaleHeight, scaleWidth, wp} from '../../Components/Responsiveness/gameResponsive';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -22,7 +25,6 @@ export default function CharacterProfile() {
     error,
     purchasing,
     selecting,
-    // Add these two properties that were missing
     assetsLoading,
     assetsProgress,
     selectCharacter,
@@ -30,15 +32,18 @@ export default function CharacterProfile() {
     loadCharacters,
     clearError,
     getHeroNames,
-    changeDisplayedCharacter
+    changeDisplayedCharacter,
+    isVideoAssetCached // ✅ Use the new video cache checker
   } = useCharacterSelection(playerId);
 
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [showStaticImage, setShowStaticImage] = useState(false);
   const [isCharacterAnimating, setIsCharacterAnimating] = useState(true);
+  const [videoReady, setVideoReady] = useState(false);
 
   // Animation refs
   const backgroundOpacity = useRef(new Animated.Value(1)).current;
+  const videoRef = useRef(null);
   
   // Refs for child components
   const screenLabelRef = useRef(null);
@@ -49,6 +54,34 @@ export default function CharacterProfile() {
     { style: styles.health, icon: URLS.healthIcon, text: "Health:", number: currentHero.health },
     { style: styles.skill, icon: currentHero.damageIcon, text: "Damage:", number: currentHero.character_damage }
   ] : [];
+
+  // ✅ Get cached video path
+  const getCachedVideoSource = () => {
+    const cachedPath = universalAssetPreloader.getCachedAssetPath(VIDEO_ASSETS.characterSelectBackground);
+    console.log(`🎬 Using video source: ${cachedPath}`);
+    return { uri: cachedPath };
+  };
+
+  const onVideoLoad = (status) => {
+    console.log('🎬 Video load status:', status);
+    if (status.isLoaded) {
+      setVideoReady(true);
+      console.log('🎬 Character select video loaded successfully');
+    }
+  };
+
+  const onVideoError = (error) => {
+    console.error('🎬 Character select video error:', error);
+    setVideoReady(false);
+  };
+
+  const onVideoStatusUpdate = (status) => {
+    if (status.error) {
+      console.error('🎬 Video playback error:', status.error);
+    }
+  };
+
+  // ... existing handlers remain the same ...
 
   const handleCharacterAnimationFinish = () => {
     setIsCharacterAnimating(false);
@@ -118,7 +151,6 @@ export default function CharacterProfile() {
     }
   }, [selectedHero]);
 
-  // Updated renderHeroBox function
   const renderHeroBox = (heroName) => {
     const hero = charactersData[heroName];
     if (!hero) return null;
@@ -177,11 +209,18 @@ export default function CharacterProfile() {
           <View style={styles.headerContainer}>
             <MapHeader />
           </View>
-          <ImageBackground 
-            source={{ uri: URLS.background }} 
-            resizeMode="cover" 
-            opacity={0.7} 
+          <Video 
+            ref={videoRef}
+            source={getCachedVideoSource()} 
             style={styles.fullBackground}
+            shouldPlay={true}
+            isLooping={true}
+            resizeMode="cover" 
+            useNativeControls={false}
+            isMuted={true}
+            onLoad={onVideoLoad}
+            onError={onVideoError}
+            onPlaybackStatusUpdate={onVideoStatusUpdate}
           />
         </View>
         <AssetDownloadProgress
@@ -217,12 +256,22 @@ export default function CharacterProfile() {
         <MapHeader />
       </View>
 
-      <ImageBackground 
-        source={{ uri: URLS.background }} 
-        resizeMode="cover" 
-        opacity={0.7} 
+      <Video 
+        ref={videoRef}
+        source={getCachedVideoSource()} 
         style={styles.fullBackground}
-      >
+        shouldPlay={true}
+        isLooping={true}
+        resizeMode="contain"
+        useNativeControls={false}
+        isMuted={true}
+        onLoad={onVideoLoad}
+        onError={onVideoError}
+        onPlaybackStatusUpdate={onVideoStatusUpdate}
+      />
+
+      {/* Content overlay */}
+      <View style={styles.contentOverlay}>
         <View style={styles.topSection}>
           <View style={styles.contentContainer}>
             
@@ -276,7 +325,7 @@ export default function CharacterProfile() {
             {getHeroNames().map(renderHeroBox)}
           </View>
         </View>
-      </ImageBackground>
+      </View>
 
       {/* Purchase Modal */}
       <Modal 
@@ -322,8 +371,26 @@ export default function CharacterProfile() {
   );
 }
 
-// ... styles remain the same ...
 const styles = StyleSheet.create({
+
+  contentOverlay: {
+    position: 'absolute',
+    
+    top: screenWidth * 1.4 * -0.1,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)', 
+  },
+
+  fullBackground: {
+    position: 'absolute',
+    width: scaleWidth(900),
+    height: scaleHeight(970),
+    alignSelf: 'center',
+  },
+
+
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -361,11 +428,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     zIndex: 100
   },
-  fullBackground: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
   topSection: {
     flex: 0.85
   },
@@ -374,7 +436,7 @@ const styles = StyleSheet.create({
     width: '100%'
   },
   contentContainer: {
-    top: screenHeight * 0.06,
+    top: hp(28),
     alignItems: 'center',
     
     marginTop: screenHeight * 0.05,
@@ -388,7 +450,6 @@ const styles = StyleSheet.create({
   },
   characterContainer: {
     height: screenHeight * 0.4,
-    marginTop: screenHeight * 0.08,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -400,7 +461,7 @@ const styles = StyleSheet.create({
   },
   screenLabel: {
     position: 'absolute',
-    top: screenHeight * -0.11,
+    top: screenHeight * -0.20,
     width: screenWidth * 0.6,
     height: screenHeight * 0.6,
     justifyContent: 'center',
@@ -409,7 +470,8 @@ const styles = StyleSheet.create({
   },
   screenLabelText: {
     color: 'rgba(255, 255, 255, 1)',
-    fontSize: screenWidth * 0.15,
+    fontSize: screenWidth * 0.19,
+    width: '120%',
     fontFamily: 'GoldenAge',
     textAlign: 'center',
   },
@@ -422,8 +484,8 @@ const styles = StyleSheet.create({
     top: screenHeight * 0.15
   },
   characterImage: {
-    width: screenWidth * 0.8,
-    height: screenWidth * 0.8,
+    width: screenWidth * 0.9,
+    height: screenWidth * 0.9,
     top: screenHeight * 0.13,
   },
   bottomBar: {
@@ -483,16 +545,13 @@ const styles = StyleSheet.create({
     marginTop: screenHeight * 0.02,
   },
   viewedHeroBox: {
-    width: screenWidth * 0.21,
-    height: screenHeight * 0.16,
     shadowColor: '#ffffff',
     shadowOffset: { width: 10, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 1,
     elevation: 10,
     
-    borderWidth: 2,
-    borderColor: '#02b7ffff',
+
     shadowOffset: { width: 30, height: 0 },
     shadowOpacity: 1,
     shadowRadius: 1,
@@ -502,8 +561,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 5,
-    width: '100%',
-    height: '100%',
+    width: screenWidth * 0.2,
+    height: screenHeight * 0.2,
   },
   selectionIndicator: {
     position: 'absolute',
@@ -532,8 +591,8 @@ const styles = StyleSheet.create({
     width: screenWidth * 0.4,
   },
   heroBoxBackground: {
-    width: '100%',
-    height: '85%',
+    width: wp(15),
+    height: hp(15),
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: -1,
@@ -541,15 +600,10 @@ const styles = StyleSheet.create({
   },
   heroBoxTxt: {
     color: 'white',
-    fontSize: screenWidth * 0.040,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    width: '100%',
-    position: 'absolute',
-    bottom: 0,
-    paddingVertical: 2,
-    marginTop: screenHeight * 0.12,
+    fontSize: screenWidth * 0.04,
+    marginTop: scaleHeight(90),
     fontFamily: 'MusicVibes',
-    textAlign: 'center',
+    textAlign: 'center'
   },
   heroRoleIcon: {
     width: screenWidth * 0.2,

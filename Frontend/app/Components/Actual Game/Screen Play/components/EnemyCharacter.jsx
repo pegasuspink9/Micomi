@@ -148,64 +148,64 @@ const EnemyCharacter = ({
   }, [onAnimationComplete, currentState, index]);
 
   const handleInternalAnimationComplete = useCallback((completedAnimationState) => {
-  console.log(`🦹 Enemy ${index} internal animation "${completedAnimationState}" completed`);
-  
-  if (completedAnimationState === 'hurt') {
-    // ✅ Get current enemy health from characterAnimations (passed from ScreenPlay)
-    const currentEnemyHealth = characterAnimations?.enemy_health ?? 0;
-      
-    if (currentEnemyHealth <= 0) {
-      console.log('🦹 Enemy hurt animation completed, but health is 0 - setting dies animation');
-      
-      // Update animation URL to dies animation
-      const diesUrl = characterAnimations.character_dies || 
-                     characterAnimations.dies || 
-                     enemy?.enemy_dies || 
-                     enemy?.dies;
-      
-      if (diesUrl) {
-        setCurrentAnimationUrl(diesUrl);
-        setIsAnimationLooping(false);
+    console.log(`🦹 Enemy ${index} internal animation "${completedAnimationState}" completed`);
+    
+    if (completedAnimationState === 'hurt') {
+      // ✅ Get current enemy health from characterAnimations (passed from ScreenPlay)
+      const currentEnemyHealth = characterAnimations?.enemy_health ?? 0;
         
-        // Start dies animation after short delay
-        setTimeout(() => {
-          frameIndex.value = 0;
-          const diesDuration = ANIMATION_DURATIONS.dies || 2000;
+      if (currentEnemyHealth <= 0) {
+        console.log('🦹 Enemy hurt animation completed, but health is 0 - setting dies animation');
+        
+        // Update animation URL to dies animation
+        const diesUrl = characterAnimations.character_dies || 
+                       characterAnimations.dies || 
+                       enemy?.enemy_dies || 
+                       enemy?.dies;
+        
+        if (diesUrl) {
+          setCurrentAnimationUrl(diesUrl);
+          setIsAnimationLooping(false);
           
-          frameIndex.value = withTiming(
-            TOTAL_FRAMES - 1,
-            { 
-              duration: diesDuration,
-              easing: Easing.inOut(Easing.ease)
-            },
-            (diesFinished) => {
-              if (diesFinished) {
-                console.log('🦹 Enemy dies animation completed');
-                runOnJS(notifyAnimationComplete)();
-                frameIndex.value = TOTAL_FRAMES - 1; // Stay on last frame
+          // Start dies animation after short delay
+          setTimeout(() => {
+            frameIndex.value = 0;
+            const diesDuration = ANIMATION_DURATIONS.dies || 2000;
+            
+            frameIndex.value = withTiming(
+              TOTAL_FRAMES - 1,
+              { 
+                duration: diesDuration,
+                easing: Easing.inOut(Easing.ease)
+              },
+              (diesFinished) => {
+                if (diesFinished) {
+                  console.log('🦹 Enemy dies animation completed');
+                  runOnJS(notifyAnimationComplete)();
+                  frameIndex.value = TOTAL_FRAMES - 1; // Stay on last frame
+                }
               }
-            }
-          );
-        }, 100);
+            );
+          }, 100);
+        }
+        return; // Don't call external callback yet
+      } else {
+        // ✅ Enemy is still alive after hurt - call external callback to return to idle
+        console.log('🦹 Enemy hurt animation completed, enemy still alive - returning to idle');
+        notifyAnimationComplete(); // This will trigger the parent to set state back to 'idle'
       }
-      return; // Don't call external callback yet
     } else {
-      // ✅ Enemy is still alive after hurt - call external callback to return to idle
-      console.log('🦹 Enemy hurt animation completed, enemy still alive - returning to idle');
-      notifyAnimationComplete(); // This will trigger the parent to set state back to 'idle'
+      // ✅ For other animations, call external callback
+      notifyAnimationComplete();
     }
-  } else {
-    // ✅ For other animations, call external callback
-    notifyAnimationComplete();
-  }
-}, [
-  index, 
-  characterAnimations, 
-  enemy, 
-  notifyAnimationComplete, 
-  ANIMATION_DURATIONS, 
-  TOTAL_FRAMES
-]);
+  }, [
+    index, 
+    characterAnimations, 
+    enemy, 
+    notifyAnimationComplete, 
+    ANIMATION_DURATIONS, 
+    TOTAL_FRAMES
+  ]);
 
   // ✅ Memoize schedule attack phase
   const scheduleAttackPhase = useCallback(
@@ -297,7 +297,6 @@ const EnemyCharacter = ({
     };
   }, [currentAnimationUrl, prefetchWithCache]);
 
-  // ✅ Memoize animation configuration
   const animationConfig = useMemo(() => {
     let animationUrl = '';
     let shouldLoop = true;
@@ -315,10 +314,10 @@ const EnemyCharacter = ({
       if (Array.isArray(characterAnimations.character_attack)) {
         const attackAnimations = characterAnimations.character_attack.filter(url => url && typeof url === 'string');
         if (attackAnimations.length > 0) {
-          attackUrl = attackAnimations[0]; // ✅ Already transformed
+          attackUrl = attackAnimations[0]; 
         }
       } else if (typeof characterAnimations.character_attack === 'string' && characterAnimations.character_attack) {
-        attackUrl = characterAnimations.character_attack; // ✅ Already transformed
+        attackUrl = characterAnimations.character_attack; // Already transformed
       }
       
       animationUrl = attackUrl;
@@ -326,22 +325,22 @@ const EnemyCharacter = ({
       isCompound = false;
       break;
     case 'hurt':
-      animationUrl = characterAnimations.character_hurt || characterAnimations.hurt; // ✅ Already transformed
+      animationUrl = characterAnimations.character_hurt || characterAnimations.hurt; 
       shouldLoop = false;
       isCompound = false;
       break;
     case 'run':
-      animationUrl = characterAnimations.character_run || characterAnimations.run; // ✅ Already transformed
+      animationUrl = characterAnimations.character_run || characterAnimations.run;
       shouldLoop = true;
       isCompound = false;
       break;
     case 'dies':
-      animationUrl = characterAnimations.character_dies || characterAnimations.dies; // ✅ Already transformed
+      animationUrl = characterAnimations.character_dies || characterAnimations.dies; 
       shouldLoop = false;
       isCompound = false;
       break;
     default:
-      animationUrl = characterAnimations.character_idle || characterAnimations.idle; // ✅ Already transformed
+      animationUrl = characterAnimations.character_idle || characterAnimations.idle;
       shouldLoop = true;
       isCompound = false;
   }

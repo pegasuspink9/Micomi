@@ -1,4 +1,6 @@
 import { Dimensions } from 'react-native';
+import { Video } from 'expo-av';
+
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -66,13 +68,17 @@ export const HERO_DATA = {
 };
 
 export const URLS = {
-  background: "https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760085427/LabBackground_qc0ew6.png",
+  background: "https://res.cloudinary.com/dpbocuozx/video/upload/v1760423347/lv_0_20251014142230_jn9og2.mp4",
   characterBackground: "https://lottie.host/b3ebb5e0-3eda-4aad-82a3-a7428cbe0aa5/mvEeQ5rDi1.lottie",
   bottomBar: "https://github.com/user-attachments/assets/a913b8b6-2df5-4f08-b746-eb5a277f955a",
   coin: "https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd",
   healthIcon: "https://github.com/user-attachments/assets/82a87b3d-bc5c-4bb8-8d3e-46017ffcf1f4"
 };
 
+
+export const VIDEO_ASSETS = {
+  characterSelectBackground: URLS.background
+};
 export const getHeroByName = (name) => HERO_DATA[name];
 
 export const getAllHeroNames = () => Object.keys(HERO_DATA);

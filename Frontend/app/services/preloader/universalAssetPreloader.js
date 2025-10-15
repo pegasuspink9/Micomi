@@ -45,102 +45,103 @@ class UniversalAssetPreloader {
     return `${this.cacheDirectory}${category}/${finalFileName}`;
   }
 
-  // ✅ Download single asset with retry logic
-  async downloadSingleAsset(url, category = 'general', onProgress = null, retries = 2) {
-    try {
-      await this.ensureCacheDirectory(category);
-      
-      const localPath = this.getLocalFilePath(url, category);
-      
-      // Check if already downloaded and file exists
-      const fileInfo = await FileSystem.getInfoAsync(localPath);
-      if (fileInfo.exists && fileInfo.size > 0) {
-        console.log(`📦 Asset already cached: ${url.slice(-50)}`);
-        this.downloadedAssets.set(url, { localPath, category, url });
-        return { success: true, localPath, cached: true, url };
-      }
+async downloadSingleAsset(url, category = 'general', onProgress = null, retries = 2) {
+  try {
+    await this.ensureCacheDirectory(category);
+    
+    const localPath = this.getLocalFilePath(url, category);
+    
+    // Check if already downloaded and file exists
+    const fileInfo = await FileSystem.getInfoAsync(localPath);
+    if (fileInfo.exists && fileInfo.size > 0) {
+      console.log(`📦 Asset already cached: ${url.slice(-50)}`);
+      this.downloadedAssets.set(url, { localPath, category, url });
+      return { success: true, localPath, cached: true, url };
+    }
 
-      console.log(`📦 Downloading ${category} asset: ${url.slice(-50)}`);
-      const startTime = Date.now();
-      
-      // Create download with progress tracking
-      const downloadResumable = FileSystem.createDownloadResumable(
-        url,
-        localPath,
-        {},
-        onProgress ? (downloadProgress) => {
-          const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
-          onProgress({ 
-            progress: Math.min(progress, 1), 
-            url, 
-            category,
-            downloadProgress,
-            bytesWritten: downloadProgress.totalBytesWritten,
-            totalBytes: downloadProgress.totalBytesExpectedToWrite
-          });
-        } : undefined
-      );
-
-      const result = await downloadResumable.downloadAsync();
-      const downloadTime = Date.now() - startTime;
-
-      if (result && result.uri) {
-        // Verify the downloaded file
-        const downloadedFileInfo = await FileSystem.getInfoAsync(result.uri);
-        if (!downloadedFileInfo.exists || downloadedFileInfo.size === 0) {
-          throw new Error('Downloaded file is empty or corrupted');
-        }
-
-        this.downloadedAssets.set(url, { 
-          localPath: result.uri, 
-          category, 
-          url,
-          downloadedAt: Date.now(),
-          fileSize: downloadedFileInfo.size
-        });
-        
-        // Preload images to memory cache (skip for non-image files)
-        if (this.isImageFile(url)) {
-          try {
-            await RNImage.prefetch(`file://${result.uri}`);
-            this.preloadedAssets.set(url, {
-              loadedAt: Date.now(),
-              loadTime: downloadTime,
-              url,
-              localPath: result.uri,
-              category
-            });
-          } catch (prefetchError) {
-            console.warn(`⚠️ Failed to prefetch ${category} asset to memory:`, prefetchError);
-            // Don't fail the download if prefetch fails
-          }
-        }
-
-        console.log(`✅ ${category} asset downloaded in ${downloadTime}ms: ${url.slice(-50)}`);
-        return { 
-          success: true, 
-          localPath: result.uri, 
-          downloadTime, 
+    console.log(`📦 Downloading ${category} asset: ${url.slice(-50)}`);
+    const startTime = Date.now();
+    
+    // Create download with progress tracking
+    const downloadResumable = FileSystem.createDownloadResumable(
+      url,
+      localPath,
+      {},
+      onProgress ? (downloadProgress) => {
+        const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
+        onProgress({ 
+          progress: Math.min(progress, 1), 
           url, 
           category,
-          fileSize: downloadedFileInfo.size
-        };
-      } else {
-        throw new Error('Download failed - no result URI');
+          downloadProgress,
+          bytesWritten: downloadProgress.totalBytesWritten,
+          totalBytes: downloadProgress.totalBytesExpectedToWrite
+        });
+      } : undefined
+    );
+
+    const result = await downloadResumable.downloadAsync();
+    const downloadTime = Date.now() - startTime;
+
+    if (result && result.uri) {
+      // Verify the downloaded file
+      const downloadedFileInfo = await FileSystem.getInfoAsync(result.uri);
+      if (!downloadedFileInfo.exists || downloadedFileInfo.size === 0) {
+        throw new Error('Downloaded file is empty or corrupted');
       }
-    } catch (error) {
-      console.error(`❌ Failed to download ${category} asset: ${url}`, error);
+
+      this.downloadedAssets.set(url, { 
+        localPath: result.uri, 
+        category, 
+        url,
+        downloadedAt: Date.now(),
+        fileSize: downloadedFileInfo.size
+      });
       
-      // Retry logic
-      if (retries > 0) {
-        console.log(`🔄 Retrying download (${retries} retries left): ${url.slice(-50)}`);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
-        return this.downloadSingleAsset(url, category, onProgress, retries - 1);
+      // ✅ Only preload images to memory cache (not videos)
+      if (this.isImageFile(url)) {
+        try {
+          await RNImage.prefetch(`file://${result.uri}`);
+          this.preloadedAssets.set(url, {
+            loadedAt: Date.now(),
+            loadTime: downloadTime,
+            url,
+            localPath: result.uri,
+            category
+          });
+        } catch (prefetchError) {
+          console.warn(`⚠️ Failed to prefetch ${category} asset to memory:`, prefetchError);
+          // Don't fail the download if prefetch fails
+        }
       }
-      
-      return { success: false, error: error.message, url, category };
+
+      const assetType = this.isVideoFile(url) ? 'video' : 'image';
+      console.log(`✅ ${category} ${assetType} downloaded in ${downloadTime}ms: ${url.slice(-50)}`);
+      return { 
+        success: true, 
+        localPath: result.uri, 
+        downloadTime, 
+        url, 
+        category,
+        fileSize: downloadedFileInfo.size,
+        assetType
+      };
+    } else {
+      throw new Error('Download failed - no result URI');
     }
+  } catch (error) {
+    console.error(`❌ Failed to download ${category} asset: ${url}`, error);
+    
+    // Retry logic
+    if (retries > 0) {
+      console.log(`🔄 Retrying download (${retries} retries left): ${url.slice(-50)}`);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+      return this.downloadSingleAsset(url, category, onProgress, retries - 1);
+    }
+    
+    return { success: false, error: error.message, url, category };
   }
+}
 
   // ✅ Check if URL is an image file
   isImageFile(url) {
@@ -468,6 +469,217 @@ class UniversalAssetPreloader {
     console.log(`📦 Extracted ${uniqueAssets.length} game animation assets`);
     return uniqueAssets;
   }
+
+  extractPotionShopAssets(levelPreviewData) {
+  const assets = [];
+  
+  if (!levelPreviewData || !levelPreviewData.potionShop) return assets;
+
+  levelPreviewData.potionShop.forEach((potion, index) => {
+    if (potion.potion_url && typeof potion.potion_url === 'string') {
+      assets.push({
+        url: potion.potion_url,
+        name: `potion_${potion.potion_type}`,
+        type: 'image',
+        category: 'potion_shop',
+        potionId: potion.potion_id,
+        potionType: potion.potion_type,
+        potionPrice: potion.potion_price,
+        description: potion.description
+      });
+    }
+  });
+
+  console.log(`📦 Extracted ${assets.length} potion shop assets`);
+  return assets;
+  }
+
+
+  async downloadPotionShopAssets(levelPreviewData, onProgress = null, onAssetComplete = null) {
+  if (this.isDownloading) {
+    console.warn('⚠️ Asset downloading already in progress');
+    return { success: false, reason: 'already_downloading' };
+  }
+
+  this.isDownloading = true;
+  
+  try {
+    console.log('🧪 Starting potion shop asset download...');
+    
+    const assets = this.extractPotionShopAssets(levelPreviewData);
+    console.log(`🧪 Found ${assets.length} potion shop assets to download`);
+
+    if (assets.length === 0) {
+      console.log('🧪 No potion shop assets to download');
+      this.isDownloading = false;
+      return { success: true, downloaded: 0, total: 0 };
+    }
+
+    const startTime = Date.now();
+    let successCount = 0;
+    const results = [];
+
+    // Download assets with controlled concurrency
+    for (let i = 0; i < assets.length; i += this.maxConcurrentDownloads) {
+      const batch = assets.slice(i, i + this.maxConcurrentDownloads);
+      
+      const batchPromises = batch.map(async (asset, batchIndex) => {
+        const globalIndex = i + batchIndex;
+        
+        // Individual asset progress callback
+        if (onAssetComplete) {
+          onAssetComplete({
+            url: asset.url,
+            name: asset.name,
+            type: asset.type,
+            category: asset.category,
+            potionType: asset.potionType,
+            progress: 0,
+            currentIndex: globalIndex,
+            totalAssets: assets.length
+          });
+        }
+
+        const result = await this.downloadSingleAsset(
+          asset.url, 
+          asset.category, 
+          (downloadProgress) => {
+            // Individual asset download progress
+            if (onAssetComplete) {
+              onAssetComplete({
+                url: asset.url,
+                name: asset.name,
+                type: asset.type,
+                category: asset.category,
+                potionType: asset.potionType,
+                progress: downloadProgress.progress,
+                currentIndex: globalIndex,
+                totalAssets: assets.length,
+                bytesWritten: downloadProgress.bytesWritten,
+                totalBytes: downloadProgress.totalBytes
+              });
+            }
+          }
+        );
+        
+        if (result.success) {
+          successCount++;
+        }
+        
+        const assetResult = { asset, result };
+        results.push(assetResult);
+        
+        // Overall progress callback
+        if (onProgress) {
+          onProgress({
+            loaded: results.length,
+            total: assets.length,
+            progress: results.length / assets.length,
+            successCount,
+            currentAsset: asset,
+            category: 'potion_shop'
+          });
+        }
+
+        return assetResult;
+      });
+
+      // Wait for current batch to complete before starting next batch
+      await Promise.all(batchPromises);
+    }
+
+    const totalTime = Date.now() - startTime;
+    this.isDownloading = false;
+
+    // Save cache info to AsyncStorage
+    try {
+      const cacheKey = 'potionShopAssets';
+      const cacheInfo = {
+        downloadedAt: Date.now(),
+        category: 'potion_shop',
+        assets: Array.from(this.downloadedAssets.entries()).filter(([url, info]) => 
+          info.category === 'potion_shop'
+        ),
+        totalAssets: successCount
+      };
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheInfo));
+      console.log(`💾 Saved potion shop asset cache info to storage`);
+    } catch (error) {
+      console.warn('⚠️ Failed to save cache info to AsyncStorage:', error);
+    }
+
+    console.log(`🧪 Potion shop asset download completed: ${successCount}/${assets.length} in ${totalTime}ms`);
+    
+    return {
+      success: true,
+      downloaded: successCount,
+      total: assets.length,
+      totalTime,
+      results,
+      category: 'potion_shop',
+      failedAssets: results
+        .filter(r => !r.result.success)
+        .map(r => r.asset)
+    };
+
+  } catch (error) {
+    console.error('❌ Error downloading potion shop assets:', error);
+    this.isDownloading = false;
+    throw error;
+  }
+}
+
+async arePotionShopAssetsCached(levelPreviewData) {
+  const assets = this.extractPotionShopAssets(levelPreviewData);
+  
+  if (assets.length === 0) {
+    return { cached: true, total: 0, available: 0 };
+  }
+
+  let availableCount = 0;
+  for (const asset of assets) {
+    const assetInfo = this.downloadedAssets.get(asset.url);
+    if (assetInfo && assetInfo.localPath) {
+      const fileInfo = await FileSystem.getInfoAsync(assetInfo.localPath);
+      if (fileInfo.exists && fileInfo.size > 0) {
+        availableCount++;
+      }
+    }
+  }
+
+  const cached = availableCount === assets.length;
+  console.log(`🔍 Potion shop assets cache check: ${availableCount}/${assets.length} available`);
+  
+  return {
+    cached,
+    total: assets.length,
+    available: availableCount,
+    missing: assets.length - availableCount,
+    missingAssets: assets
+      .filter(asset => !this.downloadedAssets.has(asset.url))
+      .map(asset => ({ url: asset.url, name: asset.name, type: asset.type }))
+  };
+}
+
+transformPotionShopDataWithCache(levelPreviewData) {
+  if (!levelPreviewData || !levelPreviewData.potionShop) return levelPreviewData;
+
+  const transformedData = { ...levelPreviewData };
+  
+  // Transform potion URLs with cached paths
+  transformedData.potionShop = levelPreviewData.potionShop.map(potion => ({
+    ...potion,
+    potion_url: potion.potion_url ? this.getCachedAssetPath(potion.potion_url) : potion.potion_url
+  }));
+
+  return transformedData;
+}
+
+
+
+
+
+
 
   async downloadGameAnimationAssets(gameState, onProgress = null, onAssetComplete = null) {
     if (this.isDownloading) {
@@ -1277,6 +1489,332 @@ class UniversalAssetPreloader {
       console.error(`❌ Failed to clear ${category} cache:`, error);
     }
   }
+
+  //video
+
+  isVideoFile(url) {
+  const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v'];
+  const lowerUrl = url.toLowerCase();
+  
+  // Check file extension
+  if (videoExtensions.some(ext => lowerUrl.includes(ext))) {
+    return true;
+  }
+  
+  // Check if it's from video hosting services
+  if (lowerUrl.includes('cloudinary.com/video') || 
+      lowerUrl.includes('video/upload')) {
+    return true;
+  }
+  
+  return false;
+  }
+  
+  extractCharacterVideoAssets(charactersData) {
+  const assets = [];
+  
+  // Add background video from URLS
+  if (charactersData.backgroundVideo) {
+    assets.push({
+      url: charactersData.backgroundVideo,
+      name: 'character_select_background',
+      type: 'video',
+      category: 'character_videos',
+      priority: 'high' // High priority for background video
+    });
+  }
+  
+  // Add character-specific video assets if any
+  Object.values(charactersData).forEach(character => {
+    // Check for any video fields in character data
+    const videoFields = [
+      'character_intro_video',
+      'character_showcase_video',
+      'character_background_video'
+    ];
+    
+    videoFields.forEach(field => {
+      if (character[field] && this.isVideoFile(character[field])) {
+        assets.push({
+          url: character[field],
+          name: `${character.character_name.toLowerCase()}_${field}`,
+          type: 'video',
+          category: 'character_videos',
+          characterName: character.character_name,
+          characterId: character.character_id
+        });
+      }
+    });
+  });
+
+  console.log(`📹 Extracted ${assets.length} character video assets`);
+  return assets;
+}
+
+extractUIVideoAssets(uiData) {
+  const assets = [];
+  
+  if (!uiData) return assets;
+
+  // Common UI video assets
+  const uiVideoFields = [
+    'backgroundVideo',
+    'loginBackgroundVideo', 
+    'menuBackgroundVideo',
+    'characterSelectBackgroundVideo',
+    'shopBackgroundVideo',
+    'gameplayBackgroundVideo'
+  ];
+
+  uiVideoFields.forEach(field => {
+    if (uiData[field] && this.isVideoFile(uiData[field])) {
+      assets.push({
+        url: uiData[field],
+        name: field,
+        type: 'video',
+        category: 'ui_videos',
+        priority: field.includes('background') ? 'high' : 'normal'
+      });
+    }
+  });
+
+  console.log(`📹 Extracted ${assets.length} UI video assets`);
+  return assets;
+}
+
+async downloadVideoAssets(videoAssets, onProgress = null, onAssetComplete = null) {
+  if (this.isDownloading) {
+    console.warn('⚠️ Asset downloading already in progress');
+    return { success: false, reason: 'already_downloading' };
+  }
+
+  this.isDownloading = true;
+  
+  try {
+    console.log('📹 Starting video asset download...');
+    
+    if (!Array.isArray(videoAssets)) {
+      videoAssets = [videoAssets];
+    }
+    
+    console.log(`📹 Found ${videoAssets.length} video assets to download`);
+
+    if (videoAssets.length === 0) {
+      console.log('📹 No video assets to download');
+      this.isDownloading = false;
+      return { success: true, downloaded: 0, total: 0 };
+    }
+
+    const startTime = Date.now();
+    let successCount = 0;
+    const results = [];
+
+    // Sort by priority (high priority first)
+    const sortedAssets = videoAssets.sort((a, b) => {
+      const priorityOrder = { 'high': 0, 'normal': 1, 'low': 2 };
+      return (priorityOrder[a.priority] || 1) - (priorityOrder[b.priority] || 1);
+    });
+
+    // Download videos with controlled concurrency (videos are larger, so fewer concurrent downloads)
+    const videoConcurrency = Math.min(this.maxConcurrentDownloads, 2); // Limit to 2 concurrent video downloads
+    
+    for (let i = 0; i < sortedAssets.length; i += videoConcurrency) {
+      const batch = sortedAssets.slice(i, i + videoConcurrency);
+      
+      const batchPromises = batch.map(async (asset, batchIndex) => {
+        const globalIndex = i + batchIndex;
+        
+        // Individual asset progress callback
+        if (onAssetComplete) {
+          onAssetComplete({
+            url: asset.url,
+            name: asset.name,
+            type: asset.type,
+            category: asset.category,
+            characterName: asset.characterName,
+            priority: asset.priority,
+            progress: 0,
+            currentIndex: globalIndex,
+            totalAssets: sortedAssets.length
+          });
+        }
+
+        const result = await this.downloadSingleAsset(
+          asset.url, 
+          asset.category, 
+          (downloadProgress) => {
+            // Individual asset download progress
+            if (onAssetComplete) {
+              onAssetComplete({
+                url: asset.url,
+                name: asset.name,
+                type: asset.type,
+                category: asset.category,
+                characterName: asset.characterName,
+                priority: asset.priority,
+                progress: downloadProgress.progress,
+                currentIndex: globalIndex,
+                totalAssets: sortedAssets.length,
+                bytesWritten: downloadProgress.bytesWritten,
+                totalBytes: downloadProgress.totalBytes
+              });
+            }
+          }
+        );
+        
+        if (result.success) {
+          successCount++;
+        }
+        
+        const assetResult = { asset, result };
+        results.push(assetResult);
+        
+        // Overall progress callback
+        if (onProgress) {
+          onProgress({
+            loaded: results.length,
+            total: sortedAssets.length,
+            progress: results.length / sortedAssets.length,
+            successCount,
+            currentAsset: asset,
+            category: 'videos'
+          });
+        }
+
+        return assetResult;
+      });
+
+      // Wait for current batch to complete before starting next batch
+      await Promise.all(batchPromises);
+    }
+
+    const totalTime = Date.now() - startTime;
+    this.isDownloading = false;
+
+    // Save cache info to AsyncStorage
+    try {
+      const cacheKey = 'videoAssets';
+      const cacheInfo = {
+        downloadedAt: Date.now(),
+        category: 'videos',
+        assets: Array.from(this.downloadedAssets.entries()).filter(([url, info]) => 
+          this.isVideoFile(url)
+        ),
+        totalAssets: successCount
+      };
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheInfo));
+      console.log(`💾 Saved video asset cache info to storage`);
+    } catch (error) {
+      console.warn('⚠️ Failed to save video cache info to AsyncStorage:', error);
+    }
+
+    console.log(`📹 Video asset download completed: ${successCount}/${sortedAssets.length} in ${totalTime}ms`);
+    
+    return {
+      success: true,
+      downloaded: successCount,
+      total: sortedAssets.length,
+      totalTime,
+      results,
+      category: 'videos',
+      failedAssets: results
+        .filter(r => !r.result.success)
+        .map(r => r.asset)
+    };
+
+  } catch (error) {
+    console.error('❌ Error downloading video assets:', error);
+    this.isDownloading = false;
+    throw error;
+  }
+}
+
+// ✅ Download character select background video specifically
+async downloadCharacterSelectVideo(backgroundVideoUrl, onProgress = null, onAssetComplete = null) {
+  const videoAsset = {
+    url: backgroundVideoUrl,
+    name: 'character_select_background',
+    type: 'video',
+    category: 'ui_videos',
+    priority: 'high'
+  };
+
+  return await this.downloadVideoAssets([videoAsset], onProgress, onAssetComplete);
+}
+
+async areVideoAssetsCached(videoAssets) {
+  if (!Array.isArray(videoAssets)) {
+    videoAssets = [videoAssets];
+  }
+  
+  if (videoAssets.length === 0) {
+    return { cached: true, total: 0, available: 0 };
+  }
+
+  let availableCount = 0;
+  for (const asset of videoAssets) {
+    const assetInfo = this.downloadedAssets.get(asset.url);
+    if (assetInfo && assetInfo.localPath) {
+      const fileInfo = await FileSystem.getInfoAsync(assetInfo.localPath);
+      if (fileInfo.exists && fileInfo.size > 0) {
+        availableCount++;
+      }
+    }
+  }
+
+  const cached = availableCount === videoAssets.length;
+  console.log(`🔍 Video assets cache check: ${availableCount}/${videoAssets.length} available`);
+  
+  return {
+    cached,
+    total: videoAssets.length,
+    available: availableCount,
+    missing: videoAssets.length - availableCount,
+    missingAssets: videoAssets
+      .filter(asset => !this.downloadedAssets.has(asset.url))
+      .map(asset => ({ url: asset.url, name: asset.name, type: asset.type }))
+  };
+}
+
+transformVideoDataWithCache(data) {
+  if (!data) return data;
+
+  const transformedData = { ...data };
+  
+  // Handle different data structures
+  if (typeof data === 'string' && this.isVideoFile(data)) {
+    // Single video URL
+    return this.getCachedAssetPath(data);
+  }
+  
+  if (Array.isArray(data)) {
+    // Array of video URLs
+    return data.map(item => 
+      typeof item === 'string' && this.isVideoFile(item) 
+        ? this.getCachedAssetPath(item) 
+        : item
+    );
+  }
+  
+  if (typeof data === 'object') {
+    // Object with video URL properties
+    Object.keys(transformedData).forEach(key => {
+      const value = transformedData[key];
+      if (typeof value === 'string' && this.isVideoFile(value)) {
+        transformedData[key] = this.getCachedAssetPath(value);
+      } else if (typeof value === 'object') {
+        transformedData[key] = this.transformVideoDataWithCache(value);
+      }
+    });
+  }
+
+  return transformedData;
+}
+
+
+
+
+
 
   // ✅ Clear all caches
   async clearAllCaches() {
