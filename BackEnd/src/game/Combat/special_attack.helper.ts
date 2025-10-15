@@ -25,8 +25,6 @@ export async function updateProgressForChallenge(
   const level = await prisma.level.findUnique({
     where: { level_id: progress.level_id },
   });
-  const isHardOrFinal =
-    level?.level_difficulty === "hard" || level?.level_difficulty === "final";
 
   const existingAnswers = (progress.player_answer ?? {}) as Record<
     string,
@@ -48,24 +46,20 @@ export async function updateProgressForChallenge(
 
   if (isCorrect && !alreadyAnsweredCorrectly && !progress.is_completed) {
     const challengeExpected = challenge.expected_output ?? [];
-    if (isHardOrFinal) {
-      newExpectedOutput = [
-        ...(Array.isArray(newExpectedOutput) ? newExpectedOutput : []),
-        ...(Array.isArray(challengeExpected)
-          ? challengeExpected
-          : [challengeExpected]),
-      ];
-      console.log(
-        `Appended expected output for hard/final challenge ${challengeId}:`,
-        challengeExpected
-      );
-      console.log(
-        "Cumulative player_expected_output after append:",
-        newExpectedOutput
-      );
-    } else {
-      console.log(`Skipped append for easy challenge ${challengeId}`);
-    }
+    newExpectedOutput = [
+      ...(Array.isArray(newExpectedOutput) ? newExpectedOutput : []),
+      ...(Array.isArray(challengeExpected)
+        ? challengeExpected
+        : [challengeExpected]),
+    ];
+    console.log(
+      `Appended expected output for challenge ${challengeId}:`,
+      challengeExpected
+    );
+    console.log(
+      "Cumulative player_expected_output after append:",
+      newExpectedOutput
+    );
   }
 
   let updateData: any = {

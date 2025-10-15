@@ -25,6 +25,8 @@ model Map {
   created_at       DateTime        @default(now())
   last_updated     DateTime?
   map_image        String
+  player_id        Int?
+
   difficulty_level DifficultyLevel
   levels           Level[]
 }
@@ -49,6 +51,7 @@ model Level {
   level_type           String
   level_title          String?
   enemy_id             Int?
+  player_id            Int?
 
   challenges           Challenge[]
   lessons              Lesson[]
