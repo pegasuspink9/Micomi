@@ -406,8 +406,7 @@ useEffect(() => {
           animated={true}
           position="right"
           avatarUrl={gameState.submissionResult?.fightResult?.enemy?.enemy_avatar ?? 
-             gameState.enemy?.enemy_avatar ??
-             "https://github.com/user-attachments/assets/a674f682-c784-447e-8c0a-a841f65b18ed"}
+             gameState.enemy?.enemy_avatar }
           isEnemy={true}
           borderColor="#ffffffff"
         />

@@ -26,6 +26,7 @@ model Map {
   last_updated     DateTime?
   map_image        String
   difficulty_level DifficultyLevel
+  player_id        Int?
   levels           Level[]
 }
 
@@ -49,6 +50,7 @@ model Level {
   level_type           String
   level_title          String?
   enemy_id             Int?
+  player_id            Int?
   challenges           Challenge[]
   lessons              Lesson[]
   enemy                Enemy?              @relation(fields: [enemy_id], references: [enemy_id], onDelete: Cascade)

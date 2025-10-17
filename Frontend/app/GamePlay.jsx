@@ -18,7 +18,7 @@ export default function GamePlay() {
   
   // Parse parameters from Expo Router
   const playerId = parseInt(params.playerId) || 11;
-  const levelId = parseInt(params.levelId) || 1;
+  const levelId = parseInt(params.levelId);
   const levelData = params.levelData ? JSON.parse(params.levelData) : null;
 
   console.log('🎮 GamePlay component mounted with:', { 

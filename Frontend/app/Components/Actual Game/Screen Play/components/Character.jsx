@@ -49,7 +49,6 @@ const DogCharacter = ({
   const TOTAL_FRAMES = 24;
   const FRAME_DURATION = 90;
 
-  // ✅ Responsive animation constants
   const ANIMATION_DURATIONS = useMemo(() => ({
     idle: 1000,
     attack: 3000, 
@@ -65,7 +64,6 @@ const DogCharacter = ({
     }
   }), []);
 
-  // ✅ Responsive position constants
   const START_POSITION = useMemo(() => 0, []);
   const CENTER_POSITION = useMemo(() => scaleWidth(103), []); 
   const RUN_DISTANCE = useMemo(() => {
@@ -377,7 +375,7 @@ const DogCharacter = ({
           (finished) => {
             if (finished) {
               runOnJS(notifyAnimationComplete)();
-              frameIndex.value = TOTAL_FRAMES - 1; // ✅ Stay on last frame
+              frameIndex.value = TOTAL_FRAMES - 1; 
             }
           }
         );
