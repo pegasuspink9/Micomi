@@ -379,4 +379,4 @@ export const gameService = {
   clearAnimationCache: () => {
     universalAssetPreloader.clearCategoryCache('game_animations');
   }
-};
+}; 

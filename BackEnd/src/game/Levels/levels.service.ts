@@ -20,33 +20,25 @@ const prisma = new PrismaClient();
 const randomize = <T>(arr: T[]) => [...arr].sort(() => Math.random() - 0.5);
 
 export const previewLevel = async (playerId: number, levelId: number) => {
-  const level = await prisma.level.findUnique({
+  const level = (await prisma.level.findUnique({
     where: { level_id: levelId },
     include: {
       map: true,
       challenges: true,
       potionShopByLevel: true,
       lessons: true,
+      enemy: true,
     },
-  });
+  })) as
+    | (Level & {
+        map: any;
+        challenges: Challenge[];
+        lessons: any;
+        potionShopByLevel: any;
+        enemy: Enemy | null;
+      })
+    | null;
   if (!level) throw new Error("Level not found");
-
-  let enemy = null;
-  if (level.enemy_id) {
-    enemy = await prisma.enemy.findUnique({
-      where: { enemy_id: level.enemy_id },
-    });
-  }
-
-  if (!enemy) {
-    enemy = await prisma.enemy.findFirst({
-      where: {
-        enemy_map: level.map.map_name,
-        enemy_difficulty: level.level_difficulty,
-      },
-    });
-  }
-  if (!enemy) throw new Error("Enemy not found for this level");
 
   if (level.level_type === "shopButton") {
     const progress = await prisma.playerProgress.findUnique({
@@ -173,8 +165,20 @@ export const previewLevel = async (playerId: number, levelId: number) => {
         ],
       };
 
-     case "enemyButton":
-      default: {
+    case "enemyButton":
+    default: {
+      let enemy: Enemy | null = null;
+      if (level.enemy) {
+        enemy = level.enemy;
+      } else {
+        enemy = await prisma.enemy.findFirst({
+          where: {
+            enemy_map: level.map.map_name,
+            enemy_difficulty: level.level_difficulty,
+          },
+        });
+      }
+      if (!enemy) throw new Error("Enemy not found for this level");
 
       const selectedChar = await prisma.playerCharacter.findFirst({
         where: { player_id: playerId, is_selected: true },
@@ -233,18 +237,25 @@ export const previewLevel = async (playerId: number, levelId: number) => {
 };
 
 export const enterLevel = async (playerId: number, levelId: number) => {
-  const level: (Level & { map: any; challenges: Challenge[] }) | null =
-    await prisma.level.findUnique({
-      where: { level_id: levelId },
-      include: {
-        map: true,
-        challenges: true,
-        lessons: true,
-        potionShopByLevel: true,
-      },
-    });
+  const level:
+    | (Level & {
+        map: any;
+        challenges: Challenge[];
+        lessons: any;
+        potionShopByLevel: any;
+        enemy: Enemy | null;
+      })
+    | null = await prisma.level.findUnique({
+    where: { level_id: levelId },
+    include: {
+      map: true,
+      challenges: true,
+      lessons: true,
+      potionShopByLevel: true,
+      enemy: true,
+    },
+  });
 
-    
   if (!level) throw new Error("Level not found");
 
   level.challenges.sort((a, b) => a.challenge_id - b.challenge_id);
@@ -262,13 +273,10 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     level.challenges = level.challenges;
   }
 
-  let enemy = null;
-  if (level.enemy_id) {
-    enemy = await prisma.enemy.findUnique({
-      where: { enemy_id: level.enemy_id },
-    });
-  }
-  if (!enemy) {
+  let enemy: Enemy | null = null;
+  if (level.enemy) {
+    enemy = level.enemy;
+  } else {
     enemy = await prisma.enemy.findFirst({
       where: {
         enemy_map: level.map.map_name,
@@ -276,7 +284,10 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       },
     });
   }
-  if (!enemy) throw new Error("Enemy not found for this level");
+  if (!enemy)
+    throw new Error(
+      `No enemy found for map ${level.map.map_name} and difficulty ${level.level_difficulty}`
+    );
 
   const firstLevel = await prisma.level.findFirst({
     where: { map_id: level.map_id },
