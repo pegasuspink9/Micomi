@@ -59,12 +59,7 @@ export interface SubmitChallengeControllerResult
     is_unlocked: boolean;
   } | null;
   correct_answer_length?: number;
-  potionResult?: {
-    potionType: string;
-    remainingQuantity: number;
-    appliedImmediately: boolean;
-    newPlayerHealth?: number;
-  };
+  character_attack_image?: string[] | null;
 }
 
 export interface LevelStatus {

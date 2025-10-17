@@ -460,6 +460,18 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     ? firstChallenge.correct_answer.length
     : 0;
 
+  let character_attack_image = null;
+
+  if (correctAnswerLength >= 8) {
+    character_attack_image = ["special attack image"];
+  } else if (correctAnswerLength >= 5 && correctAnswerLength < 8) {
+    character_attack_image = ["second attack image"];
+  } else if (correctAnswerLength > 2) {
+    character_attack_image = ["second attack image", "basic attack"];
+  } else {
+    character_attack_image = ["basic attack"];
+  }
+
   return {
     level: {
       level_id: level.level_id,
@@ -498,6 +510,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     energy: energyStatus.energy,
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
     correct_answer_length: correctAnswerLength,
+    character_attack_image,
   };
 };
 
