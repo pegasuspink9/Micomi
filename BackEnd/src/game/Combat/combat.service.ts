@@ -7,7 +7,6 @@ import {
 import * as EnergyService from "../Energy/energy.service";
 import * as LevelService from "../Levels/levels.service";
 import { updateQuestProgress } from "../Quests/quests.service";
-import { updateProgressForChallenge } from "./special_attack.helper";
 import { formatTimer } from "../../../helper/dateTimeHelper";
 
 const prisma = new PrismaClient();
@@ -308,6 +307,7 @@ export async function fightEnemy(
   let enemy_idle: string | null = null;
   let enemy_run: string | null = null;
   let character_run: string | null = null;
+  let character_attack_card: string | null = null;
 
   character_run = character.character_run || null;
   character_idle = character.avatar_image || null;
@@ -339,6 +339,7 @@ export async function fightEnemy(
         correctAnswerLength >= 8
       ) {
         character_attack_type = "special_attack";
+        character_attack_card = "special_attack_card.png";
         damage = damageArray[2] ?? 25;
         character_run = character.character_run || null;
         character_attack = attacksArray[2] || null;
@@ -350,6 +351,7 @@ export async function fightEnemy(
         (correctAnswerLength >= 5 || correctAnswerLength < 8)
       ) {
         character_attack_type = "second_attack";
+        character_attack_card = "second_attack_card.png";
         damage = damageArray[1] ?? 15;
         character_run = character.character_run || null;
         character_attack = attacksArray[1] || null;
@@ -358,6 +360,7 @@ export async function fightEnemy(
       } else if (correctAnswerLength > 2) {
         if (elapsedSeconds > 5) {
           character_attack_type = "basic_attack";
+          character_attack_card = "basic_attack_card.png";
           damage = damageArray[0] ?? 10;
           character_run = character.character_run || null;
           character_attack = attacksArray[0] || null;
@@ -365,6 +368,7 @@ export async function fightEnemy(
           console.log("- Basic attack triggered!");
         } else {
           character_attack_type = "second_attack";
+          character_attack_card = "second_attack_card.png";
           damage = damageArray[1] ?? 15;
           character_run = character.character_run || null;
           character_attack = attacksArray[1] || null;
@@ -373,6 +377,7 @@ export async function fightEnemy(
         }
       } else {
         character_attack_type = "basic_attack";
+        character_attack_card = "basic_attack_card.png";
         damage = damageArray[0] ?? 10;
         character_run = character.character_run || null;
         character_attack = attacksArray[0] || null;
@@ -477,7 +482,6 @@ export async function fightEnemy(
     }
   } else {
     if (enemyHealth > 0) {
-      enemy_damage = enemy.enemy_damage;
       if (progress.has_freeze_effect) {
         enemy_damage = 0;
         await prisma.playerProgress.update({
@@ -566,6 +570,7 @@ export async function fightEnemy(
       character_idle,
       character_run,
       character_attack_type,
+      character_attack_card,
       character_attack,
       character_hurt,
       character_dies,
@@ -622,7 +627,7 @@ export async function fightBossEnemy(
   if (!character) throw new Error("Character not found");
 
   const challengeCount = level.challenges?.length ?? 1;
-  const scaledEnemyMaxHealth = BOSS_ENEMY_HEALTH * challengeCount;
+  const scaledEnemyMaxHealth = BOSS_ENEMY_HEALTH * challengeCount; // Fixed to use BOSS_ENEMY_HEALTH for boss levels
 
   console.log("DEBUG Combat Service (Boss):");
   console.log("- Enemy base health:", BOSS_ENEMY_HEALTH);
@@ -661,6 +666,7 @@ export async function fightBossEnemy(
   let character_run: string | null = null;
   let enemy_attack_type: string | null = null;
   let enemy_special_skill: string | null = null;
+  let character_attack_card: string | null = null;
 
   character_run = character.character_run || null;
   character_idle = character.avatar_image || null;
@@ -692,6 +698,7 @@ export async function fightBossEnemy(
         correctAnswerLength >= 8
       ) {
         character_attack_type = "special_attack";
+        character_attack_card = "special_attack_card.png";
         damage = damageArray[2] ?? 25;
         character_run = character.character_run || null;
         character_attack = attacksArray[2] || null;
@@ -703,6 +710,7 @@ export async function fightBossEnemy(
         (correctAnswerLength >= 5 || correctAnswerLength < 8)
       ) {
         character_attack_type = "second_attack";
+        character_attack_card = "second_attack_card.png";
         damage = damageArray[1] ?? 15;
         character_run = character.character_run || null;
         character_attack = attacksArray[1] || null;
@@ -711,6 +719,7 @@ export async function fightBossEnemy(
       } else if (correctAnswerLength > 2) {
         if (elapsedSeconds > 5) {
           character_attack_type = "basic_attack";
+          character_attack_card = "basic_attack_card.png";
           damage = damageArray[0] ?? 10;
           character_run = character.character_run || null;
           character_attack = attacksArray[0] || null;
@@ -718,6 +727,7 @@ export async function fightBossEnemy(
           console.log("- Basic attack triggered!");
         } else {
           character_attack_type = "second_attack";
+          character_attack_card = "second_attack_card.png";
           damage = damageArray[1] ?? 15;
           character_run = character.character_run || null;
           character_attack = attacksArray[1] || null;
@@ -726,6 +736,7 @@ export async function fightBossEnemy(
         }
       } else {
         character_attack_type = "basic_attack";
+        character_attack_card = "basic_attack_card.png";
         damage = damageArray[0] ?? 10;
         character_run = character.character_run || null;
         character_attack = attacksArray[0] || null;
@@ -830,8 +841,6 @@ export async function fightBossEnemy(
     }
   } else {
     if (enemyHealth > 0) {
-      enemy_damage = enemy.enemy_damage;
-
       if (progress.has_freeze_effect) {
         enemy_damage = 0;
         await prisma.playerProgress.update({

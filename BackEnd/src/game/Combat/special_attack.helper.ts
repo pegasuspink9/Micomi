@@ -22,10 +22,6 @@ export async function updateProgressForChallenge(
   });
   if (!challenge) throw new Error("Challenge not found");
 
-  const level = await prisma.level.findUnique({
-    where: { level_id: progress.level_id },
-  });
-
   const existingAnswers = (progress.player_answer ?? {}) as Record<
     string,
     string[]
@@ -52,14 +48,6 @@ export async function updateProgressForChallenge(
         ? challengeExpected
         : [challengeExpected]),
     ];
-    console.log(
-      `Appended expected output for challenge ${challengeId}:`,
-      challengeExpected
-    );
-    console.log(
-      "Cumulative player_expected_output after append:",
-      newExpectedOutput
-    );
   }
 
   let updateData: any = {
@@ -85,25 +73,21 @@ export async function updateProgressForChallenge(
       has_reversed_curse: hasReversedCurse,
     };
   } else {
-    if (isBonusRound) {
-      wrongChallenges = wrongChallenges.filter((id) => id !== challengeId);
-    } else {
-      if (!wrongChallenges.includes(challengeId)) {
-        wrongChallenges.push(challengeId);
-      }
+    if (!wrongChallenges.includes(challengeId)) {
+      wrongChallenges.push(challengeId);
     }
     consecutiveCorrects = 0;
     consecutiveWrongs += 1;
 
-    const levelForCurse = await prisma.level.findUnique({
+    const level = await prisma.level.findUnique({
       where: { level_id: progress.level_id },
       include: { map: true },
     });
-    if (levelForCurse) {
+    if (level) {
       const enemy = await prisma.enemy.findFirst({
         where: {
-          enemy_map: levelForCurse.map.map_name,
-          enemy_difficulty: levelForCurse.level_difficulty,
+          enemy_map: level.map.map_name,
+          enemy_difficulty: level.level_difficulty,
         },
       });
       if (enemy && enemy.enemy_name === "King Grimnir") {
