@@ -72,8 +72,9 @@ const ThirdGrid = ({
   );
 
   const [showPotions, setShowPotions] = useState(false);
+  const [runDisabled, setRunDisabled] = useState(false);
 
-  // ✅ Memoize toggle function
+
   const togglePotions = useCallback(() => {
     setShowPotions(!showPotions);
   }, [showPotions]);
@@ -81,13 +82,26 @@ const ThirdGrid = ({
   const runButtonDisabled = useMemo(() => (
     submitting || 
     usingPotion ||
+    runDisabled  ||
     (!selectedPotion && (!Array.isArray(selectedAnswers) || selectedAnswers.length === 0))
   ), [submitting, usingPotion, selectedPotion, selectedAnswers]);
+
+  const handleRunPress = useCallback(() => {
+  setRunDisabled(true); 
+  if (selectedPotion) {
+    onPotionPress?.(selectedPotion);
+  } else {
+    handleCheckAnswer();
+  }
+  setTimeout(() => {
+    setRunDisabled(false);
+  }, 5000);
+}, [selectedPotion, onPotionPress, handleCheckAnswer]);
 
   const runButtonTitle = useMemo(() => {
     if (usingPotion) return "Using...";
     if (selectedPotion) return "Use Potion";
-    if (submitting) return "Running...";
+    if (submitting) return "Running";
     return "Run";
   }, [usingPotion, selectedPotion, submitting]);
 
@@ -115,7 +129,7 @@ const ThirdGrid = ({
             title={runButtonTitle}
             position="right"
             variant={runButtonVariant}
-            onPress={selectedPotion ? () => onPotionPress?.(selectedPotion) : handleCheckAnswer}
+            onPress={selectedPotion ? () => onPotionPress?.(selectedPotion) : handleRunPress}
             disabled={runButtonDisabled}
           />
 

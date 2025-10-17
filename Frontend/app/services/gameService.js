@@ -99,69 +99,8 @@ export const gameService = {
     }
   },
 
- retryLevel: async (playerId, levelId, onAnimationProgress = null, onDownloadProgress = null) => {
-    try {
-      console.log(`🔄 RETRYING level ${levelId} for player ${playerId} - resetting to zero...`);
-      
-      await universalAssetPreloader.loadCachedAssets('game_animations');
-      
-      const response = await apiService.post(`/game/entryLevel/${playerId}/${levelId}`);
-      
-      if (!response.success) {
-        throw new Error(response.message || 'Failed to retry level');
-      }
-
-      if (!response.data.enemy || !response.data.enemy.enemy_id || !response.data.enemy.enemy_name) {
-        const level = response.data.level;
-        if (level && level.enemy_id) {
-          console.log(`🦹 Enemy data missing/invalid, fetching enemy ${level.enemy_id} for level ${levelId}`);
-          try {
-            const enemyResponse = await apiService.get(`/enemy/${level.enemy_id}`);
-            if (enemyResponse.success && enemyResponse.data) {
-              response.data.enemy = enemyResponse.data;
-              console.log(`🦹 Enemy ${level.enemy_id} fetched successfully`);
-            } else {
-              console.warn(`⚠️ Failed to fetch enemy ${level.enemy_id}, using default`);
-            }
-          } catch (enemyError) {
-            console.warn(`⚠️ Error fetching enemy ${level.enemy_id}:`, enemyError);
-          }
-        }
-      }
-
-      console.log(`🎮 Level ${levelId} RETRY data received, starting forced animation download...`);
-      
-      const cacheStatus = await universalAssetPreloader.areGameAnimationAssetsCached(response.data);
-      
-      let downloadResult = { success: true, downloaded: 0, total: 0 };
-      
-      if (!cacheStatus.cached) {
-        console.log(`📦 Need to download ${cacheStatus.missing} missing animation assets for retry`);
-        downloadResult = await universalAssetPreloader.downloadGameAnimationAssets(
-          response.data,
-          onDownloadProgress,
-          onAnimationProgress
-        );
-
-        if (!downloadResult.success) {
-          console.warn('⚠️ Animation download failed on retry, but continuing with game...');
-        } else {
-          console.log(`✅ All animations downloaded successfully on retry: ${downloadResult.downloaded}/${downloadResult.total}`);
-        }
-      } else {
-        console.log('✅ All animations already cached for retry');
-      }
-
-      const gameStateWithCache = universalAssetPreloader.transformGameStateWithCache(response.data);
-
-      return {
-        ...gameStateWithCache,
-        downloadStats: downloadResult 
-      };
-    } catch (error) {
-      console.error(`Failed to retry level ${levelId}:`, error);
-      throw error;
-    }
+  retryLevel: async (playerId, levelId, onAnimationProgress = null, onDownloadProgress = null) => {
+    return gameService.enterLevel(playerId, levelId, onAnimationProgress, onDownloadProgress);
   },
 
   

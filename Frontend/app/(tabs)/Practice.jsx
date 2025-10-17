@@ -25,7 +25,6 @@ import { Video } from 'expo-av';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// ✅ Transform API data to component format
 const transformPotionData = (potionShop = []) => {
   return potionShop.map(potion => ({
     id: potion.potion_id,
@@ -38,7 +37,6 @@ const transformPotionData = (potionShop = []) => {
     limit: potion.limit,
     boughtInLevel: potion.boughtInLevel,
     remainToBuy: potion.remainToBuy,
-    // Additional API fields
     potion_id: potion.potion_id,
   }));
 };
