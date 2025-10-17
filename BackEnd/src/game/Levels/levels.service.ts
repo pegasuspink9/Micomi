@@ -694,6 +694,8 @@ export const completeShopLevel = async (playerId: number, levelId: number) => {
   //   );
   // }
 
+  //comment daw kog gamay ingon si Noel :>
+
   const progress = await prisma.playerProgress.upsert({
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
     update: {
