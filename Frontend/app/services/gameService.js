@@ -2,7 +2,7 @@ import { apiService } from './api';
 import { universalAssetPreloader } from './preloader/universalAssetPreloader';
 
 export const gameService = {
-  enterLevel: async (playerId, levelId, onAnimationProgress = null, onDownloadProgress = null) => {
+ enterLevel: async (playerId, levelId, onAnimationProgress = null, onDownloadProgress = null) => {
     try {
       console.log(`🎮 Entering level ${levelId} for player ${playerId}...`);
       
@@ -15,9 +15,26 @@ export const gameService = {
         throw new Error(response.message || 'Failed to enter level');
       }
 
+      if (!response.data.enemy || !response.data.enemy.enemy_id || !response.data.enemy.enemy_name) {
+        const level = response.data.level;
+        if (level && level.enemy_id) {
+          console.log(`🦹 Enemy data missing/invalid, fetching enemy ${level.enemy_id} for level ${levelId}`);
+          try {
+            const enemyResponse = await apiService.get(`/enemy/${level.enemy_id}`);
+            if (enemyResponse.success && enemyResponse.data) {
+              response.data.enemy = enemyResponse.data;
+              console.log(`🦹 Enemy ${level.enemy_id} fetched successfully`);
+            } else {
+              console.warn(`⚠️ Failed to fetch enemy ${level.enemy_id}, using default`);
+            }
+          } catch (enemyError) {
+            console.warn(`⚠️ Error fetching enemy ${level.enemy_id}:`, enemyError);
+          }
+        }
+      }
+
       console.log(`🎮 Level ${levelId} data received, starting forced animation download...`);
       
-      // ✅ Use universalAssetPreloader instead of animationPreloader
       const downloadResult = await universalAssetPreloader.downloadGameAnimationAssets(
         response.data,
         onDownloadProgress,
@@ -42,7 +59,7 @@ export const gameService = {
       throw error;
     }
   },
-    
+  
   submitAnswer: async (playerId, levelId, challengeId, selectedAnswers) => {
     try {
       if (!Array.isArray(selectedAnswers) || selectedAnswers.length === 0) {
@@ -82,7 +99,7 @@ export const gameService = {
     }
   },
 
-  retryLevel: async (playerId, levelId, onAnimationProgress = null, onDownloadProgress = null) => {
+ retryLevel: async (playerId, levelId, onAnimationProgress = null, onDownloadProgress = null) => {
     try {
       console.log(`🔄 RETRYING level ${levelId} for player ${playerId} - resetting to zero...`);
       
@@ -92,6 +109,24 @@ export const gameService = {
       
       if (!response.success) {
         throw new Error(response.message || 'Failed to retry level');
+      }
+
+      if (!response.data.enemy || !response.data.enemy.enemy_id || !response.data.enemy.enemy_name) {
+        const level = response.data.level;
+        if (level && level.enemy_id) {
+          console.log(`🦹 Enemy data missing/invalid, fetching enemy ${level.enemy_id} for level ${levelId}`);
+          try {
+            const enemyResponse = await apiService.get(`/enemy/${level.enemy_id}`);
+            if (enemyResponse.success && enemyResponse.data) {
+              response.data.enemy = enemyResponse.data;
+              console.log(`🦹 Enemy ${level.enemy_id} fetched successfully`);
+            } else {
+              console.warn(`⚠️ Failed to fetch enemy ${level.enemy_id}, using default`);
+            }
+          } catch (enemyError) {
+            console.warn(`⚠️ Error fetching enemy ${level.enemy_id}:`, enemyError);
+          }
+        }
       }
 
       console.log(`🎮 Level ${levelId} RETRY data received, starting forced animation download...`);
@@ -129,6 +164,7 @@ export const gameService = {
     }
   },
 
+  
   // Enhanced unified game state extraction
   extractUnifiedGameState: (responseData, isSubmission = false) => {
     try {

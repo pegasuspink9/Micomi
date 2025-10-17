@@ -1,11 +1,16 @@
 import { apiService } from './api';
 
 export const mapService = {
-  // Get all maps with their levels
   getAllMapsWithLevels: async () => {
     try {
       const response = await apiService.get('/map');
       console.log('🗺️ Maps with levels response:', response);
+      
+      if (response.success && response.data && response.data.data) {
+        return response.data.data;
+      }
+      
+      // Fallback for old structure or errors
       return response.success ? response.data : response;
     } catch (error) {
       console.error('Failed to fetch maps with levels:', error);
@@ -13,11 +18,15 @@ export const mapService = {
     }
   },
 
-  // Get specific map with its levels - CORRECT ENDPOINT
-  getMapWithLevels: async (mapId) => {
+    getMapWithLevels: async (mapId) => {
     try {
       const response = await apiService.get(`/map/select-map/${mapId}`);
       console.log(`🗺️ Map ${mapId} with levels:`, response);
+      
+      if (response.success && response.data && response.data.data) {
+        return response.data.data;
+      }
+      
       return response.success ? response.data : response;
     } catch (error) {
       console.error(`Failed to fetch map ${mapId} with levels:`, error);
@@ -25,7 +34,6 @@ export const mapService = {
     }
   },
 
-  // Extract levels from map data
   extractLevelsFromMap: (mapData) => {
     if (!mapData || !mapData.levels) {
       console.warn('⚠️ No levels found in map data');
