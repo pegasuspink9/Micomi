@@ -231,6 +231,7 @@ export const previewLevel = async (playerId: number, levelId: number) => {
         audio: [
           "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353796/Navigation_sxwh2g.mp3",
         ],
+        bossLevelExpectedOutput: level.boss_level_expected_output,
       };
     }
   }
