@@ -162,7 +162,6 @@ const handleCharacterAnimationComplete = useCallback((animationState) => {
   
   const fightResult = gameState?.submissionResult?.fightResult;
   
-  // ✅ Handle attack completion in victory scenario
   if (animationState === 'attack' && 
       fightResult?.status === 'won' && 
       fightResult?.enemy?.enemy_health === 0) {
@@ -172,7 +171,6 @@ const handleCharacterAnimationComplete = useCallback((animationState) => {
     return;
   }
   
-  // ✅ Handle hurt animation completion
   if (animationState === 'hurt') {
     const characterHealth = fightResult?.character?.character_health ?? playerHealth;
     
@@ -229,15 +227,12 @@ const handleEnemyAnimationComplete = useCallback((index) => {
       }
     }
     
-    // ✅ Handle enemy dies animation
     if (animationState === 'dies') {
       console.log('💀 Enemy dies animation completed - staying on last frame');
       setIsPlayingSubmissionAnimation(false);
       // Enemy stays in dies state, character will handle victory celebration
       return;
     }
-    
-    // ✅ Handle enemy attack animation
     if (animationState === 'attack') {
       console.log('🦹 Enemy attack completed - returning to idle');
       setEnemyAnimationStates(prev => prev.map((state, i) => i === index ? 'idle' : state));
@@ -247,7 +242,6 @@ const handleEnemyAnimationComplete = useCallback((index) => {
   };
 }, [gameState?.submissionResult?.fightResult]);
 
-// ✅ Reset victory phase when new challenge loads
 useEffect(() => {
   setVictoryAnimationPhase('idle');
   
@@ -322,7 +316,7 @@ useEffect(() => {
 }, [gameState.submissionResult, playerHealth, isPlayingSubmissionAnimation, enemies, characterAnimationState]);
 
   useEffect(() => {
-    if (__DEV__ && Math.random() < 0.1) { // Only log 10% of the time
+    if (__DEV__ && Math.random() < 0.1) { 
       console.log(`Character animations available:`, {
         idle: !!characterAnimations.character_idle,
         attack: !!characterAnimations.character_attack,
@@ -405,8 +399,7 @@ useEffect(() => {
           }
           animated={true}
           position="right"
-          avatarUrl={gameState.submissionResult?.fightResult?.enemy?.enemy_avatar ?? 
-             gameState.enemy?.enemy_avatar }
+          avatarUrl={gameState.enemy.enemy_avatar} 
           isEnemy={true}
           borderColor="#ffffffff"
         />

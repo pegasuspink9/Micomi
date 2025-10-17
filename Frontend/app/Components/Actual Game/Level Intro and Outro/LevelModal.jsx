@@ -4,6 +4,10 @@ import { View, Text, Modal, Pressable, StyleSheet, Dimensions, Image, Animated, 
 import { LinearGradient } from 'expo-linear-gradient';
 import { levelService } from '../../../services/levelService';
 import { useRouter } from 'expo-router';
+import PotionShop from '../../../PotionShop';
+import ShopLevelModal from './ShopLevelModal'; 
+import BossLevelModal from './BossLevelModal';
+import {WebView} from 'react-native-webview';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -32,6 +36,9 @@ const LevelModal = ({
   const bounceAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
   const scanLineAnim = useRef(new Animated.Value(0)).current;
+  
+
+  const [showWebView, setShowWebView] = useState(false); 
 
   useEffect(() => {
     if (visible && levelId && !levelData) {
@@ -48,7 +55,7 @@ const LevelModal = ({
     }
   }, [visible]);
 
-  // ✅ Smooth continuous animations
+  //  Smooth continuous animations
   const startContinuousAnimations = () => {
     // Glow animation
     Animated.loop(
@@ -97,24 +104,38 @@ const LevelModal = ({
   const handlePlayPress = useCallback(() => {
     if (isAnimating) return;
     
-    console.log('🎮 Play button pressed, navigating to GamePlay:', {
-      playerId,
+    console.log('🎮 Play button pressed:', {
       levelId,
-      levelData: displayData
+      playerId,
+      levelData: displayData,
+      isShopLevel
     });
 
     handleModalClose();
 
     setTimeout(() => {
       try {
-        router.push({
-          pathname: '/GamePlay', 
-          params: {
-            playerId: playerId,
-            levelId: levelId,
-            levelData: JSON.stringify(displayData || {})
-          }
-        });
+        if (isShopLevel) {
+          //  Navigate to PotionShop for shop levels
+          router.push({
+            pathname: '/PotionShop',
+            params: {
+              playerId: playerId,
+              levelId: levelId,
+              levelData: JSON.stringify(displayData || {})
+            }
+          });
+        } else {
+          //  Existing GamePlay navigation
+          router.push({
+            pathname: '/GamePlay', 
+            params: {
+              playerId: playerId,
+              levelId: levelId,
+              levelData: JSON.stringify(displayData || {})
+            }
+          });
+        }
       } catch (error) {
         console.error('Navigation error:', error);
         onPlay({
@@ -124,9 +145,9 @@ const LevelModal = ({
         });
       }
     }, 100);
-  }, [isAnimating, playerId, levelId, displayData, handleModalClose, router, onPlay]);
+  }, [isAnimating, playerId, levelId, displayData, isShopLevel, handleModalClose, router, onPlay]);
 
-  // ✅ Much smoother entrance animation
+  //  Much smoother entrance animation
   const startEntranceAnimation = () => {
     setIsAnimating(true);
     
@@ -139,7 +160,7 @@ const LevelModal = ({
     backgroundOpacityAnim.setValue(0);
     bounceAnim.setValue(0);
 
-    // ✅ Staggered smooth entrance
+    //  Staggered smooth entrance
     Animated.parallel([
       // Background fade in
       Animated.timing(backgroundOpacityAnim, {
@@ -206,7 +227,7 @@ const LevelModal = ({
     });
   };
 
-  // ✅ Smooth exit animation
+  //  Smooth exit animation
   const handleModalClose = () => {
     setIsAnimating(true);
     
@@ -308,7 +329,7 @@ const LevelModal = ({
     player_coins: displayData.player_info?.player_coins || 0
   } : {};
 
-  // ✅ Smooth interpolations
+  //  Smooth interpolations
   const rotateInterpolate = rotateAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['20deg', '0deg'],
@@ -333,6 +354,10 @@ const LevelModal = ({
     inputRange: [0, 1],
     outputRange: [-50, SCREEN_HEIGHT * 0.4 + 50],
   });
+
+  const isShopLevel = displayData?.level?.level_type === "shopButton";
+  const isBossLevel = displayData?.level?.level_type === "bossButton"; 
+  const potionShopData = displayData?.potionShop || [];
 
   return (
     <Modal
@@ -401,38 +426,22 @@ const LevelModal = ({
             ]}
           >
             <View style={styles.outerBorder}>
-              {/* ✅ Animated antenna with glow */}
-              <Animated.Image 
-                source={{uri: 'https://github.com/user-attachments/assets/4743543a-b50b-4a55-bb59-8e0c53c08919'}}  
-                style={[
-                  styles.antenna,
-                  {
-                    opacity: glowInterpolate,
-                    transform: [
-                      { rotate: rotateAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ['-5deg', '0deg']
-                      })}
-                    ]
-                  }
-                ]}
-              />
-              
               <View style={styles.visor}>
                 <ImageBackground
-                  source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759220459/363a62c7-6a6a-456a-a3b5-c1ffb987aef1_fnpugf.png' }}
-                  imageStyle={styles.backgroundImage} 
-                  resizeMode="cover"
-                >
+            source={{ uri: isShopLevel ? 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' :  
+                    'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' }}
+            imageStyle={styles.backgroundImage} 
+            resizeMode="cover"
+>
                   <LinearGradient
                     colors={[
-                      'rgba(219, 222, 225, 1)',
-                      'rgba(130, 148, 175, 0.15)',
-                      'rgba(130, 148, 175, 0.15)',
-                      'rgba(222, 222, 222, 0.13)',
-                      'rgba(219, 222, 225, 0.15)',
-                      'rgba(130, 148, 175, 0.15)',
-                      'rgba(219, 222, 225, 1)',
+                      'rgba(15, 55, 95, 1)',
+                      'rgba(15, 55, 95,  0.15)',
+                      'rgba(15, 55, 95,  0.15)',
+                      'rgba(15, 55, 95,  0.13)',
+                      'rgba(15, 55, 95,  0.15)',
+                      'rgba(15, 55, 95,  0.15)',
+                      'rgba(29, 76, 124, 1)',
                     ]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
@@ -440,7 +449,7 @@ const LevelModal = ({
                   >
                     <View style={styles.techGrid} />
 
-                    {/* ✅ Animated scan line */}
+                    {/*  Animated scan line */}
                     <Animated.View 
                       style={[
                         styles.scanLine,
@@ -462,109 +471,117 @@ const LevelModal = ({
                           }
                         ]}
                       >
-                        <Text style={styles.levelTitle}>Level: {mappedLevelData.level_number}</Text>
+                         <Text style={styles.levelTitle}>
+                          {isShopLevel ? "Potion Shop" : `Level: ${mappedLevelData.level_number}`}
+                        </Text>
                       </Animated.View>
 
-                      {mappedLevelData.enemy_avatar && (
-                        <Animated.View 
-                          style={[
-                            styles.enemyAvatarContainer,
-                            {
-                              transform: [
-                                { scale: bounceAnim.interpolate({
-                                  inputRange: [0, 1],
-                                  outputRange: [1, 1.03]
+                      {isShopLevel ? (
+                        <ShopLevelModal potionShopData={potionShopData} opacityAnim={opacityAnim} bounceAnim={bounceAnim} />
+                      ) : isBossLevel ? (
+                          <BossLevelModal bossData={displayData?.enemy} opacityAnim={opacityAnim} bounceAnim={bounceAnim} glowAnim={glowAnim} /> 
+                        ) : (
+                        mappedLevelData.enemy_avatar && (
+                          <Animated.View 
+                            style={[
+                              styles.enemyAvatarContainer,
+                              {
+                                transform: [
+                                  { scale: bounceAnim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [1, 1.03]
+                                  })}
+                                ]
+                              }
+                            ]}
+                          >
+                            <View style={styles.enemyFoundContainer}>
+                              <View style={styles.curvedEnemyFoundContainer}>
+                                {'Bug Found!'.split('').map((char, index, array) => {
+                                  const totalChars = array.length;
+                                  const centerIndex = (totalChars - 1) / 2;
+                                  const distanceFromCenter = index - centerIndex;
+                                  const maxRotation = -1; 
+                                  const rotationAngle = (distanceFromCenter / centerIndex) * maxRotation;
+                                  const radiusOffset = Math.abs(distanceFromCenter) * 2;
+                                  
+                                  return (
+                                    <Animated.Text 
+                                      key={index}
+                                      style={[
+                                        styles.curvedEnemyFoundCharacter,
+                                        {
+                                          opacity: glowInterpolate,
+                                          transform: [
+                                            { rotate: `${rotationAngle}deg` },
+                                            { translateY: radiusOffset }
+                                          ],
+                                        }
+                                      ]}
+                                    >
+                                      {char}
+                                    </Animated.Text>
+                                  );
                                 })}
-                              ]
-                            }
-                          ]}
-                        >
-                          <View style={styles.enemyFoundContainer}>
-                            <View style={styles.curvedEnemyFoundContainer}>
-                              {'Bug Found!'.split('').map((char, index, array) => {
-                                const totalChars = array.length;
-                                const centerIndex = (totalChars - 1) / 2;
-                                const distanceFromCenter = index - centerIndex;
-                                const maxRotation = -1; 
-                                const rotationAngle = (distanceFromCenter / centerIndex) * maxRotation;
-                                const radiusOffset = Math.abs(distanceFromCenter) * 2;
-                                
-                                return (
-                                  <Animated.Text 
-                                    key={index}
-                                    style={[
-                                      styles.curvedEnemyFoundCharacter,
-                                      {
-                                        opacity: glowInterpolate,
-                                        transform: [
-                                          { rotate: `${rotationAngle}deg` },
-                                          { translateY: radiusOffset }
-                                        ],
-                                      }
-                                    ]}
-                                  >
-                                    {char}
-                                  </Animated.Text>
-                                );
-                              })}
+                              </View>
                             </View>
-                          </View>
 
-                          <View style={styles.avatarFrame}>
-                            <Animated.Image 
-                              source={{ uri: mappedLevelData.enemy_avatar }}
-                              style={[
-                                styles.enemyAvatar,
-                                {
-                                  opacity: glowInterpolate,
-                                }
-                              ]}
-                              resizeMode="cover"
-                            />
-                            <Animated.View 
-                              style={[
-                                styles.enemyAvatarGlow,
-                                {
-                                  opacity: glowInterpolate,
-                                  transform: [
-                                    { scale: glowInterpolate }
-                                  ]
-                                }
-                              ]} 
-                            />
-                          </View>
-
-                          <View style={styles.enemyNameContainer}>
-                            <View style={styles.curvedTextContainer}>
-                              {mappedLevelData.enemy_name.split('').map((char, index, array) => {
-                                const totalChars = array.length;
-                                const centerIndex = (totalChars - 1) / 2;
-                                const distanceFromCenter = index - centerIndex;
-                                const maxRotation = 10;
-                                const rotationAngle = (distanceFromCenter / centerIndex) * maxRotation;
-                                const radiusOffset = Math.abs(distanceFromCenter) * 8;
-                                
-                                return (
-                                  <Animated.Text 
-                                    key={index}
-                                    style={[
-                                      styles.curvedCharacter,
-                                      {
-                                        opacity: glowInterpolate,
-                                        transform: [
-                                          { rotate: `${rotationAngle}deg` },
-                                          { translateY: -radiusOffset }
-                                        ],
-                                      }
-                                    ]}
-                                  >
-                                    {char}
-                                  </Animated.Text>
-                                );
-                              })}
+                            <View style={styles.avatarFrame}>
+                              <Animated.Image 
+                                source={{ uri: mappedLevelData.enemy_avatar }}
+                                style={[
+                                  styles.enemyAvatar,
+                                  {
+                                    opacity: glowInterpolate,
+                                  }
+                                ]}
+                                resizeMode="cover"
+                              />
+                              <Animated.View 
+                                style={[
+                                  styles.enemyAvatarGlow,
+                                  {
+                                    opacity: glowInterpolate,
+                                    transform: [
+                                      { scale: glowInterpolate }
+                                    ]
+                                  }
+                                ]} 
+                              />
                             </View>
-                          </View>
-                        </Animated.View>
+
+                            <View style={styles.enemyNameContainer}>
+                              <View style={styles.curvedTextContainer}>
+                                {mappedLevelData.enemy_name.split('').map((char, index, array) => {
+                                  const totalChars = array.length;
+                                  const centerIndex = (totalChars - 1) / 2;
+                                  const distanceFromCenter = index - centerIndex;
+                                  const maxRotation = 10;
+                                  const rotationAngle = (distanceFromCenter / centerIndex) * maxRotation;
+                                  const radiusOffset = Math.abs(distanceFromCenter) * 8;
+                                  
+                                  return (
+                                    <Animated.Text 
+                                      key={index}
+                                      style={[
+                                        styles.curvedCharacter,
+                                        {
+                                          opacity: glowInterpolate,
+                                          transform: [
+                                            { rotate: `${rotationAngle}deg` },
+                                            { translateY: -radiusOffset }
+                                          ],
+                                        }
+                                      ]}
+                                    >
+                                      {char}
+                                    </Animated.Text>
+                                  );
+                                })}
+                              </View>
+                            </View>
+                          </Animated.View>
+                        )
                       )}
                     
                       <Animated.View 
@@ -581,8 +598,16 @@ const LevelModal = ({
                           }
                         ]}
                       >
-                        <Text style={styles.contentText}>{mappedLevelData.content}</Text>
+                        <Text style={styles.contentText}>
+                          {isShopLevel ? "Stock up on potions before continuing your adventure!" : mappedLevelData.content}
+                        </Text>
                       </Animated.View>
+
+                      {isBossLevel && (
+                        <Pressable style={styles.showProjectButton} onPress={() => setShowWebView(true)}>
+                          <Text style={styles.showProjectText}>Show Project</Text>
+                        </Pressable>
+                      )}
 
                       <Animated.View 
                         style={[
@@ -671,7 +696,7 @@ const LevelModal = ({
                 <Text style={styles.closeButtonText}>×</Text>
               </Pressable>
             
-            {/* ✅ Smooth close button */}
+            {/*  Smooth close button */}
             <Animated.View
               style={{
                 opacity: opacityAnim,
@@ -736,14 +761,38 @@ const LevelModal = ({
                     }
                   ]}
                 >
-                  PLAY
+                  {isShopLevel ? "ENTER SHOP" : "PLAY"}
                 </Animated.Text>
               </LinearGradient>
             </Pressable>
           </Animated.View>
         )}
       </Animated.View>
+         <Modal
+        visible={showWebView}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowWebView(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.webviewContainer}>
+            <WebView
+              source={{ html: '<html><head><title>Hello World</title><style>body { font-family: Arial, sans-serif; font-size: 24px; text-align: center; margin: 50px; }</style></head><body><h1>Hello World</h1><p>This is a placeholder for the project content.</p></body></html>' }}
+              style={styles.webview}
+              scalesPageToFit={true}
+              startInLoadingState={false}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+            />
+            <Pressable style={styles.closeWebViewButton} onPress={() => setShowWebView(false)}>
+              <Text style={styles.closeWebViewText}>X</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+      
     </Modal>
+    
   );
 };
 
@@ -777,9 +826,9 @@ const styles = StyleSheet.create({
   },
 
   loadingContainer: {
-    backgroundColor: 'rgba(0, 0, 0, 0.9)', // ✅ Darker for better visibility
-    padding: 25, // ✅ More padding
-    borderRadius: 15, // ✅ More rounded
+    backgroundColor: 'rgba(0, 0, 0, 0.9)', //  Darker for better visibility
+    padding: 25, //  More padding
+    borderRadius: 15, //  More rounded
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
@@ -795,9 +844,9 @@ const styles = StyleSheet.create({
   },
 
   errorContainer: {
-    backgroundColor: 'rgba(220, 38, 38, 0.95)', // ✅ Slightly more opaque
-    padding: 25, // ✅ More padding
-    borderRadius: 15, // ✅ More rounded
+    backgroundColor: 'rgba(220, 38, 38, 0.95)', //  Slightly more opaque
+    padding: 25, //  More padding
+    borderRadius: 15, //  More rounded
     alignItems: 'center',
     maxWidth: SCREEN_WIDTH * 0.8,
     shadowColor: '#dc2626',
@@ -817,9 +866,9 @@ const styles = StyleSheet.create({
 
   retryButton: {
     backgroundColor: '#fff',
-    paddingHorizontal: 25, // ✅ More padding
-    paddingVertical: 12, // ✅ More padding
-    borderRadius: 8, // ✅ More rounded
+    paddingHorizontal: 25, //  More padding
+    paddingVertical: 12, //  More padding
+    borderRadius: 8, //  More rounded
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -1004,14 +1053,6 @@ const styles = StyleSheet.create({
     borderLeftColor: 'rgba(30, 144, 255, 0.5)',
     borderBottomColor: 'rgba(65, 105, 225, 0.6)',
     borderRightColor: 'rgba(100, 149, 237, 0.5)',
-    shadowColor: 'rgba(0, 255, 255, 0.8)',
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    shadowOpacity: 0.6,
-    shadowRadius: 15,
-    elevation: 15,
   },
 
   techGrid: {
@@ -1052,7 +1093,7 @@ const styles = StyleSheet.create({
   },
 
   textContainer: {
-    backgroundColor: 'rgba(63, 118, 220, 0.9)', // ✅ Slightly more opaque
+    backgroundColor: 'rgba(63, 118, 220, 0.9)', //  Slightly more opaque
     width: SCREEN_WIDTH * 0.7,  
     borderBottomLeftRadius: SCREEN_WIDTH * 1, 
     borderBottomRightRadius: SCREEN_WIDTH * 1, 
@@ -1112,7 +1153,7 @@ const styles = StyleSheet.create({
   contentText: {
     fontSize: SCREEN_WIDTH * 0.029,
     color: '#ffffffff',
-    textAlign: 'justify',
+    textAlign: 'center',
     fontFamily: 'DynaPuff',
     textShadowColor: 'rgba(135, 206, 250, 0.6)',
     textShadowOffset: { width: 0, height: 0 },
@@ -1120,10 +1161,10 @@ const styles = StyleSheet.create({
   },
 
   contentContainer: {
-    marginTop: -16,
     padding: 10,
+    width: '100%',
     marginBottom: 7,
-    backgroundColor: 'rgba(12, 73, 139, 0.6)', // ✅ Slightly more opaque
+    backgroundColor: 'rgba(12, 73, 139, 0.6)', 
     borderTopWidth: 2,
     borderBottomWidth: 2,
     borderColor: 'rgba(255, 255, 255, 1)',
@@ -1191,7 +1232,7 @@ const styles = StyleSheet.create({
 
   rewardIconContainer: {
     borderWidth: 2,
-    backgroundColor: 'rgba(248, 248, 248, 0.4)', // ✅ Slightly more opaque
+    backgroundColor: 'rgba(248, 248, 248, 0.4)', //  Slightly more opaque
     width: '100%',
     height: SCREEN_WIDTH * 0.15,
     borderRadius: 3,
@@ -1298,9 +1339,9 @@ const styles = StyleSheet.create({
       width: 0,
       height: 8,
     },
-    shadowOpacity: 0.5, // ✅ More shadow opacity
-    shadowRadius: 12, // ✅ Larger shadow radius
-    elevation: 15, // ✅ Higher elevation
+    shadowOpacity: 0.5, //  More shadow opacity
+    shadowRadius: 12, //  Larger shadow radius
+    elevation: 15, //  Higher elevation
     borderTopWidth: 3,
     borderTopColor: '#fca5a5',
     borderLeftWidth: 2,
@@ -1312,7 +1353,7 @@ const styles = StyleSheet.create({
   },
 
   closeButtonPressed: {
-    transform: [{ translateY: 2 }, { scale: 0.95 }], // ✅ Add scale effect
+    transform: [{ translateY: 2 }, { scale: 0.95 }], //  Add scale effect
     borderTopWidth: 1,
     borderLeftWidth: 1,
     borderBottomWidth: 2,
@@ -1323,7 +1364,7 @@ const styles = StyleSheet.create({
   },
 
   closeButtonText: {
-    fontSize: 28, // ✅ Slightly larger
+    fontSize: 28, //  Slightly larger
     color: '#fff',
     fontWeight: 'bold',
     lineHeight: 28,
@@ -1345,11 +1386,11 @@ const styles = StyleSheet.create({
     shadowColor: '#1e40af',
     shadowOffset: {
       width: 0,
-      height: 12, // ✅ More shadow
+      height: 12, //  More shadow
     },
     shadowOpacity: 0.6,
-    shadowRadius: 20, // ✅ Larger shadow radius
-    elevation: 25, // ✅ Higher elevation
+    shadowRadius: 20, //  Larger shadow radius
+    elevation: 25, //  Higher elevation
     borderTopWidth: 3,
     borderTopColor: '#01142bff',
     borderLeftWidth: 2,
@@ -1392,6 +1433,76 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 15,
   },
+
+  showProjectButton: {
+  backgroundColor: '#017252ff', 
+  paddingHorizontal: 5,
+  paddingVertical: 5,
+  borderRadius: 10,
+  borderWidth: 2,
+  borderColor: '#fff',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.3,
+  shadowRadius: 6,
+  elevation: 8,
+  borderTopWidth: 3,
+  borderTopColor: '#01142bff',
+  borderLeftWidth: 2,
+  borderLeftColor: '#088486ff',
+  borderBottomWidth: 4,
+  borderBottomColor: '#01142bff',
+  borderRightWidth: 3,
+  borderRightColor: '#088486ff',
+  marginBottom: 10,
+},
+  showProjectText: {
+    color: '#fff',
+    fontSize: SCREEN_WIDTH * 0.03,
+    fontFamily: 'MusicVibes',
+    textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  webviewContainer: {
+    width: SCREEN_WIDTH * 0.9,
+    height: SCREEN_HEIGHT * 0.7,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  webview: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  closeWebViewButton: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: '#ef4444',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  closeWebViewText: {
+    color: '#fff',
+    fontSize: 12,
+    fontFamily: 'DynaPuff',
+    fontWeight: 'bold',
+  },
+  
 });
 
 export default LevelModal;

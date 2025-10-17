@@ -32,11 +32,8 @@ const Life = ({
   const [previousHealth, setPreviousHealth] = useState(health);
 
   const getAvatarUrl = () => {
-    if (avatarUrl) return avatarUrl;
+    return avatarUrl;
     
-    return isEnemy 
-      ? "https://github.com/user-attachments/assets/a674f682-c784-447e-8c0a-a841f65b18ed"
-      : "https://github.com/user-attachments/assets/eced9b8f-eae0-48f5-bc05-d8d5ce018529";
   };
 
   // Calculate health percentage for bar
@@ -380,8 +377,9 @@ const styles = StyleSheet.create({
   },
 
   avatarImage: {
-    width: '100%',
-    height: '190%',
+    width: scaleWidth(70),
+    marginLeft: -10,
+    height: scaleHeight(70),
   },
 
   avatarText: {

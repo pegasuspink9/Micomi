@@ -133,6 +133,7 @@ export const gameService = {
           enemy_attack: responseData.enemy?.enemy_attack || null,
           enemy_hurt: responseData.enemy?.enemy_hurt || null,
           enemy_dies: responseData.enemy?.enemy_dies || null,
+          enemy_avatar: responseData.enemy?.enemy_avatar || null, 
         },
         
         selectedCharacter: {
@@ -145,7 +146,8 @@ export const gameService = {
           character_run: responseData.character?.character_run || null,
           character_attack: responseData.character?.character_attack || [],
           character_hurt: responseData.character?.character_hurt || null,
-          character_dies: responseData.character?.character_dies || null
+          character_dies: responseData.character?.character_dies || null,
+          character_avatar: responseData.character?.character_avatar || null,
         },
         
         energy: responseData.energy || 0,

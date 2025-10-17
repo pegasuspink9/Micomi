@@ -80,10 +80,10 @@ return (
       </Animated.View>
     </View>
     
-    {/* ✅ Overlay for pause effect */}
+    {/*  Overlay for pause effect */}
     {isPaused && <View style={styles.pauseOverlay} />}
     
-    {/* ✅ Children content */}
+    {/*  Children content */}
     <View style={styles.contentContainer}>
       {children}
     </View>

@@ -42,6 +42,7 @@ export default function GamePlay() {
   const hasTriggeredGameOver = useRef(false);
   const hasTriggeredLevelCompletion = useRef(false);
 
+
   const { 
     gameState,   
     loading, 
@@ -72,6 +73,19 @@ export default function GamePlay() {
 
   const allowEnemyCompletionRef = useRef(null);
   const setCorrectAnswerRef = useRef(null);
+    const maxAnswers = currentChallenge ? (currentChallenge.question?.match(/_/g) || []).length : 0;
+
+
+  useEffect(() => {
+  if (currentChallenge) {
+    setSelectedAnswers(new Array(maxAnswers).fill(''));
+    setBorderColor('white');
+    setActiveGameTab('code');
+    setSelectedBlankIndex(0);
+  }
+  }, [currentChallenge?.id, maxAnswers]);
+
+
 
   // ✅ Reset states when new challenge loads
   useEffect(() => {
@@ -339,7 +353,7 @@ const handleAnimationComplete = useCallback(() => {
         <StatusBar hidden={true} />
         <ImageBackground 
           source={{uri: 'https://github.com/user-attachments/assets/dc83a36e-eb2e-4fa5-b4e7-0eab9ff65abc'}}
-          style={styles.container}
+          style={styles.container}  
         >
           <GameOverModal
             visible={showGameOver}
@@ -486,7 +500,7 @@ return (
               getBlankIndex={getBlankIndex}
               onTabChange={handleGameTabChange}
               activeTab={activeGameTab}
-              onBlankSelect={handleBlankSelect}
+              onBlankSelect={selectedBlankIndex}
             />
           </View>
 

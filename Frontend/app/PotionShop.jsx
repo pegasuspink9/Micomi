@@ -22,6 +22,8 @@ import {
 import { useLevelData } from '../app/hooks/useLevelData';
 import { universalAssetPreloader } from '../app/services/preloader/universalAssetPreloader';
 import { Video } from 'expo-av';
+import { useLocalSearchParams, useRouter } from 'expo-router'; //  Add for dynamic params
+import LevelCompletionModal from '../app/Components/GameOver And Win/LevelCompletionModal'; //  Add for completion modal
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -41,7 +43,7 @@ const transformPotionData = (potionShop = []) => {
   }));
 };
 
-// ✅ Helper function for display names
+//  Helper function for display names
 const getPotionDisplayName = (potionType) => {
   const typeMap = {
     'health': 'Health',
@@ -67,6 +69,14 @@ const getPotionColors = (name) => {
 };
 
 export default function PotionShop() {
+  const router = useRouter(); //  Add router for navigation
+  const params = useLocalSearchParams(); //  Get dynamic params
+  
+  //  Dynamic levelId and playerId from navigation params
+  const levelId = parseInt(params.levelId) || 5; // Fallback to 5 if not provided
+  const playerId = parseInt(params.playerId) || 11; // Fallback to 11 if not provided
+  const levelData = params.levelData ? JSON.parse(params.levelData) : null; // Optional level data
+
   const [selected, setSelected] = useState(null);
   const [potions, setPotions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -74,18 +84,17 @@ export default function PotionShop() {
   const [playerCoins, setPlayerCoins] = useState(0);
   const [assetsLoading, setAssetsLoading] = useState(false);
   const [buyingPotion, setBuyingPotion] = useState(false); 
+  const [showLevelCompletion, setShowLevelCompletion] = useState(false); //  Add for completion modal
   const { getLevelPreview, buyPotion } = useLevelData(); 
-  const DEFAULT_PLAYER_ID = 11;
-  const DEFAULT_LEVEL_ID = 3; 
 
   const fetchPotionData = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log(`🧪 Fetching potion shop for player ${DEFAULT_PLAYER_ID}, level ${DEFAULT_LEVEL_ID}`);
+      console.log(`🧪 Fetching potion shop for player ${playerId}, level ${levelId}`);
       
-      const response = await getLevelPreview(DEFAULT_LEVEL_ID, DEFAULT_PLAYER_ID);
+      const response = await getLevelPreview(levelId, playerId); //  Use dynamic levelId
       
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch potion shop');
@@ -98,9 +107,9 @@ export default function PotionShop() {
       setPotions(transformedPotions);
       setPlayerCoins(player_info?.player_coins || 0);
       
-      console.log(`🧪 Loaded ${transformedPotions.length} potions from shop`);
+      console.log(`🧪 Loaded ${transformedPotions.length} potions from shop for level ${levelId}`);
 
-      // ✅ Preload potion images (only if not already loading)
+      //  Preload potion images (only if not already loading)
       if (transformedPotions.length > 0 && !assetsLoading) {
         setAssetsLoading(true);
         await preloadPotionAssets(transformedPotions);
@@ -117,37 +126,58 @@ export default function PotionShop() {
 
   useEffect(() => {
     fetchPotionData();
-  }, []);
+  }, [levelId, playerId]); //  Re-fetch if params change
 
   const handleBuyPotion = async (potion) => {
-  if (buyingPotion) return; // Prevent multiple purchases
+    if (buyingPotion) return; // Prevent multiple purchases
 
-  setBuyingPotion(true);
-  setError(null);
+    setBuyingPotion(true);
+    setError(null);
 
-  try {
-    const response = await buyPotion(DEFAULT_PLAYER_ID, DEFAULT_LEVEL_ID, potion.potion_id);
+    try {
+      const response = await buyPotion(playerId, levelId, potion.potion_id); //  Use dynamic IDs
 
-    if (response.success) {
-      console.log('🛒 Purchase successful!', response);
+      if (response.success) {
+        console.log('🛒 Purchase successful!', response);
 
-      await fetchPotionData();
+        await fetchPotionData();
 
-      // Close detail view
-      setSelected(null);
-    } else {
-      console.error('❌ Purchase failed:', response.error || response);
-      setError(response.error || 'Purchase failed');
+        // Close detail view
+        setSelected(null);
+      } else {
+        console.error('❌ Purchase failed:', response.error || response);
+        setError(response.error || 'Purchase failed');
+      }
+    } catch (purchaseError) {
+      console.error('❌ Purchase failed:', purchaseError);
+      setError(purchaseError.message || 'Unable to complete purchase. Please try again.');
+    } finally {
+      setBuyingPotion(false);
     }
-  } catch (purchaseError) {
-    console.error('❌ Purchase failed:', purchaseError);
-    setError(purchaseError.message || 'Unable to complete purchase. Please try again.');
-  } finally {
-    setBuyingPotion(false);
-  }
-};
+  };
 
-  // ✅ Preload potion assets (unchanged)
+  //  Handle shop completion (Finish button)
+  const handleFinishShop = () => {
+    console.log('🏁 Finishing shop level');
+    setShowLevelCompletion(true);
+  };
+
+  //  Handle next level navigation (like LevelCompletionModal)
+  const handleNextLevel = () => {
+    const nextLevelId = levelId + 1; //  Simulate next level (customize based on your map logic)
+    console.log(`🚀 Navigating to next level ${nextLevelId}`);
+    
+    router.push({
+      pathname: '/GamePlay', // Or '/PotionShop' if next is another shop
+      params: {
+        playerId,
+        levelId: nextLevelId,
+        levelData: JSON.stringify({}), // Pass empty or fetch new levelData
+      }
+    });
+  };
+
+  //  Preload potion assets (unchanged)
   const preloadPotionAssets = async (potionData) => {
     try {
       console.log('🧪 Starting potion asset preloading...');
@@ -192,13 +222,13 @@ export default function PotionShop() {
     return universalAssetPreloader.getCachedAssetPath(url);
   };
 
-  // ✅ Enhanced retry function
+  //  Enhanced retry function
   const handleRetry = () => {
     setError(null);
     fetchPotionData();
   };
 
-  // ✅ Loading state with buying indicator
+  //  Loading state with buying indicator
   if (loading) {
     return (
       <View style={styles.container}>
@@ -235,7 +265,7 @@ export default function PotionShop() {
             <Text style={styles.errorText}>❌ {error}</Text>
             <TouchableOpacity 
               style={styles.retryButton}
-              onPress={handleRetry} // ✅ Use proper retry function
+              onPress={handleRetry} //  Use proper retry function
             >
               <Text style={styles.retryText}>Retry</Text>
             </TouchableOpacity>
@@ -244,6 +274,8 @@ export default function PotionShop() {
       </View>
     );
   }
+
+
 
   return (
     <View style={styles.container}>
@@ -256,7 +288,7 @@ export default function PotionShop() {
         
         {/* Top Frame - 40% */}
         <View style={styles.topFrame}>
-        <Video
+          <Video
             source={{ uri: 'https://res.cloudinary.com/dpbocuozx/video/upload/v1760423233/lv_0_20251014141918_dvsmzk.mp4' }}
             style={styles.ImageBackgroundTop}
             shouldPlay
@@ -265,7 +297,7 @@ export default function PotionShop() {
             useNativeControls={false}
             isMuted={true}
           />
-          </View>
+        </View>
         
         {/* Bottom Frame - 60% */}
         <View style={styles.bottomFrame}>
@@ -277,11 +309,13 @@ export default function PotionShop() {
           </ImageBackground>
 
           <View style={styles.potionsOverlay}>
-            <PotionsGrid 
-              data={potions} 
-              onSelect={(p) => setSelected(p)}
-              getCachedImagePath={getCachedImagePath}
-            />
+             <PotionsGrid data={potions} onSelect={setSelected} getCachedImagePath={getCachedImagePath} />
+            
+
+            {/*  Add Finish Button */}
+            <TouchableOpacity style={styles.finishButton} onPress={handleFinishShop}>
+              <Text style={styles.finishText}>Finish</Text>
+            </TouchableOpacity>
 
             {selected && (
               <View style={styles.detailOverlay}>
@@ -299,11 +333,29 @@ export default function PotionShop() {
         </View>
 
       </ImageBackground>
+      <LevelCompletionModal
+        visible={showLevelCompletion}
+        onRetry={() => setShowLevelCompletion(false)} // Close modal
+        onHome={() => router.back()} // Go back to map
+        onNextLevel={handleNextLevel} // Navigate to next level
+        completionRewards={{
+          feedbackMessage: "Potion Shop completed! Stock up and continue your adventure.",
+          currentTotalPoints: 0,
+          currentExpPoints: 0,
+          coinsEarned: 0
+        }}
+        nextLevel={{
+          level_id: levelId + 1,
+          level_number: levelId + 1,
+          is_unlocked: true
+        }}
+        isLoading={false}
+      />
     </View>
   );
 }
 
-// ✅ Updated PotionsGrid (unchanged)
+//  Updated PotionsGrid (unchanged)
 function PotionsGrid({ data, onSelect, getCachedImagePath }) {
   return (
     <ScrollView 
@@ -318,7 +370,7 @@ function PotionsGrid({ data, onSelect, getCachedImagePath }) {
         return (
           <View key={potion.id} style={styles.cardCell}>
             <Pressable
-              onPress={() => onSelect(potion)} // ✅ Allow selecting any potion
+              onPress={() => onSelect(potion)} //  Allow selecting any potion
               style={({ pressed }) => [
                 styles.potionFrame,
                 { backgroundColor: colors.frameColor },
@@ -373,7 +425,7 @@ function PotionsGrid({ data, onSelect, getCachedImagePath }) {
   );
 }
 
-// ✅ Updated DetailView with buy functionality
+//  Updated DetailView with buy functionality
 function DetailView({ selected, onBack, playerCoins, getCachedImagePath, onBuy, buyingPotion }) {
   const colors = getPotionColors(selected.name);
   const isOut = selected.quantity === 0;
@@ -431,7 +483,7 @@ function DetailView({ selected, onBack, playerCoins, getCachedImagePath, onBuy, 
             styles.buyButton, 
             cannotBuy || buyingPotion ? styles.keyDisabled : styles.keyActive 
           ]}
-          disabled={cannotBuy || buyingPotion} // ✅ Disable when buying
+          disabled={cannotBuy || buyingPotion} //  Disable when buying
           onPress={() => onBuy(selected)} 
         >
           <Text style={[styles.actionText, styles.keyText]}>
@@ -445,7 +497,7 @@ function DetailView({ selected, onBack, playerCoins, getCachedImagePath, onBuy, 
           style={[styles.backButton, styles.keyActive]}
           activeOpacity={0.9}
           onPress={onBack}
-          disabled={buyingPotion} // ✅ Disable back button while buying
+          disabled={buyingPotion} //  Disable back button while buying
         >
           <Text style={[styles.actionText, styles.keyText]}>Back</Text>
         </TouchableOpacity>
@@ -455,9 +507,6 @@ function DetailView({ selected, onBack, playerCoins, getCachedImagePath, onBuy, 
 }
 
 const styles = StyleSheet.create({
-  // ...existing styles...
-
-  // ✅ Add purchase overlay styles
   purchaseOverlay: {
     position: 'absolute',
     top: 0,
@@ -889,4 +938,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'DynaPuff'
   },
+
+  finishButton: {
+    position: 'absolute',
+    bottom: scaleHeight(20),
+    alignSelf: 'center',
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  finishText: {
+    color: '#fff',
+    fontSize: SCREEN_WIDTH * 0.04,
+    fontFamily: 'DynaPuff',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+
 });
