@@ -151,6 +151,9 @@ export const previewLevel = async (playerId: number, levelId: number) => {
           player_coins: player.coins,
         },
         potionShop,
+        audio: [
+          "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353798/Shop_fjlttd.ogg",
+        ],
       };
 
     case "enemyButton":
@@ -211,6 +214,9 @@ export const previewLevel = async (playerId: number, levelId: number) => {
         },
         energy: energyStatus.energy,
         timeToNextEnergyRestore: energyStatus.timeToNextRestore,
+        audio: [
+          "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353796/Navigation_sxwh2g.mp3",
+        ],
       };
     }
   }

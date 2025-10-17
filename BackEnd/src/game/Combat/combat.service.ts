@@ -150,6 +150,83 @@ export async function handleFight(
   }
 }
 
+//for potion response
+export async function getCurrentFightState(
+  playerId: number,
+  levelId: number,
+  enemyId: number
+) {
+  const setup = await getFightSetup(playerId, levelId);
+  const enemy = await prisma.enemy.findUnique({ where: { enemy_id: enemyId } });
+  if (!enemy) throw new Error("Enemy not found");
+
+  const progress = await prisma.playerProgress.findUnique({
+    where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
+  });
+  if (!progress) throw new Error("Progress not found");
+
+  const character = setup.selectedCharacter;
+  const level = setup.level;
+  const scaledEnemyMaxHealth = getBaseEnemyHp(level);
+
+  const charHealth = safeHp(progress.player_hp, character.character_max_health);
+  const enemyHealth = safeHp(progress.enemy_hp, scaledEnemyMaxHealth);
+
+  let enemyDamage = enemy.enemy_damage;
+  if (progress.has_freeze_effect) {
+    enemyDamage = 0;
+    console.log("- Freeze effect active: enemy_damage set to 0 for response");
+  }
+
+  const status = progress.battle_status ?? BattleStatus.in_progress;
+  const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
+
+  let displayDamageArray = Array.isArray(character.character_damage)
+    ? (character.character_damage as number[])
+    : [10, 15, 25];
+  if (progress.has_strong_effect) {
+    displayDamageArray = displayDamageArray.map((d) => d * 2);
+    console.log(
+      "- Strong effect active: damage array doubled for display:",
+      displayDamageArray
+    );
+  }
+
+  return {
+    status,
+    enemy: {
+      enemy_id: enemy.enemy_id,
+      enemy_name: enemy.enemy_name,
+      enemy_idle: enemy.enemy_avatar || null,
+      enemy_run: null,
+      enemy_attack: null,
+      enemy_hurt: null,
+      enemy_dies: null,
+      enemy_damage: enemyDamage,
+      enemy_health: enemyHealth,
+      enemy_max_health: scaledEnemyMaxHealth,
+      enemy_attack_type: null,
+      enemy_special_skill: null,
+    },
+    character: {
+      character_id: character.character_id,
+      character_name: character.character_name,
+      character_idle: character.character_idle || null,
+      character_run: null,
+      character_attack_type: null,
+      character_attack: null,
+      character_hurt: null,
+      character_dies: null,
+      character_damage: displayDamageArray,
+      character_health: charHealth,
+      character_max_health: character.character_max_health,
+    },
+    timer: "00:00",
+    energy: energyStatus.energy,
+    timeToNextEnergyRestore: energyStatus.timeToNextRestore,
+  };
+}
+
 export async function fightEnemy(
   playerId: number,
   enemyId: number,

@@ -15,10 +15,13 @@ import {
 
 const prisma = new PrismaClient();
 
-const arraysEqual = (a: string[], b: string[]): boolean => {
-  const setA = new Set(a);
-  const setB = new Set(b);
-  return setA.size === setB.size && [...setA].every((val) => setB.has(val));
+const multisetEqual = (a: string[], b: string[]): boolean => {
+  if (a.length !== b.length) return false;
+  const countA: Record<string, number> = {};
+  const countB: Record<string, number> = {};
+  for (const item of a) countA[item] = (countA[item] || 0) + 1;
+  for (const item of b) countB[item] = (countB[item] || 0) + 1;
+  return Object.keys(countA).every((key) => countA[key] === countB[key]);
 };
 
 const reverseString = (str: string): string => str.split("").reverse().join("");
@@ -181,7 +184,7 @@ export const submitChallengeService = async (
     }
   }
 
-  const isCorrect = arraysEqual(finalAnswer, effectiveCorrectAnswer);
+  const isCorrect = multisetEqual(finalAnswer, effectiveCorrectAnswer);
 
   let wasEverWrong = false;
   if (isCorrect) {
@@ -468,7 +471,7 @@ function getNextWrongChallenge(
     const challenge = level.challenges.find(
       (c: Challenge) => c.challenge_id === id
     );
-    return !arraysEqual(ans, challenge?.correct_answer ?? []);
+    return !multisetEqual(ans, challenge?.correct_answer ?? []);
   });
 
   const currentWrongs = [...new Set(filteredWrongs)];
