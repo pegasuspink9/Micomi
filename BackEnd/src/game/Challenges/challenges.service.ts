@@ -210,8 +210,9 @@ export const submitChallengeService = async (
   let audioResponse: string[] = [];
 
   if (isCorrect) {
-    fightResult = await CombatService.fightEnemy(
+    fightResult = await CombatService.handleFight(
       playerId,
+      levelId,
       enemy.enemy_id,
       true,
       elapsed,
@@ -241,8 +242,9 @@ export const submitChallengeService = async (
       await updateQuestProgress(playerId, QuestType.solve_challenge_no_hint, 1);
     }
   } else {
-    fightResult = await CombatService.fightEnemy(
+    fightResult = await CombatService.handleFight(
       playerId,
+      levelId,
       enemy.enemy_id,
       false,
       elapsed,
