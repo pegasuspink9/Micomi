@@ -37,6 +37,7 @@ const ThirdGrid = ({
   usingPotion = false,
   setThirdGridHeight,
   selectedBlankIndex = 0, 
+  usePotion,
 }) => {
 
   if (!currentQuestion) {
@@ -82,11 +83,10 @@ const ThirdGrid = ({
 
   const [showPotions, setShowPotions] = useState(false);
   const [runDisabled, setRunDisabled] = useState(false);
-
-
-  const togglePotions = useCallback(() => {
-    setShowPotions(!showPotions);
-  }, [showPotions]);
+  const [potionUsed, setPotionUsed] = useState(false);
+const togglePotions = useCallback(() => {
+  setShowPotions(!showPotions); // ✅ Always allow toggling
+}, [showPotions]);
 
   const runButtonDisabled = useMemo(() => (
     submitting || 
@@ -95,17 +95,20 @@ const ThirdGrid = ({
     (!selectedPotion && (!Array.isArray(selectedAnswers) || selectedAnswers.length === 0))
   ), [submitting, usingPotion, selectedPotion, selectedAnswers]);
 
-  const handleRunPress = useCallback(() => {
-  setRunDisabled(true); 
-  if (selectedPotion) {
-    onPotionPress?.(selectedPotion);
-  } else {
-    handleCheckAnswer();
-  }
-  setTimeout(() => {
-    setRunDisabled(false);
-  }, 5000);
-}, [selectedPotion, onPotionPress, handleCheckAnswer]);
+  
+
+    const handleRunPress = useCallback(() => {
+    setRunDisabled(true); 
+    if (selectedPotion) {
+      setPotionUsed(true); 
+      usePotion(selectedPotion.player_potion_id); 
+    } else {
+      handleCheckAnswer();
+    }
+    setTimeout(() => {
+      setRunDisabled(false);
+    }, 5000);
+  }, [selectedPotion, usePotion, handleCheckAnswer]);
 
   const runButtonTitle = useMemo(() => {
     if (usingPotion) return "Using...";
@@ -164,7 +167,7 @@ const ThirdGrid = ({
             title={runButtonTitle}
             position="right"
             variant={runButtonVariant}
-            onPress={selectedPotion ? () => onPotionPress?.(selectedPotion) : handleRunPress}
+            onPress={handleRunPress}
             disabled={runButtonDisabled}
           />
 

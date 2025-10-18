@@ -107,26 +107,16 @@ export default function GamePlay() {
     }
   }, [currentChallenge, loading, animationsLoading, isRetrying, isLoadingNextLevel]);
 
-  const handlePotionPress = useCallback(async (potion) => {
+  const handlePotionPress = useCallback((potion) => {
     if (selectedPotion && selectedPotion.id === potion.id) {
-      // If clicking the same potion, use it
-      console.log('🧪 Using selected potion:', potion.name);
-      
-      const result = await usePotion(potion.player_potion_id);
-      
-      if (result.success) {
-        console.log(`🧪 ${potion.name} potion used successfully!`);
-        // Optionally show success message
-      } else {
-        console.error('Failed to use potion:', result.error);
-        // Optionally show error message
-      }
+      clearSelectedPotion();
+      console.log('🧪 Potion deselected:', potion.name);
     } else {
       // Select the potion
       selectPotion(potion);
       console.log('🧪 Potion selected:', potion.name);
     }
-  }, [selectedPotion, usePotion, selectPotion]);
+  }, [selectedPotion, clearSelectedPotion, selectPotion]);
 
 
 
@@ -527,6 +517,7 @@ return (
                 loadingPotions={loadingPotions}
                 usingPotion={usingPotion}
                 setThirdGridHeight={setThirdGridHeight}
+                usePotion={usePotion}
               />
             </View>
           )}
