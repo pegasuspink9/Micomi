@@ -63,7 +63,6 @@ export default function GameQuestions({
                 }}
                 style={[
                   styles.codeBlankContainer,
-                  // ✅ Fixed: Compare global blank index with current blank index
                   (blanksBeforeCurrent + localBlankIndex) === currentBlankIndex && styles.currentBlank
                 ]}
               >

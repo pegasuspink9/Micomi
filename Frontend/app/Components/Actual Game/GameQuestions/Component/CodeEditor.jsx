@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
 
   scrollContentContainer: {
     flexGrow: 1,
-    paddingBottom: scale(20), // ✅ Responsive
+    paddingBottom: scale(100), // ✅ Responsive
   },
 
   outputContainer: {

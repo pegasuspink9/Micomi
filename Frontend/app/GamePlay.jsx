@@ -20,6 +20,7 @@ export default function GamePlay() {
   const playerId = parseInt(params.playerId) || 11;
   const levelId = parseInt(params.levelId);
   const levelData = params.levelData ? JSON.parse(params.levelData) : null;
+  const [thirdGridHeight, setThirdGridHeight] = useState(SCREEN_HEIGHT * 0.10);
 
   console.log('🎮 GamePlay component mounted with:', { 
     playerId, 
@@ -41,7 +42,7 @@ export default function GamePlay() {
   const gameOverTimeoutRef = useRef(null);
   const hasTriggeredGameOver = useRef(false);
   const hasTriggeredLevelCompletion = useRef(false);
-
+  
 
   const { 
     gameState,   
@@ -505,7 +506,7 @@ return (
           </View>
 
           {!shouldHideThirdGrid && (
-            <View style={styles.thirdGridContainer}>
+            <View style={[styles.thirdGridContainer, { height: thirdGridHeight }]}>
               <ThirdGrid 
                 currentQuestion={currentChallenge}
                 selectedAnswers={selectedAnswers}
@@ -525,6 +526,7 @@ return (
                 onPotionPress={handlePotionPress}
                 loadingPotions={loadingPotions}
                 usingPotion={usingPotion}
+                setThirdGridHeight={setThirdGridHeight}
               />
             </View>
           )}
@@ -578,10 +580,6 @@ const styles = StyleSheet.create({
 
    gameQuestionsContainerExpanded: {
     maxHeight: SCREEN_HEIGHT * 0.75, 
-  },
-
-  thirdGridContainer: {
-    height: SCREEN_HEIGHT * 0.25,
   },
 
   centerContent: { 

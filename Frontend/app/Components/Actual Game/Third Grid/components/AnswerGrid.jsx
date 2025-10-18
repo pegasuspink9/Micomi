@@ -8,7 +8,9 @@ const AnswerGrid = ({
   options, 
   selectedAnswers = [],
   maxAnswers = 1,
-  onAnswerSelect
+  onAnswerSelect,
+  isFillInTheBlank = false,
+  selectedBlankIndex = 0, 
 }) => {
   const renderListItems = () => {
     // Early return if no options
@@ -50,20 +52,22 @@ const AnswerGrid = ({
           return null;
         }
         
+            
         const isSelected = selectedAnswers.includes(trimmedItem);
         const isDisabled = !isSelected && selectedAnswers.length >= maxAnswers;
+
         
         return (
           <AnswerOption
-            key={`option-${index}-${trimmedItem}`}
-            item={trimmedItem}
-            index={index}
-            isSelected={isSelected}
-            isDisabled={isDisabled}
-            onPress={onAnswerSelect}
-          />
-        );
-      }).filter(item => item !== null); // Remove null items
+              key={`option-${index}-${trimmedItem}`}
+              item={trimmedItem}
+              index={index}
+              isSelected={isSelected}
+              isDisabled={isDisabled}
+              onPress={onAnswerSelect}
+            />
+          );
+        }).filter(item => item !== null);
       
     } catch (error) {
       console.error('❌ Error processing options:', error);
@@ -71,7 +75,6 @@ const AnswerGrid = ({
     }
   };
 
-  // Show loading state if no options yet
   if (!options) {
     return (
       <View style={styles.loadingContainer}>

@@ -82,15 +82,25 @@ export const canSelectAnswer = (selectedAnswers, answer, maxAnswers) => {
   return selectedAnswers.length < maxAnswers;
 };
 
-export const createAnswerSelectHandler = (currentQuestion, selectedAnswers, setSelectedAnswers) => {
-  const maxAnswers = getMaxAnswers(currentQuestion);
-  
+export const createAnswerSelectHandler = (currentQuestion, selectedAnswers, setSelectedAnswers, submitAnswer,
+  onCorrectAnswer,
+  selectedBlankIndex) => {
   return (answer) => {
+    
+    const maxAnswers = getMaxAnswers(currentQuestion);
+    
+    if (!selectedAnswers.every(answer => answer && answer.trim())) {
+        console.log('❌ Not all blanks filled');
+        setBorderColor('red');
+        return;
+      }
+
     if (!canSelectAnswer(selectedAnswers, answer, maxAnswers)) {
       Alert.alert('Selection Limit', `You can only select ${maxAnswers} answer(s)`);
       return;
     }
 
+    
     setSelectedAnswers(prev => {
       const prevArray = Array.isArray(prev) ? prev : [];
       

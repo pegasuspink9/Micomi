@@ -10,7 +10,7 @@ class MapAssetPreloader {
     this.cacheDirectory = FileSystem.documentDirectory + 'mapAssets/';
   }
 
-  // ✅ Create cache directory if it doesn't exist
+  //  Create cache directory if it doesn't exist
   async ensureCacheDirectory() {
     const dirInfo = await FileSystem.getInfoAsync(this.cacheDirectory);
     if (!dirInfo.exists) {
@@ -19,13 +19,13 @@ class MapAssetPreloader {
     }
   }
 
-  // ✅ Generate local file path for asset
+  //  Generate local file path for asset
   getLocalFilePath(url) {
     const fileName = url.split('/').pop().split('?')[0] || `asset_${Date.now()}`;
     return this.cacheDirectory + fileName;
   }
 
-  // ✅ Download and cache single asset
+  //  Download and cache single asset
   async downloadSingleAsset(url, onProgress = null) {
     try {
       await this.ensureCacheDirectory();
@@ -75,7 +75,7 @@ class MapAssetPreloader {
           }
         }
 
-        console.log(`✅ Asset downloaded and cached in ${downloadTime}ms: ${url.slice(-50)}`);
+        console.log(` Asset downloaded and cached in ${downloadTime}ms: ${url.slice(-50)}`);
         return { success: true, localPath: result.uri, downloadTime };
       } else {
         throw new Error('Download failed - no result URI');
@@ -86,7 +86,7 @@ class MapAssetPreloader {
     }
   }
 
-  // ✅ Extract all asset URLs from theme data
+  //  Extract all asset URLs from theme data
   extractThemeAssets(themeData) {
     const assets = [];
     
@@ -114,7 +114,7 @@ class MapAssetPreloader {
     return assets;
   }
 
-  // ✅ Download all theme assets with progress tracking
+  //  Download all theme assets with progress tracking
   async downloadThemeAssets(themeData, mapName, onProgress = null, onAssetComplete = null) {
     if (this.isDownloading) {
       console.warn('⚠️ Map asset downloading already in progress');
@@ -228,7 +228,7 @@ class MapAssetPreloader {
     }
   }
 
-  // ✅ Get cached asset path (local file or original URL)
+  //  Get cached asset path (local file or original URL)
   getCachedAssetPath(url) {
     const localPath = this.downloadedAssets.get(url);
     if (localPath) {
@@ -237,7 +237,7 @@ class MapAssetPreloader {
     return url; // Fallback to original URL
   }
 
-  // ✅ Load cached assets from storage on app start
+  //  Load cached assets from storage on app start
   async loadCachedAssets(mapName) {
     try {
       await this.ensureCacheDirectory();
@@ -275,7 +275,7 @@ class MapAssetPreloader {
     }
   }
 
-  // ✅ Check if all theme assets are cached
+  //  Check if all theme assets are cached
   async areThemeAssetsCached(themeData, mapName) {
     const assets = this.extractThemeAssets(themeData);
     
@@ -305,7 +305,7 @@ class MapAssetPreloader {
     };
   }
 
-  // ✅ Get download statistics
+  //  Get download statistics
   getDownloadStats() {
     return {
       downloadedCount: this.downloadedAssets.size,
@@ -316,7 +316,7 @@ class MapAssetPreloader {
     };
   }
 
-  // ✅ Clear cache for specific map
+  //  Clear cache for specific map
   async clearMapCache(mapName) {
     try {
       const cacheKey = `mapAssets_${mapName}`;
@@ -335,7 +335,7 @@ class MapAssetPreloader {
     }
   }
 
-  // ✅ Clear all caches
+  //  Clear all caches
   async clearAllCaches() {
     try {
       // Clear memory caches

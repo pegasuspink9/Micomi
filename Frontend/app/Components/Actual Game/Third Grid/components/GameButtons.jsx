@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useMemo} from 'react';
 import { Pressable, Text, StyleSheet, Dimensions, View } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -10,6 +10,18 @@ const GameButton = ({
   position = 'right', 
   variant = 'primary' 
 }) => {
+
+    const buttonStyle = useMemo(() => [
+    styles.button,
+    position === 'left' && styles.buttonLeft,
+    position === 'right' && styles.buttonRight,
+    position === 'center' && styles.buttonCenter, 
+    variant === 'secondary' && styles.buttonSecondary,
+    variant === 'info' && styles.buttonInfo,
+    variant === 'danger' && styles.buttonDanger,
+    disabled && styles.buttonDisabled,
+    ], [position, variant, disabled]);
+
   
   const getButtonStyles = (variant) => {
     const variants = {
@@ -237,6 +249,19 @@ const styles = StyleSheet.create({
   buttonTextDisabled: {
     color: '#f2f2f7',
     textShadowColor: 'rgba(0, 0, 0, 0.2)',
+  },
+
+    buttonCenter: {
+    left: '50%',
+    transform: [{ translateX: -50 }],
+  },
+
+  buttonDanger: {
+    backgroundColor: '#dc2626',
+    borderTopColor: '#fca5a5',
+    borderLeftColor: '#f87171',
+    borderBottomColor: '#b91c1c',
+    borderRightColor: '#dc2626',
   },
 });
 

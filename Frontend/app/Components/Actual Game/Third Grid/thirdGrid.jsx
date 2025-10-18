@@ -1,9 +1,12 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View } from 'react-native';
+import { View, Dimensions } from 'react-native';
 import GridContainer from './components/GridContainer';
 import AnswerGrid from './components/AnswerGrid';
 import GameButton from './components/GameButtons';
 import PotionGrid from './components/Potions/Potions';
+
+
+const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
 import { 
   getMaxAnswers,
@@ -32,8 +35,10 @@ const ThirdGrid = ({
   onPotionPress,
   loadingPotions = false,
   usingPotion = false,
+  setThirdGridHeight,
+  selectedBlankIndex = 0, 
 }) => {
-  
+
   if (!currentQuestion) {
     console.warn('No currentQuestion provided to ThirdGrid');
     return null;
@@ -41,15 +46,12 @@ const ThirdGrid = ({
   
   // ✅ Memoize maxAnswers calculation
   const maxAnswers = useMemo(() => getMaxAnswers(currentQuestion), [currentQuestion]);
+
+  const isFillInTheBlank = (currentQuestion.type || currentQuestion.challenge_type) === 'fill in the blank';
   
-  // ✅ Memoize handlers to prevent recreation
-  const handleAnswerSelect = useMemo(() => 
-    createAnswerSelectHandler(
-      currentQuestion, 
-      selectedAnswers, 
-      setSelectedAnswers
-    ), [currentQuestion, selectedAnswers, setSelectedAnswers]
-  );
+  const handleAnswerSelect = useMemo(() => {
+    return createAnswerSelectHandler(currentQuestion, selectedAnswers, setSelectedAnswers);
+  }, [currentQuestion, selectedAnswers, setSelectedAnswers]);
 
   const handleNextQuestion = useMemo(() => 
     createNextQuestionHandler(
@@ -109,7 +111,6 @@ const ThirdGrid = ({
     return selectedPotion ? "info" : "primary";
   }, [selectedPotion]);
 
-  // ✅ Memoize options array
   const options = useMemo(() => currentQuestion.options || [], [currentQuestion.options]);
 
   console.log('ThirdGrid render:', {
@@ -121,8 +122,36 @@ const ThirdGrid = ({
     submitting
   });
 
+    const calculateHeight = (numOptions) => {
+      if (numOptions > 8) {
+        return SCREEN_HEIGHT * 0.2; 
+      }
+      
+      const baseHeight = SCREEN_HEIGHT * 0.10;
+      const itemHeight = SCREEN_HEIGHT * 0.04; 
+      const columns = 4; 
+      const rows = Math.ceil(numOptions / columns);
+      const extraHeight = (rows - 1) * itemHeight;
+      return baseHeight + extraHeight;
+    };
+
+    const handleClearAll = useCallback(() => {
+        setSelectedAnswers([]); 
+      }, [setSelectedAnswers]);
+
+
+
+  const dynamicHeight = calculateHeight(options.length);
+
+   useEffect(() => {
+    if (setThirdGridHeight) {
+      setThirdGridHeight(dynamicHeight);
+    }
+  }, [dynamicHeight, setThirdGridHeight]);
+
   return (
     <GridContainer
+      mainHeight={dynamicHeight}
       lowerChildren={
         <View style={{ flex: 1, position: 'relative' }}>
           <GameButton 
@@ -140,6 +169,14 @@ const ThirdGrid = ({
             onPress={togglePotions}
             disabled={submitting || usingPotion}
           />
+
+          <GameButton 
+          title="Clear"
+          position="left"
+          variant="danger"
+          onPress={handleClearAll}
+          disabled={submitting || usingPotion}
+          />
         </View>
       }
     >
@@ -156,6 +193,8 @@ const ThirdGrid = ({
           selectedAnswers={selectedAnswers}
           maxAnswers={maxAnswers}
           onAnswerSelect={handleAnswerSelect}
+          isFillInTheBlank={isFillInTheBlank}
+          selectedBlankIndex={selectedBlankIndex} 
         />
       )}
     </GridContainer>
@@ -164,13 +203,14 @@ const ThirdGrid = ({
 
 // ✅ Memoize ThirdGrid with custom comparison
 export default React.memo(ThirdGrid, (prevProps, nextProps) => {
-  return (
-    prevProps.currentQuestion?.id === nextProps.currentQuestion?.id &&
-    prevProps.currentQuestion?.title === nextProps.currentQuestion?.title &&
-    JSON.stringify(prevProps.selectedAnswers) === JSON.stringify(nextProps.selectedAnswers) &&
-    prevProps.submitting === nextProps.submitting &&
-    prevProps.currentQuestionIndex === nextProps.currentQuestionIndex &&
-    prevProps.setSelectedAnswers === nextProps.setSelectedAnswers &&
-    prevProps.submitAnswer === nextProps.submitAnswer
-  );
+    return (
+      prevProps.currentQuestion?.id === nextProps.currentQuestion?.id &&
+      prevProps.currentQuestion?.title === nextProps.currentQuestion?.title &&
+      JSON.stringify(prevProps.selectedAnswers) === JSON.stringify(nextProps.selectedAnswers) &&
+      prevProps.submitting === nextProps.submitting &&
+      prevProps.currentQuestionIndex === nextProps.currentQuestionIndex &&
+      prevProps.setSelectedAnswers === nextProps.setSelectedAnswers &&
+      prevProps.submitAnswer === nextProps.submitAnswer &&
+      prevProps.selectedBlankIndex === nextProps.selectedBlankIndex 
+    );
 });

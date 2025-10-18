@@ -3,11 +3,11 @@ import { View, StyleSheet, Dimensions } from 'react-native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const GridContainer = ({ children, lowerChildren }) => {
+const GridContainer = ({ children, lowerChildren, mainHeight }) => {
   return (
     <View style={styles.containerWrapper}>
       {/* Main Grid */}
-      <View style={styles.thirdGrid}>
+      <View style={[styles.thirdGrid, { height: mainHeight }]}>
         <View style={styles.outerFrame}>
           <View style={styles.innerContent}>
             <View style={styles.innerBorder}>
@@ -46,6 +46,9 @@ const styles = StyleSheet.create({
     position: 'absolute', 
     left: 0,
     right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
     height: SCREEN_HEIGHT * 0.32,
     backgroundColor: 'transparent',
  
@@ -58,9 +61,8 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
 
-  // ✅ New lower grid with same styling
   lowerGrid: {
-    height: SCREEN_HEIGHT * 0.15,
+    height: SCREEN_HEIGHT * 0.12,
     width: SCREEN_WIDTH * 0.7,
     alignSelf: 'center',
     backgroundColor: 'transparent',
