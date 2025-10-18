@@ -135,6 +135,11 @@ export const gameService = {
           enemy_dies: responseData.enemy?.enemy_dies || null,
           enemy_avatar: responseData.enemy?.enemy_avatar || null, 
         },
+
+        avatar: {
+          player: responseData.character?.character_avatar || null,
+          enemy: responseData.enemy?.enemy_avatar || null
+        },
         
         selectedCharacter: {
           character_id: responseData.character?.character_id || null,
@@ -155,6 +160,7 @@ export const gameService = {
         currentChallenge: null,
         submissionResult: null
       };
+
 
       // Extract challenge data
       const challengeSource = isSubmission ? responseData.nextChallenge : responseData.currentChallenge;
@@ -224,6 +230,7 @@ export const gameService = {
               character_damage: responseData.fightResult.character.character_damage,
               character_health: responseData.fightResult.character.character_health,
               character_max_health: responseData.fightResult.character.character_max_health,
+              character_avatar: responseData.fightResult.character.character_avatar
             } : null,
             
             enemy: responseData.fightResult.enemy ? {
@@ -237,6 +244,7 @@ export const gameService = {
               enemy_damage: responseData.fightResult.enemy.enemy_damage,
               enemy_health: responseData.fightResult.enemy.enemy_health,
               enemy_max_health: responseData.fightResult.enemy.enemy_max_health,
+              enemy_avatar: responseData.fightResult?.enemy.enemy_avatar || null, 
             } : null,
           } : null,
           
@@ -284,9 +292,18 @@ export const gameService = {
         if (responseData.fightResult?.enemy?.enemy_health) {
           gameState.enemy.enemy_health = responseData.fightResult.enemy.enemy_health;
         }
+
         if (responseData.fightResult?.energy !== undefined) {
           gameState.energy = responseData.fightResult.energy;
         }
+
+        if (responseData.fightResult?.character?.character_avatar) {
+          gameState.avatar.player = responseData.fightResult.character.character_avatar;
+        }
+        if (responseData.fightResult?.enemy?.enemy_avatar) {
+          gameState.avatar.enemy = responseData.fightResult.enemy.enemy_avatar;
+        }
+        
       }
       
   
@@ -341,22 +358,30 @@ export const gameService = {
     }
   },
 
-    usePotion: async (playerId, levelId, playerPotionId) => {
-    try {
-      console.log(`🧪 Using potion ${playerPotionId} for player ${playerId} in level ${levelId}...`);
-      
-      const response = await apiService.post(`/game/potion/${playerId}/${levelId}/${playerPotionId}`);
-      
-      if (!response.success) {
-        throw new Error(response.message || 'Failed to use potion');
-      }
-
-      console.log(`🧪 Potion used successfully:`, response.data);
-      return response;
-    } catch (error) {
-      console.error(`Failed to use potion ${playerPotionId}:`, error);
-      throw error;
+  usePotion: async (playerId, levelId, challengeId, playerPotionId) => {
+  try {
+    console.log(`🧪 Using potion ${playerPotionId} for player ${playerId}, level ${levelId}, challenge ${challengeId}...`);
+    
+    const payload = { playerPotionId };
+    
+    const response = await apiService.post(
+      `/game/submit-challenge/${playerId}/${levelId}/${challengeId}/use-potion`,
+      payload
+    );
+    
+    if (!response.success) {
+      throw new Error(response.message || 'Failed to use potion');
     }
+    
+    const responseWithCache = universalAssetPreloader.transformGameStateWithCache(response.data);
+    const extractedState = gameService.extractUnifiedGameState(responseWithCache, true);
+    
+    console.log(`🧪 Potion used successfully for challenge ${challengeId}`);
+    return extractedState;
+  } catch (error) {
+    console.error(`Failed to use potion ${playerPotionId}:`, error);
+    throw error;
+  }
   },
 
     getPotionDisplayName: (potionType) => {

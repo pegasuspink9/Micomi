@@ -380,6 +380,9 @@ const EnemyCharacter = ({
 
     frameIndex.value = 0;
 
+    positionX.value = 0;
+    opacity.value = 1;
+
     if (isCompoundAnimation && currentState === 'attack') {
       const phases = COMPOUND_PHASES.attack;
       positionX.value = 0;

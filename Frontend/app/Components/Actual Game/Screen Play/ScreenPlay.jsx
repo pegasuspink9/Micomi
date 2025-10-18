@@ -64,6 +64,12 @@ const ScreenPlay = ({
   ), [gameState]);
 
 
+  const playerAvatar = useMemo(() => gameState.avatar?.player, [gameState.avatar?.player]);
+
+  const enemyAvatar = useMemo(() => gameState.avatar?.enemy, [gameState.avatar?.enemy]);
+
+
+
   const characterAnimations = useMemo(() => ({
     character_idle: gameState.submissionResult?.fightResult?.character?.character_idle 
       ?? gameState.selectedCharacter?.character_idle,
@@ -138,15 +144,14 @@ useEffect(() => {
   }
 }, [gameState.submissionResult]);
 
-  // ✅ Memoize damage values
-  const damageThisSubmission = useMemo(() => 
-    gameState.submissionResult?.fightResult?.character?.character_damage,
-    [gameState.submissionResult?.fightResult?.character?.character_damage]
-  );
+    const damageThisSubmission = useMemo(() => 
+      gameState.submissionResult?.isPotionUsage ? 0 : gameState.submissionResult?.fightResult?.character?.character_damage,
+      [gameState.submissionResult]
+    );
 
   const enemyDamageThisSubmission = useMemo(() => 
-    gameState.submissionResult?.fightResult?.enemy?.enemy_damage,
-    [gameState.submissionResult?.fightResult?.enemy?.enemy_damage]
+  gameState.submissionResult?.isPotionUsage ? 0 : gameState.submissionResult?.fightResult?.enemy?.enemy_damage,
+  [gameState.submissionResult]
   );
 
   const [submissionSeq, setSubmissionSeq] = useState(0);
@@ -260,10 +265,16 @@ useEffect(() => {
   }
 
   const submission = gameState.submissionResult;
-  const submissionKey = submission
-    ? `${submission.isCorrect}-${submission.attempts || 0}-${submission.fightResult?.character?.character_health ?? ''}-${submission.fightResult?.enemy?.enemy_health ?? ''}`
-    : null;
+  const submissionKey = submission ? `${submission.isCorrect}-${submission.attempts || 0}-${submission.fightResult?.character?.character_health ?? ''}-${submission.fightResult?.enemy?.enemy_health ?? ''}`
+  : null;
 
+   if (submission && submission.isPotionUsage) {
+    console.log('🧪 Potion usage detected - skipping animations');
+    return;
+  }
+
+
+  
   if (submission && lastSubmissionKeyRef.current !== submissionKey) {
     lastSubmissionKeyRef.current = submissionKey;
 
@@ -385,8 +396,7 @@ useEffect(() => {
           }
           animated={true}
           position="left"
-          avatarUrl={gameState.submissionResult?.fightResult?.character?.character_avatar ?? 
-                    gameState.selectedCharacter?.character_avatar }
+          avatarUrl={playerAvatar}
           isEnemy={false}
           borderColor="rgba(255, 255, 255, 0.8)"
         />
@@ -399,7 +409,7 @@ useEffect(() => {
           }
           animated={true}
           position="right"
-          avatarUrl={gameState.enemy.enemy_avatar} 
+          avatarUrl={enemyAvatar}
           isEnemy={true}
           borderColor="#ffffffff"
         />
@@ -454,7 +464,6 @@ useEffect(() => {
   );
 };
 
-// ✅ Memoize ScreenPlay with custom comparison
 export default React.memo(ScreenPlay, (prevProps, nextProps) => {
   return (
     prevProps.gameState?.submissionResult?.isCorrect === nextProps.gameState?.submissionResult?.isCorrect &&
@@ -462,6 +471,8 @@ export default React.memo(ScreenPlay, (prevProps, nextProps) => {
     prevProps.gameState?.enemy?.enemy_health === nextProps.gameState?.enemy?.enemy_health &&
     prevProps.borderColor === nextProps.borderColor &&
     prevProps.isPaused === nextProps.isPaused &&
-    prevProps.onSubmissionAnimationComplete === nextProps.onSubmissionAnimationComplete
+    prevProps.onSubmissionAnimationComplete === nextProps.onSubmissionAnimationComplete &&
+    prevProps.gameState?.avatar?.player === nextProps.gameState?.avatar?.player &&
+    prevProps.gameState?.avatar?.enemy === nextProps.gameState?.avatar?.enemy
   );
 });

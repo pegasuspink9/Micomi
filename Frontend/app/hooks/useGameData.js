@@ -322,34 +322,58 @@ export const useGameData = (playerId, levelId) => {
     }
   }, [playerId]);
 
-  const usePotion = useCallback(async (playerPotionId) => {
-    if (!playerId || !levelId || usingPotion) return;
+const usePotion = useCallback(async (playerPotionId) => {
+  if (!playerId || !levelId || !gameState?.currentChallenge || usingPotion || waitingForAnimation) return;
+  
+  try {
+    setUsingPotion(true);
+    console.log(`🧪 Using potion ${playerPotionId}...`);
     
-    try {
-      setUsingPotion(true);
-      console.log(`🧪 Using potion ${playerPotionId}...`);
-      
-      const result = await gameService.usePotion(playerId, levelId, playerPotionId);
-      
-      if (result.success) {
-        // Update local potion count
-        setPotions(prev => prev.map(potion => 
-          potion.player_potion_id === playerPotionId 
-            ? { ...potion, count: result.data.remaining }
-            : potion
-        ));
-        
-        setSelectedPotion(null);
-        console.log(`🧪 Potion used: ${result.data.message}`);
-        return { success: true, data: result.data };
-      }
-    } catch (error) {
-      console.error('Failed to use potion:', error);
-      return { success: false, error: error.message };
-    } finally {
-      setUsingPotion(false);
+    const responseData = await gameService.usePotion(
+      playerId, 
+      levelId, 
+      gameState.currentChallenge.id, 
+      playerPotionId
+    );
+    
+    if (!responseData) {
+      throw new Error('No response data received from potion usage');
     }
-  }, [playerId, levelId, usingPotion]);
+
+    const updatedState = responseData;
+    
+    if (!updatedState) {
+      throw new Error('Failed to extract updated game state from potion response');
+    }
+
+    console.log('Potion used, updating game state directly...');
+
+     setGameState(prevState => ({
+      ...updatedState,
+      submissionResult: {
+        ...updatedState.submissionResult,
+        isCorrect: true,
+        isPotionUsage: true,
+      },
+  }));
+
+    setPotions(prev => prev.map(potion => 
+      potion.player_potion_id === playerPotionId 
+        ? { ...potion, count: Math.max(0, potion.count - 1) }
+        : potion
+    ));
+    
+    setSelectedPotion(null);
+    console.log(`🧪 Potion used: ${playerPotionId}`);
+    return { success: true, data: updatedState };
+  } catch (error) {
+    console.error('Failed to use potion:', error);
+    return { success: false, error: error.message };
+  } finally {
+    setUsingPotion(false);
+  }
+}, [playerId, levelId, gameState?.currentChallenge, usingPotion, waitingForAnimation, gameService]);
+
 
 
   const selectPotion = useCallback((potion) => {

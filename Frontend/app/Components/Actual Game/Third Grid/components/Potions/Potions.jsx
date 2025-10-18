@@ -8,8 +8,9 @@ import {
   Pressable,
   ScrollView
 } from 'react-native';
+import { SCREEN } from '../../../../Responsiveness/gameResponsive';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const PotionGrid = ({ 
   potions = [],
@@ -204,7 +205,6 @@ const PotionGrid = ({
 const styles = StyleSheet.create({
   gridContainer: {
     flex: 1,
-    paddingTop: SCREEN_WIDTH * 0.02,
   },
 
   centerContent: {
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
 
   potionFrame: {
     width: SCREEN_WIDTH * 0.18,
-    height: SCREEN_WIDTH * 0.24,
+    height: SCREEN_WIDTH * 0.20,
     borderRadius: SCREEN_WIDTH * 0.03,
     padding: 2,
     shadowColor: '#000',
@@ -374,8 +374,8 @@ const styles = StyleSheet.create({
   },
 
   potionImage: {
-    width: '70%',
-    height: '55%',
+    width: SCREEN_WIDTH * 0.8,
+    height: SCREEN_HEIGHT * 0.08,
     borderRadius: 8,
     zIndex: 2,
     resizeMode: 'contain',
@@ -417,13 +417,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-  // ✅ Name container
   nameContainer: {
     position: 'absolute',
-    bottom: 2,
+    bottom: -1,
     left: 2,
     right: 2,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     borderRadius: 4,
     paddingVertical: 1,
     paddingHorizontal: 2,
@@ -431,11 +429,10 @@ const styles = StyleSheet.create({
   },
 
   nameText: {
-    color: '#ffffff94',
+    color: '#ffffffff',
     fontSize: 8,
-    fontFamily: 'DynaPuff',
+    fontFamily: 'MusicVibes',
     textAlign: 'center',
-    fontWeight: 'bold',
   },
 
   nameTextDisabled: {
