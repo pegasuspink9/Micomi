@@ -50,6 +50,8 @@ model Level {
   level_type           String
   level_title          String?
   enemy_id             Int?
+  boss_level_expected_output  Json?   @default("[]")    
+
   player_id            Int?
   challenges           Challenge[]
   lessons              Lesson[]

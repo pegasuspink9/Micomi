@@ -1,4 +1,4 @@
-import { DifficultyLevel } from "@prisma/client";
+import { Prisma, DifficultyLevel } from "@prisma/client";
 
 export interface LevelCreateInput {
   map_id: number;
@@ -7,6 +7,7 @@ export interface LevelCreateInput {
   level_type: string;
   level_difficulty: DifficultyLevel;
   level_title?: string;
+  boss_level_expected_output?: Prisma.InputJsonValue;
   content: string;
   feedback_message: string;
 }
@@ -19,6 +20,7 @@ export interface LevelUpdateInput {
   level_type?: string;
   level_difficulty?: DifficultyLevel;
   level_title?: string;
+  boss_level_expected_output?: Prisma.InputJsonValue;
   content?: string;
   feedback_message?: string;
 }

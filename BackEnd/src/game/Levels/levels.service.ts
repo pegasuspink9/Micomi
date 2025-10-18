@@ -231,6 +231,7 @@ export const previewLevel = async (playerId: number, levelId: number) => {
         audio: [
           "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353796/Navigation_sxwh2g.mp3",
         ],
+        bossLevelExpectedOutput: level.boss_level_expected_output,
       };
     }
   }
@@ -459,6 +460,18 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     ? firstChallenge.correct_answer.length
     : 0;
 
+  let character_attack_image = null;
+
+  if (correctAnswerLength >= 8) {
+    character_attack_image = ["special attack image"];
+  } else if (correctAnswerLength >= 5 && correctAnswerLength < 8) {
+    character_attack_image = ["second attack image"];
+  } else if (correctAnswerLength > 2) {
+    character_attack_image = ["second attack image", "basic attack"];
+  } else {
+    character_attack_image = ["basic attack"];
+  }
+
   return {
     level: {
       level_id: level.level_id,
@@ -497,6 +510,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     energy: energyStatus.energy,
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
     correct_answer_length: correctAnswerLength,
+    character_attack_image,
   };
 };
 
@@ -693,6 +707,8 @@ export const completeShopLevel = async (playerId: number, levelId: number) => {
   //     "Player has not yet bought all limited potions for this level"
   //   );
   // }
+
+  //comment daw kog gamay ingon si Noel :>
 
   const progress = await prisma.playerProgress.upsert({
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },

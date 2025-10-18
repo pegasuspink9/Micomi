@@ -252,7 +252,7 @@ export const generateDynamicMessage = (
     .replace(/[^\w\s]/g, "")
     .trim();
 
-  const audioFiles: string[] = [`${cleanMessage}.mp3`];
+  const audioFiles: string[] = [`${cleanMessage}`];
 
   if (selectedText.includes(characterName)) {
     const characterAudio = characterAudioMap[characterName];
