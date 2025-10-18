@@ -49,9 +49,15 @@ const ThirdGrid = ({
 
   const isFillInTheBlank = (currentQuestion.type || currentQuestion.challenge_type) === 'fill in the blank';
   
-  const handleAnswerSelect = useMemo(() => {
-    return createAnswerSelectHandler(currentQuestion, selectedAnswers, setSelectedAnswers);
-  }, [currentQuestion, selectedAnswers, setSelectedAnswers]);
+  
+  const options = useMemo(() => currentQuestion.options || [], [currentQuestion.options]);
+
+  const challengeType = currentQuestion.type || currentQuestion.challenge_type;
+
+  const handleAnswerSelect = useMemo(() => 
+  createAnswerSelectHandler(currentQuestion, selectedAnswers, setSelectedAnswers), 
+  [currentQuestion, selectedAnswers, setSelectedAnswers]
+  );
 
   const handleNextQuestion = useMemo(() => 
     createNextQuestionHandler(
@@ -69,8 +75,9 @@ const ThirdGrid = ({
       setBorderColor,
       setCorrectAnswerRef,
       submitAnswer,
-      onCorrectAnswer
-    ), [currentQuestion, selectedAnswers, setBorderColor, setCorrectAnswerRef, submitAnswer, onCorrectAnswer]
+      onCorrectAnswer,
+      options
+    ), [currentQuestion, selectedAnswers, setBorderColor, setCorrectAnswerRef, submitAnswer, onCorrectAnswer, options]
   );
 
   const [showPotions, setShowPotions] = useState(false);
@@ -111,7 +118,6 @@ const ThirdGrid = ({
     return selectedPotion ? "info" : "primary";
   }, [selectedPotion]);
 
-  const options = useMemo(() => currentQuestion.options || [], [currentQuestion.options]);
 
   console.log('ThirdGrid render:', {
     questionTitle: currentQuestion.title,

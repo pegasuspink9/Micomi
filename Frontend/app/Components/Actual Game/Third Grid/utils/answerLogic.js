@@ -82,33 +82,25 @@ export const canSelectAnswer = (selectedAnswers, answer, maxAnswers) => {
   return selectedAnswers.length < maxAnswers;
 };
 
-export const createAnswerSelectHandler = (currentQuestion, selectedAnswers, setSelectedAnswers, submitAnswer,
-  onCorrectAnswer,
-  selectedBlankIndex) => {
-  return (answer) => {
-    
-    const maxAnswers = getMaxAnswers(currentQuestion);
-    
-    if (!selectedAnswers.every(answer => answer && answer.trim())) {
-        console.log('❌ Not all blanks filled');
-        setBorderColor('red');
-        return;
-      }
-
-    if (!canSelectAnswer(selectedAnswers, answer, maxAnswers)) {
-      Alert.alert('Selection Limit', `You can only select ${maxAnswers} answer(s)`);
-      return;
-    }
-
-    
+export const createAnswerSelectHandler = (currentQuestion, selectedAnswers, setSelectedAnswers) => {
+  const maxAnswers = getMaxAnswers(currentQuestion);
+  
+  return (index) => {
     setSelectedAnswers(prev => {
-      const prevArray = Array.isArray(prev) ? prev : [];
-      
-      if (prevArray.includes(answer)) {
-        return prevArray.filter(item => item !== answer);
+      const newArr = [...prev];
+      const idx = newArr.indexOf(index);
+      if (idx > -1) {
+        // Remove if already selected
+        newArr.splice(idx, 1);
       } else {
-        return [...prevArray, answer];
+        // Add if not selected and under limit
+        if (newArr.length >= maxAnswers) {
+          Alert.alert('Selection Limit', `You can only select ${maxAnswers} answer(s)`);
+          return newArr;
+        }
+        newArr.push(index);
       }
+      return newArr;
     });
   };
 };
@@ -134,7 +126,8 @@ export const createCheckAnswerHandler = (
   setBorderColor,
   setCorrectAnswerRef,
   submitAnswerFunction,
-  onCorrectAnswer // NEW: Callback function to switch tab
+  onCorrectAnswer,
+  options
 ) => {
   return async () => {
     if (!selectedAnswers || selectedAnswers.length === 0) {
@@ -142,12 +135,14 @@ export const createCheckAnswerHandler = (
       return;
     }
 
-    console.log('Checking answer:', { selectedAnswers, currentQuestion });
+    const actualAnswers = selectedAnswers.map(index => options?.[index]).filter(answer => answer !== undefined);
+
+    console.log('Checking answer:', { selectedAnswers, actualAnswers, currentQuestion });
     
     // Submit answer to API
     if (submitAnswerFunction) {
       try {
-        const result = await submitAnswerFunction(selectedAnswers);
+        const result = await submitAnswerFunction(actualAnswers);
         
         console.log('Submit answer result:', result);
         
@@ -213,12 +208,15 @@ export const createCheckAnswerHandler = (
           }
         }
       } catch (error) {
-        console.error('❌ Error during answer submission:', error);
-        setBorderColor('red');
+        const isCorrect = checkAnswer(currentQuestion, actualAnswers); 
+        setBorderColor(isCorrect ? 'green' : 'red');
         
-        // Set error state
+        if (isCorrect && onCorrectAnswer) {
+          onCorrectAnswer();
+        }
+        
         if (setCorrectAnswerRef && setCorrectAnswerRef.current) {
-          setCorrectAnswerRef.current(false);
+          setCorrectAnswerRef.current(isCorrect);
         }
       }
     } else {

@@ -17,6 +17,7 @@ export default function GameQuestions({
 }) {
   const scrollViewRef = useRef(null);
   const blankRefs = useRef({});
+  const options = currentQuestion?.options || [];
 
   useEffect(() => {
     if (!currentQuestion) return;
@@ -67,8 +68,10 @@ export default function GameQuestions({
                 ]}
               >
                 <Text style={styles.codeBlankText}>
-                  {selectedAnswers?.[blanksBeforeCurrent + localBlankIndex] || '_'}
-                </Text>
+                {selectedAnswers?.[blanksBeforeCurrent + localBlankIndex] !== null && selectedAnswers?.[blanksBeforeCurrent + localBlankIndex] !== undefined
+                  ? options?.[selectedAnswers[blanksBeforeCurrent + localBlankIndex]] || '_'
+                  : '_'}
+              </Text>
               </View>
             )}
             {partIndex < parts.length - 2 && localBlankIndex++}

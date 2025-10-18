@@ -50,7 +50,9 @@ const CodeEditor = ({
     }
   }, [onTabChange]);
 
-  // ✅ Memoize tab content rendering
+
+  const options = currentQuestion?.options || [];
+
   const renderTabContent = useCallback(() => {
     switch (activeTab) {
       case 'code':
@@ -75,6 +77,8 @@ const CodeEditor = ({
           </ScrollView>
         );
 
+        
+
       case 'output':
         return (
           <View style={styles.outputContainer}>
@@ -85,6 +89,7 @@ const CodeEditor = ({
               isCorrect={isCorrect}
               showLiveHTML={true}
               style={styles.tabOutput}
+              options={options}
            />
           </View>
         );

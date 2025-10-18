@@ -53,8 +53,8 @@ const AnswerGrid = ({
         }
         
             
-        const isSelected = selectedAnswers.includes(trimmedItem);
-        const isDisabled = !isSelected && selectedAnswers.length >= maxAnswers;
+        const isSelected = selectedAnswers.includes(index);
+        const isDisabled = !isSelected && selectedAnswers.filter(a => a !== null).length >= maxAnswers;
         
         return (
           <AnswerOption
@@ -63,7 +63,7 @@ const AnswerGrid = ({
               index={index}
               isSelected={isSelected}
               isDisabled={isDisabled}
-              onPress={onAnswerSelect}
+              onPress={() => onAnswerSelect(index)}
             />
           );
         }).filter(item => item !== null);

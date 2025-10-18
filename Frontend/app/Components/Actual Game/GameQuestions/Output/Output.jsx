@@ -10,11 +10,12 @@ const Output = ({
   style = {},
   currentQuestion,
   selectedAnswers = [],
-  showLiveHTML = false
+  showLiveHTML = false,
+  options = [],
 }) => {
   const [htmlOutput, setHtmlOutput] = useState('');
 
-  // ✅ Memoize HTML generation function
+  //  Memoize HTML generation function
   const generateHtmlOutput = useCallback(() => {
     if (!currentQuestion || !currentQuestion.question) {
       return '<html><body></body></html>';
@@ -27,11 +28,10 @@ const Output = ({
     }
 
     let htmlCode = currentQuestion.question;
-    const answersArray = Array.isArray(selectedAnswers) ? selectedAnswers : [];
-    answersArray.forEach((answer, index) => {
-      if (answer && typeof answer === 'string') {
-        htmlCode = htmlCode.replace('_', answer);
-      }
+    const answersArray = selectedAnswers.map(index => options?.[index]).filter(answer => answer && typeof answer === 'string');
+    
+    answersArray.forEach((answer) => {
+      htmlCode = htmlCode.replace('_', answer);
     });
     htmlCode = htmlCode.replace(/_/g, '');
 
@@ -58,7 +58,7 @@ const Output = ({
     }
 
     return htmlCode;
-  }, [currentQuestion, selectedAnswers]);
+  }, [currentQuestion, selectedAnswers, options]);
 
   // Update HTML output when dependencies change
   useEffect(() => {
@@ -68,14 +68,14 @@ const Output = ({
     }
   }, [generateHtmlOutput, showLiveHTML]);
 
-  // ✅ Memoize should show HTML decision
+  //  Memoize should show HTML decision
   const shouldShowHTML = useMemo(() => 
     showLiveHTML && currentQuestion && 
     (currentQuestion.challenge_type === 'fill in the blank' || currentQuestion.challenge_type === 'code with guide'),
     [showLiveHTML, currentQuestion]
   );
 
-  // ✅ Memoize event handlers
+  //  Memoize event handlers
   const handleWebViewError = useCallback((error) => {
     console.log('WebView error:', error);
   }, []);
