@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
 
   lowerGrid: {
     height: SCREEN_HEIGHT * 0.12,
-    width: SCREEN_WIDTH * 0.7,
+    width: SCREEN_WIDTH * 0.9,
     alignSelf: 'center',
     backgroundColor: 'transparent',
   },

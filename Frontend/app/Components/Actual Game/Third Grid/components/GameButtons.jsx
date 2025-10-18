@@ -11,17 +11,6 @@ const GameButton = ({
   variant = 'primary' 
 }) => {
 
-    const buttonStyle = useMemo(() => [
-    styles.button,
-    position === 'left' && styles.buttonLeft,
-    position === 'right' && styles.buttonRight,
-    position === 'center' && styles.buttonCenter, 
-    variant === 'secondary' && styles.buttonSecondary,
-    variant === 'info' && styles.buttonInfo,
-    variant === 'danger' && styles.buttonDanger,
-    disabled && styles.buttonDisabled,
-    ], [position, variant, disabled]);
-
   
   const getButtonStyles = (variant) => {
     const variants = {
@@ -74,10 +63,10 @@ const GameButton = ({
   
   return (
     <View style={[
-      styles.buttonFrame,
-      position === 'left' ? styles.leftPosition : styles.rightPosition,
-      { backgroundColor: buttonVariant.frameColor }
-    ]}>
+        styles.buttonFrame,
+        position === 'left' ? styles.leftPosition : position === 'right' ? styles.rightPosition : styles.buttonCenter,
+        { backgroundColor: buttonVariant.frameColor }
+      ]}>
       <Pressable 
         style={({ pressed }) => [
           styles.buttonContainer,
@@ -140,12 +129,12 @@ const styles = StyleSheet.create({
   },
 
   leftPosition: {
-    left: SCREEN_WIDTH * 0.06,
+    left: SCREEN_WIDTH * 0.02,
     alignSelf: 'flex-start',
   },
 
   rightPosition: {
-    right: SCREEN_WIDTH * 0.06,
+    right: SCREEN_WIDTH * 0.02,
     alignSelf: 'flex-end',
   },
 
@@ -178,7 +167,6 @@ const styles = StyleSheet.create({
     paddingVertical: SCREEN_WIDTH * 0.009,
     paddingHorizontal: SCREEN_WIDTH * 0.015,
     
-    // Inner button borders for extra depth (same as AnswerOption)
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.3)',
     borderLeftWidth: 1,
@@ -251,9 +239,8 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.2)',
   },
 
-    buttonCenter: {
-    left: '50%',
-    transform: [{ translateX: -50 }],
+  buttonCenter: {
+    left: '37%',
   },
 
   buttonDanger: {

@@ -164,7 +164,7 @@ const ThirdGrid = ({
 
           <GameButton 
             title={showPotions ? "Keyboard" : "Potions"}
-            position="left"
+            position="center"
             variant="secondary"
             onPress={togglePotions}
             disabled={submitting || usingPotion}

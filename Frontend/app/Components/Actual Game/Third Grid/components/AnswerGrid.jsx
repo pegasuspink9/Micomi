@@ -55,7 +55,6 @@ const AnswerGrid = ({
             
         const isSelected = selectedAnswers.includes(trimmedItem);
         const isDisabled = !isSelected && selectedAnswers.length >= maxAnswers;
-
         
         return (
           <AnswerOption
