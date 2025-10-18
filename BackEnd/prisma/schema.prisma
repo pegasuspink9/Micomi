@@ -40,26 +40,25 @@ model Lesson {
 }
 
 model Level {
-  level_id             Int                 @id @default(autoincrement())
-  map_id               Int
-  level_number         Int
-  content              String
-  is_unlocked          Boolean             @default(false)
-  feedback_message     String
-  level_difficulty     DifficultyLevel
-  level_type           String
-  level_title          String?
-  enemy_id             Int?
-  boss_level_expected_output  Json?   @default("[]")    
-
-  player_id            Int?
-  challenges           Challenge[]
-  lessons              Lesson[]
-  enemy                Enemy?              @relation(fields: [enemy_id], references: [enemy_id], onDelete: Cascade)
-  map                  Map                 @relation(fields: [map_id], references: [map_id], onDelete: Cascade)
-  potionsBoughtByLevel PlayerLevelPotion[]
-  playerProgress       PlayerProgress[]
-  potionShopByLevel    PotionShopByLevel?
+  level_id                   Int                 @id @default(autoincrement())
+  map_id                     Int
+  level_number               Int
+  content                    String
+  is_unlocked                Boolean             @default(false)
+  feedback_message           String
+  level_difficulty           DifficultyLevel
+  level_type                 String
+  level_title                String?
+  enemy_id                   Int?
+  player_id                  Int?
+  boss_level_expected_output Json?               @default("[]")
+  challenges                 Challenge[]
+  lessons                    Lesson[]
+  enemy                      Enemy?              @relation(fields: [enemy_id], references: [enemy_id], onDelete: Cascade)
+  map                        Map                 @relation(fields: [map_id], references: [map_id], onDelete: Cascade)
+  potionsBoughtByLevel       PlayerLevelPotion[]
+  playerProgress             PlayerProgress[]
+  potionShopByLevel          PotionShopByLevel?
 }
 
 model Challenge {
