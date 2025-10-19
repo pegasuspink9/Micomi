@@ -141,7 +141,7 @@ const PotionGrid = ({
               <View style={[
                 styles.countContainer,
                 isOutOfStock && styles.countContainerDisabled,
-                potionUsed && styles.countContainerDisabled, // ✅ Apply disabled style
+                potionUsed && styles.countContainerDisabled,
                 isSelected && styles.selectedCountContainer 
               ]}>
                 <Text style={[
@@ -396,8 +396,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#fff',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderColor: '#000000ff',
+    backgroundColor: 'rgba(60, 4, 91, 0.7)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.5,
@@ -415,7 +415,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 9,
     fontFamily: 'DynaPuff',
-    fontWeight: 'bold',
   },
 
   nameContainer: {
@@ -440,7 +439,6 @@ const styles = StyleSheet.create({
     color: '#666',
   },
 
-  // ✅ Selected styles
   selectedPotionFrame: {
     borderTopColor: 'rgba(255, 255, 255, 0.8)',
     borderLeftColor: 'rgba(255, 255, 255, 0.8)',
@@ -461,23 +459,14 @@ const styles = StyleSheet.create({
     borderLeftColor: 'rgba(255, 255, 255, 0.3)',
   },
 
-  selectedCountContainer: {
-    borderColor: '#ffeb3b',
-    shadowColor: '#ffeb3b',
-    backgroundColor: 'rgba(255, 235, 59, 0.9)',
-  },
+ 
 
-  selectedCountText: {
-    color: '#000',
-    fontWeight: 'bold',
-  },
 
   selectedNameText: {
     color: '#ffeb3b',
     fontWeight: 'bold',
   },
 
-  // ✅ Loading and empty states
   loadingText: {
     color: '#ffffff94',
     fontSize: 16,

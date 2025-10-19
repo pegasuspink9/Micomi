@@ -436,7 +436,7 @@ const GameOverModal = ({
 };
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+   modalOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -444,11 +444,10 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)', 
+    backgroundColor: 'transparent', // ✅ Transparent to show gameplay behind
     zIndex: 99999,
     elevation: 99999,
   },
-
   robotHead: {
     alignSelf: 'center',
     marginTop: SCREEN_HEIGHT * -0.2,

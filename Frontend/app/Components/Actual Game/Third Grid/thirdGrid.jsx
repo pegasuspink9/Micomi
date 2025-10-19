@@ -45,7 +45,6 @@ const ThirdGrid = ({
     return null;
   }
   
-  // ✅ Memoize maxAnswers calculation
   const maxAnswers = useMemo(() => getMaxAnswers(currentQuestion), [currentQuestion]);
 
   const isFillInTheBlank = (currentQuestion.type || currentQuestion.challenge_type) === 'fill in the blank';
@@ -115,7 +114,7 @@ const ThirdGrid = ({
 
   const runButtonTitle = useMemo(() => {
     if (usingPotion) return "Using...";
-    if (selectedPotion) return "Use Potion";
+    if (selectedPotion) return "Activate";
     if (submitting) return "Running";
     return "Run";
   }, [usingPotion, selectedPotion, submitting]);
