@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, Keyboard } from 'react-native';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { View, Text, ScrollView, StyleSheet, Pressable, Keyboard, Animated } from 'react-native';
 import Output from '../Output/Output';
 import ExpectedOutput from '../Output/ExpectedOutput';
 import { 
@@ -24,10 +24,17 @@ const CodeEditor = ({
   activeTab: externalActiveTab
 }) => {
   const [activeTab, setActiveTab] = useState('code');
+  const [hasAnimated, setHasAnimated] = useState(false); 
+  const lineAnimations = useRef([]);
   
-  // ✅ Memoize code text and lines
+  //  Memoize code text and lines
   const codeText = useMemo(() => currentQuestion.question || '', [currentQuestion.question]);
   const lines = useMemo(() => codeText.split('\n'), [codeText]);
+
+   useEffect(() => {
+    setHasAnimated(false);
+  }, [currentQuestion?.id]);
+
 
   useEffect(() => {
     if (externalActiveTab && externalActiveTab !== activeTab) {
@@ -38,7 +45,7 @@ const CodeEditor = ({
     }
   }, [externalActiveTab, activeTab]);
 
-  // ✅ Memoize tab change handler
+  //  Memoize tab change handler
   const handleTabChange = useCallback((tabName) => {
     if (tabName === 'output' || tabName === 'expected') {
       Keyboard.dismiss();
@@ -64,18 +71,37 @@ const CodeEditor = ({
             showsVerticalScrollIndicator={false}
             nestedScrollEnabled={true}
           >
-            {lines.map((line, lineIndex) => (
-              <View key={lineIndex} style={styles.codeLine}>
-                <View style={styles.lineNumberContainer}>
-                  <Text style={styles.lineNumber}>{lineIndex + 1}</Text>
-                </View>
-                <View style={styles.lineContent}>
-                  {renderSyntaxHighlightedLine(line, lineIndex)}
-                </View>
-              </View>
-            ))}
+            {lines.map((line, lineIndex) => {
+              //  Initialize animation values if not exists
+              if (!lineAnimations.current[lineIndex]) {
+                lineAnimations.current[lineIndex] = {
+                  opacity: new Animated.Value(0),
+                  translateY: new Animated.Value(-20),
+                };
+              }
+
+              return (
+                <Animated.View
+                  key={lineIndex}
+                  style={{
+                    opacity: lineAnimations.current[lineIndex].opacity,
+                    transform: [{ translateY: lineAnimations.current[lineIndex].translateY }],
+                  }}
+                >
+                  <View style={styles.codeLine}>
+                    <View style={styles.lineNumberContainer}>
+                      <Text style={styles.lineNumber}>{lineIndex + 1}</Text>
+                    </View>
+                    <View style={styles.lineContent}>
+                      {renderSyntaxHighlightedLine(line, lineIndex)}
+                    </View>
+                  </View>
+                </Animated.View>
+              );
+            })}
           </ScrollView>
         );
+
 
         
 
@@ -109,7 +135,41 @@ const CodeEditor = ({
     }
   }, [activeTab, lines, renderSyntaxHighlightedLine, currentQuestion, selectedAnswers, userOutput, isCorrect, scrollViewRef]);
 
-  // ✅ Memoize tab press handlers
+ useEffect(() => {
+    if (!hasAnimated && activeTab === 'code' && lines && lines.length > 0) {
+      // Reset animations
+      lineAnimations.current.forEach(anim => {
+        if (anim) {
+          anim.opacity.setValue(0);
+          anim.translateY.setValue(-20);
+        }
+      });
+
+      // Stagger animation for each line
+      const anims = lineAnimations.current.slice(0, lines.length).map((anim, index) =>
+        Animated.parallel([
+          Animated.timing(anim.opacity, {
+            toValue: 1,
+            duration: 400,
+            delay: index * 90,
+            useNativeDriver: true,
+          }),
+          Animated.timing(anim.translateY, {
+            toValue: 0,
+            duration: 400,
+            delay: index * 50,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      Animated.stagger(25, anims).start(() => {
+        setHasAnimated(true); 
+      });
+    }
+  }, [activeTab, lines, hasAnimated]);
+
+
   const handleCodeTabPress = useCallback(() => handleTabChange('code'), [handleTabChange]);
   const handleOutputTabPress = useCallback(() => handleTabChange('output'), [handleTabChange]);
   const handleExpectedTabPress = useCallback(() => handleTabChange('expected'), [handleTabChange]);
@@ -189,15 +249,15 @@ const styles = StyleSheet.create({
     flex: 1, 
     width: '100%',
     overflow: 'hidden',
-    borderTopWidth: scale(2), // ✅ Responsive
+    borderTopWidth: scale(2), //  Responsive
     borderTopColor: '#4a4a4a',
-    borderLeftWidth: scale(2), // ✅ Responsive
+    borderLeftWidth: scale(2), //  Responsive
     borderLeftColor: '#3a3a3a',
-    borderBottomWidth: scale(4), // ✅ Responsive
+    borderBottomWidth: scale(4), //  Responsive
     borderBottomColor: '#0a0a0a',
-    borderRightWidth: scale(3), // ✅ Responsive
+    borderRightWidth: scale(3), //  Responsive
     borderRightColor: '#1a1a1a',
-    ...RESPONSIVE.shadow.heavy, // ✅ Responsive shadow
+    ...RESPONSIVE.shadow.heavy, //  Responsive shadow
     minHeight: 0, 
   },
 
@@ -205,63 +265,63 @@ const styles = StyleSheet.create({
     backgroundColor: '#2d2d30',
     flexDirection: 'row',
     alignItems: 'flex-end',
-    paddingHorizontal: RESPONSIVE.margin.md, // ✅ Responsive
-    paddingTop: RESPONSIVE.margin.sm, // ✅ Responsive
+    paddingHorizontal: RESPONSIVE.margin.md, //  Responsive
+    paddingTop: RESPONSIVE.margin.sm, //  Responsive
     paddingBottom: 0,
-    borderTopWidth: scale(1), // ✅ Responsive
+    borderTopWidth: scale(1), //  Responsive
     borderTopColor: '#505050',
-    ...RESPONSIVE.shadow.medium, // ✅ Responsive shadow
+    ...RESPONSIVE.shadow.medium, //  Responsive shadow
   },
 
   windowControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: RESPONSIVE.margin.sm, // ✅ Responsive
+    marginBottom: RESPONSIVE.margin.sm, //  Responsive
   },
 
   windowButton: {
-    width: scale(12), // ✅ Responsive
-    height: scale(12), // ✅ Responsive
-    borderRadius: scale(6), // ✅ Responsive
-    marginRight: RESPONSIVE.margin.sm, // ✅ Responsive
-    borderTopWidth: scale(1), // ✅ Responsive
+    width: scale(12), //  Responsive
+    height: scale(12), //  Responsive
+    borderRadius: scale(6), //  Responsive
+    marginRight: RESPONSIVE.margin.sm, //  Responsive
+    borderTopWidth: scale(1), //  Responsive
     borderTopColor: 'rgba(255, 255, 255, 0.3)',
-    borderBottomWidth: scale(1), // ✅ Responsive
+    borderBottomWidth: scale(1), //  Responsive
     borderBottomColor: 'rgba(0, 0, 0, 0.5)',
     shadowColor: '#000',
-    shadowOffset: { width: scale(1), height: scale(2) }, // ✅ Responsive
+    shadowOffset: { width: scale(1), height: scale(2) }, //  Responsive
     shadowOpacity: 0.4,
-    shadowRadius: scale(2), // ✅ Responsive
+    shadowRadius: scale(2), //  Responsive
     elevation: 4,
   },
 
   tabsContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    marginLeft: RESPONSIVE.margin.md, // ✅ Responsive
-    height: scale(32), // ✅ Responsive
+    marginLeft: RESPONSIVE.margin.md, //  Responsive
+    height: scale(32), //  Responsive
   },
 
   webTab: {
     backgroundColor: '#3c3c3c',
-    paddingHorizontal: scale(12), // ✅ Responsive
-    paddingVertical: RESPONSIVE.margin.sm, // ✅ Responsive
-    marginRight: scale(2), // ✅ Responsive
-    borderTopLeftRadius: RESPONSIVE.borderRadius.sm, // ✅ Responsive
-    borderTopRightRadius: RESPONSIVE.borderRadius.sm, // ✅ Responsive
-    borderTopWidth: scale(1), // ✅ Responsive
-    borderLeftWidth: scale(1), // ✅ Responsive
-    borderRightWidth: scale(1), // ✅ Responsive
+    paddingHorizontal: scale(12), //  Responsive
+    paddingVertical: RESPONSIVE.margin.sm, //  Responsive
+    marginRight: scale(2), //  Responsive
+    borderTopLeftRadius: RESPONSIVE.borderRadius.sm, //  Responsive
+    borderTopRightRadius: RESPONSIVE.borderRadius.sm, //  Responsive
+    borderTopWidth: scale(1), //  Responsive
+    borderLeftWidth: scale(1), //  Responsive
+    borderRightWidth: scale(1), //  Responsive
     borderTopColor: '#555',
     borderLeftColor: '#555',
     borderRightColor: '#555',
-    minWidth: scaleWidth(80), // ✅ Responsive
+    minWidth: scaleWidth(80), //  Responsive
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: scale(-1) }, // ✅ Responsive
+    shadowOffset: { width: 0, height: scale(-1) }, //  Responsive
     shadowOpacity: 0.2,
-    shadowRadius: scale(2), // ✅ Responsive
+    shadowRadius: scale(2), //  Responsive
     elevation: 1,
   },
   
@@ -273,7 +333,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
     elevation: 3,
     zIndex: 10,
-    marginBottom: scale(-2), // ✅ Responsive
+    marginBottom: scale(-2), //  Responsive
   },
 
   webTabFirst: {
@@ -286,7 +346,7 @@ const styles = StyleSheet.create({
 
   webTabText: {
     color: '#d1d5d9',
-    fontSize: 10, // ✅ Responsive
+    fontSize: 10, //  Responsive
     fontFamily: 'DynaPuff',
     fontWeight: '500',
   },
@@ -302,73 +362,73 @@ const styles = StyleSheet.create({
 
   contentArea: {
     flex: 1,
-    borderTopWidth: scale(1), // ✅ Responsive
+    borderTopWidth: scale(1), //  Responsive
     borderTopColor: '#1a1a1a',
     minHeight: 0,
   },
 
   codeContainer: {
     backgroundColor: '#000d2f99',
-    paddingVertical: RESPONSIVE.margin.md, // ✅ Responsive
+    paddingVertical: RESPONSIVE.margin.md, //  Responsive
     borderTopWidth: 0,
-    borderLeftWidth: scale(1), // ✅ Responsive
+    borderLeftWidth: scale(1), //  Responsive
     borderLeftColor: '#0a0a0a',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: scale(-2) }, // ✅ Responsive
+    shadowOffset: { width: 0, height: scale(-2) }, //  Responsive
     shadowOpacity: 0.2,
-    shadowRadius: scale(4), // ✅ Responsive
+    shadowRadius: scale(4), //  Responsive
     elevation: 2,
   },
 
   codeLine: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    minHeight: scale(20), // ✅ Responsive
-    paddingVertical: scale(2), // ✅ Responsive
+    minHeight: scale(20), //  Responsive
+    paddingVertical: scale(2), //  Responsive
   },
 
   lineNumberContainer: {
-    minWidth: scaleWidth(50), // ✅ Responsive
+    minWidth: scaleWidth(50), //  Responsive
     alignItems: 'center',
-    borderTopWidth: scale(1), // ✅ Responsive
+    borderTopWidth: scale(1), //  Responsive
     borderTopColor: '#3a3a3a',
-    borderLeftWidth: scale(1), // ✅ Responsive
+    borderLeftWidth: scale(1), //  Responsive
     borderLeftColor: '#2a2a2a',
     shadowColor: '#000',
-    shadowOffset: { width: scale(1), height: 0 }, // ✅ Responsive
+    shadowOffset: { width: scale(1), height: 0 }, //  Responsive
     shadowOpacity: 0.3,
-    shadowRadius: scale(2), // ✅ Responsive
+    shadowRadius: scale(2), //  Responsive
     elevation: 3,
   },
 
   lineNumber: {
     color: '#ffffff7e',
-    fontSize: RESPONSIVE.fontSize.xs, // ✅ Responsive
+    fontSize: RESPONSIVE.fontSize.xs, //  Responsive
     fontFamily: 'monospace',
     fontWeight: '400',
   },
 
   lineContent: {
     flex: 1,
-    paddingHorizontal: RESPONSIVE.margin.md, // ✅ Responsive
+    paddingHorizontal: RESPONSIVE.margin.md, //  Responsive
   },
 
   scrollContentContainer: {
     flexGrow: 1,
-    paddingBottom: scale(100), // ✅ Responsive
+    paddingBottom: scale(100), //  Responsive
   },
 
   outputContainer: {
     backgroundColor: '#ffffff',
     flex: 1,
-    maxHeight: scaleHeight(250), // ✅ Responsive
+    maxHeight: scaleHeight(250), //  Responsive
   },
 
   outputHeader: {
     backgroundColor: '#f8f9fa',
-    paddingHorizontal: RESPONSIVE.margin.lg, // ✅ Responsive
-    paddingVertical: RESPONSIVE.margin.sm, // ✅ Responsive
-    borderBottomWidth: scale(1), // ✅ Responsive
+    paddingHorizontal: RESPONSIVE.margin.lg, //  Responsive
+    paddingVertical: RESPONSIVE.margin.sm, //  Responsive
+    borderBottomWidth: scale(1), //  Responsive
     borderBottomColor: '#e9ecef',
   },
 
@@ -385,7 +445,7 @@ const styles = StyleSheet.create({
 
   outputScrollContent: {
     flexGrow: 1,
-    padding: RESPONSIVE.margin.lg, // ✅ Responsive
+    padding: RESPONSIVE.margin.lg, //  Responsive
   },
 
   browserViewport: {

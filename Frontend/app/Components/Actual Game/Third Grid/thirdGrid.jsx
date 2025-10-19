@@ -84,9 +84,9 @@ const ThirdGrid = ({
   const [showPotions, setShowPotions] = useState(false);
   const [runDisabled, setRunDisabled] = useState(false);
   const [potionUsed, setPotionUsed] = useState(false);
-const togglePotions = useCallback(() => {
-  setShowPotions(!showPotions); // ✅ Always allow toggling
-}, [showPotions]);
+  const togglePotions = useCallback(() => {
+    setShowPotions(!showPotions); // ✅ Always allow toggling
+  }, [showPotions]);
 
   const runButtonDisabled = useMemo(() => (
     submitting || 
@@ -96,6 +96,9 @@ const togglePotions = useCallback(() => {
   ), [submitting, usingPotion, selectedPotion, selectedAnswers]);
 
   
+  useEffect(() => {
+  setPotionUsed(false);
+  }, [currentQuestion?.id]);
 
     const handleRunPress = useCallback(() => {
     setRunDisabled(true); 
@@ -195,6 +198,8 @@ const togglePotions = useCallback(() => {
           onPotionPress={onPotionPress}
           selectedPotion={selectedPotion}
           loadingPotions={loadingPotions}
+          potionUsed={potionUsed} 
+          currentQuestionId={currentQuestion.id} 
         />
       ) : (
         <AnswerGrid
@@ -204,6 +209,7 @@ const togglePotions = useCallback(() => {
           onAnswerSelect={handleAnswerSelect}
           isFillInTheBlank={isFillInTheBlank}
           selectedBlankIndex={selectedBlankIndex} 
+          currentQuestionId={currentQuestion.id}
         />
       )}
     </GridContainer>

@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, ScrollView, StyleSheet, Dimensions, Text } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, ScrollView, StyleSheet, Dimensions, Text, Animated } from 'react-native';
 import AnswerOption from './AnswerOption';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -12,6 +12,10 @@ const AnswerGrid = ({
   isFillInTheBlank = false,
   selectedBlankIndex = 0, 
 }) => {
+
+  const animations = useRef([]);
+  
+  
   const renderListItems = () => {
     // Early return if no options
     if (!options) {
@@ -50,6 +54,13 @@ const AnswerGrid = ({
         // Skip empty items
         if (!trimmedItem) {
           return null;
+        } 
+
+         if (!animations.current[index]) {
+        animations.current[index] = {
+          opacity: new Animated.Value(0),
+          scale: new Animated.Value(0.8),
+        };
         }
         
             
@@ -57,22 +68,63 @@ const AnswerGrid = ({
         const isDisabled = !isSelected && selectedAnswers.filter(a => a !== null).length >= maxAnswers;
         
         return (
+        <Animated.View
+          key={`option-${index}-${trimmedItem}`}
+          style={{
+            opacity: animations.current[index].opacity,
+            transform: [{ scale: animations.current[index].scale }],
+          }}
+        >
           <AnswerOption
-              key={`option-${index}-${trimmedItem}`}
-              item={trimmedItem}
-              index={index}
-              isSelected={isSelected}
-              isDisabled={isDisabled}
-              onPress={() => onAnswerSelect(index)}
-            />
-          );
-        }).filter(item => item !== null);
+            item={trimmedItem}
+            index={index}
+            isSelected={isSelected}
+            isDisabled={isDisabled}
+            onPress={() => onAnswerSelect(index)}
+          />
+        </Animated.View>
+      );
+    }).filter(item => item !== null);
       
     } catch (error) {
       console.error('❌ Error processing options:', error);
       return [];
     }
   };
+
+   useEffect(() => {
+    if (options && Array.isArray(options) && options.length > 0) {
+      // Reset animations
+      animations.current.forEach(anim => {
+        if (anim) {
+          anim.opacity.setValue(0);
+          anim.scale.setValue(0.8);
+        }
+      });
+
+      // Stagger animation for each option
+      const anims = animations.current.slice(0, options.length).map((anim, index) =>
+        Animated.parallel([
+          Animated.timing(anim.opacity, {
+            toValue: 1,
+            duration: 300,
+            delay: index * 100, // Stagger delay
+            useNativeDriver: true,
+          }),
+          Animated.spring(anim.scale, {
+            toValue: 1,
+            tension: 200,
+            friction: 8,
+            delay: index * 100,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      Animated.stagger(50, anims).start();
+    }
+  }, [options]);
+  
 
   if (!options) {
     return (

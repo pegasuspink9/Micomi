@@ -16,7 +16,8 @@ const PotionGrid = ({
   potions = [],
   onPotionPress,
   selectedPotion = null, 
-  loadingPotions = false 
+  loadingPotions = false,
+  potionUsed = false
 }) => {
 
   const getPotionColors = (name) => {
@@ -85,12 +86,13 @@ const PotionGrid = ({
     const colors = getPotionColors(potion.name);
     const isSelected = selectedPotion && selectedPotion.id === potion.id;
     const isOutOfStock = potion.count === 0;
+    const isDisabled = isOutOfStock || loadingPotions || potionUsed; // ✅ Include potionUsed
 
     return (
       <View style={[
         styles.potionFrame,
         { backgroundColor: colors.frameColor },
-        isOutOfStock && styles.outOfStockSlot,
+        (isOutOfStock || potionUsed) && styles.outOfStockSlot, // ✅ Apply disabled style
         isSelected && styles.selectedPotionFrame 
       ]}>
         <Pressable 
@@ -103,14 +105,14 @@ const PotionGrid = ({
               borderBottomColor: colors.frameColor,
               borderRightColor: colors.frameColor,
             },
-            pressed && !isOutOfStock && [
+            pressed && !isDisabled && [
               styles.potionSlotPressed,
               { backgroundColor: colors.pressedColor }
             ],
             isSelected && styles.selectedPotionSlot 
           ]}
-          onPress={() => !isOutOfStock && onPotionPress && onPotionPress(potion)}
-          disabled={isOutOfStock || loadingPotions}
+          onPress={() => !isDisabled && onPotionPress && onPotionPress(potion)} 
+          disabled={isDisabled} 
         >
           <View style={styles.potionSlotInner}>
             <View style={[
@@ -132,13 +134,14 @@ const PotionGrid = ({
                 source={{ uri: potion.image }} 
                 style={[
                   styles.potionImage,
-                  isOutOfStock && styles.potionImageDisabled
+                  (isOutOfStock || potionUsed) && styles.potionImageDisabled // ✅ Apply disabled style
                 ]}
               />
               
               <View style={[
                 styles.countContainer,
                 isOutOfStock && styles.countContainerDisabled,
+                potionUsed && styles.countContainerDisabled, // ✅ Apply disabled style
                 isSelected && styles.selectedCountContainer 
               ]}>
                 <Text style={[
@@ -154,7 +157,7 @@ const PotionGrid = ({
                 <Text style={[
                   styles.nameText,
                   isSelected && styles.selectedNameText,
-                  isOutOfStock && styles.nameTextDisabled
+                  (isOutOfStock || potionUsed) && styles.nameTextDisabled // ✅ Apply disabled style
                 ]}>
                   {potion.name}
                 </Text>
@@ -166,41 +169,39 @@ const PotionGrid = ({
     );
   };
 
-  // ✅ Loading state
-  if (loadingPotions) {
+    if (loadingPotions) {
+      return (
+        <View style={[styles.gridContainer, styles.centerContent]}>
+          <Text style={styles.loadingText}>Loading potions...</Text>
+        </View>
+      );
+    }
+
+    if (!potions || potions.length === 0) {
+      return (
+        <View style={[styles.gridContainer, styles.centerContent]}>
+          <Text style={styles.emptyText}>No potions available</Text>
+        </View>
+      );
+    }
+
     return (
-      <View style={[styles.gridContainer, styles.centerContent]}>
-        <Text style={styles.loadingText}>Loading potions...</Text>
+      <View style={styles.gridContainer}>
+        <ScrollView 
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContainer}
+          style={styles.scrollView}
+        >
+          {potions.map((potion, index) => (
+            <View key={potion.id || index} style={styles.potionSlotWrapper}>
+              <PotionSlot potion={potion} />
+            </View>
+          ))}
+        </ScrollView>
       </View>
     );
-  }
-
-  // ✅ Empty state
-  if (!potions || potions.length === 0) {
-    return (
-      <View style={[styles.gridContainer, styles.centerContent]}>
-        <Text style={styles.emptyText}>No potions available</Text>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.gridContainer}>
-      <ScrollView 
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContainer}
-        style={styles.scrollView}
-      >
-        {potions.map((potion, index) => (
-          <View key={potion.id || index} style={styles.potionSlotWrapper}>
-            <PotionSlot potion={potion} />
-          </View>
-        ))}
-      </ScrollView>
-    </View>
-  );
-};
+  };
 
 const styles = StyleSheet.create({
   gridContainer: {
