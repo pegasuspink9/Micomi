@@ -1,4 +1,4 @@
-import { PrismaClient, QuestType } from "@prisma/client";
+import { PrismaClient, QuestType, Prisma } from "@prisma/client";
 import { updateQuestProgress } from "../Quests/quests.service";
 import { previewLevel } from "../Levels/levels.service";
 import * as CombatService from "../Combat/combat.service";
@@ -226,6 +226,8 @@ export const usePotion = async (
   let dynamicMessage = "Potion activated!";
   let audioResponse: string[] = [];
 
+  let nextChallengeForHint: any = null;
+
   switch (potionType) {
     case "strong":
       if (!progress.has_strong_effect) {
@@ -270,115 +272,65 @@ export const usePotion = async (
         playerId,
         levelId
       );
-      const currentChallenge = currentNext.nextChallenge;
+      let currentChallenge = currentNext.nextChallenge;
       if (!currentChallenge) throw new Error("No current challenge found");
 
       let effectiveCorrectAnswer = currentChallenge.correct_answer as string[];
       const rawCorrectAnswer = [...effectiveCorrectAnswer];
       const level = await prisma.level.findUnique({
         where: { level_id: levelId },
-        include: { map: true },
+        include: { enemy: true },
       });
-      const enemy = await prisma.enemy.findFirst({
-        where: {
-          enemy_map: level?.map.map_name,
-          enemy_difficulty: level?.level_difficulty,
-        },
+
+      const enemy = await prisma.enemy.findUnique({
+        where: { enemy_id: level?.enemy_id ?? 0 },
       });
+
       if (progress.has_reversed_curse && enemy?.enemy_name === "King Grimnir") {
         effectiveCorrectAnswer = rawCorrectAnswer.map(reverseString);
       }
 
-      const revealedHint =
-        effectiveCorrectAnswer.length > 0 ? effectiveCorrectAnswer[0] : null;
-      const partialPlayerAnswer = revealedHint ? [revealedHint] : [];
-
+      const challengeKey = currentChallenge.challenge_id.toString();
       const currentPlayerAnswer =
         progress.player_answer && typeof progress.player_answer === "object"
-          ? progress.player_answer
+          ? (progress.player_answer as Record<string, unknown>)
           : {};
-      await prisma.playerProgress.update({
-        where: { progress_id: progress.progress_id },
-        data: {
-          player_answer: {
-            ...currentPlayerAnswer,
-            [currentChallenge.challenge_id.toString()]: partialPlayerAnswer,
+      const existingAnswer =
+        (currentPlayerAnswer[challengeKey] as string[] | undefined) ?? [];
+      const isAlreadyHinted =
+        existingAnswer.length >= effectiveCorrectAnswer.length;
+
+      if (isAlreadyHinted) {
+        dynamicMessage = `Full hint already applied to this challenge—no extra reveal!`;
+      } else {
+        await prisma.playerProgress.update({
+          where: { progress_id: progress.progress_id },
+          data: {
+            player_answer: {
+              ...(currentPlayerAnswer as Record<string, unknown>),
+              [challengeKey]: effectiveCorrectAnswer,
+            } as Prisma.InputJsonValue,
           },
-        },
-      });
+        });
 
-      const fightResult = await CombatService.getCurrentFightState(
-        playerId,
-        levelId,
-        enemy?.enemy_id ?? 0
-      );
+        let filledQuestion = currentChallenge.question ?? "";
+        effectiveCorrectAnswer.forEach((answer) => {
+          filledQuestion = filledQuestion.replace("<_>", `<${answer}>`);
+        });
 
-      const adjustedFightResult: any = {
-        ...fightResult,
-        character: {
-          ...fightResult.character,
-          character_dies: fightResult.character.character_dies ?? "",
-        },
-      };
-
-      const freshProgress = await prisma.playerProgress.findUnique({
-        where: {
-          player_id_level_id: { player_id: playerId, level_id: levelId },
-        },
-        include: { level: { include: { challenges: true } } },
-      });
-      const answeredIds = Object.keys(freshProgress?.player_answer ?? {}).map(
-        Number
-      );
-      const wrongChallengesArr = (freshProgress?.wrong_challenges ??
-        []) as number[];
-      const allCompleted =
-        answeredIds.length ===
-          (freshProgress?.level?.challenges?.length ?? 0) &&
-        wrongChallengesArr.length === 0;
-      const rawPlayerOutputs = freshProgress?.player_expected_output;
-      const playerOutputs: string[] | null = Array.isArray(rawPlayerOutputs)
-        ? (rawPlayerOutputs as string[])
-        : null;
-      const levelStatus = {
-        isCompleted: allCompleted,
-        showFeedback: allCompleted && freshProgress?.battle_status === "won",
-        playerHealth: adjustedFightResult.character.character_health,
-        enemyHealth: adjustedFightResult.enemy.enemy_health,
-        coinsEarned: freshProgress?.coins_earned ?? 0,
-        totalPointsEarned: freshProgress?.total_points_earned ?? 0,
-        totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
-        playerOutputs,
-      };
-
-      const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
-      const correctAnswerLength = Array.isArray(currentChallenge.correct_answer)
-        ? currentChallenge.correct_answer.length
-        : 0;
-
-      return {
-        isCorrect: null as any,
-        attempts: freshProgress?.attempts ?? 0,
-        fightResult: adjustedFightResult,
-        message: `Hint applied: First blank pre-filled with "${revealedHint}" – Complete the rest!`,
-        nextChallenge: {
+        nextChallengeForHint = {
           ...currentChallenge,
-          answer: partialPlayerAnswer,
-        },
-        audio: [
-          "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353786/All_Potions_h1hdib.wav",
-        ],
-        levelStatus,
-        completionRewards: undefined,
-        nextLevel: null,
-        energy: energyStatus.energy,
-        timeToNextEnergyRestore: energyStatus.timeToNextRestore,
-        correct_answer_length: correctAnswerLength,
-        potionType,
-        remainingQuantity: playerPotion.quantity - 1,
-        appliedImmediately: true,
-        revealedHint,
-      } as unknown as SubmitChallengeControllerResult;
+          question: filledQuestion,
+          options: [],
+          answer: effectiveCorrectAnswer,
+        } as any;
+        dynamicMessage = `All blanks revealed: Submit to confirm the solution!`;
+      }
+
+      audioResponse = [
+        "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353786/All_Potions_h1hdib.wav",
+      ];
+      break;
     default:
       throw new Error(`Unknown potion type: ${potionType}`);
   }
@@ -402,13 +354,12 @@ export const usePotion = async (
     include: {
       map: true,
       challenges: true,
+      enemy: true,
     },
   });
-  const enemy = await prisma.enemy.findFirst({
-    where: {
-      enemy_map: level?.map.map_name,
-      enemy_difficulty: level?.level_difficulty,
-    },
+
+  const enemy = await prisma.enemy.findUnique({
+    where: { enemy_id: level?.enemy_id ?? 0 },
   });
 
   let fightResult = await CombatService.getCurrentFightState(
@@ -448,7 +399,7 @@ export const usePotion = async (
     playerId,
     levelId
   );
-  const nextChallenge = next.nextChallenge;
+  let nextChallenge = next.nextChallenge ?? null;
 
   let freshProgress = await prisma.playerProgress.findUnique({
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
@@ -511,16 +462,20 @@ export const usePotion = async (
   }
 
   const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
-  const correctAnswerLength = Array.isArray(nextChallenge?.correct_answer)
-    ? nextChallenge.correct_answer.length
-    : 0;
+  const correctAnswerLength =
+    nextChallenge && Array.isArray(nextChallenge.correct_answer)
+      ? nextChallenge.correct_answer.length
+      : 0;
+
+  const finalNextChallenge =
+    potionType === "hint" ? nextChallengeForHint : nextChallenge;
 
   return {
     isCorrect: null as any,
     attempts: freshProgress?.attempts ?? 0,
     fightResult: adjustedFightResult,
     message: dynamicMessage,
-    nextChallenge,
+    nextChallenge: finalNextChallenge,
     audio: audioResponse,
     levelStatus,
     completionRewards,
