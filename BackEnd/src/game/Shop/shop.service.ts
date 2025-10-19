@@ -228,27 +228,33 @@ export const usePotion = async (
 
   switch (potionType) {
     case "strong":
-      updateData.has_strong_effect = true;
-      const currentDamages = Array.isArray(character.character_damage)
-        ? (character.character_damage as number[])
-        : [30, 40, 50];
-      const doubledDamages = currentDamages.map((d) => d * 2);
-      await prisma.character.update({
-        where: { character_id: character.character_id },
-        data: { character_damage: doubledDamages },
-      });
-      console.log(`Doubled damages: ${currentDamages} → ${doubledDamages}`);
-      dynamicMessage = `Strength surges through ${character.character_name}, attacks doubled!`;
-      audioResponse = [
-        "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353786/All_Potions_h1hdib.wav",
-      ];
+      if (!progress.has_strong_effect) {
+        updateData.has_strong_effect = true;
+        const currentDamages = Array.isArray(character.character_damage)
+          ? (character.character_damage as number[])
+          : [30, 40, 50];
+        console.log(`Strong effect activated (only once): ${currentDamages}`);
+        dynamicMessage = `Strength surges through ${character.character_name}, attacks doubled!`;
+        audioResponse = [
+          "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353786/All_Potions_h1hdib.wav",
+        ];
+      } else {
+        dynamicMessage = `${character.character_name} already empowered—no extra surge!`;
+      }
       break;
     case "freeze":
-      updateData.has_freeze_effect = true;
-      dynamicMessage = `Enemy frozen, next counterattack nullified!`;
-      audioResponse = [
-        "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353786/All_Potions_h1hdib.wav",
-      ];
+      if (!progress.has_freeze_effect) {
+        updateData.has_freeze_effect = true;
+        dynamicMessage = `Enemy frozen, next counterattack nullified!`;
+        audioResponse = [
+          "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353786/All_Potions_h1hdib.wav",
+        ];
+        console.log(
+          `Freeze effect activated (only once): Next enemy attack nullified.`
+        );
+      } else {
+        dynamicMessage = `Already frozen—no extra chill!`;
+      }
       break;
     case "health":
       updateData.player_hp = maxHealth;
@@ -357,7 +363,7 @@ export const usePotion = async (
         message: `Hint applied: First blank pre-filled with "${revealedHint}" – Complete the rest!`,
         nextChallenge: {
           ...currentChallenge,
-          player_answer: partialPlayerAnswer,
+          answer: partialPlayerAnswer,
         },
         audio: [
           "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353786/All_Potions_h1hdib.wav",
@@ -405,11 +411,30 @@ export const usePotion = async (
     },
   });
 
-  const fightResult = await CombatService.getCurrentFightState(
+  let fightResult = await CombatService.getCurrentFightState(
     playerId,
     levelId,
     enemy?.enemy_id ?? 0
   );
+
+  if (potionType === "strong" && freshProgressPostTx?.has_strong_effect) {
+    const originalDamages = Array.isArray(character.character_damage)
+      ? (character.character_damage as number[])
+      : [30, 40, 50];
+    const doubledDamages = originalDamages.map((d) => d * 2);
+    fightResult.character.character_damage = doubledDamages;
+    console.log(
+      `Backend doubling applied in response: ${originalDamages} → ${doubledDamages}`
+    );
+  }
+
+  if (potionType === "freeze" && freshProgressPostTx?.has_freeze_effect) {
+    fightResult.enemy.enemy_damage = 0;
+    fightResult.enemy.enemy_attack = null;
+    console.log(
+      "Backend freeze applied in response: enemy_damage=0, enemy_attack=null"
+    );
+  }
 
   const adjustedFightResult: any = {
     ...fightResult,
@@ -425,7 +450,7 @@ export const usePotion = async (
   );
   const nextChallenge = next.nextChallenge;
 
-  const freshProgress = await prisma.playerProgress.findUnique({
+  let freshProgress = await prisma.playerProgress.findUnique({
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
     include: {
       level: {
@@ -441,7 +466,7 @@ export const usePotion = async (
   );
   const wrongChallengesArr = (freshProgress?.wrong_challenges ??
     []) as number[];
-  const allCompleted =
+  let allCompleted =
     answeredIds.length === (freshProgress?.level?.challenges?.length ?? 0) &&
     wrongChallengesArr.length === 0;
 
@@ -466,7 +491,12 @@ export const usePotion = async (
   if (allCompleted && freshProgress && !freshProgress.is_completed) {
     await prisma.playerProgress.update({
       where: { progress_id: progress.progress_id },
-      data: { is_completed: true, completed_at: new Date() },
+      data: {
+        is_completed: true,
+        completed_at: new Date(),
+        has_strong_effect: false,
+        has_freeze_effect: false,
+      },
     });
     completionRewards = {
       feedbackMessage:
