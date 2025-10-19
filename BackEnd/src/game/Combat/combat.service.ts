@@ -563,6 +563,7 @@ export async function fightEnemy(
       enemy_damage,
       enemy_health: enemyHealth,
       enemy_max_health: scaledEnemyMaxHealth,
+      enemy_avatar: enemy.enemy_avatar,
     },
     character: {
       character_id: character.character_id,
@@ -577,6 +578,7 @@ export async function fightEnemy(
       character_damage: damage,
       character_health: charHealth,
       character_max_health: character.health,
+      character_avatar: character.character_avatar,
     },
     timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,

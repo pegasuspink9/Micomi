@@ -17,11 +17,10 @@ const prisma = new PrismaClient();
 
 const multisetEqual = (a: string[], b: string[]): boolean => {
   if (a.length !== b.length) return false;
-  const countA: Record<string, number> = {};
-  const countB: Record<string, number> = {};
-  for (const item of a) countA[item] = (countA[item] || 0) + 1;
-  for (const item of b) countB[item] = (countB[item] || 0) + 1;
-  return Object.keys(countA).every((key) => countA[key] === countB[key]);
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
 };
 
 const reverseString = (str: string): string => str.split("").reverse().join("");
@@ -416,6 +415,10 @@ export const getNextChallengeService = async (
 const getNextChallengeEasy = async (progress: any) => {
   const { level } = progress;
 
+  const sortedChallenges = [...level.challenges].sort(
+    (a: Challenge, b: Challenge) => a.challenge_id - b.challenge_id
+  );
+
   const wrongChallenges = (progress.wrong_challenges as number[] | null) ?? [];
   const answeredIds = Object.keys(
     (progress.player_answer as Record<string, string[]> | null) ?? {}
@@ -427,7 +430,7 @@ const getNextChallengeEasy = async (progress: any) => {
 
   if (!enemyDefeated) {
     nextChallenge =
-      level.challenges.find(
+      sortedChallenges.find(
         (c: Challenge) => !answeredIds.includes(c.challenge_id)
       ) || null;
 
@@ -439,7 +442,7 @@ const getNextChallengeEasy = async (progress: any) => {
   } else {
     if (playerAlive) {
       nextChallenge =
-        level.challenges.find(
+        sortedChallenges.find(
           (c: Challenge) => !answeredIds.includes(c.challenge_id)
         ) || null;
 
