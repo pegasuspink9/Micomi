@@ -8,6 +8,7 @@ import { updateProgressForChallenge } from "../Combat/special_attack.helper";
 import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
 import { generateDynamicMessage } from "../../../helper/gamePlayMessageHelper";
 import { getBaseEnemyHp } from "../Combat/combat.service";
+import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 import {
   SubmitChallengeControllerResult,
   CompletionRewards,
@@ -401,6 +402,10 @@ export const submitChallengeService = async (
     character_attack_image = ["basic attack"];
   }
 
+  const combatBackground = [
+    await getBackgroundForLevel(level.map.map_name, level.level_number),
+  ];
+
   return {
     isCorrect,
     attempts: freshProgress?.attempts ?? updatedProgress.attempts,
@@ -425,6 +430,7 @@ export const submitChallengeService = async (
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
     correct_answer_length: correctAnswerLength,
     character_attack_image,
+    combat_background: combatBackground,
   };
 };
 

@@ -6,6 +6,8 @@ import { SubmitChallengeControllerResult } from "./challenges.types";
 
 const prisma = new PrismaClient();
 
+const reverseString = (str: string): string => str.split("").reverse().join("");
+
 export const submitChallenge = async (req: Request, res: Response) => {
   const playerId = Number(req.params.playerId);
   const levelId = Number(req.params.levelId);
@@ -25,11 +27,56 @@ export const submitChallenge = async (req: Request, res: Response) => {
         .json({ error: "All answer elements must be strings" });
     }
 
+    const progress = await prisma.playerProgress.findUnique({
+      where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
+    });
+    if (!progress) {
+      return errorResponse(res, null, "No progress found for this level", 404);
+    }
+
+    const currentChallenge = await prisma.challenge.findUnique({
+      where: { challenge_id: challengeId },
+    });
+    if (!currentChallenge) {
+      return errorResponse(res, null, "Challenge not found", 404);
+    }
+
+    let effectiveCorrectAnswer = currentChallenge.correct_answer as string[];
+    const playerAnswer =
+      progress.player_answer && typeof progress.player_answer === "object"
+        ? (progress.player_answer as Record<string, unknown>)
+        : {};
+    const challengeKey = challengeId.toString();
+
+    const level = await prisma.level.findUnique({
+      where: { level_id: levelId },
+      include: { enemy: true },
+    });
+    const enemy = level?.enemy;
+    if (progress.has_reversed_curse && enemy?.enemy_name === "King Grimnir") {
+      effectiveCorrectAnswer = effectiveCorrectAnswer.map(reverseString);
+    }
+
+    const submittedAnswer = answer;
+    const isHinted =
+      (playerAnswer[challengeKey] as string[] | undefined)?.length ===
+      effectiveCorrectAnswer.length;
+    let adjustedAnswer = submittedAnswer;
+
+    if (isHinted && submittedAnswer.join("").toLowerCase() === "next") {
+      adjustedAnswer = effectiveCorrectAnswer;
+      console.log(
+        `Hinted challenge ${challengeId}: "next" submitted, overriding to correct answer`
+      );
+    } else {
+      console.log(`Standard submission for challenge ${challengeId}`);
+    }
+
     const result = await submitChallengeService(
       playerId,
       levelId,
       challengeId,
-      answer
+      adjustedAnswer
     );
 
     const freshProgress = await prisma.playerProgress.findUnique({

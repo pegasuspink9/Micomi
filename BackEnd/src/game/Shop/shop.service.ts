@@ -314,17 +314,25 @@ export const usePotion = async (
         });
 
         let filledQuestion = currentChallenge.question ?? "";
-        effectiveCorrectAnswer.forEach((answer) => {
-          filledQuestion = filledQuestion.replace("<_>", `<${answer}>`);
-        });
+        const missingTagsOnly = effectiveCorrectAnswer.slice(
+          -filledQuestion.split(/<_|<\/_>/).length + 1
+        );
+        filledQuestion = filledQuestion.replace(
+          /<_( ?[^>]*?)>/g,
+          (match, attrs) => `<${missingTagsOnly.shift()}${attrs}>`
+        );
+        filledQuestion = filledQuestion.replace(
+          /<\/_>/g,
+          () => `</${missingTagsOnly.shift()}>`
+        );
 
         nextChallengeForHint = {
           ...currentChallenge,
           question: filledQuestion,
-          options: [],
+          options: ["next"],
           answer: effectiveCorrectAnswer,
         } as any;
-        dynamicMessage = `All blanks revealed: Submit to confirm the solution!`;
+        dynamicMessage = `All blanks revealed: Select "next" to confirm and proceed!`;
       }
 
       audioResponse = [

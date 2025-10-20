@@ -62,6 +62,7 @@ export interface SubmitChallengeControllerResult
   } | null;
   correct_answer_length?: number;
   character_attack_image?: string[] | null;
+  combat_background?: string[] | null;
 }
 
 export interface LevelStatus {

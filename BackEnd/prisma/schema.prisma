@@ -328,6 +328,15 @@ model PlayerQuest {
   @@unique([player_id, quest_id])
 }
 
+model BackgroundMapping {
+  id            Int      @id @default(autoincrement())
+  mapName       String
+  levelNumber   Int
+  backgroundUrl String
+
+  @@unique([mapName, levelNumber]) 
+}
+
 enum QuestType {
   defeat_enemy //already in the combat
   buy_potion //already in the shop
