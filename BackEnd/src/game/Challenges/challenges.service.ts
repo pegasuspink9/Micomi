@@ -207,8 +207,15 @@ export const submitChallengeService = async (
   let fightResult: any;
   let message: string = "Challenge submitted.";
   let audioResponse: string[] = [];
+  let appliedDamage = 0;
 
   if (isCorrect) {
+    const baselineState = await CombatService.getCurrentFightState(
+      playerId,
+      levelId,
+      enemy.enemy_id
+    );
+
     fightResult = await CombatService.handleFight(
       playerId,
       levelId,
@@ -218,6 +225,17 @@ export const submitChallengeService = async (
       challengeId,
       alreadyAnsweredCorrectly,
       wasEverWrong
+    );
+
+    fightResult.character.character_damage =
+      baselineState.character.character_damage;
+
+    appliedDamage =
+      fightResult.appliedDamage ||
+      baselineState.character.character_damage[1] ||
+      50;
+    console.log(
+      `- Character damage displayed on correct answer (doubled if active): ${fightResult.character.character_damage}, applied: ${appliedDamage}`
     );
 
     const { text, audio } = generateDynamicMessage(
@@ -234,13 +252,19 @@ export const submitChallengeService = async (
         currentProgress.enemy_hp
     );
 
-    message = text;
+    message = `${text} Dealt ${appliedDamage} damage!`;
     audioResponse = audio;
 
     if (!hintUsed) {
       await updateQuestProgress(playerId, QuestType.solve_challenge_no_hint, 1);
     }
   } else {
+    const baselineState = await CombatService.getCurrentFightState(
+      playerId,
+      levelId,
+      enemy.enemy_id
+    );
+
     fightResult = await CombatService.handleFight(
       playerId,
       levelId,
@@ -249,6 +273,21 @@ export const submitChallengeService = async (
       elapsed,
       challengeId
     );
+
+    if (currentProgress.has_freeze_effect) {
+      fightResult.character.character_health =
+        baselineState.character.character_health;
+      fightResult.character.character_hurt = null;
+      fightResult.enemy.enemy_damage = 0;
+      fightResult.enemy.enemy_attack = null;
+      fightResult.enemy.enemy_run = null;
+      console.log(
+        "Freeze effect applied on wrong answer: No enemy attack, no damage taken."
+      );
+      message = "Frozen enemy can't strike back!";
+    } else {
+      fightResult.character.character_damage = 0;
+    }
 
     const { text, audio } = generateDynamicMessage(
       false,
@@ -308,7 +347,12 @@ export const submitChallengeService = async (
     if (wasFirstCompletion) {
       await prisma.playerProgress.update({
         where: { progress_id: currentProgress.progress_id },
-        data: { is_completed: true, completed_at: new Date() },
+        data: {
+          is_completed: true,
+          completed_at: new Date(),
+          has_strong_effect: false,
+          has_freeze_effect: false,
+        },
       });
 
       completionRewards = {

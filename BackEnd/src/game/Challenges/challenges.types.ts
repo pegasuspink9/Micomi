@@ -11,6 +11,7 @@ export interface FightResult {
     enemy_damage: number;
     enemy_health: number;
     enemy_max_health: number;
+    enemy_avatar?: string | null;
     enemy_attack_type?: string | null;
     enemy_special_skill?: string | null;
   };
@@ -26,6 +27,7 @@ export interface FightResult {
     character_damage: number | number[];
     character_health: number;
     character_max_health: number;
+    character_avatar?: string | null;
   };
   timer: string;
   energy: number;
