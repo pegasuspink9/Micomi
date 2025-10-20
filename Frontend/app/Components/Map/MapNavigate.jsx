@@ -9,7 +9,8 @@ import {
   View,
   ImageBackground,
   ActivityIndicator,
-  Modal
+  Modal,
+  Animated
 } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { useRouter } from 'expo-router';
@@ -29,6 +30,8 @@ const LEVEL_SELECTOR_IMAGES = {
 export default function MapNavigate({ onMapChange }) {
   const [currentMapIndex, setCurrentMapIndex] = useState(0);
   const router = useRouter();
+
+   const [animations, setAnimations] = useState([]);
   
   // ✅ Asset download states
   const [downloadModalVisible, setDownloadModalVisible] = useState(false);
@@ -56,6 +59,132 @@ export default function MapNavigate({ onMapChange }) {
   // Add safety check for current map
   const currentMap = maps[currentMapIndex];
   const isValidMap = currentMap && typeof currentMap === 'object';
+
+
+   useEffect(() => {
+    if (maps.length > 0) {
+      const initialAnimations = maps.map((_, index) => ({
+        translateX: new Animated.Value(getInitialTranslateX(index)),
+        scale: new Animated.Value(getInitialScale(index)),
+        rotateY: new Animated.Value(getInitialRotateY(index)),
+        opacity: new Animated.Value(getInitialOpacity(index)),
+      }));
+      setAnimations(initialAnimations);
+    }
+  }, [maps]);
+
+  const getInitialTranslateX = (index) => {
+    const prevIndex = (currentMapIndex - 1 + maps.length) % maps.length;
+    const nextIndex = (currentMapIndex + 1) % maps.length;
+    
+    if (index === currentMapIndex) return 0;
+    if (index === prevIndex) return -width * 0.4;
+    if (index === nextIndex) return width * 0.4;
+    return index > currentMapIndex ? width * 2 : -width * 2; // Hide others
+  };
+
+  const getInitialScale = (index) => {
+    const prevIndex = (currentMapIndex - 1 + maps.length) % maps.length;
+    const nextIndex = (currentMapIndex + 1) % maps.length;
+    
+    if (index === currentMapIndex) return 1;
+    if (index === prevIndex || index === nextIndex) return 0.8;
+    return 0.5;
+  };
+
+  const getInitialRotateY = (index) => {
+    const prevIndex = (currentMapIndex - 1 + maps.length) % maps.length;
+    const nextIndex = (currentMapIndex + 1) % maps.length;
+    
+    if (index === currentMapIndex) return 0;
+    if (index === prevIndex || index === nextIndex) return 180;
+    return 180;
+  };
+
+  const getInitialOpacity = (index) => {
+    const prevIndex = (currentMapIndex - 1 + maps.length) % maps.length;
+    const nextIndex = (currentMapIndex + 1) % maps.length;
+    
+    if (index === currentMapIndex) return 1;
+    if (index === prevIndex || index === nextIndex) return 0.5;
+    return 0;
+  };
+
+   const animateToIndex = (newIndex) => {
+    if (animations.length === 0) return;
+
+    const anims = animations.map((anim, index) => {
+      const prevIndex = (newIndex - 1 + maps.length) % maps.length;
+      const nextIndex = (newIndex + 1) % maps.length;
+      
+      let targetTranslateX, targetScale, targetRotateY, targetOpacity;
+      
+      if (index === newIndex) {
+        targetTranslateX = 0;
+        targetScale = 1;
+        targetRotateY = 0;
+        targetOpacity = 1;
+      } else if (index === prevIndex) {
+        targetTranslateX = -width * 0.4;
+        targetScale = 0.8;
+        targetRotateY = 180;
+        targetOpacity = 0.7;
+      } else if (index === nextIndex) {
+        targetTranslateX = width * 0.4;
+        targetScale = 0.8;
+        targetRotateY = 180;
+        targetOpacity = 0.7;
+      } else {
+        targetTranslateX = index > newIndex ? width * 2 : -width * 2;
+        targetScale = 0.5;
+        targetRotateY = 180;
+        targetOpacity = 0;
+      }
+
+      return Animated.parallel([
+        Animated.spring(anim.translateX, {
+          toValue: targetTranslateX,
+          useNativeDriver: true,
+          tension: 100,
+          friction: 8,
+        }),
+        Animated.spring(anim.scale, {
+          toValue: targetScale,
+          useNativeDriver: true,
+          tension: 100,
+          friction: 8,
+        }),
+        Animated.spring(anim.rotateY, {
+          toValue: targetRotateY,
+          useNativeDriver: true,
+          tension: 100,
+          friction: 8,
+        }),
+        Animated.timing(anim.opacity, {
+          toValue: targetOpacity,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]);
+    });
+
+    Animated.parallel(anims).start();
+  };
+
+
+  
+   const handlePrevious = () => {
+    const newIndex = currentMapIndex > 0 ? currentMapIndex - 1 : maps.length - 1;
+    setCurrentMapIndex(newIndex);
+    animateToIndex(newIndex);
+  };
+
+  const handleNext = () => {
+    const newIndex = currentMapIndex < maps.length - 1 ? currentMapIndex + 1 : 0;
+    setCurrentMapIndex(newIndex);
+    animateToIndex(newIndex);
+  };
+
 
   useEffect(() => {
     if (onMapChange && maps.length > 0 && isValidMap) {
@@ -187,13 +316,6 @@ export default function MapNavigate({ onMapChange }) {
     });
   };
 
-  const handlePrevious = () => {
-    setCurrentMapIndex(prevIndex => prevIndex > 0 ? prevIndex - 1 : maps.length - 1);
-  };
-
-  const handleNext = () => {
-    setCurrentMapIndex(prevIndex => prevIndex < maps.length - 1 ? prevIndex + 1 : 0);
-  };
 
   // ✅ Enhanced island click with asset download
   const handleIslandClick = async () => {
@@ -303,64 +425,90 @@ export default function MapNavigate({ onMapChange }) {
           </View>
         )}
 
-        {/* Floating Island */}
-        <View style={styles.mapWrapper}>
-          <TouchableOpacity 
-            style={styles.island}
-            onPress={handleIslandClick}
-            disabled={!isValidMap || !maps[currentMapIndex].is_active}
+         <View style={styles.islandsContainer}>
+      {maps.map((map, index) => (
+        <Animated.View
+          key={map.map_id || index}
+          style={[
+            styles.animatedIsland,
+            {
+              opacity: animations[index]?.opacity,
+               zIndex: index === currentMapIndex ? 10 : 1, 
+              transform: [
+                { translateX: animations[index]?.translateX || 0 },
+                { scale: animations[index]?.scale || 0.6 },
+                { 
+                  rotateY: animations[index]?.rotateY?.interpolate({
+                    inputRange: [0, 180],
+                    outputRange: ['0deg', '180deg']
+                  }) || '0deg'
+                },
+              ],
+            },
+          ]}
+        >
+          <View 
+            style={[
+              styles.island,
+              {
+                width: index === currentMapIndex ? width * 2.0 : width * 0.6, 
+                maxWidth: index === currentMapIndex ? 500 : 300, 
+              }
+            ]}
+            disabled={!map.is_active}
           >
-            <LottieView
-              source={getMapImageSource(maps[currentMapIndex])}
-              style={styles.islandImage}
-              autoPlay
-              loop
-              speed={isValidMap && maps[currentMapIndex].is_active ? 1 : 0}
-              resizeMode='contain'
-              cacheComposition={true}
-              renderMode='HARDWARE'
-            />
+                <LottieView
+                  source={getMapImageSource(map)}
+                  style={styles.islandImage}
+                  autoPlay
+                  loop
+                  speed={map.is_active ? 1 : 0}
+                  resizeMode='contain'
+                  cacheComposition={true}
+                  renderMode='HARDWARE'
+                />
 
-            {isValidMap && !maps[currentMapIndex].is_active && (
-              <Image
-                source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945939/473288860-e8a1b478-91d3-44c9-8a59-4bc46db4d1c0_jaroj9.png'}}
-                style={styles.lockedOverlay}
-                resizeMode='contain'
-              />
-            )}
+                {!map.is_active && (
+                  <Image
+                    source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945939/473288860-e8a1b478-91d3-44c9-8a59-4bc46db4d1c0_jaroj9.png'}}
+                    style={styles.lockedOverlay}
+                    resizeMode='contain'
+                  />
+                )}
+              </View>
+            </Animated.View>
+          ))}
+        </View>
 
+        <View style={styles.levelSelector}>
+          <TouchableOpacity 
+            style={styles.navArrow} 
+            onPress={handlePrevious}
+          >
+            <Image source={{uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945991/469163197-5f2b8e72-f49e-4f06-8b76-40b580289d54_mf5hcw.png'}} style={[styles.arrowImage, styles.flippedHorizontal]} />
           </TouchableOpacity>
-
-          <View style={styles.levelSelector}>
-            <TouchableOpacity 
-              style={[styles.navArrow, currentMapIndex === 0 && styles.disabledArrow]} 
-              onPress={handlePrevious}
-              disabled={currentMapIndex === 0}
-            >
-              <Image source={{uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945991/469163197-5f2b8e72-f49e-4f06-8b76-40b580289d54_mf5hcw.png'}} style={[styles.arrowImage, styles.flippedHorizontal]} />
-            </TouchableOpacity>
-            
-            <ImageBackground
-              source={{uri: LEVEL_SELECTOR_IMAGES[isValidMap ? maps[currentMapIndex].map_name : 'HTML']}}
+          
+        <TouchableOpacity onPress={handleIslandClick} activeOpacity={0.7}> 
+          <ImageBackground
+              source={{uri: LEVEL_SELECTOR_IMAGES[maps[currentMapIndex]?.map_name || 'HTML']}}
               style={styles.levelSelectorImage}
               resizeMode="contain"
             >
               <View style={styles.currentLevel}>
                 <Text style={styles.currentLevelText} numberOfLines={1} adjustsFontSizeToFit={true}>
-                  {isValidMap ? maps[currentMapIndex].map_name : 'Loading...'}
+                  {maps[currentMapIndex]?.map_name || 'Loading...'}
                 </Text>
               </View>
             </ImageBackground>
-            
-            <TouchableOpacity 
-              style={[styles.navArrow, currentMapIndex === maps.length - 1 && styles.disabledArrow]} 
-              onPress={handleNext}
-              disabled={currentMapIndex === maps.length - 1}
+          </TouchableOpacity>
+          
+           <TouchableOpacity 
+            style={styles.navArrow} 
+            onPress={handleNext}
             >
               <Image source={{uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945991/469163197-5f2b8e72-f49e-4f06-8b76-40b580289d54_mf5hcw.png'}} style={styles.arrowImage} />
             </TouchableOpacity>
           </View>
-        </View>
       </View>
       
       <Modal
@@ -467,7 +615,6 @@ export default function MapNavigate({ onMapChange }) {
 const styles = StyleSheet.create({
   scrollContent: {
     flex: 1,
-    justifyContent: 'center',
   },
   mapWrapper: {
     flex: 1,
@@ -475,20 +622,33 @@ const styles = StyleSheet.create({
     maxHeight: height * 1,
     paddingVertical: 20,
   },
+   islandsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: height * 0.6, // Adjust height as needed
+  },
+
+  animatedIsland: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   island: {
     position: 'relative',
-    width: width * 1,
+    width: width * 0.9,
     aspectRatio: 1,
-    maxWidth: 700,
-    maxHeight: 700,
+    maxWidth: 400,
+    maxHeight: 400,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    top: 50
+    top: 50,
+    pointerEvents: 'none'
   },
   islandImage: {
-    width: '130%',
-    height: '130%',
+    width: '120%',
+    height: '120%',
   },
   levelSelector: {
     flexDirection: 'row',
@@ -496,7 +656,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     paddingHorizontal: 20,
-    marginTop: -30,
+    marginTop: -50,
   },
   levelSelectorImage: {
     width: 150,
@@ -588,9 +748,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     fontFamily: 'FunkySign',
-  },
-  disabledArrow: {
-    opacity: 0.5,
   },
   lockedOverlay: {
     position: 'absolute',

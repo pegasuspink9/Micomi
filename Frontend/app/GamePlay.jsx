@@ -71,10 +71,11 @@ export default function GamePlay() {
 
   const currentChallenge = gameState?.currentChallenge;
   const submissionResult = gameState?.submissionResult;
-
+  
   const allowEnemyCompletionRef = useRef(null);
   const setCorrectAnswerRef = useRef(null);
-    const maxAnswers = currentChallenge ? (currentChallenge.question?.match(/_/g) || []).length : 0;
+  const maxAnswers = currentChallenge ? (currentChallenge.question?.match(/_/g) || []).length : 0;
+
 
 
   useEffect(() => {
@@ -108,16 +109,15 @@ export default function GamePlay() {
   }, [currentChallenge, loading, animationsLoading, isRetrying, isLoadingNextLevel]);
 
   const handlePotionPress = useCallback((potion) => {
-    if (selectedPotion && selectedPotion.id === potion.id) {
-      clearSelectedPotion();
-      console.log('🧪 Potion deselected:', potion.name);
-    } else {
-      // Select the potion
-      selectPotion(potion);
-      console.log('🧪 Potion selected:', potion.name);
-    }
+  if (selectedPotion && selectedPotion.id === potion.id) {
+    clearSelectedPotion();
+    setBorderColor('white');
+    console.log('🧪 Potion deselected:', potion.name);
+  } else {
+    selectPotion(potion);
+    console.log('🧪 Potion selected:', potion.name);
+  }
   }, [selectedPotion, clearSelectedPotion, selectPotion]);
-
 
 
   const handleVSComplete = () => {

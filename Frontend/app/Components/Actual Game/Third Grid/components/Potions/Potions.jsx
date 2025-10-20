@@ -82,7 +82,7 @@ const PotionGrid = ({
     };
   };
 
-  const PotionSlot = ({ potion }) => {
+  const PotionSlot = React.memo(({ potion }) => {
     const colors = getPotionColors(potion.name);
     const isSelected = selectedPotion && selectedPotion.id === potion.id;
     const isOutOfStock = potion.count === 0;
@@ -167,7 +167,14 @@ const PotionGrid = ({
         </Pressable>
       </View>
     );
-  };
+  }, (prevProps, nextProps) => {
+    return (
+      JSON.stringify(prevProps.potions) === JSON.stringify(nextProps.potions) &&
+      prevProps.selectedPotion?.id === nextProps.selectedPotion?.id &&
+      prevProps.loadingPotions === nextProps.loadingPotions &&
+      prevProps.potionUsed === nextProps.potionUsed
+    );
+  });
 
     if (loadingPotions) {
       return (

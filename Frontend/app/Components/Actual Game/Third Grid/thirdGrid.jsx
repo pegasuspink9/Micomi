@@ -13,7 +13,8 @@ import {
   createAnswerSelectHandler,
   createNextQuestionHandler,
   createCheckAnswerHandler,
-  checkAnswer
+  checkAnswer,
+  setBorderColor
 } from './utils/answerLogic';
 
 const ThirdGrid = ({ 
@@ -51,6 +52,22 @@ const ThirdGrid = ({
   
   
   const options = useMemo(() => currentQuestion.options || [], [currentQuestion.options]);
+
+   const getPotionBorderColor = (potionName) => {
+    switch (potionName) {
+      case 'Health':
+        return 'rgba(227, 140, 140, 1)';
+      case 'Strong':
+        return 'rgba(197, 197, 96, 1)';
+      case 'Hint':
+        return 'rgba(8, 120, 66, 1)';
+      case 'Freeze':
+        return 'rgba(1, 184, 201, 1)';
+      default:
+        return 'white';
+    }
+  };
+
 
   const challengeType = currentQuestion.type || currentQuestion.challenge_type;
 
@@ -99,18 +116,20 @@ const ThirdGrid = ({
   setPotionUsed(false);
   }, [currentQuestion?.id]);
 
-    const handleRunPress = useCallback(() => {
+  const handleRunPress = useCallback(() => {
     setRunDisabled(true); 
     if (selectedPotion) {
       setPotionUsed(true); 
-      usePotion(selectedPotion.player_potion_id); 
+      usePotion(selectedPotion.player_potion_id);
+      setBorderColor(getPotionBorderColor(selectedPotion.name)); 
+      console.log('🧪 Potion activated:', selectedPotion.name, 'Border color changed');
     } else {
       handleCheckAnswer();
     }
     setTimeout(() => {
       setRunDisabled(false);
     }, 5000);
-  }, [selectedPotion, usePotion, handleCheckAnswer]);
+  }, [selectedPotion, usePotion, handleCheckAnswer, setBorderColor]);
 
   const runButtonTitle = useMemo(() => {
     if (usingPotion) return "Using...";
