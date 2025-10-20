@@ -1,7 +1,6 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet, Dimensions, View } from 'react-native';
-
-const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
+import { scale, scaleWidth, scaleHeight, RESPONSIVE, wp, hp } from '../../../Responsiveness/gameResponsive';
 
 const AnswerOption = ({ 
   item, 
@@ -48,59 +47,57 @@ const AnswerOption = ({
 
 const styles = StyleSheet.create({
   buttonFrame: {
+    marginTop: RESPONSIVE.margin.xs,
     backgroundColor: '#000000ff', 
-    borderRadius: SCREEN_WIDTH * 0.025, 
-    marginBottom: SCREEN_HEIGHT * 0.009,
+    borderRadius: RESPONSIVE.borderRadius.sm, 
     shadowColor: '#000', 
     shadowOffset: {
       width: 0,
-      height: 6,
+      height: scale(6),
     },
     shadowOpacity: 0.4,
-    shadowRadius: 8,
+    shadowRadius: scale(8),
     elevation: 12,
-    borderTopWidth: 1,
+    borderTopWidth: scale(1),
     borderTopColor: 'rgba(255, 255, 255, 0.3)',
-    borderLeftWidth: 1,
+    borderLeftWidth: scale(1),
     borderLeftColor: 'rgba(255, 255, 255, 0.3)',
-    borderBottomWidth: 3,
+    borderBottomWidth: scale(3),
     borderBottomColor: 'rgba(0, 0, 0, 0.4)',
-    borderRightWidth: 2,
+    borderRightWidth: scale(2),
     borderRightColor: 'rgba(0, 0, 0, 0.3)',
   },
 
   buttonFrameSelected: {
     shadowColor: '#0ea5e9',
     shadowOpacity: 0.6,
-    shadowRadius: 10,
+    shadowRadius: scale(10),
   },
 
   listItemContainer: {
-    width: SCREEN_WIDTH * 0.20,
-    borderRadius: SCREEN_WIDTH * 0.02, 
+    width: wp(20),
+    borderRadius: RESPONSIVE.borderRadius.sm, 
     position: 'relative',
     overflow: 'hidden',
     
-    //  Keep original colors
     backgroundColor: '#4a90e2',
     
-    //  Updated border structure from GameButton
-    borderTopWidth: 2,
-    borderTopColor: '#93c5fd', // Keep original light blue highlight
-    borderLeftWidth: 2,
+    borderTopWidth: scale(2),
+    borderTopColor: '#93c5fd',
+    borderLeftWidth: scale(2),
     borderLeftColor: '#93c5fd',
-    borderBottomWidth: 3,
-    borderBottomColor: '#1e3a8a', // Keep original dark blue shadow
-    borderRightWidth: 3,
+    borderBottomWidth: scale(3),
+    borderBottomColor: '#1e3a8a',
+    borderRightWidth: scale(3),
     borderRightColor: '#1e3a8a',
     
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: scale(4),
     },
     shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowRadius: scale(6),
     elevation: 10,
   },
 
@@ -108,28 +105,27 @@ const styles = StyleSheet.create({
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: SCREEN_WIDTH * 0.015,
-    paddingVertical: SCREEN_WIDTH * 0.009, //  Updated from GameButton
-    paddingHorizontal: SCREEN_WIDTH * 0.015, //  Added from GameButton
-    backgroundColor: '#014656ae', //  Keep original color
+    borderRadius: RESPONSIVE.borderRadius.xs,
+    paddingVertical: RESPONSIVE.margin.xs,
+    paddingHorizontal: RESPONSIVE.margin.xs,
+    backgroundColor: '#014656ae',
     
-    //  Keep GameButton's inner border structure
-    borderTopWidth: 1,
+    borderTopWidth: scale(1),
     borderTopColor: 'rgba(255, 255, 255, 0.3)',
-    borderLeftWidth: 1,
+    borderLeftWidth: scale(1),
     borderLeftColor: 'rgba(255, 255, 255, 0.2)',
-    borderBottomWidth: 1,
+    borderBottomWidth: scale(1),
     borderBottomColor: 'rgba(0, 0, 0, 0.3)',
-    borderRightWidth: 1,
+    borderRightWidth: scale(1),
     borderRightColor: 'rgba(0, 0, 0, 0.2)',
   },
 
   innerButtonSelected: {
-    backgroundColor: '#014656ae', //  Keep original but could be slightly different for selected
+    backgroundColor: '#014656ae',
   },
 
   innerButtonDisabled: {
-    backgroundColor: '#b0b0b0', //  From GameButton
+    backgroundColor: '#b0b0b0',
   },
 
   buttonHighlight: {
@@ -139,8 +135,8 @@ const styles = StyleSheet.create({
     right: 0,
     height: '40%',
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderTopLeftRadius: SCREEN_WIDTH * 0.015,
-    borderTopRightRadius: SCREEN_WIDTH * 0.015,
+    borderTopLeftRadius: RESPONSIVE.borderRadius.xs,
+    borderTopRightRadius: RESPONSIVE.borderRadius.xs,
     pointerEvents: 'none',
   },
 
@@ -151,26 +147,26 @@ const styles = StyleSheet.create({
     right: 0,
     height: '30%',
     backgroundColor: 'rgba(0, 0, 0, 0.15)', 
-    borderBottomLeftRadius: SCREEN_WIDTH * 0.015,
-    borderBottomRightRadius: SCREEN_WIDTH * 0.015,
+    borderBottomLeftRadius: RESPONSIVE.borderRadius.xs,
+    borderBottomRightRadius: RESPONSIVE.borderRadius.xs,
     pointerEvents: 'none',
   },
 
   listItemPressed: {
-    transform: [{ translateY: 0.5 }],
+    transform: [{ translateY: scale(0.5) }],
     backgroundColor: '#0044b1ff', 
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: scale(2),
     },
     shadowOpacity: 0.2,
-    borderTopWidth: 3,
+    borderTopWidth: scale(3),
     borderTopColor: '#1e3a8a',
-    borderLeftWidth: 3,
+    borderLeftWidth: scale(3),
     borderLeftColor: '#1e3a8a',
-    borderBottomWidth: 1,
+    borderBottomWidth: scale(1),
     borderBottomColor: '#93c5fd',
-    borderRightWidth: 1,
+    borderRightWidth: scale(1),
     borderRightColor: '#93c5fd',
   },
 
@@ -187,39 +183,39 @@ const styles = StyleSheet.create({
       height: 0,
     },
     shadowOpacity: 0.6,
-    shadowRadius: 8,
+    shadowRadius: scale(8),
     elevation: 15,
   },
 
   listItemDisabled: {
     opacity: 0.4,
-    backgroundColor: '#8e8e93', //  Updated from GameButton
-    borderTopColor: '#aeaeb2', //  Updated from GameButton
+    backgroundColor: '#8e8e93',
+    borderTopColor: '#aeaeb2',
     borderLeftColor: '#aeaeb2',
-    borderBottomColor: '#636366', //  Updated from GameButton
+    borderBottomColor: '#636366',
     borderRightColor: '#636366',
   },
 
   listItemText: {
-    fontSize: SCREEN_WIDTH * 0.031, //  Updated from GameButton
+    fontSize: RESPONSIVE.fontSize.sm,
     color: '#ffffff', 
     textAlign: 'center',
     fontFamily: 'DynaPuff', 
-    textShadowColor: 'rgba(0, 0, 0, 0.5)', //  Updated from GameButton
-    textShadowOffset: { width: 1, height: 1 }, //  Updated from GameButton
-    textShadowRadius: 2,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: scale(1), height: scale(1) },
+    textShadowRadius: scale(2),
     zIndex: 1,
   },
 
   listItemTextSelected: {
     color: '#ffffff',
     textShadowColor: 'rgba(0, 0, 0, 0.7)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+    textShadowOffset: { width: scale(1), height: scale(1) },
+    textShadowRadius: scale(3),
   },
 
   listItemTextDisabled: {
-    color: '#f2f2f7', //  Updated from GameButton
+    color: '#f2f2f7',
     textShadowColor: 'rgba(0, 0, 0, 0.2)',
   },
 });

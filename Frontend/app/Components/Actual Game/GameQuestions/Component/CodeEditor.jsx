@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
 
   webTabText: {
     color: '#d1d5d9',
-    fontSize: 10, //  Responsive
+    fontSize: RESPONSIVE.fontSize.xs, //  Responsive (was hard-coded 10)
     fontFamily: 'DynaPuff',
     fontWeight: '500',
   },
@@ -451,10 +451,12 @@ const styles = StyleSheet.create({
   browserViewport: {
     flex: 1,
     backgroundColor: '#ffffff',
-    minHeight: scale(100), 
+    minHeight: scale(100), //  Responsive
   },
 
 });
+
+// ...existing export remains unchanged...
 
 export default React.memo(CodeEditor, (prevProps, nextProps) => {
   return (

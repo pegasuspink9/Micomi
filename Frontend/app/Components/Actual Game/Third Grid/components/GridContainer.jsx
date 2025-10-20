@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
+import { scale, scaleWidth, scaleHeight, RESPONSIVE, wp, hp } from '../../../Responsiveness/gameResponsive';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -22,7 +23,6 @@ const GridContainer = ({ children, lowerChildren, mainHeight }) => {
         </View>
       </View>
 
-      {/* ✅ New Lower Grid - Connected */}
       <View style={styles.lowerGrid}>
         <View style={styles.outerFrame}>
           <View style={styles.innerContent}>
@@ -49,21 +49,21 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    height: SCREEN_HEIGHT * 0.32,
+    height: hp(32),
     backgroundColor: 'transparent',
  
   },
 
   thirdGrid: {
-    height: SCREEN_HEIGHT * 0.15,
+    height: hp(15),
     backgroundColor: 'transparent',
-    marginBottom: SCREEN_WIDTH * -0.1, 
+    marginBottom: hp(-4),
     zIndex: 10,
   },
 
   lowerGrid: {
-    height: SCREEN_HEIGHT * 0.12,
-    width: SCREEN_WIDTH * 0.9,
+    height: hp(12),
+    width: wp(90),
     alignSelf: 'center',
     backgroundColor: 'transparent',
   },
@@ -72,23 +72,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#b4bdc6ff',
     borderRadius: SCREEN_WIDTH * 0.03,
-    padding: SCREEN_WIDTH * 0.004,
+    padding: scale(2),
     shadowColor: '#052a53ff',
     shadowOffset: {
       width: 0,
-      height: 12,
+      height: scale(12),
     },
     shadowOpacity: 0.6,
-    shadowRadius: 16,
+    shadowRadius: scale(16),
     elevation: 20,
     // 3D outer border effect
-    borderTopWidth: 3,
+    borderTopWidth: scale(3),
     borderTopColor: '#87ceeb',
-    borderLeftWidth: 2,
+    borderLeftWidth: scale(2),
     borderLeftColor: '#87ceeb',
-    borderBottomWidth: 5,
+    borderBottomWidth: scale(5),
     borderBottomColor: '#2c5282',
-    borderRightWidth: 4,
+    borderRightWidth: scale(4),
     borderRightColor: '#2c5282',
   },
 
@@ -96,14 +96,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#052a53ff',
     borderRadius: SCREEN_WIDTH * 0.045,
-    padding: SCREEN_WIDTH * 0.03,
+    padding: RESPONSIVE.margin.sm,
     shadowColor: '#1a365d',
     shadowOffset: {
       width: 0,
-      height: 8,
+      height: scale(8),
     },
     shadowOpacity: 0.5,
-    shadowRadius: 12,
+    shadowRadius: scale(12),
     elevation: 18,
   },
 
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
     shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowRadius: scale(6),
     elevation: 8,
     flexDirection: 'column',
     justifyContent: 'space-between',
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: SCREEN_WIDTH * 0.08,
+    height: scale(30),
     background: 'linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 100%)',
     borderTopLeftRadius: SCREEN_WIDTH * 0.03,
     borderTopRightRadius: SCREEN_WIDTH * 0.03,
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: SCREEN_WIDTH * 0.06,
+    height: scale(24),
     borderBottomLeftRadius: SCREEN_WIDTH * 0.03,
     borderBottomRightRadius: SCREEN_WIDTH * 0.03,
     pointerEvents: 'none',
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     bottom: 0,
-    width: SCREEN_WIDTH * 0.04,
+    width: scale(16),
     borderTopLeftRadius: SCREEN_WIDTH * 0.03,
     borderBottomLeftRadius: SCREEN_WIDTH * 0.03,
     pointerEvents: 'none',
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     top: 0,
     right: 0,
     bottom: 0,
-    width: SCREEN_WIDTH * 0.03,
+    width: scale(12),
     borderTopRightRadius: SCREEN_WIDTH * 0.03,
     borderBottomRightRadius: SCREEN_WIDTH * 0.03,
     pointerEvents: 'none',

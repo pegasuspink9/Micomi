@@ -8,7 +8,7 @@ import {
   Pressable,
   ScrollView
 } from 'react-native';
-import { SCREEN } from '../../../../Responsiveness/gameResponsive';
+import { scale, scaleWidth, scaleHeight, hp, wp } from '../../../../Responsiveness/gameResponsive';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -86,13 +86,13 @@ const PotionGrid = ({
     const colors = getPotionColors(potion.name);
     const isSelected = selectedPotion && selectedPotion.id === potion.id;
     const isOutOfStock = potion.count === 0;
-    const isDisabled = isOutOfStock || loadingPotions || potionUsed; // ✅ Include potionUsed
+    const isDisabled = isOutOfStock || loadingPotions || potionUsed; //  Include potionUsed
 
     return (
       <View style={[
         styles.potionFrame,
         { backgroundColor: colors.frameColor },
-        (isOutOfStock || potionUsed) && styles.outOfStockSlot, // ✅ Apply disabled style
+        (isOutOfStock || potionUsed) && styles.outOfStockSlot, //  Apply disabled style
         isSelected && styles.selectedPotionFrame 
       ]}>
         <Pressable 
@@ -134,7 +134,7 @@ const PotionGrid = ({
                 source={{ uri: potion.image }} 
                 style={[
                   styles.potionImage,
-                  (isOutOfStock || potionUsed) && styles.potionImageDisabled // ✅ Apply disabled style
+                  (isOutOfStock || potionUsed) && styles.potionImageDisabled //  Apply disabled style
                 ]}
               />
               
@@ -152,12 +152,12 @@ const PotionGrid = ({
                 </Text>
               </View>
               
-              {/* ✅ Potion name label */}
+              {/*  Potion name label */}
               <View style={styles.nameContainer}>
                 <Text style={[
                   styles.nameText,
                   isSelected && styles.selectedNameText,
-                  (isOutOfStock || potionUsed) && styles.nameTextDisabled // ✅ Apply disabled style
+                  (isOutOfStock || potionUsed) && styles.nameTextDisabled //  Apply disabled style
                 ]}>
                   {potion.name}
                 </Text>
@@ -225,69 +225,69 @@ const styles = StyleSheet.create({
   },
 
   scrollContainer: {
-    paddingHorizontal: SCREEN_WIDTH * 0.04,
+    paddingHorizontal: wp(4), //  Responsive padding (4% of width)
     alignItems: 'center',
   },
 
   potionSlotWrapper: {
-    marginHorizontal: SCREEN_WIDTH * 0.015,
+    marginHorizontal: wp(1.5), //  Responsive margin (1.5% of width)
   },
 
   potionFrame: {
-    width: SCREEN_WIDTH * 0.18,
-    height: SCREEN_WIDTH * 0.20,
-    borderRadius: SCREEN_WIDTH * 0.03,
-    padding: 2,
+    width: scaleWidth(70),
+    height: scaleHeight(70),
+    borderRadius: wp(3), //  Responsive borderRadius (3% of width)
+    padding: scale(2), //  Responsive padding
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 6,
+      height: scale(6), //  Responsive shadow height
     },
     shadowOpacity: 0.4,
-    shadowRadius: 8,
+    shadowRadius: scale(8), //  Responsive shadow radius
     elevation: 12,
-    borderTopWidth: 1,
+    borderTopWidth: wp(0.4), //  Responsive border width (0.4% of width)
     borderTopColor: 'rgba(255, 255, 255, 0.3)',
-    borderLeftWidth: 1,
+    borderLeftWidth: wp(0.4),
     borderLeftColor: 'rgba(255, 255, 255, 0.3)',
-    borderBottomWidth: 3,
+    borderBottomWidth: wp(0.6),
     borderBottomColor: 'rgba(0, 0, 0, 0.4)',
-    borderRightWidth: 2,
+    borderRightWidth: wp(0.4),
     borderRightColor: 'rgba(0, 0, 0, 0.3)',
   },
 
   potionSlot: {
     flex: 1,
-    borderRadius: SCREEN_WIDTH * 0.025,
+    borderRadius: wp(2.5), //  Responsive borderRadius (2.5% of width)
     position: 'relative',
     overflow: 'visible',
     
-    borderTopWidth: 2,
-    borderLeftWidth: 2,
-    borderBottomWidth: 3,
-    borderRightWidth: 3,
+    borderTopWidth: scale(2), //  Responsive border width
+    borderLeftWidth: scale(2),
+    borderBottomWidth: scale(3),
+    borderRightWidth: scale(3),
     
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: scale(4), //  Responsive shadow height
     },
     shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowRadius: scale(6), //  Responsive shadow radius
     elevation: 10,
   },
 
   potionSlotPressed: {
-    transform: [{ translateY: 1 }],
+    transform: [{ translateY: scale(1) }], //  Responsive translateY
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: scale(2), //  Responsive shadow height
     },
     shadowOpacity: 0.2,
-    borderTopWidth: 3,
-    borderLeftWidth: 3,
-    borderBottomWidth: 1,
-    borderRightWidth: 1,
+    borderTopWidth: scale(3), //  Responsive border width
+    borderLeftWidth: scale(3),
+    borderBottomWidth: scale(1),
+    borderRightWidth: scale(1),
   },
 
   outOfStockSlot: {
@@ -296,27 +296,27 @@ const styles = StyleSheet.create({
 
   potionSlotInner: {
     flex: 1,
-    borderRadius: SCREEN_WIDTH * 0.02,
-    padding: 2,
+    borderRadius: wp(2), //  Responsive borderRadius (2% of width)
+    padding: scale(2), //  Responsive padding
     overflow: 'hidden',
   },
 
   potionSlotContent: {
     flex: 1,
-    borderRadius: SCREEN_WIDTH * 0.015,
+    borderRadius: wp(1.5), //  Responsive borderRadius (1.5% of width)
     backgroundColor: '#10075380',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
     overflow: 'hidden',
     
-    borderTopWidth: 1,
+    borderTopWidth: scale(1), //  Responsive border width
     borderTopColor: 'rgba(255, 255, 255, 0.2)',
-    borderLeftWidth: 1,
+    borderLeftWidth: scale(1),
     borderLeftColor: 'rgba(255, 255, 255, 0.1)',
-    borderBottomWidth: 1,
+    borderBottomWidth: scale(1),
     borderBottomColor: 'rgba(0, 0, 0, 0.3)',
-    borderRightWidth: 1,
+    borderRightWidth: scale(1),
     borderRightColor: 'rgba(0, 0, 0, 0.2)',
   },
 
@@ -327,8 +327,8 @@ const styles = StyleSheet.create({
     right: 0,
     height: '40%',
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderTopLeftRadius: SCREEN_WIDTH * 0.015,
-    borderTopRightRadius: SCREEN_WIDTH * 0.015,
+    borderTopLeftRadius: wp(1.5), //  Responsive borderRadius
+    borderTopRightRadius: wp(1.5),
     pointerEvents: 'none',
   },
 
@@ -339,8 +339,8 @@ const styles = StyleSheet.create({
     right: 0,
     height: '30%',
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    borderBottomLeftRadius: SCREEN_WIDTH * 0.015,
-    borderBottomRightRadius: SCREEN_WIDTH * 0.015,
+    borderBottomLeftRadius: wp(1.5), //  Responsive borderRadius
+    borderBottomRightRadius: wp(1.5),
     pointerEvents: 'none',
   },
 
@@ -355,36 +355,36 @@ const styles = StyleSheet.create({
 
   dot: {
     position: 'absolute',
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
+    width: scale(3), //  Responsive width
+    height: scale(3), //  Responsive height
+    borderRadius: scale(1.5), //  Responsive borderRadius
     backgroundColor: '#666',
   },
 
   dotTopLeft: {
-    top: 4,
-    left: 4,
+    top: scale(4), //  Responsive position
+    left: scale(4),
   },
 
   dotTopRight: {
-    top: 4,
-    right: 4,
+    top: scale(4),
+    right: scale(4),
   },
 
   dotBottomLeft: {
-    bottom: 4,
-    left: 4,
+    bottom: scale(4),
+    left: scale(4),
   },
 
   dotBottomRight: {
-    bottom: 4,
-    right: 4,
+    bottom: scale(4),
+    right: scale(4),
   },
 
   potionImage: {
-    width: SCREEN_WIDTH * 0.8,
-    height: SCREEN_HEIGHT * 0.08,
-    borderRadius: 8,
+    width: wp(80), //  Responsive width (80% of width)
+    height: hp(8), //  Responsive height (8% of height)
+    borderRadius: scale(8), //  Responsive borderRadius
     zIndex: 2,
     resizeMode: 'contain',
   },
@@ -395,20 +395,18 @@ const styles = StyleSheet.create({
 
   countContainer: {
     position: 'absolute',
-    top: 2,
-    right: 2,
-    borderRadius: 6,
-    minWidth: 14,
-    height: 14,
+    top: scale(2), //  Responsive position
+    right: scale(2),
+    borderRadius: scale(6), //  Responsive borderRadius
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: scale(1), //  Responsive border width
     borderColor: '#000000ff',
     backgroundColor: 'rgba(60, 4, 91, 0.7)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: scale(1) }, //  Responsive shadow
     shadowOpacity: 0.5,
-    shadowRadius: 1,
+    shadowRadius: scale(1), //  Responsive shadow radius
     elevation: 3,
     zIndex: 3,
   },
@@ -420,24 +418,24 @@ const styles = StyleSheet.create({
 
   countText: {
     color: '#ffffff',
-    fontSize: 9,
+    fontSize: wp(2), //  Responsive fontSize (2% of width)
     fontFamily: 'DynaPuff',
   },
 
   nameContainer: {
     position: 'absolute',
-    bottom: -1,
-    left: 2,
-    right: 2,
-    borderRadius: 4,
-    paddingVertical: 1,
-    paddingHorizontal: 2,
+    bottom: scale(-1), //  Responsive position
+    left: scale(2),
+    right: scale(2),
+    borderRadius: scale(4), //  Responsive borderRadius
+    paddingVertical: scale(1), //  Responsive padding
+    paddingHorizontal: scale(2),
     zIndex: 3,
   },
 
   nameText: {
     color: '#ffffffff',
-    fontSize: 8,
+    fontSize: scale(8), //  Responsive fontSize
     fontFamily: 'MusicVibes',
     textAlign: 'center',
   },
@@ -466,23 +464,16 @@ const styles = StyleSheet.create({
     borderLeftColor: 'rgba(255, 255, 255, 0.3)',
   },
 
- 
-
-
-  selectedNameText: {
-    color: '#ffeb3b',
-    fontWeight: 'bold',
-  },
 
   loadingText: {
     color: '#ffffff94',
-    fontSize: 16,
+    fontSize: scale(16), //  Responsive fontSize
     fontFamily: 'DynaPuff',
   },
 
   emptyText: {
     color: '#ffffff94',
-    fontSize: 14,
+    fontSize: scale(14), //  Responsive fontSize
     fontFamily: 'DynaPuff',
   },
 });

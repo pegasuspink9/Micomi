@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Image } from 'react-native';
+import { View, Text, StyleSheet, Animated, Image, Dimensions} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { 
   scale, 
@@ -7,8 +7,10 @@ import {
   scaleHeight, 
   scaleFont, 
   RESPONSIVE, 
-  layoutHelpers 
+  layoutHelpers
 } from '../../../Responsiveness/gameResponsive';
+
+const { width, height } = Dimensions.get('window');
 
 const Life = ({
   health = 0,
@@ -377,9 +379,8 @@ const styles = StyleSheet.create({
   },
 
   avatarImage: {
-    width: scaleWidth(70),
-    marginLeft: -10,
-    height: scaleHeight(70),
+    height: height * 0.1,
+    
   },
 
   avatarText: {

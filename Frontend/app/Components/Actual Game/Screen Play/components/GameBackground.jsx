@@ -9,6 +9,7 @@ import Animated, {
   Easing,
   cancelAnimation,
 } from 'react-native-reanimated';
+import { hp } from '../../../Responsiveness/gameResponsive';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -96,7 +97,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ff6b6b',
     position: 'relative',
     overflow: 'hidden',
-    minHeight: SCREEN_HEIGHT * 0.34, 
+    minHeight: hp(34), 
   },
   
   spriteContainer: {
@@ -127,7 +128,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     position: 'relative',
     zIndex: 2,
-    minHeight: SCREEN_HEIGHT * 0.34,
+    minHeight: hp(34),
   },
   
 });

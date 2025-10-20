@@ -64,7 +64,7 @@ const MAP_THEMES = {
       stoneImage: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758947320/472848361-b1f40882-fa38-4e28-acce-02ac9bb688bd_1_h8jdpk.png'
     },
     floatingComment: {
-      commentBackground: 'hhttps://res.cloudinary.com/dm8i9u1pk/image/upload/v1758947152/472833211-b8878f16-21ca-4ae2-80cb-9407743011cc_t5lzlq.png',
+      commentBackground: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758947152/472833211-b8878f16-21ca-4ae2-80cb-9407743011cc_t5lzlq.png',
       signageBackground: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758947166/473007483-d7e33c61-4cc1-4ba3-8aed-373f4bb4dbe6_pbzy9h.png',
       commentBackgroundStyle:{
         width: '110%',

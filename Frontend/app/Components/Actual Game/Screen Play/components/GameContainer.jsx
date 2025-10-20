@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
+import { scale, RESPONSIVE } from '../../../Responsiveness/gameResponsive';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -28,42 +29,41 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 15,
+      height: scale(15),
     },
   },
 
-
   innerBorderContainer: {
-    borderWidth: 6,
+    borderWidth: scale(6),
     overflow: 'hidden',
     borderRadius: SCREEN_WIDTH * 0.08,
     position: 'relative',
 
     // Original inner borders preserved
-    borderTopWidth: 6,
+    borderTopWidth: scale(6),
     borderTopColor: '#052a53ff', 
-    borderLeftWidth: 6,
+    borderLeftWidth: scale(6),
     borderLeftColor: '#052a53ff',
-    borderBottomWidth: 6,
+    borderBottomWidth: scale(6),
     borderBottomColor: '#052a53ff',
-    borderRightWidth: 6,
+    borderRightWidth: scale(6),
     borderRightColor: '#052a53ff', 
 
   },
 
   contentContainer: {
-    borderWidth: 2,
+    borderWidth: scale(2),
     borderColor: '#052953f2',
     borderRadius: SCREEN_WIDTH * 0.06,
     overflow: 'hidden',
     
-    borderTopWidth: 3,
+    borderTopWidth: scale(3),
     borderTopColor: '#052953f2',
-    borderLeftWidth: 3,
+    borderLeftWidth: scale(3),
     borderLeftColor: '#052a53ff',
-    borderBottomWidth: 3,
+    borderBottomWidth: scale(3),
     borderBottomColor: '#052a53ff',
-    borderRightWidth: 3,
+    borderRightWidth: scale(3),
     borderRightColor: '#052a53ff',
   },
 
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: SCREEN_WIDTH * 0.08,
+    height: scale(40),
     borderTopLeftRadius: SCREEN_WIDTH * 0.06,
     borderTopRightRadius: SCREEN_WIDTH * 0.06,
     pointerEvents: 'none',
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: SCREEN_WIDTH * 0.06,
+    height: scale(30),
     borderBottomLeftRadius: SCREEN_WIDTH * 0.06,
     borderBottomRightRadius: SCREEN_WIDTH * 0.06,
     pointerEvents: 'none',
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     bottom: 0,
-    width: SCREEN_WIDTH * 0.04,
+    width: scale(20),
     borderTopLeftRadius: SCREEN_WIDTH * 0.06,
     borderBottomLeftRadius: SCREEN_WIDTH * 0.06,
     pointerEvents: 'none',
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     top: 0,
     right: 0,
     bottom: 0,
-    width: SCREEN_WIDTH * 0.03,
+    width: scale(15),
     borderTopRightRadius: SCREEN_WIDTH * 0.06,
     borderBottomRightRadius: SCREEN_WIDTH * 0.06,
     pointerEvents: 'none',

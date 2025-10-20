@@ -4,7 +4,7 @@ import CodeEditor from './Component/CodeEditor';
 import DocumentQuestion from './Component/DocumentQuestion';
 import { renderHighlightedText } from './utils/syntaxHighligther';
 import { scrollToNextBlank, calculateGlobalBlankIndex } from './utils/blankHelper';
-import { scale, RESPONSIVE } from '../../Responsiveness/gameResponsive';
+import { scale, RESPONSIVE, scaleWidth, scaleHeight, wp, hp } from '../../Responsiveness/gameResponsive';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -74,7 +74,6 @@ export default function GameQuestions({
               </Text>
               </View>
             )}
-            {partIndex < parts.length - 2 && localBlankIndex++}
           </React.Fragment>
         ))}
       </Text>
@@ -130,9 +129,9 @@ const styles = StyleSheet.create({
     maxHeight: '100%',
   },
   codeText: {
-    lineHeight: SCREEN_HEIGHT * 0.03,
+    lineHeight: scale(25),
     fontFamily: 'monospace',
-    fontSize: RESPONSIVE.fontSize.md, 
+    fontSize: RESPONSIVE.fontSize.md, // Responsive (was hard-coded 12)
   },
   codeBlankContainer: {
     backgroundColor: '#0e639c',
@@ -169,7 +168,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontFamily: 'monospace',
     fontWeight: 'bold',
-    fontSize: SCREEN_WIDTH * 0.03,
+    fontSize: scale(13),
     textAlign: 'center',
   },
   errorText: {

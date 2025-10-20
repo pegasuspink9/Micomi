@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   },
   popAnimationBase: {
     position: 'absolute',
-    width: 420,
+    width: 490,
     height: 420,
   },
 });

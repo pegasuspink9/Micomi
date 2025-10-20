@@ -16,7 +16,7 @@ import LottieView from 'lottie-react-native';
 import { useRouter } from 'expo-router';
 import { useMapData } from '../../hooks/useMapData'; 
 import { mapAssetPreloader } from '../../services/preloader/mapAssetPreloader';
-import { MAP_THEMES, DEFAULT_THEME } from '../RoadMap/MapLevel/MapDatas/mapData'; // ✅ Import theme data
+import { MAP_THEMES, DEFAULT_THEME } from '../RoadMap/MapLevel/MapDatas/mapData'; 
 
 const { width, height } = Dimensions.get('window');
 
@@ -30,6 +30,7 @@ const LEVEL_SELECTOR_IMAGES = {
 export default function MapNavigate({ onMapChange }) {
   const [currentMapIndex, setCurrentMapIndex] = useState(0);
   const router = useRouter();
+  
 
    const [animations, setAnimations] = useState([]);
   
@@ -192,7 +193,6 @@ export default function MapNavigate({ onMapChange }) {
     }
   }, [currentMapIndex, onMapChange, maps, isValidMap]);
 
-  // ✅ Load cached assets on component mount
   useEffect(() => {
     const loadCachedAssets = async () => {
       if (maps.length > 0) {
@@ -451,8 +451,8 @@ export default function MapNavigate({ onMapChange }) {
             style={[
               styles.island,
               {
-                width: index === currentMapIndex ? width * 2.0 : width * 0.6, 
-                maxWidth: index === currentMapIndex ? 500 : 300, 
+                width: index === currentMapIndex ? width * 1 : width * 0.6, 
+                maxWidth: index === currentMapIndex ? width * 2 : width * 1, 
               }
             ]}
             disabled={!map.is_active}
@@ -636,10 +636,7 @@ const styles = StyleSheet.create({
   },
   island: {
     position: 'relative',
-    width: width * 0.9,
     aspectRatio: 1,
-    maxWidth: 400,
-    maxHeight: 400,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',

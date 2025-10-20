@@ -146,7 +146,7 @@ const AnswerGrid = ({
   }
 
   return (
-    <ScrollView 
+    <View 
       contentContainerStyle={styles.scrollableButton}
       showsVerticalScrollIndicator={false}
       bounces={true}
@@ -154,7 +154,7 @@ const AnswerGrid = ({
       <View style={styles.flexWrapContainer}>
         {renderedItems}
       </View>
-    </ScrollView>
+    </View>
   );
 };
 
