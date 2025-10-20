@@ -8,6 +8,7 @@ import * as EnergyService from "../Energy/energy.service";
 import * as LevelService from "../Levels/levels.service";
 import { updateQuestProgress } from "../Quests/quests.service";
 import { formatTimer } from "../../../helper/dateTimeHelper";
+import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 
 const prisma = new PrismaClient();
 
@@ -46,7 +47,7 @@ export async function getFightSetup(playerId: number, levelId: number) {
 
   const level = await prisma.level.findUnique({
     where: { level_id: levelId },
-    include: { challenges: true, enemy: true },
+    include: { challenges: true, enemy: true, map: true },
   });
   if (!level) throw new Error("Level not found");
   if (!level.enemy) throw new Error("No enemy assigned to this level");
@@ -122,7 +123,9 @@ export async function handleFight(
 ) {
   const level = await prisma.level.findUnique({
     where: { level_id: levelId },
+    include: { challenges: true },
   });
+
   if (!level) throw new Error("Level not found");
 
   const isBossLevel =
@@ -132,6 +135,7 @@ export async function handleFight(
     console.log("Boss Level detected — using fightBossEnemy()");
     return await fightBossEnemy(
       playerId,
+      levelId,
       enemyId,
       isCorrect,
       elapsedSeconds,
@@ -143,6 +147,7 @@ export async function handleFight(
     console.log("Normal Level detected — using fightEnemy()");
     return await fightEnemy(
       playerId,
+      levelId,
       enemyId,
       isCorrect,
       elapsedSeconds,
@@ -195,6 +200,10 @@ export async function getCurrentFightState(
     );
   }
 
+  const combatBackground = [
+    await getBackgroundForLevel(level.map.map_name, level.level_number),
+  ];
+
   return {
     status,
     enemy: {
@@ -229,11 +238,13 @@ export async function getCurrentFightState(
     timer: "00:00",
     energy: energyStatus.energy,
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
+    combat_background: combatBackground,
   };
 }
 
 export async function fightEnemy(
   playerId: number,
+  levelId: number,
   enemyId: number,
   isCorrect: boolean,
   elapsedSeconds: number,
@@ -244,14 +255,11 @@ export async function fightEnemy(
   const enemy = await prisma.enemy.findUnique({ where: { enemy_id: enemyId } });
   if (!enemy) throw new Error("Enemy not found");
 
-  const level = await prisma.level.findFirst({
-    where: {
-      map: { map_name: enemy.enemy_map },
-      level_difficulty: enemy.enemy_difficulty as DifficultyLevel,
-    },
+  const level = await prisma.level.findUnique({
+    where: { level_id: levelId },
     include: { challenges: true },
   });
-  if (!level) throw new Error("Level not found for enemy's map + difficulty");
+  if (!level) throw new Error("Level not found");
 
   let progress = await prisma.playerProgress.findUnique({
     where: {
@@ -593,6 +601,7 @@ export async function fightEnemy(
 
 export async function fightBossEnemy(
   playerId: number,
+  levelId: number,
   enemyId: number,
   isCorrect: boolean,
   elapsedSeconds: number,
@@ -603,14 +612,11 @@ export async function fightBossEnemy(
   const enemy = await prisma.enemy.findUnique({ where: { enemy_id: enemyId } });
   if (!enemy) throw new Error("Enemy not found");
 
-  const level = await prisma.level.findFirst({
-    where: {
-      map: { map_name: enemy.enemy_map },
-      level_difficulty: enemy.enemy_difficulty as DifficultyLevel,
-    },
+  const level = await prisma.level.findUnique({
+    where: { level_id: levelId },
     include: { challenges: true },
   });
-  if (!level) throw new Error("Level not found for enemy's map + difficulty");
+  if (!level) throw new Error("Level not found");
 
   let progress = await prisma.playerProgress.findUnique({
     where: {

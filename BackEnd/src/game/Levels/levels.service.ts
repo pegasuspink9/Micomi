@@ -14,10 +14,9 @@ import { formatTimer } from "../../../helper/dateTimeHelper";
 import { getBaseEnemyHp } from "../Combat/combat.service";
 import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
 import { updateQuestProgress } from "../Quests/quests.service";
+import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 
 const prisma = new PrismaClient();
-
-const randomize = <T>(arr: T[]) => [...arr].sort(() => Math.random() - 0.5);
 
 export const previewLevel = async (playerId: number, levelId: number) => {
   const level = (await prisma.level.findUnique({
@@ -472,6 +471,10 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     character_attack_image = ["basic attack"];
   }
 
+  const combatBackground = [
+    await getBackgroundForLevel(level.map.map_name, level.level_number),
+  ];
+
   return {
     level: {
       level_id: level.level_id,
@@ -511,6 +514,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
     correct_answer_length: correctAnswerLength,
     character_attack_image,
+    combat_background: combatBackground,
   };
 };
 

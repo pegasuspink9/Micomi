@@ -49,6 +49,7 @@ export const performFight = async (req: Request, res: Response) => {
 
       result = await CombatService.fightEnemy(
         parsedPlayerId,
+        level.level_id,
         level.enemy.enemy_id,
         isCorrect,
         0,
@@ -69,6 +70,7 @@ export const performFight = async (req: Request, res: Response) => {
       const isCorrectForBoss = correctCount / totalCount > 0.5;
       result = await CombatService.fightBossEnemy(
         parsedPlayerId,
+        level.level_id,
         level.enemy.enemy_id,
         isCorrectForBoss,
         0,
