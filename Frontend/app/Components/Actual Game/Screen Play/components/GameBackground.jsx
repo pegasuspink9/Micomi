@@ -13,14 +13,16 @@ import { hp } from '../../../Responsiveness/gameResponsive';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const GameBackground = ({ children, isPaused }) => {
+const GameBackground = ({ children, isPaused, combatBackground }) => {
   const frameIndex = useSharedValue(0);
   
-  const SPRITE_URL = 'https://res.cloudinary.com/dpbocuozx/image/upload/v1759480324/test_zs60s2.png';
+  const SPRITE_URL = combatBackground && Array.isArray(combatBackground) && combatBackground.length > 0 
+  ? combatBackground[0] 
+  : 'https://res.cloudinary.com/dpbocuozx/image/upload/v1759480324/test_zs60s2.png';
   const COLUMNS = 5; 
   const ROWS = 4;   
   const TOTAL_FRAMES = COLUMNS * ROWS; 
-  const FRAME_DURATION = 100;
+  const FRAME_DURATION = 50;
   const TOTAL_ANIMATION_DURATION = FRAME_DURATION * TOTAL_FRAMES;
 
   useEffect(() => {
@@ -46,7 +48,6 @@ const GameBackground = ({ children, isPaused }) => {
 const animatedSpriteStyle = useAnimatedStyle(() => {
   const currentFrame = Math.floor(frameIndex.value) % TOTAL_FRAMES;
   
-  // Calculate which frame to show (column and row)
   const column = currentFrame % COLUMNS;
   const row = Math.floor(currentFrame / COLUMNS);
   
@@ -94,7 +95,7 @@ return (
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ff6b6b',
+    backgroundColor: 'transparent', // ✅ Changed to transparent to allow combat background
     position: 'relative',
     overflow: 'hidden',
     minHeight: hp(34), 
@@ -107,6 +108,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     overflow: 'hidden', 
+    zIndex: 1, // Above background
   },
   
   
@@ -122,12 +124,12 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(212, 84, 77, 0.5)', 
-    zIndex: 1,
+    zIndex: 2,
   },
   
   contentContainer: {
     position: 'relative',
-    zIndex: 2,
+    zIndex: 3, // Above everything
     minHeight: hp(34),
   },
   

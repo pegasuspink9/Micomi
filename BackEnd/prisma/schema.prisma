@@ -297,12 +297,12 @@ model PlayerQuest {
 }
 
 model BackgroundMapping {
-  id            Int      @id @default(autoincrement())
+  id            Int    @id @default(autoincrement())
   mapName       String
   levelNumber   Int
   backgroundUrl String
 
-  @@unique([mapName, levelNumber]) 
+  @@unique([mapName, levelNumber])
 }
 
 enum QuestType {

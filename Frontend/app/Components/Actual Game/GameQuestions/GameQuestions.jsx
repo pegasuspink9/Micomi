@@ -74,6 +74,7 @@ export default function GameQuestions({
               </Text>
               </View>
             )}
+            {partIndex < parts.length - 2 && localBlankIndex++}
           </React.Fragment>
         ))}
       </Text>
@@ -130,8 +131,9 @@ const styles = StyleSheet.create({
   },
   codeText: {
     lineHeight: scale(25),
+    color: '#ffffff',
     fontFamily: 'monospace',
-    fontSize: RESPONSIVE.fontSize.md, // Responsive (was hard-coded 12)
+    fontSize: RESPONSIVE.fontSize.md,
   },
   codeBlankContainer: {
     backgroundColor: '#0e639c',
@@ -169,7 +171,7 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     fontWeight: 'bold',
     fontSize: scale(13),
-    textAlign: 'center',
+    textAlign: 'center'
   },
   errorText: {
     color: '#ff6b6b',

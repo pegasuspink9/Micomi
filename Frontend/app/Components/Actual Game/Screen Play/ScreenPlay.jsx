@@ -88,6 +88,8 @@ const ScreenPlay = ({
     [gameState.submissionResult?.levelStatus?.coinsEarned]
   );
 
+  const combatBackground = useMemo(() => gameState?.combat_background, [gameState?.combat_background]);
+
 useEffect(() => {
   const fightResult = gameState?.submissionResult?.fightResult;
   
@@ -380,7 +382,7 @@ useEffect(() => {
 
   return (
     <GameContainer borderColor={borderColor}>
-      <GameBackground isPaused={isPaused}>
+      <GameBackground isPaused={isPaused} combatBackground={combatBackground}>
         <DogCharacter 
           isPaused={isPaused} 
           characterAnimations={characterAnimations}

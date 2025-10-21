@@ -158,7 +158,8 @@ export const gameService = {
         energy: responseData.energy || 0,
         timeToNextEnergyRestore: responseData.timeToNextEnergyRestore || null,
         currentChallenge: null,
-        submissionResult: null
+        submissionResult: null,
+        combat_background: responseData.combat_background || null,
       };
 
 
@@ -300,9 +301,16 @@ export const gameService = {
         if (responseData.fightResult?.character?.character_avatar) {
           gameState.avatar.player = responseData.fightResult.character.character_avatar;
         }
+
         if (responseData.fightResult?.enemy?.enemy_avatar) {
           gameState.avatar.enemy = responseData.fightResult.enemy.enemy_avatar;
         }
+
+        
+        if (responseData.fightResult?.combat_background) {
+          gameState.combat_background = responseData.fightResult.combat_background;
+        }
+
         
       }
       
@@ -316,7 +324,8 @@ export const gameService = {
         hasChallenge: !!gameStateWithCache.currentChallenge?.id,
         hasSubmission: !!gameStateWithCache.submissionResult,
         hasCompletionRewards: !!(isSubmission && gameStateWithCache.submissionResult?.completionRewards),
-        hasNextLevel: !!(isSubmission && gameStateWithCache.submissionResult?.nextLevel)
+        hasNextLevel: !!(isSubmission && gameStateWithCache.submissionResult?.nextLevel),
+         hasCombatBackground: !!gameStateWithCache.combat_background
       });
       
       return gameStateWithCache;
