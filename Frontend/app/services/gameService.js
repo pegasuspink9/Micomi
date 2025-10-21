@@ -143,10 +143,10 @@ export const gameService = {
         
         selectedCharacter: {
           character_id: responseData.character?.character_id || null,
-          name: responseData.character?.character_name || null,
+          character_name: responseData.character?.character_name || null,
           current_health: responseData.character?.character_health || null,
           max_health: responseData.character?.character_health || null,
-          damage: responseData.character?.character_damage || [],
+          character_damage: responseData.character?.character_damage || [],
           character_idle: responseData.character?.character_idle || null,
           character_run: responseData.character?.character_run || null,
           character_attack: responseData.character?.character_attack || [],

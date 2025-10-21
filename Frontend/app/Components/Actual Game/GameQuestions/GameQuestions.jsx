@@ -38,48 +38,48 @@ export default function GameQuestions({
     }
   };
 
-  const renderSyntaxHighlightedLine = (line, lineIndex) => {
-    if (!line || typeof line !== 'string') {
-      return <Text style={styles.codeText}></Text>;
-    }
+const renderSyntaxHighlightedLine = (line, lineIndex) => {
+  if (!line || typeof line !== 'string') {
+    return <Text style={styles.codeText}></Text>;
+  }
 
-    const parts = line.split('_');
-    let localBlankIndex = 0;
-    
-    const blanksBeforeCurrent = calculateGlobalBlankIndex(currentQuestion, lineIndex);
-    const currentBlankIndex = selectedAnswers?.length || 0; // ✅ Current blank to highlight
-    
-    return (
-      <Text style={styles.codeText}>
-        {parts.map((part, partIndex) => (
-          <React.Fragment key={partIndex}>
-            {renderHighlightedText(part)}
-            {partIndex < parts.length - 1 && (
-              <View 
-                ref={(ref) => {
-                  if (ref) {
-                    const globalIndex = blanksBeforeCurrent + localBlankIndex;
-                    blankRefs.current[globalIndex] = ref;
-                  }
-                }}
-                style={[
-                  styles.codeBlankContainer,
-                  (blanksBeforeCurrent + localBlankIndex) === currentBlankIndex && styles.currentBlank
-                ]}
-              >
-                <Text style={styles.codeBlankText}>
-                {selectedAnswers?.[blanksBeforeCurrent + localBlankIndex] !== null && selectedAnswers?.[blanksBeforeCurrent + localBlankIndex] !== undefined
-                  ? options?.[selectedAnswers[blanksBeforeCurrent + localBlankIndex]] || '_'
-                  : '_'}
-              </Text>
-              </View>
-            )}
-            {partIndex < parts.length - 2 && localBlankIndex++}
-          </React.Fragment>
-        ))}
-      </Text>
-    );
-  };
+  const parts = line.split('_');
+  let localBlankIndex = 0;
+  
+  const blanksBeforeCurrent = calculateGlobalBlankIndex(currentQuestion, lineIndex);
+  const currentBlankIndex = selectedAnswers?.length || 0;
+  
+  return (
+    <Text style={styles.codeText}>
+      {parts.map((part, partIndex) => (
+        <React.Fragment key={partIndex}>
+          {renderHighlightedText(part)}
+          {partIndex < parts.length - 1 && (
+            <View 
+              ref={(ref) => {
+                if (ref) {
+                  const globalIndex = blanksBeforeCurrent + localBlankIndex;
+                  blankRefs.current[globalIndex] = ref;
+                }
+              }}
+              style={[
+                styles.codeBlankContainer,
+                (blanksBeforeCurrent + localBlankIndex) === currentBlankIndex && styles.currentBlank
+              ]}
+            >
+              <Text style={styles.codeBlankText}>
+              {selectedAnswers?.[blanksBeforeCurrent + localBlankIndex] !== null && selectedAnswers?.[blanksBeforeCurrent + localBlankIndex] !== undefined
+                ? options?.[selectedAnswers[blanksBeforeCurrent + localBlankIndex]] || '_'
+                : '_'}
+            </Text>
+            </View>
+          )}
+          {partIndex < parts.length - 2 && (localBlankIndex++, null)}
+        </React.Fragment>
+      ))}
+    </Text>
+  );
+};
 
   if (!currentQuestion) {
     return (

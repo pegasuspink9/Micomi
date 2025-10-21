@@ -34,7 +34,7 @@ export default function GamePlay() {
   const [borderColor, setBorderColor] = useState('white');
   const [activeGameTab, setActiveGameTab] = useState('code');
   const [selectedBlankIndex, setSelectedBlankIndex] = useState(0); 
-  const [showVSModal, setShowVSModal] = useState(false);
+  const [showVSModal, setShowVSModal] = useState(true);
   const [showGameOver, setShowGameOver] = useState(false);
   const [showLevelCompletion, setShowLevelCompletion] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
@@ -42,6 +42,8 @@ export default function GamePlay() {
   const gameOverTimeoutRef = useRef(null);
   const hasTriggeredGameOver = useRef(false);
   const hasTriggeredLevelCompletion = useRef(false);
+
+
   
 
   const { 
@@ -86,6 +88,13 @@ export default function GamePlay() {
     setSelectedBlankIndex(0);
   }
   }, [currentChallenge?.id, maxAnswers]);
+
+    useEffect(() => {
+    if (currentChallenge && !loading && !animationsLoading) {
+      // Show VS modal when level is ready
+      setShowVSModal(true);
+    }
+  }, [currentChallenge, loading, animationsLoading]);
 
 
 
@@ -544,6 +553,13 @@ return (
       characterName={gameState?.selectedCharacter?.name || 'Character'}
       enemyName={gameState?.enemy?.enemy_name || 'Enemy'}
       isLoading={isLoadingNextLevel}
+    />
+
+    <CombatVSModal
+      visible={showVSModal}
+      onComplete={() => setShowVSModal(false)}
+      selectedCharacter={gameState?.selectedCharacter}
+      enemy={gameState?.enemy}
     />
   </>
 );
