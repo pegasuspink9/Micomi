@@ -388,18 +388,15 @@ export const submitChallengeService = async (
 
   let character_attack_image = null;
 
-  if (!alreadyAnsweredCorrectly && !wasEverWrong && correctAnswerLength >= 8) {
-    character_attack_image = ["special attack image"];
-  } else if (
-    !alreadyAnsweredCorrectly &&
-    !wasEverWrong &&
-    (correctAnswerLength >= 5 || correctAnswerLength < 8)
-  ) {
-    character_attack_image = ["second attack image"];
-  } else if (correctAnswerLength > 2) {
-    character_attack_image = ["second attack image", "basic attack"];
+  if (correctAnswerLength >= 8) {
+    character_attack_image = //third attack
+      "https://res.cloudinary.com/dpbocuozx/image/upload/v1760942688/15cdfe1f-dc78-4f25-a4ae-5cbbc27a4060_jmzqz6.png";
+  } else if (correctAnswerLength >= 5 && correctAnswerLength < 8) {
+    character_attack_image = //second attack
+      "https://res.cloudinary.com/dpbocuozx/image/upload/v1760942690/b86116f4-4c3c-4f9c-bec3-7628482673e8_eh6biu.png";
   } else {
-    character_attack_image = ["basic attack"];
+    character_attack_image = //basic attack
+      "https://res.cloudinary.com/dpbocuozx/image/upload/v1760942690/Untitled_1024_x_1536_px__20251020_131545_0000_hs8lr4.png";
   }
 
   const combatBackground = [

@@ -61,7 +61,7 @@ export interface SubmitChallengeControllerResult
     is_unlocked: boolean;
   } | null;
   correct_answer_length?: number;
-  character_attack_image?: string[] | null;
+  character_attack_image?: string | null;
   combat_background?: string[] | null;
 }
 

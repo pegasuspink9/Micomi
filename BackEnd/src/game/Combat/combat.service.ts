@@ -352,7 +352,8 @@ export async function fightEnemy(
         correctAnswerLength >= 8
       ) {
         character_attack_type = "special_attack";
-        character_attack_card = "special_attack_card.png";
+        character_attack_card =
+          "https://res.cloudinary.com/dpbocuozx/image/upload/v1760942688/15cdfe1f-dc78-4f25-a4ae-5cbbc27a4060_jmzqz6.png";
         damage = damageArray[2] ?? 25;
         character_run = character.character_run || null;
         character_attack = attacksArray[2] || null;
@@ -364,33 +365,17 @@ export async function fightEnemy(
         (correctAnswerLength >= 5 || correctAnswerLength < 8)
       ) {
         character_attack_type = "second_attack";
-        character_attack_card = "second_attack_card.png";
+        character_attack_card =
+          "https://res.cloudinary.com/dpbocuozx/image/upload/v1760942690/b86116f4-4c3c-4f9c-bec3-7628482673e8_eh6biu.png";
         damage = damageArray[1] ?? 15;
         character_run = character.character_run || null;
         character_attack = attacksArray[1] || null;
         character_idle = character.avatar_image || null;
         console.log("- Second attack triggered!");
-      } else if (correctAnswerLength > 2) {
-        if (elapsedSeconds > 5) {
-          character_attack_type = "basic_attack";
-          character_attack_card = "basic_attack_card.png";
-          damage = damageArray[0] ?? 10;
-          character_run = character.character_run || null;
-          character_attack = attacksArray[0] || null;
-          character_idle = character.avatar_image || null;
-          console.log("- Basic attack triggered!");
-        } else {
-          character_attack_type = "second_attack";
-          character_attack_card = "second_attack_card.png";
-          damage = damageArray[1] ?? 15;
-          character_run = character.character_run || null;
-          character_attack = attacksArray[1] || null;
-          character_idle = character.avatar_image || null;
-          console.log("- Second attack triggered!");
-        }
       } else {
         character_attack_type = "basic_attack";
-        character_attack_card = "basic_attack_card.png";
+        character_attack_card =
+          "https://res.cloudinary.com/dpbocuozx/image/upload/v1760942690/Untitled_1024_x_1536_px__20251020_131545_0000_hs8lr4.png";
         damage = damageArray[0] ?? 10;
         character_run = character.character_run || null;
         character_attack = attacksArray[0] || null;
@@ -711,7 +696,8 @@ export async function fightBossEnemy(
         correctAnswerLength >= 8
       ) {
         character_attack_type = "special_attack";
-        character_attack_card = "special_attack_card.png";
+        character_attack_card =
+          "https://res.cloudinary.com/dpbocuozx/image/upload/v1760942688/15cdfe1f-dc78-4f25-a4ae-5cbbc27a4060_jmzqz6.png";
         damage = damageArray[2] ?? 25;
         character_run = character.character_run || null;
         character_attack = attacksArray[2] || null;
@@ -723,33 +709,17 @@ export async function fightBossEnemy(
         (correctAnswerLength >= 5 || correctAnswerLength < 8)
       ) {
         character_attack_type = "second_attack";
-        character_attack_card = "second_attack_card.png";
+        character_attack_card =
+          "https://res.cloudinary.com/dpbocuozx/image/upload/v1760942690/b86116f4-4c3c-4f9c-bec3-7628482673e8_eh6biu.pngsecond_attack_card.png";
         damage = damageArray[1] ?? 15;
         character_run = character.character_run || null;
         character_attack = attacksArray[1] || null;
         character_idle = character.avatar_image || null;
         console.log("- Second attack triggered!");
-      } else if (correctAnswerLength > 2) {
-        if (elapsedSeconds > 5) {
-          character_attack_type = "basic_attack";
-          character_attack_card = "basic_attack_card.png";
-          damage = damageArray[0] ?? 10;
-          character_run = character.character_run || null;
-          character_attack = attacksArray[0] || null;
-          character_idle = character.avatar_image || null;
-          console.log("- Basic attack triggered!");
-        } else {
-          character_attack_type = "second_attack";
-          character_attack_card = "second_attack_card.png";
-          damage = damageArray[1] ?? 15;
-          character_run = character.character_run || null;
-          character_attack = attacksArray[1] || null;
-          character_idle = character.avatar_image || null;
-          console.log("- Second attack triggered!");
-        }
       } else {
         character_attack_type = "basic_attack";
-        character_attack_card = "basic_attack_card.png";
+        character_attack_card =
+          "https://res.cloudinary.com/dpbocuozx/image/upload/v1760942690/Untitled_1024_x_1536_px__20251020_131545_0000_hs8lr4.pngbasic_attack_card.png";
         damage = damageArray[0] ?? 10;
         character_run = character.character_run || null;
         character_attack = attacksArray[0] || null;
