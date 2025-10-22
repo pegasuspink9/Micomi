@@ -303,19 +303,31 @@ export const enterLevel = async (playerId: number, levelId: number) => {
   }
 
   if (level.level_id !== firstLevel?.level_id) {
-    const latestProgress: (PlayerProgress & { level: Level }) | null =
-      await prisma.playerProgress.findFirst({
-        where: { player_id: playerId },
-        orderBy: { level_id: "desc" },
-        include: { level: true },
+    const previousLevelNumber = level.level_number - 1;
+    const previousLevel = await prisma.level.findFirst({
+      where: {
+        map_id: level.map_id,
+        level_number: previousLevelNumber,
+      },
+    });
+
+    if (previousLevel) {
+      const previousProgress = await prisma.playerProgress.findUnique({
+        where: {
+          player_id_level_id: {
+            player_id: playerId,
+            level_id: previousLevel.level_id,
+          },
+        },
       });
 
-    if (
-      !level.is_unlocked ||
-      (latestProgress &&
-        latestProgress.level.level_number < level.level_number - 1)
-    ) {
-      throw new Error("Level not unlocked yet");
+      if (!previousProgress || !previousProgress.is_completed) {
+        throw new Error("Level not unlocked yet");
+      }
+    } else {
+      console.warn(
+        `No previous level found for level ${level.level_number} in map ${level.map_id}`
+      );
     }
   }
 
