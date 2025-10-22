@@ -16,6 +16,7 @@ import lessonRoutes from "./models/Lesson/lesson.routes";
 import questRoutes from "./models/Quest/quest.routes";
 import levelPotionShopRoutes from "./models/Potion Shop by Level/levelPotionShop.routes";
 import authRoutes from "../middleware/auth.routes";
+import { getAllPlayerProgress } from "../src/models/Player/playerProgress.service";
 
 import { Server } from "socket.io";
 import http from "http";
@@ -52,6 +53,9 @@ app.use("/lesson", lessonRoutes);
 app.use("/quest", questRoutes);
 app.use("/level-potion-shop", levelPotionShopRoutes);
 app.use("/game", gameRoutes);
+
+//temporary
+app.get("/progress", getAllPlayerProgress);
 
 io.on("connection", (socket) => {
   console.log("Player connected:", socket.id);
