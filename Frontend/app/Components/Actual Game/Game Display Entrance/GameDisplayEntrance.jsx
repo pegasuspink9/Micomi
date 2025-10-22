@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { scale, scaleWidth, scaleHeight, scaleFont, wp, hp } from '../../Responsiveness/gameResponsive';
+import { ImageBackground } from 'expo-image';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -44,20 +45,10 @@ const CombatVSModal = ({
   });
 
   return (
-    <View style={styles.modalOverlay}>
-      {/* Background gradient */}
-      <LinearGradient
-        colors={[
-          'rgba(0, 0, 0, 0.95)',
-          'rgba(75, 0, 130, 0.8)', // Purple
-          'rgba(220, 20, 60, 0.8)', // Crimson
-          'rgba(0, 0, 0, 0.95)'
-        ]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.backgroundGradient}
-      >
-        {/* Character side - Left top */}
+    <ImageBackground    source={{ uri: 'https://res.cloudinary.com/dpbocuozx/image/upload/v1761122670/file_000000006f7061f4bcda9c9c314d5882_cfnaan.png' }} style={styles.modalOverlay}>
+     
+   
+            {/* Character side - Left top */}
         <View style={styles.characterSide}>
           <View style={styles.characterContainer}>
             <View style={styles.avatarFrame}>
@@ -97,41 +88,36 @@ const CombatVSModal = ({
         </View>
 
         {/* Enemy side - Bottom right */}
-        <View style={[styles.enemySide, { transform: [{ scaleX: -1 }] }]}>
-          <View style={[styles.characterContainer, { transform: [{ scaleX: -1 }] }]}>
-            <View style={styles.avatarFrame}>
-              <Image 
-                source={{ uri: enemy.enemy_avatar }}
-                style={styles.characterAvatar}
-                resizeMode="contain" 
-              />
-            </View>
-            
-            <View style={styles.nameContainer}>
-              <Text style={[styles.characterName, styles.enemyName]}>
-                {enemy.enemy_name}
-              </Text>
-              <Text style={styles.roleLabel}>ENEMY</Text>
-            </View>
-            
-            <View style={styles.statsContainer}>
-              <Text style={styles.statsText}>HP: {enemy.enemy_health}</Text>
-              <Text style={styles.statsText}>DMG: {enemy.enemy_damage}</Text>
-            </View>
+        <View style={styles.enemySide}>
+        <View style={styles.characterContainer}>
+          <View style={styles.avatarFrame}>
+            <Image 
+              source={{ uri: enemy.enemy_avatar }}
+              style={styles.characterAvatar}
+              resizeMode="contain" 
+            />
+          </View>
+          
+          <View style={styles.nameContainer}>
+            <Text style={[styles.characterName, styles.enemyName]}>
+              {enemy.enemy_name}
+            </Text>
+            <Text style={styles.roleLabel}>ENEMY</Text>
+          </View>
+          
+          <View style={styles.statsContainer}>
+            <Text style={styles.statsText}>HP: {enemy.enemy_health}</Text>
+            <Text style={styles.statsText}>DMG: {enemy.enemy_damage}</Text>
           </View>
         </View>
-
-       
-      </LinearGradient>
-    </View>
+      </View>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
    modalOverlay: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     position: 'absolute',
     top: 0,
     left: 0,
@@ -140,12 +126,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
  
-   backgroundGradient: {
-    flex: 1,
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
-    position: 'relative', 
-  },
+
 
  characterSide: {
     position: 'absolute',
@@ -162,13 +143,15 @@ const styles = StyleSheet.create({
    enemySide: {
     position: 'absolute',
     bottom: 0,
-    right: 0,
-    width: SCREEN_WIDTH / 2,
-    height: SCREEN_HEIGHT,
+    left: 0,
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT / 2,
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
     zIndex: 3,
   },
+
+ 
   
 
   characterContainer: {
