@@ -11,17 +11,19 @@ const CombatVSModal = ({
   onComplete = () => {},
   selectedCharacter = null,
   enemy = null,
-  duration = 2000 
+  duration = 5000
 }) => {
-  useEffect(() => {
+    useEffect(() => {
     if (visible) {
-      // Wait for duration, then complete
+      console.log('Setting timer for', duration);  
       const timer = setTimeout(() => {
+        console.log('Timer triggered, calling onComplete');  
         onComplete();
       }, duration);
       return () => clearTimeout(timer);
     }
   }, [visible, duration, onComplete]);
+
 
   if (!selectedCharacter || !enemy) {
     console.log('🚫 Missing selectedCharacter or enemy data:', { selectedCharacter: !!selectedCharacter, enemy: !!enemy });
@@ -45,7 +47,8 @@ const CombatVSModal = ({
   });
 
   return (
-    <ImageBackground    source={{ uri: 'https://res.cloudinary.com/dpbocuozx/image/upload/v1761122670/file_000000006f7061f4bcda9c9c314d5882_cfnaan.png' }} style={styles.modalOverlay}>
+    <View style={styles.modalOverlay}>
+    <ImageBackground source={{ uri: 'https://res.cloudinary.com/dpbocuozx/image/upload/v1761122670/file_000000006f7061f4bcda9c9c314d5882_cfnaan.png' }} style={styles.modalBackground} >
      
    {/* Character side - Left top */}
         <View style={styles.characterSide}>
@@ -99,21 +102,24 @@ const CombatVSModal = ({
                 resizeMode="contain" 
               />
             </View>
+          </View>
             
-            <View style={styles.enemyNameContainer}>
+            <View  style={styles.enemyNameContainer}>
+            <View>
               <Text style={[styles.characterName, styles.enemyName]}>
                 {enemy.enemy_name}
               </Text>
-              <Text style={styles.roleLabel}>ENEMY</Text>
+              <Text style={styles.enemyRoleLabel}>ENEMY</Text>
             </View>
 
             <View style={styles.enemyStatsContainer}>
               <Text style={styles.statsText}>HP: {enemy.enemy_health}</Text>
               <Text style={styles.statsText}>DMG: {enemy.enemy_damage}</Text>
             </View>
-          </View>
+            </View>
         </View>
     </ImageBackground>
+    </View>
   );
 };
 
@@ -126,6 +132,12 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 1000,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+  },
+
+  modalBackground:{
+    flex: 1
+
   },
  
 
@@ -137,15 +149,15 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH / 2,
     height: SCREEN_HEIGHT,
     alignItems: 'center',
-    justifyContent: 'flex-start',  // ✅ Start from top
+    justifyContent: 'flex-start',  
     zIndex: 3,
   },
 
 
    enemySide: {
     position: 'absolute',
-    bottom: SCREEN_HEIGHT * 0.17,
-    left: SCREEN_WIDTH * 0.25,
+    bottom: SCREEN_HEIGHT * 0.14,
+    left: SCREEN_HEIGHT * 0.12,
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT / 2,
     alignItems: 'center',
@@ -164,18 +176,20 @@ const styles = StyleSheet.create({
 
    enemyNameContainer: {
     position: 'absolute',
-    left: SCREEN_WIDTH * 0.0001,  // ✅ Opposite of right
-    top: SCREEN_HEIGHT * 0.1,
+    right: SCREEN_WIDTH * 0.8,  // ✅ Opposite of right
+    top: SCREEN_HEIGHT * 0.22,
     alignItems: 'flex-end',  // ✅ Opposite of flex-start
   },
 
    
   enemyStatsContainer: {
-    position: 'absolute',  // ✅ Changed to absolute like nameContainer
-    left: SCREEN_WIDTH * 0.0001,  // ✅ Opposite of right/marginLeft
-    top: SCREEN_HEIGHT * 0.2,  // ✅ Position below name
-    alignItems: 'flex-end',  // ✅ Opposite of flex-start
-    // Removed marginRight
+    alignItems: 'flex-end',
+    marginTop: scale(4),
+  },
+
+  
+  statsContainer:{
+    marginLeft: SCREEN_WIDTH * 0.03
   },
 
 
@@ -190,7 +204,7 @@ const styles = StyleSheet.create({
   },
 
    enemyAvatar: {
-    width: scaleWidth(400), 
+    width: scaleWidth(500), 
     height: scaleHeight(500),
   },
 
@@ -232,29 +246,38 @@ const styles = StyleSheet.create({
 
    characterName: {
     width: '100%',
-    fontSize: scaleFont(24),
     textAlign: 'center',
     textShadowOffset: { width: scale(-3), height: scale(0) },
     textShadowRadius: scale(1),
   },
 
   heroName: {
-    color: '#ffffffff',
+    color: '#1f637dff',
     textShadowColor: 'rgba(124, 169, 209, 1)',
     fontSize: SCREEN_WIDTH * 0.2,
     fontFamily: 'MusicVibes'
   },
 
   enemyName: {
-    color: '#F44336',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    color: '#8b3f3fff',
+    fontFamily: 'MusicVibes',
+    textShadowColor: 'rgba(100, 0, 0, 0.8)',
+    fontSize: SCREEN_WIDTH * 0.1,
   },
 
   roleLabel: {
     fontSize: scaleFont(12),
-    color: '#0d6d76ff',
+    color: '#0d6d76a3',
     fontWeight: 'bold',
-    letterSpacing: scale(2),
+    letterSpacing: scale(2)
+  },
+
+  enemyRoleLabel: {
+    fontSize: scaleFont(12),
+    color: '#6f3232ff',
+    textAlign: 'right',
+    fontWeight: 'bold',
+    letterSpacing: scale(2)
   },
 
   
@@ -264,7 +287,7 @@ const styles = StyleSheet.create({
 
   statsText: {
     fontSize: scaleFont(15),
-    color: '#FFF',
+    color: '#d2d1f9ff',
     fontFamily: 'DynaPuff',
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: scale(2), height: scale(1) },
@@ -274,9 +297,6 @@ const styles = StyleSheet.create({
   },
 
 
-  statsContainer:{
-    marginLeft: SCREEN_WIDTH * 0.03
-  },
 
    
   vsContainer: {

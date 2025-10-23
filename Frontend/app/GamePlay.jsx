@@ -34,7 +34,7 @@ export default function GamePlay() {
   const [borderColor, setBorderColor] = useState('white');
   const [activeGameTab, setActiveGameTab] = useState('code');
   const [selectedBlankIndex, setSelectedBlankIndex] = useState(0); 
-  const [showVSModal, setShowVSModal] = useState(true);
+  const [showVSModal, setShowVSModal] = useState(false);
   const [showGameOver, setShowGameOver] = useState(false);
   const [showLevelCompletion, setShowLevelCompletion] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
@@ -129,9 +129,10 @@ export default function GamePlay() {
   }, [selectedPotion, clearSelectedPotion, selectPotion]);
 
 
-  const handleVSComplete = () => {
-    setShowVSModal(false);
-  };
+  const handleVSComplete = useCallback(() => {
+  console.log('handleVSComplete called, setting showVSModal to false');  // ✅ Debug log
+  setShowVSModal(false);
+  }, []);
 
   const handleGameTabChange = useCallback((tabName) => {
     setActiveGameTab(tabName);
@@ -557,7 +558,7 @@ return (
 
     <CombatVSModal
       visible={showVSModal}
-      onComplete={() => setShowVSModal(false)}
+      onComplete={handleVSComplete}
       selectedCharacter={gameState?.selectedCharacter}
       enemy={gameState?.enemy}
     />
