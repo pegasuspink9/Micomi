@@ -11,7 +11,7 @@ const CombatVSModal = ({
   onComplete = () => {},
   selectedCharacter = null,
   enemy = null,
-  duration = 10000000 // How long to show the VS screen
+  duration = 2000 
 }) => {
   useEffect(() => {
     if (visible) {
@@ -47,8 +47,7 @@ const CombatVSModal = ({
   return (
     <ImageBackground    source={{ uri: 'https://res.cloudinary.com/dpbocuozx/image/upload/v1761122670/file_000000006f7061f4bcda9c9c314d5882_cfnaan.png' }} style={styles.modalOverlay}>
      
-   
-            {/* Character side - Left top */}
+   {/* Character side - Left top */}
         <View style={styles.characterSide}>
           <View style={styles.characterContainer}>
             <View style={styles.avatarFrame}>
@@ -60,13 +59,15 @@ const CombatVSModal = ({
             </View>
             
             <View style={styles.nameContainer}>
+            <View>
               <Text style={[styles.characterName, styles.heroName]}>
                 {selectedCharacter.character_name}
               </Text>
-              <Text style={styles.roleLabel}>HERO</Text>
+              
             </View>
             
             <View style={styles.statsContainer}>
+              <Text style={styles.roleLabel}>HERO</Text>
               <Text style={styles.statsText}>HP: {selectedCharacter.max_health}</Text>
               <Text style={styles.statsText}>
                 DMG: {Array.isArray(selectedCharacter.character_damage) 
@@ -75,6 +76,7 @@ const CombatVSModal = ({
               </Text>
             </View>
           </View>
+          </View>
         </View>
 
         {/* VS Text */}
@@ -82,35 +84,35 @@ const CombatVSModal = ({
           <View style={styles.vsBackground}>
             <Image 
               source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1761043746/Untitled_design_16_sixivj.png' }}
-              style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT, resizeMode: 'contain' }}
+              style={{ width: SCREEN_WIDTH * 1, height: SCREEN_HEIGHT * 0.5, resizeMode: 'cover' }}
             />
           </View>
         </View>
 
         {/* Enemy side - Bottom right */}
         <View style={styles.enemySide}>
-        <View style={styles.characterContainer}>
-          <View style={styles.avatarFrame}>
-            <Image 
-              source={{ uri: enemy.enemy_avatar }}
-              style={styles.characterAvatar}
-              resizeMode="contain" 
-            />
-          </View>
-          
-          <View style={styles.nameContainer}>
-            <Text style={[styles.characterName, styles.enemyName]}>
-              {enemy.enemy_name}
-            </Text>
-            <Text style={styles.roleLabel}>ENEMY</Text>
-          </View>
-          
-          <View style={styles.statsContainer}>
-            <Text style={styles.statsText}>HP: {enemy.enemy_health}</Text>
-            <Text style={styles.statsText}>DMG: {enemy.enemy_damage}</Text>
+          <View style={styles.characterContainer}>
+            <View style={styles.avatarFrame}>
+              <Image 
+                source={{ uri: enemy.enemy_avatar }}
+                style={styles.enemyAvatar}
+                resizeMode="contain" 
+              />
+            </View>
+            
+            <View style={styles.enemyNameContainer}>
+              <Text style={[styles.characterName, styles.enemyName]}>
+                {enemy.enemy_name}
+              </Text>
+              <Text style={styles.roleLabel}>ENEMY</Text>
+            </View>
+
+            <View style={styles.enemyStatsContainer}>
+              <Text style={styles.statsText}>HP: {enemy.enemy_health}</Text>
+              <Text style={styles.statsText}>DMG: {enemy.enemy_damage}</Text>
+            </View>
           </View>
         </View>
-      </View>
     </ImageBackground>
   );
 };
@@ -128,27 +130,27 @@ const styles = StyleSheet.create({
  
 
 
- characterSide: {
+   characterSide: {
     position: 'absolute',
+    left: 0,  // ✅ Left side
     top: 0,
-    left: 0,
     width: SCREEN_WIDTH / 2,
     height: SCREEN_HEIGHT,
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'flex-start',  // ✅ Start from top
     zIndex: 3,
   },
 
 
    enemySide: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
+    bottom: SCREEN_HEIGHT * 0.17,
+    left: SCREEN_WIDTH * 0.25,
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT / 2,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 3,
+    zIndex: 100,
   },
 
  
@@ -156,17 +158,40 @@ const styles = StyleSheet.create({
 
   characterContainer: {
     alignItems: 'center',
-    marginTop: 80,
+    marginTop: SCREEN_HEIGHT * 0.06,
+    position: 'relative', 
   },
+
+   enemyNameContainer: {
+    position: 'absolute',
+    left: SCREEN_WIDTH * 0.0001,  // ✅ Opposite of right
+    top: SCREEN_HEIGHT * 0.1,
+    alignItems: 'flex-end',  // ✅ Opposite of flex-start
+  },
+
+   
+  enemyStatsContainer: {
+    position: 'absolute',  // ✅ Changed to absolute like nameContainer
+    left: SCREEN_WIDTH * 0.0001,  // ✅ Opposite of right/marginLeft
+    top: SCREEN_HEIGHT * 0.2,  // ✅ Position below name
+    alignItems: 'flex-end',  // ✅ Opposite of flex-start
+    // Removed marginRight
+  },
+
 
  avatarFrame: {
     position: 'relative',
-    marginBottom: scale(15),
+    marginBottom: scale(-65),
   },
 
   characterAvatar: {
-    width: scaleWidth(400),
-    height: scaleHeight(400),
+    width: scaleWidth(500),  
+    height: scaleHeight(500)
+  },
+
+   enemyAvatar: {
+    width: scaleWidth(400), 
+    height: scaleHeight(500),
   },
 
  avatarGlow: {
@@ -196,24 +221,28 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
   },
 
-   nameContainer: {
-    alignItems: 'center',
-    marginBottom: scale(10),
+   
+  nameContainer: {
+    position: 'absolute',
+    right: SCREEN_WIDTH * 0.0001,  
+    top: SCREEN_HEIGHT * 0.1, 
+    alignItems: 'flex-start'
   },
 
 
    characterName: {
+    width: '100%',
     fontSize: scaleFont(24),
-    fontWeight: 'bold',
     textAlign: 'center',
-    textShadowOffset: { width: scale(2), height: scale(2) },
-    textShadowRadius: scale(4),
-    marginBottom: scale(5),
+    textShadowOffset: { width: scale(-3), height: scale(0) },
+    textShadowRadius: scale(1),
   },
 
   heroName: {
-    color: '#4CAF50',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    color: '#ffffffff',
+    textShadowColor: 'rgba(124, 169, 209, 1)',
+    fontSize: SCREEN_WIDTH * 0.2,
+    fontFamily: 'MusicVibes'
   },
 
   enemyName: {
@@ -221,28 +250,33 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
   },
 
-    roleLabel: {
+  roleLabel: {
     fontSize: scaleFont(12),
-    color: '#FFD700',
+    color: '#0d6d76ff',
     fontWeight: 'bold',
     letterSpacing: scale(2),
   },
 
-   statsContainer: {
-    alignItems: 'center',
-  },
+  
+
+ 
 
 
   statsText: {
-    fontSize: scaleFont(16),
+    fontSize: scaleFont(15),
     color: '#FFF',
-    fontWeight: '600',
+    fontFamily: 'DynaPuff',
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: scale(1), height: scale(1) },
+    textShadowOffset: { width: scale(2), height: scale(1) },
     textShadowRadius: scale(2),
     marginBottom: scale(2),
+    marginRight: SCREEN_WIDTH * 0.02
   },
 
+
+  statsContainer:{
+    marginLeft: SCREEN_WIDTH * 0.03
+  },
 
    
   vsContainer: {
@@ -257,8 +291,8 @@ const styles = StyleSheet.create({
   },
 
   vsBackground: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
+    width: SCREEN_WIDTH * 1,
+    height: SCREEN_HEIGHT * 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
