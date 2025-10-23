@@ -117,7 +117,8 @@ export async function handleFight(
   wasEverWrong?: boolean,
   isBonusRound: boolean = false,
   isCompletingBonus: boolean = false,
-  bonusTotalQuestions: number = 0
+  bonusTotalQuestions: number = 0,
+  bonusAllCorrect: boolean = false
 ) {
   const level = await prisma.level.findUnique({
     where: { level_id: levelId },
@@ -157,7 +158,8 @@ export async function handleFight(
       wasEverWrong,
       isBonusRound,
       isCompletingBonus,
-      bonusTotalQuestions
+      bonusTotalQuestions,
+      bonusAllCorrect
     );
   }
 }
@@ -257,7 +259,8 @@ export async function fightEnemy(
   wasEverWrong?: boolean,
   isBonusRound: boolean = false,
   isCompletingBonus: boolean = false,
-  bonusTotalQuestions: number = 0
+  bonusTotalQuestions: number = 0,
+  bonusAllCorrect: boolean = false
 ) {
   const enemy = await prisma.enemy.findUnique({ where: { enemy_id: enemyId } });
   if (!enemy) throw new Error("Enemy not found");
@@ -292,15 +295,21 @@ export async function fightEnemy(
   const challengeCount = level.challenges?.length ?? 1;
   const scaledEnemyMaxHealth = ENEMY_HEALTH * challengeCount;
 
+  const answeredCount = Object.keys(progress.player_answer ?? {}).length || 0;
+  const totalChallenges = level.challenges?.length ?? 0;
+  let enemyHealth = safeHp(progress.enemy_hp, scaledEnemyMaxHealth);
+  const isDetectedBonusRound =
+    enemyHealth <= 0 && answeredCount < totalChallenges;
+
   console.log("DEBUG Combat Service:");
   console.log("- Enemy base health:", ENEMY_HEALTH);
   console.log("- Number of challenges:", challengeCount);
   console.log("- Calculated scaled health:", scaledEnemyMaxHealth);
   console.log("- FRESH Progress enemy_hp from DB:", progress.enemy_hp);
   console.log("- FRESH Progress player_hp from DB:", progress.player_hp);
+  console.log("- Detected bonus round:", isDetectedBonusRound);
 
   let charHealth = safeHp(progress.player_hp, character.health);
-  let enemyHealth = safeHp(progress.enemy_hp, scaledEnemyMaxHealth);
 
   let status: BattleStatus = BattleStatus.in_progress;
 
@@ -352,15 +361,17 @@ export async function fightEnemy(
     console.log("- Already answered correctly:", alreadyAnsweredCorrectly);
     console.log("- Was ever wrong:", wasEverWrong);
 
-    if (isBonusRound) {
+    const effectiveBonusRound = isBonusRound || isDetectedBonusRound;
+
+    if (effectiveBonusRound) {
       if (isCompletingBonus) {
-        character_attack_type =
-          bonusTotalQuestions >= 5 ? "special_attack" : "third_skill";
-        if (bonusTotalQuestions >= 5) {
+        if (bonusAllCorrect) {
+          character_attack_type = "special_attack";
           character_attack_card = "no card for special finale attack";
           damage = damageArray[3] ?? 25;
           character_attack = attacksArray[3] || null;
         } else {
+          character_attack_type = "third_attack";
           character_attack_card =
             "https://res.cloudinary.com/dpbocuozx/image/upload/v1760942688/15cdfe1f-dc78-4f25-a4ae-5cbbc27a4060_jmzqz6.png";
           damage = damageArray[2] ?? 15;
@@ -458,8 +469,6 @@ export async function fightEnemy(
     }
 
     if (enemyHealth <= 0) {
-      const answeredCount = Object.keys(progress.player_answer ?? {}).length;
-      const totalChallenges = level.challenges.length;
       const wrongChallengesCount = (
         (progress.wrong_challenges as unknown[]) ?? []
       ).length;
@@ -480,8 +489,8 @@ export async function fightEnemy(
         );
       } else {
         enemy_dies = enemy.enemy_dies || null;
+        enemy_hurt = enemy.enemy_hurt || null;
 
-        enemy_hurt = null;
         enemy_idle = null;
         enemy_run = null;
         enemy_attack = null;
@@ -509,13 +518,6 @@ export async function fightEnemy(
 
                 await updateQuestProgress(playerId, QuestType.perfect_level, 1);
               }
-            }
-
-            if (
-              enemy.enemy_difficulty === "hard" ||
-              enemy.enemy_difficulty === "final"
-            ) {
-              await updateQuestProgress(playerId, QuestType.defeat_boss, 1);
             }
 
             await prisma.player.update({
@@ -546,9 +548,21 @@ export async function fightEnemy(
       }
     }
   } else {
-    if (isBonusRound) {
+    const effectiveBonusRound = isBonusRound || isDetectedBonusRound;
+
+    if (effectiveBonusRound) {
       character_idle = character.avatar_image || null;
       enemy_hurt = enemy.enemy_hurt || null;
+      character_run = null;
+      character_attack_type = null;
+      character_attack_card = null;
+      character_attack = null;
+      character_hurt = null;
+      character_dies = null;
+      enemy_idle = null;
+      enemy_run = null;
+      enemy_attack = null;
+      enemy_dies = null;
       console.log("- Bonus round wrong: character idle, enemy hurt, no damage");
     } else if (enemyHealth > 0) {
       if (progress.has_freeze_effect) {
@@ -668,7 +682,8 @@ export async function fightBossEnemy(
   wasEverWrong?: boolean,
   isBonusRound: boolean = false,
   isCompletingBonus: boolean = false,
-  bonusTotalQuestions: number = 0
+  bonusTotalQuestions: number = 0,
+  bonusAllCorrect: boolean = false
 ) {
   const enemy = await prisma.enemy.findUnique({ where: { enemy_id: enemyId } });
   if (!enemy) throw new Error("Enemy not found");
@@ -703,15 +718,21 @@ export async function fightBossEnemy(
   const challengeCount = level.challenges?.length ?? 1;
   const scaledEnemyMaxHealth = BOSS_ENEMY_HEALTH * challengeCount;
 
+  const answeredCount = Object.keys(progress.player_answer ?? {}).length || 0;
+  const totalChallenges = level.challenges?.length ?? 0;
+  let enemyHealth = safeHp(progress.enemy_hp, scaledEnemyMaxHealth);
+  const isDetectedBonusRound =
+    enemyHealth <= 0 && answeredCount < totalChallenges;
+
   console.log("DEBUG Combat Service (Boss):");
   console.log("- Enemy base health:", BOSS_ENEMY_HEALTH);
   console.log("- Number of challenges:", challengeCount);
   console.log("- Calculated scaled health:", scaledEnemyMaxHealth);
   console.log("- FRESH Progress enemy_hp from DB:", progress.enemy_hp);
   console.log("- FRESH Progress player_hp from DB:", progress.player_hp);
+  console.log("- Detected bonus round:", isDetectedBonusRound);
 
   let charHealth = safeHp(progress.player_hp, character.health);
-  let enemyHealth = safeHp(progress.enemy_hp, scaledEnemyMaxHealth);
 
   let status: BattleStatus = BattleStatus.in_progress;
 
@@ -765,16 +786,18 @@ export async function fightBossEnemy(
     console.log("- Already answered correctly:", alreadyAnsweredCorrectly);
     console.log("- Was ever wrong:", wasEverWrong);
 
-    if (isBonusRound) {
+    const effectiveBonusRound = isBonusRound || isDetectedBonusRound;
+
+    if (effectiveBonusRound) {
       if (isCompletingBonus) {
-        character_attack_type =
-          bonusTotalQuestions >= 5 ? "special_attack" : "second_attack";
-        if (bonusTotalQuestions >= 5) {
+        if (bonusAllCorrect) {
+          character_attack_type = "special_attack";
           character_attack_card =
             "https://res.cloudinary.com/dpbocuozx/image/upload/v1760942688/15cdfe1f-dc78-4f25-a4ae-5cbbc27a4060_jmzqz6.png";
           damage = damageArray[3] ?? 25;
           character_attack = attacksArray[3] || null;
         } else {
+          character_attack_type = "third_attack";
           character_attack_card =
             "https://res.cloudinary.com/dpbocuozx/image/upload/v1760942690/b86116f4-4c3c-4f9c-bec3-7628482673e8_eh6biu.pngsecond_attack_card.png";
           damage = damageArray[2] ?? 15;
@@ -806,6 +829,7 @@ export async function fightBossEnemy(
       } else {
         character_idle = character.avatar_image || null;
         enemy_hurt = enemy.enemy_hurt || null;
+
         console.log(
           "- Bonus round correct (non-final): character idle, enemy hurt"
         );
@@ -872,8 +896,6 @@ export async function fightBossEnemy(
     }
 
     if (enemyHealth <= 0) {
-      const answeredCount = Object.keys(progress.player_answer ?? {}).length;
-      const totalChallenges = level.challenges.length;
       const wrongChallengesCount = (
         (progress.wrong_challenges as unknown[]) ?? []
       ).length;
@@ -893,10 +915,10 @@ export async function fightBossEnemy(
           "- Boss defeated but there are remaining challenges — entering bonus/stunned state"
         );
       } else {
-        enemy_hurt = null;
         enemy_idle = null;
         enemy_run = null;
         enemy_attack = null;
+        enemy_hurt = enemy.enemy_hurt || null;
         enemy_dies = enemy.enemy_dies || null;
 
         character_idle = null;
@@ -959,9 +981,23 @@ export async function fightBossEnemy(
       }
     }
   } else {
-    if (isBonusRound) {
+    const effectiveBonusRound = isBonusRound || isDetectedBonusRound;
+
+    if (effectiveBonusRound) {
       character_idle = character.avatar_image || null;
       enemy_hurt = enemy.enemy_hurt || null;
+      character_run = null;
+      character_attack_type = null;
+      character_attack_card = null;
+      character_attack = null;
+      character_hurt = null;
+      character_dies = null;
+      enemy_idle = null;
+      enemy_run = null;
+      enemy_attack_type = null;
+      enemy_attack = null;
+      enemy_special_skill = null;
+      enemy_dies = null;
       console.log("- Bonus round wrong: character idle, enemy hurt, no damage");
     } else if (enemyHealth > 0) {
       if (progress.has_freeze_effect) {

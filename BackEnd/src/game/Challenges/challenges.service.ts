@@ -196,6 +196,14 @@ export const submitChallengeService = async (
   const isBonusRound =
     currentProgress.enemy_hp <= 0 && currentProgress.player_hp > 0;
 
+  const answeredIdsBefore = Object.keys(
+    currentProgress.player_answer ?? {}
+  ).map(Number);
+  const allChallengeIds = level.challenges.map((c) => c.challenge_id);
+  const bonusChallengeIds = allChallengeIds.filter(
+    (id) => !answeredIdsBefore.includes(id)
+  );
+
   const { updatedProgress, alreadyAnsweredCorrectly } =
     await updateProgressForChallenge(
       currentProgress.progress_id,
@@ -204,6 +212,16 @@ export const submitChallengeService = async (
       finalAnswer,
       isBonusRound
     );
+
+  const nextBefore = await getNextChallengeService(playerId, levelId);
+  const nextChallengeBefore = nextBefore.nextChallenge;
+  const isCompletingBonus = isBonusRound && !nextChallengeBefore;
+
+  const updatedWrongChallenges = (updatedProgress?.wrong_challenges ??
+    []) as number[];
+  const bonusAllCorrect =
+    bonusChallengeIds.length === 0 ||
+    !bonusChallengeIds.some((id) => updatedWrongChallenges.includes(id));
 
   let fightResult: any;
   let message: string = "Challenge submitted.";
@@ -225,7 +243,26 @@ export const submitChallengeService = async (
       elapsed,
       challengeId,
       alreadyAnsweredCorrectly,
-      wasEverWrong
+      wasEverWrong,
+      isBonusRound,
+      isCompletingBonus,
+      bonusChallengeIds.length,
+      bonusAllCorrect
+    );
+
+    fightResult = await CombatService.fightEnemy(
+      playerId,
+      levelId,
+      enemy.enemy_id,
+      true,
+      elapsed,
+      challengeId,
+      alreadyAnsweredCorrectly,
+      wasEverWrong,
+      isBonusRound,
+      isCompletingBonus,
+      bonusChallengeIds.length,
+      bonusAllCorrect
     );
 
     fightResult.character.character_damage =
@@ -267,6 +304,15 @@ export const submitChallengeService = async (
     );
 
     fightResult = await CombatService.handleFight(
+      playerId,
+      levelId,
+      enemy.enemy_id,
+      false,
+      elapsed,
+      challengeId
+    );
+
+    fightResult = await CombatService.fightEnemy(
       playerId,
       levelId,
       enemy.enemy_id,
@@ -490,12 +536,10 @@ const getNextChallengeEasy = async (progress: any) => {
     if (playerAlive) {
       nextChallenge =
         sortedChallenges.find(
-          (c: Challenge) => !answeredIds.includes(c.challenge_id)
+          (c: Challenge) =>
+            !answeredIds.includes(c.challenge_id) &&
+            !wrongChallenges.includes(c.challenge_id)
         ) || null;
-
-      if (!nextChallenge && wrongChallenges.length > 0) {
-        nextChallenge = getNextWrongChallenge(progress, level, wrongChallenges);
-      }
     }
   }
 
