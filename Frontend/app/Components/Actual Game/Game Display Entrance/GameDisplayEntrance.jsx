@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect,useRef } from 'react';
 import { View, Text, StyleSheet, Dimensions, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { scale, scaleWidth, scaleHeight, scaleFont, wp, hp } from '../../Responsiveness/gameResponsive';
@@ -13,24 +13,35 @@ const CombatVSModal = ({
   enemy = null,
   duration = 5000
 }) => {
-    useEffect(() => {
-    if (visible) {
-      console.log('Setting timer for', duration);  
-      const timer = setTimeout(() => {
-        console.log('Timer triggered, calling onComplete');  
-        onComplete();
-      }, duration);
-      return () => clearTimeout(timer);
-    }
-  }, [visible, duration, onComplete]);
+    const timerRef = useRef(null); 
+    const visibleRef = useRef(visible)
 
+    useEffect(() => {
+    visibleRef.current = visible;  
+    if (visible && !timerRef.current) {
+      console.log('Setting timer for', duration);
+      timerRef.current = setTimeout(() => {
+        console.log('Timer triggered, calling onComplete');
+        onComplete();
+        timerRef.current = null;
+      }, duration);
+    }
+    return () => {
+      if (!visibleRef.current) {  
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+          timerRef.current = null;
+        }
+      }
+    };
+  }, [visible, duration, onComplete]);
 
   if (!selectedCharacter || !enemy) {
     console.log('🚫 Missing selectedCharacter or enemy data:', { selectedCharacter: !!selectedCharacter, enemy: !!enemy });
     return null;
   }
 
-  // ✅ Debug logging to check data structure
+
   console.log('🎭 GameDisplayEntrance data:', {
     selectedCharacter: {
       name: selectedCharacter.character_name,
@@ -176,9 +187,9 @@ const styles = StyleSheet.create({
 
    enemyNameContainer: {
     position: 'absolute',
-    right: SCREEN_WIDTH * 0.8,  // ✅ Opposite of right
+    right: SCREEN_WIDTH * 0.77,  
     top: SCREEN_HEIGHT * 0.22,
-    alignItems: 'flex-end',  // ✅ Opposite of flex-start
+    alignItems: 'flex-end',  
   },
 
    
@@ -245,9 +256,8 @@ const styles = StyleSheet.create({
 
 
    characterName: {
-    width: '100%',
     textAlign: 'center',
-    textShadowOffset: { width: scale(-3), height: scale(0) },
+    textShadowOffset: { width: scale(-3), height: scale(2) },
     textShadowRadius: scale(1),
   },
 
@@ -258,7 +268,7 @@ const styles = StyleSheet.create({
     fontFamily: 'MusicVibes'
   },
 
-  enemyName: {
+  enemyName: {  
     color: '#8b3f3fff',
     fontFamily: 'MusicVibes',
     textShadowColor: 'rgba(100, 0, 0, 0.8)',
