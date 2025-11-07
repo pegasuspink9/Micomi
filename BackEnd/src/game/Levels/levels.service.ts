@@ -271,6 +271,16 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         "Easy levels can only have 'multiple choice' or 'fill in the blank' challenges"
       );
     level.challenges = level.challenges;
+  } else if (
+    level.level_difficulty === "hard" ||
+    level.level_difficulty === "final"
+  ) {
+    const invalid = level.challenges.some(
+      (c: Challenge) => c.challenge_type !== "code with guide"
+    );
+    if (invalid)
+      throw new Error("Hard levels can only have 'code with guide' challenges");
+    level.challenges = level.challenges;
   }
 
   let enemy: Enemy | null = null;
@@ -379,6 +389,8 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         consecutive_corrects: 0,
         consecutive_wrongs: 0,
         has_reversed_curse: false,
+        has_boss_shield: false,
+        has_force_character_attack_type: false,
         took_damage: false,
         has_strong_effect: false,
         has_freeze_effect: false,
@@ -404,6 +416,8 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         consecutive_corrects: 0,
         consecutive_wrongs: 0,
         has_reversed_curse: false,
+        has_boss_shield: false,
+        has_force_character_attack_type: false,
         took_damage: false,
         has_strong_effect: false,
         has_freeze_effect: false,
@@ -424,6 +438,8 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         consecutive_corrects: 0,
         consecutive_wrongs: 0,
         has_reversed_curse: false,
+        has_boss_shield: false,
+        has_force_character_attack_type: false,
         took_damage: false,
         has_strong_effect: false,
         has_freeze_effect: false,

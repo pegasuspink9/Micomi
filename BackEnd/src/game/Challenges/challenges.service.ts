@@ -121,6 +121,8 @@ export const submitChallengeService = async (
         consecutive_corrects: 0,
         consecutive_wrongs: 0,
         has_reversed_curse: false,
+        has_boss_shield: false,
+        has_force_character_attack_type: false,
       },
     });
   }
@@ -250,24 +252,6 @@ export const submitChallengeService = async (
       bonusAllCorrect
     );
 
-    fightResult = await CombatService.fightEnemy(
-      playerId,
-      levelId,
-      enemy.enemy_id,
-      true,
-      elapsed,
-      challengeId,
-      alreadyAnsweredCorrectly,
-      wasEverWrong,
-      isBonusRound,
-      isCompletingBonus,
-      bonusChallengeIds.length,
-      bonusAllCorrect
-    );
-
-    fightResult.character.character_damage =
-      baselineState.character.character_damage;
-
     appliedDamage =
       fightResult.appliedDamage ||
       baselineState.character.character_damage[1] ||
@@ -304,15 +288,6 @@ export const submitChallengeService = async (
     );
 
     fightResult = await CombatService.handleFight(
-      playerId,
-      levelId,
-      enemy.enemy_id,
-      false,
-      elapsed,
-      challengeId
-    );
-
-    fightResult = await CombatService.fightEnemy(
       playerId,
       levelId,
       enemy.enemy_id,
