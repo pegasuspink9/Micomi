@@ -15,10 +15,7 @@ router.post("/", MapService.createMap);
 router.put("/:id", MapService.updateMap);
 router.delete("/:id", MapService.deleteMap);
 
+router.get("/:playerId", MapService.getAllMapsByPlayerId); //player map display
 router.post("/select-map/:playerId/:mapId", GameMapController.selectMap); //player map selection
-router.get(
-  "/select-map/:map_id/select-level/:level_id",
-  LevelService.getLevelChallenges
-);
 
 export default router;
