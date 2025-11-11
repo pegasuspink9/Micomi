@@ -5,17 +5,66 @@ import { successResponse, errorResponse } from "../../../utils/response";
 
 const prisma = new PrismaClient();
 
+export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
+  try {
+    const { playerId } = req.params;
+    if (!playerId) {
+      return errorResponse(
+        res,
+        new Error("Player not authenticated"),
+        "Player ID required"
+      );
+    }
+    const playerIdNum = Number(playerId);
+
+    const maps = await prisma.map.findMany({
+      orderBy: { map_id: "asc" },
+    });
+
+    const enhancedMaps = await Promise.all(
+      maps.map(async (map) => {
+        const hasProgress = await prisma.playerProgress.findFirst({
+          where: {
+            player_id: playerIdNum,
+            level: {
+              map_id: map.map_id,
+            },
+          },
+          select: { progress_id: true },
+        });
+
+        const isDefaultUnlocked =
+          map.map_name === "HTML" || map.map_name === "Computer";
+
+        return {
+          map_id: map.map_id,
+          map_name: map.map_name,
+          description: map.description,
+          is_active: !!hasProgress || isDefaultUnlocked,
+          created_at: map.created_at,
+          last_updated: map.last_updated,
+          map_image: map.map_image,
+          player_id: map.player_id,
+          difficulty_level: map.difficulty_level,
+        };
+      })
+    );
+
+    return successResponse(
+      res,
+      {
+        data: enhancedMaps,
+      },
+      "Maps fetched with player activity"
+    );
+  } catch (error) {
+    return errorResponse(res, error, "Failed to fetch maps");
+  }
+};
+
 export const getAllMaps = async (req: Request, res: Response) => {
   try {
-    const maps = await prisma.map.findMany({
-      include: {
-        levels: {
-          include: {
-            challenges: true,
-          },
-        },
-      },
-    });
+    const maps = await prisma.map.findMany();
 
     return successResponse(
       res,
@@ -29,83 +78,6 @@ export const getAllMaps = async (req: Request, res: Response) => {
     );
   } catch (error) {
     return errorResponse(res, error, "Failed to fetch maps");
-  }
-};
-
-export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
-  try {
-    const { playerId } = req.params;
-
-    const maps = await prisma.map.findMany({
-      where: { player_id: Number(playerId) },
-      include: {
-        levels: {
-          where: { player_id: Number(playerId) },
-          include: {
-            challenges: true,
-          },
-        },
-      },
-    });
-
-    return successResponse(
-      res,
-      {
-        data: maps,
-        audio: [
-          "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353796/Navigation_sxwh2g.mp3",
-        ],
-      },
-      "All maps for this player fetched"
-    );
-  } catch (error) {
-    return errorResponse(res, error, "Failed to fetch maps for this player");
-  }
-};
-
-export const getMapById = async (req: Request, res: Response) => {
-  const id = Number(req.params.id);
-  try {
-    const map = await prisma.map.findUnique({
-      where: { map_id: id },
-      include: {
-        levels: {
-          orderBy: {
-            level_number: "asc",
-          },
-          include: {
-            challenges: true,
-            playerProgress: true,
-            lessons: true,
-            potionShopByLevel: true,
-            map: true,
-          },
-        },
-      },
-    });
-
-    if (!map) {
-      return errorResponse(res, null, "Map not found", 404);
-    }
-
-    map.levels.sort((a, b) => {
-      const aNum = a.level_number ?? Infinity;
-      const bNum = b.level_number ?? Infinity;
-      return aNum - bNum;
-    });
-
-    return successResponse(
-      res,
-      {
-        data: map,
-        audio: [
-          "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353796/Navigation_sxwh2g.mp3",
-        ],
-      },
-      "Map found"
-    );
-  } catch (error) {
-    return errorResponse(res, error, "Failed to fetch map", 500);
   }
 };
 

@@ -121,6 +121,8 @@ export const submitChallengeService = async (
         consecutive_corrects: 0,
         consecutive_wrongs: 0,
         has_reversed_curse: false,
+        has_boss_shield: false,
+        has_force_character_attack_type: false,
       },
     });
   }
@@ -196,6 +198,14 @@ export const submitChallengeService = async (
   const isBonusRound =
     currentProgress.enemy_hp <= 0 && currentProgress.player_hp > 0;
 
+  const answeredIdsBefore = Object.keys(
+    currentProgress.player_answer ?? {}
+  ).map(Number);
+  const allChallengeIds = level.challenges.map((c) => c.challenge_id);
+  const bonusChallengeIds = allChallengeIds.filter(
+    (id) => !answeredIdsBefore.includes(id)
+  );
+
   const { updatedProgress, alreadyAnsweredCorrectly } =
     await updateProgressForChallenge(
       currentProgress.progress_id,
@@ -204,6 +214,16 @@ export const submitChallengeService = async (
       finalAnswer,
       isBonusRound
     );
+
+  const nextBefore = await getNextChallengeService(playerId, levelId);
+  const nextChallengeBefore = nextBefore.nextChallenge;
+  const isCompletingBonus = isBonusRound && !nextChallengeBefore;
+
+  const updatedWrongChallenges = (updatedProgress?.wrong_challenges ??
+    []) as number[];
+  const bonusAllCorrect =
+    bonusChallengeIds.length === 0 ||
+    !bonusChallengeIds.some((id) => updatedWrongChallenges.includes(id));
 
   let fightResult: any;
   let message: string = "Challenge submitted.";
@@ -225,11 +245,12 @@ export const submitChallengeService = async (
       elapsed,
       challengeId,
       alreadyAnsweredCorrectly,
-      wasEverWrong
+      wasEverWrong,
+      isBonusRound,
+      isCompletingBonus,
+      bonusChallengeIds.length,
+      bonusAllCorrect
     );
-
-    fightResult.character.character_damage =
-      baselineState.character.character_damage;
 
     appliedDamage =
       fightResult.appliedDamage ||
@@ -490,12 +511,10 @@ const getNextChallengeEasy = async (progress: any) => {
     if (playerAlive) {
       nextChallenge =
         sortedChallenges.find(
-          (c: Challenge) => !answeredIds.includes(c.challenge_id)
+          (c: Challenge) =>
+            !answeredIds.includes(c.challenge_id) &&
+            !wrongChallenges.includes(c.challenge_id)
         ) || null;
-
-      if (!nextChallenge && wrongChallenges.length > 0) {
-        nextChallenge = getNextWrongChallenge(progress, level, wrongChallenges);
-      }
     }
   }
 

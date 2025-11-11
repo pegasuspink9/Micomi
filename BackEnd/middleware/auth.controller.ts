@@ -32,8 +32,8 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
       { accessToken: newAccessToken },
       "Access token refreshed"
     );
-  } catch {
-    return errorResponse(res, null, "Invalid refresh token", 403);
+  } catch (error) {
+    return errorResponse(res, error, "Invalid refresh token", 403);
   }
 };
 

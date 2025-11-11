@@ -14,15 +14,6 @@ export const generateDynamicMessage = (
   const quickAnswer = elapsed < 3;
   const enemyLowHealth = enemyHealth <= 30 && enemyHealth > 0;
 
-  const characterAudioMap: Record<string, string> = {
-    Gino: "https://res.cloudinary.com/dpbocuozx/video/upload/v1760350698/Gino_gs5neq.wav",
-    ShiShi:
-      "https://res.cloudinary.com/dpbocuozx/video/upload/v1760350771/ShiShi_aw8bl2.wav",
-    Leon: "https://res.cloudinary.com/dpbocuozx/video/upload/v1760350712/Leon_zh37ro.wav",
-    Ryron:
-      "https://res.cloudinary.com/dpbocuozx/video/upload/v1760350763/RyRon_yi9vut.wav",
-  };
-
   const correctMessages = {
     base: [
       `Great job, ${characterName}!`,
@@ -252,10 +243,10 @@ export const generateDynamicMessage = (
     .replace(/[^\w\s]/g, "")
     .trim();
 
-  const audioFiles: string[] = [`${cleanMessage}`];
+  const audioFiles: string[] = [`${cleanMessage}.mp3`];
 
   if (selectedText.includes(characterName)) {
-    const characterAudio = characterAudioMap[characterName];
+    const characterAudio = characterName + ".mp3";
     if (characterAudio) {
       audioFiles.push(characterAudio);
     }

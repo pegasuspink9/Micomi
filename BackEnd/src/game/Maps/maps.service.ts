@@ -19,7 +19,13 @@ export const selectMap = async (playerId: number, mapId: number) => {
 
   const map = await prisma.map.findUnique({
     where: { map_id: mapId },
-    include: { levels: true },
+    include: {
+      levels: {
+        orderBy: {
+          level_number: "asc",
+        },
+      },
+    },
   });
 
   if (!map || !map.is_active) {
@@ -36,7 +42,7 @@ export const selectMap = async (playerId: number, mapId: number) => {
     map.levels.length > 0 &&
     progress.level_id >= map.levels[0].level_id - 1
   ) {
-    return { map, levels: map.levels };
+    return { map };
   }
 
   throw new Error("Map not unlocked yet");

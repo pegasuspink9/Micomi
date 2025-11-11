@@ -46,32 +46,6 @@ export const getLevelById = async (req: Request, res: Response) => {
   }
 };
 
-export const getLevelChallenges = async (req: Request, res: Response) => {
-  const mapId = Number(req.params.id);
-  const levelId = Number(req.params.id);
-  try {
-    const level = await prisma.level.findFirst({
-      where: {
-        level_id: levelId,
-        map_id: mapId,
-      },
-      select: {
-        challenges: true,
-        lessons: true,
-        potionShopByLevel: true,
-      },
-    });
-
-    if (!level) {
-      return errorResponse(res, null, "Level not found for this map", 404);
-    }
-
-    return successResponse(res, level, "Challenges found");
-  } catch (error) {
-    return errorResponse(res, error, "Error fetching challenges", 500);
-  }
-};
-
 export const createLevel = async (req: Request, res: Response) => {
   const data: LevelCreateInput[] = req.body;
   try {

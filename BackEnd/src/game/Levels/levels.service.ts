@@ -18,6 +18,48 @@ import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 
 const prisma = new PrismaClient();
 
+const MAP_ORDER = ["HTML", "CSS", "JavaScript", "Computer"] as const;
+const MAP_PROGRESSION: Record<
+  (typeof MAP_ORDER)[number],
+  (typeof MAP_ORDER)[number] | null
+> = {
+  HTML: "CSS",
+  CSS: "JavaScript",
+  JavaScript: "Computer",
+  Computer: null,
+};
+
+export const isMapUnlockedForPlayer = async (
+  playerId: number,
+  mapName: string
+) => {
+  if (mapName === "HTML" || mapName === "Computer") return true;
+
+  const currentIndex = MAP_ORDER.indexOf(mapName as (typeof MAP_ORDER)[number]);
+  if (currentIndex <= 0) return false;
+
+  const prevMapName = MAP_ORDER[currentIndex - 1];
+  const prevMap = await prisma.map.findUnique({
+    where: { map_name: prevMapName },
+  });
+  if (!prevMap) return false;
+
+  const lastLevel = await prisma.level.findFirst({
+    where: { map_id: prevMap.map_id },
+    orderBy: { level_number: "desc" },
+  });
+  if (!lastLevel) return false;
+
+  const prevProgress = await prisma.playerProgress.findUnique({
+    where: {
+      player_id_level_id: { player_id: playerId, level_id: lastLevel.level_id },
+    },
+    select: { is_completed: true },
+  });
+
+  return prevProgress?.is_completed === true;
+};
+
 export const previewLevel = async (playerId: number, levelId: number) => {
   const level = (await prisma.level.findUnique({
     where: { level_id: levelId },
@@ -271,6 +313,16 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         "Easy levels can only have 'multiple choice' or 'fill in the blank' challenges"
       );
     level.challenges = level.challenges;
+  } else if (
+    level.level_difficulty === "hard" ||
+    level.level_difficulty === "final"
+  ) {
+    const invalid = level.challenges.some(
+      (c: Challenge) => c.challenge_type !== "code with guide"
+    );
+    if (invalid)
+      throw new Error("Hard levels can only have 'code with guide' challenges");
+    level.challenges = level.challenges;
   }
 
   let enemy: Enemy | null = null;
@@ -294,31 +346,6 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     orderBy: { level_number: "asc" },
   });
 
-  if (level.level_id === firstLevel?.level_id && !level.is_unlocked) {
-    await prisma.level.update({
-      where: { level_id: level.level_id },
-      data: { is_unlocked: true },
-    });
-    level.is_unlocked = true;
-  }
-
-  if (level.level_id !== firstLevel?.level_id) {
-    const latestProgress: (PlayerProgress & { level: Level }) | null =
-      await prisma.playerProgress.findFirst({
-        where: { player_id: playerId },
-        orderBy: { level_id: "desc" },
-        include: { level: true },
-      });
-
-    if (
-      !level.is_unlocked ||
-      (latestProgress &&
-        latestProgress.level.level_number < level.level_number - 1)
-    ) {
-      throw new Error("Level not unlocked yet");
-    }
-  }
-
   const selectedChar: (PlayerCharacter & { character: any }) | null =
     await prisma.playerCharacter.findFirst({
       where: { player_id: playerId, is_selected: true },
@@ -339,14 +366,49 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
   });
 
-  const isReEnteringCompleted = existingProgress?.is_completed === true;
-  const isLostState =
-    existingProgress &&
-    existingProgress.player_hp <= 0 &&
-    !existingProgress.is_completed;
+  let progress: PlayerProgress;
+  if (existingProgress) {
+    progress = existingProgress;
+    console.log(`Resuming/replaying level ${levelId} for player ${playerId}`);
+  } else {
+    if (level.level_id === firstLevel?.level_id) {
+      const mapUnlocked = await isMapUnlockedForPlayer(
+        playerId,
+        level.map.map_name
+      );
+      if (!mapUnlocked) {
+        throw new Error("Map not unlocked yet for this player");
+      }
+    } else {
+      const previousLevelNumber = level.level_number - 1;
+      const previousLevel = await prisma.level.findFirst({
+        where: {
+          map_id: level.map_id,
+          level_number: previousLevelNumber,
+        },
+      });
 
-  let progress;
-  if (!existingProgress) {
+      if (previousLevel) {
+        const previousProgress = await prisma.playerProgress.findUnique({
+          where: {
+            player_id_level_id: {
+              player_id: playerId,
+              level_id: previousLevel.level_id,
+            },
+          },
+          select: { is_completed: true },
+        });
+
+        if (!previousProgress || !previousProgress.is_completed) {
+          throw new Error("Previous level not completed yet for this player");
+        }
+      } else {
+        console.warn(
+          `No previous level found for level ${level.level_number} in map ${level.map_id}`
+        );
+      }
+    }
+
     progress = await prisma.playerProgress.create({
       data: {
         player_id: playerId,
@@ -367,15 +429,30 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         consecutive_corrects: 0,
         consecutive_wrongs: 0,
         has_reversed_curse: false,
+        has_boss_shield: false,
+        has_force_character_attack_type: false,
         took_damage: false,
         has_strong_effect: false,
         has_freeze_effect: false,
+        ...(level.level_type === "shopButton"
+          ? { done_shop_level: false }
+          : {}),
+        ...(level.level_type === "micomiButton"
+          ? { done_micomi_level: false }
+          : {}),
       },
     });
-    console.log(`Created new progress for level ${levelId}`);
-  } else if (isLostState) {
+    console.log(
+      `Created new player-specific progress (unlocked) for level ${levelId}`
+    );
+  }
+
+  const isReEnteringCompleted = progress.is_completed === true;
+  const isLostState = progress.player_hp <= 0 && !progress.is_completed;
+
+  if (isLostState) {
     progress = await prisma.playerProgress.update({
-      where: { progress_id: existingProgress.progress_id },
+      where: { progress_id: progress.progress_id },
       data: {
         attempts: 0,
         player_answer: {},
@@ -392,6 +469,8 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         consecutive_corrects: 0,
         consecutive_wrongs: 0,
         has_reversed_curse: false,
+        has_boss_shield: false,
+        has_force_character_attack_type: false,
         took_damage: false,
         has_strong_effect: false,
         has_freeze_effect: false,
@@ -400,7 +479,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     console.log(`Reset progress for lost state in level ${levelId}`);
   } else if (isReEnteringCompleted) {
     progress = await prisma.playerProgress.update({
-      where: { progress_id: existingProgress.progress_id },
+      where: { progress_id: progress.progress_id },
       data: {
         attempts: 0,
         player_answer: {},
@@ -412,6 +491,8 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         consecutive_corrects: 0,
         consecutive_wrongs: 0,
         has_reversed_curse: false,
+        has_boss_shield: false,
+        has_force_character_attack_type: false,
         took_damage: false,
         has_strong_effect: false,
         has_freeze_effect: false,
@@ -422,7 +503,6 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     });
     console.log(`Reset progress for replay of completed level ${levelId}`);
   } else {
-    progress = existingProgress;
     console.log(`Resuming in-progress level ${levelId}`);
   }
 
@@ -529,13 +609,6 @@ export const unlockNextLevel = async (
   });
 
   if (nextLevel) {
-    if (!nextLevel.is_unlocked) {
-      await prisma.level.update({
-        where: { level_id: nextLevel.level_id },
-        data: { is_unlocked: true },
-      });
-    }
-
     await prisma.playerProgress.upsert({
       where: {
         player_id_level_id: {
@@ -550,7 +623,30 @@ export const unlockNextLevel = async (
         current_level: nextLevel.level_number,
         attempts: 0,
         player_answer: {},
+        completed_at: null,
         challenge_start_time: new Date(),
+        player_hp: 0,
+        enemy_hp: 0,
+        battle_status: BattleStatus.in_progress,
+        is_completed: false,
+        wrong_challenges: [],
+        coins_earned: 0,
+        total_points_earned: 0,
+        total_exp_points_earned: 0,
+        consecutive_corrects: 0,
+        consecutive_wrongs: 0,
+        has_reversed_curse: false,
+        has_boss_shield: false,
+        has_force_character_attack_type: false,
+        took_damage: false,
+        has_strong_effect: false,
+        has_freeze_effect: false,
+        ...(nextLevel.level_type === "shopButton"
+          ? { done_shop_level: false }
+          : {}),
+        ...(nextLevel.level_type === "micomiButton"
+          ? { done_micomi_level: false }
+          : {}),
       },
     });
 
@@ -565,45 +661,75 @@ export const unlockNextLevel = async (
   const currentMap = await prisma.map.findUnique({ where: { map_id: mapId } });
   if (!currentMap) return null;
 
-  const mapProgression: Record<string, string | null> = {
-    HTML: "CSS",
-    CSS: "JavaScript",
-    JavaScript: null,
-    Computer: null,
-  };
-
-  const nextMapName = mapProgression[currentMap.map_name] ?? null;
+  const nextMapName =
+    MAP_PROGRESSION[currentMap.map_name as (typeof MAP_ORDER)[number]];
   if (!nextMapName) return null;
 
-  const nextMap = await prisma.map.findFirst({
+  const nextMap = await prisma.map.findUnique({
     where: { map_name: nextMapName },
   });
   if (!nextMap) return null;
-
-  if (!nextMap.is_active) {
-    await prisma.map.update({
-      where: { map_id: nextMap.map_id },
-      data: { is_active: true },
-    });
-  }
 
   const firstLevel = await prisma.level.findFirst({
     where: { map_id: nextMap.map_id },
     orderBy: { level_number: "asc" },
   });
 
-  if (firstLevel && !firstLevel.is_unlocked) {
-    await prisma.level.update({
-      where: { level_id: firstLevel.level_id },
-      data: { is_unlocked: true },
+  if (firstLevel) {
+    await prisma.playerProgress.upsert({
+      where: {
+        player_id_level_id: {
+          player_id: playerId,
+          level_id: firstLevel.level_id,
+        },
+      },
+      update: {},
+      create: {
+        player_id: playerId,
+        level_id: firstLevel.level_id,
+        current_level: firstLevel.level_number,
+        attempts: 0,
+        player_answer: {},
+        completed_at: null,
+        challenge_start_time: new Date(),
+        player_hp: 0,
+        enemy_hp: 0,
+        battle_status: BattleStatus.in_progress,
+        is_completed: false,
+        wrong_challenges: [],
+        coins_earned: 0,
+        total_points_earned: 0,
+        total_exp_points_earned: 0,
+        consecutive_corrects: 0,
+        consecutive_wrongs: 0,
+        has_reversed_curse: false,
+        has_boss_shield: false,
+        has_force_character_attack_type: false,
+        took_damage: false,
+        has_strong_effect: false,
+        has_freeze_effect: false,
+        ...(firstLevel.level_type === "shopButton"
+          ? { done_shop_level: false }
+          : {}),
+        ...(firstLevel.level_type === "micomiButton"
+          ? { done_micomi_level: false }
+          : {}),
+      },
     });
+
+    await prisma.player.update({
+      where: { player_id: playerId },
+      data: { level: firstLevel.level_id },
+    });
+
+    console.log(
+      `Player ${playerId} progressed from ${currentMap.map_name} → ${nextMapName} (unlocked first level player-specifically)`
+    );
+
+    return firstLevel;
   }
 
-  console.log(
-    `Progressed from ${currentMap.map_name} → ${nextMap.map_name} (unlocked first level)`
-  );
-
-  return firstLevel ?? null;
+  return null;
 };
 
 export const completeMicomiLevel = async (
@@ -639,7 +765,19 @@ export const completeMicomiLevel = async (
       done_micomi_level: true,
       player_hp: 0,
       enemy_hp: 0,
+      battle_status: BattleStatus.in_progress,
       wrong_challenges: [],
+      coins_earned: 0,
+      total_points_earned: 0,
+      total_exp_points_earned: 0,
+      consecutive_corrects: 0,
+      consecutive_wrongs: 0,
+      has_reversed_curse: false,
+      has_boss_shield: false,
+      has_force_character_attack_type: false,
+      took_damage: false,
+      has_strong_effect: false,
+      has_freeze_effect: false,
     },
   });
 
@@ -734,7 +872,19 @@ export const completeShopLevel = async (playerId: number, levelId: number) => {
       done_shop_level: true,
       player_hp: 0,
       enemy_hp: 0,
+      battle_status: BattleStatus.in_progress,
       wrong_challenges: [],
+      coins_earned: 0,
+      total_points_earned: 0,
+      total_exp_points_earned: 0,
+      consecutive_corrects: 0,
+      consecutive_wrongs: 0,
+      has_reversed_curse: false,
+      has_boss_shield: false,
+      has_force_character_attack_type: false,
+      took_damage: false,
+      has_strong_effect: false,
+      has_freeze_effect: false,
     },
   });
 

@@ -15,7 +15,11 @@ export async function updateProgressForChallenge(
 
   let consecutiveCorrects = progress.consecutive_corrects ?? 0;
   let consecutiveWrongs = progress.consecutive_wrongs ?? 0;
+
   let hasReversedCurse = progress.has_reversed_curse ?? false;
+  let hasBossShield = progress.has_boss_shield ?? false;
+  let hasForceCharacterAttackType =
+    progress.has_force_character_attack_type ?? false;
 
   const challenge = await prisma.challenge.findUnique({
     where: { challenge_id: challengeId },
@@ -38,6 +42,8 @@ export async function updateProgressForChallenge(
 
   let wrongChallenges = (progress.wrong_challenges ?? []) as number[];
 
+  const wrongCount = wrongChallenges.length;
+
   let newExpectedOutput = progress.player_expected_output ?? [];
 
   if (isCorrect && !alreadyAnsweredCorrectly && !progress.is_completed) {
@@ -59,7 +65,6 @@ export async function updateProgressForChallenge(
   if (isCorrect) {
     wrongChallenges = wrongChallenges.filter((id) => id !== challengeId);
     consecutiveCorrects += 1;
-    consecutiveWrongs = 0;
     hasReversedCurse = false;
 
     updateData = {
@@ -71,6 +76,8 @@ export async function updateProgressForChallenge(
       consecutive_corrects: consecutiveCorrects,
       consecutive_wrongs: consecutiveWrongs,
       has_reversed_curse: hasReversedCurse,
+      has_boss_shield: hasBossShield,
+      has_force_character_attack_type: hasForceCharacterAttackType,
     };
   } else {
     if (!wrongChallenges.includes(challengeId)) {
@@ -90,12 +97,29 @@ export async function updateProgressForChallenge(
           enemy_difficulty: level.level_difficulty,
         },
       });
-      if (enemy && enemy.enemy_name === "King Grimnir") {
-        if (consecutiveWrongs >= 3) {
-          hasReversedCurse = true;
-          console.log(
-            "- Reversal curse activated for King Grimnir after 3 consecutive wrongs"
-          );
+
+      if (consecutiveWrongs % 3 == 0) {
+        const enemyName = enemy && enemy.enemy_name;
+
+        switch (enemyName) {
+          case "King Grimnir":
+            hasReversedCurse = true;
+            console.log(
+              "- Reversal curse activated for King Grimnir after multiples of 3 consecutive wrongs"
+            );
+            break;
+          case "Boss Darco":
+            hasBossShield = true;
+            console.log(
+              "- Shield activated for Boss Darco after multiples of 3 consecutive wrongs"
+            );
+            break;
+          case "Boss Joshy":
+            hasForceCharacterAttackType = true;
+            console.log(
+              "- Force character attack type into basic activated for Boss Joshy after multiples of 3 consecutive wrongs"
+            );
+            break;
         }
       }
     }
@@ -106,6 +130,8 @@ export async function updateProgressForChallenge(
       consecutive_corrects: consecutiveCorrects,
       consecutive_wrongs: consecutiveWrongs,
       has_reversed_curse: hasReversedCurse,
+      has_boss_shield: hasBossShield,
+      has_force_character_attack_type: hasForceCharacterAttackType,
     };
   }
 
