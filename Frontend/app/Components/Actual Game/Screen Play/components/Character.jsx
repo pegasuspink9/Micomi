@@ -47,7 +47,7 @@ const DogCharacter = ({
   const [preloadedImages] = useState(new Map());
 
   const TOTAL_FRAMES = 24;
-  const FRAME_DURATION = 90;
+  const FRAME_DURATION = 50;
 
   const ANIMATION_DURATIONS = useMemo(() => ({
     idle: 1000,

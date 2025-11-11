@@ -1,5 +1,5 @@
-import React, { useEffect,useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions, Image } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Dimensions, Image, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { scale, scaleWidth, scaleHeight, scaleFont, wp, hp } from '../../Responsiveness/gameResponsive';
 import { ImageBackground } from 'expo-image';
@@ -14,18 +14,80 @@ const CombatVSModal = ({
   duration = 5000
 }) => {
     const timerRef = useRef(null); 
-    const visibleRef = useRef(visible)
+    const visibleRef = useRef(visible);
+
+    const characterSlideAnim = useRef(new Animated.Value(-SCREEN_WIDTH)).current;
+    const enemySlideAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
+    const vsScaleAnim = useRef(new Animated.Value(0)).current;
+    const fadeOutAnim = useRef(new Animated.Value(1)).current;
+
 
     useEffect(() => {
-    visibleRef.current = visible;  
-    if (visible && !timerRef.current) {
-      console.log('Setting timer for', duration);
-      timerRef.current = setTimeout(() => {
-        console.log('Timer triggered, calling onComplete');
-        onComplete();
-        timerRef.current = null;
-      }, duration);
-    }
+      visibleRef.current = visible;  
+      if (visible && !timerRef.current) {
+        console.log('Setting timer for', duration);
+        
+        //  Entrance animation
+        Animated.sequence([
+          Animated.timing(characterSlideAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.parallel([
+            Animated.timing(enemySlideAnim, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.timing(vsScaleAnim, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start();
+
+        //  Set timer for outro animation
+        timerRef.current = setTimeout(() => {
+          console.log('Starting outro animation');
+          
+          // Outro animation - reverse sequence
+          Animated.sequence([
+            Animated.timing(vsScaleAnim, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+            Animated.parallel([
+              Animated.timing(characterSlideAnim, {
+                toValue: -SCREEN_WIDTH,
+                duration: 200,
+                useNativeDriver: true,
+              }),
+              Animated.timing(enemySlideAnim, {
+                toValue: SCREEN_WIDTH,
+                duration: 200,
+                useNativeDriver: true,
+              }),
+            ]),
+            Animated.timing(fadeOutAnim, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+          ]).start(() => {
+            console.log('Timer triggered, calling onComplete');
+            onComplete();
+            timerRef.current = null;
+
+            characterSlideAnim.setValue(-SCREEN_WIDTH);
+            enemySlideAnim.setValue(SCREEN_WIDTH);
+            vsScaleAnim.setValue(0);
+            fadeOutAnim.setValue(1);
+          });
+        }, duration);
+      }
     return () => {
       if (!visibleRef.current) {  
         if (timerRef.current) {
@@ -33,9 +95,14 @@ const CombatVSModal = ({
           timerRef.current = null;
         }
       }
-    };
-  }, [visible, duration, onComplete]);
+    };  
+  }, [visible, duration, onComplete, characterSlideAnim, enemySlideAnim, vsScaleAnim, fadeOutAnim]);
 
+
+  if (!visible || !selectedCharacter || !enemy) {
+    return null;
+  }
+   
   if (!selectedCharacter || !enemy) {
     console.log('🚫 Missing selectedCharacter or enemy data:', { selectedCharacter: !!selectedCharacter, enemy: !!enemy });
     return null;
@@ -58,11 +125,14 @@ const CombatVSModal = ({
   });
 
   return (
+  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000 }} pointerEvents="box-none">
+    <Animated.View style={[{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }, { opacity: fadeOutAnim },
+    fadeOutAnim._value === 0 && { pointerEvents: 'none' }
+    ]}>
     <View style={styles.modalOverlay}>
     <ImageBackground source={{ uri: 'https://res.cloudinary.com/dpbocuozx/image/upload/v1761122670/file_000000006f7061f4bcda9c9c314d5882_cfnaan.png' }} style={styles.modalBackground} >
-     
-   {/* Character side - Left top */}
-        <View style={styles.characterSide}>
+  
+    <Animated.View style={[styles.characterSide, { transform: [{ translateX: characterSlideAnim }] }]}>
           <View style={styles.characterContainer}>
             <View style={styles.avatarFrame}>
               <Image 
@@ -72,39 +142,39 @@ const CombatVSModal = ({
               />
             </View>
             
-            <View style={styles.nameContainer}>
-            <View>
-              <Text style={[styles.characterName, styles.heroName]}>
-                {selectedCharacter.character_name}
-              </Text>
+             <View style={styles.nameContainer}>
+              <View>
+                <Text style={[styles.characterName, styles.heroName]}>
+                  {selectedCharacter.character_name}
+                </Text>
+              </View>
               
-            </View>
-            
-            <View style={styles.statsContainer}>
-              <Text style={styles.roleLabel}>HERO</Text>
-              <Text style={styles.statsText}>HP: {selectedCharacter.max_health}</Text>
-              <Text style={styles.statsText}>
-                DMG: {Array.isArray(selectedCharacter.character_damage) 
-                  ? `${Math.min(...selectedCharacter.character_damage)}-${Math.max(...selectedCharacter.character_damage)}`
-                  : selectedCharacter.character_damage}
-              </Text>
+              <View style={styles.statsContainer}>
+                <Text style={styles.roleLabel}>HERO</Text>
+                <Text style={styles.statsText}>HP: {selectedCharacter.max_health}</Text>
+                <Text style={styles.statsText}>
+                  DMG: {Array.isArray(selectedCharacter.character_damage) 
+                    ? `${Math.min(...selectedCharacter.character_damage)}-${Math.max(...selectedCharacter.character_damage)}`
+                    : selectedCharacter.character_damage}
+                </Text>
+              </View>
             </View>
           </View>
-          </View>
-        </View>
+        </Animated.View>
+
 
         {/* VS Text */}
-        <View style={styles.vsContainer}>
-          <View style={styles.vsBackground}>
-            <Image 
-              source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1761043746/Untitled_design_16_sixivj.png' }}
-              style={{ width: SCREEN_WIDTH * 1, height: SCREEN_HEIGHT * 0.5, resizeMode: 'cover' }}
-            />
-          </View>
-        </View>
+        <Animated.View style={[styles.vsContainer, { transform: [{ scale: vsScaleAnim }] }]}>
+              <View style={styles.vsBackground}>
+                <Image 
+                  source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1761043746/Untitled_design_16_sixivj.png' }}
+                  style={{ width: SCREEN_WIDTH * 1, height: SCREEN_HEIGHT * 0.5, resizeMode: 'cover' }}
+                />
+              </View>
+        </Animated.View>
 
         {/* Enemy side - Bottom right */}
-        <View style={styles.enemySide}>
+        <Animated.View style={[styles.enemySide, { transform: [{ translateX: enemySlideAnim }] }]}>
           <View style={styles.characterContainer}>
             <View style={styles.avatarFrame}>
               <Image 
@@ -115,7 +185,7 @@ const CombatVSModal = ({
             </View>
           </View>
             
-            <View  style={styles.enemyNameContainer}>
+          <View style={styles.enemyNameContainer}>
             <View>
               <Text style={[styles.characterName, styles.enemyName]}>
                 {enemy.enemy_name}
@@ -127,10 +197,12 @@ const CombatVSModal = ({
               <Text style={styles.statsText}>HP: {enemy.enemy_health}</Text>
               <Text style={styles.statsText}>DMG: {enemy.enemy_damage}</Text>
             </View>
-            </View>
-        </View>
+          </View>
+        </Animated.View>
     </ImageBackground>
     </View>
+    </Animated.View>
+     </View>
   );
 };
 
@@ -155,7 +227,7 @@ const styles = StyleSheet.create({
 
    characterSide: {
     position: 'absolute',
-    left: 0,  // ✅ Left side
+    left: 0,  //  Left side
     top: 0,
     width: SCREEN_WIDTH / 2,
     height: SCREEN_HEIGHT,

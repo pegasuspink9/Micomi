@@ -35,6 +35,7 @@ export default function GamePlay() {
   const [activeGameTab, setActiveGameTab] = useState('code');
   const [selectedBlankIndex, setSelectedBlankIndex] = useState(0); 
   const [showVSModal, setShowVSModal] = useState(false);
+  const [showGameplay, setShowGameplay] = useState(false);
   const [showGameOver, setShowGameOver] = useState(false);
   const [showLevelCompletion, setShowLevelCompletion] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
@@ -89,19 +90,20 @@ export default function GamePlay() {
   }
   }, [currentChallenge?.id, maxAnswers]);
 
-    useEffect(() => {
-    if (currentChallenge && !loading && !animationsLoading) {
-      // Show VS modal when level is ready
-      setShowVSModal(true);
-    }
+  useEffect(() => {
+  if (currentChallenge && !loading && !animationsLoading) {
+    console.log(' Challenge loaded, showing VS modal');
+    setShowVSModal(true);
+    setShowGameplay(false); 
+  }
   }, [currentChallenge, loading, animationsLoading]);
 
 
 
-  // ✅ Reset states when new challenge loads
+  //  Reset states when new challenge loads
   useEffect(() => {
     if (currentChallenge && !loading && !animationsLoading && (isRetrying || isLoadingNextLevel)) {
-      console.log('✅ Level data loaded successfully');
+      console.log(' Level data loaded successfully');
       setIsRetrying(false);
       setIsLoadingNextLevel(false);
       setShowGameOver(false);
@@ -130,8 +132,9 @@ export default function GamePlay() {
 
 
   const handleVSComplete = useCallback(() => {
-  console.log('handleVSComplete called, setting showVSModal to false');  // ✅ Debug log
+  console.log('handleVSComplete called, setting showVSModal to false');  //  Debug log
   setShowVSModal(false);
+  setShowGameplay(true);
   }, []);
 
   const handleGameTabChange = useCallback((tabName) => {
@@ -209,7 +212,7 @@ useEffect(() => {
       !hasTriggeredLevelCompletion.current && 
       !showLevelCompletion && 
       !isLoadingNextLevel &&
-      !waitingForAnimation) { // ✅ This ensures animations finished
+      !waitingForAnimation) { //  This ensures animations finished
     
     console.log('🎉 Level completed - all animations finished, showing modal');
     hasTriggeredLevelCompletion.current = true;
@@ -244,14 +247,14 @@ useEffect(() => {
 const handleAnimationComplete = useCallback(() => {
   console.log('🎬 All animation sequences completed');
   
-  // ✅ Call the original animation complete handler from useGameData
+  //  Call the original animation complete handler from useGameData
   onAnimationComplete?.();
   
   // The level completion modal will show automatically via the useEffect above
   // once waitingForAnimation becomes false
 }, [onAnimationComplete]);
 
-  // ✅ Updated retry handler
+  //  Updated retry handler
   const handleRetry = useCallback(() => {
     console.log('🔄 Retrying level - calling entryLevel API to reset data...');
     
@@ -266,7 +269,7 @@ const handleAnimationComplete = useCallback(() => {
     retryLevel();
   }, [retryLevel]);
 
-  // ✅ Handle next level navigation
+  //  Handle next level navigation
   const handleNextLevel = useCallback(async () => {
     const nextLevelId = gameState?.submissionResult?.nextLevel?.level_id;
     
@@ -287,7 +290,7 @@ const handleAnimationComplete = useCallback(() => {
     
     try {
       await enterNextLevel(playerId, nextLevelId);
-      console.log('✅ Next level loaded successfully');
+      console.log(' Next level loaded successfully');
     } catch (error) {
       console.error('❌ Failed to load next level:', error);
       setIsLoadingNextLevel(false);
@@ -311,7 +314,7 @@ const handleAnimationComplete = useCallback(() => {
     router.back();
   }, [router]);
 
-  // ✅ Cleanup on unmount
+  //  Cleanup on unmount
   useEffect(() => {
     return () => {
       if (gameOverTimeoutRef.current) {
@@ -352,6 +355,8 @@ const handleAnimationComplete = useCallback(() => {
     return (
       <>
         <StatusBar hidden={true} />
+
+
         <ImageBackground 
           source={{uri: 'https://github.com/user-attachments/assets/dc83a36e-eb2e-4fa5-b4e7-0eab9ff65abc'}}
           style={styles.container}  
@@ -377,7 +382,7 @@ const handleAnimationComplete = useCallback(() => {
             isLoading={isLoadingNextLevel}
           />
 
-          {/* ✅ Loading overlay */}
+          {/*  Loading overlay */}
           <View style={[styles.container, styles.centerContent]}>
             <ActivityIndicator size="large" color="#ffffff" />
             
@@ -472,6 +477,17 @@ const handleAnimationComplete = useCallback(() => {
 return (
   <>
     <StatusBar hidden={true} />
+
+    {showVSModal && (
+        <CombatVSModal
+          visible={showVSModal}
+          onComplete={handleVSComplete}
+          selectedCharacter={gameState?.selectedCharacter}
+          enemy={gameState?.enemy}
+        />
+    )}
+
+    {showGameplay && (
     <ImageBackground 
       source={{uri: 'https://github.com/user-attachments/assets/dc83a36e-eb2e-4fa5-b4e7-0eab9ff65abc'}}
       style={styles.container}
@@ -534,6 +550,7 @@ return (
         </View>
       )}
     </ImageBackground>
+    )}
 
     <GameOverModal
       visible={showGameOver}
@@ -556,12 +573,6 @@ return (
       isLoading={isLoadingNextLevel}
     />
 
-    <CombatVSModal
-      visible={showVSModal}
-      onComplete={handleVSComplete}
-      selectedCharacter={gameState?.selectedCharacter}
-      enemy={gameState?.enemy}
-    />
   </>
 );
 };
@@ -665,7 +676,7 @@ const styles = StyleSheet.create({
   // Debug styles
   debugToggle: { 
     position: 'absolute', 
-    top: 20, // ✅ Adjusted for status bar hidden
+    top: 20, //  Adjusted for status bar hidden
     right: 10, 
     backgroundColor: 'rgba(0,0,0,0.8)', 
     paddingHorizontal: 12, 
@@ -682,7 +693,7 @@ const styles = StyleSheet.create({
   },
   debugPanel: { 
     position: 'absolute', 
-    top: 20, // ✅ Adjusted for status bar hidden
+    top: 20, //  Adjusted for status bar hidden
     left: 10, 
     right: 10, 
     bottom: 100, 
