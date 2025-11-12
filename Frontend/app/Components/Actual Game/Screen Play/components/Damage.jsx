@@ -11,11 +11,93 @@ import {
 
 const { width } = Dimensions.get('window');
 
+const TickItem = ({ amount = 1, index = 0, animated = true, position = 'right' }) => {
+  const translateY = useRef(new Animated.Value(0)).current;
+  const translateX = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
+  const scale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!animated) {
+      const t = setTimeout(() => {}, 300);
+      return () => clearTimeout(t);
+    }
+
+    const randomAngle = position === 'right' 
+      ? 145 + Math.random() * 90
+      : -40 + Math.random() * 90;
+    
+    const scatterDistance = 50 + Math.random() * 100;
+    
+    const finalX = Math.cos((randomAngle * Math.PI) / 180) * scatterDistance;
+    const finalY = Math.sin((randomAngle * Math.PI) / 180) * scatterDistance;
+
+    Animated.parallel([
+      Animated.timing(translateX, {
+        toValue: finalX,
+        duration: 1200,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      
+      Animated.timing(translateY, {
+        toValue: finalY,
+        duration: 1200,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      
+      Animated.sequence([
+        Animated.delay(600),
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 1000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      ]),
+      
+      Animated.sequence([
+        Animated.timing(scale, {
+          toValue: 1.25,
+          duration: 300,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scale, {
+          toValue: 0.9,
+          duration: 1500,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  }, [position]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.tick,
+        {
+          transform: [
+            { translateX },
+            { translateY },
+            { scale }
+          ],
+          opacity,
+        },
+      ]}
+    >
+      <Text style={styles.tickText}>{`-${amount}`}</Text>
+    </Animated.View>
+  );
+};
+
 const FloatingDamageTicks = ({
   damage = 0,
   steps = 2,
   animated = true,
-  tickInterval = 50, // Faster intervals
+  tickInterval = 50,
   startDelay = 0,
   onTick = null,
   position = 'right', 
@@ -25,36 +107,46 @@ const FloatingDamageTicks = ({
   const nextId = useRef(0);
   const timers = useRef([]);
 
-  function splitDamage(total, count) {
+  function splitDamageRandomly(total, minCount = 4) {
     if (!Number.isFinite(total) || total <= 0) return [];
-    const safeCount = Math.max(1, Math.floor(count) || 1);
-    if (total <= safeCount) {
-      return Array.from({ length: total }).map(() => 1);
+    
+    let count;
+    if (total < 30) {
+      count = 3;
+    } else if (total < 100) {
+      count = 5;
+    } else {
+      count = 7;
     }
-    const base = Math.floor(total / safeCount);
-    let rem = total - base * safeCount;
-    const arr = [];
-    for (let i = 0; i < safeCount; i++) {
-      arr.push(base + (rem > 0 ? 1 : 0));
-      if (rem > 0) rem--;
+    
+    const amounts = [];
+    let remaining = total;
+
+    for (let i = 0; i < count - 1; i++) {
+      const maxAmount = Math.floor(remaining / (count - i));
+      const minAmount = Math.max(1, Math.floor(maxAmount * 0.4));
+      const amount = minAmount + Math.floor(Math.random() * (maxAmount - minAmount + 1));
+      amounts.push(amount);
+      remaining -= amount;
     }
-    return arr;
+    
+    amounts.push(remaining);
+    
+    return amounts.sort(() => Math.random() - 0.5);
   }
 
   useEffect(() => {
     if (!damage || damage <= 0) return;
 
-    // clear previous timers (avoid overlap)
     timers.current.forEach(t => clearTimeout(t));
     timers.current = [];
 
-    // Start the sequence after the provided startDelay
     const startTimer = setTimeout(() => {
-      const ticks = splitDamage(Math.round(damage), steps);
+      const ticks = splitDamageRandomly(Math.round(damage), 4);
       const tickObjs = ticks.map((amount, index) => ({
         id: `${Date.now()}-${nextId.current++}`,
         amount,
-        index, // Pass index for scatter calculation
+        index,
       }));
 
       setActiveTicks(prev => [...prev, ...tickObjs]);
@@ -64,7 +156,7 @@ const FloatingDamageTicks = ({
         const startDelayForTick = idx * tickInterval + randomDelay;
         
         const t = setTimeout(() => {
-          const totalAnimMs = 1200 + Math.random() * 300; 
+          const totalAnimMs = 2200 + Math.random() * 300;
           const endTimer = setTimeout(() => {
             setActiveTicks(curr => curr.filter(x => x.id !== tick.id));
             if (typeof onTick === 'function') {
@@ -105,93 +197,10 @@ const FloatingDamageTicks = ({
           amount={tickObj.amount}
           index={tickObj.index}
           animated={animated}
+          position={position}
         />
       ))}
     </View>
-  );
-};
-
-const TickItem = ({ amount = 1, index = 0, animated = true }) => {
-  const translateY = useRef(new Animated.Value(0)).current;
-  const translateX = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(1)).current;
-  const scale = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    if (!animated) {
-      const t = setTimeout(() => {}, 300);
-      return () => clearTimeout(t);
-    }
-
-    // Generate random scattered positions
-    const randomAngle = Math.random() * 360; // Full 360-degree scatter
-    const scatterDistance = 30 + Math.random() * 60; // 30-90px scatter radius
-    
-    // Calculate final scattered positions
-    const finalX = Math.cos((randomAngle * Math.PI) / 180) * scatterDistance;
-    const finalY = Math.sin((randomAngle * Math.PI) / 180) * scatterDistance;
-
-    Animated.parallel([
-      Animated.timing(translateX, {
-        toValue: finalX,
-        duration: 800,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-      
-      // Simple movement to scattered position
-      Animated.timing(translateY, {
-        toValue: finalY,
-        duration: 800,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-      
-      // Simple fade out
-      Animated.sequence([
-        Animated.delay(400), // Stay visible for a bit
-        Animated.timing(opacity, {
-          toValue: 0,
-          duration: 800,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        }),
-      ]),
-      
-      // Subtle scale effect
-      Animated.sequence([
-        Animated.timing(scale, {
-          toValue: 1.2,
-          duration: 200,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(scale, {
-          toValue: 1,
-          duration: 1000,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start();
-  }, []);
-
-  return (
-    <Animated.View
-      style={[
-        styles.tick,
-        {
-          transform: [
-            { translateX },
-            { translateY },
-            { scale }
-          ],
-          opacity,
-        },
-      ]}
-    >
-      <Text style={styles.tickText}>{`-${amount}`}</Text>
-    </Animated.View>
   );
 };
 
@@ -222,7 +231,6 @@ export default function Damage({
 
   return (
     <View style={[styles.container, containerPositionStyle, style]}>
-      {/* Floating ticks animate when `incoming` > 0 */}
       {incoming > 0 && (
         <FloatingDamageTicks
           damage={incoming}
@@ -247,10 +255,14 @@ const styles = StyleSheet.create({
   leftContainer: {
     left: width * 0.1,
     alignItems: 'flex-start',
+    zIndex: 9999,
+    elevation: 9999,
   },
   rightContainer: {
     right: width * 0.1,
     alignItems: 'center',
+    zIndex: 9999,
+    elevation: 9999,
   },
   badge: {
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -272,22 +284,27 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  // Container for scattered damage numbers
   ticksContainer: {
     position: 'absolute',
     width: 150, 
     height: 150, 
     pointerEvents: 'none',
+    zIndex: 9999,
+    elevation: 9999,
   },
   ticksContainerRight: {
     top: width * 0.05,
     right: width * -0.1,
     alignItems: 'center',
+    zIndex: 9999,
+    elevation: 9999,
   },
   ticksContainerLeft: {
     top: width * 0.05,
     left: width * -0.1, 
     alignItems: 'center',
+    zIndex: 9999,
+    elevation: 9999,
   },
 
   tick: {
@@ -295,16 +312,20 @@ const styles = StyleSheet.create({
     top: 75,
     left: 75, 
     paddingHorizontal: 4,
-    paddingVertical: 2
+    paddingVertical: 2,
+    zIndex: 9999,
+    elevation: 9999,
   },
   
   tickText: {
-    fontSize: 20,
+    fontSize: 15,
     fontFamily: 'DynaPuff',
     color: 'rgba(174, 7, 7, 0.77)', 
     textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 1)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
+    zIndex: 9999,
+    elevation: 9999,
   },
 });

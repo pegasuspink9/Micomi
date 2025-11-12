@@ -429,6 +429,24 @@ useEffect(() => {
           onAnimationComplete={handleCharacterAnimationComplete}
         />
 
+         {enemies.map((enemy, index) => {
+        if (!enemyPositions[index]) return null;
+
+          return (
+            <EnemyCharacter
+              key={`enemy-${index}`}
+              enemy={enemy}
+              index={index}
+              enemyPosition={enemyPositions[index]}
+              isAttacking={attackingEnemies.has(index)}
+              isPaused={isPaused}
+              characterAnimations={enemyAnimations}
+              currentState={enemyAnimationStates[index] || 'idle'}
+              onAnimationComplete={handleEnemyAnimationComplete(index)}
+            />
+          );
+        })}
+
         <Life 
           health={playerHealth}
           maxHealth={playerMaxHealth}
@@ -483,23 +501,7 @@ useEffect(() => {
           animated={true}
         />
 
-        {enemies.map((enemy, index) => {
-        if (!enemyPositions[index]) return null;
-
-          return (
-            <EnemyCharacter
-              key={`enemy-${index}`}
-              enemy={enemy}
-              index={index}
-              enemyPosition={enemyPositions[index]}
-              isAttacking={attackingEnemies.has(index)}
-              isPaused={isPaused}
-              characterAnimations={enemyAnimations}
-              currentState={enemyAnimationStates[index] || 'idle'}
-              onAnimationComplete={handleEnemyAnimationComplete(index)}
-            />
-          );
-        })}
+       
       </GameBackground>
     </GameContainer>
   );
