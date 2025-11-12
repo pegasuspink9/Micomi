@@ -562,7 +562,7 @@ export async function fightEnemy(
         if (answeredCount >= totalChallenges) {
           status = BattleStatus.won;
           enemy_dies = enemy.enemy_dies || null;
-          enemy_hurt = enemy.enemy_hurt || null;
+          enemy_hurt = null;
 
           enemy_idle = null;
           enemy_run = null;
@@ -654,7 +654,7 @@ export async function fightEnemy(
 
       if (charHealth <= 0) {
         status = BattleStatus.lost;
-        character_hurt = character.character_hurt || null;
+        character_hurt = null;
         character_dies = character.character_dies || null;
 
         enemy_run = enemy.enemy_run || null;
@@ -1208,7 +1208,7 @@ export async function fightBossEnemy(
           enemy_idle = null;
           enemy_run = null;
           enemy_attack = null;
-          enemy_hurt = enemy.enemy_hurt || null;
+          enemy_hurt = null;
           enemy_dies = enemy.enemy_dies || null;
 
           character_idle = null;
@@ -1367,7 +1367,7 @@ export async function fightBossEnemy(
 
       if (charHealth <= 0) {
         status = BattleStatus.lost;
-        character_hurt = character.character_hurt || null;
+        character_hurt = null;
         character_dies = character.character_dies || null;
 
         enemy_run = enemy.enemy_run || null;
