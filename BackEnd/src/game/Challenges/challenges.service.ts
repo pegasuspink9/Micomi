@@ -13,6 +13,7 @@ import {
   SubmitChallengeControllerResult,
   CompletionRewards,
 } from "./challenges.types";
+import { boolean } from "zod";
 
 const prisma = new PrismaClient();
 
@@ -221,9 +222,9 @@ export const submitChallengeService = async (
 
   const updatedWrongChallenges = (updatedProgress?.wrong_challenges ??
     []) as number[];
-  const bonusAllCorrect =
-    bonusChallengeIds.length === 0 ||
-    !bonusChallengeIds.some((id) => updatedWrongChallenges.includes(id));
+  const bonusAllCorrect = isCompletingBonus
+    ? updatedWrongChallenges.length === 0
+    : false;
 
   let fightResult: any;
   let message: string = "Challenge submitted.";
@@ -271,10 +272,10 @@ export const submitChallengeService = async (
       enemy.enemy_name,
       fightResult.enemyHealth ??
         fightResult.enemy?.enemy_health ??
-        currentProgress.enemy_hp
+        currentProgress.enemy_hp,
+      false
     );
-
-    message = `${text} Dealt ${appliedDamage} damage!`;
+    message = text;
     audioResponse = audio;
 
     if (!hintUsed) {
@@ -324,7 +325,8 @@ export const submitChallengeService = async (
       enemy.enemy_name,
       fightResult.enemyHealth ??
         fightResult.enemy?.enemy_health ??
-        currentProgress.enemy_hp
+        currentProgress.enemy_hp,
+      false
     );
 
     message = text;
@@ -407,22 +409,31 @@ export const submitChallengeService = async (
     ? nextChallenge.correct_answer.length
     : 0;
 
-  let character_attack_image = null;
-
-  if (correctAnswerLength >= 8) {
-    character_attack_image = //third attack
-      "https://res.cloudinary.com/dpbocuozx/image/upload/v1760942688/15cdfe1f-dc78-4f25-a4ae-5cbbc27a4060_jmzqz6.png";
-  } else if (correctAnswerLength >= 5 && correctAnswerLength < 8) {
-    character_attack_image = //second attack
-      "https://res.cloudinary.com/dpbocuozx/image/upload/v1760942690/b86116f4-4c3c-4f9c-bec3-7628482673e8_eh6biu.png";
-  } else {
-    character_attack_image = //basic attack
-      "https://res.cloudinary.com/dpbocuozx/image/upload/v1760942690/Untitled_1024_x_1536_px__20251020_131545_0000_hs8lr4.png";
-  }
-
   const combatBackground = [
     await getBackgroundForLevel(level.map.map_name, level.level_number),
   ];
+
+  const isNewBonusRound =
+    freshProgress!.enemy_hp <= 0 && freshProgress!.player_hp > 0;
+
+  if (isBonusRound) {
+    const { text, audio } = generateDynamicMessage(
+      true,
+      character.character_name,
+      hintUsed,
+      updatedProgress.consecutive_corrects ?? 0,
+      fightResult.character_health ?? character.health,
+      character.health,
+      elapsed,
+      enemy.enemy_name,
+      fightResult.enemyHealth ??
+        fightResult.enemy?.enemy_health ??
+        currentProgress.enemy_hp,
+      true
+    );
+    message = text;
+    audioResponse = audio;
+  }
 
   return {
     isCorrect,
@@ -447,8 +458,8 @@ export const submitChallengeService = async (
     energy: energyStatus.energy,
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
     correct_answer_length: correctAnswerLength,
-    character_attack_image,
     combat_background: combatBackground,
+    is_bonus_round: isNewBonusRound,
   };
 };
 

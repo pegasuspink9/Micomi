@@ -63,6 +63,7 @@ export interface SubmitChallengeControllerResult
   correct_answer_length?: number;
   character_attack_image?: string | null;
   combat_background?: string[] | null;
+  is_bonus_round?: boolean;
 }
 
 export interface LevelStatus {

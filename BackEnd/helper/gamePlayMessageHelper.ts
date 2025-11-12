@@ -7,7 +7,8 @@ export const generateDynamicMessage = (
   playerMaxHealth: number,
   elapsed: number,
   enemyName: string,
-  enemyHealth: number
+  enemyHealth: number,
+  isBonusRound: boolean
 ): { text: string; audio: string[] } => {
   const lowHealth = playerHealth <= 50 && playerHealth > 0;
   const streak = consecutiveCorrects >= 3 ? consecutiveCorrects : 0;
@@ -143,6 +144,28 @@ export const generateDynamicMessage = (
       `Fight on, ${characterName}!`,
       `Undaunted, ${characterName}!`,
     ],
+    bonus: [
+      `Bonus time, ${characterName}!`,
+      `Don’t miss this chance!`,
+      `Make it count!`,
+      `Go for glory!`,
+      `Claim your bonus, ${characterName}!`,
+      `Double the reward!`,
+      `This is the moment!`,
+      `Cash it in!`,
+      `Strike while it’s hot!`,
+      `Finish this now!`,
+      `All or nothing!`,
+      `Max the score!`,
+      `Hit it hard!`,
+      `Make it legendary!`,
+      `Earn big, ${characterName}!`,
+      `Bonus attack ready!`,
+      `It’s payday time!`,
+      `Power moment, ${characterName}!`,
+      `This one’s golden!`,
+      `Don’t waste it!`,
+    ],
   };
 
   const wrongMessages = {
@@ -227,6 +250,7 @@ export const generateDynamicMessage = (
     else if (quickAnswer) messageList = correctMessages.quick;
     else if (lowHealth) messageList = correctMessages.lowHealth;
     else if (enemyLowHealth) messageList = correctMessages.final;
+    else if (isBonusRound) messageList = correctMessages.bonus;
     else messageList = correctMessages.base;
   } else {
     if (playerHealth <= 0) messageList = wrongMessages.lost;

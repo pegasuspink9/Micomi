@@ -79,7 +79,19 @@ model Challenge {
   options         Json?   @default("[]")
   question        String?
   expected_output Json?   @default("[]")
-  file_name       String?
+
+  //new attri
+  html_file         String?
+  css_file          String?
+  javascript_file   String?
+  computer_file     String?
+
+  //file_names
+  html_file_name        String?
+  css_file_name         String?
+  javascript_file_name  String?
+  computer_file_name    String?
+
   level           Level   @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
 }
 
