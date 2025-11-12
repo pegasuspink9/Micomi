@@ -222,18 +222,18 @@ const handleEnemyAnimationComplete = useCallback((index) => {
       const enemyHealth = fightResult?.enemy?.enemy_health ?? 0;
       const enemyDiesUrl = fightResult?.enemy?.enemy_dies;
       
-      // ✅ Only transition to dies if API explicitly provides dies animation AND health is 0
+      //  Only transition to dies if API explicitly provides dies animation AND health is 0
       if (enemyDiesUrl && enemyHealth <= 0) {
         console.log('🦹 Enemy hurt completed, dies animation available, health is 0 - transitioning to dies');
         setEnemyAnimationStates(prev => prev.map((state, i) => i === index ? 'dies' : state));
         return;
       } else if (enemyHealth <= 0 && !enemyDiesUrl) {
-        // ✅ Health is 0 but no dies animation (bonus round) - stay on last frame
+        //  Health is 0 but no dies animation (bonus round) - stay on last frame
         console.log('🦹 Enemy health is 0 but no dies animation (bonus round) - staying on hurt frame');
         setIsPlayingSubmissionAnimation(false);
         return;
       } else {
-        // ✅ Health > 0 - return to idle
+        //  Health > 0 - return to idle
         console.log('🦹 Enemy hurt completed, still alive - returning to idle');
         setEnemyAnimationStates(prev => prev.map((state, i) => i === index ? 'idle' : state));
         setIsPlayingSubmissionAnimation(false);
@@ -285,26 +285,54 @@ useEffect(() => {
     lastSubmissionKeyRef.current = submissionKey;
 
     if (submission.isCorrect === true) {
-      console.log(` Correct answer - character attacks enemy`);
-      setCharacterAnimationState('attack');
+      // ✅ Check if character has attack URL before attacking
+      const attackUrl = Array.isArray(characterAnimations.character_attack)
+        ? characterAnimations.character_attack.filter(url => url && typeof url === 'string')[0]
+        : characterAnimations.character_attack;
+
+      if (attackUrl) {
+        console.log(`⚔️ Correct answer - character has attack URL, will attack enemy`);
+        setCharacterAnimationState('attack');
+      } else {
+        console.log(`⚔️ Correct answer but no attack URL available - staying idle`);
+        setCharacterAnimationState('idle');
+      }
       
-      //  Check if enemy has dies animation from API
+      // ✅ Check if enemy has dies animation from API
       const enemyDiesUrl = submission.fightResult?.enemy?.enemy_dies;
       
       if (enemyDiesUrl) {
         console.log('🦹 Enemy dies animation provided by API - enemy will die');
-        setEnemyAnimationStates(prev => prev.map(() => 'hurt')); // hurt first, then dies
+        setEnemyAnimationStates(prev => prev.map(() => 'hurt'));
       } else {
         console.log('🦹 No enemy dies animation - enemy gets hurt only (bonus round scenario)');
         setEnemyAnimationStates(prev => prev.map(() => 'hurt'));
       }
       setIsPlayingSubmissionAnimation(true);
+      
     } else if (submission.isCorrect === false) {
-      console.log(`❌ Wrong answer - enemy attacks character`);
+      const enemyHealth = submission.fightResult?.enemy?.enemy_health ?? 0;
       
-      setEnemyAnimationStates(prev => prev.map(() => 'attack'));
+      console.log(`❌ Wrong answer - checking enemy health for counter attack`);
+      console.log(`Enemy health: ${enemyHealth}`);
       
-      //  Check if character has dies animation from API
+      // ✅ Enemy counter-attacks only if health > 0
+      if (enemyHealth > 0) {
+        console.log(`🦹 Enemy health > 0 - enemy counter attacks character`);
+        setEnemyAnimationStates(prev => prev.map(() => 'attack'));
+      } else {
+        console.log(`🦹 Enemy health = 0 - enemy stays idle (already defeated)`);
+        setEnemyAnimationStates(prev => prev.map(() => 'idle'));
+      }
+      
+      const characterHurtUrl = submission.fightResult?.character?.character_hurt;
+      console.log(`🩸 Character hurt URL available: ${!!characterHurtUrl}`);
+      
+      // ✅ Character gets hurt on wrong answer (stays in place, no attack movement)
+      setCharacterAnimationState('hurt');
+      setIsPlayingSubmissionAnimation(true);
+      
+      // Check if character has dies animation from API
       const characterDiesUrl = submission.fightResult?.character?.character_dies;
       const characterHealth = submission.fightResult?.character?.character_health ?? playerHealth;
       
@@ -320,7 +348,7 @@ useEffect(() => {
     return;
   }
 
-  //  Only force dies if health is 0 AND dies animation is explicitly provided
+  // ✅ Only force dies if health is 0 AND dies animation is explicitly provided
   const characterDiesUrl = gameState.submissionResult?.fightResult?.character?.character_dies || 
                            gameState.selectedCharacter?.character_dies;
   
@@ -337,7 +365,7 @@ useEffect(() => {
     setEnemyAnimationStates(enemies.map(() => 'idle'));
     lastSubmissionKeyRef.current = null;
   }
-}, [gameState.submissionResult, playerHealth, isPlayingSubmissionAnimation, enemies, characterAnimationState, gameState.selectedCharacter]);
+}, [gameState.submissionResult, playerHealth, isPlayingSubmissionAnimation, enemies, characterAnimationState, gameState.selectedCharacter, characterAnimations.character_attack]);
 
   useEffect(() => {
     if (__DEV__ && Math.random() < 0.1) { 

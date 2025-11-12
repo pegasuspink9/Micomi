@@ -6,7 +6,6 @@ import Animated, {
   useAnimatedStyle,
   withRepeat,
   withTiming,
-  withSequence,
   cancelAnimation,
   runOnJS,
   Easing,
@@ -17,7 +16,6 @@ import {
   scale, 
   scaleWidth, 
   scaleHeight,
-  RESPONSIVE ,
   getDeviceType,
   SCREEN
 } from '../../../Responsiveness/gameResponsive';
@@ -29,29 +27,21 @@ const DogCharacter = ({
   onAnimationComplete = null,
   attackMovement = 'fade',
 }) => {
+  // ========== Shared Animation Values ==========
   const frameIndex = useSharedValue(0);
-  const positionX = useSharedValue(0); 
+  const positionX = useSharedValue(0);
   const opacity = useSharedValue(1);
-  const blinkOpacity = useSharedValue(1);
 
-  //  Responsive sprite dimensions
+  // ========== Animation Configuration ==========
   const SPRITE_SIZE = useMemo(() => scale(128), []);
   const SPRITE_COLUMNS = 6;
   const SPRITE_ROWS = 4;
-
-  const [currentAnimationUrl, setCurrentAnimationUrl] = useState('');
-  const [isAnimationLooping, setIsAnimationLooping] = useState(true);
-  const [imageReady, setImageReady] = useState(false);
-  const [isCompoundAnimation, setIsCompoundAnimation] = useState(false);
-  const [compoundPhase, setCompoundPhase] = useState('');
-  const [preloadedImages] = useState(new Map());
-
   const TOTAL_FRAMES = 24;
   const FRAME_DURATION = 50;
 
   const ANIMATION_DURATIONS = useMemo(() => ({
-    idle: 1000,
-    attack: 3000, 
+    idle: -1,
+    attack: 1500,
     hurt: 2000,
     run: -1,
     dies: 2000,
@@ -60,170 +50,113 @@ const DogCharacter = ({
   const COMPOUND_PHASES = useMemo(() => ({
     attack: {
       run: { duration: 1000 },
-      attack: { duration: 2000 }
-    }
+      attack: { duration: 1500 },
+    },
   }), []);
 
-  const START_POSITION = useMemo(() => 0, []);
-  const CENTER_POSITION = useMemo(() => scaleWidth(103), []); 
   const RUN_DISTANCE = useMemo(() => {
-      const deviceType = getDeviceType();
-      
-      switch (deviceType) {
-        case 'tablet':
-          return (SCREEN.width * 0.6); 
-        case 'large-phone':
-          return (SCREEN.width * 0.8);
-        case 'small-phone':
-          return (SCREEN.width * 0.9); 
-        default:
-          return (SCREEN.width * 0.5);
-      }
-    }, []);
+    const deviceType = getDeviceType();
+    const distanceMap = {
+      'tablet': SCREEN.width * 0.6,
+      'large-phone': SCREEN.width * 0.8,
+      'small-phone': SCREEN.width * 0.9,
+    };
+    return distanceMap[deviceType] || SCREEN.width * 0.5;
+  }, []);
 
-  //  Responsive timing constants
-  const BLINK_DURATION = useMemo(() => 50, []);
-  const MOVEMENT_DURATION = useMemo(() => 100, []);
-  const ATTACK_ANIMATION_DURATION = useMemo(() => 1500, []);
+  // ========== State Management ==========
+  const initialUrl = useMemo(() => {
+    const candidates = [
+      characterAnimations.character_idle,
+      characterAnimations.idle,
+    ].filter(url => url && typeof url === 'string');
+    return candidates[0] || '';
+  }, [characterAnimations]);
 
+  const [currentAnimationUrl, setCurrentAnimationUrl] = useState(initialUrl);
+  const [isAnimationLooping, setIsAnimationLooping] = useState(true);
+  const [imageReady, setImageReady] = useState(false);
+  const [isCompoundAnimation, setIsCompoundAnimation] = useState(false);
+  const [preloadedImages] = useState(new Map());
   const phaseTimeoutRef = useRef(null);
 
-  //  Enhanced preload animations using universalAssetPreloader
-  const preloadAnimations = useCallback(async () => {
-    const animationUrls = [
-      characterAnimations.character_idle,
-      characterAnimations.character_hurt,
-      characterAnimations.character_run,
-      characterAnimations.character_dies,
-    ].filter(url => url);
-
-    if (Array.isArray(characterAnimations.character_attack)) {
-      characterAnimations.character_attack.forEach(url => {
-        if (url) animationUrls.push(url);
-      });
-    } else if (characterAnimations.character_attack) {
-      animationUrls.push(characterAnimations.character_attack);
-    }
-
-    for (const url of animationUrls) {
-      //  Check if already downloaded by universalAssetPreloader
-      const cachedPath = universalAssetPreloader.getCachedAssetPath(url);
-      if (cachedPath !== url) {
-        // Already cached
-        preloadedImages.set(url, true);
-        console.log(`🎬 Character animation already cached: ${url.slice(-50)}`);
-      } else {
-        console.log(`🎬 Character animation using original URL: ${url.slice(-50)}`);
-        // Still use the original URL if not cached, but mark as checked
-        preloadedImages.set(url, true);
-      }
-    }
-
-    console.log(`🐕 Character animation preloading completed`);
-  }, [characterAnimations, preloadedImages]);
-
+  // ========== Reset positionX when state changes away from attack ==========
   useEffect(() => {
-    if (Object.keys(characterAnimations).length > 0) {
-      preloadAnimations();
+    if (currentState !== 'attack' && currentState !== 'run') {
+      // ✅ Immediately cancel and reset positionX to 0
+      cancelAnimation(positionX);
+      positionX.value = 0;
+      console.log(`🐕 Character - Force reset position to 0 for ${currentState} state`);
     }
-  }, [preloadAnimations]);
+  }, [currentState]);
 
-  //  Memoize blink animations
-  const createStartBlink = useCallback(() => {
-    return withSequence(
-      withTiming(0.2, { duration: BLINK_DURATION, easing: Easing.inOut(Easing.quad) }),
-      withTiming(1, { duration: BLINK_DURATION, easing: Easing.inOut(Easing.quad) })
-    );
-  }, [BLINK_DURATION]);
+  // ========== Animation Configuration Logic ==========
+  const animationConfig = useMemo(() => {
+    const configs = {
+      idle: {
+        url: characterAnimations.character_idle || characterAnimations.idle,
+        shouldLoop: true,
+        isCompound: false,
+      },
+      attack: {
+        url: Array.isArray(characterAnimations.character_attack)
+          ? characterAnimations.character_attack.filter(url => url && typeof url === 'string')[0]
+          : characterAnimations.character_attack,
+        shouldLoop: false,
+        isCompound: false,
+      },
+      hurt: {
+        url: characterAnimations.character_hurt || characterAnimations.hurt,
+        shouldLoop: false,
+        isCompound: false,
+      },
+      run: {
+        url: characterAnimations.character_run || characterAnimations.run,
+        shouldLoop: true,
+        isCompound: false,
+      },
+      dies: {
+        url: characterAnimations.character_dies || characterAnimations.dies,
+        shouldLoop: false,
+        isCompound: false,
+      },
+    };
 
-  const createCenterBlink = useCallback(() => {
-    return withSequence(
-      withTiming(0.1, { duration: BLINK_DURATION, easing: Easing.inOut(Easing.quad) }),
-      withTiming(1, { duration: BLINK_DURATION, easing: Easing.inOut(Easing.quad) })
-    );
-  }, [BLINK_DURATION]);
+    return configs[currentState] || configs.idle;
+  }, [currentState, characterAnimations]);
 
-  const createEndBlink = useCallback(() => {
-    return withSequence(
-      withTiming(0.05, { duration: BLINK_DURATION, easing: Easing.inOut(Easing.quad) }),
-      withTiming(1, { duration: BLINK_DURATION, easing: Easing.inOut(Easing.quad) })
-    );
-  }, [BLINK_DURATION]);
-
-  const notifyAnimationComplete = useCallback(() => {
-    if (onAnimationComplete && typeof onAnimationComplete === 'function') {
-      onAnimationComplete(currentState);
+  // ========== Sync Animation Config to State ==========
+  useEffect(() => {
+    if (animationConfig.url) {
+      setCurrentAnimationUrl(animationConfig.url);
+    } else if (!currentAnimationUrl) {
+      setCurrentAnimationUrl(initialUrl);
     }
-  }, [onAnimationComplete, currentState]);
 
-  const scheduleAttackPhase = useCallback(
-    (attackDuration, attackUrl) => {
-      if (phaseTimeoutRef.current) {
-        clearTimeout(phaseTimeoutRef.current);
-        phaseTimeoutRef.current = null;
-      }
+    setIsAnimationLooping(animationConfig.shouldLoop);
+    setIsCompoundAnimation(animationConfig.isCompound);
+  }, [animationConfig, initialUrl, currentAnimationUrl]);
 
-      phaseTimeoutRef.current = setTimeout(() => {
-        setCompoundPhase('attack');
-        if (attackUrl && attackUrl !== currentAnimationUrl) {
-          setCurrentAnimationUrl(attackUrl);
-        }
-
-        frameIndex.value = 0;
-        frameIndex.value = withTiming(
-          TOTAL_FRAMES - 1,
-          { 
-            duration: ATTACK_ANIMATION_DURATION,
-            easing: Easing.inOut(Easing.ease)
-          },
-          (attackFinished) => {
-            if (attackFinished) {
-              runOnJS(notifyAnimationComplete)();
-              frameIndex.value = 0;
-              blinkOpacity.value = 1;
-            }
-          }
-        );
-      }, 50);
-    },
-    [notifyAnimationComplete, currentAnimationUrl, ATTACK_ANIMATION_DURATION]
-  );
-
-  const runScheduleHold = useCallback(
-    (delayMs, attackDuration, attackUrl) => {
-      if (phaseTimeoutRef.current) {
-        clearTimeout(phaseTimeoutRef.current);
-        phaseTimeoutRef.current = null;
-      }
-      phaseTimeoutRef.current = setTimeout(() => {
-        scheduleAttackPhase(attackDuration, attackUrl);
-      }, delayMs);
-    },
-    [scheduleAttackPhase]
-  );
-
-  //  Updated prefetch using universalAssetPreloader
+  // ========== Image Preloading ==========
   const prefetchWithCache = useCallback(async () => {
     if (!currentAnimationUrl) return;
-    
+
     try {
-      //  Check if already cached by universalAssetPreloader
       const cachedPath = universalAssetPreloader.getCachedAssetPath(currentAnimationUrl);
-      if (cachedPath !== currentAnimationUrl) {
-        // Already cached, mark as ready
+
+      if (cachedPath !== currentAnimationUrl || preloadedImages.has(currentAnimationUrl)) {
         setImageReady(true);
         preloadedImages.set(currentAnimationUrl, true);
         console.log(`🐕 Using cached character animation: ${currentAnimationUrl.slice(-50)}`);
         return;
       }
 
-      //  If not cached, try to prefetch the original URL
       await RNImage.prefetch(currentAnimationUrl);
       preloadedImages.set(currentAnimationUrl, true);
       setImageReady(true);
       console.log(`🐕 Prefetched character animation: ${currentAnimationUrl.slice(-50)}`);
     } catch (err) {
-      console.warn(`🐕 Character prefetch failed for: ${currentAnimationUrl}`, err);
+      console.warn(`Character prefetch failed:`, err);
     }
   }, [currentAnimationUrl, preloadedImages]);
 
@@ -233,7 +166,6 @@ const DogCharacter = ({
 
     if (!currentAnimationUrl) return;
 
-    //  Check if already cached or preloaded
     const cachedPath = universalAssetPreloader.getCachedAssetPath(currentAnimationUrl);
     if (cachedPath !== currentAnimationUrl || preloadedImages.has(currentAnimationUrl)) {
       if (mounted) setImageReady(true);
@@ -241,360 +173,315 @@ const DogCharacter = ({
     }
 
     prefetchWithCache();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [currentAnimationUrl, prefetchWithCache]);
 
-  const animationConfig = useMemo(() => {
-    let animationUrl = '';
-    let shouldLoop = true;
-    let isCompound = false;
+  // ========== Animation Callbacks ==========
+  const notifyAnimationComplete = useCallback(() => {
+    if (onAnimationComplete && typeof onAnimationComplete === 'function') {
+      try {
+        onAnimationComplete(currentState);
+      } catch (e) {
+        console.warn(`Character onAnimationComplete error:`, e);
+      }
+    }
+  }, [onAnimationComplete, currentState]);
 
-    console.log(`🐕 Setting animation config for state: ${currentState}`);
+  const scheduleAttackPhase = useCallback(
+    (attackDuration, attackUrl) => {
+      if (phaseTimeoutRef.current) {
+        clearTimeout(phaseTimeoutRef.current);
+      }
 
-    switch (currentState) {
-      case 'idle':
-        //  URLs are already transformed to use cached paths from gameService
-        animationUrl = characterAnimations.character_idle || characterAnimations.idle;
-        shouldLoop = true;
-        isCompound = false;
-        break;
-      case 'attack':
-       let attackUrl = '';
-      if (Array.isArray(characterAnimations.character_attack)) {
-        const attackAnimations = characterAnimations.character_attack.filter(url => url && typeof url === 'string');
-        if (attackAnimations.length > 0) {
-          attackUrl = attackAnimations[0]; //  Already transformed
+      phaseTimeoutRef.current = setTimeout(() => {
+        if (attackUrl && attackUrl !== currentAnimationUrl) {
+          setCurrentAnimationUrl(attackUrl);
         }
-      } else if (typeof characterAnimations.character_attack === 'string' && characterAnimations.character_attack) {
-        attackUrl = characterAnimations.character_attack; //  Already transformed
-      }
-      
-      animationUrl = attackUrl;
-      shouldLoop = false;
-      isCompound = false;
-      break;
-      case 'hurt':
-        animationUrl = characterAnimations.character_hurt || characterAnimations.hurt; //  Already transformed
-        shouldLoop = false;
-        isCompound = false;
-      break;
-      case 'run':
-        animationUrl = characterAnimations.character_run || characterAnimations.run; //  Already transformed
-        shouldLoop = true;
-        isCompound = false;
-        break;
-      case 'dies':
-        animationUrl = characterAnimations.character_dies || characterAnimations.dies; //  Already transformed
-        shouldLoop = false;
-        isCompound = false;
-        break;
-      default:
-        animationUrl = characterAnimations.character_idle || characterAnimations.idle; //  Already transformed
-        shouldLoop = true;
-        isCompound = false;
-    }
 
-    return { animationUrl, shouldLoop, isCompound };
-  }, [currentState, characterAnimations]);
-
-  useEffect(() => {
-    if (animationConfig.animationUrl) {
-      if (animationConfig.animationUrl !== currentAnimationUrl) {
-        setCurrentAnimationUrl(animationConfig.animationUrl);
-      }
-    }
-    
-    setIsAnimationLooping(animationConfig.shouldLoop);
-    setIsCompoundAnimation(animationConfig.isCompound);
-
-    if (animationConfig.isCompound && currentState === 'attack') {
-      setCompoundPhase('run');
-    } else {
-      setCompoundPhase('');
-    }
-  }, [animationConfig, currentState, currentAnimationUrl]);
-
-  // Enhanced animation timing with smooth start->center->end transition
-  useEffect(() => {
-    if (phaseTimeoutRef.current) {
-      clearTimeout(phaseTimeoutRef.current);
-      phaseTimeoutRef.current = null;
-    }
-
-    if (!isPaused && currentAnimationUrl && imageReady) {
-      cancelAnimation(frameIndex);
-      cancelAnimation(positionX);
-      cancelAnimation(opacity);
-      cancelAnimation(blinkOpacity);
-
-      frameIndex.value = 0;
-      blinkOpacity.value = 1;
-
-      if (isCompoundAnimation && currentState === 'attack') {
-        const phases = COMPOUND_PHASES?.attack || { run: { duration: 1000 }, attack: { duration: 2000 } };
-        positionX.value = 0;
-
-        const naturalRunCycleDuration = FRAME_DURATION * TOTAL_FRAMES;
-
+        frameIndex.value = 0;
         frameIndex.value = withTiming(
           TOTAL_FRAMES - 1,
-          { duration: Math.min(phases.run.duration, naturalRunCycleDuration) },
-          (finished) => {
-            if (finished) {
-              let attackUrl;
-              if (Array.isArray(characterAnimations.character_attack)) {
-                const attackAnimations = characterAnimations.character_attack.filter(url => url);
-                attackUrl = attackAnimations.length > 0 ? attackAnimations[0] : null;
-              } else {
-                attackUrl = characterAnimations.character_attack || characterAnimations.attack;
-              }
-
-              if (phases.run.duration <= naturalRunCycleDuration) {
-                runOnJS(scheduleAttackPhase)(phases.attack.duration, attackUrl);
-              } else {
-                const remainingDuration = phases.run.duration - naturalRunCycleDuration;
-                runOnJS(runScheduleHold)(remainingDuration, phases.attack.duration, attackUrl);
-              }
-            }
-          }
-        );
-      }  else if (isAnimationLooping) {
-      positionX.value = START_POSITION;
-      opacity.value = 1;
-      
-      //  Don't loop dies animation
-      if (currentState === 'dies') {
-        frameIndex.value = withTiming(
-          TOTAL_FRAMES - 1,
-          { 
-            duration: ANIMATION_DURATIONS.dies || 2000,
-            easing: Easing.inOut(Easing.ease)
+          {
+            duration: attackDuration,
+            easing: Easing.inOut(Easing.ease),
           },
           (finished) => {
             if (finished) {
               runOnJS(notifyAnimationComplete)();
-              frameIndex.value = TOTAL_FRAMES - 1; 
+              frameIndex.value = 0;
             }
           }
         );
-      } else {
-        frameIndex.value = withRepeat(
-          withTiming(TOTAL_FRAMES - 1, {
-            duration: FRAME_DURATION * TOTAL_FRAMES,
-            easing: Easing.linear,
-          }),
-          -1,
-          false
-        );
+      }, 50);
+    },
+    [notifyAnimationComplete, currentAnimationUrl, TOTAL_FRAMES]
+  );
+
+  const runScheduleHold = useCallback(
+    (delayMs, attackDuration, attackUrl) => {
+      if (phaseTimeoutRef.current) {
+        clearTimeout(phaseTimeoutRef.current);
       }
-    } else {
-      if (currentState === 'attack') {
-          positionX.value = START_POSITION;
-          opacity.value = 1;
-          
-          console.log(`🐕 Phase 1: Starting blink at START position`);
-          blinkOpacity.value = createStartBlink();
-          
-          setTimeout(() => {
-            console.log(`🐕 Phase 2: Moving to CENTER and blinking`);
-            positionX.value = withTiming(CENTER_POSITION, { 
-              duration: MOVEMENT_DURATION,
-              easing: Easing.inOut(Easing.quad)
-            });
-            blinkOpacity.value = createCenterBlink();
-          }, BLINK_DURATION * 2);
+      phaseTimeoutRef.current = setTimeout(() => {
+        scheduleAttackPhase(attackDuration, attackUrl);
+      }, delayMs);
+    },
+    [scheduleAttackPhase]
+  );
 
-          setTimeout(() => {
-            console.log(`🐕 Phase 3: Moving to END and final blink`);
-            positionX.value = withTiming(RUN_DISTANCE, { 
-              duration: MOVEMENT_DURATION,
-              easing: Easing.inOut(Easing.quad)
-            });
-            blinkOpacity.value = createEndBlink();
-          }, (MOVEMENT_DURATION + BLINK_DURATION * 2) + (BLINK_DURATION * 2));
+  // ========== Main Animation Effect ==========
+  useEffect(() => {
+    if (phaseTimeoutRef.current) {
+      clearTimeout(phaseTimeoutRef.current);
+    }
 
-          const totalBlinkingTime = (BLINK_DURATION * 2) + MOVEMENT_DURATION + (BLINK_DURATION * 2) + MOVEMENT_DURATION + (BLINK_DURATION * 2);
-          
-          setTimeout(() => {
-            frameIndex.value = 0;
-            frameIndex.value = withTiming(
-              TOTAL_FRAMES - 1,
-              { 
-                duration: ATTACK_ANIMATION_DURATION,
-                easing: Easing.inOut(Easing.ease)
-              },
-              (finished) => {
-                if (finished) {
-                  runOnJS(notifyAnimationComplete)();
-                  frameIndex.value = 0;
-                  blinkOpacity.value = 1;
-                }
-              }
-            );
-          }, totalBlinkingTime);
-
-        } else {
-          positionX.value = START_POSITION;
-          opacity.value = 1;
-
-          const animationDuration =
-            ANIMATION_DURATIONS[currentState] || FRAME_DURATION * TOTAL_FRAMES;
-
-          frameIndex.value = withTiming(
-            TOTAL_FRAMES - 1,
-            { 
-              duration: animationDuration,
-              easing: Easing.inOut(Easing.ease)
-            },
-            (finished) => {
-            if (finished) {
-              if (currentState === 'dies') {
-                runOnJS(notifyAnimationComplete)();
-                frameIndex.value = TOTAL_FRAMES - 1;
-              } else {
-                runOnJS(notifyAnimationComplete)();
-                frameIndex.value = 0;
-              }
-            }
-          } 
-          );
-        }
-      }
-    } else {
+    if (isPaused || !currentAnimationUrl || !imageReady) {
       cancelAnimation(frameIndex);
       cancelAnimation(positionX);
       cancelAnimation(opacity);
-      cancelAnimation(blinkOpacity);
+      return;
     }
 
+    // ✅ Reset animations
+    cancelAnimation(frameIndex);
+    cancelAnimation(positionX);
+    cancelAnimation(opacity);
+
+    frameIndex.value = 0;
+
+    // ✅ FORCE position reset for non-attack/run states (especially hurt)
+    if (currentState !== 'attack' && currentState !== 'run') {
+      positionX.value = 0;
+      opacity.value = 1;
+    }
+
+    // ========== Compound Attack Animation ==========
+    if (isCompoundAnimation && currentState === 'attack') {
+      const phases = COMPOUND_PHASES.attack;
+      const naturalRunDuration = FRAME_DURATION * TOTAL_FRAMES;
+
+      frameIndex.value = withTiming(
+        TOTAL_FRAMES - 1,
+        {
+          duration: Math.min(phases.run.duration, naturalRunDuration),
+          easing: Easing.linear,
+        },
+        (finished) => {
+          if (finished) {
+            const attackUrl = Array.isArray(characterAnimations.character_attack)
+              ? characterAnimations.character_attack.filter(url => url)[0]
+              : characterAnimations.character_attack;
+
+            if (phases.run.duration <= naturalRunDuration) {
+              runOnJS(scheduleAttackPhase)(phases.attack.duration, attackUrl);
+            } else {
+              const remainingDuration = phases.run.duration - naturalRunDuration;
+              runOnJS(runScheduleHold)(remainingDuration, phases.attack.duration, attackUrl);
+            }
+          }
+        }
+      );
+      return;
+    }
+
+    // ========== Looping Animation (Idle, Run) ==========
+    if (isAnimationLooping) {
+      positionX.value = 0;
+      opacity.value = 1;
+
+      frameIndex.value = withRepeat(
+        withTiming(TOTAL_FRAMES - 1, {
+          duration: FRAME_DURATION * TOTAL_FRAMES,
+          easing: Easing.linear,
+        }),
+        -1,
+        false
+      );
+      return;
+    }
+
+    // ========== Non-Looping Animation (Hurt, Dies, Attack) ==========
+    if (currentState === 'attack') {
+      console.log(`⚔️ Character entering attack state - will animate positionX`);
+      positionX.value = 0;
+      opacity.value = 1;
+
+      if (attackMovement === 'slide') {
+        positionX.value = withTiming(RUN_DISTANCE, {
+          duration: ANIMATION_DURATIONS.attack,
+          easing: Easing.inOut(Easing.quad),
+        });
+      } else if (attackMovement === 'teleport') {
+        positionX.value = RUN_DISTANCE;
+      } else if (attackMovement === 'fade') {
+        positionX.value = RUN_DISTANCE;
+        opacity.value = 0;
+        opacity.value = withTiming(1, {
+          duration: Math.min(300, ANIMATION_DURATIONS.attack),
+          easing: Easing.inOut(Easing.quad),
+        });
+      }
+    } else {
+      // ✅ For hurt, dies, run - NEVER animate positionX
+      console.log(`🩸 Character entering ${currentState} state - position will stay at 0`);
+      positionX.value = 0;
+      opacity.value = 1;
+    }
+
+    // Play frame animation
+    const duration = ANIMATION_DURATIONS[currentState] || (FRAME_DURATION * TOTAL_FRAMES);
+    console.log(`🎬 Character ${currentState} animation starting - duration: ${duration}ms, positionX: ${positionX.value}`);
+
+    frameIndex.value = withTiming(
+      TOTAL_FRAMES - 1,
+      {
+        duration,
+        easing: Easing.inOut(Easing.ease),
+      },
+      (finished) => {
+        if (finished) {
+          console.log(`✅ Character ${currentState} animation completed`);
+          // ✅ Always reset position after animation
+          positionX.value = 0;
+          opacity.value = 1;
+
+          if (currentState === 'dies') {
+            runOnJS(notifyAnimationComplete)();
+            frameIndex.value = TOTAL_FRAMES - 1;
+          } else {
+            runOnJS(notifyAnimationComplete)();
+            frameIndex.value = 0;
+          }
+        }
+      }
+    );
+
+    // ========== Cleanup ==========
     return () => {
       cancelAnimation(frameIndex);
       cancelAnimation(positionX);
       cancelAnimation(opacity);
-      cancelAnimation(blinkOpacity);
       if (phaseTimeoutRef.current) {
         clearTimeout(phaseTimeoutRef.current);
-        phaseTimeoutRef.current = null;
       }
     };
   }, [
     isPaused,
     currentAnimationUrl,
+    imageReady,
     isAnimationLooping,
+    isCompoundAnimation,
     currentState,
     notifyAnimationComplete,
-    imageReady,
-    isCompoundAnimation,
     scheduleAttackPhase,
     runScheduleHold,
-    createStartBlink,
-    createCenterBlink,
-    createEndBlink,
-    START_POSITION,
-    CENTER_POSITION,
-    RUN_DISTANCE,
-    BLINK_DURATION,
-    MOVEMENT_DURATION,
-    ATTACK_ANIMATION_DURATION,
     ANIMATION_DURATIONS,
     COMPOUND_PHASES,
+    RUN_DISTANCE,
+    FRAME_DURATION,
+    TOTAL_FRAMES,
+    attackMovement,
     characterAnimations,
   ]);
 
-  //  Memoize animated styles with responsive dimensions
+  // ========== Animated Styles ==========
   const animatedStyle = useAnimatedStyle(() => {
-    const currentFrame = Math.floor(frameIndex.value) % TOTAL_FRAMES;
-
-    const column = currentFrame % SPRITE_COLUMNS;
-    const row = Math.floor(currentFrame / SPRITE_COLUMNS);
-
-    const xOffset = -(column * SPRITE_SIZE);
-    const yOffset = -(row * SPRITE_SIZE);
+    const frame = Math.floor(frameIndex.value) % TOTAL_FRAMES;
+    const column = frame % SPRITE_COLUMNS;
+    const row = Math.floor(frame / SPRITE_COLUMNS);
 
     return {
-      transform: [{ translateX: xOffset }, { translateY: yOffset }],
+      transform: [
+        { translateX: -(column * SPRITE_SIZE) },
+        { translateY: -(row * SPRITE_SIZE) },
+      ],
     };
   }, [SPRITE_SIZE]);
 
-    const positionStyle = useAnimatedStyle(() => {
+  const positionStyle = useAnimatedStyle(() => {
     if (currentState === 'attack' || currentState === 'run') {
+      console.log(`📍 Applying positionX movement: ${positionX.value}`);
       return {
         transform: [{ translateX: positionX.value }],
       };
     }
+    console.log(`📍 Forcing position 0 for ${currentState} state`);
     return {
       transform: [{ translateX: 0 }],
     };
   }, [currentState]);
-  const opacityStyle = useAnimatedStyle(() => {
-    return {
-      opacity: opacity.value * blinkOpacity.value,
-    };
-  }, []);
 
+  const opacityStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }), []);
+
+  // ========== Event Handlers ==========
   const handleImageError = useCallback((error) => {
-    console.error(`🐕 Failed to load animation: ${currentAnimationUrl}`, error);
-  }, [currentAnimationUrl]);
+    console.warn(`🐕 Character image load error:`, error);
+  }, []);
 
   const handleImageLoadEnd = useCallback(() => {
     setImageReady(true);
   }, []);
 
-  if (!currentAnimationUrl) {
-    console.warn('🐕 No animation URL available, not rendering character');
-    return null;
-  }
-
+  // ========== Render ==========
   return (
     <Animated.View
-      style={[styles.dogRun, isPaused && styles.pausedElement, positionStyle, opacityStyle]}
+      style={[
+        styles.characterContainer,
+        positionStyle,
+        opacityStyle,
+        isPaused && styles.paused,
+      ]}
     >
       <View style={[styles.spriteContainer, { width: SPRITE_SIZE, height: SPRITE_SIZE }]}>
-        <Animated.View style={[styles.spriteSheet, animatedStyle, {
-          width: SPRITE_SIZE * SPRITE_COLUMNS,
-          height: SPRITE_SIZE * SPRITE_ROWS,
-        }]}>
-          <Image
-            source={{ uri: currentAnimationUrl }}
-            style={styles.spriteImage}
-            contentFit="contain"
-            onError={handleImageError}
-            onLoadEnd={handleImageLoadEnd}
-            cachePolicy="disk"
-          />
+        <Animated.View
+          style={[
+            styles.spriteSheet,
+            animatedStyle,
+            {
+              width: SPRITE_SIZE * SPRITE_COLUMNS,
+              height: SPRITE_SIZE * SPRITE_ROWS,
+            },
+          ]}
+        >
+          {currentAnimationUrl ? (
+            <Image
+              source={{ uri: currentAnimationUrl }}
+              style={styles.spriteImage}
+              contentFit="cover"
+              onLoadEnd={handleImageLoadEnd}
+              onError={handleImageError}
+              cachePolicy="disk"
+            />
+          ) : (
+            <View style={[styles.spriteImage, { backgroundColor: 'transparent' }]} />
+          )}
         </Animated.View>
       </View>
     </Animated.View>
   );
 };
 
-//  Responsive styles
+// ========== Styles ==========
 const styles = StyleSheet.create({
-  dogRun: {
+  characterContainer: {
     position: 'absolute',
-    left: scaleWidth(-8), //  Responsive positioning
-    top: scaleHeight(133), //  Responsive positioning
+    left: scaleWidth(-8),
+    top: scaleHeight(133),
     justifyContent: 'flex-start',
     alignItems: 'center',
     zIndex: 10,
   },
-
   spriteContainer: {
     overflow: 'hidden',
   },
-
-  spriteSheet: {
-    // Dimensions set dynamically in component
-  },
-
+  spriteSheet: {},
   spriteImage: {
     width: '100%',
     height: '100%',
   },
-
-  pausedElement: {
+  paused: {
     opacity: 0.6,
   },
 });
