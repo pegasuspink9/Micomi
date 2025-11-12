@@ -100,7 +100,7 @@ useEffect(() => {
     console.log('🎉 Victory detected - starting celebration sequence');
     setVictoryAnimationPhase('celebrating');
     
-    // ✅ Fix: Use setCharacterAnimationState instead of setCharacterState
+    //  Fix: Use setCharacterAnimationState instead of setCharacterState
     setCharacterAnimationState('idle');
     
     victoryTimeoutRef.current = setTimeout(() => {
@@ -212,7 +212,6 @@ const handleCharacterAnimationComplete = useCallback((animationState) => {
   }
 }, [gameState?.submissionResult?.fightResult, playerHealth, onSubmissionAnimationComplete]);
 
-
 const handleEnemyAnimationComplete = useCallback((index) => {
   return (animationState) => {
     console.log(`🎬 Enemy ${index} ${animationState} animation completed`);
@@ -221,12 +220,20 @@ const handleEnemyAnimationComplete = useCallback((index) => {
     
     if (animationState === 'hurt') {
       const enemyHealth = fightResult?.enemy?.enemy_health ?? 0;
+      const enemyDiesUrl = fightResult?.enemy?.enemy_dies;
       
-      if (enemyHealth <= 0) {
-        console.log('🦹 Enemy hurt completed, health is 0 - transitioning to dies');
+      // ✅ Only transition to dies if API explicitly provides dies animation AND health is 0
+      if (enemyDiesUrl && enemyHealth <= 0) {
+        console.log('🦹 Enemy hurt completed, dies animation available, health is 0 - transitioning to dies');
         setEnemyAnimationStates(prev => prev.map((state, i) => i === index ? 'dies' : state));
-        return; // Don't reset isPlayingSubmissionAnimation yet
+        return;
+      } else if (enemyHealth <= 0 && !enemyDiesUrl) {
+        // ✅ Health is 0 but no dies animation (bonus round) - stay on last frame
+        console.log('🦹 Enemy health is 0 but no dies animation (bonus round) - staying on hurt frame');
+        setIsPlayingSubmissionAnimation(false);
+        return;
       } else {
+        // ✅ Health > 0 - return to idle
         console.log('🦹 Enemy hurt completed, still alive - returning to idle');
         setEnemyAnimationStates(prev => prev.map((state, i) => i === index ? 'idle' : state));
         setIsPlayingSubmissionAnimation(false);
@@ -237,13 +244,12 @@ const handleEnemyAnimationComplete = useCallback((index) => {
     if (animationState === 'dies') {
       console.log('💀 Enemy dies animation completed - staying on last frame');
       setIsPlayingSubmissionAnimation(false);
-      // Enemy stays in dies state, character will handle victory celebration
       return;
     }
+
     if (animationState === 'attack') {
       console.log('🦹 Enemy attack completed - returning to idle');
       setEnemyAnimationStates(prev => prev.map((state, i) => i === index ? 'idle' : state));
-      // Don't reset isPlayingSubmissionAnimation - let character hurt animation complete first
       return;
     }
   };
@@ -274,23 +280,22 @@ useEffect(() => {
     console.log('🧪 Potion usage detected - skipping animations');
     return;
   }
-
-
   
   if (submission && lastSubmissionKeyRef.current !== submissionKey) {
     lastSubmissionKeyRef.current = submissionKey;
 
     if (submission.isCorrect === true) {
-      console.log(`✅ Correct answer - character attacks enemy`);
+      console.log(` Correct answer - character attacks enemy`);
       setCharacterAnimationState('attack');
       
-      // ✅ Enemy gets hurt first, then check if dies
-      const enemyHealth = submission.fightResult?.enemy?.enemy_health ?? enemyHealth;
-      if (enemyHealth <= 0) {
-        console.log('🦹 Enemy will die from this attack');
-        setEnemyAnimationStates(prev => prev.map(() => 'hurt')); // hurt first, dies will be triggered by animation complete
+      //  Check if enemy has dies animation from API
+      const enemyDiesUrl = submission.fightResult?.enemy?.enemy_dies;
+      
+      if (enemyDiesUrl) {
+        console.log('🦹 Enemy dies animation provided by API - enemy will die');
+        setEnemyAnimationStates(prev => prev.map(() => 'hurt')); // hurt first, then dies
       } else {
-        console.log('🦹 Enemy gets hurt but survives');
+        console.log('🦹 No enemy dies animation - enemy gets hurt only (bonus round scenario)');
         setEnemyAnimationStates(prev => prev.map(() => 'hurt'));
       }
       setIsPlayingSubmissionAnimation(true);
@@ -299,11 +304,13 @@ useEffect(() => {
       
       setEnemyAnimationStates(prev => prev.map(() => 'attack'));
       
+      //  Check if character has dies animation from API
+      const characterDiesUrl = submission.fightResult?.character?.character_dies;
       const characterHealth = submission.fightResult?.character?.character_health ?? playerHealth;
       
-      if (characterHealth <= 0) {
-        console.log('💀 Character will die from this attack');
-        setCharacterAnimationState('hurt'); // hurt first, dies will be triggered by animation complete
+      if (characterDiesUrl && characterHealth <= 0) {
+        console.log('💀 Character dies animation provided by API - character will die');
+        setCharacterAnimationState('hurt'); // hurt first, then dies
       } else {
         console.log('🩸 Character gets hurt but survives');
         setCharacterAnimationState('hurt');
@@ -313,8 +320,12 @@ useEffect(() => {
     return;
   }
 
-  if (playerHealth <= 0 && characterAnimationState !== 'dies' && !isPlayingSubmissionAnimation) {
-    console.log(`💀 Player health is 0 - transitioning to dies animation`);
+  //  Only force dies if health is 0 AND dies animation is explicitly provided
+  const characterDiesUrl = gameState.submissionResult?.fightResult?.character?.character_dies || 
+                           gameState.selectedCharacter?.character_dies;
+  
+  if (playerHealth <= 0 && characterDiesUrl && characterAnimationState !== 'dies' && !isPlayingSubmissionAnimation) {
+    console.log(`💀 Player health is 0 and dies animation available - transitioning to dies`);
     setCharacterAnimationState('dies');
     setIsPlayingSubmissionAnimation(true);
     return;
@@ -326,7 +337,7 @@ useEffect(() => {
     setEnemyAnimationStates(enemies.map(() => 'idle'));
     lastSubmissionKeyRef.current = null;
   }
-}, [gameState.submissionResult, playerHealth, isPlayingSubmissionAnimation, enemies, characterAnimationState]);
+}, [gameState.submissionResult, playerHealth, isPlayingSubmissionAnimation, enemies, characterAnimationState, gameState.selectedCharacter]);
 
   useEffect(() => {
     if (__DEV__ && Math.random() < 0.1) { 

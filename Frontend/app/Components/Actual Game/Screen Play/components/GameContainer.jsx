@@ -10,10 +10,6 @@ const GameContainer = ({ children, borderColor }) => {
       <View style={styles.container}>
         <View style={[styles.innerBorderContainer, { borderColor }]}>
           <View style={styles.contentContainer}>
-            <View style={styles.containerHighlight} />
-            <View style={styles.containerShadow} />
-            <View style={styles.leftHighlight} />
-            <View style={styles.rightShadow} />
             {children}
           </View>
         </View>
@@ -24,95 +20,61 @@ const GameContainer = ({ children, borderColor }) => {
 
 const styles = StyleSheet.create({
   outerFrame: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     borderRadius: SCREEN_WIDTH * 0.11,
-    backgroundColor: '#000000c4', 
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: scale(15),
-    },
+  },
+
+  container: {
+    flex: 1,
+    backgroundColor: '#052a53ff',
+    borderRadius: SCREEN_WIDTH * 0.045,
+    padding: RESPONSIVE.margin.sm,
+    borderTopWidth: scale(3),
+    borderTopColor: '#1a5a7aff',
+    borderLeftWidth: scale(2),
+    borderLeftColor: '#2a6a8aff',
+    borderBottomWidth: scale(4),
+    borderBottomColor: '#2a6a8aff',
+    borderRightWidth: scale(3),
+    borderRightColor: '#2a6a8aff',
   },
 
   innerBorderContainer: {
+    flex: 1,
     borderWidth: scale(6),
     overflow: 'hidden',
     borderRadius: SCREEN_WIDTH * 0.08,
     position: 'relative',
-
-    // Original inner borders preserved
+    backgroundColor: '#ffffff',
     borderTopWidth: scale(6),
-    borderTopColor: '#052a53ff', 
+    borderTopColor: '#f0f8ffff', 
     borderLeftWidth: scale(6),
-    borderLeftColor: '#052a53ff',
+    borderLeftColor: '#e0f0ffff',
     borderBottomWidth: scale(6),
-    borderBottomColor: '#052a53ff',
+    borderBottomColor: '#1a4a6aff',
     borderRightWidth: scale(6),
-    borderRightColor: '#052a53ff', 
-
+    borderRightColor: '#0a4166ff',
   },
 
   contentContainer: {
+    flex: 1,
     borderWidth: scale(2),
-    borderColor: '#052953f2',
+    borderColor: '#8ab4d5ff',
     borderRadius: SCREEN_WIDTH * 0.06,
     overflow: 'hidden',
-    
+    backgroundColor: '#f5f9fcff',
     borderTopWidth: scale(3),
-    borderTopColor: '#052953f2',
+    borderTopColor: '#e8f4ffff',
     borderLeftWidth: scale(3),
-    borderLeftColor: '#052a53ff',
+    borderLeftColor: '#d0e8f8ff',
     borderBottomWidth: scale(3),
-    borderBottomColor: '#052a53ff',
+    borderBottomColor: '#3a6a8aff',
     borderRightWidth: scale(3),
-    borderRightColor: '#052a53ff',
-  },
-
-  containerHighlight: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: scale(40),
-    borderTopLeftRadius: SCREEN_WIDTH * 0.06,
-    borderTopRightRadius: SCREEN_WIDTH * 0.06,
-    pointerEvents: 'none',
-    zIndex: 1,
-  },
-
-  containerShadow: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: scale(30),
-    borderBottomLeftRadius: SCREEN_WIDTH * 0.06,
-    borderBottomRightRadius: SCREEN_WIDTH * 0.06,
-    pointerEvents: 'none',
-    zIndex: 1,
-  },
-
-  leftHighlight: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    bottom: 0,
-    width: scale(20),
-    borderTopLeftRadius: SCREEN_WIDTH * 0.06,
-    borderBottomLeftRadius: SCREEN_WIDTH * 0.06,
-    pointerEvents: 'none',
-    zIndex: 1,
-  },
-
-  rightShadow: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    width: scale(15),
-    borderTopRightRadius: SCREEN_WIDTH * 0.06,
-    borderBottomRightRadius: SCREEN_WIDTH * 0.06,
-    pointerEvents: 'none',
-    zIndex: 1,
+    borderRightColor: '#4a7a9aff',
   },
 });
 

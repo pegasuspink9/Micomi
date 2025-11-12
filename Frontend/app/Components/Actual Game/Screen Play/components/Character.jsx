@@ -34,7 +34,7 @@ const DogCharacter = ({
   const opacity = useSharedValue(1);
   const blinkOpacity = useSharedValue(1);
 
-  // ✅ Responsive sprite dimensions
+  //  Responsive sprite dimensions
   const SPRITE_SIZE = useMemo(() => scale(128), []);
   const SPRITE_COLUMNS = 6;
   const SPRITE_ROWS = 4;
@@ -81,14 +81,14 @@ const DogCharacter = ({
       }
     }, []);
 
-  // ✅ Responsive timing constants
+  //  Responsive timing constants
   const BLINK_DURATION = useMemo(() => 50, []);
   const MOVEMENT_DURATION = useMemo(() => 100, []);
   const ATTACK_ANIMATION_DURATION = useMemo(() => 1500, []);
 
   const phaseTimeoutRef = useRef(null);
 
-  // ✅ Enhanced preload animations using universalAssetPreloader
+  //  Enhanced preload animations using universalAssetPreloader
   const preloadAnimations = useCallback(async () => {
     const animationUrls = [
       characterAnimations.character_idle,
@@ -106,7 +106,7 @@ const DogCharacter = ({
     }
 
     for (const url of animationUrls) {
-      // ✅ Check if already downloaded by universalAssetPreloader
+      //  Check if already downloaded by universalAssetPreloader
       const cachedPath = universalAssetPreloader.getCachedAssetPath(url);
       if (cachedPath !== url) {
         // Already cached
@@ -128,7 +128,7 @@ const DogCharacter = ({
     }
   }, [preloadAnimations]);
 
-  // ✅ Memoize blink animations
+  //  Memoize blink animations
   const createStartBlink = useCallback(() => {
     return withSequence(
       withTiming(0.2, { duration: BLINK_DURATION, easing: Easing.inOut(Easing.quad) }),
@@ -202,12 +202,12 @@ const DogCharacter = ({
     [scheduleAttackPhase]
   );
 
-  // ✅ Updated prefetch using universalAssetPreloader
+  //  Updated prefetch using universalAssetPreloader
   const prefetchWithCache = useCallback(async () => {
     if (!currentAnimationUrl) return;
     
     try {
-      // ✅ Check if already cached by universalAssetPreloader
+      //  Check if already cached by universalAssetPreloader
       const cachedPath = universalAssetPreloader.getCachedAssetPath(currentAnimationUrl);
       if (cachedPath !== currentAnimationUrl) {
         // Already cached, mark as ready
@@ -217,7 +217,7 @@ const DogCharacter = ({
         return;
       }
 
-      // ✅ If not cached, try to prefetch the original URL
+      //  If not cached, try to prefetch the original URL
       await RNImage.prefetch(currentAnimationUrl);
       preloadedImages.set(currentAnimationUrl, true);
       setImageReady(true);
@@ -233,7 +233,7 @@ const DogCharacter = ({
 
     if (!currentAnimationUrl) return;
 
-    // ✅ Check if already cached or preloaded
+    //  Check if already cached or preloaded
     const cachedPath = universalAssetPreloader.getCachedAssetPath(currentAnimationUrl);
     if (cachedPath !== currentAnimationUrl || preloadedImages.has(currentAnimationUrl)) {
       if (mounted) setImageReady(true);
@@ -255,7 +255,7 @@ const DogCharacter = ({
 
     switch (currentState) {
       case 'idle':
-        // ✅ URLs are already transformed to use cached paths from gameService
+        //  URLs are already transformed to use cached paths from gameService
         animationUrl = characterAnimations.character_idle || characterAnimations.idle;
         shouldLoop = true;
         isCompound = false;
@@ -265,10 +265,10 @@ const DogCharacter = ({
       if (Array.isArray(characterAnimations.character_attack)) {
         const attackAnimations = characterAnimations.character_attack.filter(url => url && typeof url === 'string');
         if (attackAnimations.length > 0) {
-          attackUrl = attackAnimations[0]; // ✅ Already transformed
+          attackUrl = attackAnimations[0]; //  Already transformed
         }
       } else if (typeof characterAnimations.character_attack === 'string' && characterAnimations.character_attack) {
-        attackUrl = characterAnimations.character_attack; // ✅ Already transformed
+        attackUrl = characterAnimations.character_attack; //  Already transformed
       }
       
       animationUrl = attackUrl;
@@ -276,22 +276,22 @@ const DogCharacter = ({
       isCompound = false;
       break;
       case 'hurt':
-        animationUrl = characterAnimations.character_hurt || characterAnimations.hurt; // ✅ Already transformed
+        animationUrl = characterAnimations.character_hurt || characterAnimations.hurt; //  Already transformed
         shouldLoop = false;
         isCompound = false;
       break;
       case 'run':
-        animationUrl = characterAnimations.character_run || characterAnimations.run; // ✅ Already transformed
+        animationUrl = characterAnimations.character_run || characterAnimations.run; //  Already transformed
         shouldLoop = true;
         isCompound = false;
         break;
       case 'dies':
-        animationUrl = characterAnimations.character_dies || characterAnimations.dies; // ✅ Already transformed
+        animationUrl = characterAnimations.character_dies || characterAnimations.dies; //  Already transformed
         shouldLoop = false;
         isCompound = false;
         break;
       default:
-        animationUrl = characterAnimations.character_idle || characterAnimations.idle; // ✅ Already transformed
+        animationUrl = characterAnimations.character_idle || characterAnimations.idle; //  Already transformed
         shouldLoop = true;
         isCompound = false;
     }
@@ -364,7 +364,7 @@ const DogCharacter = ({
       positionX.value = START_POSITION;
       opacity.value = 1;
       
-      // ✅ Don't loop dies animation
+      //  Don't loop dies animation
       if (currentState === 'dies') {
         frameIndex.value = withTiming(
           TOTAL_FRAMES - 1,
@@ -503,7 +503,7 @@ const DogCharacter = ({
     characterAnimations,
   ]);
 
-  // ✅ Memoize animated styles with responsive dimensions
+  //  Memoize animated styles with responsive dimensions
   const animatedStyle = useAnimatedStyle(() => {
     const currentFrame = Math.floor(frameIndex.value) % TOTAL_FRAMES;
 
@@ -518,12 +518,16 @@ const DogCharacter = ({
     };
   }, [SPRITE_SIZE]);
 
-  const positionStyle = useAnimatedStyle(() => {
+    const positionStyle = useAnimatedStyle(() => {
+    if (currentState === 'attack' || currentState === 'run') {
+      return {
+        transform: [{ translateX: positionX.value }],
+      };
+    }
     return {
-      transform: [{ translateX: positionX.value }],
+      transform: [{ translateX: 0 }],
     };
-  }, []);
-
+  }, [currentState]);
   const opacityStyle = useAnimatedStyle(() => {
     return {
       opacity: opacity.value * blinkOpacity.value,
@@ -566,12 +570,12 @@ const DogCharacter = ({
   );
 };
 
-// ✅ Responsive styles
+//  Responsive styles
 const styles = StyleSheet.create({
   dogRun: {
     position: 'absolute',
-    left: scaleWidth(-8), // ✅ Responsive positioning
-    top: scaleHeight(133), // ✅ Responsive positioning
+    left: scaleWidth(-8), //  Responsive positioning
+    top: scaleHeight(133), //  Responsive positioning
     justifyContent: 'flex-start',
     alignItems: 'center',
     zIndex: 10,

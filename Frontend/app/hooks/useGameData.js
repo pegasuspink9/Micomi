@@ -88,7 +88,7 @@ export const useGameData = (playerId, levelId) => {
       setGameState(unifiedState);
       console.log('🎮 Game data loaded successfully');
       
-      // ✅ Check download results
+      //  Check download results
       if (responseData.downloadStats) {
         const { downloaded, total, failedUrls } = responseData.downloadStats;
         console.log(`📥 Animation download completed: ${downloaded}/${total}`);
@@ -150,7 +150,7 @@ export const useGameData = (playerId, levelId) => {
       
       console.log(`Submitting answer for challenge ${gameState.currentChallenge.id}:`, selectedAnswers);
       
-      // ✅ Don't pass animation progress handler for submissions
+      //  Don't pass animation progress handler for submissions
       const responseData = await gameService.submitAnswer(
         playerId, 
         levelId, 
@@ -228,7 +228,7 @@ export const useGameData = (playerId, levelId) => {
       setDownloadProgress({ loaded: 0, total: 0, progress: 0, currentUrl: null });
       setIndividualAnimationProgress({ url: null, loaded: 0, total: 0, progress: 0 });
 
-      // ✅ Use retryLevel instead of enterLevel for clearer logging
+      //  Use retryLevel instead of enterLevel for clearer logging
       const data = await gameService.retryLevel(
         playerId, 
         levelId,
@@ -244,7 +244,7 @@ export const useGameData = (playerId, levelId) => {
         const extractedGameState = gameService.extractUnifiedGameState(data, false);
         if (extractedGameState) {
           setGameState(extractedGameState);
-          console.log('✅ Level retried successfully with fresh data');
+          console.log(' Level retried successfully with fresh data');
         } else {
           throw new Error('Failed to extract game state from retry response');
         }
@@ -273,7 +273,7 @@ export const useGameData = (playerId, levelId) => {
       setDownloadProgress({ loaded: 0, total: 0, progress: 0, currentUrl: '' });
       setIndividualAnimationProgress({ url: '', progress: 0 });
 
-      // ✅ Use enterLevel API for next level
+      //  Use enterLevel API for next level
       const data = await gameService.enterLevel(
         playerId, 
         nextLevelId,
@@ -285,7 +285,7 @@ export const useGameData = (playerId, levelId) => {
         const extractedGameState = gameService.extractUnifiedGameState(data, false);
         if (extractedGameState) {
           setGameState(extractedGameState);
-          console.log('✅ Next level loaded successfully');
+          console.log(' Next level loaded successfully');
         } else {
           throw new Error('Failed to extract game state from next level response');
         }

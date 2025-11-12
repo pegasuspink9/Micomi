@@ -2,40 +2,40 @@ import { Dimensions, PixelRatio } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
-// ✅ Base design dimensions (iPhone 12/13 as reference)
+//  Base design dimensions (iPhone 12/13 as reference)
 const BASE_WIDTH = 390;
 const BASE_HEIGHT = 844;
 
-// ✅ Calculate scale ratios
+//  Calculate scale ratios
 const widthRatio = width / BASE_WIDTH;
 const heightRatio = height / BASE_HEIGHT;
 const minRatio = Math.min(widthRatio, heightRatio);
 
-// ✅ Universal scaling function - maintains aspect ratio
+//  Universal scaling function - maintains aspect ratio
 export const scale = (size) => {
   const newSize = size * minRatio;
   return Math.round(PixelRatio.roundToNearestPixel(newSize));
 };
 
-// ✅ Width-based scaling
+//  Width-based scaling
 export const scaleWidth = (size) => {
   const newSize = (size / BASE_WIDTH) * width;
   return Math.round(PixelRatio.roundToNearestPixel(newSize));
 };
 
-// ✅ Height-based scaling
+//  Height-based scaling
 export const scaleHeight = (size) => {
   const newSize = (size / BASE_HEIGHT) * height;
   return Math.round(PixelRatio.roundToNearestPixel(newSize));
 };
 
-// ✅ Font scaling (slightly different for better readability)
+//  Font scaling (slightly different for better readability)
 export const scaleFont = (size) => {
   const newSize = size * widthRatio;
   return Math.round(PixelRatio.roundToNearestPixel(newSize));
 };
 
-// ✅ Percentage-based functions
+//  Percentage-based functions
 export const wp = (percentage) => {
   return scaleWidth((percentage * BASE_WIDTH) / 100);
 };
@@ -44,7 +44,7 @@ export const hp = (percentage) => {
   return scaleHeight((percentage * BASE_HEIGHT) / 100);
 };
 
-// ✅ FIXED Device type detection
+//  FIXED Device type detection
 export const getDeviceType = () => {
   console.log(`📱 Device detection: width=${width}, height=${height}, ratio=${width/height}`);
   
@@ -64,7 +64,7 @@ export const getDeviceType = () => {
   }
 };
 
-// ✅ Screen information
+//  Screen information
 export const SCREEN = {
   width,
   height,
@@ -76,7 +76,7 @@ export const SCREEN = {
   deviceType: getDeviceType(),
 };
 
-// ✅ Common responsive values
+//  Common responsive values
 export const RESPONSIVE = {
   // Common margins and paddings
   margin: {
@@ -146,7 +146,7 @@ export const RESPONSIVE = {
   },
 };
 
-// ✅ Responsive layout helpers
+//  Responsive layout helpers
 export const layoutHelpers = {
   // Game-specific layout ratios
   screenPlayHeight: hp(35), // 35% of screen height

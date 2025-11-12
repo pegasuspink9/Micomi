@@ -39,6 +39,8 @@ const ThirdGrid = ({
   setThirdGridHeight,
   selectedBlankIndex = 0, 
   usePotion,
+  cardImageUrl,
+  cardDisplaySequence
 }) => {
 
   if (!currentQuestion) {
@@ -101,7 +103,7 @@ const ThirdGrid = ({
   const [runDisabled, setRunDisabled] = useState(false);
   const [potionUsed, setPotionUsed] = useState(false);
   const togglePotions = useCallback(() => {
-    setShowPotions(!showPotions); // ✅ Always allow toggling
+    setShowPotions(!showPotions); //  Always allow toggling
   }, [showPotions]);
 
   const runButtonDisabled = useMemo(() => (
@@ -182,6 +184,8 @@ const ThirdGrid = ({
   return (
     <GridContainer
       mainHeight={dynamicHeight}
+      cardImageUrl={cardImageUrl}
+      showCardInGrid={cardDisplaySequence === 'grid'}
       lowerChildren={
         <View style={{ flex: 1, position: 'relative' }}>
           <GameButton 
@@ -234,7 +238,7 @@ const ThirdGrid = ({
   );
 };
 
-// ✅ Memoize ThirdGrid with custom comparison
+//  Memoize ThirdGrid with custom comparison
 export default React.memo(ThirdGrid, (prevProps, nextProps) => {
     return (
       prevProps.currentQuestion?.id === nextProps.currentQuestion?.id &&
