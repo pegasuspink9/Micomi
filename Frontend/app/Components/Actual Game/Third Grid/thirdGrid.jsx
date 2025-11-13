@@ -130,7 +130,7 @@ const ThirdGrid = ({
     }
     setTimeout(() => {
       setRunDisabled(false);
-    }, 5000);
+    }, 3000);
   }, [selectedPotion, usePotion, handleCheckAnswer, setBorderColor]);
 
   const runButtonTitle = useMemo(() => {
