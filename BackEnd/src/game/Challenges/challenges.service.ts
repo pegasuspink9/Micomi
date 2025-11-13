@@ -13,7 +13,7 @@ import {
   SubmitChallengeControllerResult,
   CompletionRewards,
 } from "./challenges.types";
-import { boolean } from "zod";
+import { getCardForAttackType } from "../Combat/combat.service";
 
 const prisma = new PrismaClient();
 
@@ -336,6 +336,49 @@ export const submitChallengeService = async (
   const next = await getNextChallengeService(playerId, levelId);
   const nextChallenge = next.nextChallenge;
 
+  const nextCorrectAnswerLength = Array.isArray(challenge.correct_answer)
+    ? challenge.correct_answer.length
+    : 0;
+
+  let card_type: string | null = null;
+  let character_attack_card: string | null = null;
+
+  let attackType: string | null = null;
+
+  const currentAnsweredCount = Object.keys(
+    updatedProgress.player_answer ?? {}
+  ).length;
+  const totalChallenges = level.challenges.length;
+  const isLastRemaining =
+    updatedWrongChallenges.length === 0 &&
+    currentAnsweredCount + 1 === totalChallenges;
+
+  const isLastRemainingChallenge = currentAnsweredCount + 1 === totalChallenges;
+
+  const isRetryOfWrong =
+    nextChallenge &&
+    updatedWrongChallenges.includes(nextChallenge.challenge_id);
+
+  const hasConsecutiveWrongs = updatedProgress.consecutive_wrongs > 0;
+
+  if (isRetryOfWrong) {
+    attackType = "basic_attack";
+  } else if (isLastRemainingChallenge && hasConsecutiveWrongs) {
+    attackType = "third_attack";
+  } else if (isLastRemaining) {
+    attackType = "special_attack";
+  } else if (nextCorrectAnswerLength >= 8) {
+    attackType = "third_attack";
+  } else if (nextCorrectAnswerLength >= 5) {
+    attackType = "second_attack";
+  } else {
+    attackType = "basic_attack";
+  }
+
+  const cardInfo = getCardForAttackType(character.character_name, attackType);
+  card_type = cardInfo.card_type;
+  character_attack_card = cardInfo.character_attack_card;
+
   if (nextChallenge) {
     await prisma.playerProgress.update({
       where: { progress_id: currentProgress.progress_id },
@@ -460,6 +503,10 @@ export const submitChallengeService = async (
     correct_answer_length: correctAnswerLength,
     combat_background: combatBackground,
     is_bonus_round: isNewBonusRound,
+    card: {
+      card_type,
+      character_attack_card,
+    },
   };
 };
 

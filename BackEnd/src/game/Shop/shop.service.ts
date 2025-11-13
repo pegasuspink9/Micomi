@@ -329,10 +329,10 @@ export const usePotion = async (
         nextChallengeForHint = {
           ...currentChallenge,
           question: filledQuestion,
-          options: ["next"],
+          options: ["Attack"],
           answer: effectiveCorrectAnswer,
         } as any;
-        dynamicMessage = `All blanks revealed: Select "next" to confirm and proceed!`;
+        dynamicMessage = `All blanks revealed: Select "Attack" to confirm and proceed!`;
       }
 
       audioResponse = [

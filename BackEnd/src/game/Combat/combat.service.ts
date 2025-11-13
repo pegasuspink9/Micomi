@@ -23,22 +23,22 @@ const CARD_CONFIG: Record<
     special_attack: {
       card_type: "Stormfang Surge",
       character_attack_card:
-        "https://res.cloudinary.com/dpbocuozx/image/upload/v1760942688/15cdfe1f-dc78-4f25-a4ae-5cbbc27a4060_jmzqz6.png",
+        "https://ik.imagekit.io/aulojbv6x/Micomi/Icons/Skill%20Icon/15cdfe1f-dc78-4f25-a4ae-5cbbc27a4060_jmzqz6.png?updatedAt=1762844066327",
     },
     third_attack: {
       card_type: "Feral Slash",
       character_attack_card:
-        "https://res.cloudinary.com/dpbocuozx/image/upload/v1760942688/15cdfe1f-dc78-4f25-a4ae-5cbbc27a4060_jmzqz6.png",
+        "https://ik.imagekit.io/aulojbv6x/Micomi/Icons/Skill%20Icon/15cdfe1f-dc78-4f25-a4ae-5cbbc27a4060_jmzqz6.png?updatedAt=1762844066327",
     },
     second_attack: {
       card_type: "Ruthless Fang",
       character_attack_card:
-        "https://ik.imagekit.io/aulojbv6x/Micomi/Icons/Skill%20Icon/b86116f4-4c3c-4f9c-bec3-7628482673e8_eh6biu.png?updatedAt=1762844066536",
+        "https://ik.imagekit.io/aulojbv6x/Micomi/Icons/Skill%20Icon/Untitled_1024_x_1536_px__20251020_131545_0000_hs8lr4.png?updatedAt=1762844066860",
     },
     basic_attack: {
       card_type: "Wild Claw",
       character_attack_card:
-        "https://ik.imagekit.io/aulojbv6x/Micomi/Icons/Skill%20Icon/Untitled_1024_x_1536_px__20251020_131545_0000_hs8lr4.png?updatedAt=1762844066860",
+        "https://ik.imagekit.io/aulojbv6x/Micomi/Icons/Skill%20Icon/b86116f4-4c3c-4f9c-bec3-7628482673e8_eh6biu.png?updatedAt=1762844066536",
     },
   },
 };
@@ -301,6 +301,7 @@ export async function getCurrentFightState(
     energy: energyStatus.energy,
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
     combat_background: combatBackground,
+    isEnemyFreeze: progress.has_freeze_effect || false,
   };
 }
 
@@ -619,16 +620,16 @@ export async function fightEnemy(
   } else {
     const effectiveBonusRound = isBonusRound || isDetectedBonusRound;
 
-    if (effectiveBonusRound) {
-      if (enemyHealth > 0) {
-        if (progress.has_freeze_effect) {
-          enemy_damage = 0;
-          await prisma.playerProgress.update({
-            where: { progress_id: progress.progress_id },
-            data: { has_freeze_effect: false },
-          });
-          console.log("- Freeze potion active, enemy attack nullified");
-        }
+    if (!effectiveBonusRound && enemyHealth > 0) {
+      if (progress.has_freeze_effect) {
+        enemy_damage = 0;
+        await prisma.playerProgress.update({
+          where: { progress_id: progress.progress_id },
+          data: { has_freeze_effect: false },
+        });
+        console.log("- Freeze potion active, enemy attack nullified");
+      } else {
+        enemy_damage = enemy.enemy_damage;
       }
 
       enemy_damage = enemy.enemy_damage;
@@ -665,8 +666,14 @@ export async function fightEnemy(
 
         // await EnergyService.deductEnergy(playerId, 10); disabled to allow retries while testing
       }
+    } else if (effectiveBonusRound) {
+      console.log("- Bonus round wrong: No enemy counterattack (safe mode)");
+      character_idle = character.avatar_image || null;
+      enemy_idle = enemy.enemy_avatar || null;
+      enemy_hurt = null;
+      enemy_damage = 0;
     } else {
-      console.log("- Enemy already defeated: no counterattack damage.");
+      console.log("- Enemy already defeated: no counterattack.");
     }
   }
 
@@ -722,13 +729,10 @@ export async function fightEnemy(
       character_max_health: character.health,
       character_avatar: character.character_avatar,
     },
-    card: {
-      card_type,
-      character_attack_card,
-    },
     timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,
+    isEnemyFreeze: progress.has_freeze_effect || false,
   };
 }
 
@@ -1437,12 +1441,9 @@ export async function fightBossEnemy(
       character_max_health: character.health,
       character_avatar: character.character_avatar,
     },
-    card: {
-      card_type,
-      character_attack_card,
-    },
     timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,
+    isEnemyFreeze: progress.has_freeze_effect || false,
   };
 }
