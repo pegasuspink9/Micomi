@@ -88,15 +88,10 @@ export async function updateProgressForChallenge(
 
     const level = await prisma.level.findUnique({
       where: { level_id: progress.level_id },
-      include: { map: true },
+      include: { map: true, enemy: true },
     });
     if (level) {
-      const enemy = await prisma.enemy.findFirst({
-        where: {
-          enemy_map: level.map.map_name,
-          enemy_difficulty: level.level_difficulty,
-        },
-      });
+      const enemy = level.enemy;
 
       if (consecutiveWrongs % 3 == 0) {
         const enemyName = enemy && enemy.enemy_name;

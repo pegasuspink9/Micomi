@@ -23,7 +23,7 @@ export interface FightResult {
     character_attack_type: string | null;
     character_attack: string | null;
     character_hurt: string | null;
-    character_dies: string;
+    character_dies: string | null;
     character_damage: number | null;
     character_health: number;
     character_max_health: number;
