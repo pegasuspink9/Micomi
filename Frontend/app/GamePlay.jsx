@@ -67,6 +67,8 @@ export default function GamePlay() {
     animationProgress,
     downloadProgress,
     individualAnimationProgress,
+    canProceed,
+    handleProceed,
 
     potions,
     selectedPotion,
@@ -86,44 +88,31 @@ export default function GamePlay() {
 
   //  SINGLE effect to handle card display on image change
   useEffect(() => {
-  console.log('📸 Checking attack card:', {
-    current: characterAttackCard,
-    previous: previousImageUrl,
-    cardType: cardType,
-    showGameplay: showGameplay,
-    imageChanged: characterAttackCard !== previousImageUrl,
-  });
+    console.log('📸 Checking card display:', {
+      currentCard: characterAttackCard,
+      previousCard: previousImageUrl,
+      currentChallengeId: currentChallenge?.id,
+      showGameplay: showGameplay,
+    });
 
-  if (
-    characterAttackCard && 
-    showGameplay && 
-    (characterAttackCard !== previousImageUrl || currentChallenge?.id)
-  ) {
-    console.log('📸 NEW CARD DETECTED - Showing card modal');
-    setCardDisplaySequence('modal');
-    setShowAttackCard(true);
-    setPreviousImageUrl(characterAttackCard);
-  }
-  }, [characterAttackCard, cardType, showGameplay, previousImageUrl, currentChallenge?.id]);
-
-  //  Reset card when retrying or loading next level
-  useEffect(() => {
-    if (isRetrying || isLoadingNextLevel) {
-      console.log('📸 Resetting attack image tracking');
-      setPreviousImageUrl(null);
-      setShowAttackCard(false);
-    }
-  }, [isRetrying, isLoadingNextLevel]);
-
-
-  useEffect(() => {
-    if (currentChallenge?.id) {
-      console.log('📸 New challenge detected, resetting sequence');
-      setPreviousImageUrl(null);
-      setShowAttackCard(false);
+    // Card should display when we have a valid card image that's different from previous
+    if (
+      characterAttackCard && 
+      showGameplay && 
+      characterAttackCard !== previousImageUrl
+    ) {
+      console.log('📸 NEW CARD DETECTED - Showing card');
       setCardDisplaySequence('modal');
+      setShowAttackCard(true);
+      setPreviousImageUrl(characterAttackCard);
     }
-  }, [currentChallenge?.id]);
+  }, [characterAttackCard, showGameplay])
+
+
+
+
+
+
 
   const handleCloseAttackCard = useCallback(() => {
     console.log('📸 Closing modal card - transitioning to grid display');
@@ -572,6 +561,8 @@ export default function GamePlay() {
                   usePotion={usePotion}
                   cardImageUrl={characterAttackCard}
                   cardDisplaySequence={cardDisplaySequence}
+                  canProceed={canProceed}
+                  onProceed={handleProceed}
                 />
               </View>
             )}

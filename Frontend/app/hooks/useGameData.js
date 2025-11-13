@@ -7,6 +7,7 @@ export const useGameData = (playerId, levelId) => {
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [waitingForAnimation, setWaitingForAnimation] = useState(false);
+  const [canProceed, setCanProceed] = useState(false);
 
   //potions states
   const [potions, setPotions] = useState([]);
@@ -114,116 +115,208 @@ export const useGameData = (playerId, levelId) => {
 
 
 const submitAnswer = async (selectedAnswers) => {
-  if (!gameState?.currentChallenge || !playerId || !levelId) {
-    console.error('Missing required data for submission');
-    return { success: false, error: 'Missing required data' };
-  }
+    if (!gameState?.currentChallenge || !playerId || !levelId) {
+      console.error('Missing required data for submission');
+      return { success: false, error: 'Missing required data' };
+    }
 
-  if (waitingForAnimation) {
-    console.log('Already waiting for animation, queueing submission...');
-    return { success: false, error: 'Animation in progress' };
+    if (waitingForAnimation) {
+      console.log('Already waiting for animation, queueing submission...');
+      return { success: false, error: 'Animation in progress' };
+    }
+
+    try {
+      setSubmitting(true);
+      setError(null);
+      setCanProceed(false); // Reset proceed state
+      
+      console.log(`Submitting answer for challenge ${gameState.currentChallenge.id}:`, selectedAnswers);
+      
+      const responseData = await gameService.submitAnswer(
+        playerId, 
+        levelId, 
+        gameState.currentChallenge.id, 
+        selectedAnswers
+      );
+      
+      if (!responseData) {
+        throw new Error('No response data received from submission');
+      }
+
+      const updatedState = gameService.extractUnifiedGameState(responseData, true);
+      
+      if (!updatedState) {
+        throw new Error('Failed to extract updated game state from submission response');
+      }
+
+      console.log('Submission processed, starting animation sequence...');
+
+      const challengeChanged = updatedState.currentChallenge?.id !== gameState.currentChallenge.id;
+      
+      console.log('🔍 Challenge check:', {
+        previousId: gameState.currentChallenge.id,
+        newId: updatedState.currentChallenge?.id,
+        hasChanged: challengeChanged
+      });
+
+      pendingSubmissionRef.current = updatedState;
+      setWaitingForAnimation(true);
+
+      setGameState(prevState => ({
+        ...prevState,
+        submissionResult: updatedState.submissionResult,
+        selectedCharacter: updatedState.selectedCharacter || prevState.selectedCharacter,
+        enemy: updatedState.enemy || prevState.enemy,
+      }));
+
+      animationTimeoutRef.current = setTimeout(() => {
+        console.warn('Animation timeout reached, proceeding anyway...');
+        handleAnimationComplete();
+      }, 5000);
+
+      return { 
+        success: true, 
+        updatedGameState: updatedState,
+        waitingForAnimation: true,
+      };
+
+    } catch (err) {
+      console.error('Failed to submit answer:', err);
+      const errorMessage = err.message || 'Failed to submit answer';
+      setError(errorMessage);
+      
+      pendingSubmissionRef.current = null;
+      setWaitingForAnimation(false);
+      
+      return { success: false, error: errorMessage };
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAnimationComplete = useCallback(() => {
+  console.log('Animation sequence completed, processing next challenge...');
+  
+  setWaitingForAnimation(false);
+  
+  if (animationTimeoutRef.current) {
+    clearTimeout(animationTimeoutRef.current);
+    animationTimeoutRef.current = null;
+  }
+  
+  if (pendingSubmissionRef.current) {
+    console.log('Processing pending submission result');
+    const pendingData = pendingSubmissionRef.current;
+    pendingSubmissionRef.current = null;
+    
+    // Check if answer was correct
+    const isCorrect = pendingData.submissionResult?.isCorrect === true;
+    
+    console.log('🔍 Answer correctness check:', {
+      isCorrect: isCorrect,
+      submissionResult: pendingData.submissionResult
+    });
+    
+    // Get the NEXT challenge from response
+    const nextChallenge = pendingData.currentChallenge;
+    // Card is at ROOT level of response, not nested in challenge
+    const nextChallengeCard = pendingData.card;
+    
+    console.log('📸 Card info from submission response:', {
+      challengeId: nextChallenge?.id,
+      card: nextChallengeCard,
+      isCorrect: isCorrect,
+    });
+    
+    if (isCorrect) {
+      // CORRECT: Show Proceed button
+      setCanProceed(true);
+      
+      // Update game state BUT keep current challenge - don't load next one yet
+      setGameState(prevState => ({
+        ...prevState,
+        submissionResult: pendingData.submissionResult,
+        selectedCharacter: pendingData.selectedCharacter || prevState.selectedCharacter,
+        enemy: pendingData.enemy || prevState.enemy,
+        fightResult: pendingData.fightResult || prevState.fightResult,
+        // Store COMPLETE next challenge data with card from response
+        nextChallengeData: {
+          ...nextChallenge,
+          card: nextChallengeCard,
+          enemy: pendingData.enemy || prevState.enemy, // Preserve enemy
+        },
+        // DON'T SET CARD TO NULL - keep current card visible
+        card: prevState.card, // Keep the current card displayed
+      }));
+      
+      console.log('Game state updated with submission result (card stays visible)', { 
+        canProceedNow: true,
+        nextChallengeId: nextChallenge?.id,
+        nextCard: nextChallengeCard,
+      });
+    } else {
+      // WRONG: Automatically proceed to next challenge
+      console.log('❌ Answer wrong - automatically proceeding to next challenge');
+      
+      setGameState(prevState => ({
+        ...prevState,
+        currentChallenge: nextChallenge,
+        card: nextChallengeCard, // Update to new card for next challenge
+        enemy: pendingData.enemy || prevState.enemy, // Preserve enemy with correct health
+        selectedCharacter: pendingData.selectedCharacter || prevState.selectedCharacter,
+        fightResult: pendingData.fightResult || prevState.fightResult,
+        submissionResult: null,
+        nextChallengeData: null,
+      }));
+      
+      setCanProceed(false);
+    }
+  }
+}, []);
+
+
+ const handleProceed = useCallback(async () => {
+  if (!canProceed) {
+    console.log('Cannot proceed - answer was not correct');
+    return;
   }
 
   try {
-    setSubmitting(true);
-    setError(null);
+    setCanProceed(false);
     
-    console.log(`Submitting answer for challenge ${gameState.currentChallenge.id}:`, selectedAnswers);
-    
-    const responseData = await gameService.submitAnswer(
-      playerId, 
-      levelId, 
-      gameState.currentChallenge.id, 
-      selectedAnswers
-    );
-    
-    if (!responseData) {
-      throw new Error('No response data received from submission');
-    }
-
-    const updatedState = gameService.extractUnifiedGameState(responseData, true);
-    
-    if (!updatedState) {
-      throw new Error('Failed to extract updated game state from submission response');
-    }
-
-    console.log('Submission processed, starting animation sequence...');
-
-    // Check if challenge ID has changed
-    const challengeChanged = updatedState.currentChallenge?.id !== gameState.currentChallenge.id;
-    
-    console.log('🔍 Challenge check:', {
-      previousId: gameState.currentChallenge.id,
-      newId: updatedState.currentChallenge?.id,
-      hasChanged: challengeChanged
+    setGameState(prevState => {
+      const nextChallenge = prevState.nextChallengeData;
+      
+      if (nextChallenge) {
+        console.log('User proceeding to next challenge:', {
+          challengeId: nextChallenge.id,
+          card: nextChallenge.card,
+          enemy: nextChallenge.enemy,
+        });
+        
+        // First clear submissionResult to trigger card display
+        return {
+          ...prevState,
+          submissionResult: null, // Clear submission result FIRST
+          // Then immediately set the new challenge and card
+          currentChallenge: nextChallenge,
+          card: nextChallenge.card, // Load the card that belongs to THIS challenge
+          enemy: nextChallenge.enemy || prevState.enemy,
+          selectedCharacter: nextChallenge.selectedCharacter || prevState.selectedCharacter,
+          fightResult: nextChallenge.fightResult || prevState.fightResult,
+          nextChallengeData: null, // Clear stored next challenge data
+        };
+      }
+      
+      return prevState;
     });
-
-    // Store complete updated state to apply AFTER animation completes
-    pendingSubmissionRef.current = updatedState;
-    setWaitingForAnimation(true);
-
-    // Update ONLY submissionResult for feedback - DO NOT update card yet
-    // Keep card as-is until animation completes
-    setGameState(prevState => ({
-      ...prevState,
-      submissionResult: updatedState.submissionResult,
-      selectedCharacter: updatedState.selectedCharacter || prevState.selectedCharacter,
-      enemy: updatedState.enemy || prevState.enemy,
-      // REMOVED: card update from here
-    }));
-
-    animationTimeoutRef.current = setTimeout(() => {
-      console.warn('Animation timeout reached, proceeding anyway...');
-      handleAnimationComplete();
-    }, 5000);
-
-    return { 
-      success: true, 
-      updatedGameState: updatedState,
-      waitingForAnimation: true,
-    };
-
-  } catch (err) {
-    console.error('Failed to submit answer:', err);
-    const errorMessage = err.message || 'Failed to submit answer';
-    setError(errorMessage);
     
     pendingSubmissionRef.current = null;
-    setWaitingForAnimation(false);
-    
-    return { success: false, error: errorMessage };
-  } finally {
-    setSubmitting(false);
+  } catch (err) {
+    console.error('Error proceeding:', err);
+    setCanProceed(true);
   }
-};
-
- const handleAnimationComplete = useCallback(() => {
-    console.log('Animation sequence completed, processing next challenge...');
-    
-    setWaitingForAnimation(false);
-    
-    if (animationTimeoutRef.current) {
-      clearTimeout(animationTimeoutRef.current);
-      animationTimeoutRef.current = null;
-    }
-    
-    if (pendingSubmissionRef.current) {
-      console.log('Processing pending submission result');
-      const pendingData = pendingSubmissionRef.current;
-      pendingSubmissionRef.current = null;
-      
-      // NOW update everything including the card after animations complete
-      setGameState(prevState => ({
-        ...pendingData,
-        currentChallenge: pendingData.currentChallenge?.id !== prevState.currentChallenge?.id 
-          ? pendingData.currentChallenge 
-          : prevState.currentChallenge,
-        card: pendingData.card || prevState.card, 
-      }));
-      
-      console.log('Game state updated with submission result and card');
-    }
-  }, []);
+}, [canProceed]);
 
   useEffect(() => {
     return () => {
@@ -436,6 +529,7 @@ const usePotion = useCallback(async (playerPotionId) => {
     error, 
     submitting,
     waitingForAnimation,
+    canProceed,
     
     animationsLoading,
     downloadProgress,       
@@ -446,6 +540,7 @@ const usePotion = useCallback(async (playerPotionId) => {
     refetchGameData: fetchGameData,
     submitAnswer,
     onAnimationComplete: handleAnimationComplete,
+    handleProceed,
 
     //potions
     potions,

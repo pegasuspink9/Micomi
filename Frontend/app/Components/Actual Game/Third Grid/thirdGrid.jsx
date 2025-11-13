@@ -40,7 +40,9 @@ const ThirdGrid = ({
   selectedBlankIndex = 0, 
   usePotion,
   cardImageUrl,
-  cardDisplaySequence
+  cardDisplaySequence,
+  canProceed = false,
+  onProceed = null
 }) => {
 
   if (!currentQuestion) {
@@ -188,29 +190,42 @@ const ThirdGrid = ({
       showCardInGrid={cardDisplaySequence === 'grid'}
       lowerChildren={
         <View style={{ flex: 1, position: 'relative' }}>
-          <GameButton 
-            title={runButtonTitle}
-            position="right"
-            variant={runButtonVariant}
-            onPress={handleRunPress}
-            disabled={runButtonDisabled}
-          />
+          {canProceed ? (
+            // NEW: Show Proceed button when ready
+            <GameButton 
+              title="Proceed"
+              position="center"
+              variant="success"
+              onPress={onProceed}
+              disabled={false}
+            />
+          ) : (
+            <>
+              <GameButton 
+                title={runButtonTitle}
+                position="right"
+                variant={runButtonVariant}
+                onPress={handleRunPress}
+                disabled={runButtonDisabled}
+              />
 
-          <GameButton 
-            title={showPotions ? "Keyboard" : "Potions"}
-            position="center"
-            variant="secondary"
-            onPress={togglePotions}
-            disabled={submitting || usingPotion}
-          />
+              <GameButton 
+                title={showPotions ? "Keyboard" : "Potions"}
+                position="center"
+                variant="secondary"
+                onPress={togglePotions}
+                disabled={submitting || usingPotion}
+              />
 
-          <GameButton 
-          title="Clear"
-          position="left"
-          variant="danger"
-          onPress={handleClearAll}
-          disabled={submitting || usingPotion}
-          />
+              <GameButton 
+                title="Clear"
+                position="left"
+                variant="danger"
+                onPress={handleClearAll}
+                disabled={submitting || usingPotion}
+              />
+            </>
+          )}
         </View>
       }
     >

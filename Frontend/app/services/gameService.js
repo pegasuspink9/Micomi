@@ -104,8 +104,9 @@ export const gameService = {
   },
 
   
-  // Enhanced unified game state extraction
-  extractUnifiedGameState: (responseData, isSubmission = false) => {
+    // Enhanced unified game state extraction
+// Enhanced unified game state extraction
+extractUnifiedGameState: (responseData, isSubmission = false) => {
   try {
     if (!responseData) {
       console.warn('⚠️ No response data found');
@@ -115,7 +116,11 @@ export const gameService = {
     //  Handle both direct and nested data structures
     const data = responseData.data || responseData;
 
-    console.log('🖼️ Extracting character_attack_image from:', data.character_attack_image);
+    console.log('🖼️ Extracting card from response:', {
+      rootCard: data.card,
+      isSubmission: isSubmission,
+      cardExists: !!data.card,
+    });
 
     // Base game state structure
     const gameState = {
@@ -166,13 +171,12 @@ export const gameService = {
       submissionResult: null,
       combat_background: data.combat_background || responseData.combat_background || null,
       
+      // Extract card from ROOT level - it's alongside challenge data, not inside it
       card: data.card || responseData.card || {
         card_type: null,
         character_attack_card: null
       }
     };
-
-    console.log('🖼️ GameState character_attack_image set to:', gameState.character_attack_image);
 
     // Extract challenge data
     const challengeSource = isSubmission ? responseData.nextChallenge || data.nextChallenge : responseData.currentChallenge || data.currentChallenge;
@@ -213,7 +217,7 @@ export const gameService = {
         coinsReward: challengeSource.coins_reward,
         guide: challengeSource.guide,
         testCases: challengeSource.test_cases || [],
-        expected_output: challengeSource.expected_output
+        expected_output: challengeSource.expected_output,
       };
     }
 
@@ -260,13 +264,6 @@ export const gameService = {
           } : null,
         } : null,
 
-        
-         card: responseData.fightResult.card ? {
-            card_type: responseData.fightResult.card.card_type,
-            character_attack_card: responseData.fightResult.card.character_attack_card
-          } : null,
-
-
         levelStatus: responseData.levelStatus ? {
           isCompleted: responseData.levelStatus.isCompleted || false,
           battleWon: responseData.levelStatus.battleWon || false,
@@ -293,8 +290,6 @@ export const gameService = {
           coinsEarned: responseData.levelStatus.coinsEarned || 0
         } : null),
 
-        
-
         nextLevel: responseData.nextLevel ? {
           level_id: responseData.nextLevel.level_id,
           level_number: responseData.nextLevel.level_number,
@@ -302,16 +297,18 @@ export const gameService = {
         } : null
       };
       
-
       // Merge fight result data back into main game state
-      if (responseData.fightResult?.character?.character_health) {
+      if (responseData.fightResult?.character?.character_health !== undefined) {
         gameState.selectedCharacter.current_health = responseData.fightResult.character.character_health;
       }
       if (responseData.fightResult?.character?.character_max_health) {
         gameState.selectedCharacter.max_health = responseData.fightResult.character.character_max_health;
       }
-      if (responseData.fightResult?.enemy?.enemy_health) {
+      if (responseData.fightResult?.enemy?.enemy_health !== undefined) {
         gameState.enemy.enemy_health = responseData.fightResult.enemy.enemy_health;
+      }
+      if (responseData.fightResult?.enemy?.enemy_max_health) {
+        gameState.enemy.enemy_max_health = responseData.fightResult.enemy.enemy_max_health;
       }
 
       if (responseData.fightResult?.energy !== undefined) {
@@ -336,9 +333,11 @@ export const gameService = {
     console.log(` Game state extracted (${isSubmission ? 'submission' : 'entry'}):`, {
       hasLevel: !!gameStateWithCache.level.level_id,
       hasEnemy: !!gameStateWithCache.enemy.enemy_id,
+      enemyHealth: gameStateWithCache.enemy.enemy_health,
       hasCharacter: !!gameStateWithCache.selectedCharacter.character_id,
       hasChallenge: !!gameStateWithCache.currentChallenge?.id,
-      character_attack_image: gameStateWithCache.character_attack_image
+      card: gameStateWithCache.card,
+      cardType: gameStateWithCache.card?.card_type,
     });
     
     return gameStateWithCache;
