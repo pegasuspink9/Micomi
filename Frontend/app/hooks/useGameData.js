@@ -113,34 +113,7 @@ export const useGameData = (playerId, levelId) => {
   };
 
 
- const handleAnimationComplete = useCallback(() => {
-    console.log('Animation sequence completed, processing next challenge...');
-    
-    setWaitingForAnimation(false);
-    
-    if (animationTimeoutRef.current) {
-      clearTimeout(animationTimeoutRef.current);
-      animationTimeoutRef.current = null;
-    }
-    
-    if (pendingSubmissionRef.current) {
-      console.log('Processing pending submission result');
-      const pendingData = pendingSubmissionRef.current;
-      pendingSubmissionRef.current = null;
-      
-      // Only update if challenge ID actually changed (next challenge)
-      setGameState(prevState => ({
-        ...pendingData,
-        currentChallenge: pendingData.currentChallenge?.id !== prevState.currentChallenge?.id 
-          ? pendingData.currentChallenge 
-          : prevState.currentChallenge,
-      }));
-      
-      console.log('Game state updated with submission result');
-    }
-  }, []);
-
-  const submitAnswer = async (selectedAnswers) => {
+const submitAnswer = async (selectedAnswers) => {
   if (!gameState?.currentChallenge || !playerId || !levelId) {
     console.error('Missing required data for submission');
     return { success: false, error: 'Missing required data' };
@@ -189,14 +162,14 @@ export const useGameData = (playerId, levelId) => {
     pendingSubmissionRef.current = updatedState;
     setWaitingForAnimation(true);
 
-    // Update only submissionResult immediately (for feedback)
-    // Keep currentChallenge as-is until animation completes
+    // Update ONLY submissionResult for feedback - DO NOT update card yet
+    // Keep card as-is until animation completes
     setGameState(prevState => ({
       ...prevState,
       submissionResult: updatedState.submissionResult,
       selectedCharacter: updatedState.selectedCharacter || prevState.selectedCharacter,
       enemy: updatedState.enemy || prevState.enemy,
-      card: updatedState.card || prevState.card,
+      // REMOVED: card update from here
     }));
 
     animationTimeoutRef.current = setTimeout(() => {
@@ -223,6 +196,34 @@ export const useGameData = (playerId, levelId) => {
     setSubmitting(false);
   }
 };
+
+ const handleAnimationComplete = useCallback(() => {
+    console.log('Animation sequence completed, processing next challenge...');
+    
+    setWaitingForAnimation(false);
+    
+    if (animationTimeoutRef.current) {
+      clearTimeout(animationTimeoutRef.current);
+      animationTimeoutRef.current = null;
+    }
+    
+    if (pendingSubmissionRef.current) {
+      console.log('Processing pending submission result');
+      const pendingData = pendingSubmissionRef.current;
+      pendingSubmissionRef.current = null;
+      
+      // NOW update everything including the card after animations complete
+      setGameState(prevState => ({
+        ...pendingData,
+        currentChallenge: pendingData.currentChallenge?.id !== prevState.currentChallenge?.id 
+          ? pendingData.currentChallenge 
+          : prevState.currentChallenge,
+        card: pendingData.card || prevState.card, // Card updates HERE after animations
+      }));
+      
+      console.log('Game state updated with submission result and card');
+    }
+  }, []);
 
   useEffect(() => {
     return () => {
