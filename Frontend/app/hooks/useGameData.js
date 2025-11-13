@@ -196,7 +196,7 @@ export const useGameData = (playerId, levelId) => {
       submissionResult: updatedState.submissionResult,
       selectedCharacter: updatedState.selectedCharacter || prevState.selectedCharacter,
       enemy: updatedState.enemy || prevState.enemy,
-      character_attack_image: updatedState.character_attack_image || prevState.character_attack_image,
+      card: updatedState.card || prevState.card,
     }));
 
     animationTimeoutRef.current = setTimeout(() => {

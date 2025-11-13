@@ -80,30 +80,31 @@ export default function GamePlay() {
   const currentChallenge = gameState?.currentChallenge;
   const submissionResult = gameState?.submissionResult;
   
-  //  Get character attack image from gameState
-  const characterAttackImage = gameState?.character_attack_image;
+  //  Get character attack card from gameState
+  const characterAttackCard = gameState?.card?.character_attack_card;
+  const cardType = gameState?.card?.card_type;
 
   //  SINGLE effect to handle card display on image change
   useEffect(() => {
-  console.log('📸 Checking attack image:', {
-    current: characterAttackImage,
+  console.log('📸 Checking attack card:', {
+    current: characterAttackCard,
     previous: previousImageUrl,
+    cardType: cardType,
     showGameplay: showGameplay,
-    imageChanged: characterAttackImage !== previousImageUrl,
-    sequence: cardDisplaySequence
+    imageChanged: characterAttackCard !== previousImageUrl,
   });
 
-    if (
-      characterAttackImage && 
-      showGameplay && 
-      (characterAttackImage !== previousImageUrl || currentChallenge?.id)
-    ) {
-      console.log('📸 NEW IMAGE DETECTED - Showing card modal');
-      setCardDisplaySequence('modal');
-      setShowAttackCard(true);
-      setPreviousImageUrl(characterAttackImage);
-    }
-  }, [characterAttackImage, showGameplay, previousImageUrl, currentChallenge?.id]);
+  if (
+    characterAttackCard && 
+    showGameplay && 
+    (characterAttackCard !== previousImageUrl || currentChallenge?.id)
+  ) {
+    console.log('📸 NEW CARD DETECTED - Showing card modal');
+    setCardDisplaySequence('modal');
+    setShowAttackCard(true);
+    setPreviousImageUrl(characterAttackCard);
+  }
+  }, [characterAttackCard, cardType, showGameplay, previousImageUrl, currentChallenge?.id]);
 
   //  Reset card when retrying or loading next level
   useEffect(() => {
@@ -569,7 +570,7 @@ export default function GamePlay() {
                   usingPotion={usingPotion}
                   setThirdGridHeight={setThirdGridHeight}
                   usePotion={usePotion}
-                  cardImageUrl={characterAttackImage}
+                  cardImageUrl={characterAttackCard}
                   cardDisplaySequence={cardDisplaySequence}
                 />
               </View>
@@ -582,10 +583,11 @@ export default function GamePlay() {
      
       <Card
         visible={showAttackCard}
-        imageUrl={characterAttackImage}
+        imageUrl={characterAttackCard}
+        cardType={cardType}
         onClose={handleCloseAttackCard}
         autoClose={true}
-        autoCloseDuration={3000}
+        autoCloseDuration={10000000}
       />
 
       <GameOverModal

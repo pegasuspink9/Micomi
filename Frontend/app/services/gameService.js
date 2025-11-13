@@ -165,7 +165,11 @@ export const gameService = {
       currentChallenge: null,
       submissionResult: null,
       combat_background: data.combat_background || responseData.combat_background || null,
-      character_attack_image: data.character_attack_image 
+      
+      card: data.card || responseData.card || {
+        card_type: null,
+        character_attack_card: null
+      }
     };
 
     console.log('🖼️ GameState character_attack_image set to:', gameState.character_attack_image);
@@ -255,7 +259,14 @@ export const gameService = {
             enemy_avatar: responseData.fightResult?.enemy.enemy_avatar || null, 
           } : null,
         } : null,
+
         
+         card: responseData.fightResult.card ? {
+            card_type: responseData.fightResult.card.card_type,
+            character_attack_card: responseData.fightResult.card.character_attack_card
+          } : null,
+
+
         levelStatus: responseData.levelStatus ? {
           isCompleted: responseData.levelStatus.isCompleted || false,
           battleWon: responseData.levelStatus.battleWon || false,
@@ -282,12 +293,15 @@ export const gameService = {
           coinsEarned: responseData.levelStatus.coinsEarned || 0
         } : null),
 
+        
+
         nextLevel: responseData.nextLevel ? {
           level_id: responseData.nextLevel.level_id,
           level_number: responseData.nextLevel.level_number,
           is_unlocked: responseData.nextLevel.is_unlocked || false
         } : null
       };
+      
 
       // Merge fight result data back into main game state
       if (responseData.fightResult?.character?.character_health) {
