@@ -218,7 +218,7 @@ const submitAnswer = async (selectedAnswers) => {
         currentChallenge: pendingData.currentChallenge?.id !== prevState.currentChallenge?.id 
           ? pendingData.currentChallenge 
           : prevState.currentChallenge,
-        card: pendingData.card || prevState.card, // Card updates HERE after animations
+        card: pendingData.card || prevState.card, 
       }));
       
       console.log('Game state updated with submission result and card');
