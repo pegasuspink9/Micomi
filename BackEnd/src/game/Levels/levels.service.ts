@@ -15,6 +15,7 @@ import { getBaseEnemyHp } from "../Combat/combat.service";
 import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
 import { updateQuestProgress } from "../Quests/quests.service";
 import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
+import { getCardForAttackType } from "../Combat/combat.service";
 
 const prisma = new PrismaClient();
 
@@ -539,18 +540,21 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     ? firstChallenge.correct_answer.length
     : 0;
 
-  let character_attack_image = null;
+  let card_type: string | null = null;
+  let character_attack_card: string | null = null;
 
+  let attackType: string;
   if (correctAnswerLength >= 8) {
-    character_attack_image = //third attack
-      "https://res.cloudinary.com/dpbocuozx/image/upload/v1760942688/15cdfe1f-dc78-4f25-a4ae-5cbbc27a4060_jmzqz6.png";
-  } else if (correctAnswerLength >= 5 && correctAnswerLength < 8) {
-    character_attack_image = //second attack
-      "https://res.cloudinary.com/dpbocuozx/image/upload/v1760942690/b86116f4-4c3c-4f9c-bec3-7628482673e8_eh6biu.png";
+    attackType = "third_attack";
+  } else if (correctAnswerLength >= 5) {
+    attackType = "second_attack";
   } else {
-    character_attack_image = //basic attack
-      "https://res.cloudinary.com/dpbocuozx/image/upload/v1760942690/Untitled_1024_x_1536_px__20251020_131545_0000_hs8lr4.png";
+    attackType = "basic_attack";
   }
+
+  const cardInfo = getCardForAttackType(character.character_name, attackType);
+  card_type = cardInfo.card_type;
+  character_attack_card = cardInfo.character_attack_card;
 
   const combatBackground = [
     await getBackgroundForLevel(level.map.map_name, level.level_number),
@@ -590,11 +594,14 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       character_dies: character.character_dies,
       character_avatar: character.character_avatar,
     },
+    card: {
+      card_type,
+      character_attack_card,
+    },
     currentChallenge: firstChallenge,
     energy: energyStatus.energy,
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
     correct_answer_length: correctAnswerLength,
-    character_attack_image,
     combat_background: combatBackground,
   };
 };

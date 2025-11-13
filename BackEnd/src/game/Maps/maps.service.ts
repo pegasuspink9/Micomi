@@ -1,49 +1,48 @@
 import { PrismaClient } from "@prisma/client";
+import { isMapUnlockedForPlayer } from "../Levels/levels.service";
 
 const prisma = new PrismaClient();
 
 export const selectMap = async (playerId: number, mapId: number) => {
-  const firstTwoMaps = await prisma.map.findMany({
-    orderBy: { map_id: "asc" },
-    take: 2,
+  const map = await prisma.map.findUnique({
+    where: { map_id: mapId },
   });
 
-  for (const m of firstTwoMaps) {
-    if (!m.is_active) {
-      await prisma.map.update({
-        where: { map_id: m.map_id },
-        data: { is_active: true },
-      });
-    }
+  if (!map) {
+    throw new Error("Map not found");
   }
 
-  const map = await prisma.map.findUnique({
+  const mapUnlocked = await isMapUnlockedForPlayer(playerId, map.map_name);
+  if (!mapUnlocked) {
+    throw new Error("Map not unlocked yet for this player");
+  }
+
+  const fullMap = await prisma.map.findUnique({
     where: { map_id: mapId },
     include: {
       levels: {
-        orderBy: {
-          level_number: "asc",
+        orderBy: { level_number: "asc" },
+        include: {
+          playerProgress: {
+            where: { player_id: playerId },
+            select: { progress_id: true, is_completed: true },
+          },
         },
       },
     },
   });
 
-  if (!map || !map.is_active) {
+  if (!fullMap) {
     throw new Error("Map not available");
   }
 
-  const progress = await prisma.playerProgress.findFirst({
-    where: { player_id: playerId },
-    orderBy: { level_id: "desc" },
-  });
+  const enhancedMap = {
+    ...fullMap,
+    levels: fullMap.levels.map((level) => ({
+      ...level,
+      is_unlocked: !!level.playerProgress.length,
+    })),
+  };
 
-  if (
-    progress &&
-    map.levels.length > 0 &&
-    progress.level_id >= map.levels[0].level_id - 1
-  ) {
-    return { map };
-  }
-
-  throw new Error("Map not unlocked yet");
+  return { map: enhancedMap };
 };
