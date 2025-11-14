@@ -575,7 +575,7 @@ export async function fightEnemy(
           enemy_run = null;
           enemy_attack = null;
 
-          character_idle = null;
+          character_idle = character.avatar_image || null;
           character_run = character.character_run || null;
 
           if (!progress.is_completed) {
@@ -1221,7 +1221,7 @@ export async function fightBossEnemy(
           enemy_hurt = enemy.enemy_hurt || null;
           enemy_dies = enemy.enemy_dies || null;
 
-          character_idle = null;
+          character_idle = character.avatar_image || null;
           character_run = character.character_run || null;
 
           if (!progress.is_completed) {
