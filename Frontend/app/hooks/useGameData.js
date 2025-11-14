@@ -196,7 +196,7 @@ const submitAnswer = async (selectedAnswers) => {
 
   const handleAnimationComplete = useCallback(() => {
   console.log('Animation sequence completed, processing next challenge...');
-  
+   
   setWaitingForAnimation(false);
   
   if (animationTimeoutRef.current) {
