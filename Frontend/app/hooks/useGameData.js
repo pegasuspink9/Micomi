@@ -209,11 +209,16 @@ const submitAnswer = async (selectedAnswers) => {
     const pendingData = pendingSubmissionRef.current;
     pendingSubmissionRef.current = null;
     
+    // NEW: Check if level is completed (won)
+    const levelWon = pendingData.submissionResult?.fightResult?.status === 'won' &&
+                     pendingData.submissionResult?.fightResult?.enemy?.enemy_health === 0;
+    
     // Check if answer was correct
     const isCorrect = pendingData.submissionResult?.isCorrect === true;
     
     console.log('🔍 Answer correctness check:', {
       isCorrect: isCorrect,
+      levelWon: levelWon, // NEW: Log level won status
       submissionResult: pendingData.submissionResult
     });
     
@@ -226,10 +231,27 @@ const submitAnswer = async (selectedAnswers) => {
       challengeId: nextChallenge?.id,
       card: nextChallengeCard,
       isCorrect: isCorrect,
+      levelWon: levelWon, // NEW: Log level won status
     });
     
+    // NEW: If level is won, DON'T show proceed button
+    if (levelWon) {
+      console.log('🎉 Level completed! Showing completion buttons instead of proceed');
+      setCanProceed(false);
+      
+      setGameState(prevState => ({
+        ...prevState,
+        submissionResult: pendingData.submissionResult,
+        selectedCharacter: pendingData.selectedCharacter || prevState.selectedCharacter,
+        enemy: pendingData.enemy || prevState.enemy,
+        fightResult: pendingData.fightResult || prevState.fightResult,
+      }));
+      
+      return; // Exit early - don't show proceed button
+    }
+    
     if (isCorrect) {
-      // CORRECT: Show Proceed button
+      // CORRECT: Show Proceed button (only if not level won)
       setCanProceed(true);
       
       // Update game state BUT keep current challenge - don't load next one yet
@@ -272,7 +294,7 @@ const submitAnswer = async (selectedAnswers) => {
       setCanProceed(false);
     }
   }
-}, []);
+  }, []);
 
 
  const handleProceed = useCallback(async () => {
@@ -330,6 +352,26 @@ const submitAnswer = async (selectedAnswers) => {
     fetchGameData();
   }, [playerId, levelId]);
 
+    useEffect(() => {
+    const submissionResult = gameState?.submissionResult;
+    const fightResult = submissionResult?.fightResult;
+    
+    console.log('🎉 Level Completion Check:', {
+      status: fightResult?.status, 
+      enemyHealth: fightResult?.enemy?.enemy_health,
+      hasCompletionRewards: !!submissionResult?.completionRewards,
+      hasNextLevel: !!submissionResult?.nextLevel,
+    });
+
+    // Show completion buttons when enemy is defeated
+    if (fightResult?.status === 'won' &&
+        fightResult?.enemy?.enemy_health === 0) {
+      
+      console.log('🎉 Level completed - hiding proceed button, showing completion buttons');
+      setCanProceed(false); // NEW: Explicitly set to false
+      // isLevelComplete will be handled in GamePlay component
+    }
+  }, [gameState?.submissionResult?.fightResult]);
 
 
   const retryLevel = useCallback(async () => {

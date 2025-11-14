@@ -42,7 +42,12 @@ const ThirdGrid = ({
   cardImageUrl,
   cardDisplaySequence,
   canProceed = false,
-  onProceed = null
+  onProceed = null,
+  isLevelComplete = false,
+  onRetry = null,
+  onHome = null,
+  onNextLevel = null,
+  hasNextLevel = false
 }) => {
 
   if (!currentQuestion) {
@@ -154,7 +159,11 @@ const ThirdGrid = ({
     canProceed
   });
 
-  const calculateHeight = (numOptions) => {
+    const calculateHeight = (numOptions) => {
+    if (!currentQuestion || !numOptions || numOptions === 0) {
+      return SCREEN_HEIGHT * 0.12;
+    }
+    
     if (numOptions > 8) {
       return SCREEN_HEIGHT * 0.2; 
     }
@@ -167,16 +176,18 @@ const ThirdGrid = ({
     return baseHeight + extraHeight;
   };
 
+  const dynamicHeight = useMemo(() => {
+    if (canProceed || isLevelComplete) {
+      return SCREEN_HEIGHT * 0.12;
+    }
+    return calculateHeight(options.length);
+  }, [canProceed, isLevelComplete, options.length]);
+
+
   const handleClearAll = useCallback(() => {
     setSelectedAnswers([]); 
   }, [setSelectedAnswers]);
 
-  const dynamicHeight = useMemo(() => {
-    if (canProceed) {
-      return SCREEN_HEIGHT * 0.12;
-    }
-    return calculateHeight(options.length);
-  }, [canProceed, options.length]);
 
   useEffect(() => {
     if (setThirdGridHeight) {
@@ -189,8 +200,13 @@ const ThirdGrid = ({
       mainHeight={dynamicHeight}
       cardImageUrl={cardImageUrl}
       showCardInGrid={cardDisplaySequence === 'grid'}
-      isProceedMode={canProceed}
+      isProceedMode={canProceed && !isLevelComplete}
       onProceed={onProceed} // NEW: Pass proceed callback
+      isLevelComplete={isLevelComplete} // NEW: Pass level complete status
+      onRetry={onRetry} // NEW: Pass retry callback
+      onHome={onHome} // NEW: Pass home callback
+      onNextLevel={onNextLevel} // NEW: Pass next level callback
+      hasNextLevel={hasNextLevel} // NEW: Indicate if next level exists
       lowerChildren={
         <View style={{ flex: 1, position: 'relative' }}>
           {canProceed ? (
@@ -226,7 +242,7 @@ const ThirdGrid = ({
       }
     >
       {/* REMOVED: AnswerOption proceed button - now in GridContainer */}
-      {!canProceed && showPotions ? (
+       {!canProceed && !isLevelComplete && showPotions ? (
         <PotionGrid 
           potions={potions}
           onPotionPress={onPotionPress}
@@ -235,7 +251,7 @@ const ThirdGrid = ({
           potionUsed={potionUsed} 
           currentQuestionId={currentQuestion.id} 
         />
-      ) : !canProceed ? (
+      ) : !canProceed && !isLevelComplete ? (
         <AnswerGrid
           options={options}
           selectedAnswers={selectedAnswers}

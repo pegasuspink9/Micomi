@@ -9,7 +9,7 @@ import { useGameData } from './hooks/useGameData';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import CombatVSModal from './Components/Actual Game/Game Display Entrance/GameDisplayEntrance';
 import GameOverModal from './Components/GameOver And Win/GameOver';
-import LevelCompletionModal from './Components/GameOver And Win/LevelCompletionModal'; 
+
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -244,30 +244,29 @@ export default function GamePlay() {
     console.log('🎉 Level Completion Check:', {
       status: fightResult?.status, 
       enemyHealth: fightResult?.enemy?.enemy_health,
-      hasCompletionRewards: !!submissionResult?.completionRewards,
-      hasNextLevel: !!submissionResult?.nextLevel,
-      hasTriggered: hasTriggeredLevelCompletion.current,
+      canProceed: canProceed,
       showLevelCompletion: showLevelCompletion,
       isLoadingNextLevel: isLoadingNextLevel,
-      waitingForAnimation: waitingForAnimation
+      waitingForAnimation: waitingForAnimation,
     });
 
+    // Show completion buttons when enemy is defeated
     if (fightResult?.status === 'won' &&
         fightResult?.enemy?.enemy_health === 0 &&
         !hasTriggeredLevelCompletion.current && 
         !showLevelCompletion && 
         !isLoadingNextLevel &&
-        !waitingForAnimation) {
+        !waitingForAnimation &&
+        !canProceed) { // NEW: Don't show if canProceed is still true
       
-      console.log('🎉 Level completed - all animations finished, showing modal');
+      console.log('🎉 Level completed - showing completion buttons');
       hasTriggeredLevelCompletion.current = true;
       
       setTimeout(() => {
-        console.log('🎉 Showing Level Completion modal');
         setShowLevelCompletion(true);
       }, 500); 
     }
-  }, [gameState?.submissionResult?.fightResult, showLevelCompletion, isLoadingNextLevel, waitingForAnimation]);
+  }, [gameState?.submissionResult?.fightResult, showLevelCompletion, isLoadingNextLevel, waitingForAnimation, canProceed]);
 
   const handleAnimationComplete = useCallback(() => {
     console.log('🎬 All animation sequences completed');
@@ -386,17 +385,7 @@ export default function GamePlay() {
             isRetrying={isRetrying} 
           />
 
-          <LevelCompletionModal
-            visible={showLevelCompletion}
-            onRetry={handleRetry}
-            onHome={handleHome}
-            onNextLevel={handleNextLevel}
-            completionRewards={gameState?.submissionResult?.completionRewards}
-            nextLevel={gameState?.submissionResult?.nextLevel}
-            characterName={gameState?.selectedCharacter?.name || 'Character'}
-            enemyName={gameState?.enemy?.enemy_name || 'Enemy'}
-            isLoading={isLoadingNextLevel}
-          />
+      
 
           <View style={[styles.container, styles.centerContent]}>
             <ActivityIndicator size="large" color="#ffffff" />
@@ -561,6 +550,10 @@ export default function GamePlay() {
                   cardDisplaySequence={cardDisplaySequence}
                   canProceed={canProceed}
                   onProceed={handleProceed}
+                  isLevelComplete={showLevelCompletion}
+                  onRetry={handleRetry}
+                  onNextLevel={handleNextLevel}
+                  hasNextLevel={!!gameState?.submissionResult?.nextLevel}
                 />
               </View>
             )}
@@ -588,17 +581,7 @@ export default function GamePlay() {
         isRetrying={isRetrying} 
       />
 
-      <LevelCompletionModal
-        visible={showLevelCompletion}
-        onRetry={handleRetry}
-        onHome={handleHome}
-        onNextLevel={handleNextLevel}
-        completionRewards={gameState?.submissionResult?.completionRewards}
-        nextLevel={gameState?.submissionResult?.nextLevel}
-        characterName={gameState?.selectedCharacter?.name || 'Character'}
-        enemyName={gameState?.enemy?.enemy_name || 'Enemy'}
-        isLoading={isLoadingNextLevel}
-      />
+    
     </>
   );
 }
