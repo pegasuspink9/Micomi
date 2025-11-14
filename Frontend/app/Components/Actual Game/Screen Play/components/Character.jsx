@@ -91,7 +91,7 @@ const DogCharacter = ({
   }, [currentState]);
 
   // ========== Animation Configuration Logic ==========
-  const animationConfig = useMemo(() => {
+ const animationConfig = useMemo(() => {
     const configs = {
       idle: {
         url: characterAnimations.character_idle || characterAnimations.idle,
@@ -111,7 +111,7 @@ const DogCharacter = ({
         isCompound: false,
       },
       run: {
-        url: characterAnimations.character_run || characterAnimations.run,
+        url: characterAnimations.character_run || characterAnimations.run,  // ✅ Make sure URL is here
         shouldLoop: true,
         isCompound: false,
       },
@@ -122,6 +122,7 @@ const DogCharacter = ({
       },
     };
 
+    console.log(`🎬 Animation config for state ${currentState}:`, configs[currentState]);
     return configs[currentState] || configs.idle;
   }, [currentState, characterAnimations]);
 
@@ -249,10 +250,40 @@ const DogCharacter = ({
 
     frameIndex.value = 0;
 
+    if (currentState === 'run') {
+    console.log(`🏃 Character entering run state - looping animation`);
+    positionX.value = 0;
+    opacity.value = 1;
+
+    positionX.value = withTiming(SCREEN.width, {
+      duration: FRAME_DURATION * TOTAL_FRAMES, // ~1200ms
+      easing: Easing.inOut(Easing.quad),
+    });
+
+    // Run animation loops for 2.4 seconds then completes
+    frameIndex.value = withRepeat(
+      withTiming(TOTAL_FRAMES - 1, {
+        duration: FRAME_DURATION * TOTAL_FRAMES,
+        easing: Easing.linear,
+      }),
+      -1,  // Loop infinite times
+      false
+    );
+
+    // Cleanup after run completes (2.4 seconds)
+    phaseTimeoutRef.current = setTimeout(() => {
+      console.log('✅ Run animation completed - resetting position');
+      frameIndex.value = 0;
+      runOnJS(notifyAnimationComplete)();
+    }, FRAME_DURATION * TOTAL_FRAMES);
+
+    return;
+    }
+
     // ✅ FORCE position reset for non-attack/run states (especially hurt)
-    if (currentState !== 'attack' && currentState !== 'run') {
-      positionX.value = 0;
-      opacity.value = 1;
+    if (currentState !== 'attack') {
+    positionX.value = 0;
+    opacity.value = 1;
     }
 
     // ========== Compound Attack Animation ==========
@@ -285,20 +316,21 @@ const DogCharacter = ({
     }
 
     // ========== Looping Animation (Idle, Run) ==========
-    if (isAnimationLooping) {
-      positionX.value = 0;
-      opacity.value = 1;
+    if (isAnimationLooping && currentState !== 'run') {
+    positionX.value = 0;
+    opacity.value = 1;
 
-      frameIndex.value = withRepeat(
-        withTiming(TOTAL_FRAMES - 1, {
-          duration: FRAME_DURATION * TOTAL_FRAMES,
-          easing: Easing.linear,
-        }),
-        -1,
-        false
-      );
-      return;
+    frameIndex.value = withRepeat(
+      withTiming(TOTAL_FRAMES - 1, {
+        duration: FRAME_DURATION * TOTAL_FRAMES,
+        easing: Easing.linear,
+      }),
+      -1,
+      false
+    );
+    return;
     }
+
 
     // ========== Non-Looping Animation (Hurt, Dies, Attack) ==========
     if (currentState === 'attack') {
@@ -398,9 +430,9 @@ const DogCharacter = ({
     };
   }, [SPRITE_SIZE]);
 
-  const positionStyle = useAnimatedStyle(() => {
-    if (currentState === 'attack' || currentState === 'run') {
-      console.log(`📍 Applying positionX movement: ${positionX.value}`);
+    const positionStyle = useAnimatedStyle(() => {
+    if (currentState === 'attack' || currentState === 'run') {  
+      console.log(`📍 Applying positionX movement for ${currentState}: ${positionX.value}`);
       return {
         transform: [{ translateX: positionX.value }],
       };

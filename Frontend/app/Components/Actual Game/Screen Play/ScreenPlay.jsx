@@ -15,6 +15,7 @@ const ScreenPlay = ({
   gameState,
   isPaused = false, 
   borderColor = 'white',
+  characterRunState = false,
   onSubmissionAnimationComplete = null,
 }) => {
   const [attackingEnemies] = useState(new Set());
@@ -71,17 +72,17 @@ const ScreenPlay = ({
 
 
   const characterAnimations = useMemo(() => ({
-    character_idle: gameState.submissionResult?.fightResult?.character?.character_idle 
-      ?? gameState.selectedCharacter?.character_idle,
-    character_attack: gameState.submissionResult?.fightResult?.character?.character_attack 
-      ?? gameState.selectedCharacter?.character_attack,
-    character_hurt: gameState.submissionResult?.fightResult?.character?.character_hurt 
-      ?? gameState.selectedCharacter?.character_hurt,
-    character_run: gameState.submissionResult?.fightResult?.character?.character_run 
-      ?? gameState.selectedCharacter?.character_run,
-    character_dies: gameState.submissionResult?.fightResult?.character?.character_dies 
-      ?? gameState.selectedCharacter?.character_dies,
-  }), [gameState]);
+      character_idle: gameState.submissionResult?.fightResult?.character?.character_idle 
+        ?? gameState.selectedCharacter?.character_idle,
+      character_attack: gameState.submissionResult?.fightResult?.character?.character_attack 
+        ?? gameState.selectedCharacter?.character_attack,
+      character_hurt: gameState.submissionResult?.fightResult?.character?.character_hurt 
+        ?? gameState.selectedCharacter?.character_hurt,
+      character_run: gameState.submissionResult?.fightResult?.character?.character_run 
+        ?? gameState.selectedCharacter?.character_run,
+      character_dies: gameState.submissionResult?.fightResult?.character?.character_dies 
+        ?? gameState.selectedCharacter?.character_dies,
+    }), [gameState]);
 
   const coinsEarned = useMemo(() => 
     gameState.submissionResult?.levelStatus?.coinsEarned ?? 0, 
@@ -184,7 +185,7 @@ const handleCharacterAnimationComplete = useCallback((animationState) => {
     if (characterHealth <= 0) {
       console.log('💀 Character hurt completed, health is 0 - transitioning to dies');
       setCharacterAnimationState('dies');
-      return; // Don't reset isPlayingSubmissionAnimation yet
+      return; 
     } else {
       console.log('🩸 Character hurt completed, still alive - returning to idle');
       setCharacterAnimationState('idle');
@@ -266,11 +267,31 @@ useEffect(() => {
   };
 }, [gameState?.currentChallenge?.id]);
 
+ useEffect(() => {
+  if (characterRunState) {
+    console.log('🏃 ScreenPlay detected run state - setting character animation');
+    setCharacterAnimationState('run');
+    setIsPlayingSubmissionAnimation(true);
+    
+    // Auto-reset after animation completes (2.5 seconds)
+    const runTimeout = setTimeout(() => {
+      console.log('🏃 Run animation duration complete - returning to idle');
+      setCharacterAnimationState('idle');
+      setIsPlayingSubmissionAnimation(false);
+    }, 2400); // Match character run animation duration
+    
+    return () => clearTimeout(runTimeout);
+  }
+}, [characterRunState]);
+
 useEffect(() => {
   if (isPlayingSubmissionAnimation) {
     console.log(`Skipping animation change - submission animation in progress`);
     return;
   }
+
+
+ 
 
   const submission = gameState.submissionResult;
   const submissionKey = submission ? `${submission.isCorrect}-${submission.attempts || 0}-${submission.fightResult?.character?.character_health ?? ''}-${submission.fightResult?.enemy?.enemy_health ?? ''}`
@@ -285,7 +306,7 @@ useEffect(() => {
     lastSubmissionKeyRef.current = submissionKey;
 
     if (submission.isCorrect === true) {
-      // ✅ Check if character has attack URL before attacking
+      //  Check if character has attack URL before attacking
       const attackUrl = Array.isArray(characterAnimations.character_attack)
         ? characterAnimations.character_attack.filter(url => url && typeof url === 'string')[0]
         : characterAnimations.character_attack;
@@ -298,7 +319,7 @@ useEffect(() => {
         setCharacterAnimationState('idle');
       }
       
-      // ✅ Check if enemy has dies animation from API
+      //  Check if enemy has dies animation from API
       const enemyDiesUrl = submission.fightResult?.enemy?.enemy_dies;
       
       if (enemyDiesUrl) {
@@ -316,7 +337,7 @@ useEffect(() => {
       console.log(`❌ Wrong answer - checking enemy health for counter attack`);
       console.log(`Enemy health: ${enemyHealth}`);
       
-      // ✅ Enemy counter-attacks only if health > 0
+      //  Enemy counter-attacks only if health > 0
       if (enemyHealth > 0) {
         console.log(`🦹 Enemy health > 0 - enemy counter attacks character`);
         setEnemyAnimationStates(prev => prev.map(() => 'attack'));
@@ -328,7 +349,7 @@ useEffect(() => {
       const characterHurtUrl = submission.fightResult?.character?.character_hurt;
       console.log(`🩸 Character hurt URL available: ${!!characterHurtUrl}`);
       
-      // ✅ Character gets hurt on wrong answer (stays in place, no attack movement)
+      //  Character gets hurt on wrong answer (stays in place, no attack movement)
       setCharacterAnimationState('hurt');
       setIsPlayingSubmissionAnimation(true);
       
@@ -348,7 +369,7 @@ useEffect(() => {
     return;
   }
 
-  // ✅ Only force dies if health is 0 AND dies animation is explicitly provided
+  //  Only force dies if health is 0 AND dies animation is explicitly provided
   const characterDiesUrl = gameState.submissionResult?.fightResult?.character?.character_dies || 
                            gameState.selectedCharacter?.character_dies;
   
@@ -513,6 +534,7 @@ export default React.memo(ScreenPlay, (prevProps, nextProps) => {
     prevProps.gameState?.selectedCharacter?.current_health === nextProps.gameState?.selectedCharacter?.current_health &&
     prevProps.gameState?.enemy?.enemy_health === nextProps.gameState?.enemy?.enemy_health &&
     prevProps.borderColor === nextProps.borderColor &&
+    prevProps.characterRunState === nextProps.characterRunState && 
     prevProps.isPaused === nextProps.isPaused &&
     prevProps.onSubmissionAnimationComplete === nextProps.onSubmissionAnimationComplete &&
     prevProps.gameState?.avatar?.player === nextProps.gameState?.avatar?.player &&

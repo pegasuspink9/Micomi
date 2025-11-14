@@ -47,7 +47,8 @@ const ThirdGrid = ({
   onRetry = null,
   onHome = null,
   onNextLevel = null,
-  hasNextLevel = false
+  hasNextLevel = false,
+  onCharacterRun = null
 }) => {
 
   if (!currentQuestion) {
@@ -201,12 +202,13 @@ const ThirdGrid = ({
       cardImageUrl={cardImageUrl}
       showCardInGrid={cardDisplaySequence === 'grid'}
       isProceedMode={canProceed && !isLevelComplete}
-      onProceed={onProceed} // NEW: Pass proceed callback
-      isLevelComplete={isLevelComplete} // NEW: Pass level complete status
-      onRetry={onRetry} // NEW: Pass retry callback
-      onHome={onHome} // NEW: Pass home callback
-      onNextLevel={onNextLevel} // NEW: Pass next level callback
-      hasNextLevel={hasNextLevel} // NEW: Indicate if next level exists
+      onProceed={onProceed}
+      isLevelComplete={isLevelComplete} 
+      onRetry={onRetry} 
+      onHome={onHome}
+      onNextLevel={onNextLevel}
+      hasNextLevel={hasNextLevel}
+      onRun={onCharacterRun}
       lowerChildren={
         <View style={{ flex: 1, position: 'relative' }}>
           {canProceed ? (

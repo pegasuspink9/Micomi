@@ -19,7 +19,8 @@ const GridContainer = ({
   onRetry = null,
   onHome = null,
   onNextLevel = null,
-  hasNextLevel = false
+  hasNextLevel = false,
+  onRun = null
 }) => {
   const [imageSource, setImageSource] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -31,7 +32,7 @@ const GridContainer = ({
   useEffect(() => {
     const url = cardImageUrl;
 
-    if (isProceedMode) {
+    if (isProceedMode || isLevelComplete) {
       setImageSource(null);
       setPreviousUrl(null);
       dropAnim.setValue(-500);
@@ -70,7 +71,7 @@ const GridContainer = ({
       dropAnim.setValue(-500);
       opacityAnim.setValue(0);
     }
-  }, [cardImageUrl, showCardInGrid, isProceedMode]);
+  }, [cardImageUrl, showCardInGrid, isProceedMode, isLevelComplete]);
 
   const animatedStyle = {
     transform: [
@@ -105,11 +106,11 @@ const GridContainer = ({
           />
         )}
         
-        {!isProceedMode && (
+        {!isProceedMode && !isLevelComplete && (
           <View style={styles.simpleFrame}>
           </View>
         )}
-        
+
         <View style={[
           styles.outerFrame,
           (isProceedMode || isLevelComplete) && styles.outerFrameProceed
@@ -129,10 +130,27 @@ const GridContainer = ({
               <View style={styles.rightShadow} />
               
               {/* LEVEL COMPLETE BUTTONS */}
-     {isLevelComplete ? (
+              {isLevelComplete ? (
                 <View style={styles.completionButtonFrame}>
                   <View style={styles.completionButtonsContainer}>
              
+                    {/* RUN BUTTON - GREEN (New) */}
+                    <View style={styles.completionButtonWrapper}>
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.completionListItemContainer,
+                          styles.runButtonContainer,
+                          pressed && styles.completionListItemPressed
+                        ]}
+                        onPress={onRun}
+                      >
+                        <View style={styles.completionInnerButton}>
+                          <View style={styles.completionButtonHighlight} />
+                          <View style={styles.completionButtonShadow} />
+                          <MaterialCommunityIcons name="run" size={scale(28)} color="#ffffffff" />
+                        </View>
+                      </Pressable>
+                    </View>
 
                     {/* HOME BUTTON - RED */}
                     <View style={styles.completionButtonWrapper}>
@@ -750,6 +768,21 @@ const styles = StyleSheet.create({
     borderRightColor: '#0d47a1',
   },
  
+
+    runButtonContainer: {
+    backgroundColor: '#2e7d32',
+    borderTopColor: '#66bb6a',
+    borderLeftColor: '#66bb6a',
+    borderBottomColor: '#1b5e20',
+    borderRightColor: '#1b5e20',
+  },
+  homeButtonContainer: {
+    backgroundColor: '#c62828',
+    borderTopColor: '#ef5350',
+    borderLeftColor: '#ef5350',
+    borderBottomColor: '#b71c1c',
+    borderRightColor: '#b71c1c',
+  },
 });
 
 export default GridContainer;

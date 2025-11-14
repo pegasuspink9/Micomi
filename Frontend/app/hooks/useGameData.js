@@ -305,7 +305,6 @@ const submitAnswer = async (selectedAnswers) => {
 
   try {
     setCanProceed(false);
-    
     setGameState(prevState => {
       const nextChallenge = prevState.nextChallengeData;
       
@@ -319,8 +318,7 @@ const submitAnswer = async (selectedAnswers) => {
         // First clear submissionResult to trigger card display
         return {
           ...prevState,
-          submissionResult: null, // Clear submission result FIRST
-          // Then immediately set the new challenge and card
+          submissionResult: null,
           currentChallenge: nextChallenge,
           card: nextChallenge.card, // Load the card that belongs to THIS challenge
           enemy: nextChallenge.enemy || prevState.enemy,

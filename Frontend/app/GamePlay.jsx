@@ -81,6 +81,7 @@ export default function GamePlay() {
 
   const currentChallenge = gameState?.currentChallenge;
   const submissionResult = gameState?.submissionResult;
+  const [characterRunState, setCharacterRunState] = useState(false);
   
   //  Get character attack card from gameState
   const characterAttackCard = gameState?.card?.character_attack_card;
@@ -109,7 +110,18 @@ export default function GamePlay() {
   }, [characterAttackCard, showGameplay])
 
 
-
+  const handleCharacterRun = useCallback(() => {
+  console.log('🏃 Character run triggered');
+  
+  // Trigger the character run animation
+  setCharacterRunState(true);
+  setShowGameplay(true);
+  
+  setTimeout(() => {
+    console.log('🏃 Character run animation completed');
+    setCharacterRunState(false);
+  }, 2000); // Adjust duration based on your run animation
+}, []);
 
 
 
@@ -457,7 +469,7 @@ export default function GamePlay() {
       </>
     );
   }
-  
+
   // Error state
   if (error) {
     return (
@@ -501,6 +513,7 @@ export default function GamePlay() {
                 gameState={gameState}
                 isPaused={false}
                 borderColor={borderColor}
+                characterRunState={characterRunState}
                 onEnemyComplete={handleEnemyComplete}
                 currentQuestionIndex={0}
                 onAllowEnemyCompletion={handleAllowEnemyCompletion}
@@ -555,6 +568,7 @@ export default function GamePlay() {
                   onRetry={handleRetry}
                   onNextLevel={handleNextLevel}
                   hasNextLevel={!!gameState?.submissionResult?.nextLevel}
+                  onCharacterRun={handleCharacterRun}
                 />
               </View>
             )}
