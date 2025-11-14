@@ -336,8 +336,10 @@ export const submitChallengeService = async (
   const next = await getNextChallengeService(playerId, levelId);
   const nextChallenge = next.nextChallenge;
 
-  const nextCorrectAnswerLength = Array.isArray(challenge.correct_answer)
-    ? challenge.correct_answer.length
+  const nextCorrectAnswerLength = nextChallenge
+    ? Array.isArray(nextChallenge.correct_answer)
+      ? nextChallenge.correct_answer.length
+      : 0
     : 0;
 
   let card_type: string | null = null;
@@ -352,38 +354,6 @@ export const submitChallengeService = async (
   const isLastRemaining =
     updatedWrongChallenges.length === 0 &&
     currentAnsweredCount + 1 === totalChallenges;
-
-  const isLastRemainingChallenge = currentAnsweredCount + 1 === totalChallenges;
-
-  const hasConsecutiveWrongs = updatedProgress.consecutive_wrongs > 0;
-
-  if (nextChallenge) {
-    const isRetryOfWrong =
-      nextChallenge &&
-      updatedWrongChallenges.includes(nextChallenge.challenge_id);
-
-    if (isRetryOfWrong) {
-      attackType = "basic_attack";
-    } else if (isLastRemainingChallenge && hasConsecutiveWrongs) {
-      attackType = "third_attack";
-    } else if (isLastRemaining) {
-      attackType = "special_attack";
-    } else if (nextCorrectAnswerLength >= 8) {
-      attackType = "third_attack";
-    } else if (nextCorrectAnswerLength >= 5) {
-      attackType = "second_attack";
-    } else {
-      attackType = "basic_attack";
-    }
-
-    const cardInfo = getCardForAttackType(character.character_name, attackType);
-    card_type = cardInfo.card_type;
-    character_attack_card = cardInfo.character_attack_card;
-  } else {
-    attackType = null;
-    card_type = null;
-    character_attack_card = null;
-  }
 
   if (nextChallenge) {
     await prisma.playerProgress.update({
@@ -464,6 +434,42 @@ export const submitChallengeService = async (
 
   const isNewBonusRound =
     freshProgress!.enemy_hp <= 0 && freshProgress!.player_hp > 0;
+
+  const isLastRemainingChallenge = currentAnsweredCount + 1 === totalChallenges;
+
+  const hasConsecutiveWrongs = updatedProgress.consecutive_wrongs > 0;
+
+  if (nextChallenge) {
+    const isRetryOfWrong =
+      nextChallenge &&
+      updatedWrongChallenges.includes(nextChallenge.challenge_id);
+
+    if (isRetryOfWrong) {
+      attackType = "basic_attack";
+    } else if (
+      isLastRemainingChallenge &&
+      hasConsecutiveWrongs &&
+      isNewBonusRound
+    ) {
+      attackType = "third_attack";
+    } else if (isLastRemaining && isNewBonusRound) {
+      attackType = "special_attack";
+    } else if (nextCorrectAnswerLength >= 8) {
+      attackType = "third_attack";
+    } else if (nextCorrectAnswerLength >= 5) {
+      attackType = "second_attack";
+    } else {
+      attackType = "basic_attack";
+    }
+
+    const cardInfo = getCardForAttackType(character.character_name, attackType);
+    card_type = cardInfo.card_type;
+    character_attack_card = cardInfo.character_attack_card;
+  } else {
+    attackType = null;
+    card_type = null;
+    character_attack_card = null;
+  }
 
   if (isBonusRound) {
     const { text, audio } = generateDynamicMessage(
