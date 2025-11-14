@@ -129,7 +129,7 @@ const GridContainer = ({
                       pressed && styles.proceedListItemPressed
                     ]}
                     onPress={() => {
-                      console.log('✅ Proceeding to next challenge...');
+                      console.log(' Proceeding to next challenge...');
                       onProceed?.();
                     }}
                   >
