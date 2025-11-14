@@ -457,7 +457,7 @@ export default function GamePlay() {
       </>
     );
   }
-
+  
   // Error state
   if (error) {
     return (
@@ -551,6 +551,7 @@ export default function GamePlay() {
                   canProceed={canProceed}
                   onProceed={handleProceed}
                   isLevelComplete={showLevelCompletion}
+                  onHome={handleHome}
                   onRetry={handleRetry}
                   onNextLevel={handleNextLevel}
                   hasNextLevel={!!gameState?.submissionResult?.nextLevel}

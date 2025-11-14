@@ -129,33 +129,35 @@ const GridContainer = ({
               <View style={styles.rightShadow} />
               
               {/* LEVEL COMPLETE BUTTONS */}
-              {isLevelComplete ? (
+     {isLevelComplete ? (
                 <View style={styles.completionButtonFrame}>
                   <View style={styles.completionButtonsContainer}>
-                    {/* NEXT LEVEL BUTTON */}
-                     {hasNextLevel ? (
-                      <View style={styles.completionButtonWrapper}>
-                        <Pressable
-                          style={({ pressed }) => [
-                            styles.completionListItemContainer,
-                            pressed && styles.completionListItemPressed
-                          ]}
-                          onPress={onNextLevel}
-                        >
-                          <View style={styles.completionInnerButton}>
-                            <View style={styles.completionButtonHighlight} />
-                            <View style={styles.completionButtonShadow} />
-                            <MaterialCommunityIcons name="skip-next" size={24} color="white" />
-                          </View>
-                        </Pressable>
-                      </View>
-                    ) : null}
+             
 
-                    {/* RETRY BUTTON */}
-                     <View style={styles.completionButtonWrapper}>
+                    {/* HOME BUTTON - RED */}
+                    <View style={styles.completionButtonWrapper}>
                       <Pressable
                         style={({ pressed }) => [
                           styles.completionListItemContainer,
+                          styles.homeButtonContainer,
+                          pressed && styles.completionListItemPressed
+                        ]}
+                        onPress={onHome}
+                      >
+                        <View style={styles.completionInnerButton}>
+                          <View style={styles.completionButtonHighlight} />
+                          <View style={styles.completionButtonShadow} />
+                          <MaterialIcons name="home" size={scale(28)} color="#ffffffff" />
+                        </View>
+                      </Pressable>
+                    </View>
+
+                    {/* RETRY BUTTON - YELLOW */}
+                    <View style={styles.completionButtonWrapper}>
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.completionListItemContainer,
+                          styles.retryButtonContainer,
                           pressed && styles.completionListItemPressed
                         ]}
                         onPress={onRetry}
@@ -168,22 +170,26 @@ const GridContainer = ({
                       </Pressable>
                     </View>
 
-                    {/* HOME BUTTON */}
-                    <View style={styles.completionButtonWrapper}>
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.completionListItemContainer,
-                          pressed && styles.completionListItemPressed
-                        ]}
-                        onPress={onHome}
-                      >
-                        <View style={styles.completionInnerButton}>
-                          <View style={styles.completionButtonHighlight} />
-                          <View style={styles.completionButtonShadow} />
-                          <MaterialIcons name="home" size={scale(28)} color="#ffffffff" />
-                        </View>
-                      </Pressable>
-                    </View>
+                    {/* NEXT LEVEL BUTTON - BLUE */}
+                    {hasNextLevel ? (
+                      <View style={styles.completionButtonWrapper}>
+                        <Pressable
+                          style={({ pressed }) => [
+                            styles.completionListItemContainer,
+                            styles.nextButtonContainer,
+                            pressed && styles.completionListItemPressed
+                          ]}
+                          onPress={onNextLevel}
+                        >
+                          <View style={styles.completionInnerButton}>
+                            <View style={styles.completionButtonHighlight} />
+                            <View style={styles.completionButtonShadow} />
+                            <MaterialCommunityIcons name="skip-next" size={24} color="white" />
+                          </View>
+                        </Pressable>
+                      </View>
+                    ) : null}
+                    
                   </View>
                 </View>
               ) : isProceedMode ? (
@@ -649,15 +655,15 @@ const styles = StyleSheet.create({
     borderRadius: RESPONSIVE.borderRadius.sm,
     position: 'relative',
     overflow: 'hidden',
-    backgroundColor: '#2d5f3f',
+    backgroundColor: '#043368ff',
     borderTopWidth: scale(2),
-    borderTopColor: '#4caf50',
+    borderTopColor: '#043368ff',
     borderLeftWidth: scale(2),
-    borderLeftColor: '#4caf50',
+    borderLeftColor: '#043368ff',
     borderBottomWidth: scale(3),
-    borderBottomColor: '#1b3d2a',
+    borderBottomColor: '#043368ff',
     borderRightWidth: scale(3),
-    borderRightColor: '#1b3d2a',
+    borderRightColor: '#043368ff',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -676,15 +682,7 @@ const styles = StyleSheet.create({
       width: 0,
       height: scale(1),
     },
-    shadowOpacity: 0.2,
-    borderTopWidth: scale(3),
-    borderTopColor: '#1b3d2a',
-    borderLeftWidth: scale(3),
-    borderLeftColor: '#1b3d2a',
-    borderBottomWidth: scale(1),
-    borderBottomColor: '#4caf50',
-    borderRightWidth: scale(1),
-    borderRightColor: '#4caf50',
+    shadowOpacity: 0.2
   },
 
   completionInnerButton: {
@@ -694,7 +692,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: RESPONSIVE.borderRadius.xs,
-    backgroundColor: '#1a3d2a',
+    backgroundColor: '#043368ff',
     borderTopWidth: scale(1),
     borderTopColor: 'rgba(76, 175, 80, 0.4)',
     borderBottomWidth: scale(1),
@@ -707,7 +705,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '30%',
-    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+    backgroundColor: '#043368ff',
     borderTopLeftRadius: RESPONSIVE.borderRadius.xs,
     borderTopRightRadius: RESPONSIVE.borderRadius.xs,
     pointerEvents: 'none',
@@ -725,6 +723,32 @@ const styles = StyleSheet.create({
     pointerEvents: 'none',
   },
 
+
+    homeButtonContainer: {
+    backgroundColor: '#c62828',
+    borderTopColor: '#ef5350',
+    borderLeftColor: '#ef5350',
+    borderBottomColor: '#b71c1c',
+    borderRightColor: '#b71c1c',
+  },
+
+  // RETRY BUTTON - YELLOW
+  retryButtonContainer: {
+    backgroundColor: '#f57f17',
+    borderTopColor: '#ffb74d',
+    borderLeftColor: '#ffb74d',
+    borderBottomColor: '#e65100',
+    borderRightColor: '#e65100',
+  },
+
+  // NEXT BUTTON - BLUE
+  nextButtonContainer: {
+    backgroundColor: '#1565c0',
+    borderTopColor: '#42a5f5',
+    borderLeftColor: '#42a5f5',
+    borderBottomColor: '#0d47a1',
+    borderRightColor: '#0d47a1',
+  },
  
 });
 
