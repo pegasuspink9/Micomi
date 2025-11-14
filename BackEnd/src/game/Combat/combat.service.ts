@@ -434,6 +434,7 @@ export async function fightEnemy(
         character_attack_card = cardInfo.character_attack_card;
         damage = damageArray[3] ?? 25;
         character_attack = attacksArray[3] || null;
+        console.log("SS is used: ", character_attack);
       } else {
         character_attack_type = "third_attack";
         const cardInfo = getCardForAttackType(
@@ -479,21 +480,51 @@ export async function fightEnemy(
       console.log(`- Bonus round ${character_attack_type} attack displayed!`);
       enemy_hurt = enemy.enemy_hurt || null;
     } else if (enemyHealth > 0 || answeredCount >= totalChallenges) {
-      // Normal or celebratory (HP <=0 but not bonus)
-      if (
-        !alreadyAnsweredCorrectly &&
-        !wasEverWrong &&
-        correctAnswerLength >= 8
-      ) {
-        character_attack_type = "third_attack";
-      } else if (
-        !alreadyAnsweredCorrectly &&
-        !wasEverWrong &&
-        correctAnswerLength >= 5
-      ) {
-        character_attack_type = "second_attack";
+      // Normal or celebratory (Not bonus round)
+      const isCompletingLevel = answeredCount === totalChallenges;
+      const hadCommittedWrong = progress.attempts > totalChallenges;
+
+      if (isCompletingLevel) {
+        if (hadCommittedWrong) {
+          character_attack_type = "third_attack";
+        } else {
+          character_attack_type = "special_attack";
+        }
       } else {
-        character_attack_type = "basic_attack";
+        if (
+          !alreadyAnsweredCorrectly &&
+          !wasEverWrong &&
+          correctAnswerLength >= 8
+        ) {
+          character_attack_type = "third_attack";
+        } else if (
+          !alreadyAnsweredCorrectly &&
+          !wasEverWrong &&
+          correctAnswerLength >= 5
+        ) {
+          character_attack_type = "second_attack";
+        } else {
+          character_attack_type = "basic_attack";
+        }
+      }
+
+      let damageIndex: number;
+      if (character_attack_type === "special_attack") {
+        damageIndex = 3;
+        damage = damageArray[2] ?? 25;
+        character_attack = attacksArray[3] || null;
+      } else if (character_attack_type === "third_attack") {
+        damageIndex = 2;
+        damage = damageArray[2] ?? 25;
+        character_attack = attacksArray[2] || null;
+      } else if (character_attack_type === "second_attack") {
+        damageIndex = 1;
+        damage = damageArray[1] ?? 15;
+        character_attack = attacksArray[1] || null;
+      } else {
+        damageIndex = 0;
+        damage = damageArray[0] ?? 10;
+        character_attack = attacksArray[0] || null;
       }
 
       const cardInfo = getCardForAttackType(
@@ -503,15 +534,7 @@ export async function fightEnemy(
       card_type = cardInfo.card_type;
       character_attack_card = cardInfo.character_attack_card;
 
-      const damageIndex =
-        character_attack_type === "third_attack"
-          ? 2
-          : character_attack_type === "second_attack"
-          ? 1
-          : 0;
-      damage = damageArray[damageIndex] ?? 10;
       character_run = character.character_run || null;
-      character_attack = attacksArray[damageIndex] || null;
       character_idle = character.avatar_image || null;
       console.log(`- ${character_attack_type} triggered!`);
     } else {
@@ -1043,20 +1066,50 @@ export async function fightBossEnemy(
       console.log("- Enemy health after bonus attack:", enemyHealth);
     } else if (enemyHealth > 0 || answeredCount >= totalChallenges) {
       // Normal or celebratory (HP <=0 but not bonus)
-      if (
-        !alreadyAnsweredCorrectly &&
-        !wasEverWrong &&
-        correctAnswerLength >= 8
-      ) {
-        character_attack_type = "third_attack";
-      } else if (
-        !alreadyAnsweredCorrectly &&
-        !wasEverWrong &&
-        correctAnswerLength >= 5
-      ) {
-        character_attack_type = "second_attack";
+      const isCompletingLevel = answeredCount === totalChallenges;
+      const hadCommittedWrong = progress.attempts > totalChallenges;
+
+      if (isCompletingLevel) {
+        if (hadCommittedWrong) {
+          character_attack_type = "third_attack";
+        } else {
+          character_attack_type = "special_attack";
+        }
       } else {
-        character_attack_type = "basic_attack";
+        if (
+          !alreadyAnsweredCorrectly &&
+          !wasEverWrong &&
+          correctAnswerLength >= 8
+        ) {
+          character_attack_type = "third_attack";
+        } else if (
+          !alreadyAnsweredCorrectly &&
+          !wasEverWrong &&
+          correctAnswerLength >= 5
+        ) {
+          character_attack_type = "second_attack";
+        } else {
+          character_attack_type = "basic_attack";
+        }
+      }
+
+      let damageIndex: number;
+      if (character_attack_type === "special_attack") {
+        damageIndex = 3;
+        damage = 50; // Special attack damage (adjust as needed; doubled from third's 25)
+        character_attack = attacksArray[3] || null;
+      } else if (character_attack_type === "third_attack") {
+        damageIndex = 2;
+        damage = damageArray[2] ?? 25;
+        character_attack = attacksArray[2] || null;
+      } else if (character_attack_type === "second_attack") {
+        damageIndex = 1;
+        damage = damageArray[1] ?? 15;
+        character_attack = attacksArray[1] || null;
+      } else {
+        damageIndex = 0;
+        damage = damageArray[0] ?? 10;
+        character_attack = attacksArray[0] || null;
       }
 
       const cardInfo = getCardForAttackType(
@@ -1066,33 +1119,55 @@ export async function fightBossEnemy(
       card_type = cardInfo.card_type;
       character_attack_card = cardInfo.character_attack_card;
 
-      const damageIndex =
-        character_attack_type === "third_attack"
-          ? 2
-          : character_attack_type === "second_attack"
-          ? 1
-          : 0;
-      damage = damageArray[damageIndex] ?? 10;
       character_run = character.character_run || null;
-      character_attack = attacksArray[damageIndex] || null;
       character_idle = character.avatar_image || null;
       console.log(`- ${character_attack_type} triggered!`);
     } else {
       console.log("- Enemy already defeated: showing celebratory attack.");
-      if (
-        !alreadyAnsweredCorrectly &&
-        !wasEverWrong &&
-        correctAnswerLength >= 8
-      ) {
-        character_attack_type = "third_attack";
-      } else if (
-        !alreadyAnsweredCorrectly &&
-        !wasEverWrong &&
-        correctAnswerLength >= 5
-      ) {
-        character_attack_type = "second_attack";
+      const isCompletingLevel = answeredCount === totalChallenges;
+      const hadCommittedWrong = progress.attempts > totalChallenges;
+
+      if (isCompletingLevel) {
+        if (hadCommittedWrong) {
+          character_attack_type = "third_attack";
+        } else {
+          character_attack_type = "special_attack";
+        }
       } else {
-        character_attack_type = "basic_attack";
+        if (
+          !alreadyAnsweredCorrectly &&
+          !wasEverWrong &&
+          correctAnswerLength >= 8
+        ) {
+          character_attack_type = "third_attack";
+        } else if (
+          !alreadyAnsweredCorrectly &&
+          !wasEverWrong &&
+          correctAnswerLength >= 5
+        ) {
+          character_attack_type = "second_attack";
+        } else {
+          character_attack_type = "basic_attack";
+        }
+      }
+
+      let damageIndex: number;
+      if (character_attack_type === "special_attack") {
+        damageIndex = 3;
+        damage = 50; // Special attack damage (adjust as needed; doubled from third's 25)
+        character_attack = attacksArray[3] || null;
+      } else if (character_attack_type === "third_attack") {
+        damageIndex = 2;
+        damage = damageArray[2] ?? 25;
+        character_attack = attacksArray[2] || null;
+      } else if (character_attack_type === "second_attack") {
+        damageIndex = 1;
+        damage = damageArray[1] ?? 15;
+        character_attack = attacksArray[1] || null;
+      } else {
+        damageIndex = 0;
+        damage = damageArray[0] ?? 10;
+        character_attack = attacksArray[0] || null;
       }
 
       const cardInfo = getCardForAttackType(
@@ -1102,15 +1177,7 @@ export async function fightBossEnemy(
       card_type = cardInfo.card_type;
       character_attack_card = cardInfo.character_attack_card;
 
-      const damageIndex =
-        character_attack_type === "third_attack"
-          ? 2
-          : character_attack_type === "second_attack"
-          ? 1
-          : 0;
-      damage = damageArray[damageIndex] ?? 10;
       character_run = character.character_run || null;
-      character_attack = attacksArray[damageIndex] || null;
       character_idle = character.avatar_image || null;
       console.log(`- ${character_attack_type} triggered for victory!`);
     }
@@ -1314,7 +1381,6 @@ export async function fightBossEnemy(
     const effectiveBonusRound = isBonusRound || isDetectedBonusRound;
 
     if (effectiveBonusRound) {
-      // For consistency, set animations for wrong in bonus (character idle, enemy hurt? but since wrong, perhaps enemy idle, no hurt)
       character_idle = character.avatar_image || null;
       enemy_hurt = enemy.enemy_hurt || null;
     } else if (enemyHealth > 0) {
