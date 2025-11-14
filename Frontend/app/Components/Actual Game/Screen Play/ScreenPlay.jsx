@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
-import { Animated } from 'react-native';
+import { Animated, View } from 'react-native';
 import enemiesData from '../GameData/Enemy Game Data/EnemyGameData';
 import GameContainer from './components/GameContainer';
 import GameBackground from './components/GameBackground';
@@ -22,8 +22,12 @@ const ScreenPlay = ({
   const [totalCoins, setTotalCoins] = useState(0);
   const [characterAnimationState, setCharacterAnimationState] = useState('idle');
   const [isPlayingSubmissionAnimation, setIsPlayingSubmissionAnimation] = useState(false);
+  const [isCharacterRunning, setIsCharacterRunning] = useState(false);
   const [victoryAnimationPhase, setVictoryAnimationPhase] = useState('idle'); 
   const victoryTimeoutRef = useRef(null);
+
+  const [hasRunCompleted, setHasRunCompleted] = useState(false);
+
 
   const enemies = useMemo(() => processEnemyData(enemiesData), []);
 
@@ -91,7 +95,7 @@ const ScreenPlay = ({
 
   const combatBackground = useMemo(() => gameState?.combat_background, [gameState?.combat_background]);
 
-useEffect(() => {
+  useEffect(() => {
   const fightResult = gameState?.submissionResult?.fightResult;
   
   if (fightResult?.status === 'won' && 
@@ -165,7 +169,7 @@ useEffect(() => {
     }
   }, [gameState.submissionResult]);
 
-const handleCharacterAnimationComplete = useCallback((animationState) => {
+  const handleCharacterAnimationComplete = useCallback((animationState) => {
   console.log(`🎬 Character ${animationState} animation completed`);
   
   const fightResult = gameState?.submissionResult?.fightResult;
@@ -206,6 +210,18 @@ const handleCharacterAnimationComplete = useCallback((animationState) => {
     }, 1000);
     return;
   }
+
+  if (animationState === 'run') {
+    console.log('🏃 Character run animation completed - character fading out, do not reset');
+    setIsPlayingSubmissionAnimation(false);
+    setIsCharacterRunning(false);
+    setHasRunCompleted(true);
+    // Notify completion but DON'T change state back to idle
+    if (onSubmissionAnimationComplete) {
+      onSubmissionAnimationComplete();
+    }
+    return;
+  }
   
   if (animationState !== 'idle') {
     setCharacterAnimationState('idle');
@@ -213,7 +229,9 @@ const handleCharacterAnimationComplete = useCallback((animationState) => {
   }
 }, [gameState?.submissionResult?.fightResult, playerHealth, onSubmissionAnimationComplete]);
 
-const handleEnemyAnimationComplete = useCallback((index) => {
+  
+
+  const handleEnemyAnimationComplete = useCallback((index) => {
   return (animationState) => {
     console.log(`🎬 Enemy ${index} ${animationState} animation completed`);
     
@@ -267,32 +285,37 @@ useEffect(() => {
   };
 }, [gameState?.currentChallenge?.id]);
 
- useEffect(() => {
+
+
+  useEffect(() => {
   if (characterRunState) {
     console.log('🏃 ScreenPlay detected run state - setting character animation');
     setCharacterAnimationState('run');
     setIsPlayingSubmissionAnimation(true);
-    
-    // Auto-reset after animation completes (2.5 seconds)
+    setIsCharacterRunning(true); 
+
     const runTimeout = setTimeout(() => {
       console.log('🏃 Run animation duration complete - returning to idle');
-      setCharacterAnimationState('idle');
+      setCharacterAnimationState('run');
       setIsPlayingSubmissionAnimation(false);
+      setIsCharacterRunning(false); // NEW: Reset running flag
     }, 2400); // Match character run animation duration
     
     return () => clearTimeout(runTimeout);
   }
-}, [characterRunState]);
+  }, [characterRunState]);
 
-useEffect(() => {
+  useEffect(() => {
   if (isPlayingSubmissionAnimation) {
     console.log(`Skipping animation change - submission animation in progress`);
     return;
   }
 
-
+   if (hasRunCompleted) {
+    console.log(`🏃 Run completed - preventing further animation changes`);
+    return;
+  }
  
-
   const submission = gameState.submissionResult;
   const submissionKey = submission ? `${submission.isCorrect}-${submission.attempts || 0}-${submission.fightResult?.character?.character_health ?? ''}-${submission.fightResult?.enemy?.enemy_health ?? ''}`
   : null;
@@ -450,8 +473,12 @@ useEffect(() => {
           onAnimationComplete={handleCharacterAnimationComplete}
         />
 
-         {enemies.map((enemy, index) => {
-        if (!enemyPositions[index]) return null;
+      {enemies.map((enemy, index) => {
+        if (!enemyPositions[index] || isCharacterRunning) return null;
+
+         const currentEnemyState = isCharacterRunning || hasRunCompleted 
+          ? enemyAnimationStates[index] 
+          : (enemyAnimationStates[index] || 'idle');
 
           return (
             <EnemyCharacter
@@ -460,9 +487,9 @@ useEffect(() => {
               index={index}
               enemyPosition={enemyPositions[index]}
               isAttacking={attackingEnemies.has(index)}
-              isPaused={isPaused}
+              isPaused={isPaused || isCharacterRunning}
               characterAnimations={enemyAnimations}
-              currentState={enemyAnimationStates[index] || 'idle'}
+              currentState={currentEnemyState} 
               onAnimationComplete={handleEnemyAnimationComplete(index)}
             />
           );

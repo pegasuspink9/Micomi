@@ -45,6 +45,7 @@ const DogCharacter = ({
     hurt: 2000,
     run: -1,
     dies: 2000,
+    diesOutro: 500,
   }), []);
 
   const COMPOUND_PHASES = useMemo(() => ({
@@ -83,7 +84,7 @@ const DogCharacter = ({
   // ========== Reset positionX when state changes away from attack ==========
   useEffect(() => {
     if (currentState !== 'attack' && currentState !== 'run') {
-      // ✅ Immediately cancel and reset positionX to 0
+      //  Immediately cancel and reset positionX to 0
       cancelAnimation(positionX);
       positionX.value = 0;
       console.log(`🐕 Character - Force reset position to 0 for ${currentState} state`);
@@ -111,7 +112,7 @@ const DogCharacter = ({
         isCompound: false,
       },
       run: {
-        url: characterAnimations.character_run || characterAnimations.run,  // ✅ Make sure URL is here
+        url: characterAnimations.character_run || characterAnimations.run,  //  Make sure URL is here
         shouldLoop: true,
         isCompound: false,
       },
@@ -243,7 +244,7 @@ const DogCharacter = ({
       return;
     }
 
-    // ✅ Reset animations
+    //  Reset animations
     cancelAnimation(frameIndex);
     cancelAnimation(positionX);
     cancelAnimation(opacity);
@@ -272,7 +273,7 @@ const DogCharacter = ({
 
     // Cleanup after run completes (2.4 seconds)
     phaseTimeoutRef.current = setTimeout(() => {
-      console.log('✅ Run animation completed - resetting position');
+      console.log(' Run animation completed - resetting position');
       frameIndex.value = 0;
       runOnJS(notifyAnimationComplete)();
     }, FRAME_DURATION * TOTAL_FRAMES);
@@ -280,7 +281,7 @@ const DogCharacter = ({
     return;
     }
 
-    // ✅ FORCE position reset for non-attack/run states (especially hurt)
+    //  FORCE position reset for non-attack/run states (especially hurt)
     if (currentState !== 'attack') {
     positionX.value = 0;
     opacity.value = 1;
@@ -354,7 +355,6 @@ const DogCharacter = ({
         });
       }
     } else {
-      // ✅ For hurt, dies, run - NEVER animate positionX
       console.log(`🩸 Character entering ${currentState} state - position will stay at 0`);
       positionX.value = 0;
       opacity.value = 1;
@@ -364,7 +364,7 @@ const DogCharacter = ({
     const duration = ANIMATION_DURATIONS[currentState] || (FRAME_DURATION * TOTAL_FRAMES);
     console.log(`🎬 Character ${currentState} animation starting - duration: ${duration}ms, positionX: ${positionX.value}`);
 
-    frameIndex.value = withTiming(
+     frameIndex.value = withTiming(
       TOTAL_FRAMES - 1,
       {
         duration,
@@ -372,15 +372,45 @@ const DogCharacter = ({
       },
       (finished) => {
         if (finished) {
-          console.log(`✅ Character ${currentState} animation completed`);
-          // ✅ Always reset position after animation
-          positionX.value = 0;
-          opacity.value = 1;
-
+          console.log(`Character ${currentState} animation completed`);
+          
+          // NEW: Handle dies animation with fade-out
           if (currentState === 'dies') {
-            runOnJS(notifyAnimationComplete)();
+            console.log(`💀 Character starting fade-out outro`);
             frameIndex.value = TOTAL_FRAMES - 1;
+            
+            opacity.value = withTiming(
+              0,
+              {
+                duration: ANIMATION_DURATIONS.diesOutro,
+                easing: Easing.inOut(Easing.ease),
+              },
+              (fadeFinished) => {
+                if (fadeFinished) {
+                  console.log(`👻 Character fade-out complete - gone`);
+                  runOnJS(notifyAnimationComplete)();
+                }
+              }
+            );
+          } else if (currentState === 'run') {
+            // ✅ Run animation completes and disappears
+            console.log(`🏃 Character run animation completed - fading out`);
+            opacity.value = withTiming(
+              0,
+              {
+                duration: 300,
+                easing: Easing.inOut(Easing.ease),
+              },
+              (fadeFinished) => {
+                if (fadeFinished) {
+                  console.log(`👻 Character run fade-out complete`);
+                  runOnJS(notifyAnimationComplete)();
+                }
+              }
+            );
           } else {
+            positionX.value = 0;
+            opacity.value = 1;
             runOnJS(notifyAnimationComplete)();
             frameIndex.value = 0;
           }

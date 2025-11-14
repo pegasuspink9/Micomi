@@ -47,6 +47,7 @@ const EnemyCharacter = ({
     hurt: 2000,
     run: -1,
     dies: 2000,
+    diesOutro: 500
   }), []);
 
   const COMPOUND_PHASES = useMemo(() => ({
@@ -337,27 +338,41 @@ const EnemyCharacter = ({
     console.log(`🎬 Enemy ${index} ${currentState} animation starting - duration: ${duration}ms, positionX: ${positionX.value}`);
 
     frameIndex.value = withTiming(
-      TOTAL_FRAMES - 1,
-      {
-        duration,
-        easing: Easing.inOut(Easing.ease),
-      },
-      (finished) => {
-        if (finished) {
-          console.log(`✅ Enemy ${index} ${currentState} animation completed`);
+    TOTAL_FRAMES - 1,
+    {
+      duration,
+      easing: Easing.inOut(Easing.ease),
+    },
+    (finished) => {
+      if (finished) {
+        console.log(`Enemy ${index} ${currentState} animation completed`);
+        
+        if (currentState === 'dies') {
+          console.log(`Enemy ${index} starting fade-out outro`);
+          frameIndex.value = TOTAL_FRAMES - 1;
+          
+          opacity.value = withTiming(
+            0,
+            {
+              duration: ANIMATION_DURATIONS.diesOutro,
+              easing: Easing.inOut(Easing.ease),
+            },
+            (fadeFinished) => {
+              if (fadeFinished) {
+                console.log(`👻 Enemy ${index} fade-out complete`);
+                runOnJS(notifyAnimationComplete)();
+              }
+            }
+          );
+        } else {
           // ✅ Always reset position after animation
           positionX.value = 0;
           opacity.value = 1;
-
-          if (currentState === 'dies') {
-            runOnJS(notifyAnimationComplete)();
-            frameIndex.value = TOTAL_FRAMES - 1;
-          } else {
-            runOnJS(notifyAnimationComplete)();
-            frameIndex.value = 0;
-          }
+          runOnJS(notifyAnimationComplete)();
+          frameIndex.value = 0;
         }
       }
+    }
     );
 
     // ========== Cleanup ==========
