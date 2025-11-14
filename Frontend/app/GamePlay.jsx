@@ -193,10 +193,7 @@ export default function GamePlay() {
     }
   }, [selectedPotion, clearSelectedPotion]);
 
-  const handleCorrectAnswer = useCallback(() => {
-    setActiveGameTab('output');
-  }, []);
-
+  
   const handleBlankSelect = useCallback((blankIndex) => {
     console.log('🎯 Blank selected in GamePlay:', blankIndex);
     setSelectedBlankIndex(blankIndex);
@@ -343,6 +340,7 @@ export default function GamePlay() {
       }
     };
   }, []);
+  
 
   const handleAllowEnemyCompletion = useCallback((allowCompletionFn) => {
     allowEnemyCompletionRef.current = allowCompletionFn;
@@ -533,6 +531,7 @@ export default function GamePlay() {
                 onTabChange={handleGameTabChange}
                 activeTab={activeGameTab}
                 onBlankSelect={selectedBlankIndex}
+                isAnswerCorrect={gameState?.submissionResult?.isCorrect}
               />
             </View>
 
@@ -550,7 +549,6 @@ export default function GamePlay() {
                   challengeData={currentChallenge}
                   submitAnswer={submitAnswer}
                   submitting={submitting}
-                  onCorrectAnswer={handleCorrectAnswer}
                   selectedBlankIndex={selectedBlankIndex} 
                   potions={potions}
                   selectedPotion={selectedPotion}

@@ -13,11 +13,17 @@ export default function GameQuestions({
   selectedAnswers, 
   getBlankIndex,
   onTabChange,
-  activeTab
+  activeTab,
+  isAnswerCorrect // NEW: Add this prop
 }) {
   const scrollViewRef = useRef(null);
   const blankRefs = useRef({});
   const options = currentQuestion?.options || [];
+
+  // NEW: Determine which question to display
+  const displayQuestion = isAnswerCorrect && currentQuestion?.expected_output 
+    ? currentQuestion.expected_output 
+    : currentQuestion?.question;
 
   useEffect(() => {
     if (!currentQuestion) return;
@@ -98,7 +104,10 @@ const renderSyntaxHighlightedLine = (line, lineIndex) => {
           currentQuestion.challenge_type === 'code with guide' || 
           currentQuestion.challenge_type === 'multiple choice') ? (
           <CodeEditor 
-            currentQuestion={currentQuestion}
+            currentQuestion={{
+              ...currentQuestion,
+              question: displayQuestion // MODIFIED: Pass the appropriate question text
+            }}
             selectedAnswers={selectedAnswers}
             getBlankIndex={getBlankIndex}
             scrollViewRef={scrollViewRef}
@@ -109,7 +118,10 @@ const renderSyntaxHighlightedLine = (line, lineIndex) => {
           />
         ) : (
           <DocumentQuestion 
-            currentQuestion={currentQuestion}
+            currentQuestion={{
+              ...currentQuestion,
+              question: displayQuestion // MODIFIED: Pass the appropriate question text
+            }}
             selectedAnswers={selectedAnswers}
           />
         )}

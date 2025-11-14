@@ -7,19 +7,22 @@ const AnswerOption = ({
   index, 
   isSelected, 
   isDisabled, 
-  onPress 
+  onPress,
+  customStyles = null
 }) => {
   return (
     <View style={[
       styles.buttonFrame,
-      isSelected && styles.buttonFrameSelected
+      isSelected && styles.buttonFrameSelected,
+      customStyles?.buttonFrame
     ]}>
       <Pressable 
         style={({ pressed }) => [
           styles.listItemContainer,
           isSelected && styles.listItemSelected,
           isDisabled && styles.listItemDisabled,
-          pressed && !isDisabled && styles.listItemPressed
+          pressed && !isDisabled && styles.listItemPressed,
+          customStyles?.listItemContainer
         ]}
         onPress={() => !isDisabled && onPress(item)}
         disabled={isDisabled}
@@ -27,14 +30,22 @@ const AnswerOption = ({
         <View style={[
           styles.innerButton,
           isSelected && styles.innerButtonSelected,
-          isDisabled && styles.innerButtonDisabled
+          isDisabled && styles.innerButtonDisabled,
+          customStyles?.innerButton // NEW: Apply custom inner button styles
         ]}>
-          <View style={styles.buttonHighlight} />
-          <View style={styles.buttonShadow} />
+          <View style={[
+            styles.buttonHighlight,
+            customStyles?.buttonHighlight // NEW: Custom highlight
+          ]} />
+          <View style={[
+            styles.buttonShadow,
+            customStyles?.buttonShadow // NEW: Custom shadow
+          ]} />
           <Text style={[
             styles.listItemText,
             isSelected && styles.listItemTextSelected,
-            isDisabled && styles.listItemTextDisabled 
+            isDisabled && styles.listItemTextDisabled,
+            customStyles?.listItemText // NEW: Custom text styles
           ]}>
             {item}
           </Text>
@@ -43,6 +54,7 @@ const AnswerOption = ({
     </View>
   );
 };
+
 
 
 const styles = StyleSheet.create({

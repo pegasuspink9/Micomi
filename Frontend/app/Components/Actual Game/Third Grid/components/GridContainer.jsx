@@ -1,11 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Dimensions, Animated, Image, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Dimensions, Animated, Image, ActivityIndicator, Pressable, Text } from 'react-native';
 import { scale, scaleWidth, scaleHeight, RESPONSIVE, wp, hp } from '../../../Responsiveness/gameResponsive';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-
-const GridContainer = ({ children, lowerChildren, mainHeight, cardImageUrl, showCardInGrid = false }) => {
+const GridContainer = ({ 
+  children, 
+  lowerChildren, 
+  mainHeight, 
+  cardImageUrl, 
+  showCardInGrid = false,
+  isProceedMode = false,
+  onProceed = null // NEW: Accept proceed callback
+}) => {
   const [imageSource, setImageSource] = useState(null);
   const [loading, setLoading] = useState(false);
   const [previousUrl, setPreviousUrl] = useState(null);
@@ -16,38 +23,47 @@ const GridContainer = ({ children, lowerChildren, mainHeight, cardImageUrl, show
   useEffect(() => {
     const url = cardImageUrl;
 
+    if (isProceedMode) {
+      setImageSource(null);
+      setPreviousUrl(null);
+      dropAnim.setValue(-500);
+      opacityAnim.setValue(0);
+      return;
+    }
+
     if (showCardInGrid && !previousUrl) {
-    setPreviousUrl(null);
+      setPreviousUrl(null);
     }
     
     if (url && cardImageUrl && showCardInGrid && url !== previousUrl) {
-    console.log('📸 Grid card image updated:', url);
-    setImageSource({ uri: url });
-    setPreviousUrl(url);
-    
-    dropAnim.setValue(-100);
-    opacityAnim.setValue(0);
-    
-    Animated.parallel([
-      Animated.timing(dropAnim, {
-        toValue: 0,
-        duration: 1200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }
-  if (!showCardInGrid) {
-    setImageSource(null);
-    setPreviousUrl(null);
-    dropAnim.setValue(-500);
-    opacityAnim.setValue(0);
-  }
-  }, [cardImageUrl, showCardInGrid]);
+      console.log('📸 Grid card image updated:', url);
+      setImageSource({ uri: url });
+      setPreviousUrl(url);
+      
+      dropAnim.setValue(-100);
+      opacityAnim.setValue(0);
+      
+      Animated.parallel([
+        Animated.timing(dropAnim, {
+          toValue: 0,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+    if (!showCardInGrid) {
+      setImageSource(null);
+      setPreviousUrl(null);
+      dropAnim.setValue(-500);
+      opacityAnim.setValue(0);
+    }
+  }, [cardImageUrl, showCardInGrid, isProceedMode]);
+
   const animatedStyle = {
     transform: [
       { translateY: dropAnim },
@@ -57,9 +73,13 @@ const GridContainer = ({ children, lowerChildren, mainHeight, cardImageUrl, show
 
   return (
     <View style={styles.containerWrapper}>
-      <View style={[styles.thirdGrid, { height: mainHeight }]}>
+      <View style={[
+        styles.thirdGrid, 
+        { height: mainHeight },
+        isProceedMode && styles.thirdGridProceed
+      ]}>
       
-      {imageSource && showCardInGrid && (
+        {imageSource && showCardInGrid && !isProceedMode && (
           <Animated.Image
             source={imageSource}
             style={[styles.cardImageInGrid, animatedStyle]}
@@ -69,7 +89,7 @@ const GridContainer = ({ children, lowerChildren, mainHeight, cardImageUrl, show
           />
         )}
 
-        {loading && showCardInGrid && (
+        {loading && showCardInGrid && !isProceedMode && (
           <ActivityIndicator 
             size="large" 
             color="#ffffff" 
@@ -77,19 +97,52 @@ const GridContainer = ({ children, lowerChildren, mainHeight, cardImageUrl, show
           />
         )}
         
+        {!isProceedMode && (
+          <View style={styles.simpleFrame}>
+          </View>
+        )}
         
-      <View style={styles.simpleFrame}>
-      </View>
-      
-      <View style={styles.outerFrame}>
-          <View style={styles.innerContent}>
-            <View style={styles.innerBorder}>
+        <View style={[
+          styles.outerFrame,
+          isProceedMode && styles.outerFrameProceed
+        ]}>
+          <View style={[
+            styles.innerContent,
+            isProceedMode && styles.innerContentProceed
+          ]}>
+            <View style={[
+              styles.innerBorder,
+              isProceedMode && styles.innerBorderProceed
+            ]}>
               <View style={styles.backlightOverlay} />
               <View style={styles.topHighlight} />
               <View style={styles.bottomShadow} />
               <View style={styles.leftHighlight} />
               <View style={styles.rightShadow} />
-              {children}
+              
+              {/* NEW: Render proceed button directly in proceed mode */}
+                 {isProceedMode ? (
+                <View style={styles.proceedButtonFrame}>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.proceedListItemContainer,
+                      pressed && styles.proceedListItemPressed
+                    ]}
+                    onPress={() => {
+                      console.log('✅ Proceeding to next challenge...');
+                      onProceed?.();
+                    }}
+                  >
+                    <View style={styles.proceedInnerButton}>
+                      <View style={styles.proceedButtonHighlight} />
+                      <View style={styles.proceedButtonShadow} />
+                      <Text style={styles.proceedButtonText}>&gt;</Text>
+                    </View>
+                  </Pressable>
+                </View>
+              ) : (
+                children
+              )}
             </View>
           </View>
         </View>
@@ -133,7 +186,13 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
 
-    simpleFrame: {
+  thirdGridProceed: {
+    marginBottom: hp(-10),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  simpleFrame: {
     width: wp(20),
     height: hp(5),
     position: 'absolute',
@@ -175,36 +234,11 @@ const styles = StyleSheet.create({
     zIndex: 21,
   },
 
-   cardImageOnly: {
-    width: wp(20),
-    height: hp(18),
-  },
-
-  loader: {
-    position: 'absolute',
-    top: hp(11),
-    right: wp(12),
-    zIndex: 1,
-  },
-
-
   lowerGrid: {
     height: hp(12),
     width: wp(90),
     alignSelf: 'center',
     backgroundColor: 'transparent',
-  },
-
-  cardImageOnly: {
-    width: wp(20),
-    height: hp(18),
-  },
-
-  loader: {
-    position: 'absolute',
-    top: hp(11),
-    right: wp(12),
-    zIndex: 1,
   },
 
   outerFrame: {
@@ -230,6 +264,15 @@ const styles = StyleSheet.create({
     borderRightColor: '#2c5282',
   },
 
+  outerFrameProceed: {
+    borderTopColor: '#87ceeb',
+    borderLeftColor: '#87ceeb',
+    borderBottomColor: '#87ceeb',
+    borderRightColor: '#87ceeb',
+    shadowColor: '#87ceeb',
+    shadowOpacity: 0.8,
+  },
+
   innerContent: {
     flex: 1,
     backgroundColor: '#052a53ff',
@@ -245,6 +288,10 @@ const styles = StyleSheet.create({
     elevation: 18,
   },
 
+  innerContentProceed: {
+    backgroundColor: '#0a3a66',
+  },
+
   innerBorder: {
     flex: 1,
     backgroundColor: '#000000fc',
@@ -256,6 +303,12 @@ const styles = StyleSheet.create({
     elevation: 8,
     flexDirection: 'column',
     justifyContent: 'space-between',
+  },
+
+  innerBorderProceed: {
+    backgroundColor: '#1a1a2e',
+    borderWidth: scale(2),
+    borderColor: '#13447196',
   },
 
   backlightOverlay: {
@@ -311,6 +364,96 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: SCREEN_WIDTH * 0.03,
     borderBottomRightRadius: SCREEN_WIDTH * 0.03,
     pointerEvents: 'none',
+  },
+
+
+  
+
+proceedButtonFrame: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: RESPONSIVE.margin.xs,
+    backgroundColor: '#000000ff',
+    borderRadius: RESPONSIVE.borderRadius.sm,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: scale(6),
+    },
+    shadowOpacity: 0.4,
+    shadowRadius: scale(8),
+    elevation: 12,
+    borderTopWidth: scale(1),
+    borderTopColor: 'rgba(255, 255, 255, 0.3)',
+    borderLeftWidth: scale(1),
+    borderLeftColor: 'rgba(255, 255, 255, 0.3)',
+    borderBottomWidth: scale(3),
+    borderBottomColor: 'rgba(0, 0, 0, 0.4)',
+    borderRightWidth: scale(2),
+    borderRightColor: 'rgba(0, 0, 0, 0.3)',
+  },
+
+  proceedListItemContainer: {
+    flex: 1,
+    width: wp(20), 
+    borderRadius: RESPONSIVE.borderRadius.sm,
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: '#4a90e2',
+    borderTopWidth: scale(2),
+    borderTopColor: '#93c5fd',
+    borderLeftWidth: scale(2),
+    borderLeftColor: '#93c5fd',
+    borderBottomWidth: scale(3),
+    borderBottomColor: '#1e3a8a',
+    borderRightWidth: scale(3),
+    borderRightColor: '#1e3a8a',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: scale(4),
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: scale(6),
+    elevation: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  proceedListItemPressed: {
+    transform: [{ translateY: scale(0.5) }],
+    shadowOffset: {
+      width: 0,
+      height: scale(2),
+    },
+    shadowOpacity: 0.2,
+    borderTopWidth: scale(3),
+    borderTopColor: '#1e3a8a',
+    borderLeftWidth: scale(3),
+    borderLeftColor: '#1e3a8a',
+    borderBottomWidth: scale(1),
+    borderBottomColor: '#93c5fd',
+    borderRightWidth: scale(1),
+    borderRightColor: '#93c5fd',
+  },
+
+
+
+  
+
+
+  proceedButtonText: {
+    fontSize: scale(80),
+    top: scale(-10),
+    color: '#fcfcfcff',
+    alignItems: 'center',
+    textAlign: 'center',
+    fontFamily: 'MusicVibes',
+    textShadowColor: '#000000ff',
+    textShadowOffset: { width: scale(1), height: scale(1) },
+    textShadowRadius: scale(2),
+    zIndex: 1,
   },
 });
 

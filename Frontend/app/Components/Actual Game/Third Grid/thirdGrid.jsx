@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Dimensions } from 'react-native';
+import { View, Dimensions, StyleSheet } from 'react-native';
 import GridContainer from './components/GridContainer';
 import AnswerGrid from './components/AnswerGrid';
 import GameButton from './components/GameButtons';
 import PotionGrid from './components/Potions/Potions';
-
+import { scale, RESPONSIVE, wp, hp } from '../../Responsiveness/gameResponsive';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -54,10 +54,9 @@ const ThirdGrid = ({
 
   const isFillInTheBlank = (currentQuestion.type || currentQuestion.challenge_type) === 'fill in the blank';
   
-  
   const options = useMemo(() => currentQuestion.options || [], [currentQuestion.options]);
 
-   const getPotionBorderColor = (potionName) => {
+  const getPotionBorderColor = (potionName) => {
     switch (potionName) {
       case 'Health':
         return 'rgba(227, 140, 140, 1)';
@@ -71,7 +70,6 @@ const ThirdGrid = ({
         return 'white';
     }
   };
-
 
   const challengeType = currentQuestion.type || currentQuestion.challenge_type;
 
@@ -104,8 +102,9 @@ const ThirdGrid = ({
   const [showPotions, setShowPotions] = useState(false);
   const [runDisabled, setRunDisabled] = useState(false);
   const [potionUsed, setPotionUsed] = useState(false);
+  
   const togglePotions = useCallback(() => {
-    setShowPotions(!showPotions); //  Always allow toggling
+    setShowPotions(!showPotions);
   }, [showPotions]);
 
   const runButtonDisabled = useMemo(() => (
@@ -115,9 +114,8 @@ const ThirdGrid = ({
     (!selectedPotion && (!Array.isArray(selectedAnswers) || selectedAnswers.length === 0))
   ), [submitting, usingPotion, selectedPotion, selectedAnswers]);
 
-  
   useEffect(() => {
-  setPotionUsed(false);
+    setPotionUsed(false);
   }, [currentQuestion?.id]);
 
   const handleRunPress = useCallback(() => {
@@ -146,38 +144,41 @@ const ThirdGrid = ({
     return selectedPotion ? "info" : "primary";
   }, [selectedPotion]);
 
-
   console.log('ThirdGrid render:', {
     questionTitle: currentQuestion.title,
     challenge_type: currentQuestion.type || currentQuestion.challenge_type,
     optionsLength: options.length,
     selectedAnswersLength: selectedAnswers?.length,
     maxAnswers,
-    submitting
+    submitting,
+    canProceed
   });
 
-    const calculateHeight = (numOptions) => {
-      if (numOptions > 8) {
-        return SCREEN_HEIGHT * 0.2; 
-      }
-      
-      const baseHeight = SCREEN_HEIGHT * 0.10;
-      const itemHeight = SCREEN_HEIGHT * 0.04; 
-      const columns = 4; 
-      const rows = Math.ceil(numOptions / columns);
-      const extraHeight = (rows - 1) * itemHeight;
-      return baseHeight + extraHeight;
-    };
+  const calculateHeight = (numOptions) => {
+    if (numOptions > 8) {
+      return SCREEN_HEIGHT * 0.2; 
+    }
+    
+    const baseHeight = SCREEN_HEIGHT * 0.10;
+    const itemHeight = SCREEN_HEIGHT * 0.04; 
+    const columns = 4; 
+    const rows = Math.ceil(numOptions / columns);
+    const extraHeight = (rows - 1) * itemHeight;
+    return baseHeight + extraHeight;
+  };
 
-    const handleClearAll = useCallback(() => {
-        setSelectedAnswers([]); 
-      }, [setSelectedAnswers]);
+  const handleClearAll = useCallback(() => {
+    setSelectedAnswers([]); 
+  }, [setSelectedAnswers]);
 
+  const dynamicHeight = useMemo(() => {
+    if (canProceed) {
+      return SCREEN_HEIGHT * 0.12;
+    }
+    return calculateHeight(options.length);
+  }, [canProceed, options.length]);
 
-
-  const dynamicHeight = calculateHeight(options.length);
-
-   useEffect(() => {
+  useEffect(() => {
     if (setThirdGridHeight) {
       setThirdGridHeight(dynamicHeight);
     }
@@ -188,17 +189,12 @@ const ThirdGrid = ({
       mainHeight={dynamicHeight}
       cardImageUrl={cardImageUrl}
       showCardInGrid={cardDisplaySequence === 'grid'}
+      isProceedMode={canProceed}
+      onProceed={onProceed} // NEW: Pass proceed callback
       lowerChildren={
         <View style={{ flex: 1, position: 'relative' }}>
           {canProceed ? (
-            // NEW: Show Proceed button when ready
-            <GameButton 
-              title="Proceed"
-              position="center"
-              variant="success"
-              onPress={onProceed}
-              disabled={false}
-            />
+            <View />
           ) : (
             <>
               <GameButton 
@@ -229,7 +225,8 @@ const ThirdGrid = ({
         </View>
       }
     >
-      {showPotions ? (
+      {/* REMOVED: AnswerOption proceed button - now in GridContainer */}
+      {!canProceed && showPotions ? (
         <PotionGrid 
           potions={potions}
           onPotionPress={onPotionPress}
@@ -238,7 +235,7 @@ const ThirdGrid = ({
           potionUsed={potionUsed} 
           currentQuestionId={currentQuestion.id} 
         />
-      ) : (
+      ) : !canProceed ? (
         <AnswerGrid
           options={options}
           selectedAnswers={selectedAnswers}
@@ -248,12 +245,21 @@ const ThirdGrid = ({
           selectedBlankIndex={selectedBlankIndex} 
           currentQuestionId={currentQuestion.id}
         />
-      )}
+      ) : null}
     </GridContainer>
   );
 };
 
-//  Memoize ThirdGrid with custom comparison
+const styles = StyleSheet.create({
+  proceedContainer: {
+    flex: 1,
+    width: scale(100),
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: RESPONSIVE.margin.md,
+  },
+});
+
 export default React.memo(ThirdGrid, (prevProps, nextProps) => {
     return (
       prevProps.currentQuestion?.id === nextProps.currentQuestion?.id &&
@@ -261,6 +267,7 @@ export default React.memo(ThirdGrid, (prevProps, nextProps) => {
       JSON.stringify(prevProps.selectedAnswers) === JSON.stringify(nextProps.selectedAnswers) &&
       prevProps.submitting === nextProps.submitting &&
       prevProps.currentQuestionIndex === nextProps.currentQuestionIndex &&
+      prevProps.canProceed === nextProps.canProceed &&
       prevProps.setSelectedAnswers === nextProps.setSelectedAnswers &&
       prevProps.submitAnswer === nextProps.submitAnswer &&
       prevProps.selectedBlankIndex === nextProps.selectedBlankIndex 
