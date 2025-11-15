@@ -560,6 +560,8 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     await getBackgroundForLevel(level.map.map_name, level.level_number),
   ];
 
+  const questionType = level.map.map_name;
+
   return {
     level: {
       level_id: level.level_id,
@@ -603,6 +605,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
     correct_answer_length: correctAnswerLength,
     combat_background: combatBackground,
+    question_type: questionType,
   };
 };
 
