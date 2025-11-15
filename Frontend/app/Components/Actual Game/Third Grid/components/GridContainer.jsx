@@ -20,11 +20,13 @@ const GridContainer = ({
   onHome = null,
   onNextLevel = null,
   hasNextLevel = false,
-  onRun = null
+  onRun = null,
+  onCompletionButtonsShow = null
 }) => {
   const [imageSource, setImageSource] = useState(null);
   const [loading, setLoading] = useState(false);
   const [previousUrl, setPreviousUrl] = useState(null);
+  const [showRunButton, setShowRunButton] = useState(true);
   
   const dropAnim = useRef(new Animated.Value(-500)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -80,6 +82,15 @@ const GridContainer = ({
     opacity: opacityAnim,
   };
 
+
+    useEffect(() => {
+    if (isLevelComplete && !showRunButton && onCompletionButtonsShow) {
+      console.log('📢 Notifying parent - completion buttons now visible');
+      onCompletionButtonsShow();
+    }
+  }, [showRunButton, isLevelComplete, onCompletionButtonsShow]);
+
+
   return (
     <View style={styles.containerWrapper}>
       <View style={[
@@ -130,28 +141,31 @@ const GridContainer = ({
               <View style={styles.rightShadow} />
               
               {/* LEVEL COMPLETE BUTTONS */}
-              {isLevelComplete ? (
+              {isLevelComplete && showRunButton ? (
+                <View style={styles.runButtonFrame}>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.runListItemContainer,
+                      pressed && styles.runListItemPressed
+                    ]}
+                    onPress={() => {
+                      console.log('🏃 Run button pressed');
+                      onRun?.();
+                      setShowRunButton(false); // Hide run button, show completion
+                    }}
+                  >
+                    <View style={styles.runInnerButton}>
+                      <View style={styles.runButtonHighlight} />
+                      <View style={styles.runButtonShadow} />
+                      <MaterialCommunityIcons name="run" size={scale(48)} color="#ffffffff" />
+                    </View>
+                  </Pressable>
+                </View>
+              ) : isLevelComplete && !showRunButton ? (
+                /* COMPLETION BUTTONS AFTER RUN */
                 <View style={styles.completionButtonFrame}>
                   <View style={styles.completionButtonsContainer}>
              
-                    {/* RUN BUTTON - GREEN (New) */}
-                    <View style={styles.completionButtonWrapper}>
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.completionListItemContainer,
-                          styles.runButtonContainer,
-                          pressed && styles.completionListItemPressed
-                        ]}
-                        onPress={onRun}
-                      >
-                        <View style={styles.completionInnerButton}>
-                          <View style={styles.completionButtonHighlight} />
-                          <View style={styles.completionButtonShadow} />
-                          <MaterialCommunityIcons name="run" size={scale(28)} color="#ffffffff" />
-                        </View>
-                      </Pressable>
-                    </View>
-
                     {/* HOME BUTTON - RED */}
                     <View style={styles.completionButtonWrapper}>
                       <Pressable

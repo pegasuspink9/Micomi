@@ -1,6 +1,6 @@
 // Try different possible backend U
 const POSSIBLE_BACKEND_URLS = [
-  'http://172.26.146.202:3000'
+  'http://192.168.254.124:3000'
 ];
 
 class ApiService {
@@ -8,7 +8,7 @@ class ApiService {
     this.baseURL = POSSIBLE_BACKEND_URLS[0];
     this.isBackendAvailable = false;
   }
-
+  
   // Test backend connectivity
   async testConnection() {
     for (const url of POSSIBLE_BACKEND_URLS) {

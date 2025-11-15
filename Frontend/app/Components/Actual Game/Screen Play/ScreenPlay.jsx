@@ -10,6 +10,7 @@ import Life from './components/Life';
 import Coin from './components/Coin';
 import Damage from './components/Damage';
 import Message from './components/Message';
+import FadeOutWrapper from './FadeOutWrapper/FadeOutWrapper';
 
 const ScreenPlay = ({ 
   gameState,
@@ -17,6 +18,8 @@ const ScreenPlay = ({
   borderColor = 'white',
   characterRunState = false,
   onSubmissionAnimationComplete = null,
+  isInRunMode = false,
+  fadeOutAnim = null,
 }) => {
   const [attackingEnemies] = useState(new Set());
   const [totalCoins, setTotalCoins] = useState(0);
@@ -473,13 +476,12 @@ useEffect(() => {
           onAnimationComplete={handleCharacterAnimationComplete}
         />
 
-      {enemies.map((enemy, index) => {
-        if (!enemyPositions[index] || isCharacterRunning) return null;
-
-         const currentEnemyState = isCharacterRunning || hasRunCompleted 
-          ? enemyAnimationStates[index] 
-          : (enemyAnimationStates[index] || 'idle');
-
+        <FadeOutWrapper fadeOutAnim={fadeOutAnim} isInRunMode={isInRunMode}>
+        {enemies.map((enemy, index) => {
+          if (!enemyPositions[index] || isCharacterRunning) return null;
+          const currentEnemyState = isCharacterRunning || hasRunCompleted 
+            ? enemyAnimationStates[index] 
+            : (enemyAnimationStates[index] || 'idle');
           return (
             <EnemyCharacter
               key={`enemy-${index}`}
@@ -494,7 +496,9 @@ useEffect(() => {
             />
           );
         })}
+      </FadeOutWrapper>
 
+      <FadeOutWrapper fadeOutAnim={fadeOutAnim} isInRunMode={isInRunMode}>
         <Life 
           health={playerHealth}
           maxHealth={playerMaxHealth}
@@ -507,7 +511,9 @@ useEffect(() => {
           isEnemy={false}
           borderColor="rgba(255, 255, 255, 0.8)"
         />
+      </FadeOutWrapper>
 
+      <FadeOutWrapper fadeOutAnim={fadeOutAnim} isInRunMode={isInRunMode}>
         <Life 
           health={enemyHealth}
           maxHealth={enemyMaxHealth}
@@ -520,34 +526,37 @@ useEffect(() => {
           isEnemy={true}
           borderColor="#ffffffff"
         />
-        
-        <Damage
-          incoming={damageThisSubmission}
-          animated={true}
-          startDelay={1000} 
-          position="right"
-          trigger={submissionSeq} 
-        />
+      </FadeOutWrapper>
+      
+      <Damage
+        incoming={damageThisSubmission}
+        animated={true}
+        startDelay={1000} 
+        position="right"
+        trigger={submissionSeq} 
+      />
 
-        <Damage
-          incoming={enemyDamageThisSubmission}
-          animated={true}
-          startDelay={1000} 
-          position="left" 
-          trigger={submissionSeq} 
-        />
+      <Damage
+        incoming={enemyDamageThisSubmission}
+        animated={true}
+        startDelay={1000} 
+        position="left" 
+        trigger={submissionSeq} 
+      />
 
-        <Message
-          message={gameState.submissionResult?.message || ''}
-          trigger={submissionSeq}
-          duration={2400}
-        />
+      <Message
+        message={gameState.submissionResult?.message || ''}
+        trigger={submissionSeq}
+        duration={2400}
+      />
 
+      <FadeOutWrapper fadeOutAnim={fadeOutAnim} isInRunMode={isInRunMode} style={{zIndex: -1}}>
         <Coin 
           coins={totalCoins}
           onCoinsChange={(newCoins) => console.log(`Total coins display updated: ${newCoins}`)}
           animated={true}
         />
+      </FadeOutWrapper>
 
        
       </GameBackground>

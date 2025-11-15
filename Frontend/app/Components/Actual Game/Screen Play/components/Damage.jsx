@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   },
   
   tickText: {
-    fontSize: 15,
+    fontSize: 10,
     fontFamily: 'DynaPuff',
     color: 'rgba(174, 7, 7, 0.77)', 
     textAlign: 'center',

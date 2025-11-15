@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { View, StyleSheet, Dimensions, ImageBackground, Text, ActivityIndicator, TouchableOpacity, ScrollView } from "react-native";
+import { View, StyleSheet, Dimensions, ImageBackground, Text, ActivityIndicator, TouchableOpacity, ScrollView, Animated } from "react-native";
 import { StatusBar } from 'expo-status-bar';
 import ScreenPlay from '../app/Components/Actual Game/Screen Play/ScreenPlay';
 import GameQuestions from '../app/Components/Actual Game/GameQuestions/GameQuestions';
@@ -9,6 +9,7 @@ import { useGameData } from './hooks/useGameData';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import CombatVSModal from './Components/Actual Game/Game Display Entrance/GameDisplayEntrance';
 import GameOverModal from './Components/GameOver And Win/GameOver';
+
 
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -87,6 +88,22 @@ export default function GamePlay() {
   const characterAttackCard = gameState?.card?.character_attack_card;
   const cardType = gameState?.card?.card_type;
 
+  const [isInRunMode, setIsInRunMode] = useState(false);
+  const fadeOutAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (isInRunMode) {
+      Animated.timing(fadeOutAnim, {
+        toValue: 0,
+        duration: 2000, // Duration of the run animation
+        useNativeDriver: true,
+      }).start(() => {
+        fadeOutAnim.setValue(1);
+        setIsInRunMode(false);
+      });
+    }
+  }, [isInRunMode, fadeOutAnim]);
+
   //  SINGLE effect to handle card display on image change
   useEffect(() => {
     console.log('📸 Checking card display:', {
@@ -112,6 +129,8 @@ export default function GamePlay() {
 
   const handleCharacterRun = useCallback(() => {
   console.log('🏃 Character run triggered');
+
+  setIsInRunMode(true);
   
   // Trigger the character run animation
   setCharacterRunState(true);
@@ -124,7 +143,11 @@ export default function GamePlay() {
 }, []);
 
 
-
+  useEffect(() => {
+  if (isRetrying || isLoadingNextLevel) {
+    setIsInRunMode(false);
+  }
+  }, [isRetrying, isLoadingNextLevel]);
 
   const handleCloseAttackCard = useCallback(() => {
     console.log('📸 Closing modal card - transitioning to grid display');
@@ -519,13 +542,18 @@ export default function GamePlay() {
                 onAllowEnemyCompletion={handleAllowEnemyCompletion}
                 onSetCorrectAnswer={handleSetCorrectAnswer}
                 onSubmissionAnimationComplete={handleAnimationComplete}
+                isInRunMode={isInRunMode}
+                fadeOutAnim={fadeOutAnim}
               />
             </View>
 
-            <View style={[
-              styles.gameQuestionsContainer,
-              shouldHideThirdGrid && styles.gameQuestionsContainerExpanded
-            ]}>
+              <Animated.View style={[styles.gameQuestionsContainer,
+                (shouldHideThirdGrid || isInRunMode) && styles.gameQuestionsContainerExpanded,
+                {
+                  opacity: fadeOutAnim,
+                  pointerEvents: isInRunMode ? 'none' : 'auto'
+                }
+              ]}>
               <GameQuestions 
                 currentQuestion={currentChallenge}
                 selectedAnswers={selectedAnswers}
@@ -535,7 +563,7 @@ export default function GamePlay() {
                 onBlankSelect={selectedBlankIndex}
                 isAnswerCorrect={gameState?.submissionResult?.isCorrect}
               />
-            </View>
+            </Animated.View>
 
             {!shouldHideThirdGrid && (
               <View style={[styles.thirdGridContainer, { height: thirdGridHeight }]}>
