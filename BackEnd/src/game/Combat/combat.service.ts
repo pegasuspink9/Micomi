@@ -399,6 +399,8 @@ export async function fightEnemy(
   character_run = character.character_run || null;
   character_idle = character.avatar_image || null;
 
+  const effectiveBonusRound = isBonusRound || isDetectedBonusRound;
+
   if (isCorrect) {
     await updateQuestProgress(playerId, QuestType.solve_challenge, 1);
 
@@ -413,18 +415,11 @@ export async function fightEnemy(
       ? (currentChallenge.correct_answer as string[]).length
       : 1;
 
-    const isLastRemainingChallenge =
-      correctAnswerLength + 1 === totalChallenges;
-
-    const commitWrongAnswer = progress.consecutive_wrongs > 0;
-
     console.log("- Challenge ID:", challengeId);
     console.log("- Correct answer length:", correctAnswerLength);
     console.log("- Elapsed seconds:", elapsedSeconds);
     console.log("- Already answered correctly:", alreadyAnsweredCorrectly);
     console.log("- Was ever wrong:", wasEverWrong);
-
-    const effectiveBonusRound = isBonusRound || isDetectedBonusRound;
 
     // Determine attack type and card for all correct answers (normal or bonus)
     if (effectiveBonusRound && isCompletingBonus) {
@@ -541,7 +536,13 @@ export async function fightEnemy(
 
     enemyHealth = Math.max(enemyHealth - damage, 0);
     enemy_hurt = enemy_hurt || enemy.enemy_hurt || null;
-    enemy_idle = enemy.enemy_avatar || null;
+
+    if (!effectiveBonusRound || isCompletingBonus) {
+      enemy_idle = enemy.enemy_avatar || null;
+    } else {
+      enemy_idle = null;
+    }
+
     console.log("- Enemy health after attack:", enemyHealth);
 
     if (enemyHealth <= 0) {
@@ -624,8 +625,6 @@ export async function fightEnemy(
       }
     }
   } else {
-    const effectiveBonusRound = isBonusRound || isDetectedBonusRound;
-
     if (!effectiveBonusRound && enemyHealth > 0) {
       if (progress.has_freeze_effect) {
         enemy_damage = 0;
@@ -673,10 +672,13 @@ export async function fightEnemy(
         // await EnergyService.deductEnergy(playerId, 10); disabled to allow retries while testing
       }
     } else if (effectiveBonusRound) {
-      console.log("- Bonus round wrong: No enemy counterattack (safe mode)");
+      console.log(
+        "- Bonus round wrong: No enemy counterattack (safe mode), enemy stays hurt"
+      );
       character_idle = character.avatar_image || null;
-      enemy_idle = enemy.enemy_avatar || null;
-      enemy_hurt = null;
+      character_run = null;
+      enemy_idle = null;
+      enemy_hurt = enemy.enemy_hurt || null;
       enemy_damage = 0;
     } else {
       console.log("- Enemy already defeated: no counterattack.");
@@ -759,9 +761,9 @@ export async function fightBossEnemy(
   const enemy = await prisma.enemy.findUnique({ where: { enemy_id: enemyId } });
   if (!enemy) throw new Error("Enemy not found");
 
-  const isBossDarco = enemy.enemy_name === "Boss Darco";
-
   const isBossJoshy = enemy.enemy_name === "Boss Joshy";
+
+  const isBossDarco = enemy.enemy_name === "Boss Darco";
 
   const level = await prisma.level.findUnique({
     where: { level_id: levelId },
@@ -842,6 +844,8 @@ export async function fightBossEnemy(
   character_run = character.character_run || null;
   character_idle = character.avatar_image || null;
 
+  const effectiveBonusRound = isBonusRound || isDetectedBonusRound;
+
   if (isCorrect) {
     await updateQuestProgress(playerId, QuestType.solve_challenge, 1);
 
@@ -861,8 +865,6 @@ export async function fightBossEnemy(
     console.log("- Elapsed seconds:", elapsedSeconds);
     console.log("- Already answered correctly:", alreadyAnsweredCorrectly);
     console.log("- Was ever wrong:", wasEverWrong);
-
-    const effectiveBonusRound = isBonusRound || isDetectedBonusRound;
 
     // Determine attack type and card for all correct answers (normal or bonus)
     if (effectiveBonusRound && isCompletingBonus) {
@@ -894,13 +896,13 @@ export async function fightBossEnemy(
       let shieldActive = false;
       let forceCharacterAttackType = false;
 
-      if (isBossDarco && progress.has_boss_shield) {
+      if (isBossJoshy && progress.has_boss_shield) {
         shieldActive = true;
         damage = 0;
         enemy_hurt = null;
         enemy_run = null;
-        console.log("- Boss Darco shield active: damage set to 0");
-      } else if (isBossJoshy && progress.has_force_character_attack_type) {
+        console.log("- Boss Joshy shield active: damage set to 0");
+      } else if (isBossDarco && progress.has_force_character_attack_type) {
         forceCharacterAttackType = true;
 
         character_attack = attacksArray[0] || null;
@@ -915,7 +917,7 @@ export async function fightBossEnemy(
         character_run = character.character_run || null;
         character_idle = character.avatar_image || null;
         console.log(
-          "- Boss Joshy force character attack type active: character attack set to basic attack"
+          "- Boss Darco force character attack type active: character attack set to basic attack"
         );
       }
 
@@ -936,7 +938,7 @@ export async function fightBossEnemy(
           data: { has_boss_shield: false },
         });
         progress.has_boss_shield = false;
-        console.log("- Boss Darco shield deactivated after use");
+        console.log("- Boss Joshy shield deactivated after use");
       }
       if (forceCharacterAttackType) {
         await prisma.playerProgress.update({
@@ -945,7 +947,7 @@ export async function fightBossEnemy(
         });
         progress.has_force_character_attack_type = false;
         console.log(
-          "- Boss Joshy force character attack type deactived after use"
+          "- Boss Darco force character attack type deactived after use"
         );
       }
       enemy_idle = enemy.enemy_avatar || null;
@@ -986,15 +988,15 @@ export async function fightBossEnemy(
       let shieldActive = false;
       let forceCharacterAttackType = false;
 
-      if (isBossDarco && progress.has_boss_shield) {
+      if (isBossJoshy && progress.has_boss_shield) {
         shieldActive = true;
         damage = 0;
         enemy_hurt = null;
         enemy_run = null;
         enemy_attack_type = "special skill";
         enemy_special_skill = enemy.special_skill;
-        console.log("- Boss Darco shield active: damage set to 0");
-      } else if (isBossJoshy && progress.has_force_character_attack_type) {
+        console.log("- Boss Joshy shield active: damage set to 0");
+      } else if (isBossDarco && progress.has_force_character_attack_type) {
         forceCharacterAttackType = true;
 
         damage = damageArray[0] ?? 10;
@@ -1009,7 +1011,7 @@ export async function fightBossEnemy(
         character_attack = attacksArray[0] || null;
         character_idle = character.avatar_image || null;
         console.log(
-          "- Boss Joshy force character attack type active: character attack set to basic attack"
+          "- Boss Darco force character attack type active: character attack set to basic attack"
         );
       }
 
@@ -1030,7 +1032,7 @@ export async function fightBossEnemy(
           data: { has_boss_shield: false },
         });
         progress.has_boss_shield = false;
-        console.log("- Boss Darco shield deactivated after use");
+        console.log("- Boss Joshy shield deactivated after use");
       }
       if (forceCharacterAttackType) {
         await prisma.playerProgress.update({
@@ -1039,13 +1041,19 @@ export async function fightBossEnemy(
         });
         progress.has_force_character_attack_type = false;
         console.log(
-          "- Boss Joshy force character attack type deactivated after use"
+          "- Boss Darco force character attack type deactivated after use"
         );
       } else {
         enemy_hurt = null;
       }
       enemy_hurt = enemy.enemy_hurt || null;
-      enemy_idle = enemy.enemy_avatar || null;
+
+      if (!effectiveBonusRound || isCompletingBonus) {
+        enemy_idle = enemy.enemy_avatar || null;
+      } else {
+        enemy_idle = null;
+      }
+
       console.log("- Enemy health after bonus attack:", enemyHealth);
     } else if (enemyHealth > 0 || answeredCount >= totalChallenges) {
       // Normal or celebratory (HP <=0 but not bonus)
@@ -1128,7 +1136,7 @@ export async function fightBossEnemy(
     let shieldActive = false;
     let forceCharacterAttackType = false;
 
-    if (isBossDarco && progress.has_boss_shield) {
+    if (isBossJoshy && progress.has_boss_shield) {
       shieldActive = true;
       damage = 0;
 
@@ -1136,8 +1144,8 @@ export async function fightBossEnemy(
       enemy_run = null;
       enemy_attack_type = "special skill";
       enemy_special_skill = enemy.special_skill;
-      console.log("- Boss Darco shield active: damage set to 0");
-    } else if (isBossJoshy && progress.has_force_character_attack_type) {
+      console.log("- Boss Joshy shield active: damage set to 0");
+    } else if (isBossDarco && progress.has_force_character_attack_type) {
       forceCharacterAttackType = true;
 
       damage = damageArray[0] ?? 10;
@@ -1152,7 +1160,7 @@ export async function fightBossEnemy(
       character_attack = attacksArray[0] || null;
       character_idle = character.avatar_image || null;
       console.log(
-        "- Boss Joshy force character attack type active: character attack set to basic attack"
+        "- Boss Darco force character attack type active: character attack set to basic attack"
       );
     }
 
@@ -1173,7 +1181,7 @@ export async function fightBossEnemy(
         data: { has_boss_shield: false },
       });
       progress.has_boss_shield = false;
-      console.log("- Boss Darco shield deactivated after use");
+      console.log("- Boss Joshy shield deactivated after use");
     }
     if (forceCharacterAttackType) {
       await prisma.playerProgress.update({
@@ -1182,13 +1190,19 @@ export async function fightBossEnemy(
       });
       progress.has_force_character_attack_type = false;
       console.log(
-        "- Boss Joshy force character attack type deactivated after use"
+        "- Boss Darco force character attack type deactivated after use"
       );
     } else {
       enemy_hurt = null;
     }
     enemy_hurt = enemy.enemy_hurt || null;
-    enemy_idle = enemy.enemy_avatar || null;
+
+    if (!effectiveBonusRound || isCompletingBonus) {
+      enemy_idle = enemy.enemy_avatar || null;
+    } else {
+      enemy_idle = null;
+    }
+
     console.log("- Enemy health after attack:", enemyHealth);
 
     if (enemyHealth <= 0) {
@@ -1285,34 +1299,36 @@ export async function fightBossEnemy(
     if (challengeId) {
       wrongChallenges.push(challengeId);
     }
-    const wrongCount = progress.consecutive_wrongs;
+    const wrongCount = progress.consecutive_wrongs + 1; // Increment for this wrong
 
     await prisma.playerProgress.update({
       where: { progress_id: progress.progress_id },
       data: {
         wrong_challenges: wrongChallenges,
         consecutive_corrects: 0,
+        consecutive_wrongs: wrongCount,
       },
     });
     progress.wrong_challenges = wrongChallenges;
     progress.consecutive_corrects = 0;
+    progress.consecutive_wrongs = wrongCount;
 
     if (wrongCount % 3 === 0) {
-      if (isBossDarco) {
+      if (isBossJoshy) {
         await prisma.playerProgress.update({
           where: { progress_id: progress.progress_id },
           data: { has_boss_shield: true },
         });
         progress.has_boss_shield = true;
-        console.log(`- Boss Darco shield activated after ${wrongCount} wrongs`);
-      } else if (isBossJoshy) {
+        console.log(`- Boss Joshy shield activated after ${wrongCount} wrongs`);
+      } else if (isBossDarco) {
         await prisma.playerProgress.update({
           where: { progress_id: progress.progress_id },
           data: { has_force_character_attack_type: true },
         });
         progress.has_force_character_attack_type = true;
         console.log(
-          `- Boss Joshy force character attack type activated after ${wrongCount} wrongs`
+          `- Boss Darco force character attack type activated after ${wrongCount} wrongs`
         );
       }
     }
@@ -1320,9 +1336,12 @@ export async function fightBossEnemy(
     const effectiveBonusRound = isBonusRound || isDetectedBonusRound;
 
     if (effectiveBonusRound) {
-      // For consistency, set animations for wrong in bonus (character idle, enemy hurt? but since wrong, perhaps enemy idle, no hurt)
+      // For consistency, set animations for wrong in bonus (character idle, enemy hurt, no idle)
       character_idle = character.avatar_image || null;
+      character_run = null;
+      enemy_idle = null;
       enemy_hurt = enemy.enemy_hurt || null;
+      console.log("- Boss bonus round wrong: Enemy stays hurt, no counter");
     } else if (enemyHealth > 0) {
       if (progress.has_freeze_effect) {
         enemy_damage = 0;

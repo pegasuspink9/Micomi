@@ -64,6 +64,7 @@ export interface SubmitChallengeControllerResult
   character_attack_image?: string | null;
   combat_background?: string[] | null;
   is_bonus_round?: boolean;
+  question_type: string;
   card: {
     card_type: string | null;
     character_attack_card: string | null;

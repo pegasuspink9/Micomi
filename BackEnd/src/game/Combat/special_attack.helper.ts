@@ -103,16 +103,16 @@ export async function updateProgressForChallenge(
               "- Reversal curse activated for King Grimnir after multiples of 3 consecutive wrongs"
             );
             break;
-          case "Boss Darco":
+          case "Boss Joshy":
             hasBossShield = true;
             console.log(
-              "- Shield activated for Boss Darco after multiples of 3 consecutive wrongs"
+              "- Shield activated for Boss Joshy after multiples of 3 consecutive wrongs"
             );
             break;
-          case "Boss Joshy":
+          case "Boss Darco":
             hasForceCharacterAttackType = true;
             console.log(
-              "- Force character attack type into basic activated for Boss Joshy after multiples of 3 consecutive wrongs"
+              "- Force character attack type into basic activated for Boss Darco after multiples of 3 consecutive wrongs"
             );
             break;
         }

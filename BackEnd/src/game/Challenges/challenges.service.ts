@@ -432,6 +432,8 @@ export const submitChallengeService = async (
     await getBackgroundForLevel(level.map.map_name, level.level_number),
   ];
 
+  const questionType = level.map.map_name;
+
   const isNewBonusRound =
     freshProgress!.enemy_hp <= 0 && freshProgress!.player_hp > 0;
 
@@ -514,6 +516,7 @@ export const submitChallengeService = async (
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
     correct_answer_length: correctAnswerLength,
     combat_background: combatBackground,
+    question_type: questionType,
     is_bonus_round: isNewBonusRound,
     card: {
       card_type,
