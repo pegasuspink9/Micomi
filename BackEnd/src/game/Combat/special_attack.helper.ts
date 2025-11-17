@@ -6,7 +6,8 @@ export async function updateProgressForChallenge(
   challengeId: number,
   isCorrect: boolean,
   finalAnswer: string[],
-  isBonusRound: boolean = false
+  isBonusRound: boolean = false,
+  characterDamage?: number
 ) {
   const progress = await prisma.playerProgress.findUnique({
     where: { progress_id: progressId },
@@ -42,8 +43,6 @@ export async function updateProgressForChallenge(
 
   let wrongChallenges = (progress.wrong_challenges ?? []) as number[];
 
-  const wrongCount = wrongChallenges.length;
-
   let newExpectedOutput = progress.player_expected_output ?? [];
 
   if (isCorrect && !alreadyAnsweredCorrectly && !progress.is_completed) {
@@ -67,10 +66,15 @@ export async function updateProgressForChallenge(
     consecutiveCorrects += 1;
     hasReversedCurse = false;
 
+    const coinsToAdd =
+      isBonusRound && characterDamage
+        ? characterDamage
+        : challenge.coins_reward;
+
     updateData = {
       ...updateData,
       wrong_challenges: wrongChallenges,
-      coins_earned: { increment: challenge.coins_reward },
+      coins_earned: { increment: coinsToAdd },
       total_points_earned: { increment: challenge.points_reward },
       total_exp_points_earned: { increment: challenge.points_reward },
       consecutive_corrects: consecutiveCorrects,
