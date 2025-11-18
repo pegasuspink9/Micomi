@@ -23,22 +23,22 @@ const CARD_CONFIG: Record<
     special_attack: {
       card_type: "Stormfang Surge",
       character_attack_card:
-        "https://ik.imagekit.io/aulojbv6x/Micomi/Icons/Skill%20Icon/15cdfe1f-dc78-4f25-a4ae-5cbbc27a4060_jmzqz6.png?updatedAt=1762844066327",
+        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/4th.png",
     },
     third_attack: {
       card_type: "Feral Slash",
       character_attack_card:
-        "https://ik.imagekit.io/aulojbv6x/Micomi/Icons/Skill%20Icon/15cdfe1f-dc78-4f25-a4ae-5cbbc27a4060_jmzqz6.png?updatedAt=1762844066327",
+        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/3rd.png",
     },
     second_attack: {
       card_type: "Ruthless Fang",
       character_attack_card:
-        "https://ik.imagekit.io/aulojbv6x/Micomi/Icons/Skill%20Icon/Untitled_1024_x_1536_px__20251020_131545_0000_hs8lr4.png?updatedAt=1762844066860",
+        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/2nd.png",
     },
     basic_attack: {
       card_type: "Wild Claw",
       character_attack_card:
-        "https://ik.imagekit.io/aulojbv6x/Micomi/Icons/Skill%20Icon/b86116f4-4c3c-4f9c-bec3-7628482673e8_eh6biu.png?updatedAt=1762844066536",
+        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/1st.png",
     },
   },
 };
@@ -567,12 +567,13 @@ export async function fightEnemy(
         );
       } else {
         // Win condition: answered all challenges (bonus completion or normal)
-        if (answeredCount >= totalChallenges) {
+        if (answeredCount >= totalChallenges || isCompletingBonus) {
           status = BattleStatus.won;
           enemy_dies = enemy.enemy_dies || null;
           enemy_hurt = enemy.enemy_hurt || null;
 
           enemy_idle = null;
+
           enemy_run = null;
           enemy_attack = null;
 
@@ -682,6 +683,132 @@ export async function fightEnemy(
       enemy_damage = 0;
     } else {
       console.log("- Enemy already defeated: no counterattack.");
+    }
+
+    // Check for win after bonus completion on wrong answer
+    if (
+      status === BattleStatus.in_progress &&
+      effectiveBonusRound &&
+      isCompletingBonus &&
+      enemyHealth <= 0
+    ) {
+      const wrongChallengesCount = (
+        (progress.wrong_challenges as unknown[]) ?? []
+      ).length;
+      const effectiveAnsweredCount = answeredCount + 1;
+
+      if (effectiveAnsweredCount >= totalChallenges) {
+        status = BattleStatus.won;
+        enemy_dies = enemy.enemy_dies || null;
+        enemy_hurt = enemy.enemy_hurt || null;
+
+        enemy_idle = null;
+        enemy_run = null;
+        enemy_attack = null;
+
+        character_idle = character.avatar_image || null;
+        character_run = character.character_run || null;
+
+        if (!progress.is_completed) {
+          const totalExp = progress.total_exp_points_earned ?? 0;
+          const totalPoints = progress.total_points_earned ?? 0;
+          const totalCoins = progress.coins_earned ?? 0;
+
+          // Always give base rewards on win
+          await updateQuestProgress(playerId, QuestType.defeat_enemy, 1);
+          await prisma.player.update({
+            where: { player_id: playerId },
+            data: {
+              total_points: { increment: totalPoints },
+              exp_points: { increment: totalExp },
+              coins: { increment: totalCoins },
+            },
+          });
+          await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
+
+          // Perfect rewards only if no wrongs and no damage
+          if (wrongChallengesCount === 0 && !progress.took_damage) {
+            await updateQuestProgress(
+              playerId,
+              QuestType.defeat_enemy_full_hp,
+              1
+            );
+            await updateQuestProgress(playerId, QuestType.perfect_level, 1);
+          }
+        }
+
+        try {
+          await LevelService.unlockNextLevel(
+            playerId,
+            level.map_id,
+            level.level_number
+          );
+          console.log(
+            "- Level unlocked after enemy defeated and all challenges answered"
+          );
+        } catch (err) {
+          console.error("Error unlocking next level:", err);
+        }
+
+        console.log("- Level won with completion rewards");
+      }
+    }
+  }
+
+  if (
+    status === BattleStatus.in_progress &&
+    enemyHealth <= 0 &&
+    answeredCount >= totalChallenges
+  ) {
+    console.log(
+      "- Bonus round completed (all challenges answered), setting status to won"
+    );
+    status = BattleStatus.won;
+    enemy_dies = enemy.enemy_dies || null;
+    enemy_hurt = enemy.enemy_hurt || null;
+    enemy_idle = null;
+    enemy_run = null;
+    enemy_attack = null;
+
+    character_idle = character.avatar_image || null;
+    character_run = character.character_run || null;
+
+    if (!progress.is_completed) {
+      const wrongChallengesCount = (
+        (progress.wrong_challenges as unknown[]) ?? []
+      ).length;
+      const totalExp = progress.total_exp_points_earned ?? 0;
+      const totalPoints = progress.total_points_earned ?? 0;
+      const totalCoins = progress.coins_earned ?? 0;
+
+      await updateQuestProgress(playerId, QuestType.defeat_enemy, 1);
+      await prisma.player.update({
+        where: { player_id: playerId },
+        data: {
+          total_points: { increment: totalPoints },
+          exp_points: { increment: totalExp },
+          coins: { increment: totalCoins },
+        },
+      });
+      await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
+
+      if (wrongChallengesCount === 0 && !progress.took_damage) {
+        await updateQuestProgress(playerId, QuestType.defeat_enemy_full_hp, 1);
+        await updateQuestProgress(playerId, QuestType.perfect_level, 1);
+      }
+    }
+
+    try {
+      await LevelService.unlockNextLevel(
+        playerId,
+        level.map_id,
+        level.level_number
+      );
+      console.log(
+        "- Level unlocked after all challenges answered (bonus completed)"
+      );
+    } catch (err) {
+      console.error("Error unlocking next level:", err);
     }
   }
 
@@ -1227,7 +1354,7 @@ export async function fightBossEnemy(
         );
       } else {
         // Win condition: answered all challenges (bonus completion or normal)
-        if (answeredCount >= totalChallenges) {
+        if (answeredCount >= totalChallenges || isCompletingBonus) {
           status = BattleStatus.won;
           enemy_idle = null;
           enemy_run = null;
@@ -1409,6 +1536,147 @@ export async function fightBossEnemy(
       }
     } else {
       console.log("- Enemy already defeated: no counterattack damage.");
+    }
+
+    // Check for win after bonus completion on wrong answer
+    if (
+      status === BattleStatus.in_progress &&
+      effectiveBonusRound &&
+      isCompletingBonus &&
+      enemyHealth <= 0
+    ) {
+      const wrongChallengesCount = (
+        (progress.wrong_challenges as unknown[]) ?? []
+      ).length;
+      const effectiveAnsweredCount = answeredCount + 1;
+
+      if (effectiveAnsweredCount >= totalChallenges) {
+        status = BattleStatus.won;
+        enemy_idle = null;
+        enemy_run = null;
+        enemy_attack = null;
+        enemy_hurt = enemy.enemy_hurt || null;
+        enemy_dies = enemy.enemy_dies || null;
+
+        character_idle = character.avatar_image || null;
+        character_run = character.character_run || null;
+
+        if (!progress.is_completed) {
+          const totalExp = progress.total_exp_points_earned ?? 0;
+          const totalPoints = progress.total_points_earned ?? 0;
+          const totalCoins = progress.coins_earned ?? 0;
+
+          // Always give base rewards on win
+          await updateQuestProgress(playerId, QuestType.defeat_enemy, 1);
+
+          if (
+            enemy.enemy_difficulty === "hard" ||
+            enemy.enemy_difficulty === "final"
+          ) {
+            await updateQuestProgress(playerId, QuestType.defeat_boss, 1);
+          }
+
+          await prisma.player.update({
+            where: { player_id: playerId },
+            data: {
+              total_points: { increment: totalPoints },
+              exp_points: { increment: totalExp },
+              coins: { increment: totalCoins },
+            },
+          });
+
+          await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
+
+          // Perfect rewards only if no wrongs and no damage
+          if (wrongChallengesCount === 0 && !progress.took_damage) {
+            await updateQuestProgress(
+              playerId,
+              QuestType.defeat_enemy_full_hp,
+              1
+            );
+            await updateQuestProgress(playerId, QuestType.perfect_level, 1);
+          }
+        }
+
+        try {
+          await LevelService.unlockNextLevel(
+            playerId,
+            level.map_id,
+            level.level_number
+          );
+          console.log(
+            "- Level unlocked after boss defeated and all challenges answered"
+          );
+        } catch (err) {
+          console.error("Error unlocking next level:", err);
+        }
+
+        console.log("- Level won with completion rewards");
+      }
+    }
+  }
+
+  if (
+    status === BattleStatus.in_progress &&
+    enemyHealth <= 0 &&
+    answeredCount >= totalChallenges
+  ) {
+    console.log(
+      "- Boss bonus round completed (all challenges answered), setting status to won"
+    );
+    status = BattleStatus.won;
+    enemy_idle = null;
+    enemy_run = null;
+    enemy_attack = null;
+    enemy_hurt = enemy.enemy_hurt || null;
+    enemy_dies = enemy.enemy_dies || null;
+
+    character_idle = character.avatar_image || null;
+    character_run = character.character_run || null;
+
+    if (!progress.is_completed) {
+      const wrongChallengesCount = (
+        (progress.wrong_challenges as unknown[]) ?? []
+      ).length;
+      const totalExp = progress.total_exp_points_earned ?? 0;
+      const totalPoints = progress.total_points_earned ?? 0;
+      const totalCoins = progress.coins_earned ?? 0;
+
+      await updateQuestProgress(playerId, QuestType.defeat_enemy, 1);
+      if (
+        enemy.enemy_difficulty === "hard" ||
+        enemy.enemy_difficulty === "final"
+      ) {
+        await updateQuestProgress(playerId, QuestType.defeat_boss, 1);
+      }
+
+      await prisma.player.update({
+        where: { player_id: playerId },
+        data: {
+          total_points: { increment: totalPoints },
+          exp_points: { increment: totalExp },
+          coins: { increment: totalCoins },
+        },
+      });
+      await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
+
+      if (wrongChallengesCount === 0 && !progress.took_damage) {
+        await updateQuestProgress(playerId, QuestType.defeat_enemy_full_hp, 1);
+        await updateQuestProgress(playerId, QuestType.perfect_level, 1);
+      }
+    }
+
+    try {
+      await LevelService.unlockNextLevel(
+        playerId,
+        level.map_id,
+        level.level_number
+      );
+      console.log(
+        "- Level unlocked after all boss challenges answered (bonus completed)"
+      );
+    } catch (err) {
+      console.error("Error unlocking next level:", err);
     }
   }
 

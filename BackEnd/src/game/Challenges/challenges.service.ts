@@ -691,3 +691,5 @@ const wrapWithTimer = async (
     nextChallenge: buildChallengeWithTimer(modifiedChallenge, timeRemaining),
   };
 };
+
+//I'm pretty sure I changed something in here!!!
