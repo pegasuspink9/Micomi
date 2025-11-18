@@ -23,22 +23,22 @@ const CARD_CONFIG: Record<
     special_attack: {
       card_type: "Stormfang Surge",
       character_attack_card:
-        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/Gino_attack3.png",
+        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/4th.png",
     },
     third_attack: {
       card_type: "Feral Slash",
       character_attack_card:
-        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/Gino_attack3.png",
+        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/3rd.png",
     },
     second_attack: {
       card_type: "Ruthless Fang",
       character_attack_card:
-        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/Gino_attack1.png",
+        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/2nd.png",
     },
     basic_attack: {
       card_type: "Wild Claw",
       character_attack_card:
-        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/Gino_attack2.png",
+        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/1st.png",
     },
   },
 };
