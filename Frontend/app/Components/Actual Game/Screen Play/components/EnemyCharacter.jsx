@@ -294,6 +294,42 @@ const EnemyCharacter = ({
       positionX.value = 0;
       opacity.value = 1;
 
+      if (currentState === 'run') {
+      console.log(`🏃 Enemy ${index} running - animating position (one-time)`);
+      positionX.value = 0;
+      opacity.value = 1;
+
+      const runDistance = -(SCREEN.width * 1);
+
+        
+      positionX.value = withTiming(runDistance, {
+        duration: FRAME_DURATION * TOTAL_FRAMES * 1.5,
+        easing: Easing.inOut(Easing.quad),
+      });
+
+
+      frameIndex.value = withTiming(TOTAL_FRAMES - 1, {
+      duration: FRAME_DURATION * TOTAL_FRAMES,
+      easing: Easing.linear,
+      }, (finished) => {
+      if (finished) {
+        console.log(`🏃 Enemy ${index} run animation complete - fading out`);
+        
+        // Fade out after run completes
+        opacity.value = withTiming(0, {
+          duration: 300,
+          easing: Easing.inOut(Easing.ease),
+        }, (fadeFinished) => {
+          if (fadeFinished) {
+            console.log(`👻 Enemy ${index} run fade-out complete`);
+            runOnJS(notifyAnimationComplete)();
+          }
+        });
+      }
+      });
+      return;
+      }
+
       frameIndex.value = withRepeat(
         withTiming(TOTAL_FRAMES - 1, {
           duration: FRAME_DURATION * TOTAL_FRAMES,

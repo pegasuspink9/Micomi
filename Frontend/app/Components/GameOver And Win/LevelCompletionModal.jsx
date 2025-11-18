@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)', 
+    backgroundColor: 'rgba(30, 30, 30, 0.87)', 
     zIndex: 99999,
     elevation: 99999,
   },

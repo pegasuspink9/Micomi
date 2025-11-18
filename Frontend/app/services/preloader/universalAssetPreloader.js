@@ -31,10 +31,12 @@ class UniversalAssetPreloader {
     // Handle different hosts and ensure proper file extensions
     let finalFileName = fileName;
     if (!fileName.includes('.')) {
-      if (url.includes('cloudinary')) {
+       if (url.includes('cloudinary')) {
         finalFileName += '.png'; // Cloudinary usually serves images
       } else if (url.includes('github')) {  
         finalFileName += '.png'; // GitHub assets are typically images
+      } else if (url.includes('r2.dev')) {
+        finalFileName += '.png'; 
       } else if (url.includes('lottie')) {
         finalFileName += '.json'; // Lottie files
       } else {
@@ -47,6 +49,8 @@ class UniversalAssetPreloader {
 
 async downloadSingleAsset(url, category = 'general', onProgress = null, retries = 2) {
   try {
+    console.log(`📥 Starting download: ${url}`);
+    
     await this.ensureCacheDirectory(category);
     
     const localPath = this.getLocalFilePath(url, category);
@@ -62,13 +66,20 @@ async downloadSingleAsset(url, category = 'general', onProgress = null, retries 
     console.log(`📦 Downloading ${category} asset: ${url.slice(-50)}`);
     const startTime = Date.now();
     
-    // Create download with progress tracking
+    // ✅ NEW: Add request headers for R2
     const downloadResumable = FileSystem.createDownloadResumable(
       url,
       localPath,
-      {},
+      {
+        // ✅ Add headers for R2 and other CDNs
+        headers: {
+          'User-Agent': 'MicomoGame/1.0',
+          'Accept': 'image/*'
+        }
+      },
       onProgress ? (downloadProgress) => {
         const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
+        console.log(`📊 ${category} download progress: ${(progress * 100).toFixed(1)}%`);
         onProgress({ 
           progress: Math.min(progress, 1), 
           url, 
@@ -116,7 +127,7 @@ async downloadSingleAsset(url, category = 'general', onProgress = null, retries 
       }
 
       const assetType = this.isVideoFile(url) ? 'video' : 'image';
-      console.log(`✅ ${category} ${assetType} downloaded in ${downloadTime}ms: ${url.slice(-50)}`);
+      console.log(`✅ ${category} ${assetType} downloaded in ${downloadTime}ms (${downloadedFileInfo.size} bytes): ${url.slice(-50)}`);
       return { 
         success: true, 
         localPath: result.uri, 
@@ -130,16 +141,55 @@ async downloadSingleAsset(url, category = 'general', onProgress = null, retries 
       throw new Error('Download failed - no result URI');
     }
   } catch (error) {
-    console.error(`❌ Failed to download ${category} asset: ${url}`, error);
+    console.error(`❌ Failed to download ${category} asset: ${url}`, {
+      message: error.message,
+      code: error.code,
+      statusCode: error.statusCode
+    });
     
     // Retry logic
     if (retries > 0) {
       console.log(`🔄 Retrying download (${retries} retries left): ${url.slice(-50)}`);
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
       return this.downloadSingleAsset(url, category, onProgress, retries - 1);
     }
     
-    return { success: false, error: error.message, url, category };
+    return { 
+      success: false, 
+      error: error.message, 
+      url, 
+      category,
+      errorCode: error.code,
+      statusCode: error.statusCode
+    };
+  }
+}
+
+async testR2Download(testUrl) {
+  console.log(`🧪 Testing R2 URL: ${testUrl}`);
+  
+  try {
+    const response = await fetch(testUrl, {
+      method: 'HEAD',
+      headers: {
+        'User-Agent': 'MicomoGame/1.0'
+      }
+    });
+    
+    console.log(`✅ R2 URL test successful:`, {
+      status: response.status,
+      contentType: response.headers.get('content-type'),
+      contentLength: response.headers.get('content-length')
+    });
+    
+    return { 
+      success: true, 
+      status: response.status,
+      contentType: response.headers.get('content-type')
+    };
+  } catch (error) {
+    console.error(`❌ R2 URL test failed:`, error.message);
+    return { success: false, error: error.message };
   }
 }
 
@@ -152,15 +202,24 @@ async downloadSingleAsset(url, category = 'general', onProgress = null, retries 
     if (imageExtensions.some(ext => lowerUrl.includes(ext))) {
       return true;
     }
+
+    const imageHosts = [
+    'cloudinary.com',
+    'github.com',
+    'githubusercontent.com',
+    'r2.dev',
+    'pub-',  
+    'cdn.jsdelivr.net'
+    ];
     
     // Check if it's from image hosting services
-    if (lowerUrl.includes('cloudinary.com') || 
-        lowerUrl.includes('github.com') || 
-        lowerUrl.includes('githubusercontent.com')) {
-      return true;
-    }
-    
-    return false;
+      if (imageHosts.some(host => lowerUrl.includes(host))) {
+    console.log(`✅ Image detected by host: ${imageHosts.find(h => lowerUrl.includes(h))}`);
+    return true;
+  }
+  
+  console.log(`❌ Not recognized as image`);
+  return false;
   }
 
   // ✅ Extract character assets from character data

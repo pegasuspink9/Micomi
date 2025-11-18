@@ -21,6 +21,8 @@ export default function GamePlay() {
   const playerId = parseInt(params.playerId) || 11;
   const levelId = parseInt(params.levelId);
   const levelData = params.levelData ? JSON.parse(params.levelData) : null;
+
+  
   const [thirdGridHeight, setThirdGridHeight] = useState(SCREEN_HEIGHT * 0.10);
 
   //  Simplified card state - only track current image URL
@@ -42,6 +44,7 @@ export default function GamePlay() {
   const [showVSModal, setShowVSModal] = useState(false);
   const [showGameplay, setShowGameplay] = useState(false);
   const [showGameOver, setShowGameOver] = useState(false);
+  const [showGameOverModal, setShowGameOverModal] = useState(false);
   const [showLevelCompletion, setShowLevelCompletion] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [isLoadingNextLevel, setIsLoadingNextLevel] = useState(false); 
@@ -51,11 +54,14 @@ export default function GamePlay() {
   const [runButtonClicked, setRunButtonClicked] = useState(false);
   const [showRunButton, setShowRunButton] = useState(true);
 
+   const [showLevelCompletionModal, setShowLevelCompletionModal] = useState(false);
 
   const gameOverTimeoutRef = useRef(null);
   const hasTriggeredGameOver = useRef(false);
   const hasTriggeredLevelCompletion = useRef(false);
   const hasShownVSModalRef = useRef(false);
+
+  const levelCompletionTimeoutRef = useRef(null);
 
   const { 
     gameState,   
@@ -147,14 +153,27 @@ export default function GamePlay() {
     console.log('🏃 Character run animation completed');
     setCharacterRunState(false);
     setIsInRunMode(false);
-  }, 2000); // Adjust duration based on your run animation
-}, []);
+  }, 2000); 
+
+  levelCompletionTimeoutRef.current = setTimeout(() => {
+      console.log('⏱️ 5 second delay passed - showing LevelCompletionModal');
+      setShowLevelCompletionModal(true);
+    }, 3000); // 5 second delay - adjust as needed
+  }, []);
+  
 
 
   useEffect(() => {
   if (isRetrying || isLoadingNextLevel) {
+
+    if (levelCompletionTimeoutRef.current) {
+      clearTimeout(levelCompletionTimeoutRef.current);
+      levelCompletionTimeoutRef.current = null;
+    }
+
     setIsInRunMode(false);
     setShowLevelCompletion(false);
+    setShowLevelCompletionModal(false);
     setRunButtonClicked(false);
     setShowRunButton(true);
   }
@@ -266,26 +285,49 @@ export default function GamePlay() {
   }, []);
 
   useEffect(() => {
-    const fightResult = gameState?.submissionResult?.fightResult;
+    const submissionResult = gameState?.submissionResult;
+    const fightResult = submissionResult?.fightResult;
+    
+    console.log('💀 Game Over Check:', {
+      status: fightResult?.status, 
+      characterHealth: fightResult?.character?.character_health,
+      showGameOver: showGameOver,
+      hasTriggered: hasTriggeredGameOver.current,
+      isRetrying: isRetrying,
+      waitingForAnimation: waitingForAnimation,
+      canProceed: canProceed,
+      runButtonClicked: runButtonClicked
+    });
     
     if (fightResult?.status === 'lost' &&
         fightResult?.character?.character_health === 0 &&
         !hasTriggeredGameOver.current && 
-        !showGameOver && 
+        !showGameOverModal && 
         !isRetrying &&
-        !waitingForAnimation && 
-        !canProceed &&
-        runButtonClicked) { 
+        !waitingForAnimation) { 
       
       console.log('💀 Character died - all animations complete, showing GameOver modal');
       hasTriggeredGameOver.current = true;
+
+      setShowGameOver(true);
       
-      gameOverTimeoutRef.current = setTimeout(() => {
-        console.log('💀 Showing GameOver modal');
-        setShowGameOver(true);
-      }, 1000);
+       gameOverTimeoutRef.current = setTimeout(() => {
+        console.log('💀 Showing GameOver modal after delay');
+        setShowGameOverModal(true);
+      }, 500);
     }
   }, [gameState?.submissionResult?.fightResult, showGameOver, isRetrying, waitingForAnimation]);
+
+  useEffect(() => {
+    if (isRetrying) {
+      if (gameOverTimeoutRef.current) {
+        clearTimeout(gameOverTimeoutRef.current);
+        gameOverTimeoutRef.current = null;
+      }
+      setShowGameOver(false);
+      setShowGameOverModal(false);
+    }
+  }, [isRetrying]);
 
   useEffect(() => {
     const submissionResult = gameState?.submissionResult;
@@ -348,6 +390,8 @@ export default function GamePlay() {
       gameOverTimeoutRef.current = null;
     }
     
+    setShowGameOver(false);
+    setShowGameOverModal(false);
     setIsRetrying(true);
     setRunButtonClicked(false);
     hasTriggeredGameOver.current = false;
@@ -389,8 +433,14 @@ export default function GamePlay() {
       clearTimeout(gameOverTimeoutRef.current);
       gameOverTimeoutRef.current = null;
     }
+
+    if (levelCompletionTimeoutRef.current) {
+      clearTimeout(levelCompletionTimeoutRef.current);
+      levelCompletionTimeoutRef.current = null;
+    }
     
     setShowGameOver(false);
+    setShowGameOverModal(false);
     setShowLevelCompletion(false); 
     setIsRetrying(false);
     setIsLoadingNextLevel(false);
@@ -400,6 +450,15 @@ export default function GamePlay() {
     hasTriggeredLevelCompletion.current = false;
     router.back();
   }, [router]);
+
+    useEffect(() => {
+    return () => {
+      if (levelCompletionTimeoutRef.current) {
+        clearTimeout(levelCompletionTimeoutRef.current);
+        levelCompletionTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -447,7 +506,7 @@ export default function GamePlay() {
           style={styles.container}  
         >
           <GameOverModal
-            visible={showGameOver}
+            visible={showGameOverModal}
             onRetry={handleRetry}
             onHome={handleHome}
             characterName={gameState?.selectedCharacter?.name || 'Character'}
@@ -582,6 +641,7 @@ export default function GamePlay() {
               />
             </View>
 
+          
               <GameQuestions 
                 currentQuestion={currentChallenge}
                 selectedAnswers={selectedAnswers}
@@ -592,6 +652,7 @@ export default function GamePlay() {
                 isAnswerCorrect={gameState?.submissionResult?.isCorrect}
               />
 
+              {!shouldHideThirdGrid && (
               <View style={[styles.thirdGridContainer, { height: thirdGridHeight }]}>
                 <ThirdGrid 
                   currentQuestion={currentChallenge}
@@ -628,17 +689,27 @@ export default function GamePlay() {
                   isInRunMode={isInRunMode}
                 />
               </View>
+              )}
 
+
+          <GameOverModal
+            visible={showGameOverModal}
+            onRetry={handleRetry}
+            onHome={handleHome}
+            characterName={gameState?.selectedCharacter?.name || 'Character'}
+            enemyName={gameState?.enemy?.enemy_name || 'Enemy'}
+            isRetrying={isRetrying} 
+          />
             
           <LevelCompletionModal
-          visible={showLevelCompletion && runButtonClicked && !showRunButton}
-          onRetry={handleRetry}
-          onHome={handleHome}
-          onNextLevel={handleNextLevel}
-          completionRewards={completionRewards}
-          nextLevel={!!gameState?.submissionResult?.nextLevel}
-          isLoading={isLoadingNextLevel}
-        />
+              visible={showLevelCompletionModal && runButtonClicked && !showRunButton}
+              onRetry={handleRetry}
+              onHome={handleHome}
+              onNextLevel={handleNextLevel}
+              completionRewards={completionRewards}
+              nextLevel={!!gameState?.submissionResult?.nextLevel}
+              isLoading={isLoadingNextLevel}
+          />
         
           </View>
         )}
@@ -654,14 +725,7 @@ export default function GamePlay() {
         autoCloseDuration={10000000}
       />
 
-      <GameOverModal
-        visible={showGameOver}
-        onRetry={handleRetry}
-        onHome={handleHome}
-        characterName={gameState?.selectedCharacter?.name || 'Character'}
-        enemyName={gameState?.enemy?.enemy_name || 'Enemy'}
-        isRetrying={isRetrying} 
-      />
+
 
     
     </>

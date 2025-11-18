@@ -30,6 +30,14 @@ const ScreenPlay = ({
   const victoryTimeoutRef = useRef(null);
 
   const [hasRunCompleted, setHasRunCompleted] = useState(false);
+  const [isEnemyRunning, setIsEnemyRunning] = useState(false);
+
+  const enemyRunTimeoutsRef = useRef({});
+  const enemyRunSequenceStartedRef = useRef(false);
+  const enemyFadeCompleteRef = useRef(false);
+  const animationCompleteNotifiedRef = useRef(false); 
+  const lastProcessedSubmissionIdRef = useRef(null); 
+
 
 
   const enemies = useMemo(() => processEnemyData(enemiesData), []);
@@ -98,28 +106,117 @@ const ScreenPlay = ({
 
   const combatBackground = useMemo(() => gameState?.combat_background, [gameState?.combat_background]);
 
+  const handleEnemyRun = useCallback(() => {
+  if (enemyRunSequenceStartedRef.current) {
+    console.log('🏃 Enemy run sequence already started, skipping duplicate');
+    return;
+  }
+
+  console.log('💀 Character defeated - initiating enemy run sequence');
+  enemyRunSequenceStartedRef.current = true;
+  setIsEnemyRunning(true);
+  animationCompleteNotifiedRef.current = false; 
+  
+  // Step 1: Enemy attacks (1.5 seconds)
+  console.log('⚔️ Step 1: Enemy attacking');
+  setEnemyAnimationStates(prev => prev.map(() => 'attack'));
+
+  enemyRunTimeoutsRef.current.idle = setTimeout(() => {
+    console.log('🦹 Step 2: Enemy attack complete - transitioning to idle');
+    setEnemyAnimationStates(prev => prev.map(() => 'idle'));
+
+    enemyRunTimeoutsRef.current.run = setTimeout(() => {
+      console.log('🏃 Step 3: Enemy running away');
+      setEnemyAnimationStates(prev => prev.map(() => 'run'));
+
+      enemyRunTimeoutsRef.current.complete = setTimeout(() => {
+        console.log('👻 Step 4: Enemy run complete - animation finished');
+
+        if (animationCompleteNotifiedRef.current) {
+          console.log('⚠️ Animation complete already notified, skipping duplicate');
+          return;
+        }
+
+        animationCompleteNotifiedRef.current = true;
+        setIsEnemyRunning(false);
+        enemyFadeCompleteRef.current = true;
+
+        if (onSubmissionAnimationComplete) {
+          console.log('📤 Notifying animation complete');
+          onSubmissionAnimationComplete();
+        }
+
+        // Clear all timeouts
+        enemyRunTimeoutsRef.current = {};
+      }, 2700); 
+    }, 1000); 
+  }, 1500);
+}, [onSubmissionAnimationComplete]);
+
+  useEffect(() => {
+    return () => {
+      if (enemyRunTimeoutsRef.current.idle) clearTimeout(enemyRunTimeoutsRef.current.idle);
+      if (enemyRunTimeoutsRef.current.run) clearTimeout(enemyRunTimeoutsRef.current.run);
+      if (enemyRunTimeoutsRef.current.complete) clearTimeout(enemyRunTimeoutsRef.current.complete);
+      enemyRunTimeoutsRef.current = {};
+    };
+  }, []);
+
+
+
   useEffect(() => {
   const fightResult = gameState?.submissionResult?.fightResult;
-  
+
+  // ✅ NEW: Create unique submission ID including timestamp to prevent duplicates
+  const submissionId = fightResult ? 
+    `${gameState?.currentChallenge?.id}-${fightResult.status}-${fightResult.character?.character_health}-${fightResult.enemy?.enemy_health}` 
+    : null;
+
+  console.log('🔍 Submission check:', {
+    status: fightResult?.status,
+    characterHealth: fightResult?.character?.character_health,
+    enemyHealth: fightResult?.enemy?.enemy_health,
+    submissionId: submissionId,
+    lastProcessedId: lastProcessedSubmissionIdRef.current,
+    hasRunStarted: enemyRunSequenceStartedRef.current,
+    hasFadeComplete: enemyFadeCompleteRef.current,
+  });
+
+  if (fightResult?.status === 'lost' && 
+      fightResult?.character?.character_health === 0 &&
+      !enemyRunSequenceStartedRef.current &&
+      !enemyFadeCompleteRef.current &&
+      lastProcessedSubmissionIdRef.current !== submissionId) {
+
+    console.log('💀 Lost status detected - starting enemy run sequence');
+    lastProcessedSubmissionIdRef.current = submissionId;
+    handleEnemyRun();
+    return;
+  }
+
   if (fightResult?.status === 'won' && 
-      fightResult?.enemy?.enemy_health === 0 &&
-      victoryAnimationPhase === 'idle') {
-    
+    fightResult?.enemy?.enemy_health === 0 &&
+    victoryAnimationPhase === 'idle') {
+  
     console.log('🎉 Victory detected - starting celebration sequence');
     setVictoryAnimationPhase('celebrating');
-    
-    //  Fix: Use setCharacterAnimationState instead of setCharacterState
     setCharacterAnimationState('idle');
     
     victoryTimeoutRef.current = setTimeout(() => {
       console.log('🎉 Celebration complete - notifying animation completion');
       setVictoryAnimationPhase('waiting');
+
+      if (animationCompleteNotifiedRef.current) {
+        console.log('⚠️ Animation complete already notified, skipping duplicate');
+        return;
+      }
+      animationCompleteNotifiedRef.current = true;
       
       if (onSubmissionAnimationComplete) {
         onSubmissionAnimationComplete();
       }
     }, 3000); 
-  }
+   }
   
   return () => {
     if (victoryTimeoutRef.current) {
@@ -127,9 +224,13 @@ const ScreenPlay = ({
       victoryTimeoutRef.current = null;
     }
   };
-}, [gameState?.submissionResult?.fightResult, victoryAnimationPhase, onSubmissionAnimationComplete]);
+  }, [gameState?.submissionResult?.fightResult?.status, gameState?.submissionResult?.fightResult?.character?.character_health, gameState?.submissionResult?.fightResult?.enemy?.enemy_health, gameState?.currentChallenge?.id, victoryAnimationPhase, handleEnemyRun, onSubmissionAnimationComplete]);
 
-
+ useEffect(() => {
+    if (isEnemyRunning) {
+      console.log('🏃 Enemy run in progress - blocking other animation changes');
+    }
+  }, [isEnemyRunning]);
   
   // Handle coin updates
   useEffect(() => {
@@ -450,12 +551,13 @@ useEffect(() => {
             enemies[0]?.character_hurt ??
             enemies[0]?.enemy_hurt ??
             enemies[0]?.hurt,
-          character_run:
+           character_run:
             gameState.submissionResult?.fightResult?.enemy?.enemy_run ??
             gameState.enemy?.enemy_run ??
             enemies[0]?.character_run ??
             enemies[0]?.enemy_run ??
-            enemies[0]?.run,
+            enemies[0]?.run ??
+            'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Enemies/Greenland/Dragorn/run_aljsxb.png',
           character_dies:
             gameState.submissionResult?.fightResult?.enemy?.enemy_dies ??
             gameState.enemy?.enemy_dies ??
@@ -464,6 +566,17 @@ useEffect(() => {
             enemies[0]?.dies,
           enemy_health: enemyHealth
         }), [gameState, enemies, enemyHealth]);
+
+        useEffect(() => {
+          console.log('🦹 Enemy animations loaded:', {
+            idle: !!enemyAnimations.character_idle,
+            attack: !!enemyAnimations.character_attack,
+            hurt: !!enemyAnimations.character_hurt,
+            run: !!enemyAnimations.character_run,
+            runUrl: enemyAnimations.character_run?.slice(-50),
+            dies: !!enemyAnimations.character_dies,
+          });
+        }, [enemyAnimations]);
 
 
   return (
@@ -478,6 +591,7 @@ useEffect(() => {
 
         {enemies.map((enemy, index) => {
           if (!enemyPositions[index] || isCharacterRunning) return null;
+          
           const currentEnemyState = isCharacterRunning || hasRunCompleted 
             ? enemyAnimationStates[index] 
             : (enemyAnimationStates[index] || 'idle');
@@ -488,7 +602,7 @@ useEffect(() => {
               index={index}
               enemyPosition={enemyPositions[index]}
               isAttacking={attackingEnemies.has(index)}
-              isPaused={isPaused || isCharacterRunning}
+              isPaused={isPaused || isCharacterRunning} 
               characterAnimations={enemyAnimations}
               currentState={currentEnemyState} 
               onAnimationComplete={handleEnemyAnimationComplete(index)}

@@ -194,6 +194,8 @@ const submitAnswer = async (selectedAnswers) => {
     }
   };
 
+  const lastProcessedSubmissionRef = useRef(null);
+
   const handleAnimationComplete = useCallback(() => {
   console.log('Animation sequence completed, processing next challenge...');
    
@@ -204,98 +206,139 @@ const submitAnswer = async (selectedAnswers) => {
     animationTimeoutRef.current = null;
   }
   
-  if (pendingSubmissionRef.current) {
-    console.log('Processing pending submission result');
-    const pendingData = pendingSubmissionRef.current;
+  if (!pendingSubmissionRef.current) {
+    console.log('⚠️ No pending submission - skipping animation complete handling');
+    return;
+  }
+
+  console.log('Processing pending submission result');
+  const pendingData = pendingSubmissionRef.current;
+
+  const submissionId = `${pendingData.submissionResult?.fightResult?.character?.character_health}-${pendingData.submissionResult?.fightResult?.enemy?.enemy_health}`;
+
+  if (lastProcessedSubmissionRef.current === submissionId) {
+    console.log('⚠️ Submission already processed - skipping duplicate handling');
+    pendingSubmissionRef.current = null;
+    return;
+  }
+  
+  const levelWon = pendingData.submissionResult?.fightResult?.status === 'won' && 
+                   pendingData.submissionResult?.fightResult?.enemy?.enemy_health === 0;
+
+  const levelLost = pendingData.submissionResult?.fightResult?.status === 'lost' && 
+                    pendingData.submissionResult?.fightResult?.character?.character_health === 0;
+  
+  const isCorrect = pendingData.submissionResult?.isCorrect === true;
+  
+  console.log('🔍 Answer correctness check:', {
+    isCorrect: isCorrect,
+    levelLost: levelLost,
+    levelWon: levelWon,
+    hasNextChallenge: !!pendingData.currentChallenge?.id
+  });
+
+  // ✅ CRITICAL: Handle level lost FIRST - CLEAR ref and EXIT immediately
+  if (levelLost) {
+    console.log('💀 Level lost! Clearing pending ref and exiting');
+    lastProcessedSubmissionRef.current = submissionId;
+    setCanProceed(false);
+    
+    setGameState(prevState => ({
+      ...prevState,
+      submissionResult: pendingData.submissionResult,
+      selectedCharacter: pendingData.selectedCharacter || prevState.selectedCharacter,
+      enemy: pendingData.enemy || prevState.enemy,
+      fightResult: pendingData.fightResult || prevState.fightResult,
+    }));
+    
+    // ✅ CLEAR IMMEDIATELY before ANY other code runs
     pendingSubmissionRef.current = null;
     
-    // NEW: Check if level is completed (won)
-    const levelWon = pendingData.submissionResult?.fightResult?.status === 'won' &&
-                     pendingData.submissionResult?.fightResult?.enemy?.enemy_health === 0;
+    // ✅ EXIT EARLY - stop ALL processing
+    console.log('💀 Level lost handling complete - exiting handler');
+    return;
+  }
+
+  // ✅ CRITICAL: Handle level won SECOND - CLEAR ref and EXIT immediately  
+  if (levelWon) {
+    console.log('🎉 Level won! Clearing pending ref and exiting');
+    lastProcessedSubmissionRef.current = submissionId;
+    setCanProceed(false);
     
-    // Check if answer was correct
-    const isCorrect = pendingData.submissionResult?.isCorrect === true;
+    setGameState(prevState => ({
+      ...prevState,
+      submissionResult: pendingData.submissionResult,
+      selectedCharacter: pendingData.selectedCharacter || prevState.selectedCharacter,
+      enemy: pendingData.enemy || prevState.enemy,
+      fightResult: pendingData.fightResult || prevState.fightResult,
+    }));
     
-    console.log('🔍 Answer correctness check:', {
-      isCorrect: isCorrect,
-      levelWon: levelWon, // NEW: Log level won status
-      submissionResult: pendingData.submissionResult
-    });
+    // ✅ CLEAR IMMEDIATELY before ANY other code runs
+    pendingSubmissionRef.current = null;
     
-    // Get the NEXT challenge from response
+    // ✅ EXIT EARLY - stop ALL processing
+    console.log('🎉 Level won handling complete - exiting handler');
+    return;
+  }
+
+  // ✅ Only reach here if NOT lost and NOT won - process next challenge
+  if (isCorrect) {
     const nextChallenge = pendingData.currentChallenge;
-    // Card is at ROOT level of response, not nested in challenge
     const nextChallengeCard = pendingData.card;
     
-    console.log('📸 Card info from submission response:', {
-      challengeId: nextChallenge?.id,
-      card: nextChallengeCard,
-      isCorrect: isCorrect,
-      levelWon: levelWon, // NEW: Log level won status
-    });
-    
-    // NEW: If level is won, DON'T show proceed button
-    if (levelWon) {
-      console.log('🎉 Level completed! Showing completion buttons instead of proceed');
-      setCanProceed(false);
-      
-      setGameState(prevState => ({
-        ...prevState,
-        submissionResult: pendingData.submissionResult,
-        selectedCharacter: pendingData.selectedCharacter || prevState.selectedCharacter,
-        enemy: pendingData.enemy || prevState.enemy,
-        fightResult: pendingData.fightResult || prevState.fightResult,
-      }));
-      
-      return; // Exit early - don't show proceed button
+    if (!nextChallenge || !nextChallenge.id) {
+      console.log('⚠️ No next challenge available - staying on current state');
+      pendingSubmissionRef.current = null;
+      return;
     }
     
-    if (isCorrect) {
-      // CORRECT: Show Proceed button (only if not level won)
-      setCanProceed(true);
-      
-      // Update game state BUT keep current challenge - don't load next one yet
-      setGameState(prevState => ({
-        ...prevState,
-        submissionResult: pendingData.submissionResult,
-        selectedCharacter: pendingData.selectedCharacter || prevState.selectedCharacter,
+    lastProcessedSubmissionRef.current = submissionId;
+    console.log('✅ Proceeding to next challenge after correct answer');
+    setCanProceed(true);
+    
+    setGameState(prevState => ({
+      ...prevState,
+      submissionResult: pendingData.submissionResult,
+      selectedCharacter: pendingData.selectedCharacter || prevState.selectedCharacter,
+      enemy: pendingData.enemy || prevState.enemy,
+      fightResult: pendingData.fightResult || prevState.fightResult,
+      nextChallengeData: {
+        ...nextChallenge,
+        card: nextChallengeCard,
         enemy: pendingData.enemy || prevState.enemy,
-        fightResult: pendingData.fightResult || prevState.fightResult,
-        // Store COMPLETE next challenge data with card from response
-        nextChallengeData: {
-          ...nextChallenge,
-          card: nextChallengeCard,
-          enemy: pendingData.enemy || prevState.enemy, // Preserve enemy
-        },
-        // DON'T SET CARD TO NULL - keep current card visible
-        card: prevState.card, // Keep the current card displayed
-      }));
-      
-      console.log('Game state updated with submission result (card stays visible)', { 
-        canProceedNow: true,
-        nextChallengeId: nextChallenge?.id,
-        nextCard: nextChallengeCard,
-      });
-    } else {
-      // WRONG: Automatically proceed to next challenge
-      console.log('❌ Answer wrong - automatically proceeding to next challenge');
-      
-      setGameState(prevState => ({
-        ...prevState,
-        currentChallenge: nextChallenge,
-        card: nextChallengeCard, // Update to new card for next challenge
-        enemy: pendingData.enemy || prevState.enemy, // Preserve enemy with correct health
-        selectedCharacter: pendingData.selectedCharacter || prevState.selectedCharacter,
-        fightResult: pendingData.fightResult || prevState.fightResult,
-        submissionResult: null,
-        nextChallengeData: null,
-      }));
-      
-      setCanProceed(false);
+      },
+      card: prevState.card,
+    }));
+  } else {
+    // Wrong answer - proceed to next challenge
+    const nextChallenge = pendingData.currentChallenge;
+    const nextChallengeCard = pendingData.card;
+    
+    if (!nextChallenge || !nextChallenge.id) {
+      console.log('⚠️ No next challenge available - staying on current state');
+      pendingSubmissionRef.current = null;
+      return;
     }
-  }
-  }, []);
 
+    lastProcessedSubmissionRef.current = submissionId; 
+    console.log('❌ Wrong answer - proceeding to next challenge');
+    setGameState(prevState => ({
+      ...prevState,
+      currentChallenge: nextChallenge,
+      card: nextChallengeCard, 
+      enemy: pendingData.enemy || prevState.enemy,
+      selectedCharacter: pendingData.selectedCharacter || prevState.selectedCharacter,
+      fightResult: pendingData.fightResult || prevState.fightResult,
+      submissionResult: null,
+      nextChallengeData: null,
+    }));
+    
+    setCanProceed(false);
+  }
+  
+  // ✅ Clear at the very end, only if we processed a next challenge
+  pendingSubmissionRef.current = null;
+}, []);
 
  const handleProceed = useCallback(async () => {
   if (!canProceed) {
@@ -374,6 +417,7 @@ const submitAnswer = async (selectedAnswers) => {
 
   const retryLevel = useCallback(async () => {
     try {
+      lastProcessedSubmissionRef.current = null;
       console.log(`🔄 Starting level retry for player ${playerId}, level ${levelId}...`);
       
       setLoading(true);
@@ -419,6 +463,7 @@ const submitAnswer = async (selectedAnswers) => {
 
   const enterNextLevel = useCallback(async (playerId, nextLevelId) => {
     try {
+      lastProcessedSubmissionRef.current = null;
       console.log(`🚀 Entering next level ${nextLevelId} for player ${playerId}...`);
       
       setLoading(true);
