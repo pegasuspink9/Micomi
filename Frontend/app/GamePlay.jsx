@@ -247,6 +247,8 @@ export default function GamePlay() {
 
   const shouldHideThirdGrid = activeGameTab === 'output' || activeGameTab === 'expected';
 
+  
+
   useEffect(() => {
     if (currentChallenge) {
       setSelectedAnswers([]);
@@ -580,13 +582,6 @@ export default function GamePlay() {
               />
             </View>
 
-            <Animated.View style={[styles.gameQuestionsContainer,
-                (shouldHideThirdGrid || isInRunMode) && styles.gameQuestionsContainerExpanded,
-                {
-                  opacity: fadeOutAnim,
-                  pointerEvents: isInRunMode ? 'none' : 'auto'
-                }
-              ]}>
               <GameQuestions 
                 currentQuestion={currentChallenge}
                 selectedAnswers={selectedAnswers}
@@ -596,9 +591,7 @@ export default function GamePlay() {
                 onBlankSelect={selectedBlankIndex}
                 isAnswerCorrect={gameState?.submissionResult?.isCorrect}
               />
-            </Animated.View>
 
-            {!shouldHideThirdGrid && (
               <View style={[styles.thirdGridContainer, { height: thirdGridHeight }]}>
                 <ThirdGrid 
                   currentQuestion={currentChallenge}
@@ -635,7 +628,6 @@ export default function GamePlay() {
                   isInRunMode={isInRunMode}
                 />
               </View>
-            )}
 
             
           <LevelCompletionModal

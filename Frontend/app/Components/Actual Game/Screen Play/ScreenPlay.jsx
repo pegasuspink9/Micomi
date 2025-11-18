@@ -476,7 +476,6 @@ useEffect(() => {
           onAnimationComplete={handleCharacterAnimationComplete}
         />
 
-        <FadeOutWrapper fadeOutAnim={fadeOutAnim} isInRunMode={isInRunMode}>
         {enemies.map((enemy, index) => {
           if (!enemyPositions[index] || isCharacterRunning) return null;
           const currentEnemyState = isCharacterRunning || hasRunCompleted 
@@ -496,7 +495,6 @@ useEffect(() => {
             />
           );
         })}
-      </FadeOutWrapper>
 
       <FadeOutWrapper fadeOutAnim={fadeOutAnim} isInRunMode={isInRunMode}>
         <Life 

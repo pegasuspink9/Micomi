@@ -16,7 +16,7 @@ const GridContainer = ({
   isProceedMode = false,
   onProceed = null,
   isLevelComplete = false,
-  showRunButton = true, // ✅ KEEP THIS ONE ONLY
+  showRunButton = true, 
   onRetry = null,
   onHome = null,
   onNextLevel = null,
@@ -87,7 +87,7 @@ const GridContainer = ({
 
 
 
-  return (
+    return (
     <View style={styles.containerWrapper}>
       <View style={[
         styles.thirdGrid, 
@@ -117,6 +117,7 @@ const GridContainer = ({
           <View style={styles.simpleFrame}>
           </View>
         )}
+        
         
         <View style={[
           styles.outerFrame,
@@ -157,10 +158,8 @@ const GridContainer = ({
                   </Pressable>
                 </View>
               ) : isLevelComplete && !showRunButton ? (
-                /* COMPLETION BUTTONS AFTER RUN */
                 null
               ) : isProceedMode ? (
-                /* PROCEED BUTTON */
                 <View style={styles.proceedButtonFrame}>
                   <Pressable
                     style={({ pressed }) => [
@@ -186,26 +185,22 @@ const GridContainer = ({
           </View>
         </View>
       </View>
-        <FadeOutWrapper 
-          fadeOutAnim={fadeOutAnim} 
-          isInRunMode={isInRunMode}
-          style={{ overflow: 'hidden' }}
-        >
-          <View style={styles.lowerGrid}>
-            <View style={styles.outerFrame}>
-              <View style={styles.innerContent}>
-                <View style={styles.innerBorder}>
-                  <View style={styles.backlightOverlay} />
-                  <View style={styles.topHighlight} />
-                  <View style={styles.bottomShadow} />
-                  <View style={styles.leftHighlight} />
-                  <View style={styles.rightShadow} />
-                  {lowerChildren}
-                </View>
-              </View>
+
+      {/* ✅ REMOVED FadeOutWrapper - Direct View rendering */}
+      <View style={styles.lowerGrid}>
+        <View style={styles.outerFrame}>
+          <View style={styles.innerContent}>
+            <View style={styles.innerBorder}>
+              <View style={styles.backlightOverlay} />
+              <View style={styles.topHighlight} />
+              <View style={styles.bottomShadow} />
+              <View style={styles.leftHighlight} />
+              <View style={styles.rightShadow} />
+              {lowerChildren}
             </View>
           </View>
-        </FadeOutWrapper>
+        </View>
+      </View>
     </View>
   );
 };
@@ -299,9 +294,9 @@ const styles = StyleSheet.create({
     shadowRadius: scale(16),
     elevation: 20,
     borderTopWidth: scale(3),
-    borderTopColor: '#87ceeb',
+    borderTopColor: '#2c5282',
     borderLeftWidth: scale(2),
-    borderLeftColor: '#87ceeb',
+    borderLeftColor: '#2c5282',
     borderBottomWidth: scale(5),
     borderBottomColor: '#2c5282',
     borderRightWidth: scale(4),
@@ -697,7 +692,7 @@ const styles = StyleSheet.create({
   },
 
 
-    homeButtonContainer: {
+  homeButtonContainer: {
     backgroundColor: '#c62828',
     borderTopColor: '#ef5350',
     borderLeftColor: '#ef5350',
