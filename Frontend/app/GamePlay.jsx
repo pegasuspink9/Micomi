@@ -9,8 +9,7 @@ import { useGameData } from './hooks/useGameData';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import CombatVSModal from './Components/Actual Game/Game Display Entrance/GameDisplayEntrance';
 import GameOverModal from './Components/GameOver And Win/GameOver';
-
-
+import LevelCompletionModal from './Components/GameOver And Win/LevelCompletionModal';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -47,10 +46,15 @@ export default function GamePlay() {
   const [isRetrying, setIsRetrying] = useState(false);
   const [isLoadingNextLevel, setIsLoadingNextLevel] = useState(false); 
   const [cardDisplaySequence, setCardDisplaySequence] = useState('modal');
+  const [completionRewards, setCompletionRewards] = useState(null);
+  
+  const [runButtonClicked, setRunButtonClicked] = useState(false);
+  const [showRunButton, setShowRunButton] = useState(true);
+
+
   const gameOverTimeoutRef = useRef(null);
   const hasTriggeredGameOver = useRef(false);
   const hasTriggeredLevelCompletion = useRef(false);
-
   const hasShownVSModalRef = useRef(false);
 
   const { 
@@ -89,13 +93,14 @@ export default function GamePlay() {
   const cardType = gameState?.card?.card_type;
 
   const [isInRunMode, setIsInRunMode] = useState(false);
+  const fadeOutAnimRef = useRef(new Animated.Value(1)).current;
   const fadeOutAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (isInRunMode) {
       Animated.timing(fadeOutAnim, {
         toValue: 0,
-        duration: 2000, // Duration of the run animation
+        duration: 2000, 
         useNativeDriver: true,
       }).start(() => {
         fadeOutAnim.setValue(1);
@@ -130,7 +135,9 @@ export default function GamePlay() {
   const handleCharacterRun = useCallback(() => {
   console.log('🏃 Character run triggered');
 
+  setRunButtonClicked(true);
   setIsInRunMode(true);
+  setShowRunButton(false);
   
   // Trigger the character run animation
   setCharacterRunState(true);
@@ -139,6 +146,7 @@ export default function GamePlay() {
   setTimeout(() => {
     console.log('🏃 Character run animation completed');
     setCharacterRunState(false);
+    setIsInRunMode(false);
   }, 2000); // Adjust duration based on your run animation
 }, []);
 
@@ -146,6 +154,9 @@ export default function GamePlay() {
   useEffect(() => {
   if (isRetrying || isLoadingNextLevel) {
     setIsInRunMode(false);
+    setShowLevelCompletion(false);
+    setRunButtonClicked(false);
+    setShowRunButton(true);
   }
   }, [isRetrying, isLoadingNextLevel]);
 
@@ -260,7 +271,9 @@ export default function GamePlay() {
         !hasTriggeredGameOver.current && 
         !showGameOver && 
         !isRetrying &&
-        !waitingForAnimation) { 
+        !waitingForAnimation && 
+        !canProceed &&
+        runButtonClicked) { 
       
       console.log('💀 Character died - all animations complete, showing GameOver modal');
       hasTriggeredGameOver.current = true;
@@ -283,6 +296,8 @@ export default function GamePlay() {
       showLevelCompletion: showLevelCompletion,
       isLoadingNextLevel: isLoadingNextLevel,
       waitingForAnimation: waitingForAnimation,
+      runButtonClicked: runButtonClicked,
+      showRunButton: showRunButton
     });
 
     // Show completion buttons when enemy is defeated
@@ -292,16 +307,31 @@ export default function GamePlay() {
         !showLevelCompletion && 
         !isLoadingNextLevel &&
         !waitingForAnimation &&
-        !canProceed) { // NEW: Don't show if canProceed is still true
+        !canProceed 
+      ) {
       
       console.log('🎉 Level completed - showing completion buttons');
       hasTriggeredLevelCompletion.current = true;
-      
-      setTimeout(() => {
-        setShowLevelCompletion(true);
-      }, 500); 
+
+      setCompletionRewards({
+        feedbackMessage: submissionResult?.feedbackMessage || 'Congratulations! You have completed this level!',
+        coinsEarned: submissionResult?.coinsEarned || 0,
+        currentTotalPoints: submissionResult?.currentTotalPoints || 0,
+        currentExpPoints: submissionResult?.currentExpPoints || 0,
+      });
+
+      setShowLevelCompletion(true);
+      setShowRunButton(true);
+      setRunButtonClicked(false);
+    
     }
   }, [gameState?.submissionResult?.fightResult, showLevelCompletion, isLoadingNextLevel, waitingForAnimation, canProceed]);
+
+   useEffect(() => {
+    if (runButtonClicked && !showRunButton && showLevelCompletion) {
+      console.log('🎉 Modal should show now');
+    }
+  }, [runButtonClicked, showRunButton, showLevelCompletion]);
 
   const handleAnimationComplete = useCallback(() => {
     console.log('🎬 All animation sequences completed');
@@ -317,6 +347,7 @@ export default function GamePlay() {
     }
     
     setIsRetrying(true);
+    setRunButtonClicked(false);
     hasTriggeredGameOver.current = false;
     hasTriggeredLevelCompletion.current = false;
     retryLevel();
@@ -361,6 +392,8 @@ export default function GamePlay() {
     setShowLevelCompletion(false); 
     setIsRetrying(false);
     setIsLoadingNextLevel(false);
+    setRunButtonClicked(false);
+    setShowRunButton(true);
     hasTriggeredGameOver.current = false;
     hasTriggeredLevelCompletion.current = false;
     router.back();
@@ -547,7 +580,7 @@ export default function GamePlay() {
               />
             </View>
 
-              <Animated.View style={[styles.gameQuestionsContainer,
+            <Animated.View style={[styles.gameQuestionsContainer,
                 (shouldHideThirdGrid || isInRunMode) && styles.gameQuestionsContainerExpanded,
                 {
                   opacity: fadeOutAnim,
@@ -592,20 +625,34 @@ export default function GamePlay() {
                   canProceed={canProceed}
                   onProceed={handleProceed}
                   isLevelComplete={showLevelCompletion}
+                  showRunButton={showRunButton}
+                  onCharacterRun={handleCharacterRun}
                   onHome={handleHome}
                   onRetry={handleRetry}
                   onNextLevel={handleNextLevel}
                   hasNextLevel={!!gameState?.submissionResult?.nextLevel}
-                  onCharacterRun={handleCharacterRun}
+                  fadeOutAnim={fadeOutAnim}
+                  isInRunMode={isInRunMode}
                 />
               </View>
             )}
+
+            
+          <LevelCompletionModal
+          visible={showLevelCompletion && runButtonClicked && !showRunButton}
+          onRetry={handleRetry}
+          onHome={handleHome}
+          onNextLevel={handleNextLevel}
+          completionRewards={completionRewards}
+          nextLevel={!!gameState?.submissionResult?.nextLevel}
+          isLoading={isLoadingNextLevel}
+        />
+        
           </View>
         )}
       </ImageBackground>
       )}
 
-     
       <Card
         visible={showAttackCard}
         imageUrl={characterAttackCard}

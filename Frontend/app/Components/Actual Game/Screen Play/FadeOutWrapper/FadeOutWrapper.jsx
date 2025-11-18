@@ -5,18 +5,19 @@ const FadeOutWrapper = ({
   children, 
   fadeOutAnim, 
   isInRunMode = false,
-  style = {}
+  style = {},
+  zIndex = 1
 }) => {
   return (
     <Animated.View 
       style={[
         {
           opacity: fadeOutAnim,
-          pointerEvents: isInRunMode ? 'none' : 'auto'
+          pointerEvents: isInRunMode ? 'none' : 'auto',
+          zIndex: zIndex
         },
         style
       ]}
-      pointerEvents="box-none"
     >
       {children}
     </Animated.View>

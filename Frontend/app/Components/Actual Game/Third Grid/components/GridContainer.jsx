@@ -4,11 +4,11 @@ import { scale, scaleWidth, scaleHeight, RESPONSIVE, wp, hp } from '../../../Res
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-
+import FadeOutWrapper from '../../Screen Play/FadeOutWrapper/FadeOutWrapper';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const GridContainer = ({ 
-  children, 
+    children, 
   lowerChildren, 
   mainHeight, 
   cardImageUrl, 
@@ -16,17 +16,20 @@ const GridContainer = ({
   isProceedMode = false,
   onProceed = null,
   isLevelComplete = false,
+  showRunButton = true, // ✅ KEEP THIS ONE ONLY
   onRetry = null,
   onHome = null,
   onNextLevel = null,
   hasNextLevel = false,
   onRun = null,
-  onCompletionButtonsShow = null
+  isInRunMode = false,
+  fadeOutAnim = null,
 }) => {
   const [imageSource, setImageSource] = useState(null);
   const [loading, setLoading] = useState(false);
   const [previousUrl, setPreviousUrl] = useState(null);
-  const [showRunButton, setShowRunButton] = useState(true);
+  const [showCompletionButtons, setShowCompletionButtons] = useState(false);
+  
   
   const dropAnim = useRef(new Animated.Value(-500)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -83,13 +86,6 @@ const GridContainer = ({
   };
 
 
-    useEffect(() => {
-    if (isLevelComplete && !showRunButton && onCompletionButtonsShow) {
-      console.log('📢 Notifying parent - completion buttons now visible');
-      onCompletionButtonsShow();
-    }
-  }, [showRunButton, isLevelComplete, onCompletionButtonsShow]);
-
 
   return (
     <View style={styles.containerWrapper}>
@@ -121,7 +117,7 @@ const GridContainer = ({
           <View style={styles.simpleFrame}>
           </View>
         )}
-
+        
         <View style={[
           styles.outerFrame,
           (isProceedMode || isLevelComplete) && styles.outerFrameProceed
@@ -151,7 +147,6 @@ const GridContainer = ({
                     onPress={() => {
                       console.log('🏃 Run button pressed');
                       onRun?.();
-                      setShowRunButton(false); // Hide run button, show completion
                     }}
                   >
                     <View style={styles.runInnerButton}>
@@ -163,67 +158,7 @@ const GridContainer = ({
                 </View>
               ) : isLevelComplete && !showRunButton ? (
                 /* COMPLETION BUTTONS AFTER RUN */
-                <View style={styles.completionButtonFrame}>
-                  <View style={styles.completionButtonsContainer}>
-             
-                    {/* HOME BUTTON - RED */}
-                    <View style={styles.completionButtonWrapper}>
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.completionListItemContainer,
-                          styles.homeButtonContainer,
-                          pressed && styles.completionListItemPressed
-                        ]}
-                        onPress={onHome}
-                      >
-                        <View style={styles.completionInnerButton}>
-                          <View style={styles.completionButtonHighlight} />
-                          <View style={styles.completionButtonShadow} />
-                          <MaterialIcons name="home" size={scale(28)} color="#ffffffff" />
-                        </View>
-                      </Pressable>
-                    </View>
-
-                    {/* RETRY BUTTON - YELLOW */}
-                    <View style={styles.completionButtonWrapper}>
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.completionListItemContainer,
-                          styles.retryButtonContainer,
-                          pressed && styles.completionListItemPressed
-                        ]}
-                        onPress={onRetry}
-                      >
-                        <View style={styles.completionInnerButton}>
-                          <View style={styles.completionButtonHighlight} />
-                          <View style={styles.completionButtonShadow} />
-                          <FontAwesome name="repeat" size={scale(24)} color="#ffffffff" />
-                        </View>
-                      </Pressable>
-                    </View>
-
-                    {/* NEXT LEVEL BUTTON - BLUE */}
-                    {hasNextLevel ? (
-                      <View style={styles.completionButtonWrapper}>
-                        <Pressable
-                          style={({ pressed }) => [
-                            styles.completionListItemContainer,
-                            styles.nextButtonContainer,
-                            pressed && styles.completionListItemPressed
-                          ]}
-                          onPress={onNextLevel}
-                        >
-                          <View style={styles.completionInnerButton}>
-                            <View style={styles.completionButtonHighlight} />
-                            <View style={styles.completionButtonShadow} />
-                            <MaterialCommunityIcons name="skip-next" size={24} color="white" />
-                          </View>
-                        </Pressable>
-                      </View>
-                    ) : null}
-                    
-                  </View>
-                </View>
+                null
               ) : isProceedMode ? (
                 /* PROCEED BUTTON */
                 <View style={styles.proceedButtonFrame}>
@@ -251,20 +186,26 @@ const GridContainer = ({
           </View>
         </View>
       </View>
-      <View style={styles.lowerGrid}>
-        <View style={styles.outerFrame}>
-          <View style={styles.innerContent}>
-            <View style={styles.innerBorder}>
-              <View style={styles.backlightOverlay} />
-              <View style={styles.topHighlight} />
-              <View style={styles.bottomShadow} />
-              <View style={styles.leftHighlight} />
-              <View style={styles.rightShadow} />
-              {lowerChildren}
+        <FadeOutWrapper 
+          fadeOutAnim={fadeOutAnim} 
+          isInRunMode={isInRunMode}
+          style={{ overflow: 'hidden' }}
+        >
+          <View style={styles.lowerGrid}>
+            <View style={styles.outerFrame}>
+              <View style={styles.innerContent}>
+                <View style={styles.innerBorder}>
+                  <View style={styles.backlightOverlay} />
+                  <View style={styles.topHighlight} />
+                  <View style={styles.bottomShadow} />
+                  <View style={styles.leftHighlight} />
+                  <View style={styles.rightShadow} />
+                  {lowerChildren}
+                </View>
+              </View>
             </View>
           </View>
-        </View>
-      </View>
+        </FadeOutWrapper>
     </View>
   );
 };
@@ -707,7 +648,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
+  
   completionListItemPressed: {
     transform: [{ scale: 0.95 }],
     shadowOffset: {
@@ -783,19 +724,86 @@ const styles = StyleSheet.create({
   },
  
 
-    runButtonContainer: {
-    backgroundColor: '#2e7d32',
-    borderTopColor: '#66bb6a',
-    borderLeftColor: '#66bb6a',
-    borderBottomColor: '#1b5e20',
-    borderRightColor: '#1b5e20',
+   runButtonFrame: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    borderRadius: RESPONSIVE.borderRadius.sm,
   },
-  homeButtonContainer: {
-    backgroundColor: '#c62828',
-    borderTopColor: '#ef5350',
-    borderLeftColor: '#ef5350',
-    borderBottomColor: '#b71c1c',
-    borderRightColor: '#b71c1c',
+
+  runListItemContainer: {
+    width: scale(80),
+    height: scale(80),
+    borderRadius: scale(12),
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: '#2e7d32',
+    borderTopWidth: scale(2),
+    borderTopColor: '#66bb6a',
+    borderLeftWidth: scale(2),
+    borderLeftColor: '#66bb6a',
+    borderBottomWidth: scale(3),
+    borderBottomColor: '#1b5e20',
+    borderRightWidth: scale(3),
+    borderRightColor: '#1b5e20',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: scale(3),
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: scale(4),
+    elevation: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  runListItemPressed: {
+    transform: [{ scale: 0.95 }],
+    shadowOffset: {
+      width: 0,
+      height: scale(1),
+    },
+    shadowOpacity: 0.2,
+  },
+
+  runInnerButton: {
+    flex: 1,
+    width: '100%',
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: scale(8),
+    backgroundColor: '#2e7d32',
+    borderTopWidth: scale(1),
+    borderTopColor: 'rgba(102, 187, 106, 0.4)',
+    borderBottomWidth: scale(1),
+    borderBottomColor: 'rgba(0, 0, 0, 0.4)',
+  },
+
+  runButtonHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '30%',
+    backgroundColor: '#2e7d32',
+    borderTopLeftRadius: scale(8),
+    borderTopRightRadius: scale(8),
+    pointerEvents: 'none',
+  },
+
+  runButtonShadow: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '15%',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderBottomLeftRadius: scale(8),
+    borderBottomRightRadius: scale(8),
+    pointerEvents: 'none',
   },
 });
 

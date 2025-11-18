@@ -44,11 +44,14 @@ const ThirdGrid = ({
   canProceed = false,
   onProceed = null,
   isLevelComplete = false,
+  showRunButton = true,
   onRetry = null,
   onHome = null,
   onNextLevel = null,
   hasNextLevel = false,
-  onCharacterRun = null
+  onCharacterRun = null, // ✅ KEEP THIS
+  fadeOutAnim = null,
+  isInRunMode = false
 }) => {
 
   if (!currentQuestion) {
@@ -204,11 +207,14 @@ const ThirdGrid = ({
       isProceedMode={canProceed && !isLevelComplete}
       onProceed={onProceed}
       isLevelComplete={isLevelComplete} 
+      showRunButton={showRunButton}
       onRetry={onRetry} 
       onHome={onHome}
       onNextLevel={onNextLevel}
       hasNextLevel={hasNextLevel}
       onRun={onCharacterRun}
+      fadeOutAnim={fadeOutAnim}
+      isInRunMode={isInRunMode}
       lowerChildren={
         <View style={{ flex: 1, position: 'relative' }}>
           {canProceed ? (
