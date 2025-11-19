@@ -150,11 +150,8 @@ const GridContainer = ({
                       onRun?.();
                     }}
                   >
-                    <View style={styles.runInnerButton}>
-                      <View style={styles.runButtonHighlight} />
-                      <View style={styles.runButtonShadow} />
-                      <MaterialCommunityIcons name="run" size={scale(48)} color="#ffffffff" />
-                    </View>
+                      <Text style={styles.proceedButtonText}>&gt;</Text>
+                
                   </Pressable>
                 </View>
               ) : isLevelComplete && !showRunButton ? (
@@ -167,7 +164,7 @@ const GridContainer = ({
                       pressed && styles.proceedListItemPressed
                     ]}
                     onPress={() => {
-                      console.log('✅ Proceeding to next challenge...');
+                      console.log(' Proceeding to next challenge...');
                       onProceed?.();
                     }}
                   >
@@ -186,7 +183,7 @@ const GridContainer = ({
         </View>
       </View>
 
-      {/* ✅ REMOVED FadeOutWrapper - Direct View rendering */}
+      {/*  REMOVED FadeOutWrapper - Direct View rendering */}
       <View style={styles.lowerGrid}>
         <View style={styles.outerFrame}>
           <View style={styles.innerContent}>
@@ -723,58 +720,87 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    marginTop: RESPONSIVE.margin.xs,
+    backgroundColor: '#000000ff',
     borderRadius: RESPONSIVE.borderRadius.sm,
+    shadowColor: '#ff6b00',
+    shadowOffset: {
+      width: 0,
+      height: scale(6),
+    },
+    shadowOpacity: 0.8,
+    shadowRadius: scale(12),
+    elevation: 16,
+    borderTopWidth: scale(1),
+    borderTopColor: 'rgba(255, 165, 0, 0.4)',
+    borderLeftWidth: scale(1),
+    borderLeftColor: 'rgba(255, 165, 0, 0.4)',
+    borderBottomWidth: scale(3),
+    borderBottomColor: 'rgba(139, 69, 19, 0.5)',
+    borderRightWidth: scale(2),
+    borderRightColor: 'rgba(139, 69, 19, 0.5)',
   },
 
   runListItemContainer: {
-    width: scale(80),
-    height: scale(80),
-    borderRadius: scale(12),
+    flex: 1,
+    width: wp(20),
+    borderRadius: RESPONSIVE.borderRadius.sm,
     position: 'relative',
     overflow: 'hidden',
-    backgroundColor: '#2e7d32',
+    backgroundColor: '#f97502ff',
     borderTopWidth: scale(2),
-    borderTopColor: '#66bb6a',
+    borderTopColor: '#ffb84d',
     borderLeftWidth: scale(2),
-    borderLeftColor: '#66bb6a',
+    borderLeftColor: '#ffb84d',
     borderBottomWidth: scale(3),
-    borderBottomColor: '#1b5e20',
+    borderBottomColor: '#cc6600',
     borderRightWidth: scale(3),
-    borderRightColor: '#1b5e20',
-    shadowColor: '#000',
+    borderRightColor: '#cc6600',
+    shadowColor: '#ff6b00',
     shadowOffset: {
       width: 0,
-      height: scale(3),
+      height: scale(4),
     },
-    shadowOpacity: 0.3,
-    shadowRadius: scale(4),
-    elevation: 8,
+    shadowOpacity: 0.6,
+    shadowRadius: scale(8),
+    elevation: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   runListItemPressed: {
-    transform: [{ scale: 0.95 }],
+    transform: [{ translateY: scale(0.5) }],
     shadowOffset: {
       width: 0,
-      height: scale(1),
+      height: scale(2),
     },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.4,
+    borderTopWidth: scale(3),
+    borderTopColor: '#cc6600',
+    borderLeftWidth: scale(3),
+    borderLeftColor: '#cc6600',
+    borderBottomWidth: scale(1),
+    borderBottomColor: '#ffb84d',
+    borderRightWidth: scale(1),
+    borderRightColor: '#ffb84d',
   },
 
   runInnerButton: {
-    flex: 1,
-    width: '100%',
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: scale(8),
-    backgroundColor: '#2e7d32',
+    borderRadius: RESPONSIVE.borderRadius.xs,
+    paddingVertical: scale(24),
+    paddingHorizontal: scale(36),
+    backgroundColor: '#d95c00',
     borderTopWidth: scale(1),
-    borderTopColor: 'rgba(102, 187, 106, 0.4)',
+    borderTopColor: 'rgba(255, 255, 255, 0.3)',
+    borderLeftWidth: scale(1),
+    borderLeftColor: 'rgba(255, 255, 255, 0.2)',
     borderBottomWidth: scale(1),
-    borderBottomColor: 'rgba(0, 0, 0, 0.4)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.3)',
+    borderRightWidth: scale(1),
+    borderRightColor: 'rgba(0, 0, 0, 0.2)',
   },
 
   runButtonHighlight: {
@@ -782,10 +808,10 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: '30%',
-    backgroundColor: '#2e7d32',
-    borderTopLeftRadius: scale(8),
-    borderTopRightRadius: scale(8),
+    height: '40%',
+    backgroundColor: 'rgba(255, 200, 100, 0.25)',
+    borderTopLeftRadius: RESPONSIVE.borderRadius.xs,
+    borderTopRightRadius: RESPONSIVE.borderRadius.xs,
     pointerEvents: 'none',
   },
 
@@ -794,10 +820,10 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: '15%',
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    borderBottomLeftRadius: scale(8),
-    borderBottomRightRadius: scale(8),
+    height: '30%',
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    borderBottomLeftRadius: RESPONSIVE.borderRadius.xs,
+    borderBottomRightRadius: RESPONSIVE.borderRadius.xs,
     pointerEvents: 'none',
   },
 });

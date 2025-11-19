@@ -40,11 +40,11 @@ const GameOverModal = ({
   const bounceAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
   const scanLineAnim = useRef(new Animated.Value(0)).current;
-  // ✅ Changed to drop animations for buttons
+  //  Changed to drop animations for buttons
   const retryButtonDrop = useRef(new Animated.Value(-SCREEN_HEIGHT)).current;
   const homeButtonDrop = useRef(new Animated.Value(-SCREEN_HEIGHT)).current;
 
-  // ✅ Fixed useEffect to prevent scheduling updates during render
+  //  Fixed useEffect to prevent scheduling updates during render
   useEffect(() => {
     let animationTimeout;
     
@@ -64,7 +64,7 @@ const GameOverModal = ({
     };
   }, [visible]);
 
-  // ✅ Smooth continuous animations
+  //  Smooth continuous animations
   const startContinuousAnimations = () => {
     // Glow animation
     Animated.loop(
@@ -103,7 +103,7 @@ const GameOverModal = ({
     ).start();
   };
 
-  // ✅ Much smoother entrance animation
+  //  Much smoother entrance animation
   const startEntranceAnimation = () => {
     setIsAnimating(true);
     
@@ -114,11 +114,11 @@ const GameOverModal = ({
     slideAnim.setValue(-200);
     backgroundOpacityAnim.setValue(0);
     bounceAnim.setValue(0);
-    // ✅ Reset button drops
+    //  Reset button drops
     retryButtonDrop.setValue(-SCREEN_HEIGHT);
     homeButtonDrop.setValue(-SCREEN_HEIGHT);
 
-    // ✅ Staggered smooth entrance
+    //  Staggered smooth entrance
     Animated.parallel([
       // Background fade in
       Animated.timing(backgroundOpacityAnim, {
@@ -170,7 +170,7 @@ const GameOverModal = ({
         })
       ]),
 
-      // ✅ Button dropping animations with stagger and bounce
+      //  Button dropping animations with stagger and bounce
       Animated.sequence([
         Animated.delay(800),
         Animated.parallel([
@@ -203,13 +203,13 @@ const GameOverModal = ({
     bounceAnim.setValue(0);
     glowAnim.setValue(0);
     scanLineAnim.setValue(0);
-    // ✅ Reset button drops
+    //  Reset button drops
     retryButtonDrop.setValue(-SCREEN_HEIGHT);
     homeButtonDrop.setValue(-SCREEN_HEIGHT);
     setIsAnimating(false);
   };
 
-  // ✅ Smooth interpolations
+  //  Smooth interpolations
   const rotateInterpolate = rotateAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['20deg', '0deg'],
@@ -261,7 +261,7 @@ const GameOverModal = ({
           ]}
         >
           <View style={styles.outerBorder}>
-            {/* ✅ Animated antenna with glow */}
+            {/*  Animated antenna with glow */}
             <Animated.Image 
               style={[
                 styles.antenna,
@@ -299,7 +299,7 @@ const GameOverModal = ({
                 >
                   <View style={styles.techGrid} />
 
-                  {/* ✅ Animated scan line */}
+                  {/*  Animated scan line */}
                   <Animated.View 
                     style={[
                       styles.scanLine,
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent', // ✅ Transparent to show gameplay behind
+    backgroundColor: 'transparent', //  Transparent to show gameplay behind
     zIndex: 99999,
     elevation: 99999,
   },
