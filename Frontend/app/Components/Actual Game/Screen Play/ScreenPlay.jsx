@@ -129,8 +129,9 @@ const ScreenPlay = ({
       console.log('🏃 Step 3: Enemy running away');
       setEnemyAnimationStates(prev => prev.map(() => 'run'));
 
+      // ✅ Wait for run animation + fade-out to complete (2.7s total)
       enemyRunTimeoutsRef.current.complete = setTimeout(() => {
-        console.log('👻 Step 4: Enemy run complete - animation finished');
+        console.log('👻 Step 4: Enemy run + fade-out complete');
 
         if (animationCompleteNotifiedRef.current) {
           console.log('⚠️ Animation complete already notified, skipping duplicate');
@@ -148,7 +149,7 @@ const ScreenPlay = ({
 
         // Clear all timeouts
         enemyRunTimeoutsRef.current = {};
-      }, 2700); 
+      }, 3000); // ✅ Increased from 2700ms to 3000ms to match run animation (1200ms) + fade-out (300ms) + buffer
     }, 1000); 
   }, 1500);
 }, [onSubmissionAnimationComplete]);
