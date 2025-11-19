@@ -1,11 +1,10 @@
-import { PrismaClient, BattleStatus, QuestType } from "@prisma/client";
+import { prisma } from "../../../prisma/client";
+import { BattleStatus, QuestType } from "@prisma/client";
 import * as EnergyService from "../Energy/energy.service";
 import * as LevelService from "../Levels/levels.service";
 import { updateQuestProgress } from "../Quests/quests.service";
 import { formatTimer } from "../../../helper/dateTimeHelper";
 import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
-
-const prisma = new PrismaClient();
 
 const ENEMY_HEALTH = 30;
 const BOSS_ENEMY_HEALTH = 30;

@@ -1,43 +1,84 @@
-import { PrismaClient, QuestType } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { QuestType } from "@prisma/client";
+import { prisma } from "../../../prisma/client";
 
 export async function updateQuestProgress(
   playerId: number,
   type: QuestType,
   increment: number
 ) {
-  return await prisma.$transaction(async (tx) => {
-    const playerQuests = await tx.playerQuest.findMany({
-      where: {
-        player_id: playerId,
-        quest: { objective_type: type },
-        is_completed: false,
+  console.log("🎯 updateQuestProgress called:", { playerId, type, increment });
+
+  const allQuests = await prisma.playerQuest.findMany({
+    where: {
+      player_id: playerId,
+      quest: { objective_type: type },
+    },
+    include: { quest: true },
+  });
+
+  console.log(
+    "📊 ALL quests for player (including completed):",
+    allQuests.map((q) => ({
+      player_quest_id: q.player_quest_id,
+      quest_id: q.quest_id,
+      title: q.quest.title,
+      current_value: q.current_value,
+      target_value: q.quest.target_value,
+      is_completed: q.is_completed,
+      is_claimed: q.is_claimed,
+    }))
+  );
+
+  const playerQuests = await prisma.playerQuest.findMany({
+    where: {
+      player_id: playerId,
+      quest: { objective_type: type },
+      is_completed: false,
+    },
+    include: { quest: true },
+  });
+
+  console.log(
+    "📋 Found INCOMPLETE quests:",
+    playerQuests.length,
+    playerQuests.map((q) => ({
+      quest_id: q.quest_id,
+      title: q.quest.title,
+      current_value: q.current_value,
+      target_value: q.quest.target_value,
+    }))
+  );
+
+  const results = [];
+
+  for (const pq of playerQuests) {
+    const newValue = Math.max(0, pq.current_value + increment);
+    const completed = newValue >= pq.quest.target_value;
+
+    console.log(
+      `  ➡️ Updating quest ${pq.quest.title}: ${pq.current_value} → ${newValue} (target: ${pq.quest.target_value})`
+    );
+
+    const updatedPQ = await prisma.playerQuest.update({
+      where: { player_quest_id: pq.player_quest_id },
+      data: {
+        current_value: newValue,
+        is_completed: completed,
+        completed_at: completed ? new Date() : null,
       },
       include: { quest: true },
     });
 
-    const results = [];
+    console.log(`  ✅ Updated successfully: ${updatedPQ.current_value}`);
+    results.push(updatedPQ);
+  }
 
-    for (const pq of playerQuests) {
-      const newValue = Math.max(0, pq.current_value + increment);
-      const completed = newValue >= pq.quest.target_value;
-
-      const updatedPQ = await tx.playerQuest.update({
-        where: { player_quest_id: pq.player_quest_id },
-        data: {
-          current_value: newValue,
-          is_completed: completed,
-          completed_at: completed ? new Date() : null,
-        },
-        include: { quest: true },
-      });
-
-      results.push(updatedPQ);
-    }
-
-    return results;
-  });
+  console.log(
+    "🎯 updateQuestProgress completed, updated",
+    results.length,
+    "quests"
+  );
+  return results;
 }
 
 export async function claimQuestReward(playerId: number, questId: number) {

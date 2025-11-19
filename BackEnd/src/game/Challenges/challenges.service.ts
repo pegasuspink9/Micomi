@@ -384,35 +384,33 @@ export const submitChallengeService = async (
 
   let completionRewards: CompletionRewards | undefined = undefined;
   let nextLevel: SubmitChallengeControllerResult["nextLevel"] = null;
-  const wasFirstCompletion = allCompleted && !freshProgress?.is_completed;
+
+  console.log("🔍 COMPLETION CHECK:");
+  console.log("- allCompleted:", allCompleted);
+  console.log("- freshProgress?.is_completed:", freshProgress?.is_completed);
 
   if (allCompleted) {
-    if (wasFirstCompletion) {
-      await prisma.playerProgress.update({
-        where: { progress_id: currentProgress.progress_id },
-        data: {
-          is_completed: true,
-          completed_at: new Date(),
-          has_strong_effect: false,
-          has_freeze_effect: false,
-        },
-      });
+    // Always show the standard completion message
+    completionRewards = {
+      feedbackMessage:
+        level.feedback_message ?? `You completed Level ${level.level_number}!`,
+      coinsEarned: freshProgress?.coins_earned ?? 0,
+      totalPointsEarned: freshProgress?.total_points_earned ?? 0,
+      totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
+    };
 
-      completionRewards = {
-        feedbackMessage:
-          level.feedback_message ??
-          `You completed Level ${level.level_number}!`,
-      };
+    // Get the next level info
+    const nextLevelData = await prisma.level.findFirst({
+      where: {
+        map_id: level.map_id,
+        level_number: level.level_number + 1,
+      },
+    });
 
-      nextLevel = await LevelService.unlockNextLevel(
-        playerId,
-        level.map_id,
-        level.level_number
-      );
-    } else {
-      const baseMessage = `You've mastered Level ${level.level_number}!`;
-      completionRewards = {
-        feedbackMessage: `${baseMessage} This level was already completed, so no additional rewards are given—great job practicing and honing your skills!`,
+    if (nextLevelData) {
+      nextLevel = {
+        level_id: nextLevelData.level_id,
+        level_number: nextLevelData.level_number,
       };
     }
   }

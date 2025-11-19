@@ -4,7 +4,7 @@ import { io } from "../../index";
 export const checkAchievements = async (playerId: number) => {
   const player = await prisma.player.findUnique({
     where: { player_id: playerId },
-    select: { days_logged_in: true, total_points: true },
+    select: { days_logged_in: true, exp_points: true },
   });
   if (!player) throw new Error("Player not found");
 
@@ -20,7 +20,11 @@ export const checkAchievements = async (playerId: number) => {
     prisma.achievement.findMany(),
     prisma.playerAchievement.findMany({
       where: { player_id: playerId },
-      select: { achievement_id: true },
+      select: {
+        player_achievement_id: true,
+        achievement_id: true,
+        is_owned: true,
+      },
     }),
     prisma.map.findMany({
       include: { levels: { select: { level_id: true } } },
@@ -38,13 +42,15 @@ export const checkAchievements = async (playerId: number) => {
     prisma.playerPotion.findMany({ where: { player_id: playerId } }),
   ]);
 
-  const leaderboardRank = player.total_points
+  const leaderboardRank = player.exp_points
     ? await prisma.player
         .count({
-          where: { total_points: { gt: player.total_points } },
+          where: { exp_points: { gt: player.exp_points } },
         })
         .then((count) => count + 1)
     : null;
+
+  console.log(`Player ${playerId} rank: ${leaderboardRank}`);
 
   const purchasedCharacters = ownedCharacters;
   const potionCount = ownedPotions.reduce(
@@ -80,35 +86,25 @@ export const checkAchievements = async (playerId: number) => {
 
   const hasCompletedMap = (mapName: string): boolean => {
     const finalLevel = finalLevels.find((l) => l.map.map_name === mapName);
-    if (!finalLevel) return false;
-
-    return finalLevel.playerProgress.length > 0;
+    return !!finalLevel && finalLevel.playerProgress.length > 0;
   };
 
   const hasCompletedAllMaps = (): boolean => {
     return maps.every((m) => {
       const finalLevel = finalLevels.find((l) => l.map.map_id === m.map_id);
-      return finalLevel && finalLevel.playerProgress.length > 0;
+      return !!finalLevel && finalLevel.playerProgress.length > 0;
     });
   };
 
-  const earnedAchievementIds = new Set(
-    existingPlayerAchievements.map(
-      (a: { achievement_id: number }) => a.achievement_id
-    )
-  );
-
-  const awards: {
-    player_id: number;
-    achievement_id: number;
-    earned_at: Date;
-    is_owned: boolean;
-  }[] = [];
+  const newlyUnlockedForEmit: any[] = [];
 
   for (const achievement of achievements) {
-    if (earnedAchievementIds.has(achievement.achievement_id)) continue;
+    const existing = existingPlayerAchievements.find(
+      (pa) => pa.achievement_id === achievement.achievement_id
+    );
 
     let shouldAward = false;
+
     switch (achievement.achievement_name) {
       case "HTML Hero":
         shouldAward = hasCompletedMap("HTML");
@@ -145,26 +141,51 @@ export const checkAchievements = async (playerId: number) => {
     }
 
     if (shouldAward) {
-      awards.push({
-        player_id: playerId,
-        achievement_id: achievement.achievement_id,
-        earned_at: new Date(),
-        is_owned: true,
-      });
+      if (existing) {
+        if (!existing.is_owned) {
+          await prisma.playerAchievement.update({
+            where: { player_achievement_id: existing.player_achievement_id },
+            data: {
+              is_owned: true,
+              earned_at: new Date(),
+            },
+          });
+
+          newlyUnlockedForEmit.push({
+            achievement_id: achievement.achievement_id,
+            achievement_name: achievement.achievement_name,
+            badge_icon: achievement.badge_icon || null,
+          });
+        }
+      } else {
+        await prisma.playerAchievement.create({
+          data: {
+            player_id: playerId,
+            achievement_id: achievement.achievement_id,
+            earned_at: new Date(),
+            is_owned: true,
+          },
+        });
+
+        newlyUnlockedForEmit.push({
+          achievement_id: achievement.achievement_id,
+          achievement_name: achievement.achievement_name,
+          badge_icon: achievement.badge_icon || null,
+        });
+      }
     }
   }
 
-  if (awards.length > 0) {
-    await prisma.playerAchievement.createMany({
-      data: awards,
-      skipDuplicates: true,
-    });
+  if (newlyUnlockedForEmit.length > 0) {
+    io.to(playerId.toString()).emit(
+      "achievementUnlocked",
+      newlyUnlockedForEmit
+    );
   }
 
-  io.to(playerId.toString()).emit("achievementUnlocked", awards);
-
-  return prisma.playerAchievement.findMany({
+  return await prisma.playerAchievement.findMany({
     where: { player_id: playerId },
     include: { achievement: true },
+    orderBy: { earned_at: "asc" },
   });
 };

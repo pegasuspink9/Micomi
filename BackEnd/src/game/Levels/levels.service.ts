@@ -807,7 +807,7 @@ export const completeMicomiLevel = async (
       level_type: level.level_type,
       level_title: level.level_title,
     },
-    unlockedNextLevel: nextLevel
+    nextLevel: nextLevel
       ? {
           level_id: nextLevel.level_id,
           level_number: nextLevel.level_number,
@@ -912,7 +912,7 @@ export const completeShopLevel = async (playerId: number, levelId: number) => {
       level_type: level.level_type,
       level_title: level.level_title,
     },
-    unlockedNextLevel: nextLevel
+    nextLevel: nextLevel
       ? {
           level_id: nextLevel.level_id,
           level_number: nextLevel.level_number,
