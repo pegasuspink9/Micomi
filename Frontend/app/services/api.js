@@ -1,6 +1,6 @@
 // Try different possible backend U
 const POSSIBLE_BACKEND_URLS = [
-  'http://172.26.146.202:3000'
+  'http://192.168.254.118:3000'
 ];
 
 class ApiService {

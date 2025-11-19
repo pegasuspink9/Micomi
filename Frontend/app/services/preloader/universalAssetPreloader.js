@@ -25,26 +25,29 @@ class UniversalAssetPreloader {
 
   // ✅ Generate local file path for asset
   getLocalFilePath(url, category = 'general') {
-    const urlParts = url.split('/');
-    const fileName = urlParts.pop().split('?')[0] || `asset_${Date.now()}`;
-    
-    // Handle different hosts and ensure proper file extensions
-    let finalFileName = fileName;
-    if (!fileName.includes('.')) {
-       if (url.includes('cloudinary')) {
-        finalFileName += '.png'; // Cloudinary usually serves images
-      } else if (url.includes('github')) {  
-        finalFileName += '.png'; // GitHub assets are typically images
-      } else if (url.includes('r2.dev')) {
-        finalFileName += '.png'; 
-      } else if (url.includes('lottie')) {
-        finalFileName += '.json'; // Lottie files
-      } else {
-        finalFileName += '.png'; // Default to PNG
-      }
+  const urlParts = url.split('/');
+  
+  // ✅ Use more of the URL path to ensure uniqueness
+  const pathSegments = urlParts.slice(-3); // Take last 3 segments: ['Hero', 'Gino', 'idle.png']
+  const fileName = pathSegments.join('_').split('?')[0]; // 'Hero_Gino_idle.png'
+  
+  // Handle different hosts and ensure proper file extensions
+  let finalFileName = fileName;
+  if (!fileName.includes('.')) {
+    if (url.includes('cloudinary')) {
+      finalFileName += '.png';
+    } else if (url.includes('github')) {  
+      finalFileName += '.png';
+    } else if (url.includes('r2.dev')) {
+      finalFileName += '.png'; 
+    } else if (url.includes('lottie')) {
+      finalFileName += '.json';
+    } else {
+      finalFileName += '.png';
     }
-    
-    return `${this.cacheDirectory}${category}/${finalFileName}`;
+  }
+  
+  return `${this.cacheDirectory}${category}/${finalFileName}`;
   }
 
 async downloadSingleAsset(url, category = 'general', onProgress = null, retries = 2) {

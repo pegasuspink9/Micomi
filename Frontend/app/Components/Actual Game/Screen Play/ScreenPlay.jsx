@@ -129,7 +129,7 @@ const ScreenPlay = ({
       console.log('🏃 Step 3: Enemy running away');
       setEnemyAnimationStates(prev => prev.map(() => 'run'));
 
-      // ✅ Wait for run animation + fade-out to complete (2.7s total)
+      //  Wait for run animation + fade-out to complete (2.7s total)
       enemyRunTimeoutsRef.current.complete = setTimeout(() => {
         console.log('👻 Step 4: Enemy run + fade-out complete');
 
@@ -149,7 +149,7 @@ const ScreenPlay = ({
 
         // Clear all timeouts
         enemyRunTimeoutsRef.current = {};
-      }, 3000); // ✅ Increased from 2700ms to 3000ms to match run animation (1200ms) + fade-out (300ms) + buffer
+      }, 3000); //  Increased from 2700ms to 3000ms to match run animation (1200ms) + fade-out (300ms) + buffer
     }, 1000); 
   }, 1500);
 }, [onSubmissionAnimationComplete]);
@@ -168,7 +168,7 @@ const ScreenPlay = ({
   useEffect(() => {
   const fightResult = gameState?.submissionResult?.fightResult;
 
-  // ✅ NEW: Create unique submission ID including timestamp to prevent duplicates
+  //  NEW: Create unique submission ID including timestamp to prevent duplicates
   const submissionId = fightResult ? 
     `${gameState?.currentChallenge?.id}-${fightResult.status}-${fightResult.character?.character_health}-${fightResult.enemy?.enemy_health}` 
     : null;
@@ -532,53 +532,44 @@ useEffect(() => {
     }
   }, [characterAnimations, characterAnimationState, isPlayingSubmissionAnimation, playerHealth, playerMaxHealth, enemyHealth, enemyMaxHealth]);
 
+  const enemyAnimations = useMemo(() => {
+  //  Get the enemy data - prioritize API data
+  const enemy = gameState.submissionResult?.fightResult?.enemy || gameState.enemy;
   
-        const enemyAnimations = useMemo(() => ({
-          character_idle:
-            gameState.submissionResult?.fightResult?.enemy?.enemy_idle ??
-            gameState.enemy?.enemy_idle ??
-            enemies[0]?.character_idle ??
-            enemies[0]?.enemy_idle ??
-            enemies[0]?.idle,
-          character_attack:
-            gameState.submissionResult?.fightResult?.enemy?.enemy_attack ??
-            gameState.enemy?.enemy_attack ??
-            enemies[0]?.character_attack ??
-            enemies[0]?.enemy_attack ??
-            enemies[0]?.attack,
-          character_hurt:
-            gameState.submissionResult?.fightResult?.enemy?.enemy_hurt ??
-            gameState.enemy?.enemy_hurt ??
-            enemies[0]?.character_hurt ??
-            enemies[0]?.enemy_hurt ??
-            enemies[0]?.hurt,
-           character_run:
-            gameState.submissionResult?.fightResult?.enemy?.enemy_run ??
-            gameState.enemy?.enemy_run ??
-            enemies[0]?.character_run ??
-            enemies[0]?.enemy_run ??
-            enemies[0]?.run ??
-            'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Enemies/Greenland/Dragorn/run_aljsxb.png',
-          character_dies:
-            gameState.submissionResult?.fightResult?.enemy?.enemy_dies ??
-            gameState.enemy?.enemy_dies ??
-            enemies[0]?.character_dies ??
-            enemies[0]?.enemy_dies ??
-            enemies[0]?.dies,
-          enemy_health: enemyHealth
-        }), [gameState, enemies, enemyHealth]);
+  if (!enemy) {
+    console.warn('⚠️ No enemy data available');
+    return {
+      character_idle: null,
+      character_attack: null,
+      character_hurt: null,
+      character_run: null,
+      character_dies: null,
+      enemy_health: enemyHealth
+    };
+  }
+  
+  console.log('🦹 Using enemy animations:', {
+    enemyName: enemy.enemy_name,
+    idle: enemy.enemy_idle?.slice?.(-40),
+    attack: enemy.enemy_attack?.slice?.(-40),
+    hurt: enemy.enemy_hurt?.slice?.(-40),
+    run: enemy.enemy_run?.slice?.(-40),
+    dies: enemy.enemy_dies?.slice?.(-40),
+  });
 
-        useEffect(() => {
-          console.log('🦹 Enemy animations loaded:', {
-            idle: !!enemyAnimations.character_idle,
-            attack: !!enemyAnimations.character_attack,
-            hurt: !!enemyAnimations.character_hurt,
-            run: !!enemyAnimations.character_run,
-            runUrl: enemyAnimations.character_run?.slice(-50),
-            dies: !!enemyAnimations.character_dies,
-          });
-        }, [enemyAnimations]);
-
+  return {
+    character_idle: enemy.enemy_idle,
+    character_attack: enemy.enemy_attack,
+    character_hurt: enemy.enemy_hurt,
+    character_run: enemy.enemy_run || 'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Enemies/Greenland/Dragorn/run_aljsxb.png',
+    character_dies: enemy.enemy_dies,
+    enemy_health: enemyHealth
+  };
+}, [
+  gameState.submissionResult?.fightResult?.enemy,
+  gameState.enemy,
+  enemyHealth
+]);
 
   return (
     <GameContainer borderColor={borderColor}>

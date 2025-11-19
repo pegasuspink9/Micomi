@@ -15,17 +15,15 @@ export const useGameData = (playerId, levelId) => {
   const [loadingPotions, setLoadingPotions] = useState(false);
   const [usingPotion, setUsingPotion] = useState(false);
 
-
-  
   const [animationsLoading, setAnimationsLoading] = useState(true);
   const [downloadProgress, setDownloadProgress] = useState({ loaded: 0, total: 0, progress: 0, currentUrl: '' });
   const [individualAnimationProgress, setIndividualAnimationProgress] = useState({ url: '', progress: 0 });
 
-
   const pendingSubmissionRef = useRef(null);
   const animationTimeoutRef = useRef(null);
+  const lastProcessedSubmissionRef = useRef(null);
 
-   const handleDownloadProgress = useCallback((progress) => {
+  const handleDownloadProgress = useCallback((progress) => {
     setDownloadProgress({
       ...progress,
       currentUrl: progress.currentAsset?.name || progress.currentUrl?.slice(-30) || ''
@@ -63,8 +61,8 @@ export const useGameData = (playerId, levelId) => {
       const responseData = await gameService.enterLevel(
         playerId, 
         levelId, 
-        handleAnimationProgress, // Individual animation progress
-        handleDownloadProgress  // Overall download progress
+        handleAnimationProgress,
+        handleDownloadProgress
       );
       
       if (!responseData) {
@@ -89,7 +87,6 @@ export const useGameData = (playerId, levelId) => {
       setGameState(unifiedState);
       console.log('🎮 Game data loaded successfully');
       
-      //  Check download results
       if (responseData.downloadStats) {
         const { downloaded, total, failedUrls } = responseData.downloadStats;
         console.log(`📥 Animation download completed: ${downloaded}/${total}`);
@@ -113,8 +110,7 @@ export const useGameData = (playerId, levelId) => {
     }
   };
 
-
-const submitAnswer = async (selectedAnswers) => {
+  const submitAnswer = async (selectedAnswers) => {
     if (!gameState?.currentChallenge || !playerId || !levelId) {
       console.error('Missing required data for submission');
       return { success: false, error: 'Missing required data' };
@@ -128,7 +124,7 @@ const submitAnswer = async (selectedAnswers) => {
     try {
       setSubmitting(true);
       setError(null);
-      setCanProceed(false); // Reset proceed state
+      setCanProceed(false);
       
       console.log(`Submitting answer for challenge ${gameState.currentChallenge.id}:`, selectedAnswers);
       
@@ -150,14 +146,6 @@ const submitAnswer = async (selectedAnswers) => {
       }
 
       console.log('Submission processed, starting animation sequence...');
-
-      const challengeChanged = updatedState.currentChallenge?.id !== gameState.currentChallenge.id;
-      
-      console.log('🔍 Challenge check:', {
-        previousId: gameState.currentChallenge.id,
-        newId: updatedState.currentChallenge?.id,
-        hasChanged: challengeChanged
-      });
 
       pendingSubmissionRef.current = updatedState;
       setWaitingForAnimation(true);
@@ -194,11 +182,9 @@ const submitAnswer = async (selectedAnswers) => {
     }
   };
 
-  const lastProcessedSubmissionRef = useRef(null);
-
   const handleAnimationComplete = useCallback(() => {
   console.log('Animation sequence completed, processing next challenge...');
-   
+  
   setWaitingForAnimation(false);
   
   if (animationTimeoutRef.current) {
@@ -214,14 +200,15 @@ const submitAnswer = async (selectedAnswers) => {
   console.log('Processing pending submission result');
   const pendingData = pendingSubmissionRef.current;
 
-  const submissionId = `${pendingData.submissionResult?.fightResult?.character?.character_health}-${pendingData.submissionResult?.fightResult?.enemy?.enemy_health}`;
+  //  FIX: Use challenge ID + timestamp for unique submission IDs
+  const submissionId = `${pendingData.currentChallenge?.id || 'unknown'}-${Date.now()}-${pendingData.submissionResult?.fightResult?.character?.character_health}-${pendingData.submissionResult?.fightResult?.enemy?.enemy_health}`;
 
   if (lastProcessedSubmissionRef.current === submissionId) {
     console.log('⚠️ Submission already processed - skipping duplicate handling');
     pendingSubmissionRef.current = null;
     return;
   }
-  
+
   const levelWon = pendingData.submissionResult?.fightResult?.status === 'won' && 
                    pendingData.submissionResult?.fightResult?.enemy?.enemy_health === 0;
 
@@ -234,10 +221,22 @@ const submitAnswer = async (selectedAnswers) => {
     isCorrect: isCorrect,
     levelLost: levelLost,
     levelWon: levelWon,
-    hasNextChallenge: !!pendingData.currentChallenge?.id
+    hasNextChallenge: !!pendingData.currentChallenge?.id,
+    nextChallengeId: pendingData.currentChallenge?.id,
+    submissionId: submissionId,
   });
 
-  // ✅ CRITICAL: Handle level lost FIRST - CLEAR ref and EXIT immediately
+  const nextChallenge = pendingData.currentChallenge;
+  const nextChallengeCard = pendingData.card;
+
+  console.log('📸 Card info from submission response:', {
+    challengeId: nextChallenge?.id,
+    card: nextChallengeCard,
+    isCorrect: isCorrect,
+    levelWon: levelWon,
+  });
+
+  // CRITICAL: Handle level lost FIRST
   if (levelLost) {
     console.log('💀 Level lost! Clearing pending ref and exiting');
     lastProcessedSubmissionRef.current = submissionId;
@@ -251,15 +250,12 @@ const submitAnswer = async (selectedAnswers) => {
       fightResult: pendingData.fightResult || prevState.fightResult,
     }));
     
-    // ✅ CLEAR IMMEDIATELY before ANY other code runs
     pendingSubmissionRef.current = null;
-    
-    // ✅ EXIT EARLY - stop ALL processing
     console.log('💀 Level lost handling complete - exiting handler');
     return;
   }
 
-  // ✅ CRITICAL: Handle level won SECOND - CLEAR ref and EXIT immediately  
+  // CRITICAL: Handle level won SECOND
   if (levelWon) {
     console.log('🎉 Level won! Clearing pending ref and exiting');
     lastProcessedSubmissionRef.current = submissionId;
@@ -273,27 +269,38 @@ const submitAnswer = async (selectedAnswers) => {
       fightResult: pendingData.fightResult || prevState.fightResult,
     }));
     
-    // ✅ CLEAR IMMEDIATELY before ANY other code runs
     pendingSubmissionRef.current = null;
-    
-    // ✅ EXIT EARLY - stop ALL processing
     console.log('🎉 Level won handling complete - exiting handler');
     return;
   }
 
-  // ✅ Only reach here if NOT lost and NOT won - process next challenge
+  // Handle correct answer
   if (isCorrect) {
-    const nextChallenge = pendingData.currentChallenge;
-    const nextChallengeCard = pendingData.card;
-    
+    //  Check if this is the LAST challenge (no next challenge)
     if (!nextChallenge || !nextChallenge.id) {
-      console.log('⚠️ No next challenge available - staying on current state');
+      console.log(' No next challenge available - this was the final challenge');
+      console.log('🎉 All challenges completed! Setting canProceed for level completion');
+      
+      lastProcessedSubmissionRef.current = submissionId;
+      setCanProceed(true);  //  Allow proceeding to level completion screen
+      
+      //  CLEAR ANIMATIONS - No next challenge, so null the current challenge to stop animations
+      setGameState(prevState => ({
+        ...prevState,
+        submissionResult: pendingData.submissionResult,
+        selectedCharacter: pendingData.selectedCharacter || prevState.selectedCharacter,
+        enemy: pendingData.enemy || prevState.enemy,
+        fightResult: pendingData.fightResult || prevState.fightResult,
+        currentChallenge: null, //  Clear current challenge to prevent animation redisplay
+        nextChallengeData: null, //  Ensure no next challenge data
+      }));
+      
       pendingSubmissionRef.current = null;
       return;
     }
     
     lastProcessedSubmissionRef.current = submissionId;
-    console.log('✅ Proceeding to next challenge after correct answer');
+    console.log(' Proceeding to next challenge after correct answer');
     setCanProceed(true);
     
     setGameState(prevState => ({
@@ -311,11 +318,16 @@ const submitAnswer = async (selectedAnswers) => {
     }));
   } else {
     // Wrong answer - proceed to next challenge
-    const nextChallenge = pendingData.currentChallenge;
-    const nextChallengeCard = pendingData.card;
-    
     if (!nextChallenge || !nextChallenge.id) {
-      console.log('⚠️ No next challenge available - staying on current state');
+      console.log('⚠️ No next challenge available after wrong answer - clearing animations');
+      
+      //  CLEAR ANIMATIONS - No next challenge available
+      setGameState(prevState => ({
+        ...prevState,
+        currentChallenge: null, //  Clear current challenge
+        nextChallengeData: null, //  Clear next challenge data
+      }));
+      
       pendingSubmissionRef.current = null;
       return;
     }
@@ -336,134 +348,59 @@ const submitAnswer = async (selectedAnswers) => {
     setCanProceed(false);
   }
   
-  // ✅ Clear at the very end, only if we processed a next challenge
   pendingSubmissionRef.current = null;
 }, []);
 
- const handleProceed = useCallback(async () => {
-  if (!canProceed) {
-    console.log('Cannot proceed - answer was not correct');
-    return;
-  }
-
-  try {
-    setCanProceed(false);
-    setGameState(prevState => {
-      const nextChallenge = prevState.nextChallengeData;
-      
-      if (nextChallenge) {
-        console.log('User proceeding to next challenge:', {
-          challengeId: nextChallenge.id,
-          card: nextChallenge.card,
-          enemy: nextChallenge.enemy,
-        });
-        
-        // First clear submissionResult to trigger card display
-        return {
-          ...prevState,
-          submissionResult: null,
-          currentChallenge: nextChallenge,
-          card: nextChallenge.card, // Load the card that belongs to THIS challenge
-          enemy: nextChallenge.enemy || prevState.enemy,
-          selectedCharacter: nextChallenge.selectedCharacter || prevState.selectedCharacter,
-          fightResult: nextChallenge.fightResult || prevState.fightResult,
-          nextChallengeData: null, // Clear stored next challenge data
-        };
-      }
-      
-      return prevState;
-    });
-    
-    pendingSubmissionRef.current = null;
-  } catch (err) {
-    console.error('Error proceeding:', err);
-    setCanProceed(true);
-  }
-}, [canProceed]);
-
-  useEffect(() => {
-    return () => {
-      if (animationTimeoutRef.current) {
-        clearTimeout(animationTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    fetchGameData();
-  }, [playerId, levelId]);
-
-    useEffect(() => {
-    const submissionResult = gameState?.submissionResult;
-    const fightResult = submissionResult?.fightResult;
-    
-    console.log('🎉 Level Completion Check:', {
-      status: fightResult?.status, 
-      enemyHealth: fightResult?.enemy?.enemy_health,
-      hasCompletionRewards: !!submissionResult?.completionRewards,
-      hasNextLevel: !!submissionResult?.nextLevel,
-    });
-
-    // Show completion buttons when enemy is defeated
-    if (fightResult?.status === 'won' &&
-        fightResult?.enemy?.enemy_health === 0) {
-      
-      console.log('🎉 Level completed - hiding proceed button, showing completion buttons');
-      setCanProceed(false); // NEW: Explicitly set to false
-      // isLevelComplete will be handled in GamePlay component
+  const handleProceed = useCallback(async () => {
+    if (!canProceed) {
+      console.log('Cannot proceed yet');
+      return;
     }
-  }, [gameState?.submissionResult?.fightResult]);
 
+    const nextChallengeData = gameState?.nextChallengeData;
+
+    if (!nextChallengeData) {
+      console.log(' All challenges completed! Level finished');
+      return;
+    }
+
+    console.log('Proceeding to next challenge:', nextChallengeData.id);
+    
+    setCanProceed(false);
+    setGameState(prevState => ({
+      ...prevState,
+      currentChallenge: nextChallengeData,
+      card: nextChallengeData.card,
+      submissionResult: null,
+      nextChallengeData: null,
+    }));
+  }, [canProceed, gameState?.nextChallengeData]);
 
   const retryLevel = useCallback(async () => {
     try {
-      lastProcessedSubmissionRef.current = null;
       console.log(`🔄 Starting level retry for player ${playerId}, level ${levelId}...`);
       
       setLoading(true);
-      setError(null);
-      setAnimationsLoading(true);
-      setDownloadProgress({ loaded: 0, total: 0, progress: 0, currentUrl: null });
-      setIndividualAnimationProgress({ url: null, loaded: 0, total: 0, progress: 0 });
-
-      //  Use retryLevel instead of enterLevel for clearer logging
-      const data = await gameService.retryLevel(
-        playerId, 
-        levelId,
-        (progress) => {
-          setIndividualAnimationProgress(progress);
-        },
-        (progress) => {
-          setDownloadProgress(progress);
-        }
-      );
+      pendingSubmissionRef.current = null;
+      setWaitingForAnimation(false);
+      lastProcessedSubmissionRef.current = null;
       
-      if (data) {
-        const extractedGameState = gameService.extractUnifiedGameState(data, false);
-        if (extractedGameState) {
-          setGameState(extractedGameState);
-          console.log(' Level retried successfully with fresh data');
-        } else {
-          throw new Error('Failed to extract game state from retry response');
-        }
-      } else {
-        throw new Error('No data received from retry level API');
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+        animationTimeoutRef.current = null;
       }
       
+      await fetchGameData();
     } catch (err) {
-      console.error('❌ Retry level failed:', err);
+      console.error('❌ Retry failed:', err);
       setError(err.message || 'Failed to retry level');
     } finally {
       setLoading(false);
-      setAnimationsLoading(false);
-      setDownloadProgress({ loaded: 0, total: 0, progress: 0, currentUrl: null });
-      setIndividualAnimationProgress({ url: null, loaded: 0, total: 0, progress: 0 });
     }
   }, [playerId, levelId]);
 
-  const enterNextLevel = useCallback(async (playerId, nextLevelId) => {
+  const enterNextLevel = useCallback(async (nextLevelId) => {
     try {
-      lastProcessedSubmissionRef.current = null;
       console.log(`🚀 Entering next level ${nextLevelId} for player ${playerId}...`);
       
       setLoading(true);
@@ -472,7 +409,6 @@ const submitAnswer = async (selectedAnswers) => {
       setDownloadProgress({ loaded: 0, total: 0, progress: 0, currentUrl: '' });
       setIndividualAnimationProgress({ url: '', progress: 0 });
 
-      //  Use enterLevel API for next level
       const data = await gameService.enterLevel(
         playerId, 
         nextLevelId,
@@ -501,11 +437,9 @@ const submitAnswer = async (selectedAnswers) => {
       setDownloadProgress({ loaded: 0, total: 0, progress: 0, currentUrl: '' });
       setIndividualAnimationProgress({ url: '', progress: 0 });
     }
-  }, [handleAnimationProgress, handleDownloadProgress]);
+  }, [playerId, handleAnimationProgress, handleDownloadProgress]);
 
-  
-
- const fetchPotions = useCallback(async () => {
+  const fetchPotions = useCallback(async () => {
     if (!playerId) return;
     
     try {
@@ -521,59 +455,57 @@ const submitAnswer = async (selectedAnswers) => {
     }
   }, [playerId]);
 
-const usePotion = useCallback(async (playerPotionId) => {
-  if (!playerId || !levelId || !gameState?.currentChallenge || usingPotion || waitingForAnimation) return;
-  
-  try {
-    setUsingPotion(true);
-    console.log(`🧪 Using potion ${playerPotionId}...`);
+  const usePotion = useCallback(async (playerPotionId) => {
+    if (!playerId || !levelId || !gameState?.currentChallenge || usingPotion || waitingForAnimation) return;
     
-    const responseData = await gameService.usePotion(
-      playerId, 
-      levelId, 
-      gameState.currentChallenge.id, 
-      playerPotionId
-    );
-    
-    if (!responseData) {
-      throw new Error('No response data received from potion usage');
+    try {
+      setUsingPotion(true);
+      console.log(`🧪 Using potion ${playerPotionId}...`);
+      
+      const responseData = await gameService.usePotion(
+        playerId, 
+        levelId, 
+        gameState.currentChallenge.id, 
+        playerPotionId
+      );
+      
+      if (!responseData) {
+        throw new Error('No response data received from potion usage');
+      }
+
+      const updatedState = responseData;
+      
+      if (!updatedState) {
+        throw new Error('Failed to extract updated game state from potion response');
+      }
+
+      console.log('Potion used, updating game state directly...');
+
+      setGameState(prevState => ({
+        ...updatedState,
+        submissionResult: {
+          ...updatedState.submissionResult,
+          isCorrect: true,
+          isPotionUsage: true,
+        },
+      }));
+
+      setPotions(prev => prev.map(potion => 
+        potion.player_potion_id === playerPotionId 
+          ? { ...potion, count: Math.max(0, potion.count - 1) }
+          : potion
+      ));
+      
+      setSelectedPotion(null);
+      console.log(`🧪 Potion used: ${playerPotionId}`);
+      return { success: true, data: updatedState };
+    } catch (error) {
+      console.error('Failed to use potion:', error);
+      return { success: false, error: error.message };
+    } finally {
+      setUsingPotion(false);
     }
-
-    const updatedState = responseData;
-    
-    if (!updatedState) {
-      throw new Error('Failed to extract updated game state from potion response');
-    }
-
-    console.log('Potion used, updating game state directly...');
-
-     setGameState(prevState => ({
-      ...updatedState,
-      submissionResult: {
-        ...updatedState.submissionResult,
-        isCorrect: true,
-        isPotionUsage: true,
-      },
-  }));
-
-    setPotions(prev => prev.map(potion => 
-      potion.player_potion_id === playerPotionId 
-        ? { ...potion, count: Math.max(0, potion.count - 1) }
-        : potion
-    ));
-    
-    setSelectedPotion(null);
-    console.log(`🧪 Potion used: ${playerPotionId}`);
-    return { success: true, data: updatedState };
-  } catch (error) {
-    console.error('Failed to use potion:', error);
-    return { success: false, error: error.message };
-  } finally {
-    setUsingPotion(false);
-  }
-}, [playerId, levelId, gameState?.currentChallenge, usingPotion, waitingForAnimation, gameService]);
-
-
+  }, [playerId, levelId, gameState?.currentChallenge, usingPotion, waitingForAnimation]);
 
   const selectPotion = useCallback((potion) => {
     setSelectedPotion(potion);
@@ -584,16 +516,15 @@ const usePotion = useCallback(async (playerPotionId) => {
     setSelectedPotion(null);
   }, []);
 
-   useEffect(() => {
+  useEffect(() => {
     fetchPotions();
   }, [fetchPotions]);
 
+  useEffect(() => {
+    fetchGameData();
+  }, [playerId, levelId]);
 
-
-
-
-
-    const refetchGameData = () => {
+  const refetchGameData = () => {
     pendingSubmissionRef.current = null;
     setWaitingForAnimation(false);
     setAnimationsLoading(true);
@@ -622,12 +553,11 @@ const usePotion = useCallback(async (playerPotionId) => {
     retryLevel,
     enterNextLevel,
     
-    refetchGameData: fetchGameData,
+    refetchGameData,
     submitAnswer,
     onAnimationComplete: handleAnimationComplete,
     handleProceed,
 
-    //potions
     potions,
     selectedPotion,
     loadingPotions,
