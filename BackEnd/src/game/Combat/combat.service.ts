@@ -848,7 +848,7 @@ export async function fightEnemy(
       enemy_damage,
       enemy_health: enemyHealth,
       enemy_max_health: scaledEnemyMaxHealth,
-      enemy_avatar: enemy.enemy_avatar,
+      enemy_avatar: enemy.avatar_enemy,
     },
     character: {
       character_id: character.character_id,
@@ -1718,7 +1718,7 @@ export async function fightBossEnemy(
       enemy_damage,
       enemy_health: enemyHealth,
       enemy_max_health: scaledEnemyMaxHealth,
-      enemy_avatar: enemy.enemy_avatar,
+      enemy_avatar: enemy.avatar_enemy,
     },
     character: {
       character_id: character.character_id,
