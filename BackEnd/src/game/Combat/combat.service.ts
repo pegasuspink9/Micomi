@@ -1,11 +1,10 @@
-import { PrismaClient, BattleStatus, QuestType } from "@prisma/client";
+import { prisma } from "../../../prisma/client";
+import { BattleStatus, QuestType } from "@prisma/client";
 import * as EnergyService from "../Energy/energy.service";
 import * as LevelService from "../Levels/levels.service";
 import { updateQuestProgress } from "../Quests/quests.service";
 import { formatTimer } from "../../../helper/dateTimeHelper";
 import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
-
-const prisma = new PrismaClient();
 
 const ENEMY_HEALTH = 30;
 const BOSS_ENEMY_HEALTH = 30;
@@ -155,6 +154,7 @@ export async function getFightSetup(playerId: number, levelId: number) {
       character_attacks: selectedCharacter.character_attacks,
       character_avatar: selectedCharacter.avatar_image,
       avatar_image: selectedCharacter.avatar_image,
+      is_range: selectedCharacter.is_range,
     },
     status: progress.battle_status,
     progress,
@@ -296,6 +296,7 @@ export async function getCurrentFightState(
       character_health: charHealth,
       character_max_health: character.character_max_health,
       character_avatar: character.character_avatar,
+      character_is_range: character.is_range,
     },
     timer: "00:00",
     energy: energyStatus.energy,
@@ -863,6 +864,7 @@ export async function fightEnemy(
       character_health: charHealth,
       character_max_health: character.health,
       character_avatar: character.character_avatar,
+      character_is_range: character.is_range,
     },
     timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,
@@ -1733,6 +1735,7 @@ export async function fightBossEnemy(
       character_health: charHealth,
       character_max_health: character.health,
       character_avatar: character.character_avatar,
+      character_is_range: character.is_range,
     },
     timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,

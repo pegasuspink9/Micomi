@@ -58,6 +58,8 @@ export const getPlayerProfile = async (player_id: number) => {
 
   if (!player) return null;
 
+  await checkAchievements(player_id);
+
   const [quests, achievements] = await Promise.all([
     prisma.quest.findMany(),
     prisma.achievement.findMany(),
@@ -131,6 +133,7 @@ export const getPlayerProfile = async (player_id: number) => {
 
 export const createPlayer = async (data: PlayerCreateInput) => {
   const hashedPassword = await hashPassword(data.password);
+
   const newPlayer = await prisma.player.create({
     data: {
       player_name: data.player_name,
@@ -161,6 +164,24 @@ export const createPlayer = async (data: PlayerCreateInput) => {
         challenge_start_time: new Date(),
       },
     });
+  }
+
+  const allQuests = await prisma.quest.findMany();
+
+  if (allQuests.length > 0) {
+    await prisma.playerQuest.createMany({
+      data: allQuests.map((quest) => ({
+        player_id: newPlayer.player_id,
+        quest_id: quest.quest_id,
+        current_value: 0,
+        is_completed: false,
+        is_claimed: false,
+      })),
+    });
+
+    console.log(
+      `✅ Initialized ${allQuests.length} quests for new player ${newPlayer.player_id}`
+    );
   }
 
   return newPlayer;

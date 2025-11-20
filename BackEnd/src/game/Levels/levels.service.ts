@@ -267,6 +267,7 @@ export const previewLevel = async (playerId: number, levelId: number) => {
           character_hurt: character.character_hurt,
           character_dies: character.character_dies,
           character_avatar: character.character_avatar,
+          character_is_range: character.is_range,
         },
         energy: energyStatus.energy,
         timeToNextEnergyRestore: energyStatus.timeToNextRestore,
@@ -595,6 +596,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       character_hurt: character.character_hurt,
       character_dies: character.character_dies,
       character_avatar: character.character_avatar,
+      character_is_range: character.is_range,
     },
     card: {
       card_type,
@@ -807,7 +809,7 @@ export const completeMicomiLevel = async (
       level_type: level.level_type,
       level_title: level.level_title,
     },
-    unlockedNextLevel: nextLevel
+    nextLevel: nextLevel
       ? {
           level_id: nextLevel.level_id,
           level_number: nextLevel.level_number,
@@ -912,7 +914,7 @@ export const completeShopLevel = async (playerId: number, levelId: number) => {
       level_type: level.level_type,
       level_title: level.level_title,
     },
-    unlockedNextLevel: nextLevel
+    nextLevel: nextLevel
       ? {
           level_id: nextLevel.level_id,
           level_number: nextLevel.level_number,

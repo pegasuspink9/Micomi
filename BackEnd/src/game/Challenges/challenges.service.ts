@@ -207,13 +207,57 @@ export const submitChallengeService = async (
     (id) => !answeredIdsBefore.includes(id)
   );
 
+  let characterDamageForCoins: number | undefined = undefined;
+  if (isBonusRound && isCorrect) {
+    const damageArray = Array.isArray(character.character_damage)
+      ? (character.character_damage as number[])
+      : [10, 15, 25];
+
+    const correctAnswerLength = Array.isArray(challenge.correct_answer)
+      ? challenge.correct_answer.length
+      : 1;
+
+    const nextBefore = await getNextChallengeService(playerId, levelId);
+    const nextChallengeBefore = nextBefore.nextChallenge;
+    const isCompletingBonusCheck = isBonusRound && !nextChallengeBefore;
+
+    const updatedWrongChallengesCheck = (currentProgress.wrong_challenges ??
+      []) as number[];
+    const bonusAllCorrectCheck = isCompletingBonusCheck
+      ? updatedWrongChallengesCheck.length === 0
+      : false;
+
+    let damageIndex = 0;
+
+    if (isCompletingBonusCheck && bonusAllCorrectCheck) {
+      damageIndex = 3;
+    } else if (isCompletingBonusCheck) {
+      damageIndex = 2;
+    } else if (!wasEverWrong && correctAnswerLength >= 8) {
+      damageIndex = 2;
+    } else if (!wasEverWrong && correctAnswerLength >= 5) {
+      damageIndex = 1;
+    }
+
+    characterDamageForCoins = damageArray[damageIndex] ?? 10;
+
+    if (currentProgress.has_strong_effect) {
+      characterDamageForCoins *= 2;
+    }
+
+    console.log(
+      `- Bonus round coins calculation: damage tier ${damageIndex}, base damage ${damageArray[damageIndex]}, final damage for coins: ${characterDamageForCoins}`
+    );
+  }
+
   const { updatedProgress, alreadyAnsweredCorrectly } =
     await updateProgressForChallenge(
       currentProgress.progress_id,
       challengeId,
       isCorrect,
       finalAnswer,
-      isBonusRound
+      isBonusRound,
+      characterDamageForCoins
     );
 
   const nextBefore = await getNextChallengeService(playerId, levelId);
@@ -691,5 +735,3 @@ const wrapWithTimer = async (
     nextChallenge: buildChallengeWithTimer(modifiedChallenge, timeRemaining),
   };
 };
-
-//I'm pretty sure I changed something in here!!!

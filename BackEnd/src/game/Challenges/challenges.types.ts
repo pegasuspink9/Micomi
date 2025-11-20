@@ -28,6 +28,7 @@ export interface FightResult {
     character_health: number;
     character_max_health: number;
     character_avatar?: string | null;
+    character_is_range?: boolean;
   };
   timer: string;
   energy: number;
@@ -58,7 +59,6 @@ export interface SubmitChallengeControllerResult
   nextLevel?: {
     level_id: number;
     level_number: number;
-    is_unlocked: boolean;
   } | null;
   correct_answer_length?: number;
   character_attack_image?: string | null;
