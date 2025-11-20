@@ -105,8 +105,6 @@ model Enemy {
   enemy_health      Int
   enemy_damage      Int
   enemy_map         String  //to determine what map is this enemy (HTML, CSS, JavaScript, Computer)
-  
-  enemy_coins       Int?    @default(0)
 
   //animations
   enemy_attack      String?
@@ -217,7 +215,6 @@ model Character {
   health            Int
   is_purchased      Boolean           @default(false)
   is_selected       Boolean           @default(false)
-  user_coins        Int?              @default(0)
 
   //animations
   character_dies    String?
@@ -229,6 +226,9 @@ model Character {
   character_avatar  String?           //character icon
   character_image_display   String?   
   hero_lottie       String?
+
+  //is_range for ShiShi and Ryron
+  is_range         Boolean?          @default(false)
 
   characterShop     CharacterShop?
   playerCharacter   PlayerCharacter[]

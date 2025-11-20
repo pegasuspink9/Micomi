@@ -28,6 +28,7 @@ export interface FightResult {
     character_health: number;
     character_max_health: number;
     character_avatar?: string | null;
+    character_is_range?: boolean;
   };
   timer: string;
   energy: number;

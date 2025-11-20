@@ -5,17 +5,31 @@ import { successResponse, errorResponse } from "../../../utils/response";
 export const getLeaderboard = async (req: Request, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string, 10) || 10;
-    const leaderboard = await LeaderboardService.getLeaderboard(limit);
-    return successResponse(res, leaderboard, "Leaderboard fetched", 200);
+
+    const currentPlayerId = Number(req.params.playerId);
+
+    const result = await LeaderboardService.getLeaderboard(
+      limit,
+      currentPlayerId
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Leaderboard fetched successfully",
+      data: result,
+    });
   } catch (error) {
-    console.error(error);
-    return errorResponse(res, error, "Failed to fetch leaderboard", 500);
+    console.error("Leaderboard error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch leaderboard",
+    });
   }
 };
 
 export const getPlayerRank = async (req: Request, res: Response) => {
   try {
-    const playerId = parseInt(req.params.id, 10);
+    const playerId = Number(req.params.playerId);
     const entry = await LeaderboardService.getPlayerRank(playerId);
     if (!entry) return res.status(404).json({ error: "Player not found" });
     return successResponse(res, entry, "Player rank fetched", 200);

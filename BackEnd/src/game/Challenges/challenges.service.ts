@@ -207,13 +207,57 @@ export const submitChallengeService = async (
     (id) => !answeredIdsBefore.includes(id)
   );
 
+  let characterDamageForCoins: number | undefined = undefined;
+  if (isBonusRound && isCorrect) {
+    const damageArray = Array.isArray(character.character_damage)
+      ? (character.character_damage as number[])
+      : [10, 15, 25];
+
+    const correctAnswerLength = Array.isArray(challenge.correct_answer)
+      ? challenge.correct_answer.length
+      : 1;
+
+    const nextBefore = await getNextChallengeService(playerId, levelId);
+    const nextChallengeBefore = nextBefore.nextChallenge;
+    const isCompletingBonusCheck = isBonusRound && !nextChallengeBefore;
+
+    const updatedWrongChallengesCheck = (currentProgress.wrong_challenges ??
+      []) as number[];
+    const bonusAllCorrectCheck = isCompletingBonusCheck
+      ? updatedWrongChallengesCheck.length === 0
+      : false;
+
+    let damageIndex = 0;
+
+    if (isCompletingBonusCheck && bonusAllCorrectCheck) {
+      damageIndex = 3;
+    } else if (isCompletingBonusCheck) {
+      damageIndex = 2;
+    } else if (!wasEverWrong && correctAnswerLength >= 8) {
+      damageIndex = 2;
+    } else if (!wasEverWrong && correctAnswerLength >= 5) {
+      damageIndex = 1;
+    }
+
+    characterDamageForCoins = damageArray[damageIndex] ?? 10;
+
+    if (currentProgress.has_strong_effect) {
+      characterDamageForCoins *= 2;
+    }
+
+    console.log(
+      `- Bonus round coins calculation: damage tier ${damageIndex}, base damage ${damageArray[damageIndex]}, final damage for coins: ${characterDamageForCoins}`
+    );
+  }
+
   const { updatedProgress, alreadyAnsweredCorrectly } =
     await updateProgressForChallenge(
       currentProgress.progress_id,
       challengeId,
       isCorrect,
       finalAnswer,
-      isBonusRound
+      isBonusRound,
+      characterDamageForCoins
     );
 
   const nextBefore = await getNextChallengeService(playerId, levelId);
@@ -384,33 +428,35 @@ export const submitChallengeService = async (
 
   let completionRewards: CompletionRewards | undefined = undefined;
   let nextLevel: SubmitChallengeControllerResult["nextLevel"] = null;
-
-  console.log("🔍 COMPLETION CHECK:");
-  console.log("- allCompleted:", allCompleted);
-  console.log("- freshProgress?.is_completed:", freshProgress?.is_completed);
+  const wasFirstCompletion = allCompleted && !freshProgress?.is_completed;
 
   if (allCompleted) {
-    // Always show the standard completion message
-    completionRewards = {
-      feedbackMessage:
-        level.feedback_message ?? `You completed Level ${level.level_number}!`,
-      coinsEarned: freshProgress?.coins_earned ?? 0,
-      totalPointsEarned: freshProgress?.total_points_earned ?? 0,
-      totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
-    };
+    if (wasFirstCompletion) {
+      await prisma.playerProgress.update({
+        where: { progress_id: currentProgress.progress_id },
+        data: {
+          is_completed: true,
+          completed_at: new Date(),
+          has_strong_effect: false,
+          has_freeze_effect: false,
+        },
+      });
 
-    // Get the next level info
-    const nextLevelData = await prisma.level.findFirst({
-      where: {
-        map_id: level.map_id,
-        level_number: level.level_number + 1,
-      },
-    });
+      completionRewards = {
+        feedbackMessage:
+          level.feedback_message ??
+          `You completed Level ${level.level_number}!`,
+      };
 
-    if (nextLevelData) {
-      nextLevel = {
-        level_id: nextLevelData.level_id,
-        level_number: nextLevelData.level_number,
+      nextLevel = await LevelService.unlockNextLevel(
+        playerId,
+        level.map_id,
+        level.level_number
+      );
+    } else {
+      const baseMessage = `You've mastered Level ${level.level_number}!`;
+      completionRewards = {
+        feedbackMessage: `${baseMessage} This level was already completed, so no additional rewards are given—great job practicing and honing your skills!`,
       };
     }
   }
@@ -689,5 +735,3 @@ const wrapWithTimer = async (
     nextChallenge: buildChallengeWithTimer(modifiedChallenge, timeRemaining),
   };
 };
-
-//I'm pretty sure I changed something in here!!!

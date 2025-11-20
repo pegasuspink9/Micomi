@@ -1,5 +1,4 @@
 import express from "express";
-import * as CombatController from "../Combat/combat.controller";
 import * as ChallengeController from "../Challenges/challenges.controller";
 import * as ShopController from "../Shop/shop.controller";
 import * as AchievementController from "../Achievements/achievements.controller";
@@ -58,9 +57,6 @@ router.post(
   ShopController.usePotion
 );
 
-//Combat route
-router.post("/fight", CombatController.performFight);
-
 //Achievement routes
 router.post("/check-achievements", AchievementController.getPlayerAchievements);
 router.get(
@@ -69,7 +65,7 @@ router.get(
 );
 
 //Leaderboard routes
-router.get("/leaderboard", LeaderboardController.getLeaderboard);
-router.get("/player-rank/:id", LeaderboardController.getPlayerRank);
+router.get("/leaderboard/:playerId", LeaderboardController.getLeaderboard);
+router.get("/player-rank/:playerId", LeaderboardController.getPlayerRank);
 
 export default router;
