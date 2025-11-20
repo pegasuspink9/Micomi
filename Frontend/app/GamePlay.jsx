@@ -358,10 +358,10 @@ export default function GamePlay() {
       hasTriggeredLevelCompletion.current = true;
 
       setCompletionRewards({
-        feedbackMessage: submissionResult?.feedbackMessage || 'Congratulations! You have completed this level!',
-        coinsEarned: submissionResult?.coinsEarned || 0,
-        currentTotalPoints: submissionResult?.currentTotalPoints || 0,
-        currentExpPoints: submissionResult?.currentExpPoints || 0,
+        feedbackMessage: submissionResult?.completionRewards?.feedbackMessage || 'Congratulations!',
+        coinsEarned: submissionResult?.completionRewards?.coinsEarned || 0,
+        currentTotalPoints: submissionResult?.completionRewards?.totalPointsEarned || 0,
+        currentExpPoints: submissionResult?.completionRewards?.totalExpPointsEarned || 0,
       });
 
       setShowLevelCompletion(true);

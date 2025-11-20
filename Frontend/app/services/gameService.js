@@ -275,19 +275,18 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
           coinsEarned: responseData.levelStatus.coinsEarned || 0
         } : null,
 
-        completionRewards: responseData.completionRewards ? {
+                completionRewards: responseData.completionRewards ? {
           feedbackMessage: responseData.completionRewards.feedbackMessage || null,
-          currentTotalPoints: responseData.completionRewards.currentTotalPoints || 
-                            responseData.levelStatus?.totalPointsEarned || 
-                            responseData.levelStatus?.coinsEarned || 0,
-          currentExpPoints: responseData.completionRewards.currentExpPoints || 
+          coinsEarned: responseData.completionRewards.coinsEarned || responseData.levelStatus?.coinsEarned || 0,
+          currentTotalPoints: responseData.completionRewards.totalPointsEarned || 
+                            responseData.levelStatus?.totalPointsEarned || 0,
+          currentExpPoints: responseData.completionRewards.totalExpPointsEarned || 
                           responseData.levelStatus?.totalExpPointsEarned || 0,
-          coinsEarned: responseData.levelStatus?.coinsEarned || 0
         } : (responseData.levelStatus && responseData.levelStatus.isCompleted ? {
           feedbackMessage: "Level completed successfully!",
-          currentTotalPoints: responseData.levelStatus.totalPointsEarned || responseData.levelStatus.coinsEarned || 0,
+          coinsEarned: responseData.levelStatus.coinsEarned || 0,
+          currentTotalPoints: responseData.levelStatus.totalPointsEarned || 0,
           currentExpPoints: responseData.levelStatus.totalExpPointsEarned || 0,
-          coinsEarned: responseData.levelStatus.coinsEarned || 0
         } : null),
 
         nextLevel: responseData.nextLevel ? {
