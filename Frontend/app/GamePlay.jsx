@@ -176,7 +176,7 @@ export default function GamePlay() {
     setShowLevelCompletion(false);
     setShowLevelCompletionModal(false);
     setRunButtonClicked(false);
-    setShowRunButton(true);
+    setShowRunButton(false);
   }
   }, [isRetrying, isLoadingNextLevel]);
 
@@ -351,7 +351,8 @@ export default function GamePlay() {
       isLoadingNextLevel: isLoadingNextLevel,
       waitingForAnimation: waitingForAnimation,
       runButtonClicked: runButtonClicked,
-      showRunButton: showRunButton
+      showRunButton: showRunButton,
+      isRetrying: isRetrying
     });
 
     // Show completion buttons when enemy is defeated
@@ -361,7 +362,8 @@ export default function GamePlay() {
         !showLevelCompletion && 
         !isLoadingNextLevel &&
         !waitingForAnimation &&
-        !canProceed 
+        !canProceed &&
+        !isRetrying
       ) {
       
       console.log('🎉 Level completed - showing completion buttons');
@@ -379,7 +381,7 @@ export default function GamePlay() {
       setRunButtonClicked(false);
     
     }
-  }, [gameState?.submissionResult?.fightResult, showLevelCompletion, isLoadingNextLevel, waitingForAnimation, canProceed]);
+  }, [gameState?.submissionResult?.fightResult, showLevelCompletion, isLoadingNextLevel, waitingForAnimation, canProceed, isRetrying]);
 
    useEffect(() => {
     if (runButtonClicked && !showRunButton && showLevelCompletion) {
@@ -395,6 +397,7 @@ export default function GamePlay() {
   const handleRetry = useCallback(async () => {
     console.log('🔄 Retrying level - calling entryLevel API to reset data...');
     
+       
     if (gameOverTimeoutRef.current) {
       clearTimeout(gameOverTimeoutRef.current);
       gameOverTimeoutRef.current = null;
@@ -404,11 +407,24 @@ export default function GamePlay() {
     setShowGameOverModal(false);
     setShowVSModal(false);
     setShowGameplay(false);
+    setShowLevelCompletion(false);
+    setShowLevelCompletionModal(false);
+    
     setIsRetrying(true);
+
     setRunButtonClicked(false);
+    setShowRunButton(false); 
+    
+
     hasTriggeredGameOver.current = false;
     hasTriggeredLevelCompletion.current = false;
     hasShownVSModalRef.current = false;
+
+    setSelectedAnswers([]); 
+    setBorderColor('white');
+    setActiveGameTab('code');
+    setSelectedBlankIndex(0);
+    setCardDisplaySequence('modal');
     
 
     try{

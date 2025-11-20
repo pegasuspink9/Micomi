@@ -292,6 +292,10 @@ export default React.memo(ThirdGrid, (prevProps, nextProps) => {
       prevProps.submitting === nextProps.submitting &&
       prevProps.currentQuestionIndex === nextProps.currentQuestionIndex &&
       prevProps.canProceed === nextProps.canProceed &&
+      prevProps.isLevelComplete === nextProps.isLevelComplete &&
+      prevProps.showRunButton === nextProps.showRunButton &&
+      prevProps.isInRunMode === nextProps.isInRunMode &&
+      
       prevProps.setSelectedAnswers === nextProps.setSelectedAnswers &&
       prevProps.submitAnswer === nextProps.submitAnswer &&
       prevProps.selectedBlankIndex === nextProps.selectedBlankIndex 

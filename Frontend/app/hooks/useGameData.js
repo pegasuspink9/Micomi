@@ -391,11 +391,24 @@ export const useGameData = (playerId, initialLevelId) => {
     }));
   }, [canProceed, gameState?.nextChallengeData]);
 
-  const retryLevel = useCallback(async () => {
+    const retryLevel = useCallback(async () => {
+    const targetLevelId = currentLevelId || initialLevelId;
+
+    if (!playerId || !targetLevelId) {
+       console.error('Cannot retry: Missing player ID or level ID');
+       return;
+    }
+
     try {
-      console.log(`🔄 Starting level retry for player ${playerId}, level ${currentLevelId}...`); 
+      console.log(`🔄 Starting level retry for player ${playerId}, level ${targetLevelId}...`); 
 
       setLoading(true);
+      setAnimationsLoading(true);
+      setError(null);
+      
+      //  FIXED: Ensure proceed flag is false
+      setCanProceed(false);
+      
       pendingSubmissionRef.current = null;
       setWaitingForAnimation(false);
       lastProcessedSubmissionRef.current = null;
@@ -405,14 +418,45 @@ export const useGameData = (playerId, initialLevelId) => {
         animationTimeoutRef.current = null;
       }
       
-      await fetchGameData();
+      const data = await gameService.enterLevel(
+        playerId, 
+        targetLevelId,
+        handleAnimationProgress,
+        handleDownloadProgress
+      );
+
+      if (data) {
+        const extractedGameState = gameService.extractUnifiedGameState(data, false);
+        if (extractedGameState) {
+          
+          //  FIXED: Ensure options are valid
+          if (extractedGameState.currentChallenge && (!extractedGameState.currentChallenge.options || !Array.isArray(extractedGameState.currentChallenge.options))) {
+             console.warn('Challenge options are missing or invalid in retry:', extractedGameState.currentChallenge.options);
+             extractedGameState.currentChallenge.options = [];
+          }
+
+          //  FIXED: Ensure we don't carry over a "won" status from previous attempt
+          if (extractedGameState.submissionResult) {
+             extractedGameState.submissionResult = null;
+          }
+
+          setGameState(extractedGameState);
+          console.log('🔄 Level retry loaded successfully');
+        } else {
+          throw new Error('Failed to extract game state from retry response');
+        }
+      } else {
+        throw new Error('No data received from retry API');
+      }
+
     } catch (err) {
       console.error('❌ Retry failed:', err);
       setError(err.message || 'Failed to retry level');
     } finally {
       setLoading(false);
+      setAnimationsLoading(false);
     }
-  }, [playerId, currentLevelId]);
+  }, [playerId, currentLevelId, initialLevelId, handleAnimationProgress, handleDownloadProgress]);
 
   const enterNextLevel = useCallback(async (nextLevelId) => {
     try {
