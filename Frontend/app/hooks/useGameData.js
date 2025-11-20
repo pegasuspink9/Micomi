@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { gameService } from '../services/gameService';
 
-export const useGameData = (playerId, levelId) => {
+export const useGameData = (playerId, initialLevelId) => {
   const [gameState, setGameState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,6 +23,16 @@ export const useGameData = (playerId, levelId) => {
   const animationTimeoutRef = useRef(null);
   const lastProcessedSubmissionRef = useRef(null);
 
+  const [currentLevelId, setCurrentLevelId] = useState(initialLevelId);
+  const skipNextFetchRef = useRef(false); 
+
+
+  useEffect(() => {
+    if (initialLevelId) setCurrentLevelId(initialLevelId);
+  }, [initialLevelId]);
+
+
+
   const handleDownloadProgress = useCallback((progress) => {
     setDownloadProgress({
       ...progress,
@@ -41,7 +51,10 @@ export const useGameData = (playerId, levelId) => {
   }, []);
 
   const fetchGameData = async () => {
-    if (!playerId || !levelId) {
+
+    const targetLevelId = currentLevelId || initialLevelId;
+    
+    if (!playerId || !targetLevelId) {
       console.warn('Missing playerId or levelId');
       setError('Missing player ID or level ID');
       setLoading(false);
@@ -56,11 +69,11 @@ export const useGameData = (playerId, levelId) => {
       setDownloadProgress({ loaded: 0, total: 0, progress: 0, currentUrl: '' });
       setIndividualAnimationProgress({ url: '', progress: 0 });
       
-      console.log(`🎮 Fetching game data and downloading animations for player ${playerId}, level ${levelId}`);
+     console.log(`🎮 Fetching game data and downloading animations for player ${playerId}, level ${targetLevelId}`);
       
       const responseData = await gameService.enterLevel(
         playerId, 
-        levelId, 
+        targetLevelId, 
         handleAnimationProgress,
         handleDownloadProgress
       );
@@ -68,6 +81,8 @@ export const useGameData = (playerId, levelId) => {
       if (!responseData) {
         throw new Error('No response data received');
       }
+
+      
       
       const unifiedState = gameService.extractUnifiedGameState(responseData, false);
       
@@ -111,7 +126,7 @@ export const useGameData = (playerId, levelId) => {
   };
 
   const submitAnswer = async (selectedAnswers) => {
-    if (!gameState?.currentChallenge || !playerId || !levelId) {
+     if (!gameState?.currentChallenge || !playerId || !currentLevelId) {
       console.error('Missing required data for submission');
       return { success: false, error: 'Missing required data' };
     }
@@ -130,7 +145,7 @@ export const useGameData = (playerId, levelId) => {
       
       const responseData = await gameService.submitAnswer(
         playerId, 
-        levelId, 
+        currentLevelId, 
         gameState.currentChallenge.id, 
         selectedAnswers
       );
@@ -378,8 +393,8 @@ export const useGameData = (playerId, levelId) => {
 
   const retryLevel = useCallback(async () => {
     try {
-      console.log(`🔄 Starting level retry for player ${playerId}, level ${levelId}...`);
-      
+      console.log(`🔄 Starting level retry for player ${playerId}, level ${currentLevelId}...`); 
+
       setLoading(true);
       pendingSubmissionRef.current = null;
       setWaitingForAnimation(false);
@@ -397,7 +412,7 @@ export const useGameData = (playerId, levelId) => {
     } finally {
       setLoading(false);
     }
-  }, [playerId, levelId]);
+  }, [playerId, currentLevelId]);
 
   const enterNextLevel = useCallback(async (nextLevelId) => {
     try {
@@ -420,6 +435,11 @@ export const useGameData = (playerId, levelId) => {
         const extractedGameState = gameService.extractUnifiedGameState(data, false);
         if (extractedGameState) {
           setGameState(extractedGameState);
+
+
+          skipNextFetchRef.current = true; 
+          setCurrentLevelId(nextLevelId);
+
           console.log(' Next level loaded successfully');
         } else {
           throw new Error('Failed to extract game state from next level response');
@@ -456,7 +476,7 @@ export const useGameData = (playerId, levelId) => {
   }, [playerId]);
 
   const usePotion = useCallback(async (playerPotionId) => {
-    if (!playerId || !levelId || !gameState?.currentChallenge || usingPotion || waitingForAnimation) return;
+     if (!playerId || !currentLevelId || !gameState?.currentChallenge || usingPotion || waitingForAnimation) return;
     
     try {
       setUsingPotion(true);
@@ -464,7 +484,7 @@ export const useGameData = (playerId, levelId) => {
       
       const responseData = await gameService.usePotion(
         playerId, 
-        levelId, 
+        currentLevelId, 
         gameState.currentChallenge.id, 
         playerPotionId
       );
@@ -505,12 +525,21 @@ export const useGameData = (playerId, levelId) => {
     } finally {
       setUsingPotion(false);
     }
-  }, [playerId, levelId, gameState?.currentChallenge, usingPotion, waitingForAnimation]);
+  }, [playerId, currentLevelId, gameState?.currentChallenge, usingPotion, waitingForAnimation]);
 
   const selectPotion = useCallback((potion) => {
     setSelectedPotion(potion);
     console.log('🧪 Potion selected:', potion.name);
   }, []);
+
+    useEffect(() => {
+    if (skipNextFetchRef.current) {
+      skipNextFetchRef.current = false;
+      return;
+    }
+    fetchGameData();
+  }, [playerId, currentLevelId]);
+
 
   const clearSelectedPotion = useCallback(() => {
     setSelectedPotion(null);
@@ -520,9 +549,6 @@ export const useGameData = (playerId, levelId) => {
     fetchPotions();
   }, [fetchPotions]);
 
-  useEffect(() => {
-    fetchGameData();
-  }, [playerId, levelId]);
 
   const refetchGameData = () => {
     pendingSubmissionRef.current = null;

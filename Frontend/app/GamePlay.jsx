@@ -128,6 +128,7 @@ export default function GamePlay() {
     if (
       characterAttackCard && 
       showGameplay && 
+      !showVSModal &&
       characterAttackCard !== previousImageUrl
     ) {
       console.log('📸 NEW CARD DETECTED - Showing card');
@@ -135,7 +136,7 @@ export default function GamePlay() {
       setShowAttackCard(true);
       setPreviousImageUrl(characterAttackCard);
     }
-  }, [characterAttackCard, showGameplay])
+  }, [characterAttackCard, showGameplay, showVSModal]);
 
 
   const handleCharacterRun = useCallback(() => {
@@ -212,27 +213,36 @@ export default function GamePlay() {
       console.log(' Challenge loaded, showing VS modal (first time only)');
       setShowVSModal(true);
       setShowGameplay(false); 
+      setShowAttackCard(false);
       hasShownVSModalRef.current = true;
     }
   }, [currentChallenge?.id, loading, animationsLoading]);
 
-  useEffect(() => {
-    if (currentChallenge && !loading && !animationsLoading && (isRetrying || isLoadingNextLevel)) {
-      console.log(' Level data loaded successfully');
-      setIsRetrying(false);
-      setIsLoadingNextLevel(false);
-      setShowGameOver(false);
-      setShowLevelCompletion(false);
-      hasTriggeredGameOver.current = false;
-      hasTriggeredLevelCompletion.current = false;
-      hasShownVSModalRef.current = false;
+  // useEffect(() => {
+  //   if (currentChallenge && !loading && !animationsLoading && (isRetrying || isLoadingNextLevel)) {
+  //     console.log(' Level data loaded successfully');
+  //     setIsRetrying(false);
+  //     setIsLoadingNextLevel(false);
+  //     setShowGameOver(false);
+  //     setShowLevelCompletion(false);
+  //     hasTriggeredGameOver.current = false;
+  //     hasTriggeredLevelCompletion.current = false;
+  //     hasShownVSModalRef.current = false;
       
-      if (gameOverTimeoutRef.current) {
-        clearTimeout(gameOverTimeoutRef.current);
-        gameOverTimeoutRef.current = null;
-      }
+  //     if (gameOverTimeoutRef.current) {
+  //       clearTimeout(gameOverTimeoutRef.current);
+  //       gameOverTimeoutRef.current = null;
+  //     }
+  //   }
+  // }, [currentChallenge?.id, loading, animationsLoading, isRetrying, isLoadingNextLevel]);
+
+    useEffect(() => {
+    if (currentChallenge && !loading && !animationsLoading) {
+       if (hasTriggeredGameOver.current && !showGameOver) hasTriggeredGameOver.current = false;
     }
-  }, [currentChallenge?.id, loading, animationsLoading, isRetrying, isLoadingNextLevel]);
+  }, [currentChallenge?.id, loading, animationsLoading, showGameOver]);
+
+
 
   const handlePotionPress = useCallback((potion) => {
     if (selectedPotion && selectedPotion.id === potion.id) {
@@ -382,7 +392,7 @@ export default function GamePlay() {
     onAnimationComplete?.();
   }, [onAnimationComplete]);
 
-  const handleRetry = useCallback(() => {
+  const handleRetry = useCallback(async () => {
     console.log('🔄 Retrying level - calling entryLevel API to reset data...');
     
     if (gameOverTimeoutRef.current) {
@@ -392,11 +402,22 @@ export default function GamePlay() {
     
     setShowGameOver(false);
     setShowGameOverModal(false);
+    setShowVSModal(false);
+    setShowGameplay(false);
     setIsRetrying(true);
     setRunButtonClicked(false);
     hasTriggeredGameOver.current = false;
     hasTriggeredLevelCompletion.current = false;
-    retryLevel();
+    hasShownVSModalRef.current = false;
+    
+
+    try{
+      await retryLevel();
+    } catch (error) {
+      console.error('❌ Failed to retry level:', error);
+    } finally {
+      setIsRetrying(false);
+    }
   }, [retryLevel]);
 
   const handleNextLevel = useCallback(async () => {
@@ -415,16 +436,22 @@ export default function GamePlay() {
     }
     
     setIsLoadingNextLevel(true);
+    setShowVSModal(false); 
+    setShowLevelCompletion(false); 
+    setShowGameplay(false);
     hasTriggeredLevelCompletion.current = false;
+    hasShownVSModalRef.current = false;
     
     try {
-      await enterNextLevel(playerId, nextLevelId);
+      await enterNextLevel(nextLevelId);
       console.log(' Next level loaded successfully');
     } catch (error) {
       console.error('❌ Failed to load next level:', error);
       setIsLoadingNextLevel(false);
+    } finally {
+      setIsLoadingNextLevel(false);
     }
-  }, [gameState?.submissionResult?.nextLevel?.level_id, playerId, enterNextLevel]);
+  }, [gameState?.submissionResult?.nextLevel?.level_id, enterNextLevel]);
 
   const handleHome = useCallback(() => {
     console.log('🏠 Going home...');
@@ -497,7 +524,7 @@ export default function GamePlay() {
     setSelectedAnswers(answers);
   }, []);
 
-  if (loading || animationsLoading) {
+    if (loading || animationsLoading || isLoadingNextLevel || isRetrying) {
     return (
       <>
         <StatusBar hidden={true} />
