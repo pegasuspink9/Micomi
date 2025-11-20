@@ -139,7 +139,14 @@ const LevelCompletionModal = ({
   const FRAME_DURATION = 50;
 
   const frameIndex = useSharedValue(0);
-  const animationUrl = 'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb2.png';
+   const animationUrls = [
+    'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb1.png',
+    'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb2.png',
+    'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb3.png'
+  ];
+
+   const [animationUrl, setAnimationUrl] = useState(() => animationUrls[Math.floor(Math.random() * animationUrls.length)]);
+
 
   // ========== Image Preloading ==========
   const prefetchWithCache = useCallback(async () => {
@@ -201,6 +208,8 @@ const LevelCompletionModal = ({
   // ========== ENTRANCE SEQUENCE ==========
   useEffect(() => {
     if (visible) {
+      setAnimationUrl(animationUrls[Math.floor(Math.random() * animationUrls.length)]);
+      
       // Reset triggers
       setStartCoinCount(false);
       setStartPointCount(false);
