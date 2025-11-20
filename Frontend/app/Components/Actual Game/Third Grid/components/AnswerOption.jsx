@@ -60,31 +60,19 @@ const AnswerOption = ({
 const styles = StyleSheet.create({
   buttonFrame: {
     marginTop: RESPONSIVE.margin.xs,
-    backgroundColor: '#000000ff', 
+    backgroundColor: '#01547dff', 
     borderRadius: RESPONSIVE.borderRadius.sm, 
-    shadowColor: '#000', 
-    shadowOffset: {
-      width: 0,
-      height: scale(6),
-    },
-    shadowOpacity: 0.4,
-    shadowRadius: scale(8),
-    elevation: 12,
     borderTopWidth: scale(1),
     borderTopColor: 'rgba(255, 255, 255, 0.3)',
     borderLeftWidth: scale(1),
     borderLeftColor: 'rgba(255, 255, 255, 0.3)',
     borderBottomWidth: scale(3),
-    borderBottomColor: 'rgba(0, 0, 0, 0.4)',
+    borderBottomColor: 'rgba(6, 98, 147, 0.4)',
     borderRightWidth: scale(2),
-    borderRightColor: 'rgba(0, 0, 0, 0.3)',
+    borderRightColor: 'rgba(6, 98, 147, 0.4)',
   },
 
-  buttonFrameSelected: {
-    shadowColor: '#0ea5e9',
-    shadowOpacity: 0.6,
-    shadowRadius: scale(10),
-  },
+
 
   listItemContainer: {
     width: wp(20),
@@ -167,11 +155,6 @@ const styles = StyleSheet.create({
   listItemPressed: {
     transform: [{ translateY: scale(0.5) }],
     backgroundColor: '#0044b1ff', 
-    shadowOffset: {
-      width: 0,
-      height: scale(2),
-    },
-    shadowOpacity: 0.2,
     borderTopWidth: scale(3),
     borderTopColor: '#1e3a8a',
     borderLeftWidth: scale(3),
@@ -183,20 +166,16 @@ const styles = StyleSheet.create({
   },
 
   listItemSelected: {
-    backgroundColor: '#ffffffff',
-    borderTopColor: '#ffffffff',
-    borderLeftColor: '#ffffffff',
-    borderBottomColor: '#0c4a6e',
-    borderRightColor: '#0c4a6e',
-    
-    shadowColor: '#0ea5e9',
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    shadowOpacity: 0.6,
-    shadowRadius: scale(8),
-    elevation: 15,
+     transform: [{ translateY: scale(0.6) }],
+    backgroundColor: '#272b2fff', 
+    borderTopWidth: scale(2),
+    borderTopColor: '#1e3a8a',
+    borderLeftWidth: scale(3),
+    borderLeftColor: '#1e3a8a',
+    borderBottomWidth: scale(2),
+    borderBottomColor: '#1e3a8a',
+    borderRightWidth: scale(1),
+    borderRightColor: '#1e3a8a',
   },
 
   listItemDisabled: {

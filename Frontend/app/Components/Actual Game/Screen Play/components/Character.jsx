@@ -62,7 +62,7 @@ const DogCharacter = ({
       'large-phone': SCREEN.width * 0.8,
       'small-phone': SCREEN.width * 0.9,
     };
-    return distanceMap[deviceType] || SCREEN.width * 0.5;
+    return distanceMap[deviceType] || SCREEN.width * 0.48;
   }, []);
 
   // ========== State Management ==========
