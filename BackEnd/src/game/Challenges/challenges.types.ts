@@ -49,6 +49,7 @@ export interface CompletionRewards {
   totalPointsEarned?: number;
   totalExpPointsEarned?: number;
   coinsEarned?: number;
+  isVictory?: boolean;
   playerOutputs?: string[] | null;
 }
 
@@ -69,6 +70,10 @@ export interface SubmitChallengeControllerResult
     card_type: string | null;
     character_attack_card: string | null;
   };
+  is_correct_audio?: string | null;
+  enemy_attack_audio?: string | null;
+  character_attack_audio?: string | null;
+  death_audio?: string | null;
 }
 
 export interface LevelStatus {

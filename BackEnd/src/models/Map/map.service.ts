@@ -54,6 +54,8 @@ export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
       res,
       {
         data: enhancedMaps,
+        audio:
+          "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Navigation.mp3",
       },
       "Maps fetched with player activity"
     );
@@ -70,9 +72,8 @@ export const getAllMaps = async (req: Request, res: Response) => {
       res,
       {
         data: maps,
-        audio: [
-          "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353796/Navigation_sxwh2g.mp3",
-        ],
+        audio:
+          "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Navigation.mp3",
       },
       "All maps fetched"
     );

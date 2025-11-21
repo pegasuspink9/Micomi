@@ -3,6 +3,8 @@ import { isMapUnlockedForPlayer } from "../Levels/levels.service";
 
 const prisma = new PrismaClient();
 
+const SPECIAL_BUTTON_TYPES = ["micomiButton", "shopButton"] as const;
+
 export const selectMap = async (playerId: number, mapId: number) => {
   const map = await prisma.map.findUnique({
     where: { map_id: mapId },
@@ -40,9 +42,16 @@ export const selectMap = async (playerId: number, mapId: number) => {
     ...fullMap,
     levels: fullMap.levels.map((level) => ({
       ...level,
+      level_number: SPECIAL_BUTTON_TYPES.includes(level.level_type as any)
+        ? null
+        : level.level_number,
       is_unlocked: !!level.playerProgress.length,
     })),
   };
 
-  return { map: enhancedMap };
+  return {
+    map: enhancedMap,
+    audio:
+      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Navigation.mp3",
+  };
 };

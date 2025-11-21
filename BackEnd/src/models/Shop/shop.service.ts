@@ -88,9 +88,8 @@ export const getAllPlayerCharacter = async (req: Request, res: Response) => {
           ...character,
           characterShop: undefined,
         },
-        audio: [
-          "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353798/Shop_fjlttd.ogg",
-        ],
+        audio:
+          "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Shop.ogg",
       };
 
       if (owned) {
