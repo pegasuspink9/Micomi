@@ -344,10 +344,10 @@ const ScreenPlay = ({
     
     if (animationState === 'hurt') {
       const enemyHealth = fightResult?.enemy?.enemy_health ?? 0;
-      const enemyDiesUrl = fightResult?.enemy?.enemy_dies;
+       const enemyDiesUrl = fightResult?.enemy?.enemy_dies || gameState?.enemy?.enemy_dies;
       
       //  Only transition to dies if API explicitly provides dies animation AND health is 0
-      if (enemyDiesUrl && enemyHealth <= 0) {
+            if (enemyDiesUrl && enemyHealth <= 0) {
         console.log('🦹 Enemy hurt completed, dies animation available, health is 0 - transitioning to dies');
         setEnemyAnimationStates(prev => prev.map((state, i) => i === index ? 'dies' : state));
         return;
@@ -448,7 +448,7 @@ useEffect(() => {
       }
       
       //  Check if enemy has dies animation from API
-      const enemyDiesUrl = submission.fightResult?.enemy?.enemy_dies;
+      const enemyDiesUrl = submission.fightResult?.enemy?.enemy_dies || gameState?.enemy?.enemy_dies;
       
       if (enemyDiesUrl) {
         console.log('🦹 Enemy dies animation provided by API - enemy will die');
@@ -470,11 +470,18 @@ useEffect(() => {
         console.log(`🦹 Enemy health > 0 - enemy counter attacks character`);
         setEnemyAnimationStates(prev => prev.map(() => 'attack'));
       } else {
-        console.log(`🦹 Enemy health = 0 - enemy stays idle (already defeated)`);
-        setEnemyAnimationStates(prev => prev.map(() => 'idle'));
+        const enemyDiesUrl = submission.fightResult?.enemy?.enemy_dies || gameState?.enemy?.enemy_dies;
+        
+        if (enemyDiesUrl) {
+           console.log(`🦹 Enemy health = 0 (despite wrong answer) - triggering death sequence`);
+           setEnemyAnimationStates(prev => prev.map(() => 'hurt'));
+        } else {
+           console.log(`🦹 Enemy health = 0 - enemy stays idle (already defeated)`);
+           setEnemyAnimationStates(prev => prev.map(() => 'idle'));
+        }
       }
       
-      const characterHurtUrl = submission.fightResult?.character?.character_hurt;
+      const characterHurtUrl = submission.fightResult?.character?.character_hurt || gameState?.selectedCharacter?.character_hurt;
       console.log(`🩸 Character hurt URL available: ${!!characterHurtUrl}`);
       
       //  Character gets hurt on wrong answer (stays in place, no attack movement)
