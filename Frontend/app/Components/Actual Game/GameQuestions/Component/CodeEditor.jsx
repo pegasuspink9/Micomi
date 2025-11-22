@@ -9,6 +9,7 @@ import {
   scaleFont,
   RESPONSIVE 
 } from '../../../Responsiveness/gameResponsive';
+import Guide from '../Output/Guide';
 
 const CodeEditor = ({
   currentQuestion,
@@ -62,6 +63,9 @@ const CodeEditor = ({
 
   const renderTabContent = useCallback(() => {
     switch (activeTab) {
+      case 'guide':
+         return  <Guide currentQuestion={currentQuestion} />;
+
       case 'code':
         return (
           <ScrollView
@@ -173,6 +177,7 @@ const CodeEditor = ({
   const handleCodeTabPress = useCallback(() => handleTabChange('code'), [handleTabChange]);
   const handleOutputTabPress = useCallback(() => handleTabChange('output'), [handleTabChange]);
   const handleExpectedTabPress = useCallback(() => handleTabChange('expected'), [handleTabChange]);
+  const handleGuideTabPress = useCallback(() => handleTabChange('guide'), [handleTabChange]);
 
   return (
     <View style={styles.editorContainer}>
@@ -184,12 +189,30 @@ const CodeEditor = ({
         </View>
 
         <View style={styles.tabsContainer}>
+           {currentQuestion?.guide && (
+            <Pressable
+              onPress={handleGuideTabPress}
+              style={[
+                styles.webTab,
+                activeTab === 'guide' && styles.webTabActive,
+                styles.webTabFirst
+              ]}
+            >
+              <Text style={[
+                styles.webTabText, 
+                activeTab === 'guide' && styles.webTabTextActive
+              ]}>
+                Guide
+              </Text>
+            </Pressable>
+          )}
+
           <Pressable
             onPress={handleCodeTabPress}
             style={[
               styles.webTab,
               activeTab === 'code' && styles.webTabActive,
-              styles.webTabFirst
+              styles.webTabFirst, !currentQuestion?.guide && styles.webTabFirst
             ]}
           >
             <Text style={[
@@ -388,7 +411,7 @@ const styles = StyleSheet.create({
   },
 
   lineNumberContainer: {
-    minWidth: scaleWidth(50), //  Responsive
+    minWidth: scaleWidth(30), //  Responsive
     alignItems: 'center',
     borderTopWidth: scale(1), //  Responsive
     borderTopColor: '#3a3a3a',

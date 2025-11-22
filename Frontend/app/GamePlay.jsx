@@ -274,7 +274,7 @@ export default function GamePlay() {
     setSelectedBlankIndex(blankIndex);
   }, []);
 
-  const shouldHideThirdGrid = activeGameTab === 'output' || activeGameTab === 'expected';
+  const shouldHideThirdGrid = activeGameTab === 'output' || activeGameTab === 'expected' || activeGameTab === 'guide';
 
   
 
