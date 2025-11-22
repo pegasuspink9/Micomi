@@ -170,12 +170,12 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
       currentChallenge: null,
       submissionResult: null,
       combat_background: data.combat_background || responseData.combat_background || null,
-      
       // Extract card from ROOT level - it's alongside challenge data, not inside it
       card: data.card || responseData.card || {
         card_type: null,
         character_attack_card: null
-      }
+      },
+      versus_background: data.versus_background || responseData.versus_background || null,
     };
 
     // Extract challenge data

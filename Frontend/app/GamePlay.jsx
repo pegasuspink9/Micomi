@@ -661,6 +661,7 @@ export default function GamePlay() {
             onComplete={handleVSComplete}
             selectedCharacter={gameState?.selectedCharacter}
             enemy={gameState?.enemy}
+            versusBackground={gameState?.versus_background}
           />
       )}
 
@@ -769,7 +770,7 @@ export default function GamePlay() {
         cardType={cardType}
         onClose={handleCloseAttackCard}
         autoClose={true}
-        autoCloseDuration={10000000}
+        autoCloseDuration={3000}
       />
 
 

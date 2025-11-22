@@ -11,8 +11,16 @@ const CombatVSModal = ({
   onComplete = () => {},
   selectedCharacter = null,
   enemy = null,
-  duration = 5000
+  versusBackground = null,
+  duration = 3000
 }) => {
+
+   useEffect(() => {
+      if (visible && versusBackground) {
+        console.log('🎭 Versus Background URL:', versusBackground);
+      }
+    }, [visible, versusBackground]);
+
     const timerRef = useRef(null); 
     const visibleRef = useRef(visible);
 
@@ -130,7 +138,7 @@ const CombatVSModal = ({
     fadeOutAnim._value === 0 && { pointerEvents: 'none' }
     ]}>
     <View style={styles.modalOverlay}>
-    <ImageBackground source={{ uri: 'https://res.cloudinary.com/dpbocuozx/image/upload/v1761122670/file_000000006f7061f4bcda9c9c314d5882_cfnaan.png' }} style={styles.modalBackground} >
+    <ImageBackground source={{ uri: versusBackground }} style={styles.modalBackground} >
   
     <Animated.View style={[styles.characterSide, { transform: [{ translateX: characterSlideAnim }] }]}>
           <View style={styles.characterContainer}>

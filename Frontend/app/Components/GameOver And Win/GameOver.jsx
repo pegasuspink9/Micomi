@@ -34,7 +34,7 @@ import Reanimated, {
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// ✅ COPIED: Smooth Reanimated Number Counter
+//  COPIED: Smooth Reanimated Number Counter
 const NumberCounter = ({ value, start, duration = 2500 }) => {
   const animatedValue = useSharedValue(0);
   
@@ -61,7 +61,7 @@ const NumberCounter = ({ value, start, duration = 2500 }) => {
   );
 };
 
-// ✅ COPIED: Helper for Reanimated Text
+//  COPIED: Helper for Reanimated Text
 const ReanimatedTextInput = Reanimated.createAnimatedComponent(
   React.forwardRef((props, ref) => {
     return <Text ref={ref} {...props}>{props.value}</Text>;
@@ -81,12 +81,12 @@ const GameOverModal = ({
   const [imageReady, setImageReady] = useState(false);
   const [preloadedImages] = useState(new Map());
 
-  // ✅ COPIED: Triggers for reward counters
+  //  COPIED: Triggers for reward counters
   const [startCoinCount, setStartCoinCount] = useState(false);
   const [startPointCount, setStartPointCount] = useState(false);
   const [startExpCount, setStartExpCount] = useState(false);
 
-  // ✅ COPIED: Reanimated Shared Values
+  //  COPIED: Reanimated Shared Values
   const backgroundOpacity = useSharedValue(0);
   const spriteTranslateY = useSharedValue(SCREEN_HEIGHT);
   const textScale = useSharedValue(3);
@@ -98,7 +98,7 @@ const GameOverModal = ({
   
   const buttonsTranslateY = useSharedValue(SCREEN_HEIGHT);
 
-  // ✅ COPIED: Sprite configuration
+  //  COPIED: Sprite configuration
   const SPRITE_SIZE = Math.round(scale(358));
   const SPRITE_COLUMNS = 6;
   const SPRITE_ROWS = 4;
@@ -107,7 +107,7 @@ const GameOverModal = ({
 
   const frameIndex = useSharedValue(0);
   
-  // ✅ COPIED: Animation URLs
+  //  COPIED: Animation URLs
   const animationUrls = [
     'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb1.png',
     'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb2.png',
@@ -202,7 +202,7 @@ const GameOverModal = ({
     reward3Scale.value = 0;
     buttonsTranslateY.value = SCREEN_HEIGHT;
 
-    // ✅ COPIED: Reanimated Sequence
+    //  COPIED: Reanimated Sequence
     
     // 0. Background
     backgroundOpacity.value = withTiming(1, { duration: 300 });
@@ -280,7 +280,7 @@ const GameOverModal = ({
         
         <Text style={styles.gameOverTitle}>GAME OVER</Text>
 
-          {/* 2. Sprite Animation (Slides Up) - ✅ MOVED BELOW TEXT */}
+          {/* 2. Sprite Animation (Slides Up) -  MOVED BELOW TEXT */}
           <Reanimated.View 
             style={[
               styles.spriteContainerWrapper,
@@ -316,7 +316,7 @@ const GameOverModal = ({
           </Reanimated.View>
 
             
-          {/* 1. Text (Game Over + Defeated Message) - ✅ MOVED TO TOP */}
+          {/* 1. Text (Game Over + Defeated Message) -  MOVED TO TOP */}
           <Reanimated.View
             style={[
               {
@@ -331,7 +331,7 @@ const GameOverModal = ({
             <Text style={styles.defeatMessage}>
               {characterName} was defeated by {enemyName}
             </Text>
-            {/* ✅ Added feedback message support */}
+            {/*  Added feedback message support */}
             {completionRewards?.feedbackMessage && (
                <Text style={styles.feedbackMessage}>
                  {completionRewards.feedbackMessage}
