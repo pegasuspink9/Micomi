@@ -319,6 +319,17 @@ export default function GamePlay() {
       console.log('💀 Character died - all animations complete, showing GameOver modal');
       hasTriggeredGameOver.current = true;
 
+      const characterName = fightResult?.character?.character_name || 'Character';
+      const enemyName = fightResult?.enemy?.enemy_name || 'Enemy';
+
+      setCompletionRewards({
+        feedbackMessage: submissionResult?.completionRewards?.feedbackMessage || `${characterName} was defeated!`,
+        coinsEarned: submissionResult?.completionRewards?.coinsEarned || 0,
+        currentTotalPoints: submissionResult?.completionRewards?.totalPointsEarned || 0,
+        currentExpPoints: submissionResult?.completionRewards?.totalExpPointsEarned || 0,
+      });
+
+
       setShowGameOver(true);
       
        gameOverTimeoutRef.current = setTimeout(() => {
@@ -548,14 +559,6 @@ export default function GamePlay() {
           source={{uri: 'https://github.com/user-attachments/assets/dc83a36e-eb2e-4fa5-b4e7-0eab9ff65abc'}}
           style={styles.container}  
         >
-          <GameOverModal
-            visible={showGameOverModal}
-            onRetry={handleRetry}
-            onHome={handleHome}
-            characterName={gameState?.selectedCharacter?.name || 'Character'}
-            enemyName={gameState?.enemy?.enemy_name || 'Enemy'}
-            isRetrying={isRetrying} 
-          />
 
       
 
@@ -739,9 +742,10 @@ export default function GamePlay() {
             visible={showGameOverModal}
             onRetry={handleRetry}
             onHome={handleHome}
-            characterName={gameState?.selectedCharacter?.name || 'Character'}
-            enemyName={gameState?.enemy?.enemy_name || 'Enemy'}
+           characterName={gameState?.submissionResult?.fightResult?.character?.character_name || 'Character'}
+            enemyName={gameState?.submissionResult?.fightResult?.enemy?.enemy_name || 'Enemy'}
             isRetrying={isRetrying} 
+            completionRewards={completionRewards}
           />
             
           <LevelCompletionModal

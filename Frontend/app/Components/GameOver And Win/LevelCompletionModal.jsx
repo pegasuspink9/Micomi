@@ -78,9 +78,6 @@ const AnimatedText = ({ style, text }) => {
     </Reanimated.Text>
   );
 };
-// Let's stick to the Reanimated.Text approach which requires passing the value as a child or prop
-// Ideally, we use a Reanimated Text component that accepts a shared value, but standard Text doesn't.
-// We will use a small wrapper to update text content.
 const ReanimatedCounterText = ({ style, sharedValue }) => {
   const animatedProps = useAnimatedStyle(() => {
     return {
