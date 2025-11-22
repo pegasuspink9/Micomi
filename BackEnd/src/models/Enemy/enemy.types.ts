@@ -15,8 +15,6 @@ export interface EnemyCreateInput {
   avatar_enemy?: string;
 
   special_skill?: string;
-
-  enemy_coins?: number;
 }
 
 export interface EnemyUpdateInput {

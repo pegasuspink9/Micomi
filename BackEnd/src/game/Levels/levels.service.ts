@@ -168,7 +168,7 @@ export const previewLevel = async (playerId: number, levelId: number) => {
       return {
         level: {
           level_id: level.level_id,
-          level_number: level.level_number,
+          level_number: null,
           level_difficulty: level.level_difficulty,
           level_title: level.level_title,
           level_type: level.level_type,
@@ -185,7 +185,7 @@ export const previewLevel = async (playerId: number, levelId: number) => {
       return {
         level: {
           level_id: level.level_id,
-          level_number: level.level_number,
+          level_number: null,
           level_difficulty: level.level_difficulty,
           level_title: level.level_title,
           level_type: level.level_type,
@@ -202,9 +202,8 @@ export const previewLevel = async (playerId: number, levelId: number) => {
           player_coins: player.coins,
         },
         potionShop,
-        audio: [
-          "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353798/Shop_fjlttd.ogg",
-        ],
+        audio:
+          "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Shop.ogg",
       };
 
     case "enemyButton":
@@ -563,6 +562,22 @@ export const enterLevel = async (playerId: number, levelId: number) => {
 
   const questionType = level.map.map_name;
 
+  let versus_background = "";
+
+  if (questionType === "HTML") {
+    versus_background =
+      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Versus%20Maps/Green.png";
+  } else if (questionType === "CSS") {
+    versus_background =
+      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Versus%20Maps/Lava.png";
+  } else if (questionType === "JavaScript") {
+    versus_background =
+      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Versus%20Maps/Winter.png";
+  } else {
+    versus_background =
+      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Versus%20Maps/Autumn.jpg";
+  }
+
   return {
     level: {
       level_id: level.level_id,
@@ -608,6 +623,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     correct_answer_length: correctAnswerLength,
     combat_background: combatBackground,
     question_type: questionType,
+    versus_background: versus_background,
   };
 };
 

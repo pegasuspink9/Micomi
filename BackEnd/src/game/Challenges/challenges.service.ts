@@ -46,6 +46,72 @@ const buildChallengeWithTimer = (
     : null,
 });
 
+const generateMotivationalMessage = (
+  wasFirstCompletion: boolean,
+  wrongChallengesCount: number,
+  totalChallenges: number,
+  isBonusRound: boolean,
+  playerWon: boolean,
+  levelNumber: number
+): string => {
+  if (!playerWon) {
+    const mistakeCount = wrongChallengesCount;
+
+    if (mistakeCount === 0) {
+      return `You were so close to victory in Level ${levelNumber}! Your knowledge was perfect, but the battle was lost. Regroup and try again—you've got this!`;
+    } else if (mistakeCount === 1) {
+      return `Level ${levelNumber} defeated you this time with just 1 mistake. You're almost there! One more focused attempt and victory will be yours!`;
+    } else if (mistakeCount <= 3) {
+      return `You made ${mistakeCount} mistakes in Level ${levelNumber} before falling. Don't be discouraged—every mistake is a lesson learned. Come back stronger!`;
+    } else if (mistakeCount <= 5) {
+      return `${mistakeCount} mistakes cost you the battle in Level ${levelNumber}. Take a moment to review, then face this challenge again with renewed determination!`;
+    } else {
+      return `Level ${levelNumber} proved challenging with ${mistakeCount} mistakes. Remember, even the greatest heroes faced setbacks. Study, practice, and return victorious!`;
+    }
+  }
+
+  const mistakeCount = wrongChallengesCount;
+  const isPerfect = mistakeCount === 0;
+
+  if (isPerfect && !isBonusRound) {
+    if (wasFirstCompletion) {
+      return `PERFECT SCORE! You've conquered Level ${levelNumber} flawlessly on your first try! Your mastery is exceptional—keep this momentum going!`;
+    } else {
+      return `PERFECT SCORE! You've mastered Level ${levelNumber} without a single mistake! Your skills continue to shine—excellent work!`;
+    }
+  }
+
+  if (isPerfect && isBonusRound) {
+    if (wasFirstCompletion) {
+      return `FLAWLESS VICTORY! You completed Level ${levelNumber} with perfect accuracy AND conquered the bonus round! You're a true champion!`;
+    } else {
+      return `FLAWLESS VICTORY! Level ${levelNumber} bonus round complete with zero mistakes! Your dedication to perfection is admirable!`;
+    }
+  }
+
+  if (isBonusRound) {
+    if (mistakeCount <= 2) {
+      return `Great job completing Level ${levelNumber}'s bonus round! ${mistakeCount} ${
+        mistakeCount === 1 ? "mistake" : "mistakes"
+      } along the way—remember, it's not bad to make mistakes. They help you grow stronger!`;
+    } else if (mistakeCount === 3) {
+      return `You've conquered Level ${levelNumber}'s bonus round with 3 mistakes. Every challenge overcome makes you wiser. Well done pushing through!`;
+    } else {
+      return `Bonus round complete in Level ${levelNumber}! You made ${mistakeCount} mistakes but persevered to victory. Your determination is your greatest strength!`;
+    }
+  }
+
+  if (mistakeCount === 1) {
+    return `Excellent work on Level ${levelNumber}! Just 1 mistake shows your strong grasp of the material. You're on the path to mastery!`;
+  } else if (mistakeCount <= 3) {
+    return `Well done completing Level ${levelNumber}! With only ${mistakeCount} mistakes, you demonstrated solid understanding. Keep up the great work!`;
+  } else if (mistakeCount <= 5) {
+    return `Victory in Level ${levelNumber}! You made ${mistakeCount} mistakes but learned from each one and succeeded. That's the spirit of a true learner!`;
+  } else {
+    return `Level ${levelNumber} complete! ${mistakeCount} mistakes couldn't stop your determination. Every error teaches you something valuable—onward to the next challenge!`;
+  }
+};
+
 export const submitChallengeService = async (
   playerId: number,
   levelId: number,
@@ -274,6 +340,7 @@ export const submitChallengeService = async (
   let message: string = "Challenge submitted.";
   let audioResponse: string[] = [];
   let appliedDamage = 0;
+  let character_attack_audio: string | null = null;
 
   if (isCorrect) {
     const baselineState = await CombatService.getCurrentFightState(
@@ -304,6 +371,28 @@ export const submitChallengeService = async (
     console.log(
       `- Character damage displayed on correct answer (doubled if active): ${fightResult.character.character_damage}, applied: ${appliedDamage}`
     );
+
+    //character attack audio
+    if (character.character_name === "Gino") {
+      const type = fightResult.character?.character_attack_type;
+
+      switch (type) {
+        case "special_attack":
+        case "third_attack":
+          character_attack_audio =
+            "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/3rd%20and%204th%20Skill%20Gino.wav";
+          break;
+        case "second_attack":
+          character_attack_audio =
+            "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Gino%20Bite.wav";
+          break;
+        case "basic_attack":
+        default:
+          character_attack_audio =
+            "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Gino_Basic_Attack.wav";
+          break;
+      }
+    }
 
     const { text, audio } = generateDynamicMessage(
       true,
@@ -430,34 +519,97 @@ export const submitChallengeService = async (
   let nextLevel: SubmitChallengeControllerResult["nextLevel"] = null;
   const wasFirstCompletion = allCompleted && !freshProgress?.is_completed;
 
-  if (allCompleted) {
-    if (wasFirstCompletion) {
+  const playerLost = freshProgress!.player_hp <= 0;
+
+  if (allCompleted || playerLost) {
+    const wrongCount = freshProgress!.consecutive_wrongs;
+    const wasInBonusRound =
+      freshProgress!.enemy_hp <= 0 && freshProgress!.player_hp > 0;
+
+    if (playerLost) {
+      const motivationalMessage = generateMotivationalMessage(
+        false,
+        wrongCount,
+        totalChallenges,
+        wasInBonusRound,
+        false,
+        level.level_number
+      );
+
+      completionRewards = {
+        feedbackMessage: motivationalMessage,
+        coinsEarned: 0,
+        totalPointsEarned: 0,
+        totalExpPointsEarned: 0,
+        isVictory: false,
+      };
+
       await prisma.playerProgress.update({
         where: { progress_id: currentProgress.progress_id },
         data: {
-          is_completed: true,
-          completed_at: new Date(),
+          player_hp: character.health,
+          enemy_hp: enemyMaxHealth,
+          player_answer: {},
+          wrong_challenges: [],
+          attempts: 0,
+          coins_earned: 0,
+          total_points_earned: 0,
+          total_exp_points_earned: 0,
+          consecutive_corrects: 0,
+          consecutive_wrongs: 0,
           has_strong_effect: false,
           has_freeze_effect: false,
+          has_reversed_curse: false,
+          has_boss_shield: false,
+          is_completed: true,
+          completed_at: new Date(),
         },
       });
-
-      completionRewards = {
-        feedbackMessage:
-          level.feedback_message ??
-          `You completed Level ${level.level_number}!`,
-      };
-
-      nextLevel = await LevelService.unlockNextLevel(
-        playerId,
-        level.map_id,
+    } else if (allCompleted) {
+      const motivationalMessage = generateMotivationalMessage(
+        wasFirstCompletion,
+        wrongCount,
+        totalChallenges,
+        wasInBonusRound,
+        true,
         level.level_number
       );
-    } else {
-      const baseMessage = `You've mastered Level ${level.level_number}!`;
-      completionRewards = {
-        feedbackMessage: `${baseMessage} This level was already completed, so no additional rewards are given—great job practicing and honing your skills!`,
-      };
+
+      if (wasFirstCompletion) {
+        await prisma.playerProgress.update({
+          where: { progress_id: currentProgress.progress_id },
+          data: {
+            is_completed: true,
+            completed_at: new Date(),
+            has_strong_effect: false,
+            has_freeze_effect: false,
+          },
+        });
+
+        completionRewards = {
+          feedbackMessage: motivationalMessage,
+          coinsEarned: freshProgress?.coins_earned ?? 0,
+          totalPointsEarned: freshProgress?.total_points_earned ?? 0,
+          totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
+          isVictory: true,
+        };
+
+        nextLevel = await LevelService.unlockNextLevel(
+          playerId,
+          level.map_id,
+          level.level_number
+        );
+      } else {
+        completionRewards = {
+          feedbackMessage:
+            motivationalMessage +
+            "Already completed—no extra rewards. Great practice!",
+          coinsEarned: 0,
+          totalPointsEarned: 0,
+          totalExpPointsEarned: 0,
+          isVictory: true,
+        };
+      }
     }
   }
 
@@ -536,6 +688,24 @@ export const submitChallengeService = async (
     audioResponse = audio;
   }
 
+  const is_correct_audio = isCorrect
+    ? "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Correct.wav"
+    : "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Wrong_2.wav";
+
+  //enemy attack audio
+  let enemy_attack_audio: string | null = null;
+  let death_audio: string | null = null;
+
+  if (!isCorrect) {
+    enemy_attack_audio =
+      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/All_Enemy_Attack.wav";
+  }
+
+  if (fightResult.status !== "in_progress") {
+    death_audio =
+      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/All%20Death.wav";
+  }
+
   return {
     isCorrect,
     attempts: freshProgress?.attempts ?? updatedProgress.attempts,
@@ -566,6 +736,10 @@ export const submitChallengeService = async (
       card_type,
       character_attack_card,
     },
+    is_correct_audio,
+    enemy_attack_audio,
+    character_attack_audio,
+    death_audio,
   };
 };
 
