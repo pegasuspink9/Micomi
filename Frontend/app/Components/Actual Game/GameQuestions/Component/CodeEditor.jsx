@@ -207,19 +207,19 @@ const CodeEditor = ({
             </Pressable>
           )}
 
-          <Pressable
+             <Pressable
             onPress={handleCodeTabPress}
             style={[
               styles.webTab,
               activeTab === 'code' && styles.webTabActive,
-              styles.webTabFirst, !currentQuestion?.guide && styles.webTabFirst
+              !currentQuestion?.guide && styles.webTabFirst
             ]}
           >
             <Text style={[
               styles.webTabText, 
               activeTab === 'code' && styles.webTabTextActive
             ]}>
-              index.html
+              {activeTab === 'code' ? 'index.html' : 'HTML'} {/*  ADDED: Abbreviated version */}
             </Text>
           </Pressable>
 
@@ -234,7 +234,7 @@ const CodeEditor = ({
               styles.webTabText, 
               activeTab === 'output' && styles.webTabTextActive
             ]}>
-              Output
+              {activeTab === 'output' ? 'Output' : 'Output'} {/*  ADDED: Abbreviated version */}
             </Text>
           </Pressable>
 
@@ -250,7 +250,7 @@ const CodeEditor = ({
               styles.webTabText, 
               activeTab === 'expected' && styles.webTabTextActive
             ]}>
-              Expected Output
+              {activeTab === 'expected' ? 'Expected Output' : 'Expected'} 
             </Text>
           </Pressable>
         </View>
@@ -321,33 +321,32 @@ const styles = StyleSheet.create({
   tabsContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    marginLeft: RESPONSIVE.margin.md, //  Responsive
+    marginLeft: RESPONSIVE.margin.md, 
     height: scale(32), //  Responsive
+    flex: 1, 
   },
 
   webTab: {
     backgroundColor: '#3c3c3c',
-    paddingHorizontal: scale(12), //  Responsive
-    paddingVertical: RESPONSIVE.margin.sm, //  Responsive
-    marginRight: scale(2), //  Responsive
-    borderTopLeftRadius: RESPONSIVE.borderRadius.sm, //  Responsive
-    borderTopRightRadius: RESPONSIVE.borderRadius.sm, //  Responsive
-    borderTopWidth: scale(1), //  Responsive
-    borderLeftWidth: scale(1), //  Responsive
-    borderRightWidth: scale(1), //  Responsive
+    paddingHorizontal: scale(8), // ✅ REDUCED: Less padding for inactive to save space
+    paddingVertical: RESPONSIVE.margin.sm,
+    marginRight: scale(2),
+    borderTopLeftRadius: RESPONSIVE.borderRadius.sm,
+    borderTopRightRadius: RESPONSIVE.borderRadius.sm,
+    borderTopWidth: scale(1),
+    borderLeftWidth: scale(1),
+    borderRightWidth: scale(1),
     borderTopColor: '#555',
     borderLeftColor: '#555',
     borderRightColor: '#555',
-    minWidth: scaleWidth(80), //  Responsive
-    alignItems: 'center',
-    justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: scale(-1) }, //  Responsive
+    shadowOffset: { width: 0, height: scale(-1) },
     shadowOpacity: 0.2,
-    shadowRadius: scale(2), //  Responsive
+    shadowRadius: scale(2),
     elevation: 1,
+    minWidth: scale(20),
   },
-  
+
   webTabActive: {
     backgroundColor: '#000d2f99',
     borderTopColor: '#1177bb',
@@ -356,7 +355,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
     elevation: 3,
     zIndex: 10,
-    marginBottom: scale(-2), //  Responsive
+    marginBottom: scale(-2),
+    flex: 0, // ✅ CHANGED: Don't participate in flex distribution
+    flexBasis: 'auto', // ✅ ADDED: Size strictly by content
+    flexGrow: 0, // ✅ ADDED: Don't take extra space beyond text
+    flexShrink: 0, // ✅ ADDED: Never shrink the active text
+    paddingHorizontal: scale(16),
+    // maxWidth: scaleWidth(150), // ✅ REMOVED: Allow full expansion
   },
 
   webTabFirst: {
@@ -369,14 +374,20 @@ const styles = StyleSheet.create({
 
   webTabText: {
     color: '#d1d5d9',
-    fontSize: RESPONSIVE.fontSize.xs, //  Responsive (was hard-coded 10)
+    fontSize: RESPONSIVE.fontSize.xs,
     fontFamily: 'DynaPuff',
     fontWeight: '500',
+    numberOfLines: 1, 
+    flexShrink: 1,
+    whiteSpace: 'nowrap', //  ADDED: Prevent wrapping
   },
 
   webTabTextActive: {
     color: '#ffffff',
     fontWeight: '600',
+    numberOfLines: 1,
+    flexShrink: 0,
+    whiteSpace: 'nowrap', //  ADDED: Prevent wrapping
   },
 
   headerSpacer: {

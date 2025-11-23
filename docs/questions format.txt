@@ -1,0 +1,4 @@
+put hypen if there is important keyword
+Code examples should be like vsCode
+
+HTML Structure Basics:\n\nEvery webpage has a skeleton made of tags that work together:\n\n• DOCTYPE - This tells the browser 'Hey, I'm an HTML page!' It's always at the very top.\n   Example: <!DOCTYPE html>\n\n• <html> tag - This is the container for your *ENTIRE* page. Everything else goes inside it.\n   Example:\n   <html>\n     ...\n   </html>\n\n• <head> tag - This section holds information *ABOUT* your page (like the title in the browser tab). Visitors don't see what's in here.\n   Example:\n   <head>\n     <title>My Cool Site</title>\n   </head>\n\n• <body> tag - This is where all the *VISIBLE* content goes. Whatever you put here shows up on the screen.\n   Example:\n   <body>\n     <h1>Welcome!</h1>\n   </body>\n\nRemember: Tags open and close like parentheses. If you open <body>, you must close it with </body>!\n\nNow look at the blanks - which tag belongs where?
