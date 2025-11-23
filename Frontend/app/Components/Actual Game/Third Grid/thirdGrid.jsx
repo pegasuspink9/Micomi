@@ -51,7 +51,8 @@ const ThirdGrid = ({
   hasNextLevel = false,
   onCharacterRun = null, 
   fadeOutAnim = null,
-  isInRunMode = false
+  isInRunMode = false,
+  setSelectedBlankIndex,
 }) => {
 
   if (!currentQuestion) {
@@ -83,9 +84,16 @@ const ThirdGrid = ({
   const challengeType = currentQuestion.type || currentQuestion.challenge_type;
 
   const handleAnswerSelect = useMemo(() => 
-  createAnswerSelectHandler(currentQuestion, selectedAnswers, setSelectedAnswers), 
-  [currentQuestion, selectedAnswers, setSelectedAnswers]
+  createAnswerSelectHandler(
+    currentQuestion, 
+    selectedAnswers, 
+    setSelectedAnswers,
+    selectedBlankIndex, // ✅ ADDED: Pass selected index
+    setSelectedBlankIndex // ✅ ADDED: Pass setter for auto-advance
+  ), 
+  [currentQuestion, selectedAnswers, setSelectedAnswers, selectedBlankIndex, setSelectedBlankIndex]
   );
+
 
   const handleNextQuestion = useMemo(() => 
     createNextQuestionHandler(

@@ -201,7 +201,7 @@ export default function GamePlay() {
 
   useEffect(() => {
     if (currentChallenge) {
-      setSelectedAnswers(new Array(maxAnswers).fill(''));
+      setSelectedAnswers(new Array(maxAnswers).fill(null));
       setBorderColor('white');
       setActiveGameTab('code');
       setSelectedBlankIndex(0);
@@ -269,30 +269,38 @@ export default function GamePlay() {
   }, [selectedPotion, clearSelectedPotion]);
 
   
-  const handleBlankSelect = useCallback((blankIndex) => {
+    const handleBlankSelect = useCallback((blankIndex) => {
     console.log('🎯 Blank selected in GamePlay:', blankIndex);
+    
+    // ✅ ADDED: Toggle logic for the blank itself
+    // If clicking the blank that is ALREADY selected, clear its answer
+    if (selectedBlankIndex === blankIndex) {
+      setSelectedAnswers(prev => {
+        // Only clear if it actually has a value
+        if (prev && prev[blankIndex] !== null) {
+          const newArr = [...prev];
+          newArr[blankIndex] = null;
+          return newArr;
+        }
+        return prev;
+      });
+    }
+
     setSelectedBlankIndex(blankIndex);
-  }, []);
+  }, [selectedBlankIndex]);
 
   const shouldHideThirdGrid = activeGameTab === 'output' || activeGameTab === 'expected' || activeGameTab === 'guide';
 
+
   
-
-  useEffect(() => {
-    if (currentChallenge) {
-      setSelectedAnswers([]);
-      setBorderColor('white');
-      setActiveGameTab('code');
-      setSelectedBlankIndex(0);
-    }
-  }, [currentChallenge?.id]);
-
   const handleEnemyComplete = useCallback(() => {
-    setSelectedAnswers([]);
+    // ✅ CHANGED: Reset to array of nulls so slots exist
+    setSelectedAnswers(new Array(maxAnswers).fill(null));
     setBorderColor('white'); 
     setActiveGameTab('code');
     setSelectedBlankIndex(0);
-  }, []);
+  }, [maxAnswers]);
+
 
   useEffect(() => {
     const submissionResult = gameState?.submissionResult;
@@ -695,7 +703,8 @@ export default function GamePlay() {
                 getBlankIndex={getBlankIndex}
                 onTabChange={handleGameTabChange}
                 activeTab={activeGameTab}
-                onBlankSelect={selectedBlankIndex}
+                selectedBlankIndex={selectedBlankIndex}
+                onBlankPress={handleBlankSelect} 
                 isAnswerCorrect={gameState?.submissionResult?.isCorrect}
               />
 
@@ -734,6 +743,7 @@ export default function GamePlay() {
                   hasNextLevel={!!gameState?.submissionResult?.nextLevel}
                   fadeOutAnim={fadeOutAnim}
                   isInRunMode={isInRunMode}
+                  setSelectedBlankIndex={setSelectedBlankIndex}
                 />
               </View>
               )}

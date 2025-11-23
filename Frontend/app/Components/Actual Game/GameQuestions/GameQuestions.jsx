@@ -1,10 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Text, View, StyleSheet, Dimensions, ScrollView } from 'react-native';
+import { Text, View, StyleSheet, Dimensions, ScrollView, Pressable} from 'react-native';
 import CodeEditor from './Component/CodeEditor';
 import DocumentQuestion from './Component/DocumentQuestion';
 import { renderHighlightedText } from './utils/syntaxHighligther';
 import { scrollToNextBlank, calculateGlobalBlankIndex } from './utils/blankHelper';
 import { scale, RESPONSIVE, scaleWidth, scaleHeight, wp, hp } from '../../Responsiveness/gameResponsive';
+
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -14,7 +15,9 @@ export default function GameQuestions({
   getBlankIndex,
   onTabChange,
   activeTab,
-  isAnswerCorrect // NEW: Add this prop
+  isAnswerCorrect, 
+  selectedBlankIndex,
+  onBlankPress
 }) {
   const scrollViewRef = useRef(null);
   const blankRefs = useRef({});
@@ -50,40 +53,48 @@ const renderSyntaxHighlightedLine = (line, lineIndex) => {
   }
 
   const parts = line.split('_');
-  let localBlankIndex = 0;
+  // Removed localBlankIndex variable as partIndex is sufficient and safer
   
   const blanksBeforeCurrent = calculateGlobalBlankIndex(currentQuestion, lineIndex);
-  const currentBlankIndex = selectedAnswers?.length || 0;
   
   return (
-    <Text style={styles.codeText}>
+    //  CHANGED: Use View with row layout instead of Text to fix touch handling
+    <View style={styles.codeLineContainer}>
       {parts.map((part, partIndex) => (
         <React.Fragment key={partIndex}>
-          {renderHighlightedText(part)}
-          {partIndex < parts.length - 1 && (
-            <View 
-              ref={(ref) => {
-                if (ref) {
-                  const globalIndex = blanksBeforeCurrent + localBlankIndex;
-                  blankRefs.current[globalIndex] = ref;
-                }
-              }}
-              style={[
-                styles.codeBlankContainer,
-                (blanksBeforeCurrent + localBlankIndex) === currentBlankIndex && styles.currentBlank
-              ]}
-            >
-              <Text style={styles.codeBlankText}>
-              {selectedAnswers?.[blanksBeforeCurrent + localBlankIndex] !== null && selectedAnswers?.[blanksBeforeCurrent + localBlankIndex] !== undefined
-                ? options?.[selectedAnswers[blanksBeforeCurrent + localBlankIndex]] || '_'
-                : '_'}
-            </Text>
-            </View>
-          )}
-          {partIndex < parts.length - 2 && (localBlankIndex++, null)}
+            {/* Wrap text parts in Text component to apply styles */}
+            {part ? <Text style={styles.codeText}>{renderHighlightedText(part)}</Text> : null}
+            
+            {partIndex < parts.length - 1 && (
+              <Pressable 
+                key={`blank-${blanksBeforeCurrent + partIndex}`}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  if (onBlankPress) onBlankPress(blanksBeforeCurrent + partIndex);
+                }}
+                ref={(ref) => {
+                  if (ref) {
+                    const globalIndex = blanksBeforeCurrent + partIndex;
+                    blankRefs.current[globalIndex] = ref;
+                  }
+                }}
+                //  Keep hitSlop for better usability
+                hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
+                style={[
+                  styles.codeBlankContainer,
+                  (blanksBeforeCurrent + partIndex) === selectedBlankIndex && styles.currentBlank
+                ]}
+              >
+                <Text style={styles.codeBlankText}>
+                {selectedAnswers?.[blanksBeforeCurrent + partIndex] != null
+                  ? options?.[selectedAnswers[blanksBeforeCurrent + partIndex]] || '_'
+                  : '_'}
+              </Text>
+              </Pressable>
+            )}
         </React.Fragment>
       ))}
-    </Text>
+    </View>
   );
 };
 
@@ -141,8 +152,13 @@ const styles = StyleSheet.create({
     minHeight: 0, 
     maxHeight: '100%',
   },
+   codeLineContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    minHeight: scale(25),
+  },
   codeText: {
-    lineHeight: scale(25),
     color: '#ffffff',
     fontFamily: 'monospace',
     fontSize: RESPONSIVE.fontSize.md,
@@ -151,7 +167,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#0e639c',
     borderRadius: 6,
     paddingHorizontal: 12,
-    marginHorizontal: 2,
     borderTopWidth: 1,
     borderTopColor: '#4da6ff',
     borderLeftWidth: 1,
@@ -165,6 +180,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 3,
     elevation: 6,
+    position: 'relative',
+    // top: scale(3), // Adjusted alignment if needed
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   currentBlank: {
     backgroundColor: '#ff9500',

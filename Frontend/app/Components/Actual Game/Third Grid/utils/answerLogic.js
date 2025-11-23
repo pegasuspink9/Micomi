@@ -82,23 +82,75 @@ export const canSelectAnswer = (selectedAnswers, answer, maxAnswers) => {
   return selectedAnswers.length < maxAnswers;
 };
 
-export const createAnswerSelectHandler = (currentQuestion, selectedAnswers, setSelectedAnswers) => {
+export const createAnswerSelectHandler = (currentQuestion, selectedAnswers, setSelectedAnswers, selectedBlankIndex, setSelectedBlankIndex) => {
   const maxAnswers = getMaxAnswers(currentQuestion);
+  const challengeType = currentQuestion.type || currentQuestion.challenge_type;
   
   return (index) => {
     setSelectedAnswers(prev => {
-      const newArr = [...prev];
-      const idx = newArr.indexOf(index);
-      if (idx > -1) {
-        // Remove if already selected
-        newArr.splice(idx, 1);
-      } else {
-        // Add if not selected and under limit
-        if (newArr.length >= maxAnswers) {
-          Alert.alert('Selection Limit', `You can only select ${maxAnswers} answer(s)`);
+      let newArr = [...prev];
+      if (newArr.length < maxAnswers) {
+        const filled = new Array(maxAnswers).fill(null).map((_, i) => newArr[i] ?? null);
+        newArr = filled;
+      }
+
+      if (challengeType === 'fill in the blank' || challengeType === 'code with guide') {
+        
+        // ✅ GLOBAL TOGGLE LOGIC:
+        // If this option is already selected ANYWHERE, deselect it.
+        const existingIndex = newArr.indexOf(index);
+
+        if (existingIndex !== -1) {
+          // Option is already used. Deselect it.
+          newArr[existingIndex] = null;
+
+          if (setSelectedBlankIndex) {
+            setSelectedBlankIndex(existingIndex);
+          }
+
+          // 🛑 STOP: Do NOT fill the current blank. Do NOT auto-advance.
           return newArr;
         }
-        newArr.push(index);
+
+        // If option is NOT used, fill the current blank
+        newArr[selectedBlankIndex] = index;
+        
+        // Auto-advance Logic
+        let nextIndex = -1;
+        for (let i = selectedBlankIndex + 1; i < maxAnswers; i++) {
+          if (newArr[i] === null) {
+            nextIndex = i;
+            break;
+          }
+        }
+        
+        if (nextIndex === -1) {
+          for (let i = 0; i < selectedBlankIndex; i++) {
+            if (newArr[i] === null) {
+              nextIndex = i;
+              break;
+            }
+          }
+        }
+
+        if (nextIndex !== -1 && setSelectedBlankIndex) {
+          setSelectedBlankIndex(nextIndex);
+        }
+
+      } else {
+        // ...existing multiple choice logic...
+        const idx = newArr.indexOf(index);
+        if (idx > -1) {
+          newArr.splice(idx, 1);
+        } else {
+          if (newArr.filter(x => x !== null).length >= maxAnswers) {
+            Alert.alert('Selection Limit', `You can only select ${maxAnswers} answer(s)`);
+            return prev; 
+          }
+          const firstNull = newArr.indexOf(null);
+          if (firstNull !== -1) newArr[firstNull] = index;
+          else newArr.push(index);
+        }
       }
       return newArr;
     });

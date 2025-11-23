@@ -13,7 +13,7 @@ const Guide = ({ currentQuestion }) => {
   const [exampleOutputs, setExampleOutputs] = useState({});
 
   const generateExampleOutput = useCallback((exampleCode) => {
-    if (!exampleCode) return '<html><body><p>No output available</p></body></html>';
+    if (!exampleCode) return ''; //  CHANGED: Return empty string instead of default message
 
     let htmlCode = exampleCode.trim();
 
@@ -54,11 +54,13 @@ const ExampleOutput = useCallback(({ exampleCode, exampleKey }) => {
   //  FIXED: Check if body has actual visible content (not empty tags)
   const hasVisibleContent = exampleCode && 
     exampleCode.trim().length > 0 && 
-    !/^[\s<>/]*$/.test(exampleCode) && // Not just tags and whitespace
-    /<body[^>]*>[\s\S]*?<\/body>/.test(htmlOutput) && // Has body tags
-    /<body[^>]*>[\s\S]*?<\/body>/.exec(htmlOutput)[0].replace(/<[^>]*>/g, '').trim().length > 0; // Body has text content
+    !/^[\s<>/]*$/.test(exampleCode) && 
+    exampleCode.includes('<') && 
+    htmlOutput && htmlOutput.trim().length > 0 && 
+    /<body[^>]*>[\s\S]*?<\/body>/.test(htmlOutput) && 
+    /<body[^>]*>[\s\S]*?<\/body>/.exec(htmlOutput)[0].replace(/<[^>]*>/g, '').trim().length > 0;
 
-  if (!hasVisibleContent) return null; // Don't render if no visible content
+  if (!hasVisibleContent) return null;
 
   return (
     <View style={styles.exampleOutputContainer}>
@@ -267,7 +269,7 @@ const styles = StyleSheet.create({
   },
 
   guideAllCaps: {
-    fontFamily: 'FunkySign',
+    fontFamily: 'MusicVibes',
     color: '#0077ffff',
   },
 
