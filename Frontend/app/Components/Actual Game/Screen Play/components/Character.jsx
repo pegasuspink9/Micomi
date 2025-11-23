@@ -31,6 +31,7 @@ const DogCharacter = ({
   const frameIndex = useSharedValue(0);
   const positionX = useSharedValue(0);
   const opacity = useSharedValue(1);
+  const blinkOpacity = useSharedValue(0); //  ADDED: For red blink effect
 
   // ========== Animation Configuration ==========
   const SPRITE_SIZE = useMemo(() => scale(128), []);
@@ -241,6 +242,7 @@ const DogCharacter = ({
       cancelAnimation(frameIndex);
       cancelAnimation(positionX);
       cancelAnimation(opacity);
+      cancelAnimation(blinkOpacity);
       return;
     }
 
@@ -248,6 +250,7 @@ const DogCharacter = ({
     cancelAnimation(frameIndex);
     cancelAnimation(positionX);
     cancelAnimation(opacity);
+    cancelAnimation(blinkOpacity);
 
     frameIndex.value = 0;
 
@@ -354,10 +357,25 @@ const DogCharacter = ({
           easing: Easing.inOut(Easing.quad),
         });
       }
+    } else if (currentState === 'hurt') {
+      console.log(`🩸 Character hurt - triggering red flash effect`);
+      positionX.value = 0;
+      opacity.value = 1;
+      
+      blinkOpacity.value = 0;
+      blinkOpacity.value = withRepeat(
+        withTiming(0.7, { // Flash to 70% red intensity
+          duration: 100,
+          easing: Easing.inOut(Easing.ease),
+        }),
+        Math.floor(ANIMATION_DURATIONS.hurt / 200), 
+        true // Reverse (fade back out)
+      );
     } else {
       console.log(`🩸 Character entering ${currentState} state - position will stay at 0`);
       positionX.value = 0;
       opacity.value = 1;
+      blinkOpacity.value = 0; //  ADDED: Reset blink
     }
 
     // Play frame animation
@@ -393,7 +411,7 @@ const DogCharacter = ({
               }
             );
           } else if (currentState === 'run') {
-            // ✅ Run animation completes and disappears
+            //  Run animation completes and disappears
             console.log(`🏃 Character run animation completed - fading out`);
             opacity.value = withTiming(
               0,
@@ -408,9 +426,15 @@ const DogCharacter = ({
                 }
               }
             );
+          } else if (currentState === 'hurt') {
+            //  FIXED: Don't reset blinkOpacity here, let it finish naturally
+            console.log(`🩸 Character hurt animation frame complete`);
+            frameIndex.value = 0;
+            runOnJS(notifyAnimationComplete)();
           } else {
             positionX.value = 0;
             opacity.value = 1;
+            blinkOpacity.value = 0; //  ADDED: Reset blink
             runOnJS(notifyAnimationComplete)();
             frameIndex.value = 0;
           }
@@ -423,6 +447,7 @@ const DogCharacter = ({
       cancelAnimation(frameIndex);
       cancelAnimation(positionX);
       cancelAnimation(opacity);
+      cancelAnimation(blinkOpacity);
       if (phaseTimeoutRef.current) {
         clearTimeout(phaseTimeoutRef.current);
       }
@@ -477,6 +502,11 @@ const DogCharacter = ({
     opacity: opacity.value,
   }), []);
 
+  //  ADDED: Style for the red overlay
+  const redFlashStyle = useAnimatedStyle(() => ({
+    opacity: blinkOpacity.value,
+  }), []);
+
   // ========== Event Handlers ==========
   const handleImageError = useCallback((error) => {
     console.warn(`🐕 Character image load error:`, error);
@@ -518,6 +548,21 @@ const DogCharacter = ({
             />
           ) : (
             <View style={[styles.spriteImage, { backgroundColor: 'transparent' }]} />
+          )}
+
+          {/*  ADDED: Red Overlay Sprite (Layered Exactly on Top) */}
+          {currentAnimationUrl && (
+            <Animated.View style={[StyleSheet.absoluteFill, redFlashStyle]}>
+              <Image
+                source={{ uri: currentAnimationUrl }}
+                style={[
+                  styles.spriteImage, 
+                  { tintColor: '#760404a2' } //  The magic: Red tint
+                ]}
+                contentFit="cover"
+                cachePolicy="disk"
+              />
+            </Animated.View>
           )}
         </Animated.View>
       </View>

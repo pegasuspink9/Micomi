@@ -33,6 +33,7 @@ const EnemyCharacter = ({
   const frameIndex = useSharedValue(0);
   const positionX = useSharedValue(0);
   const opacity = useSharedValue(1);
+  const blinkOpacity = useSharedValue(0);
 
   // ========== Animation Configuration ==========
   const SPRITE_SIZE = useMemo(() => scale(150), []);
@@ -88,7 +89,7 @@ const EnemyCharacter = ({
    // ========== Reset positionX when state changes away from attack ==========
     useEffect(() => {
     if (currentState !== 'attack' && currentState !== 'run') {
-      // ✅ Immediately cancel and reset positionX to 0
+      //  Immediately cancel and reset positionX to 0
       cancelAnimation(positionX);
       positionX.value = 0;
       console.log(`🦹 Enemy ${index} - Force reset position to 0 for ${currentState} state`);
@@ -244,17 +245,19 @@ const EnemyCharacter = ({
       cancelAnimation(frameIndex);
       cancelAnimation(positionX);
       cancelAnimation(opacity);
+      cancelAnimation(blinkOpacity);
       return;
     }
 
-    // ✅ Reset animations
+    //  Reset animations
     cancelAnimation(frameIndex);
     cancelAnimation(positionX);
     cancelAnimation(opacity);
+    cancelAnimation(blinkOpacity);
 
     frameIndex.value = 0;
 
-    // ✅ FORCE position reset for non-attack/run states (especially hurt)
+    //  FORCE position reset for non-attack/run states (especially hurt)
     if (currentState !== 'attack' && currentState !== 'run') {
       positionX.value = 0;
       opacity.value = 1;
@@ -313,7 +316,7 @@ const EnemyCharacter = ({
           if (finished) {
             console.log(`🏃 Enemy ${index} run animation complete - starting fade-out`);
             
-            // ✅ Fade out after run completes (same as character dies)
+            //  Fade out after run completes (same as character dies)
             opacity.value = withTiming(0, {
               duration: 300,
               easing: Easing.inOut(Easing.ease),
@@ -361,11 +364,25 @@ const EnemyCharacter = ({
           easing: Easing.inOut(Easing.quad),
         });
       }
+    } else if (currentState === 'hurt') {
+      console.log(`🩸 Enemy ${index} hurt - triggering red flash effect`);
+      positionX.value = 0;
+      opacity.value = 1;
+      
+      blinkOpacity.value = 0;
+      blinkOpacity.value = withRepeat(
+        withTiming(0.7, { // Flash to 70% red intensity
+          duration: 100,
+          easing: Easing.inOut(Easing.ease),
+        }),
+        Math.floor(ANIMATION_DURATIONS.hurt / 200), 
+        true // Reverse (fade back out)
+      );
     } else {
-      // ✅ For hurt, dies, run - NEVER animate positionX
       console.log(`🩸 Enemy ${index} entering ${currentState} state - position will stay at 0`);
       positionX.value = 0;
       opacity.value = 1;
+      blinkOpacity.value = 0;
     }
 
     // Play frame animation
@@ -399,22 +416,30 @@ const EnemyCharacter = ({
               }
             }
           );
+        } else if (currentState === 'hurt') {
+          //  FIXED: Don't reset blinkOpacity here, let it finish naturally
+          console.log(`🩸 Enemy ${index} hurt animation frame complete`);
+          frameIndex.value = 0;
+          runOnJS(notifyAnimationComplete)();
         } else {
-          // ✅ Always reset position after animation
+          //  Always reset position after animation
           positionX.value = 0;
           opacity.value = 1;
+          blinkOpacity.value = 0; //  CHANGED: Reset to 0
           runOnJS(notifyAnimationComplete)();
           frameIndex.value = 0;
         }
       }
     }
     );
+    
 
     // ========== Cleanup ==========
     return () => {
       cancelAnimation(frameIndex);
       cancelAnimation(positionX);
       cancelAnimation(opacity);
+      cancelAnimation(blinkOpacity);
       if (phaseTimeoutRef.current) {
         clearTimeout(phaseTimeoutRef.current);
       }
@@ -453,6 +478,15 @@ const EnemyCharacter = ({
     };
   }, [SPRITE_SIZE]);
 
+    const opacityStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }), []);
+
+  //  CHANGED: Style for the red overlay
+  const redFlashStyle = useAnimatedStyle(() => ({
+    opacity: blinkOpacity.value,
+  }), []);
+
      const positionStyle = useAnimatedStyle(() => {
     if (currentState === 'attack' || currentState === 'run') {
       console.log(`📍 Applying positionX movement: ${positionX.value}`);
@@ -466,8 +500,10 @@ const EnemyCharacter = ({
     };
   }, [currentState]);
 
-  const opacityStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
+
+  const blinkStyle = useAnimatedStyle(() => ({
+    opacity: blinkOpacity.value,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)', //  ADDED: White blink color
   }), []);
 
   // ========== Event Handlers ==========
@@ -518,7 +554,25 @@ const EnemyCharacter = ({
           ) : (
             <View style={[styles.spriteImage, { backgroundColor: 'transparent' }]} />
           )}
+
+          {currentAnimationUrl && (
+            <Animated.View style={[StyleSheet.absoluteFill, redFlashStyle]}>
+              <Image
+                source={{ uri: currentAnimationUrl }}
+                style={[
+                  styles.spriteImage, 
+                  isAttacking && styles.attacking,
+                  { tintColor: '#760404a2' } 
+                ]}
+                contentFit="cover"
+                cachePolicy="disk"
+              />
+            </Animated.View>
+          )}
         </Animated.View>
+
+        
+
       </View>
     </Animated.View>
   );
@@ -550,6 +604,12 @@ const styles = StyleSheet.create({
   },
   paused: {
     opacity: 0.6,
+  },
+   blinkOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    borderRadius: scale(8),
   },
 });
 

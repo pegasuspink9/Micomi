@@ -99,13 +99,13 @@ export default function LevelButtons({
     },
     get signageWidth() { return 90 * this.signageScale; },
     get signageHeight() { return 90 * this.signageScale; },
-    get signageTop() { return 20 * this.heightRatio; },
+    get signageTop() { return 15 * this.heightRatio; },
     get signageLeft() { return 40 * this.widthRatio; },
     get textSize() { 
-      const baseSize = 12;
+      const baseSize = 22;
       let scaleFactor = this.signageScale;
       const scaledSize = baseSize * scaleFactor;
-      return Math.max(8, Math.min(scaledSize, 20)); 
+      return Math.max(30, Math.min(scaledSize, 20)); 
     }
   };
 
@@ -312,10 +312,10 @@ export default function LevelButtons({
                 />
               </ImageBackground>
 
-              {level.level_title && 
-               level.level_title !== 'null' && 
-               level.level_title.toString().trim() !== '' && 
-               level.level_title.toString().trim().toLowerCase() !== 'none' && (
+              {level.level_number && 
+               level.level_number !== 'null' && 
+               level.level_number.toString().trim() !== '' && 
+               level.level_number.toString().trim().toLowerCase() !== 'none' && (
                 <ImageBackground
                   source={{ uri: getCachedAssetUrl(theme.floatingComment.signageBackground) }}
                   style={[
@@ -333,13 +333,11 @@ export default function LevelButtons({
                   <Text 
                     style={[
                       styles.tagsText, 
-                      { fontSize: responsive.textSize }, 
+                      { fontSize: responsive.textSize },
                       theme?.floatingComment.textStyle || {}
                     ]} 
-                    numberOfLines={1} 
-                    adjustsFontSizeToFit={true}
                   >
-                    {level.level_title}
+                    {level.level_number}
                   </Text>
                 </ImageBackground>
               )}
@@ -397,12 +395,11 @@ const styles = StyleSheet.create({
     zIndex: 5
   },
   tagsText: {
-    color: '#FFF',
+    color: '#ffffffdc',
     textAlign: 'center',
     textAlignVertical: 'center',
-    fontFamily: 'FunkySign',
-    marginTop: -35,
-    opacity: 0.8
+    fontFamily: 'MusicVibes',
+    marginTop: defaultHeight * -0.045, 
   },
   levelButton: {
     position: 'absolute',
