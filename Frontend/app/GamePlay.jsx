@@ -11,8 +11,6 @@ import CombatVSModal from './Components/Actual Game/Game Display Entrance/GameDi
 import GameOverModal from './Components/GameOver And Win/GameOver';
 import LevelCompletionModal from './Components/GameOver And Win/LevelCompletionModal';
 import { soundManager } from './Components/Actual Game/Sounds/UniversalSoundManager';
-import { uiSoundManager } from './Components/Actual Game/Sounds/UISoundManager';
-import { Vibration } from 'react-native';
 
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');

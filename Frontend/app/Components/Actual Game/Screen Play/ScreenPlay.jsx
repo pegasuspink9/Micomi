@@ -11,8 +11,6 @@ import Coin from './components/Coin';
 import Damage from './components/Damage';
 import Message from './components/Message';
 import FadeOutWrapper from './FadeOutWrapper/FadeOutWrapper';
-import { combatSoundManager } from '../Sounds/CombatSoundManager';
-
 const ScreenPlay = ({ 
   gameState,
   isPaused = false, 

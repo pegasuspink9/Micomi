@@ -6,6 +6,7 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import FadeOutWrapper from '../../Screen Play/FadeOutWrapper/FadeOutWrapper';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+import { soundManager } from '../../Sounds/UniversalSoundManager';
 
 const GridContainer = ({ 
     children, 
@@ -146,6 +147,7 @@ const GridContainer = ({
                       pressed && styles.runListItemPressed
                     ]}
                     onPress={() => {
+                      soundManager.playButtonTapSound();
                       console.log('🏃 Run button pressed');
                       onRun?.();
                     }}
@@ -164,6 +166,7 @@ const GridContainer = ({
                       pressed && styles.proceedListItemPressed
                     ]}
                     onPress={() => {
+                      soundManager.playButtonTapSound();
                       console.log(' Proceeding to next challenge...');
                       onProceed?.();
                     }}

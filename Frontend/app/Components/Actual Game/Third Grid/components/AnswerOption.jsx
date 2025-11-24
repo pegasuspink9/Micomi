@@ -1,6 +1,8 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet, Dimensions, View } from 'react-native';
 import { scale, scaleWidth, scaleHeight, RESPONSIVE, wp, hp } from '../../../Responsiveness/gameResponsive';
+import { soundManager } from '../../Sounds/UniversalSoundManager';
+
 
 const AnswerOption = ({ 
   item, 
@@ -24,7 +26,12 @@ const AnswerOption = ({
           pressed && !isDisabled && styles.listItemPressed,
           customStyles?.listItemContainer
         ]}
-        onPress={() => !isDisabled && onPress(item)}
+        onPress={() => {
+          if (!isDisabled) {
+            soundManager.playButtonTapSound();
+            onPress(item);
+          }
+        }}
         disabled={isDisabled}
       >
         <View style={[

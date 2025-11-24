@@ -7,6 +7,7 @@ class UniversalSoundManager {
       message: null,
       ui: null,
       combat: null,
+      button: null
     };
     
     // State for sequential message audio
@@ -67,6 +68,11 @@ class UniversalSoundManager {
 
   playCombatSound(url) {
     this._playSimpleSound('combat', url, null);
+  }
+
+  playButtonTapSound() {
+    const tapSoundUrl = 'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Tap.wav';
+    this._playSimpleSound('button', tapSoundUrl, null);
   }
 
   // --- Sequential Message Sound Logic (adapted from old SoundManager) ---
@@ -164,8 +170,9 @@ class UniversalSoundManager {
   
   async stopAllSounds() {
     await this._stopMessageSound();
-    await this._playSimpleSound('ui', null, null); // Stops UI sound
-    await this._playSimpleSound('combat', null, null); // Stops Combat sound
+    await this._playSimpleSound('ui', null, null);
+    await this._playSimpleSound('combat', null, null); 
+    await this._playSimpleSound('button', null, null); 
     console.log('🔊 All sound channels have been stopped.');
   }
 }
