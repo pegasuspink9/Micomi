@@ -10,6 +10,7 @@ import {
   RESPONSIVE 
 } from '../../../Responsiveness/gameResponsive';
 import Guide from '../Output/Guide';
+import FileViewer from '../Output/FileViewer';
 
 const CodeEditor = ({
   currentQuestion,
@@ -31,6 +32,29 @@ const CodeEditor = ({
   //  Memoize code text and lines
   const codeText = useMemo(() => currentQuestion.question || '', [currentQuestion.question]);
   const lines = useMemo(() => codeText.split('\n'), [codeText]);
+
+    const codeTabDetails = useMemo(() => {
+    const type = currentQuestion?.question_type?.toLowerCase();
+    switch (type) {
+      case 'html':
+        return { long: 'index.html', short: 'HTML' };
+      case 'css':
+        return { long: 'style.css', short: 'CSS' };
+      case 'javascript':
+        return { long: 'script.js', short: 'JS' };
+      default:
+        return { long: 'index.html', short: 'File' }; // Fallback
+    }
+  }, [currentQuestion?.question_type]);
+
+
+  const fileTabs = useMemo(() => [
+    { key: 'html_file', short: 'HTML', long: 'index.html' },
+    { key: 'css_file', short: 'CSS', long: 'styles.css' },
+    { key: 'javascript_file', short: 'JS', long: 'script.js' },
+    { key: 'computer_file', short: 'File', long: 'file.txt' },
+  ], []);
+
 
    useEffect(() => {
     setHasAnimated(false);
@@ -105,9 +129,14 @@ const CodeEditor = ({
             })}
           </ScrollView>
         );
-
-
-        
+      case 'css_file':
+        return <FileViewer fileContent={currentQuestion.css_file} />;
+      case 'javascript_file':
+        return <FileViewer fileContent={currentQuestion.javascript_file} />;
+      case 'html_file':
+        return <FileViewer fileContent={currentQuestion.html_file} />;
+      case 'computer_file':
+        return <FileViewer fileContent={currentQuestion.computer_file} />;
 
       case 'output':
         return (
@@ -178,6 +207,7 @@ const CodeEditor = ({
   const handleOutputTabPress = useCallback(() => handleTabChange('output'), [handleTabChange]);
   const handleExpectedTabPress = useCallback(() => handleTabChange('expected'), [handleTabChange]);
   const handleGuideTabPress = useCallback(() => handleTabChange('guide'), [handleTabChange]);
+  const handleFileTabPress = useCallback((fileName) => handleTabChange(fileName), [handleTabChange]);
 
   return (
     <View style={styles.editorContainer}>
@@ -207,7 +237,7 @@ const CodeEditor = ({
             </Pressable>
           )}
 
-             <Pressable
+          <Pressable
             onPress={handleCodeTabPress}
             style={[
               styles.webTab,
@@ -215,13 +245,30 @@ const CodeEditor = ({
               !currentQuestion?.guide && styles.webTabFirst
             ]}
           >
-            <Text style={[
+              <Text style={[
               styles.webTabText, 
               activeTab === 'code' && styles.webTabTextActive
             ]}>
-              {activeTab === 'code' ? 'index.html' : 'HTML'} {/*  ADDED: Abbreviated version */}
+              {activeTab === 'code' ? codeTabDetails.long : codeTabDetails.short}
             </Text>
           </Pressable>
+
+           {fileTabs.map(tab => (
+            currentQuestion?.[tab.key] != null && (
+              <Pressable
+                key={tab.key}
+                onPress={() => handleFileTabPress(tab.key)}
+                style={[
+                  styles.webTab,
+                  activeTab === tab.key && styles.webTabActive,
+                ]}
+              >
+                <Text style={[styles.webTabText, activeTab === tab.key && styles.webTabTextActive]}>
+                  {currentQuestion[`${tab.key}_name`] || (activeTab === tab.key ? tab.long : tab.short)}
+                </Text>
+              </Pressable>
+            )
+          ))}
 
           <Pressable
             onPress={handleOutputTabPress}

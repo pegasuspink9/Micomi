@@ -207,6 +207,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         options: options,
         correctAnswer: correctAnswer,
         challenge_type: challengeSource.challenge_type,
+        question_type: data.question_type || responseData.question_type || null,
         timeLimit: challengeSource.timeLimit || challengeSource.timer,
         timeRemaining: challengeSource.timeRemaining,
         timer: challengeSource.timer,
@@ -218,6 +219,14 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         guide: challengeSource.guide,
         testCases: challengeSource.test_cases || [],
         expected_output: challengeSource.expected_output,
+         computer_file: challengeSource.computer_file,
+        computer_file_name: challengeSource.computer_file_name,
+        css_file: challengeSource.css_file,
+        css_file_name: challengeSource.css_file_name,
+        html_file: challengeSource.html_file,
+        html_file_name: challengeSource.html_file_name,
+        javascript_file: challengeSource.javascript_file,
+        javascript_file_name: challengeSource.javascript_file_name,
       };
     }
 

@@ -289,7 +289,13 @@ export default function GamePlay() {
     setSelectedBlankIndex(blankIndex);
   }, [selectedBlankIndex]);
 
-  const shouldHideThirdGrid = activeGameTab === 'output' || activeGameTab === 'expected' || activeGameTab === 'guide';
+   const interactiveTabs = ['code']; 
+  const interactiveChallengeTypes = ['fill in the blank', 'code with guide', 'multiple choice'];
+
+  const isInteractiveTabActive = interactiveTabs.includes(activeGameTab);
+  const isInteractiveChallenge = currentChallenge && interactiveChallengeTypes.includes(currentChallenge.challenge_type);
+  
+  const shouldHideThirdGrid = !isInteractiveTabActive || !isInteractiveChallenge;
 
 
   

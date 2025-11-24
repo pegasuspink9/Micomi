@@ -10,13 +10,13 @@ const ExpectedOutput = ({
 }) => {
   const [htmlOutput, setHtmlOutput] = useState('');
   
-  // ✅ Memoize expected result
+  //  Memoize expected result
   const expectedResult = useMemo(() => 
     currentQuestion?.expected_output || "No expected output available",
     [currentQuestion?.expected_output]
   );
 
-  // ✅ Memoize HTML generation function
+  //  Memoize HTML generation function
   const generateHtmlOutput = useCallback(() => {
     if (!currentQuestion || !currentQuestion.expected_output) {
       return '<html><body><p>No expected output available</p></body></html>';
@@ -77,13 +77,13 @@ const ExpectedOutput = ({
     setHtmlOutput(newHtmlOutput);
   }, [generateHtmlOutput]);
 
-  // ✅ Memoize should show HTML decision
+  //  Memoize should show HTML decision
   const shouldShowHTML = useMemo(() => 
     currentQuestion && currentQuestion.expected_output,
     [currentQuestion]
   );
 
-  // ✅ Memoize event handlers
+  //  Memoize event handlers
   const handleWebViewError = useCallback((error) => {
     console.log('ExpectedOutput WebView error:', error);
   }, []);

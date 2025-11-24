@@ -16,9 +16,9 @@ const Output = ({
   const [htmlOutput, setHtmlOutput] = useState('');
 
   //  Memoize HTML generation function
-  const generateHtmlOutput = useCallback(() => {
+    const generateHtmlOutput = useCallback(() => {
     if (!currentQuestion || !currentQuestion.question) {
-      return '<html><body></body></html>';
+      return '<html><body><p>No question content available.</p></body></html>';
     }
 
     const questionType = currentQuestion.challenge_type;
@@ -27,37 +27,60 @@ const Output = ({
       return '<html><body></body></html>';
     }
 
-    let htmlCode = currentQuestion.question;
+    // 1. Get the main content by filling in the blanks
+    let bodyContent = currentQuestion.question;
     const answersArray = selectedAnswers.map(index => options?.[index]).filter(answer => answer && typeof answer === 'string');
     
     answersArray.forEach((answer) => {
-      htmlCode = htmlCode.replace('_', answer);
+      bodyContent = bodyContent.replace('_', answer);
     });
-    htmlCode = htmlCode.replace(/_/g, '');
+    // Remove any remaining unanswered blanks
+    bodyContent = bodyContent.replace(/_/g, '');
 
-    if (!htmlCode.includes('<!DOCTYPE')) {
-      htmlCode = `<!DOCTYPE html>\n${htmlCode}`;
-    }
+    // 2. Get the content from the separate file fields
+    const cssContent = currentQuestion.css_file || '';
+    const jsContent = currentQuestion.javascript_file || '';
 
-    if (!htmlCode.includes('<html>')) {
-      htmlCode = `<html>\n<head>
-        <title>Output</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          body { 
-            font-family: Arial, sans-serif; 
-            font-size: 18px; 
-            line-height: 1.6; 
-            margin: 20px; 
-            color: #333;
-          }
-          h1, h2, h3 { color: #2c3e50; margin-bottom: 15px; }
-          p { margin-bottom: 15px; }
-        </style>
-      </head>\n<body>\n${htmlCode}\n</body>\n</html>`;
-    }
+    // 3. Construct the final HTML document, injecting CSS and JS
+    const finalHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Live Output</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+          <style>
+            /* --- Injected CSS from Challenge --- */
+            ${cssContent}
+          </style>
+        </head>
+        <body>
+          ${bodyContent}
+          
+          <!-- --- Injected JavaScript from Challenge --- -->
+          <script>
+            try {
+              ${jsContent}
+            } catch (e) {
+              // Create a visual error overlay in the HTML if JS fails
+              const errorDiv = document.createElement('div');
+              errorDiv.style.position = 'fixed';
+              errorDiv.style.bottom = '0';
+              errorDiv.style.left = '0';
+              errorDiv.style.right = '0';
+              errorDiv.style.backgroundColor = '#ff5f56';
+              errorDiv.style.color = 'white';
+              errorDiv.style.padding = '10px';
+              errorDiv.style.fontFamily = 'monospace';
+              errorDiv.style.zIndex = '10000';
+              errorDiv.innerText = 'JavaScript Error: ' + e.message;
+              document.body.appendChild(errorDiv);
+            }
+          </script>
+        </body>
+      </html>
+    `;
 
-    return htmlCode;
+    return finalHtml;
   }, [currentQuestion, selectedAnswers, options]);
 
   // Update HTML output when dependencies change
