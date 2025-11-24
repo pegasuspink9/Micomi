@@ -232,10 +232,17 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
 
     // Handle submission data
     if (isSubmission) {
+      const fightResult = responseData.fightResult || data.fightResult;
+      const levelStatus = responseData.levelStatus || data.levelStatus;
+
       gameState.submissionResult = {
-        isCorrect: responseData.isCorrect || false,
-        attempts: responseData.attempts || 0,
-        message: responseData.message,
+        isCorrect: data.isCorrect,
+        message: data.message,
+        fightResult: fightResult,
+        levelStatus: levelStatus,
+        nextLevel: responseData.nextLevel || data.nextLevel || null,
+        completionRewards: responseData.completionRewards || data.completionRewards || null,
+        isBonusRound: data.is_bonus_round || responseData.is_bonus_round || false,
         
         fightResult: responseData.fightResult ? {
           status: responseData.fightResult.status,

@@ -28,6 +28,8 @@ const EnemyCharacter = ({
   currentState = 'idle',
   onAnimationComplete = null,
   attackMovement = 'fade',
+  isBonusRound = false,
+  fightStatus = null
 }) => {
   // ========== Shared Animation Values ==========
   const frameIndex = useSharedValue(0);
@@ -113,7 +115,7 @@ const EnemyCharacter = ({
       },
       hurt: {
         url: characterAnimations.character_hurt || characterAnimations.hurt,
-        shouldLoop: false,
+        shouldLoop: isBonusRound && fightStatus !== 'won',
         isCompound: false,
       },
       run: {
@@ -129,8 +131,8 @@ const EnemyCharacter = ({
     };
 
     return configs[currentState] || configs.idle;
-  }, [currentState, characterAnimations]);
-
+  }, [currentState, characterAnimations, isBonusRound, fightStatus]);
+  
   // ========== Sync Animation Config to State ==========
   useEffect(() => {
     if (animationConfig.url) {
@@ -332,6 +334,16 @@ const EnemyCharacter = ({
         return;
       }
 
+      if (currentState === 'hurt' && isBonusRound) {
+        console.log(`🩸 Enemy ${index} hurt (BONUS ROUND) - triggering looping red flash effect`);
+        blinkOpacity.value = 0;
+        blinkOpacity.value = withRepeat(
+          withTiming(0.7, { duration: 100, easing: Easing.inOut(Easing.ease) }),
+          -1, // Loop indefinitely
+          true // Reverse (fade back out)
+        );
+      }
+
       frameIndex.value = withRepeat(
         withTiming(TOTAL_FRAMES - 1, {
           duration: FRAME_DURATION * TOTAL_FRAMES,
@@ -364,21 +376,7 @@ const EnemyCharacter = ({
           easing: Easing.inOut(Easing.quad),
         });
       }
-    } else if (currentState === 'hurt') {
-      console.log(`🩸 Enemy ${index} hurt - triggering red flash effect`);
-      positionX.value = 0;
-      opacity.value = 1;
-      
-      blinkOpacity.value = 0;
-      blinkOpacity.value = withRepeat(
-        withTiming(0.7, { // Flash to 70% red intensity
-          duration: 100,
-          easing: Easing.inOut(Easing.ease),
-        }),
-        Math.floor(ANIMATION_DURATIONS.hurt / 200), 
-        true // Reverse (fade back out)
-      );
-    } else {
+    }else {
       console.log(`🩸 Enemy ${index} entering ${currentState} state - position will stay at 0`);
       positionX.value = 0;
       opacity.value = 1;
@@ -462,6 +460,7 @@ const EnemyCharacter = ({
     attackMovement,
     characterAnimations,
     enemy,
+    isBonusRound
   ]);
 
   // ========== Animated Styles ==========
@@ -614,20 +613,13 @@ const styles = StyleSheet.create({
 });
 
 export default React.memo(EnemyCharacter, (prevProps, nextProps) => {
-  return (
-    prevProps.isPaused === nextProps.isPaused &&
+   return (
+   prevProps.isPaused === nextProps.isPaused &&
     prevProps.currentState === nextProps.currentState &&
     prevProps.isAttacking === nextProps.isAttacking &&
-    prevProps.attackMovement === nextProps.attackMovement &&
+    prevProps.isBonusRound === nextProps.isBonusRound &&
     prevProps.index === nextProps.index &&
-    prevProps.characterAnimations.character_idle === nextProps.characterAnimations.character_idle &&
-    prevProps.characterAnimations.character_attack === nextProps.characterAnimations.character_attack &&
-    prevProps.characterAnimations.character_hurt === nextProps.characterAnimations.character_hurt &&
-    prevProps.characterAnimations.character_run === nextProps.characterAnimations.character_run &&
-    prevProps.characterAnimations.character_dies === nextProps.characterAnimations.character_dies &&
-    prevProps.enemy?.enemy_idle === nextProps.enemy?.enemy_idle &&
-    prevProps.enemy?.enemy_attack === nextProps.enemy?.enemy_attack &&
-    prevProps.enemy?.enemy_hurt === nextProps.enemy?.enemy_hurt &&
-    prevProps.onAnimationComplete === nextProps.onAnimationComplete
+    prevProps.fightStatus === nextProps.fightStatus &&
+    JSON.stringify(prevProps.characterAnimations) === JSON.stringify(nextProps.characterAnimations)
   );
 });

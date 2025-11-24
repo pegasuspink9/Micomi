@@ -86,18 +86,18 @@ const ScreenPlay = ({
 
 
 
-  const characterAnimations = useMemo(() => ({
-      character_idle: gameState.submissionResult?.fightResult?.character?.character_idle 
-        ?? gameState.selectedCharacter?.character_idle,
-      character_attack: gameState.submissionResult?.fightResult?.character?.character_attack 
-        ?? gameState.selectedCharacter?.character_attack,
-      character_hurt: gameState.submissionResult?.fightResult?.character?.character_hurt 
-        ?? gameState.selectedCharacter?.character_hurt,
-      character_run: gameState.submissionResult?.fightResult?.character?.character_run 
-        ?? gameState.selectedCharacter?.character_run,
-      character_dies: gameState.submissionResult?.fightResult?.character?.character_dies 
-        ?? gameState.selectedCharacter?.character_dies,
-    }), [gameState]);
+  const characterAnimations = useMemo(() => {
+    const base = gameState.selectedCharacter;
+    const action = gameState.submissionResult?.fightResult?.character;
+    
+    return {
+      character_idle: action?.character_idle ?? base?.character_idle,
+      character_attack: action?.character_attack ?? base?.character_attack,
+      character_hurt: action?.character_hurt ?? base?.character_hurt,
+      character_run: action?.character_run ?? base?.character_run,
+      character_dies: action?.character_dies ?? base?.character_dies,
+    };
+  }, [gameState.submissionResult?.fightResult?.character, gameState.selectedCharacter]);
 
   const coinsEarned = useMemo(() => 
     gameState.submissionResult?.levelStatus?.coinsEarned ?? 0, 
@@ -341,43 +341,54 @@ const ScreenPlay = ({
     console.log(`🎬 Enemy ${index} ${animationState} animation completed`);
     
     const fightResult = gameState?.submissionResult?.fightResult;
+    const isBonusRound = gameState.submissionResult?.isBonusRound ?? false;
     
     if (animationState === 'hurt') {
       const enemyHealth = fightResult?.enemy?.enemy_health ?? 0;
-       const enemyDiesUrl = fightResult?.enemy?.enemy_dies || gameState?.enemy?.enemy_dies;
-      
-      //  Only transition to dies if API explicitly provides dies animation AND health is 0
-            if (enemyDiesUrl && enemyHealth <= 0) {
-        console.log('🦹 Enemy hurt completed, dies animation available, health is 0 - transitioning to dies');
+      const enemyDiesUrl = fightResult?.enemy?.enemy_dies || gameState?.enemy?.enemy_dies;
+
+      //  FIX: If the fight is WON, the enemy MUST die if a dies animation exists. This overrides the bonus round loop.
+      if (fightResult?.status === 'won' && enemyDiesUrl) {
+        console.log('🎉 Fight won! Enemy hurt completed, transitioning to dies.');
         setEnemyAnimationStates(prev => prev.map((state, i) => i === index ? 'dies' : state));
         return;
-      } else if (enemyHealth <= 0 && !enemyDiesUrl) {
-        //  Health is 0 but no dies animation (bonus round) - stay on last frame
-        console.log('🦹 Enemy health is 0 but no dies animation (bonus round) - staying on hurt frame');
-        setIsPlayingSubmissionAnimation(false);
-        return;
-      } else {
-        //  Health > 0 - return to idle
-        console.log('🦹 Enemy hurt completed, still alive - returning to idle');
-        setEnemyAnimationStates(prev => prev.map((state, i) => i === index ? 'idle' : state));
-        setIsPlayingSubmissionAnimation(false);
+      }
+      
+      //  FIX: If it's a bonus round and the fight is NOT won, let it loop and do nothing on completion.
+      // The character's animation will unlock the game state.
+      if (isBonusRound) {
+        console.log(`🦹 Enemy is in bonus round, continuing 'hurt' loop.`);
         return;
       }
+
+      // This handles a lethal hit during a normal round.
+      if (enemyDiesUrl && enemyHealth <= 0) {
+        console.log('🦹 Enemy hurt completed, health is 0 - transitioning to dies');
+        setEnemyAnimationStates(prev => prev.map((state, i) => i === index ? 'dies' : state));
+        return;
+      }
+      
+      // This handles a non-lethal hit during a normal round.
+      console.log('🦹 Enemy hurt completed, still alive - returning to idle');
+      setEnemyAnimationStates(prev => prev.map((state, i) => i === index ? 'idle' : state));
+      return;
     }
     
+    // The 'dies' animation is a terminal state. Its completion means the sequence is over.
     if (animationState === 'dies') {
-      console.log('💀 Enemy dies animation completed - staying on last frame');
+      console.log('💀 Enemy dies animation completed. Unlocking submission state.');
       setIsPlayingSubmissionAnimation(false);
       return;
     }
 
+    // After an enemy attacks, it returns to idle. The character's 'hurt' animation handles the state lock.
     if (animationState === 'attack') {
       console.log('🦹 Enemy attack completed - returning to idle');
       setEnemyAnimationStates(prev => prev.map((state, i) => i === index ? 'idle' : state));
       return;
     }
   };
-}, [gameState?.submissionResult?.fightResult]);
+}, [gameState?.submissionResult]);
 
 useEffect(() => {
   setVictoryAnimationPhase('idle');
@@ -422,8 +433,9 @@ useEffect(() => {
   }
  
   const submission = gameState.submissionResult;
-  const submissionKey = submission ? `${submission.isCorrect}-${submission.attempts || 0}-${submission.fightResult?.character?.character_health ?? ''}-${submission.fightResult?.enemy?.enemy_health ?? ''}`
-  : null;
+   const submissionKey = submission && submission.fightResult ? 
+    `${submission.isCorrect}-${submission.message}-${submission.fightResult.timer}` 
+    : null;
 
    if (submission && submission.isPotionUsage) {
     console.log('🧪 Potion usage detected - skipping animations');
@@ -540,44 +552,19 @@ useEffect(() => {
   }, [characterAnimations, characterAnimationState, isPlayingSubmissionAnimation, playerHealth, playerMaxHealth, enemyHealth, enemyMaxHealth]);
 
   const enemyAnimations = useMemo(() => {
-  //  Get the enemy data - prioritize API data
-  const enemy = gameState.submissionResult?.fightResult?.enemy || gameState.enemy;
+    const base = gameState.enemy;
+    const action = gameState.submissionResult?.fightResult?.enemy;
   
-  if (!enemy) {
-    console.warn('⚠️ No enemy data available');
+    //  FIX: Prioritize action-specific animations from the fight result
     return {
-      character_idle: null,
-      character_attack: null,
-      character_hurt: null,
-      character_run: null,
-      character_dies: null,
-      enemy_health: enemyHealth
+      character_idle: action?.enemy_idle ?? base?.enemy_idle,
+      character_attack: action?.enemy_attack ?? base?.enemy_attack,
+      character_hurt: action?.enemy_hurt ?? base?.enemy_hurt,
+      character_run: action?.enemy_run ?? base?.enemy_run,
+      character_dies: action?.enemy_dies ?? base?.enemy_dies,
     };
-  }
-  
-  console.log('🦹 Using enemy animations:', {
-    enemyName: enemy.enemy_name,
-    idle: enemy.enemy_idle?.slice?.(-40),
-    attack: enemy.enemy_attack?.slice?.(-40),
-    hurt: enemy.enemy_hurt?.slice?.(-40),
-    run: enemy.enemy_run?.slice?.(-40),
-    dies: enemy.enemy_dies?.slice?.(-40),
-  });
-
-  return {
-    character_idle: enemy.enemy_idle,
-    character_attack: enemy.enemy_attack,
-    character_hurt: enemy.enemy_hurt,
-    character_run: enemy.enemy_run || 'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Enemies/Greenland/Dragorn/run_aljsxb.png',
-    character_dies: enemy.enemy_dies,
-    enemy_health: enemyHealth
-  };
-}, [
-  gameState.submissionResult?.fightResult?.enemy,
-  gameState.enemy,
-  enemyHealth
-]);
-
+  //  DEPENDENCY FIX: Re-calculate whenever fight result enemy or base enemy data changes.
+  }, [gameState.submissionResult?.fightResult?.enemy, gameState.enemy]);
   return (
     <GameContainer borderColor={borderColor}>
       <GameBackground isPaused={isPaused} combatBackground={combatBackground}>
@@ -604,6 +591,8 @@ useEffect(() => {
               isPaused={isPaused || isCharacterRunning} 
               characterAnimations={enemyAnimations}
               currentState={currentEnemyState} 
+              isBonusRound={gameState.submissionResult?.isBonusRound ?? false}
+              fightStatus={gameState.submissionResult?.fightResult?.status}
               onAnimationComplete={handleEnemyAnimationComplete(index)}
             />
           );
