@@ -37,6 +37,8 @@ const EnemyCharacter = ({
   const opacity = useSharedValue(1);
   const blinkOpacity = useSharedValue(0);
 
+  const wasBonusRound = useRef(false);
+
   // ========== Animation Configuration ==========
   const SPRITE_SIZE = useMemo(() => scale(150), []);
   const SPRITE_COLUMNS = 6;
@@ -88,6 +90,13 @@ const EnemyCharacter = ({
   const [preloadedImages] = useState(new Map());
   const phaseTimeoutRef = useRef(null);
 
+  if (isBonusRound) {
+    wasBonusRound.current = true;
+  } 
+  
+  else if (currentState === 'idle') {
+    wasBonusRound.current = false;
+  }
    // ========== Reset positionX when state changes away from attack ==========
     useEffect(() => {
     if (currentState !== 'attack' && currentState !== 'run') {
@@ -376,7 +385,21 @@ const EnemyCharacter = ({
           easing: Easing.inOut(Easing.quad),
         });
       }
-    }else {
+    }else if (currentState === 'hurt') {
+      console.log(`🩸 Enemy ${index} hurt - triggering red flash effect`);
+      positionX.value = 0;
+      opacity.value = 1;
+      
+      blinkOpacity.value = 0;
+      blinkOpacity.value = withRepeat(
+        withTiming(0.7, { // Flash to 70% red intensity
+          duration: 100,
+          easing: Easing.inOut(Easing.ease),
+        }),
+        Math.floor(ANIMATION_DURATIONS.hurt / 200), 
+        true // Reverse (fade back out)
+      );
+    } else {
       console.log(`🩸 Enemy ${index} entering ${currentState} state - position will stay at 0`);
       positionX.value = 0;
       opacity.value = 1;
@@ -561,7 +584,7 @@ const EnemyCharacter = ({
                 style={[
                   styles.spriteImage, 
                   isAttacking && styles.attacking,
-                  { tintColor: '#760404a2' } 
+                   {  tintColor: wasBonusRound.current ? 'rgba(218, 200, 0, 0.88)' : '#760404a2' } 
                 ]}
                 contentFit="cover"
                 cachePolicy="disk"

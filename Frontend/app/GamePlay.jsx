@@ -140,26 +140,22 @@ export default function GamePlay() {
 
 
   const handleCharacterRun = useCallback(() => {
-  console.log('🏃 Character run triggered');
-
-  setRunButtonClicked(true);
-  setIsInRunMode(true);
-  setShowRunButton(false);
+    console.log('🏃 Character run triggered');
   
-  // Trigger the character run animation
-  setCharacterRunState(true);
-  setShowGameplay(true);
-  
-  setTimeout(() => {
-    console.log('🏃 Character run animation completed');
-    setCharacterRunState(false);
-    setIsInRunMode(false);
-  }, 2000); 
-
-  levelCompletionTimeoutRef.current = setTimeout(() => {
-      console.log('⏱️ 5 second delay passed - showing LevelCompletionModal');
+    setRunButtonClicked(true);
+    setIsInRunMode(true);
+    setShowRunButton(false);
+    
+    // Trigger the character run animation
+    setCharacterRunState(true);
+    
+    // Set a single timer that ends the run animation and immediately shows the modal.
+    levelCompletionTimeoutRef.current = setTimeout(() => {
+      console.log('🏃 Character run animation completed, now showing modal.');
+      setCharacterRunState(false);
+      setIsInRunMode(false);
       setShowLevelCompletionModal(true);
-    }, 3000); // 5 second delay - adjust as needed
+    }, 1000); 
   }, []);
   
 

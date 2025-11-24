@@ -634,6 +634,7 @@ useEffect(() => {
         startDelay={1000} 
         position="right"
         trigger={submissionSeq} 
+        isBonusRound={gameState.submissionResult?.isBonusRound ?? false}
       />
 
       <Damage

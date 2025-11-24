@@ -11,7 +11,7 @@ import {
 
 const { width } = Dimensions.get('window');
 
-const TickItem = ({ amount = 1, index = 0, animated = true, position = 'right' }) => {
+const TickItem = ({ amount = 1, index = 0, animated = true, isBonusRound = false, position = 'right' }) => {
   const translateY = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
@@ -88,8 +88,13 @@ const TickItem = ({ amount = 1, index = 0, animated = true, position = 'right' }
         },
       ]}
     >
-      <Text style={styles.tickText}>{`-${amount}`}</Text>
-    </Animated.View>
+     <Text style={[
+        styles.tickText,
+        { color: isBonusRound ? 'rgba(218, 200, 0, 0.88)' : 'rgba(174, 7, 7, 0.77)' }
+      ]}>
+        {isBonusRound ? `+${amount}` : `-${amount}`}
+      </Text>
+  </Animated.View>
   );
 };
 
@@ -102,6 +107,7 @@ const FloatingDamageTicks = ({
   onTick = null,
   position = 'right', 
   trigger = 0,
+  isBonusRound = false,
 }) => {
   const [activeTicks, setActiveTicks] = useState([]);
   const nextId = useRef(0);
@@ -198,6 +204,7 @@ const FloatingDamageTicks = ({
           index={tickObj.index}
           animated={animated}
           position={position}
+          isBonusRound={isBonusRound}
         />
       ))}
     </View>
@@ -213,6 +220,7 @@ export default function Damage({
   position = 'right', 
   style = {},
   trigger = 0, 
+  isBonusRound = false,
 }) {
   const prevTotalRef = useRef(totalDamage);
 
@@ -238,6 +246,7 @@ export default function Damage({
           startDelay={startDelay}
           position={position}
           trigger={trigger}
+          isBonusRound={isBonusRound}
         />
       )}
     </View>
