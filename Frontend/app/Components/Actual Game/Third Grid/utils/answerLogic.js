@@ -1,4 +1,5 @@
-import { Alert } from 'react-native';
+import { Alert, Vibration } from 'react-native';
+import { uiSoundManager } from '../../Sounds/UISoundManager'; 
 
 export const getBlankCount = (questionText) => {
   if (!questionText || typeof questionText !== 'string') {
@@ -205,18 +206,27 @@ export const createCheckAnswerHandler = (
           
           if (submissionResult) {
             const isCorrect = submissionResult.isCorrect || false;
+            const correctAudioUrl = submissionResult.isCorrectAudio;
+            
+            const onSoundStart = () => {
+              setBorderColor(isCorrect ? 'green' : 'red');
+
+              if (!isCorrect) {
+                console.log('📳 VIBRATION ATTEMPTED - If your phone settings are correct, it should vibrate now.');
+                Vibration.vibrate();
+              }
+            };
+
+
+            uiSoundManager.playSound(correctAudioUrl, onSoundStart);
             
             if (isCorrect) {
-              setBorderColor('green');
               console.log('✅ Correct answer! Moving to next challenge.');
-              console.log('🎯 Next challenge:', updatedGameState.currentChallenge?.title);
               
-              // NEW: Automatically switch to Output tab on correct answer
               if (onCorrectAnswer) {
                 onCorrectAnswer();
               }
             } else {
-              setBorderColor('red');
               console.log('❌ Incorrect answer. Message:', submissionResult.message);
             }
 
