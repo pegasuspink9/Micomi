@@ -16,6 +16,7 @@ import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
 import { updateQuestProgress } from "../Quests/quests.service";
 import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 import { getCardForAttackType } from "../Combat/combat.service";
+import { audioLinks } from "../../../utils/audioLinks";
 
 const prisma = new PrismaClient();
 
@@ -179,6 +180,7 @@ export const previewLevel = async (playerId: number, levelId: number) => {
         energy: energyStatus.energy,
         timeToNextEnergyRestore: energyStatus.timeToNextRestore,
         lessons,
+        audioLinks,
       };
 
     case "shopButton":
@@ -204,6 +206,7 @@ export const previewLevel = async (playerId: number, levelId: number) => {
         potionShop,
         audio:
           "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Shop.ogg",
+        audioLinks,
       };
 
     case "enemyButton":
@@ -270,10 +273,10 @@ export const previewLevel = async (playerId: number, levelId: number) => {
         },
         energy: energyStatus.energy,
         timeToNextEnergyRestore: energyStatus.timeToNextRestore,
-        audio: [
+        audio:
           "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353796/Navigation_sxwh2g.mp3",
-        ],
         bossLevelExpectedOutput: level.boss_level_expected_output,
+        audioLinks,
       };
     }
   }
@@ -629,6 +632,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     combat_background: combatBackground,
     question_type: questionType,
     versus_background: versus_background,
+    audioLinks,
   };
 };
 
