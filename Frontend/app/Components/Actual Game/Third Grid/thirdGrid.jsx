@@ -124,12 +124,16 @@ const ThirdGrid = ({
     setShowPotions(!showPotions);
   }, [showPotions]);
 
-  const runButtonDisabled = useMemo(() => (
-    submitting || 
-    usingPotion ||
-    runDisabled  ||
-    (!selectedPotion && (!Array.isArray(selectedAnswers) || selectedAnswers.length === 0))
-  ), [submitting, usingPotion, selectedPotion, selectedAnswers]);
+   const runButtonDisabled = useMemo(() => {
+    const hasSelectedAnswer = selectedAnswers.some(answer => answer != null);
+
+    return (
+      submitting || 
+      usingPotion ||
+      runDisabled  ||
+      (!selectedPotion && !hasSelectedAnswer)
+    );
+  }, [submitting, usingPotion, runDisabled, selectedPotion, selectedAnswers]);
 
   useEffect(() => {
     setPotionUsed(false);
