@@ -11,7 +11,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { universalAssetPreloader } from '../../../../services/preloader/universalAssetPreloader';
-import { combatSoundManager } from '../../Sounds/CombatSoundManager';
+import { soundManager } from '../../Sounds/UniversalSoundManager';
 import { 
   scale, 
   scaleWidth, 
@@ -108,7 +108,7 @@ const EnemyCharacter = ({
       
       attackSoundTimeoutRef.current = setTimeout(() => {
         console.log(`🔊 Playing delayed attack sound for Enemy [${index}].`);
-        combatSoundManager.playSound(attackAudioUrl);
+        soundManager.playCombatSound(attackAudioUrl);
       }, SOUND_DELAY);
     }
 

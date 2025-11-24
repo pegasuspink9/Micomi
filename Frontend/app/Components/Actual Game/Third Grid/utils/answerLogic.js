@@ -1,5 +1,6 @@
 import { Alert, Vibration } from 'react-native';
-import { uiSoundManager } from '../../Sounds/UISoundManager'; 
+import { soundManager } from '../../Sounds/UniversalSoundManager'; 
+
 
 export const getBlankCount = (questionText) => {
   if (!questionText || typeof questionText !== 'string') {
@@ -218,7 +219,8 @@ export const createCheckAnswerHandler = (
             };
 
 
-            uiSoundManager.playSound(correctAudioUrl, onSoundStart);
+            soundManager.playUISound(correctAudioUrl, onSoundStart);
+            
             
             if (isCorrect) {
               console.log('✅ Correct answer! Moving to next challenge.');

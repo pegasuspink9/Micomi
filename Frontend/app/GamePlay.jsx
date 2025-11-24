@@ -10,8 +10,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import CombatVSModal from './Components/Actual Game/Game Display Entrance/GameDisplayEntrance';
 import GameOverModal from './Components/GameOver And Win/GameOver';
 import LevelCompletionModal from './Components/GameOver And Win/LevelCompletionModal';
-import {soundManager} from './Components/Actual Game/Sounds/SoundManager';
-import { combatSoundManager } from './Components/Actual Game/Sounds/CombatSoundManager';
+import { soundManager } from './Components/Actual Game/Sounds/UniversalSoundManager';
+import { uiSoundManager } from './Components/Actual Game/Sounds/UISoundManager';
+import { Vibration } from 'react-native';
+
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -179,10 +181,10 @@ export default function GamePlay() {
     setIsMessageVisible(false);
     
     // Use a short timeout to allow the UI to register the "hide" before we "show" again.
-    setTimeout(() => {
+     setTimeout(() => {
       if (audioUrl) {
         console.log('🔊 Sync: Playing sound, message will show on playback start.');
-        soundManager.playSequentialSounds([audioUrl], showMessage);
+        soundManager.playSequentialMessage([audioUrl], showMessage);
       } else {
         console.log('💬 Sync: No sound, showing message immediately.');
         showMessage(); // If no sound, trigger the message directly.
@@ -533,7 +535,6 @@ export default function GamePlay() {
     hasTriggeredLevelCompletion.current = false;
     hasShownVSModalRef.current = false;
     soundManager.stopAllSounds();
-    combatSoundManager.stopAllSounds();
     
     try {
       await enterNextLevel(nextLevelId);
@@ -560,7 +561,6 @@ export default function GamePlay() {
     }
     
     soundManager.stopAllSounds();
-    combatSoundManager.stopAllSounds();
     setShowGameOver(false);
     setShowGameOverModal(false);
     setShowLevelCompletion(false); 
@@ -589,7 +589,6 @@ export default function GamePlay() {
         gameOverTimeoutRef.current = null;
       }
      soundManager.stopAllSounds();
-     combatSoundManager.stopAllSounds();
     };
   }, []);
   
