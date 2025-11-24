@@ -11,6 +11,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { universalAssetPreloader } from '../../../../services/preloader/universalAssetPreloader';
+import { soundManager } from '../../Sounds/UniversalSoundManager';
 
 import { 
   scale, 
@@ -26,6 +27,7 @@ const DogCharacter = ({
   currentState = 'idle',
   onAnimationComplete = null,
   attackMovement = 'fade',
+  attackAudioUrl = null,
 }) => {
   // ========== Shared Animation Values ==========
   const frameIndex = useSharedValue(0);
@@ -81,6 +83,31 @@ const DogCharacter = ({
   const [isCompoundAnimation, setIsCompoundAnimation] = useState(false);
   const [preloadedImages] = useState(new Map());
   const phaseTimeoutRef = useRef(null);
+  const attackSoundTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    if (attackSoundTimeoutRef.current) {
+      clearTimeout(attackSoundTimeoutRef.current);
+    }
+
+    if (currentState === 'attack' && attackAudioUrl) {
+      // Adjust this delay (in milliseconds) to match your animation's impact frame.
+      const SOUND_DELAY = 600; 
+      
+      console.log(`🔊 Character scheduling attack sound with a ${SOUND_DELAY}ms delay.`);
+      
+      attackSoundTimeoutRef.current = setTimeout(() => {
+        console.log(`🔊 Playing delayed character attack sound.`);
+        soundManager.playCombatSound(attackAudioUrl);
+      }, SOUND_DELAY);
+    }
+
+    return () => {
+      if (attackSoundTimeoutRef.current) {
+        clearTimeout(attackSoundTimeoutRef.current);
+      }
+    };
+  }, [currentState, attackAudioUrl]);
 
   // ========== Reset positionX when state changes away from attack ==========
   useEffect(() => {
@@ -598,6 +625,7 @@ export default React.memo(DogCharacter, (prevProps, nextProps) => {
     prevProps.isPaused === nextProps.isPaused &&
     prevProps.currentState === nextProps.currentState &&
     prevProps.attackMovement === nextProps.attackMovement &&
+    prevProps.attackAudioUrl === nextProps.attackAudioUrl &&
     prevProps.onAnimationComplete === nextProps.onAnimationComplete &&
     JSON.stringify(prevProps.characterAnimations) === JSON.stringify(nextProps.characterAnimations)
   );

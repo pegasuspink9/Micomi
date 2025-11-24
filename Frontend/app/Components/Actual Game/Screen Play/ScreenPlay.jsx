@@ -578,6 +578,7 @@ useEffect(() => {
           characterAnimations={characterAnimations}
           currentState={characterAnimationState}
           onAnimationComplete={handleCharacterAnimationComplete}
+          attackAudioUrl={gameState.submissionResult?.characterAttackAudio}
         />
 
         {enemies.map((enemy, index) => {
