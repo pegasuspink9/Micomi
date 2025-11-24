@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { generateCombinedHtml } from './WebViewBuilder'; 
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -16,80 +17,19 @@ const Output = ({
   const [htmlOutput, setHtmlOutput] = useState('');
 
   //  Memoize HTML generation function
-    const generateHtmlOutput = useCallback(() => {
-    if (!currentQuestion || !currentQuestion.question) {
-      return '<html><body><p>No question content available.</p></body></html>';
-    }
-
-    const questionType = currentQuestion.challenge_type;
-    
-    if (questionType !== 'fill in the blank' && questionType !== 'code with guide') {
-      return '<html><body></body></html>';
-    }
-
-    // 1. Get the main content by filling in the blanks
-    let bodyContent = currentQuestion.question;
-    const answersArray = selectedAnswers.map(index => options?.[index]).filter(answer => answer && typeof answer === 'string');
-    
-    answersArray.forEach((answer) => {
-      bodyContent = bodyContent.replace('_', answer);
-    });
-    // Remove any remaining unanswered blanks
-    bodyContent = bodyContent.replace(/_/g, '');
-
-    // 2. Get the content from the separate file fields
-    const cssContent = currentQuestion.css_file || '';
-    const jsContent = currentQuestion.javascript_file || '';
-
-    // 3. Construct the final HTML document, injecting CSS and JS
-    const finalHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Live Output</title>
-          <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-          <style>
-            /* --- Injected CSS from Challenge --- */
-            ${cssContent}
-          </style>
-        </head>
-        <body>
-          ${bodyContent}
-          
-          <!-- --- Injected JavaScript from Challenge --- -->
-          <script>
-            try {
-              ${jsContent}
-            } catch (e) {
-              // Create a visual error overlay in the HTML if JS fails
-              const errorDiv = document.createElement('div');
-              errorDiv.style.position = 'fixed';
-              errorDiv.style.bottom = '0';
-              errorDiv.style.left = '0';
-              errorDiv.style.right = '0';
-              errorDiv.style.backgroundColor = '#ff5f56';
-              errorDiv.style.color = 'white';
-              errorDiv.style.padding = '10px';
-              errorDiv.style.fontFamily = 'monospace';
-              errorDiv.style.zIndex = '10000';
-              errorDiv.innerText = 'JavaScript Error: ' + e.message;
-              document.body.appendChild(errorDiv);
-            }
-          </script>
-        </body>
-      </html>
-    `;
-
-    return finalHtml;
+   const generateHtmlOutput = useCallback(() => {
+    // Get user's answers from the selected options
+    const userAnswers = selectedAnswers.map(index => options?.[index]).filter(Boolean);
+    // Generate the combined HTML using the utility
+    return generateCombinedHtml(currentQuestion, userAnswers);
   }, [currentQuestion, selectedAnswers, options]);
 
   // Update HTML output when dependencies change
-  useEffect(() => {
-    if (showLiveHTML) {
-      const newHtmlOutput = generateHtmlOutput();
-      setHtmlOutput(newHtmlOutput);
-    }
-  }, [generateHtmlOutput, showLiveHTML]);
+    useEffect(() => {
+    const newHtmlOutput = generateHtmlOutput();
+    setHtmlOutput(newHtmlOutput);
+  }, [generateHtmlOutput]);
+
 
   //  Memoize should show HTML decision
   const shouldShowHTML = useMemo(() => 
