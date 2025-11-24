@@ -542,14 +542,18 @@ export const enterLevel = async (playerId: number, levelId: number) => {
 
   let card_type: string | null = null;
   let character_attack_card: string | null = null;
+  let character_damage_card: number | null = null;
 
   let attackType: string;
   if (correctAnswerLength >= 8) {
     attackType = "third_attack";
+    character_damage_card = character.character_damage[2];
   } else if (correctAnswerLength >= 5) {
     attackType = "second_attack";
+    character_damage_card = character.character_damage[1];
   } else {
     attackType = "basic_attack";
+    character_damage_card = character.character_damage[0];
   }
 
   const cardInfo = getCardForAttackType(character.character_name, attackType);
@@ -616,6 +620,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     card: {
       card_type,
       character_attack_card,
+      character_damage_card,
     },
     currentChallenge: firstChallenge,
     energy: energyStatus.energy,

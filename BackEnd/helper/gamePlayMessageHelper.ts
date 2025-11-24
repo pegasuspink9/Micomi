@@ -372,7 +372,6 @@ export const generateDynamicMessage = (
       `No stopping you, ${characterName}!`,
       `Blazing trail, ${characterName}!`,
       `Record streak, ${characterName}!`,
-      `${enemyName} is overwhelmed!`,
       `${characterName} can't be stopped!`,
     ],
     quick: [
@@ -587,22 +586,33 @@ export const generateDynamicMessage = (
   const selectedText =
     messageList[Math.floor(Math.random() * messageList.length)];
 
+  const PHRASE_AUDIO_NORMALIZED = Object.fromEntries(
+    Object.entries(PHRASE_AUDIO).map(([key, val]) => [
+      key
+        .toLowerCase()
+        .replace(/[,!?.]/g, "")
+        .replace(/\s+/g, " ")
+        .trim(),
+      val,
+    ])
+  );
+
   const cleanPhrase = selectedText
     .replace(new RegExp(`\\b${characterName}\\b`, "gi"), "")
     .replace(new RegExp(`\\b${enemyName}\\b`, "gi"), "")
     .replace(/[,!?.]/g, "")
     .replace(/\s+/g, " ")
-    .trim();
+    .trim()
+    .toLowerCase();
 
   const phraseAudioUrl =
-    PHRASE_AUDIO[cleanPhrase] ||
-    Object.entries(PHRASE_AUDIO).find(([key]) =>
+    PHRASE_AUDIO_NORMALIZED[cleanPhrase] ||
+    Object.entries(PHRASE_AUDIO_NORMALIZED).find(([key]) =>
       cleanPhrase.startsWith(key)
     )?.[1] ||
-    Object.entries(PHRASE_AUDIO).find(([key]) =>
+    Object.entries(PHRASE_AUDIO_NORMALIZED).find(([key]) =>
       cleanPhrase.includes(key)
     )?.[1];
-
   const finalPhraseUrl =
     phraseAudioUrl ||
     "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Correct%20Answer!/cheer_generic.wav";

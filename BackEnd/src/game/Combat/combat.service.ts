@@ -403,8 +403,6 @@ export async function fightEnemy(
   const effectiveBonusRound = isBonusRound || isDetectedBonusRound;
 
   if (isCorrect) {
-    await updateQuestProgress(playerId, QuestType.solve_challenge, 1);
-
     let currentChallenge = null;
     if (challengeId) {
       currentChallenge = await prisma.challenge.findUnique({
@@ -976,8 +974,6 @@ export async function fightBossEnemy(
   const effectiveBonusRound = isBonusRound || isDetectedBonusRound;
 
   if (isCorrect) {
-    await updateQuestProgress(playerId, QuestType.solve_challenge, 1);
-
     let currentChallenge = null;
     if (challengeId) {
       currentChallenge = await prisma.challenge.findUnique({
@@ -1422,46 +1418,6 @@ export async function fightBossEnemy(
       }
     }
   } else {
-    const wrongChallenges = progress.wrong_challenges
-      ? [...(progress.wrong_challenges as number[])]
-      : [];
-    if (challengeId) {
-      wrongChallenges.push(challengeId);
-    }
-    const wrongCount = progress.consecutive_wrongs + 1; // Increment for this wrong
-
-    await prisma.playerProgress.update({
-      where: { progress_id: progress.progress_id },
-      data: {
-        wrong_challenges: wrongChallenges,
-        consecutive_corrects: 0,
-        consecutive_wrongs: wrongCount,
-      },
-    });
-    progress.wrong_challenges = wrongChallenges;
-    progress.consecutive_corrects = 0;
-    progress.consecutive_wrongs = wrongCount;
-
-    if (wrongCount % 3 === 0) {
-      if (isBossJoshy) {
-        await prisma.playerProgress.update({
-          where: { progress_id: progress.progress_id },
-          data: { has_boss_shield: true },
-        });
-        progress.has_boss_shield = true;
-        console.log(`- Boss Joshy shield activated after ${wrongCount} wrongs`);
-      } else if (isBossDarco) {
-        await prisma.playerProgress.update({
-          where: { progress_id: progress.progress_id },
-          data: { has_force_character_attack_type: true },
-        });
-        progress.has_force_character_attack_type = true;
-        console.log(
-          `- Boss Darco force character attack type activated after ${wrongCount} wrongs`
-        );
-      }
-    }
-
     const effectiveBonusRound = isBonusRound || isDetectedBonusRound;
 
     if (effectiveBonusRound) {
