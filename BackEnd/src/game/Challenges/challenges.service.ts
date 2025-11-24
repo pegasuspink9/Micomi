@@ -54,19 +54,47 @@ const generateMotivationalMessage = (
   playerWon: boolean,
   levelNumber: number
 ): string => {
+  const random = (messages: string[]) =>
+    messages[Math.floor(Math.random() * messages.length)];
+
   if (!playerWon) {
     const mistakeCount = wrongChallengesCount;
 
     if (mistakeCount === 0) {
-      return `You were so close to victory in Level ${levelNumber}! Your knowledge was perfect, but the battle was lost. Regroup and try again—you've got this!`;
+      return random([
+        `You were so close to victory in Level ${levelNumber}! Your knowledge was perfect, but the battle was lost. Regroup and try again—you've got this!`,
+        `Level ${levelNumber} ended in defeat despite your flawless answers! Sometimes timing matters too. Take a breath and dive back in!`,
+        `Not a single wrong answer in Level ${levelNumber}, yet defeat found you! You clearly know your stuff—one more attempt will seal the victory!`,
+        `Your knowledge shined bright in Level ${levelNumber} with zero mistakes! The win slipped away this time, but you're absolutely ready for the next round!`,
+      ]);
     } else if (mistakeCount === 1) {
-      return `Level ${levelNumber} defeated you this time with just 1 mistake. You're almost there! One more focused attempt and victory will be yours!`;
+      return random([
+        `Level ${levelNumber} defeated you this time with just 1 mistake. You're almost there! One more focused attempt and victory will be yours!`,
+        `So close! Just 1 slip-up in Level ${levelNumber} led to defeat. You know what to do now—go claim that victory!`,
+        `A single mistake in Level ${levelNumber} cost you the win. Shake it off and show this level what you're truly capable of!`,
+        `Level ${levelNumber} caught you on 1 error. That's how close you are! Your comeback will be legendary!`,
+      ]);
     } else if (mistakeCount <= 3) {
-      return `You made ${mistakeCount} mistakes in Level ${levelNumber} before falling. Don't be discouraged—every mistake is a lesson learned. Come back stronger!`;
+      return random([
+        `You made ${mistakeCount} mistakes in Level ${levelNumber} before falling. Don't be discouraged—every mistake is a lesson learned. Come back stronger!`,
+        `Level ${levelNumber} proved tough with ${mistakeCount} errors leading to defeat. But now you know the traps—next time, they won't catch you!`,
+        `${mistakeCount} mistakes in Level ${levelNumber} this round. Each one teaches you something valuable. You're getting closer with every attempt!`,
+        `Defeated in Level ${levelNumber} with ${mistakeCount} missteps. But look at everything you DID get right! Victory is within reach!`,
+      ]);
     } else if (mistakeCount <= 5) {
-      return `${mistakeCount} mistakes cost you the battle in Level ${levelNumber}. Take a moment to review, then face this challenge again with renewed determination!`;
+      return random([
+        `${mistakeCount} mistakes cost you the battle in Level ${levelNumber}. Take a moment to review, then face this challenge again with renewed determination!`,
+        `Level ${levelNumber} wasn't yours this time, with ${mistakeCount} errors along the way. Every warrior needs to study their opponent—now you know!`,
+        `${mistakeCount} slips in Level ${levelNumber} led to defeat. Rest, reflect, and return ready to conquer! You've got the potential!`,
+        `The challenge of Level ${levelNumber} claimed victory with ${mistakeCount} mistakes on your side. But you're learning fast—the next attempt will be different!`,
+      ]);
     } else {
-      return `Level ${levelNumber} proved challenging with ${mistakeCount} mistakes. Remember, even the greatest heroes faced setbacks. Study, practice, and return victorious!`;
+      return random([
+        `Level ${levelNumber} proved challenging with ${mistakeCount} mistakes. Remember, even the greatest heroes faced setbacks. Study, practice, and return victorious!`,
+        `${mistakeCount} errors in Level ${levelNumber} this round. This level is testing you, but each attempt makes you sharper. Don't give up!`,
+        `A tough battle in Level ${levelNumber} with ${mistakeCount} mistakes. Take your time, review the material, and come back when you're ready to dominate!`,
+        `Level ${levelNumber} pushed you hard with ${mistakeCount} errors. But you know what? You're still here, still trying. That's what champions do!`,
+      ]);
     }
   }
 
@@ -75,40 +103,101 @@ const generateMotivationalMessage = (
 
   if (isPerfect && !isBonusRound) {
     if (wasFirstCompletion) {
-      return `PERFECT SCORE! You've conquered Level ${levelNumber} flawlessly on your first try! Your mastery is exceptional—keep this momentum going!`;
+      return random([
+        `PERFECT SCORE! You've conquered Level ${levelNumber} flawlessly on your first try! Your mastery is exceptional—keep this momentum going!`,
+        `ABSOLUTE PERFECTION! Level ${levelNumber} defeated on your first attempt without a single error! You're a natural—amazing work!`,
+        `FIRST TRY FLAWLESS! Not one mistake in Level ${levelNumber}! Your skill level is off the charts—what an incredible achievement!`,
+        `UNSTOPPABLE! Level ${levelNumber} crushed perfectly on your debut! You're setting the bar high—absolutely outstanding performance!`,
+      ]);
     } else {
-      return `PERFECT SCORE! You've mastered Level ${levelNumber} without a single mistake! Your skills continue to shine—excellent work!`;
+      return random([
+        `PERFECT SCORE! You've mastered Level ${levelNumber} without a single mistake! Your skills continue to shine—excellent work!`,
+        `FLAWLESS EXECUTION! Zero errors in Level ${levelNumber}! Your persistence has paid off beautifully—you're in the zone!`,
+        `100% PERFECTION! Level ${levelNumber} completely dominated! You've truly mastered this material—phenomenal job!`,
+        `SPOTLESS VICTORY! Not a single mistake in Level ${levelNumber}! Your dedication shows in every answer—bravo!`,
+      ]);
     }
   }
 
   if (isPerfect && isBonusRound) {
     if (wasFirstCompletion) {
-      return `FLAWLESS VICTORY! You completed Level ${levelNumber} with perfect accuracy AND conquered the bonus round! You're a true champion!`;
+      return random([
+        `FLAWLESS VICTORY! You completed Level ${levelNumber} with perfect accuracy AND conquered the bonus round! You're a true champion!`,
+        `LEGENDARY PERFORMANCE! First completion of Level ${levelNumber} with ZERO mistakes through the bonus round! Absolutely spectacular!`,
+        `PERFECT CHAMPION! Level ${levelNumber} bonus round demolished flawlessly on your first try! You're operating at peak performance!`,
+        `ULTIMATE MASTERY! Not a single error through Level ${levelNumber}'s bonus challenge on your first attempt! Pure excellence!`,
+      ]);
     } else {
-      return `FLAWLESS VICTORY! Level ${levelNumber} bonus round complete with zero mistakes! Your dedication to perfection is admirable!`;
+      return random([
+        `FLAWLESS VICTORY! Level ${levelNumber} bonus round complete with zero mistakes! Your dedication to perfection is admirable!`,
+        `PERFECTION ACHIEVED! The bonus round of Level ${levelNumber} conquered without a single slip! Your consistency is remarkable!`,
+        `IMPECCABLE! Level ${levelNumber}'s bonus challenge completed with 100% accuracy! You've reached expert status!`,
+        `TOTAL DOMINATION! Zero errors through Level ${levelNumber}'s bonus round! You make difficult look easy!`,
+      ]);
     }
   }
 
   if (isBonusRound) {
     if (mistakeCount <= 2) {
-      return `Great job completing Level ${levelNumber}'s bonus round! ${mistakeCount} ${
-        mistakeCount === 1 ? "mistake" : "mistakes"
-      } along the way—remember, it's not bad to make mistakes. They help you grow stronger!`;
+      return random([
+        `Great job completing Level ${levelNumber}'s bonus round! ${mistakeCount} ${
+          mistakeCount === 1 ? "mistake" : "mistakes"
+        } along the way—remember, it's not bad to make mistakes. They help you grow stronger!`,
+        `Bonus round conquered in Level ${levelNumber}! Only ${mistakeCount} ${
+          mistakeCount === 1 ? "error" : "errors"
+        }—that's impressive! You're learning and improving with every challenge!`,
+        `Victory in Level ${levelNumber}'s bonus challenge! ${mistakeCount} ${
+          mistakeCount === 1 ? "slip" : "slips"
+        }, but you pushed through! That's the mark of a determined learner!`,
+        `Level ${levelNumber} bonus round complete! Just ${mistakeCount} ${
+          mistakeCount === 1 ? "mistake" : "mistakes"
+        }—you handled that extra challenge beautifully! Well earned!`,
+      ]);
     } else if (mistakeCount === 3) {
-      return `You've conquered Level ${levelNumber}'s bonus round with 3 mistakes. Every challenge overcome makes you wiser. Well done pushing through!`;
+      return random([
+        `You've conquered Level ${levelNumber}'s bonus round with 3 mistakes. Every challenge overcome makes you wiser. Well done pushing through!`,
+        `Bonus round victory in Level ${levelNumber}! Three errors couldn't stop your momentum. Your resilience is impressive!`,
+        `Level ${levelNumber}'s bonus challenge completed with 3 mistakes. That shows real determination—you didn't give up!`,
+        `Three mistakes in Level ${levelNumber}'s bonus round, but you crossed the finish line! Persistence wins the day!`,
+      ]);
     } else {
-      return `Bonus round complete in Level ${levelNumber}! You made ${mistakeCount} mistakes but persevered to victory. Your determination is your greatest strength!`;
+      return random([
+        `Bonus round complete in Level ${levelNumber}! You made ${mistakeCount} mistakes but persevered to victory. Your determination is your greatest strength!`,
+        `Level ${levelNumber}'s bonus challenge conquered! ${mistakeCount} errors along the way, but you never quit. That's what matters most!`,
+        `Victory in Level ${levelNumber}'s bonus round despite ${mistakeCount} mistakes! Your refusal to give up is truly inspiring!`,
+        `You powered through Level ${levelNumber}'s bonus with ${mistakeCount} mistakes. Remember: finishing strong beats starting perfect. Excellent perseverance!`,
+      ]);
     }
   }
 
   if (mistakeCount === 1) {
-    return `Excellent work on Level ${levelNumber}! Just 1 mistake shows your strong grasp of the material. You're on the path to mastery!`;
+    return random([
+      `Excellent work on Level ${levelNumber}! Just 1 mistake shows your strong grasp of the material. You're on the path to mastery!`,
+      `Level ${levelNumber} conquered with only 1 error! That's outstanding accuracy—you really know your stuff!`,
+      `Impressive victory in Level ${levelNumber}! A single mistake is practically perfect. You're doing amazing!`,
+      `One mistake in Level ${levelNumber} and still victorious! Your understanding is rock solid—keep up this fantastic progress!`,
+    ]);
   } else if (mistakeCount <= 3) {
-    return `Well done completing Level ${levelNumber}! With only ${mistakeCount} mistakes, you demonstrated solid understanding. Keep up the great work!`;
+    return random([
+      `Well done completing Level ${levelNumber}! With only ${mistakeCount} mistakes, you demonstrated solid understanding. Keep up the great work!`,
+      `Victory is yours in Level ${levelNumber}! Just ${mistakeCount} errors shows you're really grasping the concepts. Excellent progress!`,
+      `Level ${levelNumber} complete with ${mistakeCount} mistakes! That's a strong performance—you should be proud of this achievement!`,
+      `${mistakeCount} mistakes in Level ${levelNumber}, but victory was never in doubt! You're building real expertise here!`,
+    ]);
   } else if (mistakeCount <= 5) {
-    return `Victory in Level ${levelNumber}! You made ${mistakeCount} mistakes but learned from each one and succeeded. That's the spirit of a true learner!`;
+    return random([
+      `Victory in Level ${levelNumber}! You made ${mistakeCount} mistakes but learned from each one and succeeded. That's the spirit of a true learner!`,
+      `Level ${levelNumber} conquered! ${mistakeCount} errors couldn't hold you back. Each mistake made you smarter, and you finished strong!`,
+      `You've beaten Level ${levelNumber} with ${mistakeCount} mistakes along the way. The important thing? You kept going and won!`,
+      `Success in Level ${levelNumber}! ${mistakeCount} slips were just speed bumps on your road to victory. Great determination!`,
+    ]);
   } else {
-    return `Level ${levelNumber} complete! ${mistakeCount} mistakes couldn't stop your determination. Every error teaches you something valuable—onward to the next challenge!`;
+    return random([
+      `Level ${levelNumber} complete! ${mistakeCount} mistakes couldn't stop your determination. Every error teaches you something valuable—onward to the next challenge!`,
+      `You did it! Level ${levelNumber} finished despite ${mistakeCount} errors. Your persistence is admirable—that's how champions are made!`,
+      `Victory earned in Level ${levelNumber}! ${mistakeCount} mistakes tested you, but you never gave up. Forward to greater heights!`,
+      `Level ${levelNumber} conquered through sheer determination! ${mistakeCount} errors made the victory even sweeter. You're getting stronger with every level!`,
+    ]);
   }
 };
 
@@ -167,6 +256,8 @@ export const submitChallengeService = async (
   let currentProgress = await prisma.playerProgress.findUnique({
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
   });
+
+  const isReplayingCompletedLevel = currentProgress?.is_completed === true;
 
   if (!currentProgress) {
     currentProgress = await prisma.playerProgress.create({
@@ -411,8 +502,11 @@ export const submitChallengeService = async (
     message = text;
     audioResponse = audio;
 
-    if (!hintUsed) {
+    if (!hintUsed && !isReplayingCompletedLevel) {
       await updateQuestProgress(playerId, QuestType.solve_challenge_no_hint, 1);
+      console.log("Quest progress updated - first-time completion");
+    } else if (isReplayingCompletedLevel) {
+      console.log("Skipping quest update - replaying completed level");
     }
   } else {
     const baselineState = await CombatService.getCurrentFightState(
@@ -479,6 +573,8 @@ export const submitChallengeService = async (
   let character_attack_card: string | null = null;
 
   let attackType: string | null = null;
+
+  let character_damage_card: number | null = null;
 
   const currentAnsweredCount = Object.keys(
     updatedProgress.player_answer ?? {}
@@ -603,7 +699,7 @@ export const submitChallengeService = async (
         completionRewards = {
           feedbackMessage:
             motivationalMessage +
-            "Already completed—no extra rewards. Great practice!",
+            "\nAlready completed—no extra rewards. Great practice!",
           coinsEarned: 0,
           totalPointsEarned: 0,
           totalExpPointsEarned: 0,
@@ -638,20 +734,20 @@ export const submitChallengeService = async (
   const hasConsecutiveWrongs = updatedProgress.consecutive_wrongs > 0;
 
   if (nextChallenge) {
-    const isRetryOfWrong =
-      nextChallenge &&
-      updatedWrongChallenges.includes(nextChallenge.challenge_id);
+    const isRetryOfWrong = updatedWrongChallenges.includes(
+      nextChallenge.challenge_id
+    );
 
     if (isRetryOfWrong) {
       attackType = "basic_attack";
+    } else if (isLastRemaining && isNewBonusRound) {
+      attackType = "special_attack";
     } else if (
       isLastRemainingChallenge &&
       hasConsecutiveWrongs &&
       isNewBonusRound
     ) {
       attackType = "third_attack";
-    } else if (isLastRemaining && isNewBonusRound) {
-      attackType = "special_attack";
     } else if (nextCorrectAnswerLength >= 8) {
       attackType = "third_attack";
     } else if (nextCorrectAnswerLength >= 5) {
@@ -660,13 +756,37 @@ export const submitChallengeService = async (
       attackType = "basic_attack";
     }
 
+    const damageIndexMap: Record<string, number> = {
+      basic_attack: 0,
+      second_attack: 1,
+      third_attack: 2,
+      special_attack: 2,
+    };
+
+    const damageIndex = damageIndexMap[attackType] ?? 0;
+
+    const damageArray = Array.isArray(character.character_damage)
+      ? (character.character_damage as number[])
+      : [10, 15, 25];
+
+    character_damage_card = damageArray[damageIndex] ?? 10;
+
+    if (freshProgress?.has_strong_effect) {
+      character_damage_card *= 2;
+    }
+
     const cardInfo = getCardForAttackType(character.character_name, attackType);
     card_type = cardInfo.card_type;
     character_attack_card = cardInfo.character_attack_card;
+
+    console.log(
+      `Next challenge card preview: ${attackType}, damage: ${character_damage_card}, answer length: ${nextCorrectAnswerLength}`
+    );
   } else {
     attackType = null;
     card_type = null;
     character_attack_card = null;
+    character_damage_card = null;
   }
 
   if (isBonusRound) {
@@ -735,6 +855,7 @@ export const submitChallengeService = async (
     card: {
       card_type,
       character_attack_card,
+      character_damage_card,
     },
     is_correct_audio,
     enemy_attack_audio,

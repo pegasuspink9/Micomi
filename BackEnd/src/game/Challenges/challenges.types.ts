@@ -69,6 +69,7 @@ export interface SubmitChallengeControllerResult
   card: {
     card_type: string | null;
     character_attack_card: string | null;
+    character_damage_card: number | null;
   };
   is_correct_audio?: string | null;
   enemy_attack_audio?: string | null;
