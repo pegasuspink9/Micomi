@@ -11,6 +11,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { universalAssetPreloader } from '../../../../services/preloader/universalAssetPreloader';
+import { combatSoundManager } from '../../Sounds/CombatSoundManager';
 import { 
   scale, 
   scaleWidth, 
@@ -29,7 +30,8 @@ const EnemyCharacter = ({
   onAnimationComplete = null,
   attackMovement = 'fade',
   isBonusRound = false,
-  fightStatus = null
+  fightStatus = null,
+  attackAudioUrl = null
 }) => {
   // ========== Shared Animation Values ==========
   const frameIndex = useSharedValue(0);
@@ -89,6 +91,13 @@ const EnemyCharacter = ({
   const [isCompoundAnimation, setIsCompoundAnimation] = useState(false);
   const [preloadedImages] = useState(new Map());
   const phaseTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    if (currentState === 'attack' && attackAudioUrl) {
+      console.log(`🔊 EnemyCharacter [${index}] is attacking, playing sound.`);
+      combatSoundManager.playSound(attackAudioUrl);
+    }
+  }, [currentState, attackAudioUrl, index]);
 
   if (isBonusRound) {
     wasBonusRound.current = true;
@@ -637,12 +646,13 @@ const styles = StyleSheet.create({
 
 export default React.memo(EnemyCharacter, (prevProps, nextProps) => {
    return (
-   prevProps.isPaused === nextProps.isPaused &&
+     prevProps.isPaused === nextProps.isPaused &&
     prevProps.currentState === nextProps.currentState &&
     prevProps.isAttacking === nextProps.isAttacking &&
     prevProps.isBonusRound === nextProps.isBonusRound &&
     prevProps.index === nextProps.index &&
     prevProps.fightStatus === nextProps.fightStatus &&
+    prevProps.attackAudioUrl === nextProps.attackAudioUrl &&
     JSON.stringify(prevProps.characterAnimations) === JSON.stringify(nextProps.characterAnimations)
   );
 });

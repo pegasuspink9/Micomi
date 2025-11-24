@@ -10,7 +10,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import CombatVSModal from './Components/Actual Game/Game Display Entrance/GameDisplayEntrance';
 import GameOverModal from './Components/GameOver And Win/GameOver';
 import LevelCompletionModal from './Components/GameOver And Win/LevelCompletionModal';
-import {soundManager} from './Components/Actual Game/Sounds/SoundManager'
+import {soundManager} from './Components/Actual Game/Sounds/SoundManager';
+import { combatSoundManager } from './Components/Actual Game/Sounds/CombatSoundManager';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -532,6 +533,7 @@ export default function GamePlay() {
     hasTriggeredLevelCompletion.current = false;
     hasShownVSModalRef.current = false;
     soundManager.stopAllSounds();
+    combatSoundManager.stopAllSounds();
     
     try {
       await enterNextLevel(nextLevelId);
@@ -558,6 +560,7 @@ export default function GamePlay() {
     }
     
     soundManager.stopAllSounds();
+    combatSoundManager.stopAllSounds();
     setShowGameOver(false);
     setShowGameOverModal(false);
     setShowLevelCompletion(false); 
@@ -586,6 +589,7 @@ export default function GamePlay() {
         gameOverTimeoutRef.current = null;
       }
      soundManager.stopAllSounds();
+     combatSoundManager.stopAllSounds();
     };
   }, []);
   

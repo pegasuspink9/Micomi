@@ -245,7 +245,8 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         isBonusRound: data.is_bonus_round || responseData.is_bonus_round || false,
         audio: data.audio || responseData.audio || [],
         isCorrectAudio: data.is_correct_audio || responseData.is_correct_audio || null,
-        
+        enemyAttackAudio: data.enemy_attack_audio || responseData.enemy_attack_audio || null,
+
         fightResult: responseData.fightResult ? {
           status: responseData.fightResult.status,
           timer: responseData.fightResult.timer,

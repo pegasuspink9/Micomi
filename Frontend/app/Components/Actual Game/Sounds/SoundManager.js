@@ -2,96 +2,84 @@ import { Audio } from 'expo-av';
 
 class SoundManager {
   constructor() {
-    this.currentSound = null; // The sound object currently playing
-    this.nextSound = null;    // The sound object that is preloaded and ready
+    this.currentSound = null;
+    this.nextSound = null;
     this.isPlaying = false;
-    this.soundQueue = [];     // A queue of URLs for upcoming sounds
+    this.soundQueue = [];
     this.onPlaybackStartCallback = null;
   }
 
   async playSequentialSounds(urls, onPlaybackStart) {
     if (!Array.isArray(urls) || urls.length === 0) {
-      // If there are no sounds, but a callback was provided, call it immediately.
       if (onPlaybackStart) onPlaybackStart();
       return;
     }
-    // Stop any currently playing sequence to start the new one fresh.
+    
     await this.stopAllSounds();
 
-    this.onPlaybackStartCallback = onPlaybackStart || null; 
+    this.onPlaybackStartCallback = onPlaybackStart || null;
     this.soundQueue = [...urls];
     this._playNextInQueue();
   }
 
-
   _playNextInQueue = async () => {
-    // Case 1: A sound has been preloaded and is ready to go.
+    let soundToPlay = null;
+
     if (this.nextSound) {
-      this.currentSound = this.nextSound;
-      this.nextSound = null; // Clear the preloaded slot
-    } 
-    // Case 2: No sound was preloaded, but there are more URLs in the queue (e.g., the very first sound).
-    else if (this.soundQueue.length > 0) {
+      soundToPlay = this.nextSound;
+      this.nextSound = null;
+    } else if (this.soundQueue.length > 0) {
       const url = this.soundQueue.shift();
       try {
-        console.log(`🔊 Loading sound: ${url}`);
         const { sound } = await Audio.Sound.createAsync({ uri: url });
-        this.currentSound = sound;
+        soundToPlay = sound;
       } catch (error) {
         console.error(`Error loading sound ${url}:`, error);
-        // If loading fails, skip to the next in the queue.
         this._playNextInQueue();
         return;
       }
-    } 
-    // Case 3: No preloaded sound and the queue is empty. We're done.
-    else {
-      console.log('🔊 Sound sequence finished.');
+    } else {
       this.isPlaying = false;
       return;
     }
 
     this.isPlaying = true;
-    
-    // IMPORTANT: As soon as we have a sound to play, start preloading the next one.
+    this.currentSound = soundToPlay;
+
     this._preloadNextSound();
-    
-    // Set up the listener that will call this function again when the current sound finishes.
-    this.currentSound.setOnPlaybackStatusUpdate(this._onPlaybackStatusUpdate);
+
+    // Pass the specific sound instance to the status update handler
+    soundToPlay.setOnPlaybackStatusUpdate((status) => this._onPlaybackStatusUpdate(status, soundToPlay));
 
     if (this.onPlaybackStartCallback) {
       this.onPlaybackStartCallback();
-      this.onPlaybackStartCallback = null; // Consume the callback so it only fires once.
+      this.onPlaybackStartCallback = null;
     }
-    
-    // Finally, play the sound.
-    await this.currentSound.playAsync();
+
+    await soundToPlay.playAsync().catch(e => console.error("Error playing sound:", e));
   };
 
-  _onPlaybackStatusUpdate = async (status) => {
+  _onPlaybackStatusUpdate = async (status, soundInstance) => {
     if (status.didJustFinish) {
-      // The sound finished. Clean up its resources.
-      if (this.currentSound) {
-        this.currentSound.setOnPlaybackStatusUpdate(null);
-        await this.currentSound.unloadAsync().catch(e => console.error("Error unloading sound:", e));
+      soundInstance.setOnPlaybackStatusUpdate(null);
+      await soundInstance.unloadAsync().catch(() => {});
+
+      if (this.currentSound === soundInstance) {
         this.currentSound = null;
       }
-      // Trigger the next sound in the sequence, which should be preloaded.
+      
       this._playNextInQueue();
     }
   };
 
   _preloadNextSound = async () => {
-    // Preload if there's a URL in the queue and the `nextSound` slot is empty.
     if (this.soundQueue.length > 0 && !this.nextSound) {
       const nextUrl = this.soundQueue.shift();
       try {
-        console.log(`🔊 Preloading next sound: ${nextUrl}`);
         const { sound } = await Audio.Sound.createAsync({ uri: nextUrl }, { shouldPlay: false });
         this.nextSound = sound;
       } catch (error) {
         console.error(`Error preloading sound ${nextUrl}:`, error);
-        // If preload fails, put the URL back at the front of the queue to try again later.
         this.soundQueue.unshift(nextUrl);
       }
     }
@@ -100,18 +88,21 @@ class SoundManager {
   async stopAllSounds() {
     this.soundQueue = [];
     this.isPlaying = false;
+    this.onPlaybackStartCallback = null;
 
     if (this.currentSound) {
-      this.currentSound.setOnPlaybackStatusUpdate(null);
-      await this.currentSound.stopAsync().catch(() => {});
-      await this.currentSound.unloadAsync().catch(() => {});
+      const soundToUnload = this.currentSound;
       this.currentSound = null;
+      soundToUnload.setOnPlaybackStatusUpdate(null);
+      await soundToUnload.stopAsync().catch(() => {});
+      await soundToUnload.unloadAsync().catch(() => {});
     }
+
     if (this.nextSound) {
-      await this.nextSound.unloadAsync().catch(() => {});
+      const soundToUnload = this.nextSound;
       this.nextSound = null;
+      await soundToUnload.unloadAsync().catch(() => {});
     }
-    console.log('🔊 All sounds stopped and unloaded.');
   }
 }
 

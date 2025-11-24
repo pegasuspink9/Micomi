@@ -11,6 +11,7 @@ import Coin from './components/Coin';
 import Damage from './components/Damage';
 import Message from './components/Message';
 import FadeOutWrapper from './FadeOutWrapper/FadeOutWrapper';
+import { combatSoundManager } from '../Sounds/CombatSoundManager';
 
 const ScreenPlay = ({ 
   gameState,
@@ -33,6 +34,7 @@ const ScreenPlay = ({
 
   const [hasRunCompleted, setHasRunCompleted] = useState(false);
   const [isEnemyRunning, setIsEnemyRunning] = useState(false);
+  const lastPlayedEnemyAttackKey = useRef(null);
 
   const enemyRunTimeoutsRef = useRef({});
   const enemyRunSequenceStartedRef = useRef(false);
@@ -392,6 +394,7 @@ const ScreenPlay = ({
   };
 }, [gameState?.submissionResult]);
 
+
 useEffect(() => {
   setVictoryAnimationPhase('idle');
   
@@ -584,7 +587,7 @@ useEffect(() => {
             ? enemyAnimationStates[index] 
             : (enemyAnimationStates[index] || 'idle');
           return (
-            <EnemyCharacter
+         <EnemyCharacter
               key={`enemy-${index}`}
               enemy={enemy}
               index={index}
@@ -595,6 +598,7 @@ useEffect(() => {
               currentState={currentEnemyState} 
               isBonusRound={gameState.submissionResult?.isBonusRound ?? false}
               fightStatus={gameState.submissionResult?.fightResult?.status}
+              attackAudioUrl={gameState.submissionResult?.enemyAttackAudio}
               onAnimationComplete={handleEnemyAnimationComplete(index)}
             />
           );
