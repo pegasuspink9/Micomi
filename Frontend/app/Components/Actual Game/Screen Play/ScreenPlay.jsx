@@ -646,7 +646,7 @@ useEffect(() => {
       <Damage
         incoming={enemyDamageThisSubmission}
         animated={true}
-        startDelay={1000} 
+        startDelay={600} 
         position="left" 
         trigger={submissionSeq} 
       />

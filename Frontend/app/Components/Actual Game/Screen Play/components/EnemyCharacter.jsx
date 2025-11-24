@@ -50,7 +50,7 @@ const EnemyCharacter = ({
 
   const ANIMATION_DURATIONS = useMemo(() => ({
     idle: -1,
-    attack: 1500,
+    attack: 1300,
     hurt: 2000,
     run: -1,
     dies: 2000,
@@ -91,12 +91,33 @@ const EnemyCharacter = ({
   const [isCompoundAnimation, setIsCompoundAnimation] = useState(false);
   const [preloadedImages] = useState(new Map());
   const phaseTimeoutRef = useRef(null);
+  const attackSoundTimeoutRef = useRef(null);
 
   useEffect(() => {
-    if (currentState === 'attack' && attackAudioUrl) {
-      console.log(`🔊 EnemyCharacter [${index}] is attacking, playing sound.`);
-      combatSoundManager.playSound(attackAudioUrl);
+    // Always clear any pending sound timeout when state changes or the component re-renders.
+    if (attackSoundTimeoutRef.current) {
+      clearTimeout(attackSoundTimeoutRef.current);
     }
+
+    if (currentState === 'attack' && attackAudioUrl) {
+      // This delay (in milliseconds) should match the point in your animation
+      // where the enemy's attack visually connects. 400ms is a good starting point.
+      const SOUND_DELAY = 400; 
+      
+      console.log(`🔊 EnemyCharacter [${index}] scheduling attack sound with a ${SOUND_DELAY}ms delay.`);
+      
+      attackSoundTimeoutRef.current = setTimeout(() => {
+        console.log(`🔊 Playing delayed attack sound for Enemy [${index}].`);
+        combatSoundManager.playSound(attackAudioUrl);
+      }, SOUND_DELAY);
+    }
+
+    // This cleanup function ensures the timeout is cancelled if the component unmounts.
+    return () => {
+      if (attackSoundTimeoutRef.current) {
+        clearTimeout(attackSoundTimeoutRef.current);
+      }
+    };
   }, [currentState, attackAudioUrl, index]);
 
   if (isBonusRound) {

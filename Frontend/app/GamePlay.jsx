@@ -187,7 +187,7 @@ export default function GamePlay() {
         console.log('💬 Sync: No sound, showing message immediately.');
         showMessage(); // If no sound, trigger the message directly.
       }
-    }, 50);
+    }, 1000);
 
   }, [gameState?.submissionResult]);
 
