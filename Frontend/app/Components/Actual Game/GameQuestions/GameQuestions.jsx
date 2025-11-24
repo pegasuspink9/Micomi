@@ -34,12 +34,12 @@ export default function GameQuestions({
     const challengeType = currentQuestion.challenge_type;
     if (challengeType === 'fill in the blank' || challengeType === 'code with guide') {
       const timeoutId = setTimeout(() => {
-        scrollToNextBlank(scrollViewRef, blankRefs, currentQuestion, selectedAnswers);
+        scrollToNextBlank(scrollViewRef, blankRefs, currentQuestion, selectedAnswers, selectedBlankIndex);
       }, 200);
       
       return () => clearTimeout(timeoutId);
     }
-  }, [selectedAnswers, currentQuestion]);
+  }, [selectedAnswers, currentQuestion, selectedBlankIndex]);
 
   const handleTabChange = (tabName) => {
     if (onTabChange) {

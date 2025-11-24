@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     width: wp(20),
     height: hp(18),
     position: 'absolute',
-    top: hp(-10),
+    top: hp(-8),
     right: wp(2),
   },
    
