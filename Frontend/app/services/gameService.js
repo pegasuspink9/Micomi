@@ -243,6 +243,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         nextLevel: responseData.nextLevel || data.nextLevel || null,
         completionRewards: responseData.completionRewards || data.completionRewards || null,
         isBonusRound: data.is_bonus_round || responseData.is_bonus_round || false,
+        audio: data.audio || responseData.audio || [],
         
         fightResult: responseData.fightResult ? {
           status: responseData.fightResult.status,

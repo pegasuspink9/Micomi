@@ -20,6 +20,8 @@ const ScreenPlay = ({
   onSubmissionAnimationComplete = null,
   isInRunMode = false,
   fadeOutAnim = null,
+  isMessageVisible,
+  messageText,
 }) => {
   const [attackingEnemies] = useState(new Set());
   const [totalCoins, setTotalCoins] = useState(0);
@@ -646,9 +648,10 @@ useEffect(() => {
       />
 
       <Message
-        message={gameState.submissionResult?.message || ''}
+        message={messageText} 
         trigger={submissionSeq}
         duration={2400}
+        visible={isMessageVisible}
       />
 
       <FadeOutWrapper fadeOutAnim={fadeOutAnim} isInRunMode={isInRunMode} style={{zIndex: -1}}>
@@ -665,6 +668,7 @@ useEffect(() => {
   );
 };
 
+// ...existing code...
 export default React.memo(ScreenPlay, (prevProps, nextProps) => {
   return (
     prevProps.gameState?.submissionResult?.isCorrect === nextProps.gameState?.submissionResult?.isCorrect &&
@@ -673,6 +677,9 @@ export default React.memo(ScreenPlay, (prevProps, nextProps) => {
     prevProps.borderColor === nextProps.borderColor &&
     prevProps.characterRunState === nextProps.characterRunState && 
     prevProps.isPaused === nextProps.isPaused &&
+    // ✅ ADDED: This ensures the component re-renders when the message visibility changes.
+    prevProps.isMessageVisible === nextProps.isMessageVisible &&
+    prevProps.messageText === nextProps.messageText && 
     prevProps.onSubmissionAnimationComplete === nextProps.onSubmissionAnimationComplete &&
     prevProps.gameState?.avatar?.player === nextProps.gameState?.avatar?.player &&
     prevProps.gameState?.avatar?.enemy === nextProps.gameState?.avatar?.enemy

@@ -87,9 +87,11 @@ export default function Message({
           duration: 150,
           useNativeDriver: true,
         }),
-      ]).start(() => {
-        setIsShown(false);
-        if (typeof onHide === 'function') onHide();
+      ]).start((result) => {
+        if (result.finished) {
+          setIsShown(false);
+          if (typeof onHide === 'function') onHide();
+        }
       });
     }
   },
@@ -158,9 +160,12 @@ export default function Message({
           duration: 200,
           useNativeDriver: true,
         }),
-      ]).start(() => {
-        setIsShown(false);
-        if (typeof onHide === 'function') onHide();
+      ]).start((result) => {
+        // ✅ ADDED: Only hide if the animation completed without being interrupted.
+        if (result.finished) {
+          setIsShown(false);
+          if (typeof onHide === 'function') onHide();
+        }
       });
     }
   },
@@ -245,9 +250,11 @@ export default function Message({
           duration: 200,
           useNativeDriver: true,
         }),
-      ]).start(() => {
-        setIsShown(false);
-        if (typeof onHide === 'function') onHide();
+      ]).start((result) => {
+        if (result.finished) {
+          setIsShown(false);
+          if (typeof onHide === 'function') onHide();
+        }
       });
     }
   }

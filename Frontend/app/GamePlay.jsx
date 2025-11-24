@@ -10,6 +10,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import CombatVSModal from './Components/Actual Game/Game Display Entrance/GameDisplayEntrance';
 import GameOverModal from './Components/GameOver And Win/GameOver';
 import LevelCompletionModal from './Components/GameOver And Win/LevelCompletionModal';
+import {soundManager} from './Components/Actual Game/Sounds/SoundManager'
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -54,12 +55,15 @@ export default function GamePlay() {
   const [runButtonClicked, setRunButtonClicked] = useState(false);
   const [showRunButton, setShowRunButton] = useState(true);
 
-   const [showLevelCompletionModal, setShowLevelCompletionModal] = useState(false);
-
+  const [showLevelCompletionModal, setShowLevelCompletionModal] = useState(false);
+  const [isMessageVisible, setIsMessageVisible] = useState(false); 
+  const [messageText, setMessageText] = useState('');
   const gameOverTimeoutRef = useRef(null);
   const hasTriggeredGameOver = useRef(false);
   const hasTriggeredLevelCompletion = useRef(false);
   const hasShownVSModalRef = useRef(false);
+  const lastSubmissionKey = useRef(null); 
+  const lastPlayedAudioKey = useRef(null);
 
   const levelCompletionTimeoutRef = useRef(null);
 
@@ -137,6 +141,55 @@ export default function GamePlay() {
       setPreviousImageUrl(characterAttackCard);
     }
   }, [characterAttackCard, showGameplay, showVSModal]);
+
+  useEffect(() => {
+    const submission = gameState?.submissionResult;
+
+    // If there's no submission or message, ensure the message is hidden.
+    if (!submission || !submission.message) {
+      setIsMessageVisible(false);
+      return;
+    }
+
+    // Create a unique key for the submission event to prevent re-triggering on re-renders.
+    const submissionKey = `${submission?.message}-${submission?.fightResult?.timer}-${submission?.audio?.[0]}`
+
+    // If we've already processed this exact submission, do nothing.
+    if (lastSubmissionKey.current === submissionKey) {
+      return;
+    }
+    lastSubmissionKey.current = submissionKey;
+
+     if (!submission?.message) {
+      setIsMessageVisible(false);
+      return;
+    }
+
+    // This function will be called to trigger the message animation.
+     const showMessage = () => {
+      console.log('🎬 Sync: Setting message text and triggering visibility');
+      setMessageText(submission.message); 
+      setIsMessageVisible(true);
+    }; 
+
+    const audioUrl = submission.audio?.[0];
+
+    // Hide any previous message before starting the new sequence.
+    setIsMessageVisible(false);
+    
+    // Use a short timeout to allow the UI to register the "hide" before we "show" again.
+    setTimeout(() => {
+      if (audioUrl) {
+        console.log('🔊 Sync: Playing sound, message will show on playback start.');
+        soundManager.playSequentialSounds([audioUrl], showMessage);
+      } else {
+        console.log('💬 Sync: No sound, showing message immediately.');
+        showMessage(); // If no sound, trigger the message directly.
+      }
+    }, 50);
+
+  }, [gameState?.submissionResult]);
+
 
 
   const handleCharacterRun = useCallback(() => {
@@ -478,6 +531,7 @@ export default function GamePlay() {
     setShowGameplay(false);
     hasTriggeredLevelCompletion.current = false;
     hasShownVSModalRef.current = false;
+    soundManager.stopAllSounds();
     
     try {
       await enterNextLevel(nextLevelId);
@@ -503,6 +557,7 @@ export default function GamePlay() {
       levelCompletionTimeoutRef.current = null;
     }
     
+    soundManager.stopAllSounds();
     setShowGameOver(false);
     setShowGameOverModal(false);
     setShowLevelCompletion(false); 
@@ -530,6 +585,7 @@ export default function GamePlay() {
         clearTimeout(gameOverTimeoutRef.current);
         gameOverTimeoutRef.current = null;
       }
+     soundManager.stopAllSounds();
     };
   }, []);
   
@@ -695,6 +751,8 @@ export default function GamePlay() {
                 onSubmissionAnimationComplete={handleAnimationComplete}
                 isInRunMode={isInRunMode}
                 fadeOutAnim={fadeOutAnim}
+                isMessageVisible={isMessageVisible}
+                messageText={messageText}
               />
             </View>
 
