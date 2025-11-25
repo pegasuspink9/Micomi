@@ -76,12 +76,16 @@ export async function getBackgroundForLevel(
   });
 
   const usedUrls = usedBackgrounds.map((b) => b.backgroundUrl);
+
   const available = bgList.filter((url) => !usedUrls.includes(url));
 
-  const selected =
-    available.length > 0
-      ? available[Math.floor(Math.random() * available.length)]
-      : bgList[(levelNumber - 1) % bgList.length];
+  let selected: string;
+
+  if (available.length > 0) {
+    selected = available[0];
+  } else {
+    selected = bgList[(levelNumber - 1) % bgList.length];
+  }
 
   await prisma.backgroundMapping.create({
     data: { mapName: key, levelNumber, backgroundUrl: selected },

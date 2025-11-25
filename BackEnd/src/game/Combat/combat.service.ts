@@ -290,7 +290,7 @@ export async function getCurrentFightState(
     character: {
       character_id: character.character_id,
       character_name: character.character_name,
-      character_idle: character.avatar_image || null,
+      character_idle: character.character_idle || null,
       character_run: null,
       character_attack_type: null,
       character_attack: null,
