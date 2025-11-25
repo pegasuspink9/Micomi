@@ -129,8 +129,8 @@ async downloadSingleAsset(url, category = 'general', onProgress = null, retries 
         }
       }
 
-      const assetType = this.isVideoFile(url) ? 'video' : 'image';
-      console.log(`✅ ${category} ${assetType} downloaded in ${downloadTime}ms (${downloadedFileInfo.size} bytes): ${url.slice(-50)}`);
+      const assetType = this.isVideoFile(url) ? 'video' : (this.isAudioFile(url) ? 'audio' : 'image');
+       console.log(`✅ ${category} ${assetType} downloaded in ${downloadTime}ms (${downloadedFileInfo.size} bytes): ${url.slice(-50)}`);
       return { 
         success: true, 
         localPath: result.uri, 
@@ -167,6 +167,14 @@ async downloadSingleAsset(url, category = 'general', onProgress = null, retries 
     };
   }
 }
+
+isAudioFile(url) {
+  if (!url || typeof url !== 'string') return false;
+  const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a'];
+  const lowerUrl = url.toLowerCase().split('?')[0];
+  return audioExtensions.some(ext => lowerUrl.endsWith(ext));
+}
+
 
 async testR2Download(testUrl) {
   console.log(`🧪 Testing R2 URL: ${testUrl}`);
@@ -223,6 +231,24 @@ async testR2Download(testUrl) {
   
   console.log(`❌ Not recognized as image`);
   return false;
+  }
+
+  extractAudioAssets(levelData) {
+    const assets = [];
+    if (levelData && Array.isArray(levelData.audioLinks)) {
+      levelData.audioLinks.forEach(url => {
+        if (url && typeof url === 'string' && this.isAudioFile(url)) {
+          assets.push({
+            url,
+            name: url.split('/').pop().split('?')[0],
+            type: 'audio',
+            category: 'game_audio'
+          });
+        }
+      });
+    }
+    console.log(`🎵 Extracted ${assets.length} game audio assets`);
+    return assets;
   }
 
   // ✅ Extract character assets from character data
@@ -554,6 +580,45 @@ async testR2Download(testUrl) {
 
   console.log(`📦 Extracted ${assets.length} potion shop assets`);
   return assets;
+  }
+
+  async downloadAudioAssets(levelData, onProgress = null) {
+    try {
+      console.log('🎵 Starting game audio asset download...');
+      const assets = this.extractAudioAssets(levelData);
+
+      if (assets.length === 0) {
+        return { success: true, downloaded: 0, total: 0 };
+      }
+      const startTime = Date.now();
+      let successCount = 0;
+      const results = [];
+      for (let i = 0; i < assets.length; i += this.maxConcurrentDownloads) {
+        const batch = assets.slice(i, i + this.maxConcurrentDownloads);
+        const batchPromises = batch.map(async (asset) => {
+          const result = await this.downloadSingleAsset(asset.url, asset.category);
+          if (result.success) {
+            successCount++;
+          }
+          results.push({ asset, result });
+          if (onProgress) {
+            onProgress({
+              loaded: results.length,
+              total: assets.length,
+              progress: results.length / assets.length,
+              category: 'game_audio'
+            });
+          }
+        });
+        await Promise.all(batchPromises);
+      }
+      const totalTime = Date.now() - startTime;
+      console.log(`🎵 Audio asset download completed: ${successCount}/${assets.length} in ${totalTime}ms`);
+      return { success: true, downloaded: successCount, total: assets.length, results };
+    } catch (error) {
+      console.error('❌ Error downloading audio assets:', error);
+      return { success: false, error };
+    }
   }
 
 
@@ -960,6 +1025,21 @@ transformPotionShopDataWithCache(levelPreviewData) {
           enemy[field] = this.getCachedAssetPath(enemy[field]);
         }
       });
+    }
+
+     if (Array.isArray(transformedGameState.audio)) {
+      transformedGameState.audio = transformedGameState.audio.map(url =>
+        url ? this.getCachedAssetPath(url) : url
+      );
+    }
+    if (transformedGameState.is_correct_audio) {
+      transformedGameState.is_correct_audio = this.getCachedAssetPath(transformedGameState.is_correct_audio);
+    }
+    if (transformedGameState.enemy_attack_audio) {
+      transformedGameState.enemy_attack_audio = this.getCachedAssetPath(transformedGameState.enemy_attack_audio);
+    }
+    if (transformedGameState.character_attack_audio) {
+      transformedGameState.character_attack_audio = this.getCachedAssetPath(transformedGameState.character_attack_audio);
     }
 
     // Transform fight result animations
@@ -1523,7 +1603,7 @@ transformPotionShopDataWithCache(levelPreviewData) {
   // ✅ Clear cache for specific category
   async clearCategoryCache(category = 'characters') {
     try {
-      const cacheKey = category === 'characters' ? 'characterAssets' : `${category}Assets`;
+       const cacheKey = `${category}Assets`;
       await AsyncStorage.removeItem(cacheKey);
       
       // Remove from memory maps (filter by category)

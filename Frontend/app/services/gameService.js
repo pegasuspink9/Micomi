@@ -8,6 +8,7 @@ export const gameService = {
       
       // Load cached animations on first call
       await universalAssetPreloader.loadCachedAssets('game_animations');
+      await universalAssetPreloader.loadCachedAssets('game_audio');
       
       const response = await apiService.post(`/game/entryLevel/${playerId}/${levelId}`);
       
@@ -40,6 +41,8 @@ export const gameService = {
         onDownloadProgress,
         onAnimationProgress
       );
+
+      await universalAssetPreloader.downloadAudioAssets(response.data);
 
       if (!downloadResult.success) {
         console.warn('⚠️ Animation download failed, but continuing with game...');
@@ -176,6 +179,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         character_attack_card: null
       },
       versus_background: data.versus_background || responseData.versus_background || null,
+      audioLinks: data.audioLinks || responseData.audioLinks || [],
     };
 
     // Extract challenge data

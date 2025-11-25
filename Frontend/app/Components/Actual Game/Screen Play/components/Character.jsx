@@ -92,7 +92,7 @@ const DogCharacter = ({
 
     if (currentState === 'attack' && attackAudioUrl) {
       // Adjust this delay (in milliseconds) to match your animation's impact frame.
-      const SOUND_DELAY = 600; 
+      const SOUND_DELAY = 1000; 
       
       console.log(`🔊 Character scheduling attack sound with a ${SOUND_DELAY}ms delay.`);
       
