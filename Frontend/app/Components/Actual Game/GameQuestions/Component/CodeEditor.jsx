@@ -129,15 +129,16 @@ const CodeEditor = ({
             })}
           </ScrollView>
         );
-      case 'css_file':
-        return <FileViewer fileContent={currentQuestion.css_file} />;
+       case 'css_file':
+        return <FileViewer fileContent={currentQuestion.css_file} language="css" />;
       case 'javascript_file':
-        return <FileViewer fileContent={currentQuestion.javascript_file} />;
+        return <FileViewer fileContent={currentQuestion.javascript_file} language="javascript" />;
       case 'html_file':
-        return <FileViewer fileContent={currentQuestion.html_file} />;
+        return <FileViewer fileContent={currentQuestion.html_file} language="html" />;
       case 'computer_file':
         return <FileViewer fileContent={currentQuestion.computer_file} />;
 
+        
       case 'output':
         return (
           <View style={styles.outputContainer}>

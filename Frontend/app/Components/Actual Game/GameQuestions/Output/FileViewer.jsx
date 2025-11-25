@@ -7,7 +7,7 @@ import {
   RESPONSIVE
 } from '../../../Responsiveness/gameResponsive';
 
-const FileViewer = ({ fileContent }) => {
+const FileViewer = ({ fileContent, language = 'html' }) => {
   const lines = useMemo(() => (fileContent || '').split('\n'), [fileContent]);
 
   return (
@@ -24,7 +24,7 @@ const FileViewer = ({ fileContent }) => {
           </View>
           <View style={styles.lineContent}>
             <Text style={styles.codeText}>
-              {renderHighlightedText(line)}
+               {renderHighlightedText(line, language)}
             </Text>
           </View>
         </View>
