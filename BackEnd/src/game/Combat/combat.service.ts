@@ -152,8 +152,8 @@ export async function getFightSetup(playerId: number, levelId: number) {
       character_max_health: selectedCharacter.health,
       character_damage: selectedCharacter.character_damage,
       character_attacks: selectedCharacter.character_attacks,
-      character_avatar: selectedCharacter.avatar_image,
-      avatar_image: selectedCharacter.avatar_image,
+      character_avatar: selectedCharacter.character_avatar,
+      avatar_image: selectedCharacter.character_avatar,
       is_range: selectedCharacter.is_range,
     },
     status: progress.battle_status,
@@ -242,6 +242,10 @@ export async function getCurrentFightState(
   const charHealth = safeHp(progress.player_hp, character.character_max_health);
   const enemyHealth = safeHp(progress.enemy_hp, scaledEnemyMaxHealth);
 
+  const answeredCount = Object.keys(progress.player_answer ?? {}).length || 0;
+  const totalChallenges = level.challenges?.length ?? 0;
+  const isInBonusRound = enemyHealth <= 0 && answeredCount < totalChallenges;
+
   let enemyDamage = enemy.enemy_damage;
   if (progress.has_freeze_effect) {
     enemyDamage = 0;
@@ -271,10 +275,10 @@ export async function getCurrentFightState(
     enemy: {
       enemy_id: enemy.enemy_id,
       enemy_name: enemy.enemy_name,
-      enemy_idle: enemy.enemy_avatar || null,
+      enemy_idle: isInBonusRound ? null : enemy.enemy_avatar || null,
       enemy_run: null,
       enemy_attack: null,
-      enemy_hurt: null,
+      enemy_hurt: isInBonusRound ? enemy.enemy_hurt || null : null,
       enemy_dies: null,
       enemy_damage: enemyDamage,
       enemy_health: enemyHealth,
@@ -286,7 +290,7 @@ export async function getCurrentFightState(
     character: {
       character_id: character.character_id,
       character_name: character.character_name,
-      character_idle: character.character_idle || null,
+      character_idle: character.avatar_image || null,
       character_run: null,
       character_attack_type: null,
       character_attack: null,

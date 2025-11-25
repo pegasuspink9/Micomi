@@ -6,7 +6,7 @@ export interface FightResult {
     enemy_idle: string | null;
     enemy_run: null;
     enemy_attack: null;
-    enemy_hurt: null;
+    enemy_hurt: string | null;
     enemy_dies: null;
     enemy_damage: number;
     enemy_health: number;
