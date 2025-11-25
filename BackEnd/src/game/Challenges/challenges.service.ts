@@ -851,7 +851,7 @@ export const submitChallengeService = async (
     correct_answer_length: correctAnswerLength,
     combat_background: combatBackground,
     question_type: questionType,
-    is_bonus_round: isNewBonusRound,
+    is_bonus_round: isBonusRound,
     card: {
       card_type,
       character_attack_card,
