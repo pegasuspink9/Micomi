@@ -12,7 +12,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { universalAssetPreloader } from '../../../../services/preloader/universalAssetPreloader';
 import { soundManager } from '../../Sounds/UniversalSoundManager';
-
 import { 
   scale, 
   scaleWidth, 
@@ -21,19 +20,19 @@ import {
   SCREEN
 } from '../../../Responsiveness/gameResponsive';
 
-const DogCharacter = ({
+const Character = ({
   isPaused,
   characterAnimations = {},
   currentState = 'idle',
   onAnimationComplete = null,
-  attackMovement = 'fade',
   attackAudioUrl = null,
 }) => {
   // ========== Shared Animation Values ==========
   const frameIndex = useSharedValue(0);
   const positionX = useSharedValue(0);
   const opacity = useSharedValue(1);
-  const blinkOpacity = useSharedValue(0); //  ADDED: For red blink effect
+  const blinkOpacity = useSharedValue(0);
+  const attackInitiated = useSharedValue(false);
 
   // ========== Animation Configuration ==========
   const SPRITE_SIZE = useMemo(() => scale(128), []);
@@ -44,21 +43,14 @@ const DogCharacter = ({
 
   const ANIMATION_DURATIONS = useMemo(() => ({
     idle: -1,
-    attack: 1500,
+    attack: 1300,
     hurt: 2000,
-    run: -1,
+    run: 1200, // Duration for the run-off-screen movement
     dies: 2000,
     diesOutro: 500,
   }), []);
-
-  const COMPOUND_PHASES = useMemo(() => ({
-    attack: {
-      run: { duration: 1000 },
-      attack: { duration: 1500 },
-    },
-  }), []);
-
-  const RUN_DISTANCE = useMemo(() => {
+  
+  const ATTACK_RUN_DISTANCE = useMemo(() => {
     const deviceType = getDeviceType();
     const distanceMap = {
       'tablet': SCREEN.width * 0.6,
@@ -70,525 +62,195 @@ const DogCharacter = ({
 
   // ========== State Management ==========
   const initialUrl = useMemo(() => {
-    const candidates = [
-      characterAnimations.character_idle,
-      characterAnimations.idle,
-    ].filter(url => url && typeof url === 'string');
-    return candidates[0] || '';
+    return [characterAnimations.character_idle, characterAnimations.idle]
+      .filter(url => url && typeof url === 'string')[0] || '';
   }, [characterAnimations]);
 
   const [currentAnimationUrl, setCurrentAnimationUrl] = useState(initialUrl);
-  const [isAnimationLooping, setIsAnimationLooping] = useState(true);
   const [imageReady, setImageReady] = useState(false);
-  const [isCompoundAnimation, setIsCompoundAnimation] = useState(false);
   const [preloadedImages] = useState(new Map());
-  const phaseTimeoutRef = useRef(null);
   const attackSoundTimeoutRef = useRef(null);
 
   useEffect(() => {
-    if (attackSoundTimeoutRef.current) {
-      clearTimeout(attackSoundTimeoutRef.current);
-    }
-
+    if (attackSoundTimeoutRef.current) clearTimeout(attackSoundTimeoutRef.current);
     if (currentState === 'attack' && attackAudioUrl) {
-      // Adjust this delay (in milliseconds) to match your animation's impact frame.
-      const SOUND_DELAY = 1000; 
-      
-      console.log(`🔊 Character scheduling attack sound with a ${SOUND_DELAY}ms delay.`);
-      
+      const SOUND_DELAY = 400; 
       attackSoundTimeoutRef.current = setTimeout(() => {
-        console.log(`🔊 Playing delayed character attack sound.`);
         soundManager.playCombatSound(attackAudioUrl);
       }, SOUND_DELAY);
     }
-
     return () => {
-      if (attackSoundTimeoutRef.current) {
-        clearTimeout(attackSoundTimeoutRef.current);
-      }
+      if (attackSoundTimeoutRef.current) clearTimeout(attackSoundTimeoutRef.current);
     };
   }, [currentState, attackAudioUrl]);
 
-  // ========== Reset positionX when state changes away from attack ==========
-  useEffect(() => {
-    if (currentState !== 'attack' && currentState !== 'run') {
-      //  Immediately cancel and reset positionX to 0
-      cancelAnimation(positionX);
-      positionX.value = 0;
-      console.log(`🐕 Character - Force reset position to 0 for ${currentState} state`);
-    }
-  }, [currentState]);
-
   // ========== Animation Configuration Logic ==========
- const animationConfig = useMemo(() => {
+  const animationConfig = useMemo(() => {
     const configs = {
-      idle: {
-        url: characterAnimations.character_idle || characterAnimations.idle,
-        shouldLoop: true,
-        isCompound: false,
-      },
-      attack: {
-        url: Array.isArray(characterAnimations.character_attack)
-          ? characterAnimations.character_attack.filter(url => url && typeof url === 'string')[0]
-          : characterAnimations.character_attack,
-        shouldLoop: false,
-        isCompound: false,
-      },
-      hurt: {
-        url: characterAnimations.character_hurt || characterAnimations.hurt,
-        shouldLoop: false,
-        isCompound: false,
-      },
-      run: {
-        url: characterAnimations.character_run || characterAnimations.run,  //  Make sure URL is here
-        shouldLoop: true,
-        isCompound: false,
-      },
-      dies: {
-        url: characterAnimations.character_dies || characterAnimations.dies,
-        shouldLoop: false,
-        isCompound: false,
-      },
+      idle: { url: characterAnimations.character_idle || characterAnimations.idle, shouldLoop: true, isCompound: false },
+      attack: { runUrl: characterAnimations.character_run || characterAnimations.run, attackUrl: Array.isArray(characterAnimations.character_attack) ? characterAnimations.character_attack.filter(Boolean)[0] : characterAnimations.character_attack, shouldLoop: false, isCompound: true },
+      hurt: { url: characterAnimations.character_hurt || characterAnimations.hurt, shouldLoop: false, isCompound: false },
+      run: { url: characterAnimations.character_run || characterAnimations.run, shouldLoop: true, isCompound: false },
+      dies: { url: characterAnimations.character_dies || characterAnimations.dies, shouldLoop: false, isCompound: false },
     };
-
-    console.log(`🎬 Animation config for state ${currentState}:`, configs[currentState]);
     return configs[currentState] || configs.idle;
   }, [currentState, characterAnimations]);
 
-  // ========== Sync Animation Config to State ==========
-  useEffect(() => {
-    if (animationConfig.url) {
-      setCurrentAnimationUrl(animationConfig.url);
-    } else if (!currentAnimationUrl) {
-      setCurrentAnimationUrl(initialUrl);
-    }
-
-    setIsAnimationLooping(animationConfig.shouldLoop);
-    setIsCompoundAnimation(animationConfig.isCompound);
-  }, [animationConfig, initialUrl, currentAnimationUrl]);
-
   // ========== Image Preloading ==========
-  const prefetchWithCache = useCallback(async () => {
-    if (!currentAnimationUrl) return;
-
-    try {
-      const cachedPath = universalAssetPreloader.getCachedAssetPath(currentAnimationUrl);
-
-      if (cachedPath !== currentAnimationUrl || preloadedImages.has(currentAnimationUrl)) {
-        setImageReady(true);
-        preloadedImages.set(currentAnimationUrl, true);
-        console.log(`🐕 Using cached character animation: ${currentAnimationUrl.slice(-50)}`);
-        return;
-      }
-
-      await RNImage.prefetch(currentAnimationUrl);
-      preloadedImages.set(currentAnimationUrl, true);
-      setImageReady(true);
-      console.log(`🐕 Prefetched character animation: ${currentAnimationUrl.slice(-50)}`);
-    } catch (err) {
-      console.warn(`Character prefetch failed:`, err);
-    }
-  }, [currentAnimationUrl, preloadedImages]);
-
   useEffect(() => {
     let mounted = true;
-    setImageReady(false);
-
     if (!currentAnimationUrl) return;
-
+    setImageReady(false);
     const cachedPath = universalAssetPreloader.getCachedAssetPath(currentAnimationUrl);
     if (cachedPath !== currentAnimationUrl || preloadedImages.has(currentAnimationUrl)) {
       if (mounted) setImageReady(true);
       return;
     }
-
-    prefetchWithCache();
+    (async () => {
+      try {
+        await RNImage.prefetch(currentAnimationUrl);
+        if (mounted) {
+          preloadedImages.set(currentAnimationUrl, true);
+          setImageReady(true);
+        }
+      } catch (err) { console.warn(`Character prefetch failed:`, err); }
+    })();
     return () => { mounted = false; };
-  }, [currentAnimationUrl, prefetchWithCache]);
+  }, [currentAnimationUrl, preloadedImages]);
 
   // ========== Animation Callbacks ==========
   const notifyAnimationComplete = useCallback(() => {
-    if (onAnimationComplete && typeof onAnimationComplete === 'function') {
-      try {
-        onAnimationComplete(currentState);
-      } catch (e) {
-        console.warn(`Character onAnimationComplete error:`, e);
-      }
-    }
+    if (onAnimationComplete) onAnimationComplete(currentState);
   }, [onAnimationComplete, currentState]);
-
-  const scheduleAttackPhase = useCallback(
-    (attackDuration, attackUrl) => {
-      if (phaseTimeoutRef.current) {
-        clearTimeout(phaseTimeoutRef.current);
-      }
-
-      phaseTimeoutRef.current = setTimeout(() => {
-        if (attackUrl && attackUrl !== currentAnimationUrl) {
-          setCurrentAnimationUrl(attackUrl);
-        }
-
-        frameIndex.value = 0;
-        frameIndex.value = withTiming(
-          TOTAL_FRAMES - 1,
-          {
-            duration: attackDuration,
-            easing: Easing.inOut(Easing.ease),
-          },
-          (finished) => {
-            if (finished) {
-              runOnJS(notifyAnimationComplete)();
-              frameIndex.value = 0;
-            }
-          }
-        );
-      }, 50);
-    },
-    [notifyAnimationComplete, currentAnimationUrl, TOTAL_FRAMES]
-  );
-
-  const runScheduleHold = useCallback(
-    (delayMs, attackDuration, attackUrl) => {
-      if (phaseTimeoutRef.current) {
-        clearTimeout(phaseTimeoutRef.current);
-      }
-      phaseTimeoutRef.current = setTimeout(() => {
-        scheduleAttackPhase(attackDuration, attackUrl);
-      }, delayMs);
-    },
-    [scheduleAttackPhase]
-  );
 
   // ========== Main Animation Effect ==========
   useEffect(() => {
-    if (phaseTimeoutRef.current) {
-      clearTimeout(phaseTimeoutRef.current);
+    if (currentState === 'attack' && attackInitiated.value) return;
+
+    const config = animationConfig;
+    const targetUrl = config.isCompound ? config.runUrl : config.url;
+
+    if (targetUrl && currentAnimationUrl !== targetUrl) {
+      setCurrentAnimationUrl(targetUrl);
+      return; 
     }
 
-    if (isPaused || !currentAnimationUrl || !imageReady) {
+    if (isPaused || !imageReady) {
       cancelAnimation(frameIndex);
       cancelAnimation(positionX);
-      cancelAnimation(opacity);
-      cancelAnimation(blinkOpacity);
       return;
     }
+    
+    if (currentState !== 'attack') attackInitiated.value = false;
 
-    //  Reset animations
     cancelAnimation(frameIndex);
     cancelAnimation(positionX);
     cancelAnimation(opacity);
     cancelAnimation(blinkOpacity);
-
     frameIndex.value = 0;
 
-    if (currentState === 'run') {
-    console.log(`🏃 Character entering run state - looping animation`);
-    positionX.value = 0;
-    opacity.value = 1;
-
-    positionX.value = withTiming(SCREEN.width, {
-      duration: FRAME_DURATION * TOTAL_FRAMES, // ~1200ms
-      easing: Easing.inOut(Easing.quad),
-    });
-
-    // Run animation loops for 2.4 seconds then completes
-    frameIndex.value = withRepeat(
-      withTiming(TOTAL_FRAMES - 1, {
-        duration: FRAME_DURATION * TOTAL_FRAMES,
-        easing: Easing.linear,
-      }),
-      -1,  // Loop infinite times
-      false
-    );
-
-    // Cleanup after run completes (2.4 seconds)
-    phaseTimeoutRef.current = setTimeout(() => {
-      console.log(' Run animation completed - resetting position');
-      frameIndex.value = 0;
-      runOnJS(notifyAnimationComplete)();
-    }, FRAME_DURATION * TOTAL_FRAMES);
-
-    return;
-    }
-
-    //  FORCE position reset for non-attack/run states (especially hurt)
-    if (currentState !== 'attack') {
-    positionX.value = 0;
-    opacity.value = 1;
-    }
-
-    // ========== Compound Attack Animation ==========
-    if (isCompoundAnimation && currentState === 'attack') {
-      const phases = COMPOUND_PHASES.attack;
-      const naturalRunDuration = FRAME_DURATION * TOTAL_FRAMES;
-
-      frameIndex.value = withTiming(
-        TOTAL_FRAMES - 1,
-        {
-          duration: Math.min(phases.run.duration, naturalRunDuration),
-          easing: Easing.linear,
-        },
-        (finished) => {
-          if (finished) {
-            const attackUrl = Array.isArray(characterAnimations.character_attack)
-              ? characterAnimations.character_attack.filter(url => url)[0]
-              : characterAnimations.character_attack;
-
-            if (phases.run.duration <= naturalRunDuration) {
-              runOnJS(scheduleAttackPhase)(phases.attack.duration, attackUrl);
-            } else {
-              const remainingDuration = phases.run.duration - naturalRunDuration;
-              runOnJS(runScheduleHold)(remainingDuration, phases.attack.duration, attackUrl);
-            }
+    // --- COMPOUND ATTACK (RUN -> ATTACK -> RETURN) ---
+    if (config.isCompound && currentState === 'attack') {
+      if (attackInitiated.value) return; 
+      attackInitiated.value = true;
+      const { runUrl, attackUrl } = config;
+      if (!runUrl || !attackUrl) {
+        runOnJS(notifyAnimationComplete)();
+        return;
+      }
+      positionX.value = 0; 
+      opacity.value = 1;
+      frameIndex.value = withRepeat(withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false);
+      positionX.value = withTiming(ATTACK_RUN_DISTANCE, { duration: 600, easing: Easing.inOut(Easing.ease) }, (finished) => {
+        if (!finished) return;
+        cancelAnimation(frameIndex);
+        frameIndex.value = 0;
+        runOnJS(setCurrentAnimationUrl)(attackUrl);
+        frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration: ANIMATION_DURATIONS.attack, easing: Easing.linear }, (attackFinished) => {
+          if (attackFinished) {
+            positionX.value = withTiming(0, { duration: 300, easing: Easing.quad }, (returnFinished) => {
+              if (returnFinished) runOnJS(notifyAnimationComplete)();
+            });
           }
+        });
+      });
+      return;
+    }
+    
+    // ✅ ADDED: Specific logic for the "run off-screen" state.
+    // --- RUN OFF-SCREEN ---
+    if (currentState === 'run' && !config.isCompound) {
+      const RUN_AWAY_DISTANCE = SCREEN.width; 
+      positionX.value = 0;
+      opacity.value = 1;
+      frameIndex.value = withRepeat(withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false);
+      positionX.value = withTiming(RUN_AWAY_DISTANCE, { duration: ANIMATION_DURATIONS.run, easing: Easing.linear }, (finished) => {
+        if (finished) {
+          cancelAnimation(frameIndex);
+          runOnJS(notifyAnimationComplete)();
         }
-      );
+      });
       return;
     }
 
-    // ========== Looping Animation (Idle, Run) ==========
-    if (isAnimationLooping && currentState !== 'run') {
+    // --- ALL OTHER ANIMATIONS ---
     positionX.value = 0;
     opacity.value = 1;
 
-    frameIndex.value = withRepeat(
-      withTiming(TOTAL_FRAMES - 1, {
-        duration: FRAME_DURATION * TOTAL_FRAMES,
-        easing: Easing.linear,
-      }),
-      -1,
-      false
-    );
-    return;
+    if (config.shouldLoop) { // Catches 'idle'
+      frameIndex.value = withRepeat(withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false);
+      return;
     }
 
-
-    // ========== Non-Looping Animation (Hurt, Dies, Attack) ==========
-    if (currentState === 'attack') {
-      console.log(`⚔️ Character entering attack state - will animate positionX`);
-      positionX.value = 0;
-      opacity.value = 1;
-
-      if (attackMovement === 'slide') {
-        positionX.value = withTiming(RUN_DISTANCE, {
-          duration: ANIMATION_DURATIONS.attack,
-          easing: Easing.inOut(Easing.quad),
-        });
-      } else if (attackMovement === 'teleport') {
-        positionX.value = RUN_DISTANCE;
-      } else if (attackMovement === 'fade') {
-        positionX.value = RUN_DISTANCE;
-        opacity.value = 0;
-        opacity.value = withTiming(1, {
-          duration: Math.min(300, ANIMATION_DURATIONS.attack),
-          easing: Easing.inOut(Easing.quad),
-        });
-      }
-    } else if (currentState === 'hurt') {
-      console.log(`🩸 Character hurt - triggering red flash effect`);
-      positionX.value = 0;
-      opacity.value = 1;
-      
-      blinkOpacity.value = 0;
-      blinkOpacity.value = withRepeat(
-        withTiming(0.7, { // Flash to 70% red intensity
-          duration: 100,
-          easing: Easing.inOut(Easing.ease),
-        }),
-        Math.floor(ANIMATION_DURATIONS.hurt / 200), 
-        true // Reverse (fade back out)
-      );
+    if (currentState === 'hurt') {
+      blinkOpacity.value = withRepeat(withTiming(0.7, { duration: 100 }), Math.floor(ANIMATION_DURATIONS.hurt / 200), true);
     } else {
-      console.log(`🩸 Character entering ${currentState} state - position will stay at 0`);
-      positionX.value = 0;
-      opacity.value = 1;
-      blinkOpacity.value = 0; //  ADDED: Reset blink
+      blinkOpacity.value = 0;
     }
 
-    // Play frame animation
     const duration = ANIMATION_DURATIONS[currentState] || (FRAME_DURATION * TOTAL_FRAMES);
-    console.log(`🎬 Character ${currentState} animation starting - duration: ${duration}ms, positionX: ${positionX.value}`);
-
-     frameIndex.value = withTiming(
-      TOTAL_FRAMES - 1,
-      {
-        duration,
-        easing: Easing.inOut(Easing.ease),
-      },
-      (finished) => {
-        if (finished) {
-          console.log(`Character ${currentState} animation completed`);
-          
-          // NEW: Handle dies animation with fade-out
-          if (currentState === 'dies') {
-            console.log(`💀 Character starting fade-out outro`);
-            frameIndex.value = TOTAL_FRAMES - 1;
-            
-            opacity.value = withTiming(
-              0,
-              {
-                duration: ANIMATION_DURATIONS.diesOutro,
-                easing: Easing.inOut(Easing.ease),
-              },
-              (fadeFinished) => {
-                if (fadeFinished) {
-                  console.log(`👻 Character fade-out complete - gone`);
-                  runOnJS(notifyAnimationComplete)();
-                }
-              }
-            );
-          } else if (currentState === 'run') {
-            //  Run animation completes and disappears
-            console.log(`🏃 Character run animation completed - fading out`);
-            opacity.value = withTiming(
-              0,
-              {
-                duration: 300,
-                easing: Easing.inOut(Easing.ease),
-              },
-              (fadeFinished) => {
-                if (fadeFinished) {
-                  console.log(`👻 Character run fade-out complete`);
-                  runOnJS(notifyAnimationComplete)();
-                }
-              }
-            );
-          } else if (currentState === 'hurt') {
-            //  FIXED: Don't reset blinkOpacity here, let it finish naturally
-            console.log(`🩸 Character hurt animation frame complete`);
-            frameIndex.value = 0;
-            runOnJS(notifyAnimationComplete)();
-          } else {
-            positionX.value = 0;
-            opacity.value = 1;
-            blinkOpacity.value = 0; //  ADDED: Reset blink
-            runOnJS(notifyAnimationComplete)();
-            frameIndex.value = 0;
-          }
+    frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration, easing: Easing.inOut(Easing.ease) }, (finished) => {
+      if (finished) {
+        if (currentState === 'dies') {
+          opacity.value = withTiming(0, { duration: ANIMATION_DURATIONS.diesOutro }, (fadeFinished) => {
+            if (fadeFinished) runOnJS(notifyAnimationComplete)();
+          });
+        } else {
+          runOnJS(notifyAnimationComplete)();
+          frameIndex.value = 0;
         }
       }
-    );
-
-    // ========== Cleanup ==========
-    return () => {
-      cancelAnimation(frameIndex);
-      cancelAnimation(positionX);
-      cancelAnimation(opacity);
-      cancelAnimation(blinkOpacity);
-      if (phaseTimeoutRef.current) {
-        clearTimeout(phaseTimeoutRef.current);
-      }
-    };
-  }, [
-    isPaused,
-    currentAnimationUrl,
-    imageReady,
-    isAnimationLooping,
-    isCompoundAnimation,
-    currentState,
-    notifyAnimationComplete,
-    scheduleAttackPhase,
-    runScheduleHold,
-    ANIMATION_DURATIONS,
-    COMPOUND_PHASES,
-    RUN_DISTANCE,
-    FRAME_DURATION,
-    TOTAL_FRAMES,
-    attackMovement,
-    characterAnimations,
-  ]);
+    });
+  }, [currentState, isPaused, imageReady, currentAnimationUrl, animationConfig, notifyAnimationComplete]);
 
   // ========== Animated Styles ==========
   const animatedStyle = useAnimatedStyle(() => {
     const frame = Math.floor(frameIndex.value) % TOTAL_FRAMES;
     const column = frame % SPRITE_COLUMNS;
     const row = Math.floor(frame / SPRITE_COLUMNS);
-
-    return {
-      transform: [
-        { translateX: -(column * SPRITE_SIZE) },
-        { translateY: -(row * SPRITE_SIZE) },
-      ],
-    };
+    return { transform: [{ translateX: -(column * SPRITE_SIZE) }, { translateY: -(row * SPRITE_SIZE) }] };
   }, [SPRITE_SIZE]);
 
-    const positionStyle = useAnimatedStyle(() => {
-    if (currentState === 'attack' || currentState === 'run') {  
-      console.log(`📍 Applying positionX movement for ${currentState}: ${positionX.value}`);
-      return {
-        transform: [{ translateX: positionX.value }],
-      };
-    }
-    console.log(`📍 Forcing position 0 for ${currentState} state`);
-    return {
-      transform: [{ translateX: 0 }],
-    };
-  }, [currentState]);
-
-  const opacityStyle = useAnimatedStyle(() => ({
+  const containerStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
+    transform: [{ translateX: positionX.value }],
   }), []);
 
-  //  ADDED: Style for the red overlay
-  const redFlashStyle = useAnimatedStyle(() => ({
-    opacity: blinkOpacity.value,
-  }), []);
-
-  // ========== Event Handlers ==========
-  const handleImageError = useCallback((error) => {
-    console.warn(`🐕 Character image load error:`, error);
-  }, []);
-
-  const handleImageLoadEnd = useCallback(() => {
-    setImageReady(true);
-  }, []);
+  const redFlashStyle = useAnimatedStyle(() => ({ opacity: blinkOpacity.value }), []);
 
   // ========== Render ==========
   return (
-    <Animated.View
-      style={[
-        styles.characterContainer,
-        positionStyle,
-        opacityStyle,
-        isPaused && styles.paused,
-      ]}
-    >
+    <Animated.View style={[ styles.characterContainer, containerStyle ]}>
       <View style={[styles.spriteContainer, { width: SPRITE_SIZE, height: SPRITE_SIZE }]}>
-        <Animated.View
-          style={[
-            styles.spriteSheet,
-            animatedStyle,
-            {
-              width: SPRITE_SIZE * SPRITE_COLUMNS,
-              height: SPRITE_SIZE * SPRITE_ROWS,
-            },
-          ]}
-        >
+        <Animated.View style={[ styles.spriteSheet, animatedStyle, { width: SPRITE_SIZE * SPRITE_COLUMNS, height: SPRITE_SIZE * SPRITE_ROWS } ]}>
           {currentAnimationUrl ? (
-            <Image
-              source={{ uri: currentAnimationUrl }}
-              style={styles.spriteImage}
-              contentFit="cover"
-              onLoadEnd={handleImageLoadEnd}
-              onError={handleImageError}
-              cachePolicy="disk"
-            />
+            <Image source={{ uri: currentAnimationUrl }} style={styles.spriteImage} contentFit="cover" cachePolicy="disk" />
           ) : (
             <View style={[styles.spriteImage, { backgroundColor: 'transparent' }]} />
           )}
-
-          {/*  ADDED: Red Overlay Sprite (Layered Exactly on Top) */}
           {currentAnimationUrl && (
             <Animated.View style={[StyleSheet.absoluteFill, redFlashStyle]}>
-              <Image
-                source={{ uri: currentAnimationUrl }}
-                style={[
-                  styles.spriteImage, 
-                  { tintColor: '#760404a2' } //  The magic: Red tint
-                ]}
-                contentFit="cover"
-                cachePolicy="disk"
-              />
+              <Image source={{ uri: currentAnimationUrl }} style={[ styles.spriteImage, { tintColor: '#760404a2' }]} contentFit="cover" cachePolicy="disk" />
             </Animated.View>
           )}
         </Animated.View>
@@ -597,7 +259,6 @@ const DogCharacter = ({
   );
 };
 
-// ========== Styles ==========
 const styles = StyleSheet.create({
   characterContainer: {
     position: 'absolute',
@@ -607,26 +268,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10,
   },
-  spriteContainer: {
-    overflow: 'hidden',
-  },
+  spriteContainer: { overflow: 'hidden' },
   spriteSheet: {},
-  spriteImage: {
-    width: '100%',
-    height: '100%',
-  },
-  paused: {
-    opacity: 0.6,
-  },
+  spriteImage: { width: '100%', height: '100%' },
 });
 
-export default React.memo(DogCharacter, (prevProps, nextProps) => {
-  return (
-    prevProps.isPaused === nextProps.isPaused &&
-    prevProps.currentState === nextProps.currentState &&
-    prevProps.attackMovement === nextProps.attackMovement &&
-    prevProps.attackAudioUrl === nextProps.attackAudioUrl &&
-    prevProps.onAnimationComplete === nextProps.onAnimationComplete &&
-    JSON.stringify(prevProps.characterAnimations) === JSON.stringify(nextProps.characterAnimations)
-  );
-});
+export default Character;
