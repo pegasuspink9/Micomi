@@ -9,6 +9,7 @@ import { scale, RESPONSIVE, scaleWidth, scaleHeight, wp, hp } from '../../Respon
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
+
 export default function GameQuestions({ 
   currentQuestion, 
   selectedAnswers, 
@@ -23,9 +24,31 @@ export default function GameQuestions({
   const blankRefs = useRef({});
   const options = currentQuestion?.options || [];
 
-  // NEW: Determine which question to display
-  const displayQuestion = isAnswerCorrect && currentQuestion?.expected_output 
-    ? currentQuestion.expected_output 
+  
+  const getFilledQuestion = (questionText, answers) => {
+    if (!questionText || !Array.isArray(answers) || answers.length === 0) {
+      return questionText;
+    }
+    const parts = questionText.split('_');
+    if (parts.length <= 1) {
+      return questionText;
+    }
+    let result = '';
+    let answerIndex = 0;
+    for (let i = 0; i < parts.length; i++) {
+        result += parts[i];
+        if (i < parts.length - 1) { 
+            if (answerIndex < answers.length) {
+                result += answers[answerIndex];
+                answerIndex++;
+            }
+        }
+    }
+    return result;
+  };
+
+  const displayQuestion = isAnswerCorrect 
+    ? getFilledQuestion(currentQuestion?.question, currentQuestion?.correctAnswer) 
     : currentQuestion?.question;
 
   useEffect(() => {

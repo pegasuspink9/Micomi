@@ -272,6 +272,24 @@ async testR2Download(testUrl) {
   }
 
 
+  extractGameImageAssets(levelData) {
+    const assets = [];
+    if (levelData && Array.isArray(levelData.imagesUrls)) {
+      levelData.imagesUrls.forEach(url => {
+        if (url && typeof url === 'string' && this.isImageFile(url)) {
+          assets.push({
+            url,
+            name: url.split('/').pop().split('?')[0],
+            type: 'image',
+            category: 'game_images'
+          });
+        }
+      });
+    }
+    console.log(`🖼️ Extracted ${assets.length} general game images (cards, potions)`);
+    return assets;
+  }
+
   extractAudioAssets(levelData) {
     const assets = [];
     if (levelData && Array.isArray(levelData.audioLinks)) {
@@ -656,6 +674,62 @@ async testR2Download(testUrl) {
       return { success: true, downloaded: successCount, total: assets.length, results };
     } catch (error) {
       console.error('❌ Error downloading visual assets:', error);
+      return { success: false, error };
+    }
+  }
+
+   async downloadGameImageAssets(levelData, onProgress = null) {
+    try {
+      console.log('🖼️ Starting general game image asset download...');
+      const assets = this.extractGameImageAssets(levelData);
+
+      if (assets.length === 0) {
+        return { success: true, downloaded: 0, total: 0 };
+      }
+      const startTime = Date.now();
+      let successCount = 0;
+      const results = [];
+      for (let i = 0; i < assets.length; i += this.maxConcurrentDownloads) {
+        const batch = assets.slice(i, i + this.maxConcurrentDownloads);
+        const batchPromises = batch.map(async (asset) => {
+          const result = await this.downloadSingleAsset(asset.url, asset.category);
+          if (result.success) {
+            successCount++;
+          }
+          results.push({ asset, result });
+          if (onProgress) {
+            onProgress({
+              loaded: results.length,
+              total: assets.length,
+              progress: results.length / assets.length,
+              category: 'game_images'
+            });
+          }
+        });
+        await Promise.all(batchPromises);
+      }
+      const totalTime = Date.now() - startTime;
+      
+      try {
+        const cacheKey = 'game_imagesAssets';
+        const cacheInfo = {
+          downloadedAt: Date.now(),
+          category: 'game_images',
+          assets: Array.from(this.downloadedAssets.entries()).filter(([, info]) => 
+            info.category === 'game_images'
+          ),
+          totalAssets: successCount
+        };
+        await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheInfo));
+        console.log(`💾 Saved game images asset cache info to storage`);
+      } catch (error) {
+        console.warn('⚠️ Failed to save game_images cache info to AsyncStorage:', error);
+      }
+      
+      console.log(`🖼️ General image asset download completed: ${successCount}/${assets.length} in ${totalTime}ms`);
+      return { success: true, downloaded: successCount, total: assets.length, results };
+    } catch (error) {
+      console.error('❌ Error downloading general game images:', error);
       return { success: false, error };
     }
   }
@@ -1744,6 +1818,7 @@ transformPotionShopDataWithCache(levelPreviewData) {
     }
   }
 
+  
   //video
 
   isVideoFile(url) {

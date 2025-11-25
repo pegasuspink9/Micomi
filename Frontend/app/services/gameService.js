@@ -10,7 +10,8 @@ export const gameService = {
       await universalAssetPreloader.loadCachedAssets('game_animations');
       await universalAssetPreloader.loadCachedAssets('game_audio');
       await universalAssetPreloader.loadCachedAssets('game_visuals');
-      
+      await universalAssetPreloader.loadCachedAssets('game_images');
+
       const response = await apiService.post(`/game/entryLevel/${playerId}/${levelId}`);
       
       if (!response.success) {
@@ -45,6 +46,8 @@ export const gameService = {
 
       await universalAssetPreloader.downloadAudioAssets(response.data);
       await universalAssetPreloader.downloadGameVisualAssets(response.data);
+      await universalAssetPreloader.downloadGameImageAssets(response.data);
+
 
 
       if (!downloadResult.success) {
@@ -389,7 +392,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         id: potion.player_potion_id,
         name: gameService.getPotionDisplayName(potion.potion_type),
         count: potion.quantity,
-        image: potion.potion_url,
+        image: universalAssetPreloader.getCachedAssetPath(potion.potion_url),
         type: potion.potion_type,
         description: potion.potion_description,
         price: potion.potion_price,
