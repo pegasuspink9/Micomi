@@ -11,7 +11,6 @@ export const audioLinks = [
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Correct%20Answer!/Combo_Master_tcqhxv.wav",
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Correct%20Answer!/No_Stopping_You_fremig.wav",
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Correct%20Answer!/Record_Streak_ahsmyn.wav",
-  "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Correct%20Answer!/Can_t_Be_Stopped_qkq4if.wav",
   //correct answer base
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Correct%20Answer!/Great_Job_pq4o7t.wav",
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Correct%20Answer!/Exellent_Work_xdkitb.wav",
@@ -142,7 +141,6 @@ export const audioLinks = [
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Wrong%20Answers!/Rest_in_Peace_ogbczn.wav",
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Wrong%20Answers!/Fallen_in_Battle_u7dfkd.wav",
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Wrong%20Answers!/Your_Adventure_is_Over_vo6gpv.wav",
-  "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Wrong%20Answers!/Met_Their_End_qn2tij.wav",
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Wrong%20Answers!/Silence_Falls_On_slnxqc.wav",
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Wrong%20Answers!/No_More_Fight_benfzf.wav",
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Wrong%20Answers!/Perished_By_The_Enemy_s_Hand_wqqtmv.wav",
@@ -150,7 +148,6 @@ export const audioLinks = [
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Wrong%20Answers!/Darkness_Consumed_certhj.wav",
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Wrong%20Answers!/Until_Next_Time_egj3ra.wav",
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Wrong%20Answers!/Game_Over_wis8iw.wav",
-  "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Wrong%20Answers!/Is_No_More_poxw3h.wav",
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Wrong%20Answers!/The_Final_Breath_jemyrw.wav",
   //Shop audio
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Shop.ogg",

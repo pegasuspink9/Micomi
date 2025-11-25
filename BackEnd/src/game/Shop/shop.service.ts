@@ -225,6 +225,7 @@ export const usePotion = async (
   let updateData: any = {};
   let dynamicMessage = "Potion activated!";
   let audioResponse: string[] = [];
+  let usePotionAudio: string = "";
 
   let nextChallengeForHint: any = null;
 
@@ -237,9 +238,9 @@ export const usePotion = async (
           : [30, 40, 50];
         console.log(`Strong effect activated (only once): ${currentDamages}`);
         dynamicMessage = `Strength surges through ${character.character_name}, attacks doubled!`;
-        audioResponse = [
-          "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353786/All_Potions_h1hdib.wav",
-        ];
+        audioResponse = ["Strong audio link here"];
+        usePotionAudio =
+          "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353786/All_Potions_h1hdib.wav";
       } else {
         dynamicMessage = `${character.character_name} already empowered—no extra surge!`;
       }
@@ -248,9 +249,9 @@ export const usePotion = async (
       if (!progress.has_freeze_effect) {
         updateData.has_freeze_effect = true;
         dynamicMessage = `Enemy frozen, next counterattack nullified!`;
-        audioResponse = [
-          "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353786/All_Potions_h1hdib.wav",
-        ];
+        audioResponse = ["Freeze audio link here"];
+        usePotionAudio =
+          "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353786/All_Potions_h1hdib.wav";
         console.log(
           `Freeze effect activated (only once): Next enemy attack nullified.`
         );
@@ -261,9 +262,10 @@ export const usePotion = async (
     case "health":
       updateData.player_hp = maxHealth;
       dynamicMessage = `Health fully restored—${character.character_name} feels invigorated!`;
-      audioResponse = [
-        "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353786/All_Potions_h1hdib.wav",
-      ];
+      audioResponse = ["Health audio link here"];
+      usePotionAudio =
+        "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353786/All_Potions_h1hdib.wav";
+
       break;
     case "hint":
       console.log(`Hint potion consumed for challenge ${challengeId}`);
@@ -335,9 +337,9 @@ export const usePotion = async (
         dynamicMessage = `All blanks revealed: Select "Attack" to confirm and proceed!`;
       }
 
-      audioResponse = [
-        "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353786/All_Potions_h1hdib.wav",
-      ];
+      audioResponse = ["Hint audio link here"];
+      usePotionAudio =
+        "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353786/All_Potions_h1hdib.wav";
       break;
     default:
       throw new Error(`Unknown potion type: ${potionType}`);
@@ -485,6 +487,7 @@ export const usePotion = async (
     message: dynamicMessage,
     nextChallenge: finalNextChallenge,
     audio: audioResponse,
+    use_potion_audio: usePotionAudio,
     levelStatus,
     completionRewards,
     nextLevel,
