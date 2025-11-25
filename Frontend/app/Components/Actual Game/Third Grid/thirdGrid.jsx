@@ -202,7 +202,8 @@ const ThirdGrid = ({
 
   const handleClearAll = useCallback(() => {
     setSelectedAnswers([]); 
-  }, [setSelectedAnswers]);
+    setSelectedBlankIndex(0);
+  }, [setSelectedAnswers, setSelectedBlankIndex]);
 
 
   useEffect(() => {

@@ -98,45 +98,48 @@ export const createAnswerSelectHandler = (currentQuestion, selectedAnswers, setS
 
       if (challengeType === 'fill in the blank' || challengeType === 'code with guide') {
         
-        // ✅ GLOBAL TOGGLE LOGIC:
-        // If this option is already selected ANYWHERE, deselect it.
         const existingIndex = newArr.indexOf(index);
 
         if (existingIndex !== -1) {
-          // Option is already used. Deselect it.
+          // Deselecting the answer.
           newArr[existingIndex] = null;
-
-          if (setSelectedBlankIndex) {
-            setSelectedBlankIndex(existingIndex);
-          }
-
-          // 🛑 STOP: Do NOT fill the current blank. Do NOT auto-advance.
-          return newArr;
-        }
-
-        // If option is NOT used, fill the current blank
-        newArr[selectedBlankIndex] = index;
-        
-        // Auto-advance Logic
-        let nextIndex = -1;
-        for (let i = selectedBlankIndex + 1; i < maxAnswers; i++) {
-          if (newArr[i] === null) {
-            nextIndex = i;
-            break;
-          }
+        } else {
+          // Selecting the answer for the current blank.
+          newArr[selectedBlankIndex] = index;
         }
         
-        if (nextIndex === -1) {
-          for (let i = 0; i < selectedBlankIndex; i++) {
-            if (newArr[i] === null) {
-              nextIndex = i;
-              break;
+        // --- UNIFIED INDEX UPDATE LOGIC ---
+        if (setSelectedBlankIndex) {
+            // 1. CHECK FOR EMPTY BOARD (User's Request)
+            // After any change, if the board is now completely empty, reset the index to 0.
+            const isNowEmpty = newArr.every(answer => answer === null);
+            if (isNowEmpty) {
+                setSelectedBlankIndex(0);
+            } else if (existingIndex !== -1) {
+                // 2. FOCUS ON DESELECTED BLANK
+                // If we just deselected an answer, move the focus to that newly emptied blank.
+                setSelectedBlankIndex(existingIndex);
+            } else {
+                // 3. AUTO-ADVANCE TO NEXT EMPTY BLANK
+                // If we just selected an answer, find the next available blank to fill.
+                let nextIndex = -1;
+                for (let i = selectedBlankIndex + 1; i < maxAnswers; i++) {
+                    if (newArr[i] === null) {
+                        nextIndex = i;
+                        break;
+                    }
+                }
+                if (nextIndex === -1) { // Wrap around if not found
+                    for (let i = 0; i < selectedBlankIndex; i++) {
+                        if (newArr[i] === null) {
+                            nextIndex = i;
+                            break;
+                        }
+                    }
+                }
+                // If still not found, all blanks are full; default focus to the start.
+                setSelectedBlankIndex(nextIndex !== -1 ? nextIndex : 0);
             }
-          }
-        }
-
-        if (nextIndex !== -1 && setSelectedBlankIndex) {
-          setSelectedBlankIndex(nextIndex);
         }
 
       } else {

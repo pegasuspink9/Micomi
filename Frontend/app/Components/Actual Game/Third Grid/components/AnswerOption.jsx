@@ -29,7 +29,7 @@ const AnswerOption = ({
         onPress={() => {
           if (!isDisabled) {
             soundManager.playButtonTapSound();
-            onPress(item);
+            onPress(item);    
           }
         }}
         disabled={isDisabled}
