@@ -18,9 +18,9 @@ class UniversalSoundManager {
   }
 
   // --- PRIVATE HELPER for one-shot sounds (UI & Combat) ---
-  async _playSimpleSound(channel, url, onPlayCallback) {
+  async _playSimpleSound(channel, url, onPlayCallback, volume = 1.0) {
     // 1. Stop any sound currently playing on this specific channel.
-    if (this.activeSounds[channel]) {
+     if (this.activeSounds[channel]) {
       const soundToUnload = this.activeSounds[channel];
       this.activeSounds[channel] = null;
       soundToUnload.setOnPlaybackStatusUpdate(null);
@@ -37,6 +37,8 @@ class UniversalSoundManager {
     try {
       const { sound } = await Audio.Sound.createAsync({ uri: url }, { shouldPlay: false });
       this.activeSounds[channel] = sound;
+
+      await sound.setVolumeAsync(volume);
 
       // 3. Execute callback for perfect sync before playing.
       if (onPlayCallback) onPlayCallback();
@@ -66,8 +68,8 @@ class UniversalSoundManager {
     this._playSimpleSound('ui', url, onPlayCallback);
   }
 
-  playCombatSound(url) {
-    this._playSimpleSound('combat', url, null);
+  playCombatSound(url, volume = 1.0) {
+    this._playSimpleSound('combat', url, null, volume);
   }
 
   playButtonTapSound() {

@@ -9,6 +9,7 @@ export const gameService = {
       // Load cached animations on first call
       await universalAssetPreloader.loadCachedAssets('game_animations');
       await universalAssetPreloader.loadCachedAssets('game_audio');
+      await universalAssetPreloader.loadCachedAssets('game_visuals');
       
       const response = await apiService.post(`/game/entryLevel/${playerId}/${levelId}`);
       
@@ -43,6 +44,8 @@ export const gameService = {
       );
 
       await universalAssetPreloader.downloadAudioAssets(response.data);
+      await universalAssetPreloader.downloadGameVisualAssets(response.data);
+
 
       if (!downloadResult.success) {
         console.warn('⚠️ Animation download failed, but continuing with game...');

@@ -623,7 +623,7 @@ export default function GamePlay() {
       <>
         <StatusBar hidden={true} />
         <ImageBackground 
-          source={{uri: 'https://github.com/user-attachments/assets/dc83a36e-eb2e-4fa5-b4e7-0eab9ff65abc'}}
+          source={{uri: './gamebackgroundmain.png'}}
           style={styles.container}  
         >
 
@@ -734,7 +734,7 @@ export default function GamePlay() {
 
       {showGameplay && (
       <ImageBackground 
-        source={{uri: 'https://github.com/user-attachments/assets/dc83a36e-eb2e-4fa5-b4e7-0eab9ff65abc'}}
+        source={require('./gamebackgroundmain.png')}
         style={styles.container}
       >
         {currentChallenge && (

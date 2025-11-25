@@ -233,6 +233,45 @@ async testR2Download(testUrl) {
   return false;
   }
 
+
+   extractGameVisualAssets(gameState) {
+    const assets = [];
+    // Check both the root of the state and the submissionResult for assets
+    const sources = [gameState, gameState?.submissionResult];
+
+    sources.forEach(source => {
+      if (!source) return;
+
+      // Combat Background (can be an array of URLs)
+      if (Array.isArray(source.combat_background)) {
+        source.combat_background.forEach(url => {
+          if (url && this.isImageFile(url)) {
+            assets.push({ url, name: 'combat_background', type: 'image', category: 'game_visuals' });
+          }
+        });
+      }
+
+      // Versus Background (single URL)
+      if (source.versus_background && this.isImageFile(source.versus_background)) {
+        assets.push({ url: source.versus_background, name: 'versus_background', type: 'image', category: 'game_visuals' });
+      }
+
+      // Card Image (single URL)
+      if (source.card?.character_attack_card && this.isImageFile(source.card.character_attack_card)) {
+        assets.push({ url: source.card.character_attack_card, name: 'character_attack_card', type: 'image', category: 'game_visuals' });
+      }
+    });
+
+    // Remove duplicates to avoid unnecessary downloads
+    const uniqueAssets = assets.filter((asset, index, self) =>
+      index === self.findIndex(a => a.url === asset.url)
+    );
+
+    console.log(`🖼️ Extracted ${uniqueAssets.length} game visual assets`);
+    return uniqueAssets;
+  }
+
+
   extractAudioAssets(levelData) {
     const assets = [];
     if (levelData && Array.isArray(levelData.audioLinks)) {
@@ -580,6 +619,45 @@ async testR2Download(testUrl) {
 
   console.log(`📦 Extracted ${assets.length} potion shop assets`);
   return assets;
+  }
+
+  async downloadGameVisualAssets(gameState, onProgress = null) {
+    try {
+      console.log('🖼️ Starting game visual asset download...');
+      const assets = this.extractGameVisualAssets(gameState);
+
+      if (assets.length === 0) {
+        return { success: true, downloaded: 0, total: 0 };
+      }
+      const startTime = Date.now();
+      let successCount = 0;
+      const results = [];
+      for (let i = 0; i < assets.length; i += this.maxConcurrentDownloads) {
+        const batch = assets.slice(i, i + this.maxConcurrentDownloads);
+        const batchPromises = batch.map(async (asset) => {
+          const result = await this.downloadSingleAsset(asset.url, asset.category);
+          if (result.success) {
+            successCount++;
+          }
+          results.push({ asset, result });
+          if (onProgress) {
+            onProgress({
+              loaded: results.length,
+              total: assets.length,
+              progress: results.length / assets.length,
+              category: 'game_visuals'
+            });
+          }
+        });
+        await Promise.all(batchPromises);
+      }
+      const totalTime = Date.now() - startTime;
+      console.log(`🖼️ Visual asset download completed: ${successCount}/${assets.length} in ${totalTime}ms`);
+      return { success: true, downloaded: successCount, total: assets.length, results };
+    } catch (error) {
+      console.error('❌ Error downloading visual assets:', error);
+      return { success: false, error };
+    }
   }
 
   async downloadAudioAssets(levelData, onProgress = null) {
@@ -1027,6 +1105,18 @@ transformPotionShopDataWithCache(levelPreviewData) {
       });
     }
 
+
+    if (Array.isArray(transformedGameState.combat_background)) {
+      transformedGameState.combat_background = transformedGameState.combat_background.map(url => this.getCachedAssetPath(url));
+    }
+    if (transformedGameState.versus_background) {
+      transformedGameState.versus_background = this.getCachedAssetPath(transformedGameState.versus_background);
+    }
+    if (transformedGameState.card?.character_attack_card) {
+      transformedGameState.card.character_attack_card = this.getCachedAssetPath(transformedGameState.card.character_attack_card);
+    }
+
+
      if (Array.isArray(transformedGameState.audio)) {
       transformedGameState.audio = transformedGameState.audio.map(url =>
         url ? this.getCachedAssetPath(url) : url
@@ -1043,61 +1133,83 @@ transformPotionShopDataWithCache(levelPreviewData) {
     }
 
     // Transform fight result animations
-    if (transformedGameState.submissionResult?.fightResult) {
-      const fightResult = transformedGameState.submissionResult.fightResult;
-      
-      if (fightResult.character) {
-        const fightChar = fightResult.character;
-        
-        const charFields = [
-          'character_idle',
-          'character_run',
-          'character_hurt',
-          'character_dies'
-        ];
-        
-        charFields.forEach(field => {
-          if (fightChar[field]) {
-            fightChar[field] = this.getCachedAssetPath(fightChar[field]);
-          }
-        });
-        
-        // Handle character_attack array
-        if (Array.isArray(fightChar.character_attack)) {
-          fightChar.character_attack = fightChar.character_attack.map(url => 
-            url ? this.getCachedAssetPath(url) : url
-          );
-        } else if (fightChar.character_attack) {
-          fightChar.character_attack = this.getCachedAssetPath(fightChar.character_attack);
-        }
+    if (transformedGameState.submissionResult) {
+      const sub = transformedGameState.submissionResult;
+
+      if (Array.isArray(sub.combat_background)) {
+        sub.combat_background = sub.combat_background.map(url => this.getCachedAssetPath(url));
       }
-      
-      if (fightResult.enemy) {
-        const fightEnemy = fightResult.enemy;
+      if (sub.versus_background) {
+        sub.versus_background = this.getCachedAssetPath(sub.versus_background);
+      }
+      if (sub.card?.character_attack_card) {
+        sub.card.character_attack_card = this.getCachedAssetPath(sub.card.character_attack_card);
+      }
+
+      if (Array.isArray(sub.audio)) {
+        sub.audio = sub.audio.map(url => url ? this.getCachedAssetPath(url) : url);
+      }
+      if (sub.is_correct_audio) {
+        sub.is_correct_audio = this.getCachedAssetPath(sub.is_correct_audio);
+      }
+      if (sub.enemy_attack_audio) {
+        sub.enemy_attack_audio = this.getCachedAssetPath(sub.enemy_attack_audio);
+      }
+      if (sub.character_attack_audio) {
+        sub.character_attack_audio = this.getCachedAssetPath(sub.character_attack_audio);
+      }
+
+      if (sub.fightResult) {
+        const fightResult = sub.fightResult;
         
-        const enemyFields = [
-          'enemy_idle',
-          'enemy_run',
-          'enemy_attack',
-          'enemy_hurt',
-          'enemy_dies'
-        ];
-        
-        enemyFields.forEach(field => {
-          if (fightEnemy[field]) {
-            fightEnemy[field] = this.getCachedAssetPath(fightEnemy[field]);
+        if (fightResult.character) {
+          const fightChar = fightResult.character;
+          
+          const charFields = [
+            'character_idle',
+            'character_run',
+            'character_hurt',
+            'character_dies'
+          ];
+          
+          charFields.forEach(field => {
+            if (fightChar[field]) {
+              fightChar[field] = this.getCachedAssetPath(fightChar[field]);
+            }
+          });
+          
+          // Handle character_attack array
+          if (Array.isArray(fightChar.character_attack)) {
+            fightChar.character_attack = fightChar.character_attack.map(url => 
+              url ? this.getCachedAssetPath(url) : url
+            );
+          } else if (fightChar.character_attack) {
+            fightChar.character_attack = this.getCachedAssetPath(fightChar.character_attack);
           }
-        });
+        }
+        
+        if (fightResult.enemy) {
+          const fightEnemy = fightResult.enemy;
+          
+          const enemyFields = [
+            'enemy_idle',
+            'enemy_run',
+            'enemy_attack',
+            'enemy_hurt',
+            'enemy_dies'
+          ];
+          
+          enemyFields.forEach(field => {
+            if (fightEnemy[field]) {
+              fightEnemy[field] = this.getCachedAssetPath(fightEnemy[field]);
+            }
+          });
+        }
       }
     }
 
     return transformedGameState;
   }
-
-
-
-
-
 
   // ✅ Download all character assets
   async downloadCharacterAssets(charactersData, onProgress = null, onAssetComplete = null) {

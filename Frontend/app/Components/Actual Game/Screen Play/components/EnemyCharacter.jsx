@@ -108,7 +108,7 @@ const EnemyCharacter = ({
       
       attackSoundTimeoutRef.current = setTimeout(() => {
         console.log(`🔊 Playing delayed attack sound for Enemy [${index}].`);
-        soundManager.playCombatSound(attackAudioUrl);
+        soundManager.playCombatSound(attackAudioUrl, 0.2);
       }, SOUND_DELAY);
     }
 
