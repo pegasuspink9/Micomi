@@ -292,6 +292,17 @@ async testR2Download(testUrl) {
 
   extractAudioAssets(levelData) {
     const assets = [];
+
+     if (levelData && levelData.gameplay_audio && typeof levelData.gameplay_audio === 'string' && this.isAudioFile(levelData.gameplay_audio)) {
+      assets.push({
+        url: levelData.gameplay_audio,
+        name: 'gameplay_background_music',
+        type: 'audio',
+        category: 'game_audio'
+      });
+    }
+
+
     if (levelData && Array.isArray(levelData.audioLinks)) {
       levelData.audioLinks.forEach(url => {
         if (url && typeof url === 'string' && this.isAudioFile(url)) {
@@ -1206,6 +1217,11 @@ transformPotionShopDataWithCache(levelPreviewData) {
       transformedGameState.character_attack_audio = this.getCachedAssetPath(transformedGameState.character_attack_audio);
     }
 
+     if (transformedGameState.gameplay_audio) {
+      transformedGameState.gameplay_audio = this.getCachedAssetPath(transformedGameState.gameplay_audio);
+    }
+
+
     // Transform fight result animations
     if (transformedGameState.submissionResult) {
       const sub = transformedGameState.submissionResult;
@@ -1232,6 +1248,11 @@ transformPotionShopDataWithCache(levelPreviewData) {
       if (sub.character_attack_audio) {
         sub.character_attack_audio = this.getCachedAssetPath(sub.character_attack_audio);
       }
+
+      if (sub.gameplay_audio) {
+        sub.gameplay_audio = this.getCachedAssetPath(sub.gameplay_audio);
+      }
+
 
       if (sub.fightResult) {
         const fightResult = sub.fightResult;

@@ -92,6 +92,14 @@ export default function GamePlay() {
     clearSelectedPotion,
   } = useGameData(playerId, levelId);
 
+   useEffect(() => {
+    const bgmUrl = gameState?.gameplay_audio;
+
+    if (showGameplay && bgmUrl) {
+      soundManager.playBackgroundMusic(bgmUrl);
+    }
+  }, [gameState?.gameplay_audio, showGameplay]);
+
   const currentChallenge = gameState?.currentChallenge;
   const submissionResult = gameState?.submissionResult;
   const [characterRunState, setCharacterRunState] = useState(false);

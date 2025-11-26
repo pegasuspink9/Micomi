@@ -7,10 +7,12 @@ class UniversalSoundManager {
       message: null,
       ui: null,
       combat: null,
-      button: null
+      button: null,
+      bgm: null
     };
     
     // State for sequential message audio
+    this.currentBgmUrl = null;
     this.messageQueue = [];
     this.preloadedMessageSound = null;
     this.isMessagePlaying = false;
@@ -94,6 +96,57 @@ class UniversalSoundManager {
     this._playSimpleSound('button', blankTapUrl, null, v);
   }
 
+
+  async playBackgroundMusic(url, volume = 0.2, loop = true) {
+    // 1. If the requested music is already playing, do nothing.
+    if (this.currentBgmUrl === url && this.activeSounds.bgm) {
+      console.log(`🎵 BGM is already playing: ${url.slice(-30)}`);
+      return;
+    }
+
+    console.log(`🎵 Preparing to play new BGM: ${url ? url.slice(-30) : 'None'}`);
+    
+    // 2. Stop any currently playing BGM.
+    await this.stopBackgroundMusic();
+    
+    // 3. If no new URL is provided, we are done.
+    if (!url) {
+      return;
+    }
+
+    // 4. Load and play the new background music.
+    try {
+      this.currentBgmUrl = url; // Set this early to prevent race conditions
+      
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: url },
+        { 
+          shouldPlay: true, 
+          isLooping: loop,
+          volume: volume 
+        }
+      );
+
+      this.activeSounds.bgm = sound;
+      console.log(`🎵 BGM playback started: ${url.slice(-30)}`);
+    } catch (error) {
+      console.error(`Error playing background music [${url}]:`, error);
+      this.activeSounds.bgm = null;
+      this.currentBgmUrl = null;
+    }
+  }
+
+  async stopBackgroundMusic() {
+    if (this.activeSounds.bgm) {
+      console.log('🎵 Stopping current BGM...');
+      const soundToUnload = this.activeSounds.bgm;
+      this.activeSounds.bgm = null;
+      this.currentBgmUrl = null;
+      await soundToUnload.stopAsync().catch(() => {});
+      await soundToUnload.unloadAsync().catch(() => {});
+      console.log('🎵 BGM stopped and unloaded.');
+    }
+  }
   // --- Sequential Message Sound Logic (adapted from old SoundManager) ---
 
   async playSequentialMessage(urls, onPlaybackStart) {
@@ -192,6 +245,7 @@ class UniversalSoundManager {
     await this._playSimpleSound('ui', null, null);
     await this._playSimpleSound('combat', null, null); 
     await this._playSimpleSound('button', null, null); 
+    await this.stopBackgroundMusic();
     console.log('🔊 All sound channels have been stopped.');
   }
 }
