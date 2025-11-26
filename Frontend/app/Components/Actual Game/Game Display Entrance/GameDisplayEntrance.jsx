@@ -1,10 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, Image, Animated } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { scale, scaleWidth, scaleHeight, scaleFont, wp, hp } from '../../Responsiveness/gameResponsive';
+import { View, Text, StyleSheet, Image, Animated } from 'react-native';
+import { gameScale, SCREEN } from '../../Responsiveness/gameResponsive';
 import { ImageBackground } from 'expo-image';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const CombatVSModal = ({ 
   visible = false, 
@@ -24,8 +22,8 @@ const CombatVSModal = ({
     const timerRef = useRef(null); 
     const visibleRef = useRef(visible);
 
-    const characterSlideAnim = useRef(new Animated.Value(-SCREEN_WIDTH)).current;
-    const enemySlideAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
+    const characterSlideAnim = useRef(new Animated.Value(-SCREEN.width)).current;
+    const enemySlideAnim = useRef(new Animated.Value(SCREEN.width)).current;
     const vsScaleAnim = useRef(new Animated.Value(0)).current;
     const fadeOutAnim = useRef(new Animated.Value(1)).current;
 
@@ -69,12 +67,12 @@ const CombatVSModal = ({
             }),
             Animated.parallel([
               Animated.timing(characterSlideAnim, {
-                toValue: -SCREEN_WIDTH,
+                toValue: -SCREEN.width,
                 duration: 200,
                 useNativeDriver: true,
               }),
               Animated.timing(enemySlideAnim, {
-                toValue: SCREEN_WIDTH,
+                toValue: SCREEN.width,
                 duration: 200,
                 useNativeDriver: true,
               }),
@@ -89,8 +87,8 @@ const CombatVSModal = ({
             onComplete();
             timerRef.current = null;
 
-            characterSlideAnim.setValue(-SCREEN_WIDTH);
-            enemySlideAnim.setValue(SCREEN_WIDTH);
+            characterSlideAnim.setValue(-SCREEN.width);
+            enemySlideAnim.setValue(SCREEN.width);
             vsScaleAnim.setValue(0);
             fadeOutAnim.setValue(1);
           });
@@ -174,9 +172,9 @@ const CombatVSModal = ({
         {/* VS Text */}
         <Animated.View style={[styles.vsContainer, { transform: [{ scale: vsScaleAnim }] }]}>
               <View style={styles.vsBackground}>
-                <Image 
+                 <Image 
                   source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1761043746/Untitled_design_16_sixivj.png' }}
-                  style={{ width: SCREEN_WIDTH * 1, height: SCREEN_HEIGHT * 0.5, resizeMode: 'cover' }}
+                  style={styles.vsImage}
                 />
               </View>
         </Animated.View>
@@ -225,230 +223,187 @@ const styles = StyleSheet.create({
     zIndex: 1000,
     backgroundColor: 'rgba(0,0,0,0.9)',
   },
-
   modalBackground:{
     flex: 1
-
   },
- 
-
-
    characterSide: {
     position: 'absolute',
-    left: 0,  //  Left side
+    left: 0,
     top: 0,
-    width: SCREEN_WIDTH / 2,
-    height: SCREEN_HEIGHT,
+    width: gameScale(390 / 2),
+    height: gameScale(844),
     alignItems: 'center',
     justifyContent: 'flex-start',  
     zIndex: 3,
   },
-
-
-   enemySide: {
+ enemySide: {
     position: 'absolute',
-    bottom: SCREEN_HEIGHT * 0.14,
-    left: SCREEN_HEIGHT * 0.12,
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT / 2,
+    right: 0,
+    bottom: gameScale(844 * 0.14),
+    width: gameScale(390 / 2),
+    height: gameScale(844 / 2),
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 100,
   },
-
- 
-  
-
   characterContainer: {
     alignItems: 'center',
-    marginTop: SCREEN_HEIGHT * 0.06,
+    marginTop: gameScale(844 * 0.06),
     position: 'relative', 
   },
-
-   enemyNameContainer: {
+  enemyNameContainer: {
     position: 'absolute',
-    right: SCREEN_WIDTH * 0.77,  
-    top: SCREEN_HEIGHT * 0.22,
+    left: gameScale(-200),
+    top: gameScale(844 * 0.22),
     alignItems: 'flex-end',  
   },
-
-   
   enemyStatsContainer: {
     alignItems: 'flex-end',
-    marginTop: scale(4),
+    marginTop: gameScale(4),
   },
-
-  
   statsContainer:{
-    marginLeft: SCREEN_WIDTH * 0.03
+    marginLeft: gameScale(390 * 0.03)
   },
-
-
- avatarFrame: {
+  avatarFrame: {
     position: 'relative',
-    marginBottom: scale(-65),
+    marginBottom: gameScale(-65),
   },
-
   characterAvatar: {
-    width: scaleWidth(500),  
-    height: scaleHeight(500)
+    width: gameScale(500),  
+    height: gameScale(500)
   },
-
    enemyAvatar: {
-    width: scaleWidth(500), 
-    height: scaleHeight(500),
+    width: gameScale(600), 
+    height: gameScale(600),
   },
-
- avatarGlow: {
+  avatarGlow: {
     position: 'absolute',
-    top: scale(-8),
-    left: scale(-8),
-    width: scale(216),
-    height: scale(216),
-    borderRadius: scale(108),
+    top: gameScale(-8),
+    left: gameScale(-8),
+    width: gameScale(216),
+    height: gameScale(216),
+    borderRadius: gameScale(108),
     zIndex: -1,
   },
-
-
   characterGlow: {
     backgroundColor: 'rgba(76, 175, 80, 0.6)',
     shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 1,
-    shadowRadius: 20,
+    shadowRadius: gameScale(20),
   },
-
   enemyGlow: {
     backgroundColor: 'rgba(244, 67, 54, 0.6)',
     shadowColor: '#F44336',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 1,
-    shadowRadius: 20,
+    shadowRadius: gameScale(20),
   },
-
-   
   nameContainer: {
     position: 'absolute',
-    right: SCREEN_WIDTH * 0.0001,  
-    top: SCREEN_HEIGHT * 0.1, 
+    right: gameScale(390 * 0.0001),
+    top: gameScale(844 * 0.1),
     alignItems: 'flex-start'
   },
-
-
-   characterName: {
+  characterName: {
     textAlign: 'center',
-    textShadowOffset: { width: scale(-3), height: scale(2) },
-    textShadowRadius: scale(1),
+    textShadowOffset: { width: gameScale(-3), height: gameScale(2) },
+    textShadowRadius: gameScale(1),
   },
-
   heroName: {
     color: '#1f637dff',
     textShadowColor: 'rgba(124, 169, 209, 1)',
-    fontSize: SCREEN_WIDTH * 0.2,
+    fontSize: gameScale(390 * 0.2),
     fontFamily: 'MusicVibes'
   },
-
   enemyName: {  
     color: '#8b3f3fff',
     fontFamily: 'MusicVibes',
     textShadowColor: 'rgba(100, 0, 0, 0.8)',
-    fontSize: SCREEN_WIDTH * 0.1,
+    fontSize: gameScale(390 * 0.1),
   },
-
   roleLabel: {
-    fontSize: scaleFont(12),
+    fontSize: gameScale(12),
     color: '#0d6d76a3',
     fontWeight: 'bold',
-    letterSpacing: scale(2)
+    letterSpacing: gameScale(2)
   },
-
   enemyRoleLabel: {
-    fontSize: scaleFont(12),
+    fontSize: gameScale(12),
     color: '#6f3232ff',
     textAlign: 'right',
     fontWeight: 'bold',
-    letterSpacing: scale(2)
+    letterSpacing: gameScale(2)
   },
-
-  
-
- 
-
-
   statsText: {
-    fontSize: scaleFont(15),
+    fontSize: gameScale(15),
     color: '#d2d1f9ff',
     fontFamily: 'DynaPuff',
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: scale(2), height: scale(1) },
-    textShadowRadius: scale(2),
-    marginBottom: scale(2),
-    marginRight: SCREEN_WIDTH * 0.02
+    textShadowOffset: { width: gameScale(2), height: gameScale(1) },
+    textShadowRadius: gameScale(2),
+    marginBottom: gameScale(2),
+    marginRight: gameScale(390 * 0.02)
   },
-
-
-
-   
+  vsImage: {
+    width: gameScale(690),
+    height: gameScale(602),
+    resizeMode: 'contain',
+  },
   vsContainer: {
     position: 'absolute',
     top: 0,
     left: 0,
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
+    width: gameScale(390),
+    height: gameScale(844),
     zIndex: 5,
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   vsBackground: {
-    width: SCREEN_WIDTH * 1,
-    height: SCREEN_HEIGHT * 1,
+    width: gameScale(390),
+    height: gameScale(844),
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-    vsText: {
-    fontSize: scaleFont(36),
+  vsText: {
+    fontSize: gameScale(36),
     color: '#FFF',
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: scale(2), height: scale(2) },
-    textShadowRadius: scale(4),
+    textShadowOffset: { width: gameScale(2), height: gameScale(2) },
+    textShadowRadius: gameScale(4),
   },
-
   vsGlow: {
     position: 'absolute',
-    top: -10,
-    left: -10,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    top: gameScale(-10),
+    left: gameScale(-10),
+    width: gameScale(120),
+    height: gameScale(120),
+    borderRadius: gameScale(60),
     backgroundColor: 'rgba(255, 215, 0, 0.3)',
     shadowColor: '#FFD700',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 1,
-    shadowRadius: 25,
+    shadowRadius: gameScale(25),
     zIndex: -1,
   },
-
    battleReadyContainer: {
     position: 'absolute',
-    bottom: scale(100),
+    bottom: gameScale(100),
     left: 0,
     right: 0,
     alignItems: 'center',
     zIndex: 4,
   },
-
-    battleReadyText: {
-    fontSize: scaleFont(32),
+  battleReadyText: {
+    fontSize: gameScale(32),
     fontWeight: 'bold',
     color: '#FFD700',
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: scale(2), height: scale(2) },
-    textShadowRadius: scale(4),
-    letterSpacing: scale(3),
+    textShadowOffset: { width: gameScale(2), height: gameScale(2) },
+    textShadowRadius: gameScale(4),
+    letterSpacing: gameScale(3),
   },
-
 });
 
 export default CombatVSModal;

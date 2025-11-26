@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Dimensions, Image, Animated, Pressable, Modal } from 'react-native'; // ✅ Add Modal import
 import { WebView } from 'react-native-webview';
+import { gameScale } from '../../Responsiveness/gameResponsive';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -36,9 +37,9 @@ const BossLevelModal = ({ bossData, opacityAnim, bounceAnim, glowAnim }) => {
               const totalChars = array.length;
               const centerIndex = (totalChars - 1) / 2;
               const distanceFromCenter = index - centerIndex;
-              const maxRotation = -1; 
+               const maxRotation = -1; 
               const rotationAngle = (distanceFromCenter / centerIndex) * maxRotation;
-              const radiusOffset = Math.abs(distanceFromCenter) * 2;
+              const radiusOffset = gameScale(Math.abs(distanceFromCenter) * 2);
               
               return (
                 <Animated.Text 
@@ -85,7 +86,7 @@ const BossLevelModal = ({ bossData, opacityAnim, bounceAnim, glowAnim }) => {
           />
         </View>
 
-        <View style={styles.enemyNameContainer}>
+       <View style={styles.enemyNameContainer}>
           <View style={styles.curvedTextContainer}>
             {bossData.enemy_name.split('').map((char, index, array) => {
               const totalChars = array.length;
@@ -93,7 +94,7 @@ const BossLevelModal = ({ bossData, opacityAnim, bounceAnim, glowAnim }) => {
               const distanceFromCenter = index - centerIndex;
               const maxRotation = 10;
               const rotationAngle = (distanceFromCenter / centerIndex) * maxRotation;
-              const radiusOffset = Math.abs(distanceFromCenter) * 8;
+              const radiusOffset = gameScale(Math.abs(distanceFromCenter) * 8);
               
               return (
                 <Animated.Text 
@@ -129,103 +130,91 @@ const styles = StyleSheet.create({
   enemyAvatarContainer: {
     alignItems: 'center',
     zIndex: 10,
-    marginTop: SCREEN_WIDTH * 0.07,
+    marginTop: gameScale(27),
   },
-
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0)', 
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-
   enemyFoundContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: SCREEN_WIDTH * 0.12,
+    height: gameScale(47),
   },
-
   curvedEnemyFoundContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'center',
   },
-
   curvedEnemyFoundCharacter: {
-    fontSize: SCREEN_WIDTH * 0.03,
+    fontSize: gameScale(12),
     color: '#ff4500', // Boss orange
     fontFamily: 'DoongaSlash',
     textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 0.9)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-    marginHorizontal: 2,
+    textShadowOffset: { width: gameScale(1), height: gameScale(1) },
+    textShadowRadius: gameScale(3),
+    marginHorizontal: gameScale(2),
     includeFontPadding: false,
     textAlignVertical: 'center',
   },
-
   enemyNameContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: SCREEN_WIDTH * 0.17,
-    marginBottom: SCREEN_WIDTH * 0.03,
+    height: gameScale(66),
+    marginBottom: gameScale(12),
   },
-
   curvedTextContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
-
   curvedCharacter: {
-    fontSize: SCREEN_WIDTH * 0.07,
+    fontSize: gameScale(27),
     color: '#ffffffff',
     fontFamily: 'MusicVibes',
     textAlign: 'center',
     textShadowColor: 'rgba(4, 4, 4, 0.9)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-    marginHorizontal: 0.70,
+    textShadowOffset: { width: gameScale(1), height: gameScale(1) },
+    textShadowRadius: gameScale(2),
+    marginHorizontal: gameScale(1),
     includeFontPadding: false,
     textAlignVertical: 'center',
   },
-
   avatarFrame: {
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   enemyAvatar: {
-    width: SCREEN_WIDTH * 0.28,
-    height: SCREEN_WIDTH * 0.28,
-    borderRadius: SCREEN_WIDTH * 0.15,
-    borderWidth: 4,
+    width: gameScale(109),
+    height: gameScale(109),
+    borderRadius: gameScale(59),
+    borderWidth: gameScale(4),
     borderColor: 'rgba(0, 0, 0, 1)',
     shadowColor: 'rgba(255, 69, 0, 1)', // Boss red glow
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 1,
-    shadowRadius: 20,
+    shadowRadius: gameScale(20),
     elevation: 20,
   },
-
   enemyAvatarGlow: {
     position: 'absolute',
-    top: -8,
-    left: -8,
-    width: SCREEN_WIDTH * 0.3 + 10,
-    height: SCREEN_WIDTH * 0.3 + 10,
-    borderRadius: (SCREEN_WIDTH * 0.3 + 16) / 2,
+    top: gameScale(-8),
+    left: gameScale(-8),
+    width: gameScale(127),
+    height: gameScale(127),
+    borderRadius: gameScale(67),
     backgroundColor: 'rgba(92, 0, 0, 1)', 
     borderColor: 'rgba(139, 0, 0, 1)', 
-    borderWidth: 12,
+    borderWidth: gameScale(12),
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 1,
-    shadowRadius: 25,
+    shadowRadius: gameScale(25),
     zIndex: -1,
   },
-  
 });
 
 export default BossLevelModal;

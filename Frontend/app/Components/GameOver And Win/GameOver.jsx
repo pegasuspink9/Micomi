@@ -109,9 +109,9 @@ const GameOverModal = ({
   
   //  COPIED: Animation URLs
   const animationUrls = [
-    'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb1.png',
-    'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb2.png',
-    'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb3.png'
+    'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/Failed1.png',
+    'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/Failed2.png',
+    'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/Failed3.png'
   ];
 
   const [animationUrl, setAnimationUrl] = useState(() => animationUrls[Math.floor(Math.random() * animationUrls.length)]);

@@ -77,6 +77,23 @@ class UniversalSoundManager {
     this._playSimpleSound('button', tapSoundUrl, null);
   }
 
+   playGameButtonTapSound() {
+    const tapSoundUrl = 'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Tap3.wav';
+    this._playSimpleSound('button', tapSoundUrl, null);
+  }
+
+  playCardFlipSound(volume = 1.0) {
+    const flipSoundUrl = 'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Card_Flip_2.wav';
+    const v = Math.max(0, Math.min(1, volume));
+    this._playSimpleSound('ui', flipSoundUrl, null, v);
+  }
+
+  playBlankTapSound(volume = 1.0) {
+    const blankTapUrl = 'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Tap2.wav';
+    const v = Math.max(0, Math.min(1, volume));
+    this._playSimpleSound('button', blankTapUrl, null, v);
+  }
+
   // --- Sequential Message Sound Logic (adapted from old SoundManager) ---
 
   async playSequentialMessage(urls, onPlaybackStart) {

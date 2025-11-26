@@ -8,8 +8,7 @@ import PotionShop from '../../../PotionShop';
 import ShopLevelModal from './ShopLevelModal'; 
 import BossLevelModal from './BossLevelModal';
 import {WebView} from 'react-native-webview';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+import { gameScale, BASE_HEIGHT} from '../../Responsiveness/gameResponsive';
 
 const LevelModal = ({ 
   visible = false,
@@ -350,9 +349,9 @@ const LevelModal = ({
     outputRange: [0.8, 1],
   });
 
-  const scanLineTranslate = scanLineAnim.interpolate({
+   const scanLineTranslate = scanLineAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [-50, SCREEN_HEIGHT * 0.4 + 50],
+    outputRange: [gameScale(-50), gameScale(BASE_HEIGHT * 0.4 + 50)],
   });
 
   const isShopLevel = displayData?.level?.level_type === "shopButton";
@@ -558,7 +557,7 @@ const LevelModal = ({
                                   const distanceFromCenter = index - centerIndex;
                                   const maxRotation = 10;
                                   const rotationAngle = (distanceFromCenter / centerIndex) * maxRotation;
-                                  const radiusOffset = Math.abs(distanceFromCenter) * 8;
+                                  const radiusOffset = gameScale(Math.abs(distanceFromCenter) * 8)
                                   
                                   return (
                                     <Animated.Text 
@@ -717,7 +716,8 @@ const LevelModal = ({
         {displayData && !loading && !error && (
           <Animated.View 
             style={[
-              styles.playButtonContainer,
+               styles.playButtonContainer,
+              isBossLevel && styles.playButtonContainerBoss,
               {
                 opacity: opacityAnim,
                 transform: [
@@ -802,259 +802,230 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   rewardItem: {
     alignItems: 'center',
-    marginHorizontal: 5,
+    marginHorizontal: gameScale(5),
   },
-
   rewardImage: {
-    width: SCREEN_WIDTH * 0.1,
-    height: SCREEN_WIDTH * 0.1,
-    borderRadius: SCREEN_WIDTH * 0.01,
-    marginBottom: 5,
+    width: gameScale(39),
+    height: gameScale(39),
+    borderRadius: gameScale(4),
+    marginBottom: gameScale(5),
   },
-
   rewardText: {
-    fontSize: SCREEN_WIDTH * 0.04,
+    fontSize: gameScale(16),
     color: '#FFD700',
     fontFamily: 'DynaPuff',
     textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textShadowOffset: { width: gameScale(1), height: gameScale(1) },
+    textShadowRadius: gameScale(2),
   },
-
   loadingContainer: {
-    backgroundColor: 'rgba(0, 0, 0, 0.9)', //  Darker for better visibility
-    padding: 25, //  More padding
-    borderRadius: 15, //  More rounded
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    padding: gameScale(25),
+    borderRadius: gameScale(15),
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
+    shadowOffset: { width: 0, height: gameScale(10) },
     shadowOpacity: 0.3,
-    shadowRadius: 20,
+    shadowRadius: gameScale(20),
     elevation: 20,
   },
-
   loadingText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: gameScale(18),
     fontFamily: 'DynaPuff',
   },
-
   errorContainer: {
-    backgroundColor: 'rgba(220, 38, 38, 0.95)', //  Slightly more opaque
-    padding: 25, //  More padding
-    borderRadius: 15, //  More rounded
+    backgroundColor: 'rgba(220, 38, 38, 0.95)',
+    padding: gameScale(25),
+    borderRadius: gameScale(15),
     alignItems: 'center',
-    maxWidth: SCREEN_WIDTH * 0.8,
+    maxWidth: gameScale(312),
     shadowColor: '#dc2626',
-    shadowOffset: { width: 0, height: 10 },
+    shadowOffset: { width: 0, height: gameScale(10) },
     shadowOpacity: 0.3,
-    shadowRadius: 20,
+    shadowRadius: gameScale(20),
     elevation: 20,
   },
-
   errorText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: gameScale(16),
     textAlign: 'center',
-    marginBottom: 15,
+    marginBottom: gameScale(15),
     fontFamily: 'DynaPuff',
   },
-
   retryButton: {
     backgroundColor: '#fff',
-    paddingHorizontal: 25, //  More padding
-    paddingVertical: 12, //  More padding
-    borderRadius: 8, //  More rounded
+    paddingHorizontal: gameScale(25),
+    paddingVertical: gameScale(12),
+    borderRadius: gameScale(8),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: gameScale(2) },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowRadius: gameScale(4),
     elevation: 4,
   },
-
   retryText: {
     color: '#dc2626',
-    fontSize: 16,
+    fontSize: gameScale(16),
     fontWeight: 'bold',
   },
-
   robotHead: {
     alignSelf: 'center',
-    marginTop: SCREEN_HEIGHT * -0.2,
-    width: SCREEN_WIDTH * 0.85,
+    marginTop: gameScale(-169),
+    width: gameScale(332),
     position: 'relative',
   },
-
   enemyAvatarContainer: {
     alignItems: 'center',
     zIndex: 10,
   },
-
   enemyFoundContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: SCREEN_WIDTH * 0.12,
+    height: gameScale(47),
   },
-
   curvedEnemyFoundContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'center',
   },
-
   curvedEnemyFoundCharacter: {
-    fontSize: SCREEN_WIDTH * 0.03,
+    fontSize: gameScale(12),
     color: '#ff6b6b',
     fontFamily: 'DoongaSlash',
     textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 0.9)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-    marginHorizontal: 2,
+    textShadowOffset: { width: gameScale(1), height: gameScale(1) },
+    textShadowRadius: gameScale(3),
+    marginHorizontal: gameScale(2),
     includeFontPadding: false,
     textAlignVertical: 'center',
   },
-
   enemyNameContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: SCREEN_WIDTH * 0.17,
+    height: gameScale(66),
   },
-
   curvedTextContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
-
   curvedCharacter: {
-    fontSize: SCREEN_WIDTH * 0.08,
+    fontSize: gameScale(31),
     color: '#ffffffff',
     fontFamily: 'MusicVibes',
     textAlign: 'center',
     textShadowColor: 'rgba(4, 4, 4, 0.9)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-    marginHorizontal: 0.70,
+    textShadowOffset: { width: gameScale(1), height: gameScale(1) },
+    textShadowRadius: gameScale(2),
+    marginHorizontal: gameScale(0.7),
     includeFontPadding: false,
     textAlignVertical: 'center',
   },
-
   avatarFrame: {
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   enemyAvatar: {
-    width: SCREEN_WIDTH * 0.28,
-    height: SCREEN_WIDTH * 0.28,
-    borderRadius: SCREEN_WIDTH * 0.15,
-    borderWidth: 4,
+    width: gameScale(109),
+    height: gameScale(109),
+    borderRadius: gameScale(59),
+    borderWidth: gameScale(4),
     borderColor: 'rgba(0, 0, 0, 1)',
     shadowColor: 'rgba(239, 68, 68, 1)',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 1,
-    shadowRadius: 20,
+    shadowRadius: gameScale(20),
     elevation: 20,
   },
-
   enemyAvatarGlow: {
     position: 'absolute',
-    top: -8,
-    left: -8,
-    width: SCREEN_WIDTH * 0.3 + 10,
-    height: SCREEN_WIDTH * 0.3 + 10,
-    borderRadius: (SCREEN_WIDTH * 0.3 + 16) / 2,
+    top: gameScale(-8),
+    left: gameScale(-8),
+    width: gameScale(127),
+    height: gameScale(127),
+    borderRadius: gameScale(67),
     backgroundColor: 'rgba(52, 2, 2, 1)',
-    borderColor: 'rgba(104, 0, 5, 1)', 
-    borderWidth: 12,
+    borderColor: 'rgba(104, 0, 5, 1)',
+    borderWidth: gameScale(12),
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 1,
-    shadowRadius: 25,
+    shadowRadius: gameScale(25),
     zIndex: -1,
   },
-
   outerBorder: {
     backgroundColor: 'rgba(33, 81, 152, 1)',
-    borderRadius: SCREEN_WIDTH * 0.12,
-    padding: 4,
-    borderTopLeftRadius: SCREEN_WIDTH * 0.12,
-    borderTopRightRadius: SCREEN_WIDTH * 0.12,
-    borderBottomLeftRadius: SCREEN_WIDTH * 0.12,
-    borderBottomRightRadius: SCREEN_WIDTH * 0.12,
+    borderRadius: gameScale(47),
+    padding: gameScale(4),
     shadowColor: '#ffffffff',
     shadowOffset: {
       width: 0,
-      height: 15,
+      height: gameScale(15),
     },
     shadowOpacity: 0.6,
-    shadowRadius: 20,
+    shadowRadius: gameScale(20),
     elevation: 25,
-    borderTopWidth: 3,
+    borderTopWidth: gameScale(3),
     borderTopColor: '#ffffffff',
-    borderLeftWidth: 2,
+    borderLeftWidth: gameScale(2),
     borderLeftColor: '#ffffffff',
-    borderBottomWidth: 4,
+    borderBottomWidth: gameScale(4),
     borderBottomColor: '#ffffffff',
-    borderRightWidth: 3,
+    borderRightWidth: gameScale(3),
     borderRightColor: '#ffffffff',
   },
-
   antenna: {
     position: 'absolute',
     alignSelf: 'center',
-    top: SCREEN_WIDTH * -0.35,
+    top: gameScale(-137),
     zIndex: 5,
-    width: SCREEN_WIDTH * 0.5,
-    height: SCREEN_WIDTH * 0.5,
+    width: gameScale(195),
+    height: gameScale(195),
   },
-
   visor: {
     backgroundColor: '#def8ffff',
-    padding: 4,
-    marginBottom: -140,
-    borderTopLeftRadius: SCREEN_WIDTH * 0.15,
-    borderTopRightRadius: SCREEN_WIDTH * 0.12,
-    borderBottomLeftRadius: SCREEN_WIDTH * 0.06,
-    borderBottomRightRadius: SCREEN_WIDTH * 0.06,
-    borderTopWidth: 2,
+    padding: gameScale(4),
+    marginBottom: gameScale(-140),
+    borderTopLeftRadius: gameScale(59),
+    borderTopRightRadius: gameScale(47),
+    borderBottomLeftRadius: gameScale(23),
+    borderBottomRightRadius: gameScale(23),
+    borderTopWidth: gameScale(2),
     borderTopColor: '#002c38ff',
-    borderLeftWidth: 1,
+    borderLeftWidth: gameScale(1),
     borderLeftColor: '#002c38ff',
-    borderBottomWidth: 3,
+    borderBottomWidth: gameScale(3),
     borderBottomColor: '#002c38ff',
-    borderRightWidth: 2,
+    borderRightWidth: gameScale(2),
     borderRightColor: '#002c38ff',
     shadowColor: '#002c38ff',
     shadowOffset: {
       width: 0,
-      height: 5,
+      height: gameScale(5),
     },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10
+    shadowRadius: gameScale(8),
+    elevation: 10,
   },
-
   visorGlass: {
-    minHeight: SCREEN_HEIGHT * 0.4,
+    minHeight: gameScale(338),
     position: 'relative',
     overflow: 'hidden',
-    borderTopLeftRadius: SCREEN_WIDTH * 0.15,
-    borderTopRightRadius: SCREEN_WIDTH * 0.11,
-    borderBottomLeftRadius: SCREEN_WIDTH * 0.055,
-    borderBottomRightRadius: SCREEN_WIDTH * 0.055,
-    borderWidth: 2,
+    borderTopLeftRadius: gameScale(59),
+    borderTopRightRadius: gameScale(43),
+    borderBottomLeftRadius: gameScale(21),
+    borderBottomRightRadius: gameScale(21),
+    borderWidth: gameScale(2),
     borderTopColor: 'rgba(0, 255, 255, 0.4)',
     borderLeftColor: 'rgba(30, 144, 255, 0.5)',
     borderBottomColor: 'rgba(65, 105, 225, 0.6)',
     borderRightColor: 'rgba(100, 149, 237, 0.5)',
   },
-
   techGrid: {
     position: 'absolute',
     top: 0,
@@ -1063,12 +1034,11 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 1,
   },
-
   scanLine: {
     position: 'absolute',
     left: 0,
     right: 0,
-    height: 5, 
+    height: gameScale(5),
     backgroundColor: 'rgba(40, 255, 255, 1)',
     shadowColor: 'rgba(0, 255, 255, 1)',
     shadowOffset: {
@@ -1076,33 +1046,30 @@ const styles = StyleSheet.create({
       height: 0,
     },
     shadowOpacity: 1,
-    shadowRadius: 15,
+    shadowRadius: gameScale(15),
     zIndex: 99,
   },
-
   backgroundImage: {
-    borderTopLeftRadius: SCREEN_WIDTH * 0.15,
-    borderTopRightRadius: SCREEN_WIDTH * 0.11,
-    borderBottomLeftRadius: SCREEN_WIDTH * 0.055,
-    borderBottomRightRadius: SCREEN_WIDTH * 0.055,
+    borderTopLeftRadius: gameScale(59),
+    borderTopRightRadius: gameScale(43),
+    borderBottomLeftRadius: gameScale(21),
+    borderBottomRightRadius: gameScale(21),
   },
-
   modalContent: {
     alignItems: 'center',
     zIndex: 3,
   },
-
   textContainer: {
-    backgroundColor: 'rgba(63, 118, 220, 0.9)', //  Slightly more opaque
-    width: SCREEN_WIDTH * 0.7,  
-    borderBottomLeftRadius: SCREEN_WIDTH * 1, 
-    borderBottomRightRadius: SCREEN_WIDTH * 1, 
-    borderTopLeftRadius: 0,     
-    borderTopRightRadius: 0,   
+    backgroundColor: 'rgba(63, 118, 220, 0.9)',
+    width: gameScale(273),
+    borderBottomLeftRadius: gameScale(390),
+    borderBottomRightRadius: gameScale(390),
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    alignSelf: 'center', 
-    borderWidth: 2,
+    alignSelf: 'center',
+    borderWidth: gameScale(2),
     borderColor: 'rgba(255, 255, 255, 1)',
     shadowColor: 'rgba(255, 255, 255, 0.8)',
     shadowOffset: {
@@ -1110,369 +1077,334 @@ const styles = StyleSheet.create({
       height: 0,
     },
     shadowOpacity: 1,
-    shadowRadius: 8,
+    shadowRadius: gameScale(8),
     elevation: 10,
   },
-
   levelTitle: {
-    fontSize: SCREEN_WIDTH * 0.14,
+    fontSize: gameScale(54),
     color: '#ffffff',
     fontFamily: 'MusicVibes',
     textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 1)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 15,
+    textShadowRadius: gameScale(15),
   },
-
   levelInfo: {
     alignItems: 'center',
     width: '100%',
   },
-
   levelType: {
-    fontSize: SCREEN_WIDTH * 0.045,
+    fontSize: gameScale(18),
     color: '#ffffff',
     fontFamily: 'FunkySign',
     textAlign: 'center',
     textShadowColor: 'rgba(30, 144, 255, 0.8)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 5,
+    textShadowRadius: gameScale(5),
   },
-
   energyCost: {
-    fontSize: SCREEN_WIDTH * 0.03,
+    fontSize: gameScale(12),
     color: '#e0e0e0',
     fontFamily: 'DynaPuff',
     textAlign: 'center',
-    marginTop: 2,
+    marginTop: gameScale(2),
     textShadowColor: 'rgba(5, 150, 105, 0.8)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 3,
+    textShadowRadius: gameScale(3),
   },
-
   contentText: {
-    fontSize: SCREEN_WIDTH * 0.029,
+    fontSize: gameScale(11),
     color: '#ffffffff',
     textAlign: 'center',
     fontFamily: 'DynaPuff',
     textShadowColor: 'rgba(135, 206, 250, 0.6)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 3,
+    textShadowRadius: gameScale(3),
   },
-
   contentContainer: {
-    padding: 10,
+    padding: gameScale(10),
     width: '100%',
-    marginBottom: 7,
-    backgroundColor: 'rgba(12, 73, 139, 0.6)', 
-    borderTopWidth: 2,
-    borderBottomWidth: 2,
+    marginBottom: gameScale(7),
+    backgroundColor: 'rgba(12, 73, 139, 0.6)',
+    borderTopWidth: gameScale(2),
+    borderBottomWidth: gameScale(2),
     borderColor: 'rgba(255, 255, 255, 1)',
   },
-
   rewardContainer: {
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: gameScale(10),
     width: '100%',
   },
-
   rewardSection: {
     alignItems: 'center',
     flex: 1,
   },
-
   rewardLabel: {
-    fontSize: SCREEN_WIDTH * 0.04,
+    fontSize: gameScale(16),
     color: '#ffffff',
     fontWeight: '600',
     fontFamily: 'DynaPuff',
     textShadowColor: 'rgba(0, 255, 255, 0.8)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 5,
+    textShadowRadius: gameScale(5),
   },
-
   rewardFrames: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
-    paddingHorizontal: 5,
+    paddingHorizontal: gameScale(5),
   },
-
   rewardFrame: {
-    borderRadius: 1,
+    borderRadius: gameScale(1),
     shadowOpacity: 1,
-    shadowRadius: 5,
-    minWidth: SCREEN_WIDTH * 0.12,
+    shadowRadius: gameScale(5),
+    minWidth: gameScale(47),
   },
-
   rewardBox: {
-    borderRadius: 4,
+    borderRadius: gameScale(4),
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: SCREEN_WIDTH * 0.15,
+    minHeight: gameScale(59),
   },
-
   sectionLabel: {
-    fontSize: SCREEN_WIDTH * 0.035,
+    fontSize: gameScale(14),
     color: '#ffffff',
     fontWeight: '600',
-    marginBottom: 5,
+    marginBottom: gameScale(5),
     fontFamily: 'DynaPuff',
     textShadowColor: 'rgba(0, 255, 255, 0.8)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 5,
+    textShadowRadius: gameScale(5),
     textAlign: 'center',
   },
-  
   rewardSubFrames: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
   },
-
   rewardIconContainer: {
-    borderWidth: 2,
-    backgroundColor: 'rgba(248, 248, 248, 0.4)', //  Slightly more opaque
+    borderWidth: gameScale(2),
+    backgroundColor: 'rgba(248, 248, 248, 0.4)',
     width: '100%',
-    height: SCREEN_WIDTH * 0.15,
-    borderRadius: 3,
+    height: gameScale(59),
+    borderRadius: gameScale(3),
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
     shadowColor: 'rgba(0, 255, 255, 0.8)',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 1,
-    shadowRadius: 3,
+    shadowRadius: gameScale(3),
   },
-
   heroLabel: {
-    fontSize: SCREEN_WIDTH * 0.02,
+    fontSize: gameScale(8),
     color: '#fff7f7ff',
     fontWeight: 'bold',
     position: 'absolute',
-    top: SCREEN_WIDTH * 0.005,
+    top: gameScale(2),
     textAlign: 'center',
   },
-
   heroAvatar: {
-    width: SCREEN_WIDTH * 0.1,
-    height: SCREEN_WIDTH * 0.2,
-    borderRadius: SCREEN_WIDTH * 0.04,
+    width: gameScale(39),
+    height: gameScale(78),
+    borderRadius: gameScale(16),
     position: 'absolute',
   },
-
   energyLabel: {
-    fontSize: SCREEN_WIDTH * 0.02,
+    fontSize: gameScale(8),
     color: '#fff7f7ff',
     fontWeight: 'bold',
     position: 'absolute',
-    top: SCREEN_WIDTH * 0.005,
+    top: gameScale(2),
     textAlign: 'center',
   },
-
   energyIcon: {
-    fontSize: SCREEN_WIDTH * 0.04,
+    fontSize: gameScale(16),
     textAlign: 'center',
     position: 'absolute',
-    top: SCREEN_WIDTH * 0.025,
+    top: gameScale(10),
   },
-
   rewardIcon: {
-    fontSize: SCREEN_WIDTH * 0.06,
+    fontSize: gameScale(23),
     textAlign: 'center',
     position: 'absolute',
-    top: SCREEN_WIDTH * 0.01,
+    top: gameScale(4),
   },
-
   rewardPointsInside: {
-    fontSize: SCREEN_WIDTH * 0.028,
+    fontSize: gameScale(11),
     color: '#FFD700',
     fontWeight: 'bold',
     fontFamily: 'monospace',
     textAlign: 'center',
     position: 'absolute',
-    bottom: SCREEN_WIDTH * 0.01,
+    bottom: gameScale(4),
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textShadowOffset: { width: gameScale(1), height: gameScale(1) },
+    textShadowRadius: gameScale(2),
   },
-
   statusContainer: {
     width: '100%',
     alignItems: 'center',
   },
-
   statusIndicator: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderRadius: 8,
+    paddingHorizontal: gameScale(20),
+    paddingVertical: gameScale(8),
+    borderWidth: gameScale(1),
+    borderRadius: gameScale(8),
     borderColor: 'rgba(0, 255, 255, 0.5)',
     backgroundColor: '#34c759',
     shadowColor: 'rgba(0, 255, 255, 0.8)',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 1,
-    shadowRadius: 5,
+    shadowRadius: gameScale(5),
   },
-
   statusText: {
     color: '#fff',
-    fontSize: SCREEN_WIDTH * 0.04,
+    fontSize: gameScale(16),
     fontFamily: 'FunkySign',
     textShadowColor: 'rgba(0, 255, 255, 0.6)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 3,
+    textShadowRadius: gameScale(3),
   },
-
   closeButton: {
     position: 'absolute',
-    top: SCREEN_HEIGHT * 0.02,
-    right: SCREEN_WIDTH * 0.02,
-    width: 38,
-    height: 38, 
-    borderRadius: 19,
+    top: gameScale(17),
+    right: gameScale(8),
+    width: gameScale(38),
+    height: gameScale(38),
+    borderRadius: gameScale(19),
     backgroundColor: '#ef4444',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#dc2626',
     shadowOffset: {
       width: 0,
-      height: 8,
+      height: gameScale(8),
     },
-    shadowOpacity: 0.5, //  More shadow opacity
-    shadowRadius: 12, //  Larger shadow radius
-    elevation: 15, //  Higher elevation
-    borderTopWidth: 3,
+    shadowOpacity: 0.5,
+    shadowRadius: gameScale(12),
+    elevation: 15,
+    borderTopWidth: gameScale(3),
     borderTopColor: '#fca5a5',
-    borderLeftWidth: 2,
+    borderLeftWidth: gameScale(2),
     borderLeftColor: '#f87171',
-    borderBottomWidth: 4,
+    borderBottomWidth: gameScale(4),
     borderBottomColor: '#b91c1c',
-    borderRightWidth: 3,
+    borderRightWidth: gameScale(3),
     borderRightColor: '#dc2626',
   },
-
   closeButtonPressed: {
-    transform: [{ translateY: 2 }, { scale: 0.95 }], //  Add scale effect
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderBottomWidth: 2,
-    borderRightWidth: 2,
+    transform: [{ translateY: 2 }, { scale: 0.95 }],
+    borderTopWidth: gameScale(1),
+    borderLeftWidth: gameScale(1),
+    borderBottomWidth: gameScale(2),
+    borderRightWidth: gameScale(2),
     shadowOpacity: 0.2,
-    shadowRadius: 6,
+    shadowRadius: gameScale(6),
     elevation: 8,
   },
-
   closeButtonText: {
-    fontSize: 28, //  Slightly larger
+    fontSize: gameScale(28),
     color: '#fff',
     fontWeight: 'bold',
-    lineHeight: 28,
+    lineHeight: gameScale(28),
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textShadowOffset: { width: gameScale(1), height: gameScale(1) },
+    textShadowRadius: gameScale(2),
   },
-
   playButtonContainer: {
     position: 'absolute',
-    marginTop: SCREEN_HEIGHT * 0.75,
+    bottom: gameScale(90),
     alignItems: 'center',
   },
-
+  playButtonContainerBoss: {
+    bottom: gameScale(40),
+  },
   playButtonOuter: {
     backgroundColor: '#d0d0d0ff',
-    padding: 4,
-    borderRadius: SCREEN_WIDTH * 0.08,
+    padding: gameScale(4),
+    borderRadius: gameScale(31),
     shadowColor: '#1e40af',
     shadowOffset: {
       width: 0,
-      height: 12, //  More shadow
+      height: gameScale(12),
     },
     shadowOpacity: 0.6,
-    shadowRadius: 20, //  Larger shadow radius
-    elevation: 25, //  Higher elevation
-    borderTopWidth: 3,
+    shadowRadius: gameScale(20),
+    elevation: 25,
+    borderTopWidth: gameScale(3),
     borderTopColor: '#01142bff',
-    borderLeftWidth: 2,
+    borderLeftWidth: gameScale(2),
     borderLeftColor: '#088486ff',
-    borderBottomWidth: 4,
+    borderBottomWidth: gameScale(4),
     borderBottomColor: '#01142bff',
-    borderRightWidth: 3,
+    borderRightWidth: gameScale(3),
     borderRightColor: '#088486ff',
   },
-
   playButtonMiddle: {
-    padding: 4,
-    borderRadius: SCREEN_WIDTH * 0.075,
+    padding: gameScale(4),
+    borderRadius: gameScale(29),
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: SCREEN_WIDTH * 0.35,
-    minHeight: SCREEN_WIDTH * 0.15,
-    borderTopWidth: 2,
+    minWidth: gameScale(137),
+    minHeight: gameScale(59),
+    borderTopWidth: gameScale(2),
     borderTopColor: '#f1f1f1a6',
-    borderLeftWidth: 1,
+    borderLeftWidth: gameScale(1),
     borderLeftColor: '#22c5baaf',
-    borderBottomWidth: 3,
+    borderBottomWidth: gameScale(3),
     borderBottomColor: '#f1f1f1a6',
-    borderRightWidth: 2,
+    borderRightWidth: gameScale(2),
     borderRightColor: '#22c5baaf',
   },
-
   playButtonText: {
-    fontSize: SCREEN_WIDTH * 0.1,
+    fontSize: gameScale(39),
     color: '#ffffffe0',
     fontFamily: 'FunkySign',
     textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+    textShadowOffset: { width: gameScale(1), height: gameScale(1) },
+    textShadowRadius: gameScale(3),
   },
-
   playButtonPressed: {
     shadowOpacity: 0.3,
-    shadowRadius: 10,
+    shadowRadius: gameScale(10),
     elevation: 15,
   },
-
   showProjectButton: {
-  backgroundColor: '#017252ff', 
-  paddingHorizontal: 5,
-  paddingVertical: 5,
-  borderRadius: 10,
-  borderWidth: 2,
-  borderColor: '#fff',
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.3,
-  shadowRadius: 6,
-  elevation: 8,
-  borderTopWidth: 3,
-  borderTopColor: '#01142bff',
-  borderLeftWidth: 2,
-  borderLeftColor: '#088486ff',
-  borderBottomWidth: 4,
-  borderBottomColor: '#01142bff',
-  borderRightWidth: 3,
-  borderRightColor: '#088486ff',
-  marginBottom: 10,
-},
+    backgroundColor: '#017252ff',
+    paddingHorizontal: gameScale(5),
+    paddingVertical: gameScale(5),
+    borderRadius: gameScale(10),
+    borderWidth: gameScale(2),
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: gameScale(4) },
+    shadowOpacity: 0.3,
+    shadowRadius: gameScale(6),
+    elevation: 8,
+    borderTopWidth: gameScale(3),
+    borderTopColor: '#01142bff',
+    borderLeftWidth: gameScale(2),
+    borderLeftColor: '#088486ff',
+    borderBottomWidth: gameScale(4),
+    borderBottomColor: '#01142bff',
+    borderRightWidth: gameScale(3),
+    borderRightColor: '#088486ff',
+    marginBottom: gameScale(10),
+  },
   showProjectText: {
     color: '#fff',
-    fontSize: SCREEN_WIDTH * 0.03,
+    fontSize: gameScale(12),
     fontFamily: 'MusicVibes',
     textAlign: 'center',
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   webviewContainer: {
-    width: SCREEN_WIDTH * 0.9,
-    height: SCREEN_HEIGHT * 0.7,
+    width: gameScale(351),
+    height: gameScale(591),
     backgroundColor: '#fff',
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: gameScale(8),
+    borderWidth: gameScale(1),
     borderColor: '#e9ecef',
     overflow: 'hidden',
     position: 'relative',
@@ -1483,25 +1415,24 @@ const styles = StyleSheet.create({
   },
   closeWebViewButton: {
     position: 'absolute',
-    top: 2,
-    right: 2,
+    top: gameScale(2),
+    right: gameScale(2),
     backgroundColor: '#ef4444',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 100,
+    paddingHorizontal: gameScale(15),
+    paddingVertical: gameScale(10),
+    borderRadius: gameScale(100),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: gameScale(2) },
     shadowOpacity: 0.3,
-    shadowRadius: 4,
+    shadowRadius: gameScale(4),
     elevation: 5,
   },
   closeWebViewText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: gameScale(12),
     fontFamily: 'DynaPuff',
     fontWeight: 'bold',
   },
-  
 });
 
 export default LevelModal;

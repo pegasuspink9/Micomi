@@ -5,7 +5,7 @@ import DocumentQuestion from './Component/DocumentQuestion';
 import { renderHighlightedText } from './utils/syntaxHighligther';
 import { scrollToNextBlank, calculateGlobalBlankIndex } from './utils/blankHelper';
 import { scale, RESPONSIVE, scaleWidth, scaleHeight, wp, hp } from '../../Responsiveness/gameResponsive';
-
+import { soundManager } from '../Sounds/UniversalSoundManager';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -93,6 +93,7 @@ const renderSyntaxHighlightedLine = (line, lineIndex) => {
                 key={`blank-${blanksBeforeCurrent + partIndex}`}
                 onPress={(e) => {
                   e.stopPropagation();
+                  soundManager.playBlankTapSound(1.0);
                   if (onBlankPress) onBlankPress(blanksBeforeCurrent + partIndex);
                 }}
                 ref={(ref) => {

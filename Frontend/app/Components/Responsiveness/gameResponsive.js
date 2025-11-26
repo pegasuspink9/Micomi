@@ -4,12 +4,18 @@ const { width, height } = Dimensions.get('window');
 
 //  Base design dimensions (iPhone 12/13 as reference)
 const BASE_WIDTH = 390;
-const BASE_HEIGHT = 844;
+export const BASE_HEIGHT = 844;
 
 //  Calculate scale ratios
 const widthRatio = width / BASE_WIDTH;
 const heightRatio = height / BASE_HEIGHT;
 const minRatio = Math.min(widthRatio, heightRatio);
+
+export const gameScale = (size) => {
+  const newSize = size * minRatio;
+  return Math.round(PixelRatio.roundToNearestPixel(newSize));
+};
+
 
 //  Universal scaling function - maintains aspect ratio
 export const scale = (size) => {
@@ -178,6 +184,7 @@ export const layoutHelpers = {
 
 export default {
   scale,
+  gameScale,
   scaleWidth,
   scaleHeight,
   scaleFont,

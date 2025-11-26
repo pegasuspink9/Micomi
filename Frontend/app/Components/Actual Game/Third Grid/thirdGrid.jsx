@@ -5,6 +5,7 @@ import AnswerGrid from './components/AnswerGrid';
 import GameButton from './components/GameButtons';
 import PotionGrid from './components/Potions/Potions';
 import { scale, RESPONSIVE, wp, hp } from '../../Responsiveness/gameResponsive';
+import { soundManager } from '../Sounds/UniversalSoundManager';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -121,6 +122,7 @@ const ThirdGrid = ({
   const [potionUsed, setPotionUsed] = useState(false);
   
   const togglePotions = useCallback(() => {
+    soundManager.playGameButtonTapSound();
     setShowPotions(!showPotions);
   }, [showPotions]);
 
@@ -140,6 +142,7 @@ const ThirdGrid = ({
   }, [currentQuestion?.id]);
 
   const handleRunPress = useCallback(() => {
+    soundManager.playGameButtonTapSound();
     setRunDisabled(true); 
     if (selectedPotion) {
       setPotionUsed(true); 
@@ -201,6 +204,7 @@ const ThirdGrid = ({
 
 
   const handleClearAll = useCallback(() => {
+    soundManager.playGameButtonTapSound();
     setSelectedAnswers([]); 
     setSelectedBlankIndex(0);
   }, [setSelectedAnswers, setSelectedBlankIndex]);

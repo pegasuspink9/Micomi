@@ -8,7 +8,7 @@ import {
   Animated,
   Text,
 } from 'react-native';
-
+import {soundManager} from '../Sounds/UniversalSoundManager';
 import { scale, hp, wp } from '../../Responsiveness/gameResponsive';
 
 const PLACEHOLDER_IMAGE = '';
@@ -123,6 +123,8 @@ const Card = ({
       clearTimeout(autoCloseTimer);
       setAutoCloseTimer(null);
     }
+
+    soundManager.playCardFlipSound(1.0);
 
     Animated.sequence([
       Animated.sequence([
