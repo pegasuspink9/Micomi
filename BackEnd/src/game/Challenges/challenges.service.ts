@@ -730,12 +730,16 @@ export const submitChallengeService = async (
 
   if (questionType === "HTML") {
     gameplay_audio =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Greenland.mp3";
+      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Boss.ogg";
   } else if (questionType === "CSS") {
     gameplay_audio =
       "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Lavaland.mp3";
   } else if (questionType === "JavaScript") {
-    gameplay_audio = "winter gameplay audio here";
+    gameplay_audio =
+      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Snowland.mp3";
+  } else {
+    gameplay_audio =
+      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Autumnland.mp3";
   }
 
   const isNewBonusRound =
@@ -830,7 +834,7 @@ export const submitChallengeService = async (
 
   if (!isCorrect) {
     enemy_attack_audio =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/All_Enemy_Attack.wav";
+      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/All%20Universal%20Enemy%20Attack.wav";
   }
 
   if (fightResult.status !== "in_progress") {
