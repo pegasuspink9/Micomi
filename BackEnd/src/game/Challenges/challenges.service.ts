@@ -726,6 +726,18 @@ export const submitChallengeService = async (
 
   const questionType = level.map.map_name;
 
+  let gameplay_audio = "";
+
+  if (questionType === "HTML") {
+    gameplay_audio =
+      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Greenland.mp3";
+  } else if (questionType === "CSS") {
+    gameplay_audio =
+      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Lavaland.mp3";
+  } else if (questionType === "JavaScript") {
+    gameplay_audio = "winter gameplay audio here";
+  }
+
   const isNewBonusRound =
     freshProgress!.enemy_hp <= 0 && freshProgress!.player_hp > 0;
 
@@ -861,6 +873,7 @@ export const submitChallengeService = async (
     enemy_attack_audio,
     character_attack_audio,
     death_audio,
+    gameplay_audio,
   };
 };
 

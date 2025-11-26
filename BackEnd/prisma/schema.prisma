@@ -43,7 +43,7 @@ model Lesson {  //Micomi level
 model Level {
   level_id             Int                 @id @default(autoincrement())
   map_id               Int
-  level_number         Int
+  level_number         Int       
   content              String
   is_unlocked          Boolean             @default(false)
   feedback_message     String
@@ -52,8 +52,6 @@ model Level {
   level_title          String?
   enemy_id             Int?
   boss_level_expected_output  Json?   @default("[]")    
-
-  player_id            Int?
 
   challenges           Challenge[]
   lessons              Lesson[]
