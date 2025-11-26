@@ -33,8 +33,6 @@ const PHRASE_AUDIO: Record<string, string> = {
     "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Correct%20Answer!/No_Stopping_You_fremig.wav",
   "Record streak":
     "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Correct%20Answer!/Record_Streak_ahsmyn.wav",
-  "cant be stopped":
-    "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Correct%20Answer!/Can_t_Be_Stopped_qkq4if.wav",
   //correct answer base
   "Great job":
     "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Correct%20Answer!/Great_Job_pq4o7t.wav",
@@ -294,8 +292,6 @@ const PHRASE_AUDIO: Record<string, string> = {
     "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Wrong%20Answers!/Fallen_in_Battle_u7dfkd.wav",
   "Your adventure is over":
     "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Wrong%20Answers!/Your_Adventure_is_Over_vo6gpv.wav",
-  "met their end":
-    "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Wrong%20Answers!/Met_Their_End_qn2tij.wav",
   "Silence falls on":
     "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Wrong%20Answers!/Silence_Falls_On_slnxqc.wav",
   "No more fights":
@@ -310,8 +306,6 @@ const PHRASE_AUDIO: Record<string, string> = {
     "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Wrong%20Answers!/Until_Next_Time_egj3ra.wav",
   "Game over":
     "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Wrong%20Answers!/Game_Over_wis8iw.wav",
-  "is no more":
-    "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Wrong%20Answers!/Is_No_More_poxw3h.wav",
   "The final breath":
     "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/In%20Game/Wrong%20Answers!/The_Final_Breath_jemyrw.wav",
 
@@ -372,7 +366,6 @@ export const generateDynamicMessage = (
       `No stopping you, ${characterName}!`,
       `Blazing trail, ${characterName}!`,
       `Record streak, ${characterName}!`,
-      `${characterName} can't be stopped!`,
     ],
     quick: [
       `Lightning fast, ${characterName}!`,
@@ -531,7 +524,6 @@ export const generateDynamicMessage = (
       `Rest in peace, ${characterName}.`,
       `Fallen in battle, ${characterName}.`,
       `Your adventure is over.`,
-      `${characterName} met their end.`,
       `Silence falls on ${characterName}.`,
       `No more fights, ${characterName}.`,
       `Perished by ${enemyName}'s hand.`,
@@ -539,7 +531,6 @@ export const generateDynamicMessage = (
       `Darkness consumes ${characterName}.`,
       `Until next time, ${characterName}.`,
       `Game over, ${characterName}.`,
-      `${characterName} is no more.`,
       `The final breath, ${characterName}.`,
     ],
     bonus: [

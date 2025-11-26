@@ -41,6 +41,7 @@ export interface SubmitChallengeServiceResult {
   fightResult: FightResult | null;
   message: string;
   audio: string[];
+  use_potion_audio?: string;
   nextChallenge: unknown | null;
 }
 
