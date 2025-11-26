@@ -226,6 +226,7 @@ model Character {
   character_avatar  String?           //character icon
   character_image_display   String?   
   hero_lottie       String?
+  character_image_select String?
 
   //is_range for ShiShi and Ryron
   is_range         Boolean?          @default(false)
