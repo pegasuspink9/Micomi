@@ -578,7 +578,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     versus_background =
       "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Versus%20Maps/Green.png";
     gameplay_audio =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Greenland.mp3";
+      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Boss.ogg";
   } else if (questionType === "CSS") {
     versus_background =
       "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Versus%20Maps/Lava.png";
@@ -587,9 +587,13 @@ export const enterLevel = async (playerId: number, levelId: number) => {
   } else if (questionType === "JavaScript") {
     versus_background =
       "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Versus%20Maps/Winter.png";
+    gameplay_audio =
+      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Snowland.mp3";
   } else {
     versus_background =
       "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Versus%20Maps/Autumn.jpg";
+    gameplay_audio =
+      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Autumnland.mp3";
   }
 
   return {
