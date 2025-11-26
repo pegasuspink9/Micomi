@@ -11,9 +11,8 @@ import CombatVSModal from './Components/Actual Game/Game Display Entrance/GameDi
 import GameOverModal from './Components/GameOver And Win/GameOver';
 import LevelCompletionModal from './Components/GameOver And Win/LevelCompletionModal';
 import { soundManager } from './Components/Actual Game/Sounds/UniversalSoundManager';
+import { gameScale } from './Components/Responsiveness/gameResponsive';
 
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function GamePlay() {
   const router = useRouter();
@@ -24,9 +23,7 @@ export default function GamePlay() {
   const levelId = parseInt(params.levelId);
   const levelData = params.levelData ? JSON.parse(params.levelData) : null;
 
-  
-  const [thirdGridHeight, setThirdGridHeight] = useState(SCREEN_HEIGHT * 0.10);
-
+  const [thirdGridHeight, setThirdGridHeight] = useState(gameScale(844 * 0.10));
   //  Simplified card state - only track current image URL
   const [showAttackCard, setShowAttackCard] = useState(false);
   const [previousImageUrl, setPreviousImageUrl] = useState(null);
@@ -864,7 +861,7 @@ const styles = StyleSheet.create({
   },
 
   screenPlayContainer: {
-    height: SCREEN_HEIGHT * 0.38, 
+    height: gameScale(844 * 0.38), 
   },
 
   gameQuestionsContainer: {
@@ -873,7 +870,7 @@ const styles = StyleSheet.create({
   },
 
    gameQuestionsContainerExpanded: {
-    maxHeight: SCREEN_HEIGHT * 0.75, 
+    maxHeight: gameScale(844 * 0.75), 
   },
 
   centerContent: { 
@@ -884,217 +881,216 @@ const styles = StyleSheet.create({
   
   loadingText: { 
     color: '#fff', 
-    fontSize: 18, 
-    marginTop: 10, 
+    fontSize: gameScale(18), 
+    marginTop: gameScale(10), 
     fontWeight: '600' 
   },
   
   errorText: { 
     color: '#ff6b6b', 
-    fontSize: 18, 
+    fontSize: gameScale(18), 
     textAlign: 'center', 
-    marginHorizontal: 20, 
+    marginHorizontal: gameScale(20), 
     fontWeight: '600' 
   },
   
   retryText: { 
     color: '#fff', 
-    fontSize: 16, 
+    fontSize: gameScale(16), 
     fontWeight: 'bold', 
     textAlign: 'center' 
   },
   
   exitText: { 
     color: '#fff', 
-    fontSize: 16, 
+    fontSize: gameScale(16), 
     fontWeight: 'bold', 
     textAlign: 'center' 
   },
   
   retryButton: {
     backgroundColor: '#4dabf7',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 10,
-    marginTop: 15,
+    paddingHorizontal: gameScale(20),
+    paddingVertical: gameScale(10),
+    borderRadius: gameScale(10),
+    marginTop: gameScale(15),
   },
   
   exitButton: {
     backgroundColor: '#ff6b6b',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 10,
-    marginTop: 10,
+    paddingHorizontal: gameScale(20),
+    paddingVertical: gameScale(10),
+    borderRadius: gameScale(10),
+    marginTop: gameScale(10),
   },
 
   exitGameButton: {
     position: 'absolute',
-    top: 20, 
-    left: 20,
-    width: 40,
-    height: 40,
+    top: gameScale(20), 
+    left: gameScale(20),
+    width: gameScale(40),
+    height: gameScale(40),
     backgroundColor: 'rgba(0,0,0,0.7)',
-    borderRadius: 20,
+    borderRadius: gameScale(20),
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
-    borderWidth: 1,
+    borderWidth: gameScale(1),
     borderColor: '#4dabf7',
   },
   
   exitGameText: {
     color: '#fff',
-    fontSize: 20,
+    fontSize: gameScale(20),
     fontWeight: 'bold',
   },
 
   // Debug styles
   debugToggle: { 
     position: 'absolute', 
-    top: 20, //  Adjusted for status bar hidden
-    right: 10, 
+    top: gameScale(20),
+    right: gameScale(10), 
     backgroundColor: 'rgba(0,0,0,0.8)', 
-    paddingHorizontal: 12, 
-    paddingVertical: 8, 
-    borderRadius: 20, 
-    borderWidth: 1, 
+    paddingHorizontal: gameScale(12), 
+    paddingVertical: gameScale(8), 
+    borderRadius: gameScale(20), 
+    borderWidth: gameScale(1), 
     borderColor: '#4dabf7',
     zIndex: 999,
   },
   debugToggleText: { 
     color: '#4dabf7', 
-    fontSize: 12, 
+    fontSize: gameScale(12), 
     fontWeight: 'bold' 
   },
   debugPanel: { 
     position: 'absolute', 
-    top: 20, //  Adjusted for status bar hidden
-    left: 10, 
-    right: 10, 
-    bottom: 100, 
+    top: gameScale(20),
+    left: gameScale(10), 
+    right: gameScale(10), 
+    bottom: gameScale(100), 
     backgroundColor: 'rgba(0,0,0,0.95)', 
-    borderRadius: 10, 
-    borderWidth: 1, 
+    borderRadius: gameScale(10), 
+    borderWidth: gameScale(1), 
     borderColor: '#4dabf7' 
   },
   debugHeader: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
-    padding: 12, 
-    borderBottomWidth: 1, 
+    padding: gameScale(12), 
+    borderBottomWidth: gameScale(1), 
     borderBottomColor: '#333' 
   },
   debugTitle: { 
     color: '#fff', 
-    fontSize: 16, 
+    fontSize: gameScale(16), 
     fontWeight: 'bold' 
   },
   debugClose: { 
-    padding: 4 
+    padding: gameScale(4) 
   },
   debugCloseText: { 
     color: '#ff6b6b', 
-    fontSize: 16, 
+    fontSize: gameScale(16), 
     fontWeight: 'bold' 
   },
   debugScrollView: { 
     flex: 1, 
-    padding: 12 
+    padding: gameScale(12) 
   },
   debugText: { 
     color: '#fff', 
-    fontSize: 12, 
-    lineHeight: 18 
+    fontSize: gameScale(12), 
+    lineHeight: gameScale(18) 
   },
 
   progressContainer: {
-    marginTop: 20,
+    marginTop: gameScale(20),
     alignItems: 'center',
     width: '80%',
   },
   
   progressBar: {
     width: '100%',
-    height: 8,
+    height: gameScale(8),
     backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 4,
+    borderRadius: gameScale(4),
     overflow: 'hidden',
   },
   
   progressFill: {
     height: '100%',
     backgroundColor: '#4dabf7',
-    borderRadius: 4,
+    borderRadius: gameScale(4),
   },
   
   progressText: {
     color: '#fff',
-    fontSize: 14,
-    marginTop: 8,
+    fontSize: gameScale(14),
+    marginTop: gameScale(8),
     textAlign: 'center',
   },
 
    downloadContainer: {
     alignItems: 'center',
     width: '90%',
-    paddingHorizontal: 20,
+    paddingHorizontal: gameScale(20),
   },
   
   progressSection: {
-    marginTop: 20,
+    marginTop: gameScale(20),
     alignItems: 'center',
     width: '100%',
   },
   
   progressLabel: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: gameScale(16),
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: gameScale(8),
     textAlign: 'center',
   },
   
   progressBar: {
     width: '100%',
-    height: 12,
+    height: gameScale(12),
     backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 6,
+    borderRadius: gameScale(6),
     overflow: 'hidden',
-    marginBottom: 8,
+    marginBottom: gameScale(8),
   },
   
   progressFill: {
     height: '100%',
     backgroundColor: '#4CAF50',
-    borderRadius: 6,
-    transition: 'width 0.3s ease',
+    borderRadius: gameScale(6),
   },
   
   progressPercentage: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: gameScale(14),
     fontWeight: 'bold',
   },
   
   currentAnimationText: {
     color: '#4dabf7',
-    fontSize: 12,
-    marginBottom: 4,
+    fontSize: gameScale(12),
+    marginBottom: gameScale(4),
     textAlign: 'center',
   },
   
   currentUrlText: {
     color: '#ffeb3b',
-    fontSize: 10,
-    marginTop: 8,
+    fontSize: gameScale(10),
+    marginTop: gameScale(8),
     textAlign: 'center',
   },
   
   downloadHint: {
     color: '#fff',
-    fontSize: 14,
-    marginTop: 16,
+    fontSize: gameScale(14),
+    marginTop: gameScale(16),
     textAlign: 'center',
     opacity: 0.8,
   },

@@ -13,12 +13,11 @@ import Animated, {
 import { universalAssetPreloader } from '../../../../services/preloader/universalAssetPreloader';
 import { soundManager } from '../../Sounds/UniversalSoundManager';
 import { 
-  scale, 
-  scaleWidth, 
-  scaleHeight,
+  gameScale,
   getDeviceType,
   SCREEN
 } from '../../../Responsiveness/gameResponsive';
+
 
 const Character = ({
   isPaused,
@@ -35,7 +34,7 @@ const Character = ({
   const attackInitiated = useSharedValue(false);
 
   // ========== Animation Configuration ==========
-  const SPRITE_SIZE = useMemo(() => scale(128), []);
+    const SPRITE_SIZE = useMemo(() => gameScale(128), []);
   const SPRITE_COLUMNS = 6;
   const SPRITE_ROWS = 4;
   const TOTAL_FRAMES = 24;
@@ -268,8 +267,8 @@ const Character = ({
 const styles = StyleSheet.create({
   characterContainer: {
     position: 'absolute',
-    left: scaleWidth(-8),
-    top: scaleHeight(133),
+    left: gameScale(-8),
+    top: gameScale(133),
     justifyContent: 'flex-start',
     alignItems: 'center',
     zIndex: 10,

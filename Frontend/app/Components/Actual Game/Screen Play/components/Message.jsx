@@ -1,13 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Animated, Text } from 'react-native';
-import { 
-  scale, 
-  scaleWidth, 
-  scaleHeight, 
-  scaleFont, 
-  RESPONSIVE, 
-  SCREEN 
-} from '../../../Responsiveness/gameResponsive';
+import { gameScale } from '../../../Responsiveness/gameResponsive';
 
 export default function Message({
   message = '',
@@ -103,7 +96,7 @@ export default function Message({
       opacity.setValue(0);
       scaleAnim.setValue(1.5);
       translateY.setValue(0);
-      translateX.setValue(scaleWidth(400));
+      translateX.setValue(gameScale(400));
       rotateAnim.setValue(0);
       glowAnim.setValue(0);
 
@@ -116,7 +109,7 @@ export default function Message({
         // High-speed slide with overshoot
         Animated.sequence([
           Animated.timing(translateX, {
-            toValue: -scaleWidth(30),
+            toValue: gameScale(-30),
             duration: 200,
             useNativeDriver: true,
           }),
@@ -156,7 +149,7 @@ export default function Message({
           useNativeDriver: true,
         }),
         Animated.timing(translateX, {
-          toValue: -scaleWidth(300),
+          toValue: gameScale(-300),
           duration: 200,
           useNativeDriver: true,
         }),
@@ -176,7 +169,7 @@ export default function Message({
     show: () => {
       opacity.setValue(0);
       scaleAnim.setValue(0.2);
-      translateY.setValue(scaleHeight(100));
+      translateY.setValue(gameScale(100));
       translateX.setValue(0);
       rotateAnim.setValue(0);
       glowAnim.setValue(0);
@@ -186,7 +179,7 @@ export default function Message({
         // Drop and bounce impact
         Animated.sequence([
           Animated.timing(translateY, {
-            toValue: scaleHeight(10),
+            toValue: gameScale(10),
             duration: 150,
             useNativeDriver: true,
           }),
@@ -246,7 +239,7 @@ export default function Message({
           useNativeDriver: true,
         }),
         Animated.timing(translateY, {
-          toValue: -scaleHeight(80),
+          toValue: gameScale(80),
           duration: 200,
           useNativeDriver: true,
         }),
@@ -380,23 +373,31 @@ export default function Message({
 const styles = StyleSheet.create({
   viewport: {
     position: 'absolute',
-    top: scaleHeight(80),
+    top: gameScale(80),
     left: 0,
     right: 0,
     alignItems: 'center',
     pointerEvents: 'none',
     zIndex: 999,
   },
-
-
-
+  badge: {
+    borderRadius: gameScale(12),
+    paddingHorizontal: gameScale(20),
+    paddingVertical: gameScale(12)
+  },
+  glowEffect: {
+    position: 'absolute',
+    width: gameScale(100),
+    height: gameScale(50),
+    borderRadius: gameScale(25)
+  },
   messageText: {
     color: '#094385ff',
-    fontSize: RESPONSIVE.fontSize.lg,
+    fontSize: gameScale(20),
     textAlign: 'center',
-    lineHeight: scaleFont(22),
+    lineHeight: gameScale(22),
     fontFamily: 'Oups',
-    textShadowRadius: scale(10),
-    letterSpacing: scale(1), 
+    textShadowRadius: gameScale(10),
+    letterSpacing: gameScale(1), 
   },
 });

@@ -13,9 +13,7 @@ import Animated, {
 import { universalAssetPreloader } from '../../../../services/preloader/universalAssetPreloader';
 import { soundManager } from '../../Sounds/UniversalSoundManager';
 import { 
-  scale, 
-  scaleWidth, 
-  scaleHeight,
+  gameScale,
   getDeviceType,
   SCREEN
 } from '../../../Responsiveness/gameResponsive';
@@ -43,7 +41,7 @@ const EnemyCharacter = ({
   const wasBonusRound = useRef(false);
 
   // ========== Animation Configuration ==========
-  const SPRITE_SIZE = useMemo(() => scale(150), []);
+  const SPRITE_SIZE = useMemo(() => gameScale(150), []);
   const SPRITE_COLUMNS = 6;
   const SPRITE_ROWS = 4;
   const TOTAL_FRAMES = 24;
@@ -346,8 +344,8 @@ const EnemyCharacter = ({
 const styles = StyleSheet.create({
   enemyContainer: {
     position: 'absolute',
-    right: scaleWidth(-8),
-    top: scaleHeight(126),
+    right: gameScale(-8),
+    top: gameScale(126),
     justifyContent: 'flex-start',
     alignItems: 'center',
   },

@@ -10,6 +10,7 @@ import Animated, {
   cancelAnimation,
 } from 'react-native-reanimated';
 import { hp } from '../../../Responsiveness/gameResponsive';
+import { gameScale } from '../../../Responsiveness/gameResponsive';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -94,11 +95,12 @@ return (
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: 'transparent', // ✅ Changed to transparent to allow combat background
+   container: {
+    backgroundColor: 'transparent', 
     position: 'relative',
     overflow: 'hidden',
-    minHeight: hp(34), 
+    // ✅ FIXED: Using gameScale for a consistent height based on the base design.
+    minHeight: gameScale(287), 
   },
   
   spriteContainer: {
@@ -108,7 +110,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     overflow: 'hidden', 
-    zIndex: 1, // Above background
+    minHeight: gameScale(287),
   },
   
   

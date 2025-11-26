@@ -1,16 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Image, Dimensions} from 'react-native';
+import { View, Text, StyleSheet, Animated, Image} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { 
-  scale, 
-  scaleWidth, 
-  scaleHeight, 
-  scaleFont, 
-  RESPONSIVE, 
-  layoutHelpers
-} from '../../../Responsiveness/gameResponsive';
-
-const { width, height } = Dimensions.get('window');
+import { gameScale,scale } from '../../../Responsiveness/gameResponsive';
 
 const Life = ({
   health = 0,
@@ -243,54 +234,58 @@ const Life = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: scaleHeight(11),
-    maxWidth: scaleWidth(156),
+    top: gameScale(11),
+    maxWidth: gameScale(156),
     zIndex: 10,
   },
   
   leftPosition: {
-    left: scaleWidth(8),
+    left: gameScale(8),
     alignItems: 'flex-start',
   },
   
   rightPosition: {
-    right: scaleWidth(8),
+    right: gameScale(8),
     alignItems: 'flex-end',
   },
 
   healthBarContainer: {
-    height: layoutHelpers.healthBarHeight,
-    minWidth: layoutHelpers.healthBarMinWidth,
-    borderRadius: RESPONSIVE.borderRadius.lg,
-    borderWidth: scale(2),
+    height: gameScale(20),
+    minWidth: gameScale(100),
+    borderRadius: gameScale(12),
+    borderWidth: gameScale(2),
     backgroundColor: 'rgba(0, 0, 0, 1)',
     overflow: 'visible',
-    ...RESPONSIVE.shadow.medium,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: gameScale(4) },
+    shadowOpacity: 0.2,
+    shadowRadius: gameScale(8),
+    elevation: 4,
     position: 'relative',
-    marginTop: RESPONSIVE.margin.sm - 8
+    marginTop: 0,
   },
 
   healthBarTrack: {
     flex: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: RESPONSIVE.borderRadius.md,
+    borderRadius: gameScale(8),
     position: 'relative',
     overflow: 'hidden',
   },
 
   healthBarFillContainer: {
     height: '100%',
-    borderRadius: RESPONSIVE.borderRadius.md,
+    borderRadius: gameScale(8),
     overflow: 'hidden',
   },
 
   healthBarFill: {
     flex: 1,
-    borderRadius: RESPONSIVE.borderRadius.md,
+    borderRadius: gameScale(8),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: scale(1) },
+    shadowOffset: { width: 0, height: gameScale(1) },
     shadowOpacity: 0.2,
-    shadowRadius: scale(2),
+    shadowRadius: gameScale(2),
     elevation: 2,
   },
 
@@ -306,12 +301,12 @@ const styles = StyleSheet.create({
   },
 
   healthText: {
-    fontSize: RESPONSIVE.fontSize.xs,
+    fontSize: gameScale(10),
     fontFamily: 'DynaPuff',
     color: '#FFF',
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: scale(1), height: scale(1) },
-    textShadowRadius: scale(2),
+    textShadowOffset: { width: gameScale(1), height: gameScale(1) },
+    textShadowRadius: gameScale(2),
   },
 
   criticalWarning: {
@@ -321,20 +316,20 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: '#F44336',
-    borderRadius: RESPONSIVE.borderRadius.md,
+    borderRadius: gameScale(8),
     zIndex: 3,
   },
 
   glowEffect: {
     position: 'absolute',
-    top: scale(-4),
-    left: scale(-4),
-    right: scale(-4),
-    bottom: scale(-4),
-    borderRadius: RESPONSIVE.borderRadius.xl,
+    top: gameScale(-4),
+    left: gameScale(-4),
+    right: gameScale(-4),
+    bottom: gameScale(-4),
+    borderRadius: gameScale(16),
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 1,
-    shadowRadius: scale(8),
+    shadowRadius: gameScale(8),
     elevation: 8,
     zIndex: -1,
   },
@@ -348,45 +343,49 @@ const styles = StyleSheet.create({
   },
 
   lifeContainer: {
-    top: RESPONSIVE.margin.sm,
+    top: gameScale(8),
   },
 
   avatarContainer: {
     position: 'absolute',
-    top: scale(-2),
+    top: gameScale(-2),
     zIndex: 20,
   },
 
   leftHealthBarMargin: {
-    marginLeft: layoutHelpers.avatarMedium + -20,
+    marginLeft: gameScale(28),
     marginRight: 0,
   },
 
   rightHealthBarMargin: {
     marginLeft: 0,
-    marginRight: layoutHelpers.avatarMedium + -20,
+    marginRight: gameScale(28),
   },
 
   avatarCircle: {
-    width: layoutHelpers.avatarMedium,
-    height: layoutHelpers.avatarMedium,
-    borderRadius: RESPONSIVE.borderRadius.round,
-    borderWidth: scale(2),
+    width: gameScale(48),
+    height: gameScale(48),
+    borderRadius: gameScale(50),
+    borderWidth: gameScale(2),
     borderColor: '#FFFFFF',
     overflow: 'hidden',
     backgroundColor: 'rgba(0, 0, 0, 1)',
-    ...RESPONSIVE.shadow.light,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: gameScale(2) },
+    shadowOpacity: 0.1,
+    shadowRadius: gameScale(4),
+    elevation: 2,
   },
 
   avatarImage: {
-    height: height * 0.1,
-    
+    height: gameScale(84),
   },
 
   avatarText: {
-    fontSize: RESPONSIVE.fontSize.sm,
+    fontSize: gameScale(12),
     color: '#FFF',
   },
 });
+
 
 export default Life;
