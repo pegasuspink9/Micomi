@@ -75,6 +75,7 @@ export interface SubmitChallengeControllerResult
   enemy_attack_audio?: string | null;
   character_attack_audio?: string | null;
   death_audio?: string | null;
+  gameplay_audio?: string | null;
 }
 
 export interface LevelStatus {
