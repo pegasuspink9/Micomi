@@ -170,7 +170,7 @@ const Character = ({
       }
 
       frameIndex.value = withRepeat(withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false);
-      positionX.value = withTiming(ATTACK_RUN_DISTANCE, { duration: 600, easing: Easing.inOut(Easing.ease) }, (finished) => {
+      positionX.value = withTiming(ATTACK_RUN_DISTANCE, { duration: 400, easing: Easing.in(Easing.quad) }, (finished) => {
         if (!finished) return;
         cancelAnimation(frameIndex);
         frameIndex.value = 0;

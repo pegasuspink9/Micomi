@@ -176,8 +176,6 @@ const EnemyCharacter = ({
 
   // ========== Main Animation Effect ==========
   useEffect(() => {
-    // ✅ FIXED: This guard clause is the key. It prevents re-renders from
-    // interrupting an attack sequence that is already in progress.
     if (currentState === 'attack' && attackInitiated.value) {
       return;
     }
@@ -223,7 +221,7 @@ const EnemyCharacter = ({
         return;
       }
 
-      const RUN_DURATION = 600;
+      const RUN_DURATION = 400;
       const ATTACK_DURATION = ANIMATION_DURATIONS.attack;
 
       positionX.value = 0; 
@@ -233,7 +231,7 @@ const EnemyCharacter = ({
         withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false
       );
 
-      positionX.value = withTiming(RUN_DISTANCE, { duration: RUN_DURATION, easing: Easing.inOut(Easing.ease) }, (finished) => {
+       positionX.value = withTiming(RUN_DISTANCE, { duration: RUN_DURATION, easing: Easing.in(Easing.quad) }, (finished) => {
         if (!finished) return;
 
         cancelAnimation(frameIndex);
