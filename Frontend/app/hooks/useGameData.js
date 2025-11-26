@@ -545,13 +545,16 @@ export const useGameData = (playerId, initialLevelId) => {
 
       console.log('Potion used, updating game state directly...');
 
+       const submissionResultFromServer = updatedState.submissionResult;
+
+      const finalSubmissionResult = {
+        ...submissionResultFromServer,
+        isPotionUsage: true,
+      };
+
       setGameState(prevState => ({
         ...updatedState,
-        submissionResult: {
-          ...updatedState.submissionResult,
-          isCorrect: true,
-          isPotionUsage: true,
-        },
+         submissionResult: finalSubmissionResult,
       }));
 
       setPotions(prev => prev.map(potion => 

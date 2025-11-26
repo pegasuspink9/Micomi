@@ -68,7 +68,7 @@ const ThirdGrid = ({
   const getPotionBorderColor = (potionName) => {
     switch (potionName) {
       case 'Health':
-        return 'rgba(227, 140, 140, 1)';
+        return 'rgba(130, 0, 0, 1)';
       case 'Strong':
         return 'rgba(197, 197, 96, 1)';
       case 'Hint':
