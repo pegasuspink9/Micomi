@@ -455,66 +455,43 @@ useEffect(() => {
         : characterAnimations.character_attack;
 
       if (attackUrl) {
-        console.log(`⚔️ Correct answer - character has attack URL, will attack enemy`);
+        console.log(`⚔️ Correct answer - character will attack`);
         setCharacterAnimationState('attack');
+        setIsPlayingSubmissionAnimation(true); // Lock state during attack.
       } else {
-        console.log(`⚔️ Correct answer but no attack URL available - staying idle`);
+        console.log(`⚔️ Correct answer but no attack animation available`);
         setCharacterAnimationState('idle');
       }
       
-      //  Check if enemy has dies animation from API
-      const enemyDiesUrl = submission.fightResult?.enemy?.enemy_dies || gameState?.enemy?.enemy_dies;
-      
-      if (enemyDiesUrl) {
-        console.log('🦹 Enemy dies animation provided by API - enemy will die');
+      // Delay the enemy's reaction to sync with the character's attack impact.
+      const hurtDelay = 800; // 800ms delay.
+      setTimeout(() => {
+        console.log(`💥 Enemy reaction delayed by ${hurtDelay}ms`);
         setEnemyAnimationStates(prev => prev.map(() => 'hurt'));
-      } else {
-        console.log('🦹 No enemy dies animation - enemy gets hurt only (bonus round scenario)');
-        setEnemyAnimationStates(prev => prev.map(() => 'hurt'));
-      }
-      setIsPlayingSubmissionAnimation(true);
+      }, hurtDelay);
       
     } else if (submission.isCorrect === false) {
       const enemyHealth = submission.fightResult?.enemy?.enemy_health ?? 0;
       
-      console.log(`❌ Wrong answer - checking enemy health for counter attack`);
-      console.log(`Enemy health: ${enemyHealth}`);
+      console.log(`❌ Wrong answer - enemy will counter attack`);
       
-      //  Enemy counter-attacks only if health > 0
+      // Enemy begins their attack immediately.
       if (enemyHealth > 0) {
-        console.log(`🦹 Enemy health > 0 - enemy counter attacks character`);
         setEnemyAnimationStates(prev => prev.map(() => 'attack'));
       } else {
-        const enemyDiesUrl = submission.fightResult?.enemy?.enemy_dies || gameState?.enemy?.enemy_dies;
-        
-        if (enemyDiesUrl) {
-           console.log(`🦹 Enemy health = 0 (despite wrong answer) - triggering death sequence`);
-           setEnemyAnimationStates(prev => prev.map(() => 'hurt'));
-        } else {
-           console.log(`🦹 Enemy health = 0 - enemy stays idle (already defeated)`);
-           setEnemyAnimationStates(prev => prev.map(() => 'idle'));
-        }
+        // If enemy is already defeated, they can't attack.
+        setEnemyAnimationStates(prev => prev.map(() => 'idle'));
       }
       
-      const characterHurtUrl = submission.fightResult?.character?.character_hurt || gameState?.selectedCharacter?.character_hurt;
-      console.log(`🩸 Character hurt URL available: ${!!characterHurtUrl}`);
-      
-      //  Character gets hurt on wrong answer (stays in place, no attack movement)
-      setCharacterAnimationState('hurt');
+      // Lock the game state to prevent other actions.
       setIsPlayingSubmissionAnimation(true);
       
-      // Check if character has dies animation from API
-      const characterDiesUrl = submission.fightResult?.character?.character_dies;
-      const characterHealth = submission.fightResult?.character?.character_health ?? playerHealth;
-      
-      if (characterDiesUrl && characterHealth <= 0) {
-        console.log('💀 Character dies animation provided by API - character will die');
-        setCharacterAnimationState('hurt'); // hurt first, then dies
-      } else {
-        console.log('🩸 Character gets hurt but survives');
+      // Delay the character's reaction to sync with the enemy's attack impact.
+      const hurtDelay = 800; // 800ms delay to match damage number appearance.
+      setTimeout(() => {
+        console.log(`💥 Character reaction delayed by ${hurtDelay}ms`);
         setCharacterAnimationState('hurt');
-      }
-      setIsPlayingSubmissionAnimation(true);
+      }, hurtDelay);
     }
     return;
   }

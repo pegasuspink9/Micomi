@@ -90,7 +90,7 @@ const EnemyCharacter = ({
     }
 
     if (currentState === 'attack' && attackAudioUrl) {
-      const SOUND_DELAY = 400; 
+      const SOUND_DELAY = 1000; 
       attackSoundTimeoutRef.current = setTimeout(() => {
         soundManager.playCombatSound(attackAudioUrl, 0.2);
       }, SOUND_DELAY);
@@ -195,17 +195,23 @@ const EnemyCharacter = ({
       cancelAnimation(positionX);
       cancelAnimation(opacity);
       cancelAnimation(blinkOpacity);
+
+      blinkOpacity.value = 0;
       return;
     }
     
-    if (currentState !== 'attack') {
+    if (currentState !== 'attack' && currentState !== 'run') {
       attackInitiated.value = false;
     }
     cancelAnimation(frameIndex);
     cancelAnimation(positionX);
     cancelAnimation(opacity);
     cancelAnimation(blinkOpacity);
+    blinkOpacity.value = 0;
     frameIndex.value = 0;
+
+    positionX.value = 0; 
+    opacity.value = 1;
 
     if (config.isCompound && currentState === 'attack') {
       if (attackInitiated.value) return; 
@@ -247,8 +253,6 @@ const EnemyCharacter = ({
       return;
     }
 
-    positionX.value = 0;
-    opacity.value = 1;
 
     if (config.shouldLoop) {
       if (currentState === 'hurt' && isBonusRound) {

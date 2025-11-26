@@ -74,7 +74,7 @@ const Character = ({
   useEffect(() => {
     if (attackSoundTimeoutRef.current) clearTimeout(attackSoundTimeoutRef.current);
     if (currentState === 'attack' && attackAudioUrl) {
-      const SOUND_DELAY = 400; 
+      const SOUND_DELAY = 1000; 
       attackSoundTimeoutRef.current = setTimeout(() => {
         soundManager.playCombatSound(attackAudioUrl);
       }, SOUND_DELAY);
@@ -125,6 +125,7 @@ const Character = ({
 
   // ========== Main Animation Effect ==========
   useEffect(() => {
+    if (currentState === 'run' && attackInitiated.value) return;
     if (currentState === 'attack' && attackInitiated.value) return;
 
     const config = animationConfig;
@@ -138,16 +139,25 @@ const Character = ({
     if (isPaused || !imageReady) {
       cancelAnimation(frameIndex);
       cancelAnimation(positionX);
+      cancelAnimation(blinkOpacity);
+      blinkOpacity.value = 0;
       return;
     }
     
-    if (currentState !== 'attack') attackInitiated.value = false;
+    if (currentState !== 'attack' && currentState !== 'run') attackInitiated.value = false;
 
     cancelAnimation(frameIndex);
     cancelAnimation(positionX);
     cancelAnimation(opacity);
+
+
     cancelAnimation(blinkOpacity);
+    blinkOpacity.value = 0;
     frameIndex.value = 0;
+
+
+    positionX.value = 0; 
+    opacity.value = 1;
 
     // --- COMPOUND ATTACK (RUN -> ATTACK -> RETURN) ---
     if (config.isCompound && currentState === 'attack') {
@@ -158,8 +168,7 @@ const Character = ({
         runOnJS(notifyAnimationComplete)();
         return;
       }
-      positionX.value = 0; 
-      opacity.value = 1;
+
       frameIndex.value = withRepeat(withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false);
       positionX.value = withTiming(ATTACK_RUN_DISTANCE, { duration: 600, easing: Easing.inOut(Easing.ease) }, (finished) => {
         if (!finished) return;
@@ -180,9 +189,9 @@ const Character = ({
     // ✅ ADDED: Specific logic for the "run off-screen" state.
     // --- RUN OFF-SCREEN ---
     if (currentState === 'run' && !config.isCompound) {
+      attackInitiated.value = true; 
       const RUN_AWAY_DISTANCE = SCREEN.width; 
-      positionX.value = 0;
-      opacity.value = 1;
+
       frameIndex.value = withRepeat(withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false);
       positionX.value = withTiming(RUN_AWAY_DISTANCE, { duration: ANIMATION_DURATIONS.run, easing: Easing.linear }, (finished) => {
         if (finished) {
@@ -193,9 +202,6 @@ const Character = ({
       return;
     }
 
-    // --- ALL OTHER ANIMATIONS ---
-    positionX.value = 0;
-    opacity.value = 1;
 
     if (config.shouldLoop) { // Catches 'idle'
       frameIndex.value = withRepeat(withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false);
