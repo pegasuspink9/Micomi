@@ -3,14 +3,12 @@ import { View, Text, ScrollView, StyleSheet, Pressable, Keyboard, Animated } fro
 import Output from '../Output/Output';
 import ExpectedOutput from '../Output/ExpectedOutput';
 import { 
-  scale, 
-  scaleWidth, 
-  scaleHeight, 
-  scaleFont,
-  RESPONSIVE 
+ gameScale
 } from '../../../Responsiveness/gameResponsive';
 import Guide from '../Output/Guide';
 import FileViewer from '../Output/FileViewer';
+
+
 
 const CodeEditor = ({
   currentQuestion,
@@ -104,7 +102,7 @@ const CodeEditor = ({
               if (!lineAnimations.current[lineIndex]) {
                 lineAnimations.current[lineIndex] = {
                   opacity: new Animated.Value(0),
-                  translateY: new Animated.Value(-20),
+                  translateY: new Animated.Value(gameScale(-20)),
                 };
               }
 
@@ -316,19 +314,23 @@ const CodeEditor = ({
 const styles = StyleSheet.create({
   editorContainer: {
     backgroundColor: '#1e1e1e32',
-    borderRadius: RESPONSIVE.borderRadius.lg, 
+    borderRadius: gameScale(12), 
     flex: 1, 
     width: '100%',
     overflow: 'hidden',
-    borderTopWidth: scale(2), //  Responsive
+    borderTopWidth: gameScale(2),
     borderTopColor: '#4a4a4a',
-    borderLeftWidth: scale(2), //  Responsive
+    borderLeftWidth: gameScale(2),
     borderLeftColor: '#3a3a3a',
-    borderBottomWidth: scale(4), //  Responsive
+    borderBottomWidth: gameScale(4),
     borderBottomColor: '#0a0a0a',
-    borderRightWidth: scale(3), //  Responsive
+    borderRightWidth: gameScale(3),
     borderRightColor: '#1a1a1a',
-    ...RESPONSIVE.shadow.heavy, //  Responsive shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: gameScale(8) },
+    shadowOpacity: 0.4,
+    shadowRadius: gameScale(12),
+    elevation: 16,
     minHeight: 0, 
   },
 
@@ -336,63 +338,67 @@ const styles = StyleSheet.create({
     backgroundColor: '#2d2d30',
     flexDirection: 'row',
     alignItems: 'flex-end',
-    paddingHorizontal: RESPONSIVE.margin.md, //  Responsive
-    paddingTop: RESPONSIVE.margin.sm, //  Responsive
+    paddingHorizontal: gameScale(12),
+    paddingTop: gameScale(8),
     paddingBottom: 0,
-    borderTopWidth: scale(1), //  Responsive
+    borderTopWidth: gameScale(1),
     borderTopColor: '#505050',
-    ...RESPONSIVE.shadow.medium, //  Responsive shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: gameScale(4) },
+    shadowOpacity: 0.3,
+    shadowRadius: gameScale(6),
+    elevation: 8,
   },
 
   windowControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: RESPONSIVE.margin.sm, //  Responsive
+    marginBottom: gameScale(8),
   },
 
   windowButton: {
-    width: scale(12), //  Responsive
-    height: scale(12), //  Responsive
-    borderRadius: scale(6), //  Responsive
-    marginRight: RESPONSIVE.margin.sm, //  Responsive
-    borderTopWidth: scale(1), //  Responsive
+    width: gameScale(10),
+    height: gameScale(10),
+    borderRadius: gameScale(6),
+    marginRight: gameScale(8),
+    borderTopWidth: gameScale(1),
     borderTopColor: 'rgba(255, 255, 255, 0.3)',
-    borderBottomWidth: scale(1), //  Responsive
+    borderBottomWidth: gameScale(1),
     borderBottomColor: 'rgba(0, 0, 0, 0.5)',
     shadowColor: '#000',
-    shadowOffset: { width: scale(1), height: scale(2) }, //  Responsive
+    shadowOffset: { width: gameScale(1), height: gameScale(2) },
     shadowOpacity: 0.4,
-    shadowRadius: scale(2), //  Responsive
+    shadowRadius: gameScale(2),
     elevation: 4,
   },
 
   tabsContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    marginLeft: RESPONSIVE.margin.md, 
-    height: scale(32), //  Responsive
+    marginLeft: gameScale(10), 
+    height: gameScale(32),
     flex: 1, 
   },
 
   webTab: {
     backgroundColor: '#3c3c3c',
-    paddingHorizontal: scale(8), // ✅ REDUCED: Less padding for inactive to save space
-    paddingVertical: RESPONSIVE.margin.sm,
-    marginRight: scale(2),
-    borderTopLeftRadius: RESPONSIVE.borderRadius.sm,
-    borderTopRightRadius: RESPONSIVE.borderRadius.sm,
-    borderTopWidth: scale(1),
-    borderLeftWidth: scale(1),
-    borderRightWidth: scale(1),
+    paddingVertical: gameScale(8),
+    paddingHorizontal: gameScale(4),
+    marginRight: gameScale(2),
+    borderTopLeftRadius: gameScale(6),
+    borderTopRightRadius: gameScale(6),
+    borderTopWidth: gameScale(1),
+    borderLeftWidth: gameScale(1),
+    borderRightWidth: gameScale(1),
     borderTopColor: '#555',
     borderLeftColor: '#555',
     borderRightColor: '#555',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: scale(-1) },
+    shadowOffset: { width: 0, height: gameScale(-1) },
     shadowOpacity: 0.2,
-    shadowRadius: scale(2),
+    shadowRadius: gameScale(2),
     elevation: 1,
-    minWidth: scale(20),
+    minWidth: gameScale(20),
   },
 
   webTabActive: {
@@ -403,13 +409,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
     elevation: 3,
     zIndex: 10,
-    marginBottom: scale(-2),
-    flex: 0, // ✅ CHANGED: Don't participate in flex distribution
-    flexBasis: 'auto', // ✅ ADDED: Size strictly by content
-    flexGrow: 0, // ✅ ADDED: Don't take extra space beyond text
-    flexShrink: 0, // ✅ ADDED: Never shrink the active text
-    paddingHorizontal: scale(16),
-    // maxWidth: scaleWidth(150), // ✅ REMOVED: Allow full expansion
+    marginBottom: gameScale(-2),
+    flex: 0,
+    flexBasis: 'auto',
+    flexGrow: 0,
+    flexShrink: 0,
+    paddingHorizontal: gameScale(16),
   },
 
   webTabFirst: {
@@ -422,20 +427,16 @@ const styles = StyleSheet.create({
 
   webTabText: {
     color: '#d1d5d9',
-    fontSize: RESPONSIVE.fontSize.xs,
+    fontSize: gameScale(10),
     fontFamily: 'DynaPuff',
     fontWeight: '500',
-    numberOfLines: 1, 
     flexShrink: 1,
-    whiteSpace: 'nowrap', //  ADDED: Prevent wrapping
   },
 
   webTabTextActive: {
     color: '#ffffff',
     fontWeight: '600',
-    numberOfLines: 1,
     flexShrink: 0,
-    whiteSpace: 'nowrap', //  ADDED: Prevent wrapping
   },
 
   headerSpacer: {
@@ -444,78 +445,79 @@ const styles = StyleSheet.create({
 
   contentArea: {
     flex: 1,
-    borderTopWidth: scale(1), //  Responsive
+    borderTopWidth: gameScale(1),
     borderTopColor: '#1a1a1a',
     minHeight: 0,
   },
 
   codeContainer: {
     backgroundColor: '#000d2f99',
-    paddingVertical: RESPONSIVE.margin.md, //  Responsive
+    paddingVertical: gameScale(12),
     borderTopWidth: 0,
-    borderLeftWidth: scale(1), //  Responsive
+    borderLeftWidth: gameScale(1),
     borderLeftColor: '#0a0a0a',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: scale(-2) }, //  Responsive
+    shadowOffset: { width: 0, height: gameScale(-2) },
     shadowOpacity: 0.2,
-    shadowRadius: scale(4), //  Responsive
+    shadowRadius: gameScale(4),
     elevation: 2,
   },
 
   codeLine: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    minHeight: scale(20), //  Responsive
-    paddingVertical: scale(2), //  Responsive
+    minHeight: gameScale(20),
+    paddingVertical: gameScale(2),
   },
 
   lineNumberContainer: {
-    minWidth: scaleWidth(30), //  Responsive
+    minWidth: gameScale(30),
     alignItems: 'center',
-    borderTopWidth: scale(1), //  Responsive
+    paddingRight: gameScale(4),
+    borderTopWidth: gameScale(1),
     borderTopColor: '#3a3a3a',
-    borderLeftWidth: scale(1), //  Responsive
+    borderLeftWidth: gameScale(1),
     borderLeftColor: '#2a2a2a',
     shadowColor: '#000',
-    shadowOffset: { width: scale(1), height: 0 }, //  Responsive
+    shadowOffset: { width: gameScale(1), height: 0 },
     shadowOpacity: 0.3,
-    shadowRadius: scale(2), //  Responsive
+    shadowRadius: gameScale(2),
     elevation: 3,
   },
 
   lineNumber: {
     color: '#ffffff7e',
-    fontSize: RESPONSIVE.fontSize.xs, //  Responsive
+    fontSize: gameScale(12),
     fontFamily: 'monospace',
     fontWeight: '400',
   },
 
   lineContent: {
     flex: 1,
-    paddingHorizontal: RESPONSIVE.margin.md, //  Responsive
+    paddingHorizontal: gameScale(12),
   },
 
   scrollContentContainer: {
     flexGrow: 1,
-    paddingBottom: scale(100), //  Responsive
+    paddingBottom: gameScale(100),
   },
 
   outputContainer: {
     backgroundColor: '#ffffff',
     flex: 1,
-    maxHeight: scaleHeight(250), //  Responsive
+    maxHeight: gameScale(250),
   },
 
   outputHeader: {
     backgroundColor: '#f8f9fa',
-    paddingHorizontal: RESPONSIVE.margin.lg, //  Responsive
-    paddingVertical: RESPONSIVE.margin.sm, //  Responsive
-    borderBottomWidth: scale(1), //  Responsive
+    paddingHorizontal: gameScale(16),
+    paddingVertical: gameScale(8),
+    borderBottomWidth: gameScale(1),
     borderBottomColor: '#e9ecef',
   },
 
   outputTitle: {
-    fontSize: RESPONSIVE.fontSize.md, 
+    fontSize: gameScale(14), 
     fontWeight: '600',
     color: '#495057',
   },
@@ -527,13 +529,13 @@ const styles = StyleSheet.create({
 
   outputScrollContent: {
     flexGrow: 1,
-    padding: RESPONSIVE.margin.lg, //  Responsive
+    padding: gameScale(16),
   },
 
   browserViewport: {
     flex: 1,
     backgroundColor: '#ffffff',
-    minHeight: scale(100), //  Responsive
+    minHeight: gameScale(100),
   },
 
 });

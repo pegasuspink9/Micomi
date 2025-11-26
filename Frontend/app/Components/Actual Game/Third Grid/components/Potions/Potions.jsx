@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   potionSlotWrapper: {
-    marginHorizontal: wp(1.5),
+    marginHorizontal: wp(1.9),
   },
   potionFrame: {
     width: scaleWidth(70),

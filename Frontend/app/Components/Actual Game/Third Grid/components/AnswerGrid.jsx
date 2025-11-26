@@ -1,8 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, ScrollView, StyleSheet, Dimensions, Text, Animated } from 'react-native';
 import AnswerOption from './AnswerOption';
-
-const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
+import { gameScale } from '../../../Responsiveness/gameResponsive';
 
 const AnswerGrid = ({ 
   options, 
@@ -163,31 +162,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-around',
-    paddingHorizontal: SCREEN_WIDTH * 0.01,
+    paddingHorizontal: gameScale(4),
   },
-
   scrollableButton: {
     flexGrow: 1,
-    paddingHorizontal: SCREEN_WIDTH * 0.01,
-    paddingBottom: SCREEN_HEIGHT * 0.08, 
+    paddingHorizontal: gameScale(4),
+    paddingBottom: gameScale(68), 
   },
-
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: SCREEN_HEIGHT * 0.05,
+    paddingVertical: gameScale(42),
   },
-
   loadingText: {
     color: '#999',
-    fontSize: 16,
+    fontSize: gameScale(16),
     textAlign: 'center',
   },
-
   errorText: {
     color: '#ff6b6b',
-    fontSize: 16,
+    fontSize: gameScale(16),
     textAlign: 'center',
   },
 });

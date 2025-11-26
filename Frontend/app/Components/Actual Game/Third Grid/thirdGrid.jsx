@@ -1,13 +1,11 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Dimensions, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import GridContainer from './components/GridContainer';
 import AnswerGrid from './components/AnswerGrid';
 import GameButton from './components/GameButtons';
 import PotionGrid from './components/Potions/Potions';
-import { scale, RESPONSIVE, wp, hp } from '../../Responsiveness/gameResponsive';
+import { gameScale, BASE_HEIGHT } from '../../Responsiveness/gameResponsive';
 import { soundManager } from '../Sounds/UniversalSoundManager';
-
-const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
 import { 
   getMaxAnswers,
@@ -178,29 +176,30 @@ const ThirdGrid = ({
     canProceed
   });
 
-    const calculateHeight = (numOptions) => {
+       const calculateHeight = (numOptions) => {
     if (!currentQuestion || !numOptions || numOptions === 0) {
-      return SCREEN_HEIGHT * 0.12;
+      return gameScale(BASE_HEIGHT * 0.12);
     }
     
     if (numOptions > 8) {
-      return SCREEN_HEIGHT * 0.2; 
+      return gameScale(BASE_HEIGHT * 0.2); 
     }
-    
-    const baseHeight = SCREEN_HEIGHT * 0.10;
-    const itemHeight = SCREEN_HEIGHT * 0.04; 
+
+    const baseHeight = gameScale(BASE_HEIGHT * 0.10);
+    const itemHeight = gameScale(BASE_HEIGHT * 0.04); 
     const columns = 4; 
     const rows = Math.ceil(numOptions / columns);
     const extraHeight = (rows - 1) * itemHeight;
     return baseHeight + extraHeight;
   };
 
-  const dynamicHeight = useMemo(() => {
+   const dynamicHeight = useMemo(() => {
     if (canProceed || isLevelComplete) {
-      return SCREEN_HEIGHT * 0.12;
+      return gameScale(BASE_HEIGHT * 0.12);
     }
+
     return calculateHeight(options.length);
-  }, [canProceed, isLevelComplete, options.length]);
+  }, [canProceed, isLevelComplete, options.length, showPotions]);
 
 
   const handleClearAll = useCallback(() => {
@@ -294,10 +293,10 @@ const ThirdGrid = ({
 const styles = StyleSheet.create({
   proceedContainer: {
     flex: 1,
-    width: scale(100),
+    width: gameScale(100),
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: RESPONSIVE.margin.md,
+    paddingVertical: gameScale(10),
   },
 });
 

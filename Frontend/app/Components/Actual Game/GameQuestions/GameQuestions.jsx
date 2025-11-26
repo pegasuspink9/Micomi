@@ -4,10 +4,8 @@ import CodeEditor from './Component/CodeEditor';
 import DocumentQuestion from './Component/DocumentQuestion';
 import { renderHighlightedText } from './utils/syntaxHighligther';
 import { scrollToNextBlank, calculateGlobalBlankIndex } from './utils/blankHelper';
-import { scale, RESPONSIVE, scaleWidth, scaleHeight, wp, hp } from '../../Responsiveness/gameResponsive';
 import { soundManager } from '../Sounds/UniversalSoundManager';
-
-const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
+import { gameScale } from '../../Responsiveness/gameResponsive';
 
 
 export default function GameQuestions({ 
@@ -180,32 +178,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    minHeight: scale(25),
+    minHeight: gameScale(25),
   },
   codeText: {
     color: '#ffffff',
     fontFamily: 'monospace',
-    fontSize: RESPONSIVE.fontSize.md,
+    fontSize: gameScale(14),
   },
   codeBlankContainer: {
     backgroundColor: '#0e639c',
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    borderTopWidth: 1,
+    borderRadius: gameScale(6),
+    paddingHorizontal: gameScale(12),
+    borderTopWidth: gameScale(1),
     borderTopColor: '#4da6ff',
-    borderLeftWidth: 1,
+    borderLeftWidth: gameScale(1),
     borderLeftColor: '#1177bb',
-    borderBottomWidth: 2,
+    borderBottomWidth: gameScale(2),
     borderBottomColor: '#003d82',
-    borderRightWidth: 2,
+    borderRightWidth: gameScale(2),
     borderRightColor: '#0066cc',
     shadowColor: '#000',
-    shadowOffset: { width: 1, height: 2 },
+    shadowOffset: { width: gameScale(1), height: gameScale(2) },
     shadowOpacity: 0.4,
-    shadowRadius: 3,
+    shadowRadius: gameScale(3),
     elevation: 6,
     position: 'relative',
-    // top: scale(3), // Adjusted alignment if needed
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -218,20 +215,20 @@ const styles = StyleSheet.create({
     shadowColor: '#ff9500',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
-    shadowRadius: 8,
+    shadowRadius: gameScale(8),
     elevation: 12,
   },
   codeBlankText: {
     color: '#ffffff',
     fontFamily: 'monospace',
     fontWeight: 'bold',
-    fontSize: scale(13),
+    fontSize: gameScale(13),
     textAlign: 'center'
   },
   errorText: {
     color: '#ff6b6b',
-    fontSize: 16,
+    fontSize: gameScale(16),
     textAlign: 'center',
-    margin: 20,
+    margin: gameScale(20),
   },
 });
