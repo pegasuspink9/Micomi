@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
     zIndex: 100
   },
   topSection: {
-    flex: 1,
+    flex: 1, 
   },
   contentContainer: {
     top: gameScale(276),
