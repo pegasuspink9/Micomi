@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Text, View, StyleSheet, TouchableOpacity, Animated, ImageBackground, Dimensions, Modal, Image, ActivityIndicator, Alert } from "react-native";
+import { Text, View, StyleSheet, Pressable, TouchableOpacity, Animated, ImageBackground, Dimensions, Modal, Image, ActivityIndicator, Alert } from "react-native";
 import MapHeader from '../../Components/Map/mapHeader';
 import CharacterDisplay from '../../Components/Character/CharacterDisplay';
 import ActionButton from '../../Components/Character/ActionButton';
@@ -27,6 +27,7 @@ export default function CharacterProfile() {
     selecting,
     assetsLoading,
     assetsProgress,
+    userCoins,
     selectCharacter,
     purchaseCharacter,
     loadCharacters,
@@ -37,6 +38,7 @@ export default function CharacterProfile() {
   } = useCharacterSelection(playerId);
 
   const [showBuyModal, setShowBuyModal] = useState(false);
+  const [errorModal, setErrorModal] = useState({ visible: false, message: '' });
   const [showStaticImage, setShowStaticImage] = useState(false);
   const [isCharacterAnimating, setIsCharacterAnimating] = useState(true);
   const [videoReady, setVideoReady] = useState(false);
@@ -122,24 +124,19 @@ export default function CharacterProfile() {
     try {
       console.log(`🛒 Initiating purchase for ${currentHero.character_name} (Shop ID: ${currentHero.characterShopId})`);
       
-      const response = await purchaseCharacter(selectedHero);
+      const response = await purchaseCharacter(currentHero);
       setShowBuyModal(false);
-      
-      Alert.alert(
-        'Purchase Successful! 🎉', 
-        response.message || `${currentHero.character_name} has been purchased!`,
-        [{ text: 'OK', style: 'default' }]
-      );
+
       
       console.log('✅ Purchase completed successfully:', response);
       
     } catch (error) {
       console.error('❌ Purchase failed:', error);
-      Alert.alert(
-        'Purchase Failed', 
-        error.message || 'Unable to purchase character. Please try again.',
-        [{ text: 'OK', style: 'destructive' }]
-      );
+      setShowBuyModal(false); 
+      setErrorModal({ 
+        visible: true, 
+        message: error.message || 'Unable to purchase character. Please try again.' 
+      });
     }
   };
 
@@ -159,12 +156,12 @@ export default function CharacterProfile() {
     const isActuallySelected = hero.is_selected;
 
     return (
-      <TouchableOpacity
+      <Pressable
         key={heroName}
         style={[
           styles.heroBox, 
           isCurrentlyViewed && styles.viewedHeroBox,
-          isActuallySelected 
+          isActuallySelected
         ]}
         onPress={() => handleHeroViewing(heroName)}
         disabled={selecting}
@@ -175,14 +172,14 @@ export default function CharacterProfile() {
           resizeMode="contain"
         >
           <ImageBackground
-            source={{ uri: hero.character_avatar }}
+            source={{ uri: hero.character_image_select }}
             resizeMode="cover"
             style={styles.heroBoxBackground}
           >
             <Text style={styles.heroBoxTxt}>{heroName}</Text>
           </ImageBackground>
         </ImageBackground>
-      </TouchableOpacity>
+      </Pressable>
     );
   };
 
@@ -207,7 +204,7 @@ export default function CharacterProfile() {
       <>
         <View style={styles.container}>
           <View style={styles.headerContainer}>
-            <MapHeader />
+            <MapHeader coins={userCoins} />
           </View>
           <Video 
             ref={videoRef}
@@ -253,7 +250,7 @@ export default function CharacterProfile() {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <MapHeader />
+         <MapHeader coins={userCoins} />
       </View>
 
       <Video 
@@ -333,6 +330,7 @@ export default function CharacterProfile() {
         transparent={true} 
         visible={showBuyModal} 
         onRequestClose={() => setShowBuyModal(false)}
+        statusBarTranslucent={true}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -367,6 +365,28 @@ export default function CharacterProfile() {
           </View>
         </View>
       </Modal>
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={errorModal.visible}
+        onRequestClose={() => setErrorModal({ visible: false, message: '' })}
+        statusBarTranslucent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Purchase Failed</Text>
+            <Text style={styles.modalText}>{errorModal.message}</Text>
+            <TouchableOpacity 
+              style={styles.modalSingleButton} 
+              onPress={() => setErrorModal({ visible: false, message: '' })}
+            >
+              <Text style={styles.confirmButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -549,13 +569,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 10, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 1,
-    elevation: 10,
-    
+    elevation: 80,
 
+    height: screenHeight * 0.23,
     shadowOffset: { width: 30, height: 0 },
     shadowOpacity: 1,
     shadowRadius: 1,
-    elevation: 30,
+    elevation: 30
   },
   heroBoxBorder: {
     justifyContent: 'center',
@@ -637,12 +657,12 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContainer: {
-    backgroundColor: 'rgba(3, 63, 116, 0.6)',
+    backgroundColor: 'rgba(3, 63, 116, 1)',
     borderRadius: 20,
     padding: screenWidth * 0.08,
     width: screenWidth * 0.8,
@@ -668,6 +688,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
+  },
+  modalSingleButton: {
+    backgroundColor: 'rgba(0, 93, 200, 0.59)',
+    padding: screenHeight * 0.015,
+    borderRadius: 15,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
   },
   cancelButton: {
     backgroundColor: 'rgba(255, 0, 0, 0.48)',

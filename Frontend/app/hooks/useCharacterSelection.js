@@ -15,6 +15,7 @@ export const useCharacterSelection = (playerId = 11) => {
   const [selecting, setSelecting] = useState(false);
   const [assetsLoading, setAssetsLoading] = useState(false);
   const [assetsProgress, setAssetsProgress] = useState({ loaded: 0, total: 0, progress: 0 });
+  const [userCoins, setUserCoins] = useState(0);
   
  const loadCharacters = useCallback(async () => {
     try {
@@ -29,8 +30,9 @@ export const useCharacterSelection = (playerId = 11) => {
       
       // Get character data from API
       const apiData = await characterService.getPlayerCharacters(playerId);
-      const transformedData = characterService.transformCharacterData(apiData);
-      
+      const { characters: transformedData, userCoins: fetchedUserCoins } = characterService.transformCharacterData(apiData);
+      setUserCoins(fetchedUserCoins);
+
       // ✅ Check both character assets and video assets cache status
       const characterCacheStatus = await universalAssetPreloader.areCharacterAssetsCached(transformedData);
       const videoCacheStatus = await universalAssetPreloader.areVideoAssetsCached([
@@ -279,13 +281,13 @@ export const useCharacterSelection = (playerId = 11) => {
   }, []);
 
 
-  // Purchase character
- const purchaseCharacter = useCallback(async (heroName) => {
+  const purchaseCharacter = useCallback(async (heroToPurchase) => { // ✅ CHANGED: Expects the full hero object now
     try {
       setPurchasing(true);
       setError(null);
       
-      const hero = charactersData[heroName];
+      // ✅ CHANGED: No need to look up the hero, we receive the full object directly.
+      const hero = heroToPurchase;
       if (!hero) {
         throw new Error('Character not found');
       }
@@ -294,7 +296,7 @@ export const useCharacterSelection = (playerId = 11) => {
         throw new Error('Character already purchased');
       }
 
-      console.log(`💰 Purchasing character: ${heroName} (Player ID: ${playerId}, Character Shop ID: ${hero.characterShopId})`);
+      console.log(`💰 Purchasing character: ${hero.character_name} (Player ID: ${playerId}, Character Shop ID: ${hero.characterShopId})`);
       
       const response = await characterService.purchaseCharacter(playerId, hero.characterShopId);
       
@@ -311,7 +313,7 @@ export const useCharacterSelection = (playerId = 11) => {
     } finally {
       setPurchasing(false);
     }
-  }, [charactersData, playerId, loadCharacters]);
+  }, [playerId, loadCharacters]);
   
   // Select character - This actually calls the API and updates backend
   const selectCharacter = useCallback(async (heroName) => {
@@ -421,7 +423,7 @@ export const useCharacterSelection = (playerId = 11) => {
     selecting,
     assetsLoading,
     assetsProgress, 
-    
+    userCoins,    
       // Actions
     loadCharacters,
     purchaseCharacter,

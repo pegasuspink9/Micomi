@@ -21,10 +21,20 @@ export const characterService = {
         characterShopId: characterShopId
       });
       console.log(`💰 Character purchase response for Player ID ${playerId}, Character Shop ID ${characterShopId}:`, response);
-      return response.success ? response.data : response;
+
+      if (!response.success) {
+        throw new Error(response.message || 'The purchase could not be completed.');
+      }
+
+      return response.data;
     } catch (error) {
-      console.error('Failed to purchase character:', error);
-      throw error;
+      if (error.response && error.response.data && error.response.data.message) {
+        console.error(`Purchase API failed with message: "${error.response.data.message}"`);
+        throw new Error(error.response.data.message);
+      } else {
+        console.error('Failed to purchase character (generic/network error):', error);
+        throw error;
+      }
     }
   },
   
@@ -58,12 +68,20 @@ export const characterService = {
 
   // Transform API data to match component structure - FIXED to use correct is_purchased field
   transformCharacterData: (apiData) => {
+
+     if (!apiData || apiData.length === 0) {
+      return { characters: {}, userCoins: 0 };
+    }
+
+    const userCoins = apiData[0]?.player?.coins || 0;
     const transformedData = {};
     
     apiData.forEach(item => {
       const character = item.character;
       const heroName = character.character_name;
       
+      if (!heroName) return; // Skip if a character has no name
+
       transformedData[heroName] = {
         character_id: character.character_id,
         player_character_id: item.player_character_id,
@@ -74,32 +92,31 @@ export const characterService = {
         character_damage: Array.isArray(character.character_damage) ? 
           Math.round(character.character_damage.reduce((a, b) => a + b, 0) / character.character_damage.length) : 
           character.character_damage,
-        character_price: character.character_price || 100, // Default price if not provided
+        character_price: item.character_price, 
         character_avatar: character.character_avatar,
         damageIcon: characterService.getDamageIcon(character.character_type),
         character_image_display: character.character_image_display,
         character_hero_lottie: character.hero_lottie,
         heroLottieStyle: {
-          width: 375 * 1.4, // screenWidth * 1.4
-          height: 812 * 1.4, // screenHeight * 1.4
+          width: 375 * 1.4,
+          height: 812 * 1.4,
         },
-        // FIXED: Use is_purchased from the top-level item, not from character object
-        is_purchased: item.is_purchased, // This is the correct field
-        is_selected: item.is_selected,   // This is also from top-level
+        is_purchased: item.is_purchased, // Correctly uses top-level item status
+        is_selected: item.is_selected,   // Correctly uses top-level item status
         weapon_name: character.weapon_name,
         weapon_skill: character.weapon_skill,
-        user_coins: character.user_coins,
         character_attacks: character.character_attacks || [],
         character_run: character.character_run,
         character_dies: character.character_dies,
         character_hurt: character.character_hurt,
         avatar_image: character.avatar_image,
-        // Store characterShopId for purchase (same as character_id based on your requirement)
-        characterShopId: character.character_id
+        characterShopId: item.character_shop_id,
+        character_image_select: character.character_image_select,
       };
     });
     
-    return transformedData;
+    // Return both the characters and the user's coins.
+    return { characters: transformedData, userCoins };
   },
 
   // Get role icon based on character type

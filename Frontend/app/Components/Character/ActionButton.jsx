@@ -1,53 +1,60 @@
 import React from 'react';
-import { TouchableOpacity, Text, Image, View, ActivityIndicator } from 'react-native';
+import { TouchableOpacity, Text, Image, ActivityIndicator, View } from 'react-native';
 
-export default function ActionButton({ 
-  currentHero, 
-  onSelectCharacter, 
-  onShowBuyModal, 
-  coinIcon, 
-  styles, 
+const ActionButton = ({
+  currentHero,
+  onSelectCharacter,
+  onShowBuyModal,
+  coinIcon,
+  styles,
   disabled,
-  selecting 
-}) {
-  if (!currentHero) return null;
+  selecting
+}) => {
+  if (!currentHero) {
+    return null; // Don't render anything if there's no hero data
+  }
 
-  if (!currentHero.is_purchased) {
+  // Case 1: Character is already purchased
+  if (currentHero.is_purchased) {
+    // Sub-case: Character is also the one currently selected
+    if (currentHero.is_selected) {
+      return (
+        <View style={[styles.selectButton, { backgroundColor: '#0a3d62', borderColor: '#4CAF50' }]}>
+          <Text style={styles.buttonText}>Selected</Text>
+        </View>
+      );
+    }
+    // Sub-case: Character is purchased but not selected
     return (
       <TouchableOpacity
-        style={styles.buyButton}
-        onPress={onShowBuyModal}
+        style={styles.selectButton}
+        onPress={() => onSelectCharacter(currentHero.character_name)}
         disabled={disabled}
       >
-        <Image source={{ uri: coinIcon }} style={styles.coinIcon} />
-        <Text style={styles.buttonText}>{currentHero.character_price}</Text>
+        {selecting ? (
+          <ActivityIndicator size="small" color="white" />
+        ) : (
+          <Text style={styles.buttonText}>Select</Text>
+        )}
       </TouchableOpacity>
     );
   }
 
-  
-  if (currentHero.is_selected) {
-    return (
-      <View style={[
-        styles.selectButton, 
-        { backgroundColor: 'rgba(76, 175, 80, 0.8)', borderColor: '#4CAF50' }
-      ]}>
-        <Text style={styles.buttonText}>Selected</Text>
-      </View>
-    );
-  }
-
+  // Case 2: Character is not purchased yet
   return (
     <TouchableOpacity
-      style={styles.selectButton}
-      onPress={() => onSelectCharacter(currentHero.character_name)}
-      disabled={disabled || selecting}
+      style={styles.buyButton}
+      // ✅ FIXED: This onPress event now correctly calls the function
+      // to show the purchase confirmation modal.
+      onPress={() => onShowBuyModal(true)}
+      disabled={disabled}
     >
-      {selecting ? (
-        <ActivityIndicator size="small" color="white" />
-      ) : (
-        <Text style={styles.buttonText}>Select</Text>
-      )}
+      <Image source={{ uri: coinIcon }} style={styles.coinIcon} />
+      <Text style={styles.buttonText}>
+        Buy {currentHero.character_price}
+      </Text>
     </TouchableOpacity>
   );
-}
+};
+
+export default ActionButton;
