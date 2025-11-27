@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { View, Text, Image, Animated, Dimensions } from 'react-native';
+import { gameScale } from '../Responsiveness/gameResponsive'; 
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -39,8 +40,11 @@ const AttributePanel = forwardRef(({
   };
 
   const resetAnimations = () => {
+
+    const slideDistance = gameScale(78);
+    
     slideAnims.forEach((anim, index) => {
-      anim.setValue(index % 2 === 0 ? screenWidth * 0.2 : -screenWidth * 0.2);
+      anim.setValue(index % 2 === 0 ? slideDistance : -slideDistance);
     });
     fadeAnims.forEach(anim => anim.setValue(0));
   };

@@ -10,7 +10,7 @@ import { useCharacterSelection } from '../../hooks/useCharacterSelection';
 import AssetDownloadProgress from '../../Components/RoadMap/LoadingState/assetDownloadProgress';
 import { Video } from 'expo-av';
 import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
-import {gameResponsive, hp, scaleHeight, scaleWidth, wp} from '../../Components/Responsiveness/gameResponsive';
+import {gameScale} from '../../Components/Responsiveness/gameResponsive';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -34,7 +34,7 @@ export default function CharacterProfile() {
     clearError,
     getHeroNames,
     changeDisplayedCharacter,
-    isVideoAssetCached // ✅ Use the new video cache checker
+    isVideoAssetCached //  Use the new video cache checker
   } = useCharacterSelection(playerId);
 
   const [showBuyModal, setShowBuyModal] = useState(false);
@@ -57,7 +57,7 @@ export default function CharacterProfile() {
     { style: styles.skill, icon: currentHero.damageIcon, text: "Damage:", number: currentHero.character_damage }
   ] : [];
 
-  // ✅ Get cached video path
+  //  Get cached video path
   const getCachedVideoSource = () => {
     const cachedPath = universalAssetPreloader.getCachedAssetPath(VIDEO_ASSETS.characterSelectBackground);
     console.log(`🎬 Using video source: ${cachedPath}`);
@@ -128,7 +128,7 @@ export default function CharacterProfile() {
       setShowBuyModal(false);
 
       
-      console.log('✅ Purchase completed successfully:', response);
+      console.log(' Purchase completed successfully:', response);
       
     } catch (error) {
       console.log('Purchase interrupted:', error.message);
@@ -170,7 +170,7 @@ export default function CharacterProfile() {
         style={[
           styles.heroBox, 
           isCurrentlyViewed && styles.viewedHeroBox,
-          isActuallySelected
+          isActuallySelected && styles.selectedHeroBox 
         ]}
         onPress={() => handleHeroViewing(heroName)}
         disabled={selecting}
@@ -215,7 +215,7 @@ export default function CharacterProfile() {
             style={styles.fullBackground}
             shouldPlay={true}
             isLooping={true}
-            resizeMode="cover" 
+            resizeMode="contain" 
             useNativeControls={false}
             isMuted={true}
             onLoad={onVideoLoad}
@@ -387,53 +387,36 @@ export default function CharacterProfile() {
 }
 
 const styles = StyleSheet.create({
-
   contentOverlay: {
     position: 'absolute',
-    
-    top: screenWidth * 1.4 * -0.1,
+    top: gameScale(-55), // Position relative to scaled layout
     left: 0,
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.3)', 
   },
-
   fullBackground: {
     position: 'absolute',
-    width: scaleWidth(900),
-    height: scaleHeight(970),
+    width: gameScale(900),
+    height: gameScale(920),
     alignSelf: 'center',
   },
-
-
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
     color: 'white',
-    fontSize: screenWidth * 0.05,
+    fontSize: gameScale(18),
     fontFamily: 'Computerfont',
-    marginTop: 20,
+    marginTop: gameScale(20),
   },
   errorText: {
     color: 'red',
-    fontSize: screenWidth * 0.05,
+    fontSize: gameScale(18),
     fontFamily: 'Computerfont',
     textAlign: 'center',
-    marginBottom: 20,
-  },
-  retryButton: {
-    backgroundColor: 'rgba(0, 93, 200, 0.8)',
-    padding: 15,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-  },
-  retryButtonText: {
-    color: 'white',
-    fontSize: screenWidth * 0.045,
-    fontFamily: 'Computerfont',
+    marginBottom: gameScale(20),
   },
   container: {
     flex: 1,
@@ -444,27 +427,13 @@ const styles = StyleSheet.create({
     zIndex: 100
   },
   topSection: {
-    flex: 0.85
-  },
-  characterMainBackground: {
     flex: 1,
-    width: '100%'
   },
   contentContainer: {
-    top: hp(28),
-    alignItems: 'center',
-    
-    marginTop: screenHeight * 0.05,
-  },
-  characterBackground: {
-    width: screenWidth,
-    height: screenHeight,
-    alignSelf: 'center',
-    top: screenHeight * -0.1,
-    position: 'absolute',
+    top: gameScale(276),
   },
   characterContainer: {
-    height: screenHeight * 0.4,
+    height: gameScale(298),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -476,16 +445,16 @@ const styles = StyleSheet.create({
   },
   screenLabel: {
     position: 'absolute',
-    top: screenHeight * -0.20,
-    width: screenWidth * 0.6,
-    height: screenHeight * 0.6,
+    top: gameScale(-168),
+    width: gameScale(234),
+    height: gameScale(506),
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
   },
   screenLabelText: {
     color: 'rgba(255, 255, 255, 1)',
-    fontSize: screenWidth * 0.19,
+    fontSize: gameScale(74),
     width: '120%',
     fontFamily: 'GoldenAge',
     textAlign: 'center',
@@ -494,161 +463,147 @@ const styles = StyleSheet.create({
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
-    width: screenWidth * 0.25,
-    height: screenHeight * 0.3,
-    top: screenHeight * 0.15
+    width: gameScale(98),
+    height: gameScale(253),
+    top: gameScale(126),
   },
   characterImage: {
-    width: screenWidth * 0.9,
-    height: screenWidth * 0.9,
-    top: screenHeight * 0.13,
+    width: gameScale(351),
+    height: gameScale(351),
+    top: gameScale(110),
   },
-  bottomBar: {
-    flex: 0.17,
+   bottomBar: {
+    height: gameScale(180), 
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: screenHeight * 0.02,
   },
   attributeText: {
     borderWidth: 2,
     borderColor: 'rgba(106, 191, 244, 1)',
     width: '100%',
-    top: screenHeight * 0.02,
-    height: screenHeight * 0.08,
-    borderRadius: 10,
-    paddingLeft: screenWidth * 0.02,
+    top: gameScale(17),
+    height: gameScale(68),
+    borderRadius: gameScale(10),
+    paddingLeft: gameScale(8),
     overflow: 'hidden',
     backgroundColor: 'rgba(3, 67, 112, 0.74)'
   },
   attributeTextContent: {
     fontFamily: 'Computerfont',
-    fontSize: screenWidth * 0.042,
+    fontSize: gameScale(16),
     color: 'white',
     textShadowRadius: 10,
   },
   attributeTextContentNumber: {
-    fontSize: screenWidth * 0.09,
+    fontSize: gameScale(35),
     color: 'white',
     textAlign: 'left',
-    top: screenHeight * -0.01,
+    top: gameScale(-8),
     fontFamily: 'Computerfont',
   },
   heroRole: {
-    marginLeft: screenWidth * -0.60,
+    marginLeft: gameScale(-234),
   },
   health: {
-    marginLeft: screenWidth * 0.60,
+    marginLeft: gameScale(234),
   },
   skill: {
-    marginBottom: screenHeight * 0.015,
-    marginLeft: screenWidth * -0.60,
+    marginBottom: gameScale(12),
+    marginLeft: gameScale(-234),
   },
   characterSelection: {
     flexDirection: 'row',
-    justifyContent: 'space-evenly',
+    justifyContent: 'center',
+    gap: gameScale(15),
     alignItems: 'center',
     width: '100%',
-    flexWrap: 'wrap',
-    marginTop: screenHeight * 0.01,
+    marginTop: gameScale(2),
   },
   heroBox: {
-    width: screenWidth * 0.20,
+    width: gameScale(78),
     zIndex: 2,
-    borderRadius: 8,
+    borderRadius: gameScale(8),
     overflow: 'hidden',
-    marginTop: screenHeight * 0.02,
+    marginTop: gameScale(17),
   },
   viewedHeroBox: {
     shadowColor: '#ffffff',
-    shadowOffset: { width: 10, height: 0 },
     shadowOpacity: 0.5,
-    shadowRadius: 1,
-    elevation: 80,
-
-    height: screenHeight * 0.23,
-    shadowOffset: { width: 30, height: 0 },
+    shadowRadius: gameScale(10),
+    elevation: 30,
+    height: gameScale(194),
+    width: gameScale(78), // Make it wider when viewed
+  },
+  selectedHeroBox: {
     shadowOpacity: 1,
-    shadowRadius: 1,
-    elevation: 30
+    shadowRadius: gameScale(10),
+    elevation: 35,
   },
   heroBoxBorder: {
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 5,
-    width: screenWidth * 0.2,
-    height: screenHeight * 0.2,
-  },
-  selectionIndicator: {
-    position: 'absolute',
-    top: 5,
-    right: 5,
-    backgroundColor: '#4CAF50',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  selectionIndicatorText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+    width: '100%', // Use percentage to fill the heroBox
+    height: gameScale(168), 
   },
   selectButton: {
     position: 'absolute',
-    top: screenHeight * 0.5,
+    top: gameScale(422),
     borderWidth: 2,
-    padding: 5,
+    padding: gameScale(5),
     borderColor: 'rgba(255, 255, 255, 1)',
-    borderRadius: 30,
+    borderRadius: gameScale(30),
     backgroundColor: 'rgba(3, 63, 116, 0.94)',
-    width: screenWidth * 0.4,
+    width: gameScale(156),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   heroBoxBackground: {
-    width: wp(15),
-    height: hp(15),
+    width: gameScale(110),
+    height: gameScale(110),
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: -1,
-    shadowColor: '#4CAF50',
   },
   heroBoxTxt: {
     color: 'white',
-    fontSize: screenWidth * 0.04,
-    marginTop: scaleHeight(90),
+    fontSize: gameScale(15),
+    marginTop: gameScale(90),
     fontFamily: 'MusicVibes',
     textAlign: 'center'
   },
   heroRoleIcon: {
-    width: screenWidth * 0.2,
-    height: screenWidth * 0.2,
-    marginLeft: screenWidth * 0.08,
+    width: gameScale(78),
+    height: gameScale(78),
+    marginLeft: gameScale(31),
     position: 'absolute',
     transform: [{ rotate: '20deg' }],
     opacity: 0.9
   },
   buyButton: {
     position: 'absolute',
-    top: screenHeight * 0.5,
+    top: gameScale(422),
     borderWidth: 2,
-    padding: 5,
+    padding: gameScale(5),
     borderColor: 'rgba(255, 255, 255, 1)',
-    borderRadius: 30,
+    borderRadius: gameScale(30),
     backgroundColor: 'rgba(3, 63, 116, 0.94)',
-    width: screenWidth * 0.4,
+    width: gameScale(156),
     flexDirection: 'row',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   buttonText: {
-    fontSize: screenWidth * 0.06,
+    fontSize: gameScale(23),
     color: 'white',
     fontFamily: 'Computerfont',
     textAlign: 'center',
   },
   coinIcon: {
-    width: screenWidth * 0.07,
-    height: screenWidth * 0.07,
+    width: gameScale(27),
+    height: gameScale(27),
+    marginRight: gameScale(5),
   },
   modalOverlay: {
     flex: 1,
@@ -658,26 +613,26 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     backgroundColor: 'rgba(3, 63, 116, 1)',
-    borderRadius: 20,
-    padding: screenWidth * 0.08,
-    width: screenWidth * 0.8,
+    borderRadius: gameScale(20),
+    padding: gameScale(31),
+    width: gameScale(312),
     alignItems: 'center',
     borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.8)',
   },
   modalTitle: {
-    fontSize: screenWidth * 0.07,
+    fontSize: gameScale(27),
     fontFamily: 'Computerfont',
     color: 'white',
-    marginBottom: screenHeight * 0.02,
+    marginBottom: gameScale(17),
     textAlign: 'center',
   },
   modalText: {
-    fontSize: screenWidth * 0.05,
+    fontSize: gameScale(18),
     fontFamily: 'Computerfont',
     color: 'white',
     textAlign: 'center',
-    marginBottom: screenHeight * 0.03,
+    marginBottom: gameScale(25),
   },
   modalButtons: {
     flexDirection: 'row',
@@ -686,8 +641,8 @@ const styles = StyleSheet.create({
   },
   modalSingleButton: {
     backgroundColor: 'rgba(0, 93, 200, 0.59)',
-    padding: screenHeight * 0.015,
-    borderRadius: 15,
+    padding: gameScale(12),
+    borderRadius: gameScale(15),
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
@@ -696,8 +651,8 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     backgroundColor: 'rgba(255, 0, 0, 0.48)',
-    padding: screenHeight * 0.015,
-    borderRadius: 15,
+    padding: gameScale(12),
+    borderRadius: gameScale(15),
     flex: 0.4,
     alignItems: 'center',
     borderWidth: 1,
@@ -705,8 +660,8 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     backgroundColor: 'rgba(0, 93, 200, 0.59)',
-    padding: screenHeight * 0.015,
-    borderRadius: 15,
+    padding: gameScale(12),
+    borderRadius: gameScale(15),
     flex: 0.55,
     flexDirection: 'row',
     alignItems: 'center',
@@ -716,17 +671,17 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     color: 'white',
-    fontSize: screenWidth * 0.045,
+    fontSize: gameScale(16),
     fontFamily: 'Computerfont',
   },
   confirmButtonText: {
     color: 'white',
-    fontSize: screenWidth * 0.045,
+    fontSize: gameScale(16),
     fontFamily: 'Computerfont',
-    marginLeft: 5,
+    marginLeft: gameScale(5),
   },
   modalCoinIcon: {
-    width: screenWidth * 0.05,
-    height: screenWidth * 0.05,
+    width: gameScale(20),
+    height: gameScale(20),
   },
 });
