@@ -76,6 +76,8 @@ export const getAllPlayerCharacter = async (req: Request, res: Response) => {
       const shopInfo =
         character.characterShop || owned?.character.characterShop;
 
+      const characterCards = getCharacterCards(character.character_name);
+
       const baseItem = {
         character_shop_id: shopInfo?.character_shop_id ?? null,
         player_id: player.player_id,
@@ -87,6 +89,7 @@ export const getAllPlayerCharacter = async (req: Request, res: Response) => {
         character: {
           ...character,
           characterShop: undefined,
+          cards: characterCards,
         },
         audio:
           "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Shop.ogg",
@@ -108,6 +111,39 @@ export const getAllPlayerCharacter = async (req: Request, res: Response) => {
     console.error(error);
     return errorResponse(res, null, "Failed to fetch player characters", 500);
   }
+};
+
+const getCharacterCards = (characterName: string) => {
+  const characterCardsData: Record<string, any[]> = {
+    Gino: [
+      {
+        attack_type: "Special Attack",
+        card_type: "Stormfang Surge",
+        character_attack_card:
+          "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/4th.png",
+      },
+      {
+        attack_type: "Third Attack",
+        card_type: "Feral Slash",
+        character_attack_card:
+          "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/3rd.png",
+      },
+      {
+        attack_type: "Second Attack",
+        card_type: "Ruthless Fang",
+        character_attack_card:
+          "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/2nd.png",
+      },
+      {
+        attack_type: "Basic Attack",
+        card_type: "Wild Claw",
+        character_attack_card:
+          "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/1st.png",
+      },
+    ],
+  };
+
+  return characterCardsData[characterName] || [];
 };
 
 /* POST a Character in a shop */
