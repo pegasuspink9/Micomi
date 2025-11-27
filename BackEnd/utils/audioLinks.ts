@@ -167,4 +167,7 @@ export const audioLinks = [
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Gino_Basic_Attack.wav",
   //Use potion audio
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/All%20Potions.wav",
+  //Is victory audio
+  "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Victory_Sound.wav",
+  "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Defeat_Sound.wav",
 ];

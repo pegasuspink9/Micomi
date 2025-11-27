@@ -617,6 +617,8 @@ export const submitChallengeService = async (
 
   const playerLost = freshProgress!.player_hp <= 0;
 
+  let is_victory_audio: string | null = null;
+
   if (allCompleted || playerLost) {
     const wrongCount = freshProgress!.consecutive_wrongs;
     const wasInBonusRound =
@@ -631,6 +633,9 @@ export const submitChallengeService = async (
         false,
         level.level_number
       );
+
+      is_victory_audio =
+        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Defeat_Sound.wav";
 
       completionRewards = {
         feedbackMessage: motivationalMessage,
@@ -671,6 +676,9 @@ export const submitChallengeService = async (
         level.level_number
       );
 
+      is_victory_audio =
+        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Victory_Sound.wav";
+
       if (wasFirstCompletion) {
         await prisma.playerProgress.update({
           where: { progress_id: currentProgress.progress_id },
@@ -696,6 +704,9 @@ export const submitChallengeService = async (
           level.level_id
         );
       } else {
+        is_victory_audio =
+          "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Victory_Sound.wav";
+
         completionRewards = {
           feedbackMessage:
             motivationalMessage +
@@ -878,6 +889,7 @@ export const submitChallengeService = async (
     character_attack_audio,
     death_audio,
     gameplay_audio,
+    is_victory_audio,
   };
 };
 

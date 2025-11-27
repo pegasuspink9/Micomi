@@ -254,7 +254,6 @@ export const previewLevel = async (playerId: number, levelId: number) => {
           enemy_run: enemy.enemy_run,
           enemy_damage: enemy.enemy_damage,
           enemy_attack: enemy.enemy_attack,
-          enemy_special_attack: enemy.special_skill,
           enemy_hurt: enemy.enemy_hurt,
           enemy_dies: enemy.enemy_dies,
           enemy_avatar: enemy.avatar_enemy,
@@ -697,6 +696,9 @@ export const enterLevel = async (playerId: number, levelId: number) => {
 
   const questionType = level.map.map_name;
 
+  const versus_background_audio =
+    "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Versus%20Sound%20Effect%20Final.wav";
+
   let versus_background = "";
   let gameplay_audio = "";
 
@@ -712,10 +714,10 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Lavaland.mp3";
   } else if (questionType === "JavaScript") {
     versus_background =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Versus%20Maps/Winter.png";
+      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Snowland.mp3";
   } else {
     versus_background =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Versus%20Maps/Autumn.jpg";
+      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Autumnland.mp3";
   }
 
   return {
@@ -735,7 +737,6 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       enemy_run: enemy.enemy_run,
       enemy_damage: enemy.enemy_damage,
       enemy_attack: enemy.enemy_attack,
-      enemy_special_attack: enemy.special_skill,
       enemy_hurt: enemy.enemy_hurt,
       enemy_dies: enemy.enemy_dies,
       enemy_avatar: enemy.avatar_enemy,
@@ -765,6 +766,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     combat_background: combatBackground,
     question_type: questionType,
     versus_background: versus_background,
+    versus_audio: versus_background_audio,
     gameplay_audio: gameplay_audio,
     audioLinks,
     imagesUrls,
