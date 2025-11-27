@@ -693,7 +693,7 @@ export const submitChallengeService = async (
         nextLevel = await LevelService.unlockNextLevel(
           playerId,
           level.map_id,
-          level.level_number
+          level.level_id
         );
       } else {
         completionRewards = {

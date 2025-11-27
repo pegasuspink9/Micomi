@@ -13,7 +13,10 @@ router.get("/character", ShopService.getAllCharactersInShop);
 //Get player characters
 router.get("/player-characters/:playerId", ShopService.getAllPlayerCharacter);
 //Character selection
-router.post("/select-character/:playerId", CharacterService.selectCharacter);
+router.post(
+  "/select-character/:playerId/:characterId",
+  CharacterService.selectCharacter
+);
 
 //CRUD for shop characters
 router.post("/create-character", ShopService.createShopCharacter);

@@ -2,23 +2,8 @@ import { prisma } from "../../../prisma/client";
 
 export const selectCharacter = async (
   playerId: number,
-  characterShopId: number
+  characterId: number
 ) => {
-  const characterShop = await prisma.characterShop.findUnique({
-    where: {
-      character_shop_id: characterShopId,
-    },
-    select: {
-      character_id: true,
-    },
-  });
-
-  if (!characterShop) {
-    throw new Error("Character shop item not found");
-  }
-
-  const characterId = characterShop.character_id;
-
   const playerChar = await prisma.playerCharacter.findUnique({
     where: {
       player_id_character_id: {
@@ -29,7 +14,7 @@ export const selectCharacter = async (
   });
 
   if (!playerChar || !playerChar.is_purchased) {
-    throw new Error("Character not owned by player");
+    return { message: "Character not owned by player" };
   }
 
   await prisma.playerCharacter.updateMany({

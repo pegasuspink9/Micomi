@@ -615,7 +615,7 @@ export async function fightEnemy(
             await LevelService.unlockNextLevel(
               playerId,
               level.map_id,
-              level.level_number
+              level.level_id
             );
             console.log(
               "- Level unlocked after enemy defeated and all challenges answered"
@@ -744,7 +744,7 @@ export async function fightEnemy(
           await LevelService.unlockNextLevel(
             playerId,
             level.map_id,
-            level.level_number
+            level.level_id
           );
           console.log(
             "- Level unlocked after enemy defeated and all challenges answered"
@@ -805,7 +805,7 @@ export async function fightEnemy(
       await LevelService.unlockNextLevel(
         playerId,
         level.map_id,
-        level.level_number
+        level.level_id
       );
       console.log(
         "- Level unlocked after all challenges answered (bonus completed)"
@@ -1193,7 +1193,7 @@ export async function fightBossEnemy(
             await LevelService.unlockNextLevel(
               playerId,
               level.map_id,
-              level.level_number
+              level.level_id
             );
             console.log(
               "- Level unlocked after boss defeated and all challenges answered"
@@ -1351,7 +1351,7 @@ export async function fightBossEnemy(
           await LevelService.unlockNextLevel(
             playerId,
             level.map_id,
-            level.level_number
+            level.level_id
           );
           console.log(
             "- Level unlocked after boss defeated and all challenges answered"
@@ -1419,7 +1419,7 @@ export async function fightBossEnemy(
       await LevelService.unlockNextLevel(
         playerId,
         level.map_id,
-        level.level_number
+        level.level_id
       );
       console.log(
         "- Level unlocked after all boss challenges answered (bonus completed)"

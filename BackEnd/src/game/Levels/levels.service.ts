@@ -306,6 +306,16 @@ export const enterLevel = async (playerId: number, levelId: number) => {
 
   if (!level) throw new Error("Level not found");
 
+  if (level.level_type === "shopButton") {
+    const progress = await prisma.playerProgress.findUnique({
+      where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
+    });
+
+    if (progress?.done_shop_level) {
+      throw new Error("Shop level already completed, cannot enter again");
+    }
+  }
+
   level.challenges.sort((a, b) => a.challenge_id - b.challenge_id);
 
   const totalPoints = level.challenges.reduce(
@@ -764,10 +774,10 @@ export const enterLevel = async (playerId: number, levelId: number) => {
 export const unlockNextLevel = async (
   playerId: number,
   mapId: number,
-  currentLevelNumber: number
+  currentLevelId: number
 ) => {
   const currentLevel = await prisma.level.findFirst({
-    where: { map_id: mapId, level_number: currentLevelNumber },
+    where: { map_id: mapId, level_number: currentLevelId },
   });
 
   if (!currentLevel) {
@@ -920,6 +930,12 @@ export const completeMicomiLevel = async (
     throw new Error("This API is only for micomiButton levels");
   }
 
+  const existingProgress = await prisma.playerProgress.findUnique({
+    where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
+  });
+
+  const wasAlreadyCompleted = existingProgress?.is_completed === true;
+
   const progress = await prisma.playerProgress.upsert({
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
     update: {
@@ -961,7 +977,9 @@ export const completeMicomiLevel = async (
     level.level_number
   );
 
-  await updateQuestProgress(playerId, QuestType.complete_lesson, 1);
+  if (!wasAlreadyCompleted) {
+    await updateQuestProgress(playerId, QuestType.complete_lesson, 1);
+  }
 
   return {
     message: "Micomi level completed",
