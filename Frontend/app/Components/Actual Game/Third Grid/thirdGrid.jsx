@@ -70,7 +70,7 @@ const ThirdGrid = ({
       case 'Health':
         return 'rgba(130, 0, 0, 1)';
       case 'Strong':
-        return 'rgba(197, 197, 96, 1)';
+        return 'rgba(223, 190, 0, 1)';
       case 'Hint':
         return 'rgba(8, 120, 66, 1)';
       case 'Freeze':

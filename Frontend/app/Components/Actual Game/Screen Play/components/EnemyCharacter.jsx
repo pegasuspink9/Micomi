@@ -90,7 +90,7 @@ const EnemyCharacter = ({
     if (currentState === 'attack' && attackAudioUrl) {
       const SOUND_DELAY = 1000; 
       attackSoundTimeoutRef.current = setTimeout(() => {
-        soundManager.playCombatSound(attackAudioUrl, 0.2);
+        soundManager.playCombatSound(attackAudioUrl, 1.0);
       }, SOUND_DELAY);
     }
     return () => {
