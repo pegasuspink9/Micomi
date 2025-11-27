@@ -26,14 +26,14 @@ export const useCharacterSelection = (playerId = 11) => {
       
       // First, load cached assets (including videos)
       await universalAssetPreloader.loadCachedAssets('characters');
-      await universalAssetPreloader.loadCachedAssets('ui_videos'); // ✅ Load video cache
+      await universalAssetPreloader.loadCachedAssets('ui_videos'); //  Load video cache
       
       // Get character data from API
       const apiData = await characterService.getPlayerCharacters(playerId);
       const { characters: transformedData, userCoins: fetchedUserCoins } = characterService.transformCharacterData(apiData);
       setUserCoins(fetchedUserCoins);
 
-      // ✅ Check both character assets and video assets cache status
+      //  Check both character assets and video assets cache status
       const characterCacheStatus = await universalAssetPreloader.areCharacterAssetsCached(transformedData);
       const videoCacheStatus = await universalAssetPreloader.areVideoAssetsCached([
         { url: VIDEO_ASSETS.characterSelectBackground, name: 'character_select_background', type: 'video' }
@@ -58,7 +58,7 @@ export const useCharacterSelection = (playerId = 11) => {
       const actuallySelectedCharacter = characterService.getSelectedCharacter(dataWithCachedPaths);
       if (actuallySelectedCharacter) {
         setSelectedHero(actuallySelectedCharacter.character_name);
-        console.log(`✅ Actually selected character from backend: ${actuallySelectedCharacter.character_name}`);
+        console.log(` Actually selected character from backend: ${actuallySelectedCharacter.character_name}`);
       } else {
         const firstHero = Object.keys(dataWithCachedPaths)[0];
         if (firstHero) {
@@ -84,7 +84,7 @@ export const useCharacterSelection = (playerId = 11) => {
       
       console.log('📦 Starting all assets download (videos + character assets)...');
       
-      // ✅ Step 1: Download video assets first (high priority)
+      //  Step 1: Download video assets first (high priority)
       console.log('📹 Step 1: Downloading video assets...');
       const videoAssets = [
         {
@@ -122,7 +122,7 @@ export const useCharacterSelection = (playerId = 11) => {
         console.log(`📹 Video download completed: ${videoResult.downloaded}/${videoResult.total}`);
       }
       
-      // ✅ Step 2: Download character assets
+      //  Step 2: Download character assets
       console.log('📦 Step 2: Downloading character assets...');
       const characterResult = await universalAssetPreloader.downloadCharacterAssets(
         charactersData,
@@ -151,11 +151,11 @@ export const useCharacterSelection = (playerId = 11) => {
         }
       }
       
-      // ✅ Combined result
+      //  Combined result
       const totalDownloaded = (videoResult.downloaded || 0) + (characterResult.downloaded || 0);
       const totalAssets = (videoResult.total || 0) + (characterResult.total || 0);
       
-      console.log(`✅ All assets download completed: ${totalDownloaded}/${totalAssets}`);
+      console.log(` All assets download completed: ${totalDownloaded}/${totalAssets}`);
       
       return {
         success: videoResult.success && characterResult.success,
@@ -203,7 +203,7 @@ export const useCharacterSelection = (playerId = 11) => {
       );
       
       if (result.success) {
-        console.log(`✅ Successfully downloaded ${result.downloaded}/${result.total} character assets`);
+        console.log(` Successfully downloaded ${result.downloaded}/${result.total} character assets`);
         
         if (result.failedAssets.length > 0) {
           console.warn(`⚠️ Failed to download ${result.failedAssets.length} assets:`, result.failedAssets);
@@ -281,12 +281,12 @@ export const useCharacterSelection = (playerId = 11) => {
   }, []);
 
 
-  const purchaseCharacter = useCallback(async (heroToPurchase) => { // ✅ CHANGED: Expects the full hero object now
+  const purchaseCharacter = useCallback(async (heroToPurchase) => { //  CHANGED: Expects the full hero object now
     try {
       setPurchasing(true);
       setError(null);
       
-      // ✅ CHANGED: No need to look up the hero, we receive the full object directly.
+      //  CHANGED: No need to look up the hero, we receive the full object directly.
       const hero = heroToPurchase;
       if (!hero) {
         throw new Error('Character not found');
@@ -300,7 +300,7 @@ export const useCharacterSelection = (playerId = 11) => {
       
       const response = await characterService.purchaseCharacter(playerId, hero.characterShopId);
       
-      console.log(`✅ Purchase successful:`, response);
+      console.log(` Purchase successful:`, response);
       
       // Reload characters to get updated data from server
       await loadCharacters();
@@ -339,7 +339,7 @@ export const useCharacterSelection = (playerId = 11) => {
       // Call API to select character
       const response = await characterService.selectCharacter(playerId, hero.character_id);
       
-      console.log(`✅ Character ${heroName} selected successfully:`, response);
+      console.log(` Character ${heroName} selected successfully:`, response);
       
       // Reload characters to get updated selection state from server
       await loadCharacters();
