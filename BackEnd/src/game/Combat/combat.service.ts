@@ -285,6 +285,7 @@ export async function getCurrentFightState(
       enemy_max_health: scaledEnemyMaxHealth,
       enemy_avatar: enemy.avatar_enemy,
       enemy_attack_type: null,
+      enemy_special_skill: null,
     },
     character: {
       character_id: character.character_id,
@@ -967,6 +968,7 @@ export async function fightBossEnemy(
   let enemy_run: string | null = null;
   let character_run: string | null = null;
   let enemy_attack_type: string | null = null;
+  let enemy_special_skill: string | null = null;
   let character_attack_card: string | null = null;
   let card_type: string | null = null;
 
@@ -1232,23 +1234,21 @@ export async function fightBossEnemy(
       character_run = null;
       if (progress.has_reversed_curse) {
         enemy_attack_type = "special attack";
-        enemy_attack = enemy.special_skill || null;
+        enemy_special_skill = enemy.special_skill || null;
         console.log("- Reversed curse active: using special skill attack");
       } else if (isBossJoshy && progress.has_boss_shield) {
-        enemy_run =
-          "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Enemies/Greenland/Boss%20Joshy/Run2.png";
-        enemy_idle =
-          "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Enemies/Greenland/Boss%20Joshy/idle2.png";
+        enemy_run = "Boss Joshy run";
+        enemy_idle = "Boss Joshy idle link";
 
         enemy_attack_type = "special attack";
-        enemy_attack = enemy.special_skill || null;
+        enemy_special_skill = enemy.special_skill || null;
         console.log("- Shield curse active: using special skill attack");
       } else if (isBossDarco && progress.has_force_character_attack_type) {
-        enemy_run = enemy.enemy_run || null;
-        enemy_idle = enemy.enemy_avatar || null;
+        enemy_run = "Boss Darco run";
+        enemy_idle = "Boss Darco idle link";
 
         enemy_attack_type = "special attack";
-        enemy_attack = enemy.special_skill || null;
+        enemy_special_skill = enemy.special_skill || null;
         console.log("- Force basic curse active: using special skill attack");
       } else {
         enemy_attack_type = "basic attack";
@@ -1461,6 +1461,7 @@ export async function fightBossEnemy(
       enemy_run,
       enemy_attack_type,
       enemy_attack,
+      enemy_special_skill,
       enemy_hurt,
       enemy_dies,
       enemy_damage,
