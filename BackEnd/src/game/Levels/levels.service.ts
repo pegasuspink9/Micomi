@@ -308,6 +308,123 @@ export const enterLevel = async (playerId: number, levelId: number) => {
 
   level.challenges.sort((a, b) => a.challenge_id - b.challenge_id);
 
+  const totalPoints = level.challenges.reduce(
+    (sum, ch) => sum + Number(ch.points_reward ?? 0),
+    0
+  );
+  const totalCoins = level.challenges.reduce(
+    (sum, ch) => sum + Number(ch.coins_reward ?? 0),
+    0
+  );
+
+  const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
+  const player = await prisma.player.findUnique({
+    where: { player_id: playerId },
+  });
+  if (!player) throw new Error("Player not found");
+
+  if (level.level_type === "micomiButton") {
+    const lessons = await prisma.level.findFirst({
+      where: { level_id: levelId },
+      include: { lessons: true },
+    });
+
+    return {
+      level: {
+        level_id: level.level_id,
+        level_number: null,
+        level_difficulty: level.level_difficulty,
+        level_title: level.level_title,
+        level_type: level.level_type,
+        content: level.content,
+        total_points: totalPoints,
+        total_coins: totalCoins,
+      },
+      energy: energyStatus.energy,
+      timeToNextEnergyRestore: energyStatus.timeToNextRestore,
+      lessons,
+      audioLinks,
+      imagesUrls,
+    };
+  }
+
+  if (level.level_type === "shopButton") {
+    const potionConfig = await prisma.potionShopByLevel.findUnique({
+      where: { level_id: levelId },
+    });
+
+    let potionShop: any[] = [];
+    if (potionConfig) {
+      const potions = await prisma.potionShop.findMany();
+      const playerPotions = await prisma.playerPotion.findMany({
+        where: { player_id: playerId },
+      });
+      const playerLevelPotions = await prisma.playerLevelPotion.findMany({
+        where: { player_id: playerId, level_id: levelId },
+      });
+
+      potionShop = potions
+        .map((p) => {
+          const globalOwned =
+            playerPotions.find((pp) => pp.potion_shop_id === p.potion_shop_id)
+              ?.quantity ?? 0;
+          const levelBought =
+            playerLevelPotions.find(
+              (plp) => plp.potion_shop_id === p.potion_shop_id
+            )?.quantity ?? 0;
+
+          const rawLimit =
+            potionConfig[
+              `${p.potion_type.toLowerCase()}_quantity` as keyof typeof potionConfig
+            ] ?? 0;
+
+          const limit = Number(rawLimit ?? 0);
+
+          const isAvailable = potionConfig.potions_avail
+            ? (potionConfig.potions_avail as string[]).includes(p.potion_type)
+            : limit > 0;
+          if (!isAvailable) return null;
+
+          return {
+            player_owned_quantity: globalOwned,
+            potion_id: p.potion_shop_id,
+            potion_type: p.potion_type,
+            description: p.potion_description,
+            potion_price: p.potion_price,
+            potion_url: p.potion_url,
+            limit,
+            boughtInLevel: levelBought,
+            remainToBuy: Math.max(0, limit - levelBought),
+          };
+        })
+        .filter(Boolean);
+    }
+
+    return {
+      level: {
+        level_id: level.level_id,
+        level_number: null,
+        level_difficulty: level.level_difficulty,
+        level_title: level.level_title,
+        level_type: level.level_type,
+        content: level.content,
+        total_points: totalPoints,
+        total_coins: totalCoins,
+      },
+      enemy: null,
+      character: null,
+      energy: energyStatus.energy,
+      timeToNextEnergyRestore: energyStatus.timeToNextRestore,
+      player_info: {
+        player_id: player.player_id,
+        player_coins: player.coins,
+      },
+      potionShop,
+      audio:
+        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Shop.ogg",
+    };
+  }
+
   if (level.level_difficulty === "easy") {
     const invalid = level.challenges.some(
       (c: Challenge) =>
@@ -536,7 +653,6 @@ export const enterLevel = async (playerId: number, levelId: number) => {
   );
 
   const firstChallenge = challengesWithTimer[0] ?? null;
-  const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
 
   const currentEnemyHealth = progress.enemy_hp ?? enemyMaxHealth;
   const currentPlayerHealth = progress.player_hp ?? playerMaxHealth;
@@ -578,7 +694,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     versus_background =
       "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Versus%20Maps/Green.png";
     gameplay_audio =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Boss.ogg";
+      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Greenland.mp3";
   } else if (questionType === "CSS") {
     versus_background =
       "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Versus%20Maps/Lava.png";
@@ -587,13 +703,9 @@ export const enterLevel = async (playerId: number, levelId: number) => {
   } else if (questionType === "JavaScript") {
     versus_background =
       "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Versus%20Maps/Winter.png";
-    gameplay_audio =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Snowland.mp3";
   } else {
     versus_background =
       "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Versus%20Maps/Autumn.jpg";
-    gameplay_audio =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Autumnland.mp3";
   }
 
   return {
@@ -654,8 +766,20 @@ export const unlockNextLevel = async (
   mapId: number,
   currentLevelNumber: number
 ) => {
+  const currentLevel = await prisma.level.findFirst({
+    where: { map_id: mapId, level_number: currentLevelNumber },
+  });
+
+  if (!currentLevel) {
+    throw new Error("Current level not found");
+  }
+
   const nextLevel = await prisma.level.findFirst({
-    where: { map_id: mapId, level_number: currentLevelNumber + 1 },
+    where: {
+      map_id: mapId,
+      level_id: { gt: currentLevel.level_id },
+    },
+    orderBy: { level_id: "asc" },
   });
 
   if (nextLevel) {

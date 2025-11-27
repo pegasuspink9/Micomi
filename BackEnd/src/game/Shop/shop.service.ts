@@ -16,12 +16,13 @@ async function spendCoins(playerId: number, amount: number) {
     where: { player_id: playerId },
   });
   if (!player) throw new Error("Player not found");
-  if (player.coins < amount) throw new Error("Not enough coins");
+  if (player.coins < amount) return { message: "Not enough coins" };
 
-  await prisma.player.update({
-    where: { player_id: playerId },
-    data: { coins: { decrement: amount } },
-  });
+  if (player.coins < amount)
+    await prisma.player.update({
+      where: { player_id: playerId },
+      data: { coins: { decrement: amount } },
+    });
 
   await updateQuestProgress(playerId, QuestType.spend_coins, amount);
 }
@@ -77,7 +78,8 @@ export const buyPotion = async (
     where: { player_id: playerId },
   });
   if (!player) throw new Error("Player not found");
-  if (player.coins < potion.potion_price) throw new Error("Not enough coins");
+  if (player.coins < potion.potion_price)
+    return { message: "Not enough coins" };
 
   await prisma.$transaction(async (tx) => {
     await tx.playerLevelPotion.upsert({
@@ -130,16 +132,16 @@ export const buyCharacter = async (
   const player = await prisma.player.findUnique({
     where: { player_id: playerId },
   });
-  if (!player) throw new Error("Player not found");
+  if (!player) return { message: "Player not found" };
 
   const charShop = await prisma.characterShop.findUnique({
     where: { character_shop_id: characterShopId },
     include: { character: true },
   });
-  if (!charShop) throw new Error("Character not found");
+  if (!charShop) return { message: "Character not found" };
 
   if (player.coins < charShop.character_price)
-    throw new Error("Not enough coins");
+    return { message: "Not enough coins" };
 
   const existing = await prisma.playerCharacter.findUnique({
     where: {
@@ -150,7 +152,7 @@ export const buyCharacter = async (
     },
   });
 
-  if (existing?.is_purchased) throw new Error("Character already purchased");
+  if (existing?.is_purchased) return { message: "Character already purchased" };
 
   await prisma.playerCharacter.updateMany({
     where: { player_id: playerId },
