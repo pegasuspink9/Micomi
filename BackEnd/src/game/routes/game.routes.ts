@@ -31,11 +31,11 @@ router.post(
   LevelController.enterLevelController
 );
 router.post(
-  "/entryLevel/:playerId/:levelId/preview/micomi-done", //for micomi level
+  "/entryLevel/:playerId/:levelId/done", //for micomi level
   LevelController.completeMicomiLevel
 );
 router.post(
-  "/entryLevel/:playerId/:levelId/preview/shop-done", //for potion shop level
+  "/entryLevel/:playerId/:levelId/done", //for potion shop level
   LevelController.completeShopLevel
 );
 

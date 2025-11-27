@@ -766,8 +766,20 @@ export const unlockNextLevel = async (
   mapId: number,
   currentLevelNumber: number
 ) => {
+  const currentLevel = await prisma.level.findFirst({
+    where: { map_id: mapId, level_number: currentLevelNumber },
+  });
+
+  if (!currentLevel) {
+    throw new Error("Current level not found");
+  }
+
   const nextLevel = await prisma.level.findFirst({
-    where: { map_id: mapId, level_number: currentLevelNumber + 1 },
+    where: {
+      map_id: mapId,
+      level_id: { gt: currentLevel.level_id },
+    },
+    orderBy: { level_id: "asc" },
   });
 
   if (nextLevel) {
