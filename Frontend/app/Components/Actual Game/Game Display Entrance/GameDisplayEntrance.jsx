@@ -1,7 +1,63 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Image, Animated } from 'react-native';
+import React, { useEffect, useRef, useState, useMemo} from 'react';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import { gameScale, SCREEN } from '../../Responsiveness/gameResponsive';
-import { ImageBackground } from 'expo-image';
+import { Image, ImageBackground } from 'expo-image';
+import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
+
+const SpriteAnimator = ({
+  sourceUri,
+  frameWidth,
+  frameHeight,
+  columns = 6,
+  rows = 4,
+  duration = 1000, 
+  startAnimation = false
+}) => {
+  const frameIndex = useSharedValue(0);
+  const totalFrames = columns * rows;
+
+  useEffect(() => {
+    if (startAnimation){
+      frameIndex.value = 0;
+      frameIndex.value = withTiming(totalFrames - 1, {
+        duration: duration,
+        easing: Easing.linear,
+      });
+    }
+  }, [sourceUri, totalFrames, duration, startAnimation]); 
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const frame = Math.floor(frameIndex.value);
+    const column = frame % columns;
+    const row = Math.floor(frame / columns);
+    return {
+      transform: [
+        { translateX: -(column * frameWidth) },
+        { translateY: -(row * frameHeight) },
+      ],
+    };
+  });
+
+  if (!sourceUri) {
+    return null;
+  }
+
+  return (
+    <View style={{ width: frameWidth, height: frameHeight, overflow: 'hidden' }}>
+      <Reanimated.View style={[
+        animatedStyle,
+        { width: frameWidth * columns, height: frameHeight * rows }
+      ]}>
+        <Image
+          source={{ uri: sourceUri }}
+          style={{ width: '100%', height: '100%' }}
+          contentFit="cover"
+          cachePolicy="disk"
+        />
+      </Reanimated.View>
+    </View>
+  );
+};
 
 
 const CombatVSModal = ({ 
@@ -10,8 +66,12 @@ const CombatVSModal = ({
   selectedCharacter = null,
   enemy = null,
   versusBackground = null,
-  duration = 3000
+  duration = 4000
 }) => {
+
+  const [isBackgroundLoaded, setIsBackgroundLoaded] = useState(false);
+  const [playSpriteAnimation, setPlaySpriteAnimation] = useState(false);
+  const [playEnemySpriteAnimation, setPlayEnemySpriteAnimation] = useState(false);
 
    useEffect(() => {
       if (visible && versusBackground) {
@@ -30,29 +90,37 @@ const CombatVSModal = ({
 
     useEffect(() => {
       visibleRef.current = visible;  
-      if (visible && !timerRef.current) {
+      // ✅ MODIFIED: The main animation logic is updated here.
+      if (visible && isBackgroundLoaded && !timerRef.current) {
         console.log('Setting timer for', duration);
         
-        //  Entrance animation
-        Animated.sequence([
-          Animated.timing(characterSlideAnim, {
-            toValue: 0,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-          Animated.parallel([
+        // 1. Start the character slide-in animation first.
+        Animated.timing(characterSlideAnim, {
+          toValue: 0,
+          duration: 350, // Slightly longer for better effect
+          useNativeDriver: true,
+        }).start(() => {
+          // 2. Once the slide-in is complete, trigger the sprite animation.
+          console.log('Character slide complete. Triggering sprite animation.');
+          setPlaySpriteAnimation(true);
+
+          // 3. Start the rest of the entrance animations (enemy slide-in and VS logo).
             Animated.timing(enemySlideAnim, {
-              toValue: 0,
-              duration: 200,
-              useNativeDriver: true,
-            }),
-          ]),
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }).start(() => {
+            // 4. Once the enemy slide-in is complete, trigger its sprite animation.
+            console.log('Enemy slide complete. Triggering enemy sprite animation.');
+            setPlayEnemySpriteAnimation(true);
+          });
+
           Animated.timing(vsScaleAnim, {
             toValue: 1,
-            duration: 200,
+            duration: 250,
             useNativeDriver: true,
-          }),
-        ]).start();
+          }).start();
+        });
 
         //  Set timer for outro animation
         timerRef.current = setTimeout(() => {
@@ -91,6 +159,8 @@ const CombatVSModal = ({
             enemySlideAnim.setValue(SCREEN.width);
             vsScaleAnim.setValue(0);
             fadeOutAnim.setValue(1);
+            setPlaySpriteAnimation(false);
+            setPlayEnemySpriteAnimation(false);
           });
         }, duration);
       }
@@ -102,13 +172,14 @@ const CombatVSModal = ({
         }
       }
     };  
-  }, [visible, duration, onComplete, characterSlideAnim, enemySlideAnim, vsScaleAnim, fadeOutAnim]);
+  }, [visible, isBackgroundLoaded, duration, onComplete, characterSlideAnim, enemySlideAnim, vsScaleAnim, fadeOutAnim]);
 
 
-  if (!visible || !selectedCharacter || !enemy) {
+  if (!visible || !selectedCharacter || !enemy || !versusBackground) {
     return null;
   }
    
+
   if (!selectedCharacter || !enemy) {
     console.log('🚫 Missing selectedCharacter or enemy data:', { selectedCharacter: !!selectedCharacter, enemy: !!enemy });
     return null;
@@ -130,81 +201,122 @@ const CombatVSModal = ({
     }
   });
 
+  const characterSpriteUrl = useMemo(() => {
+  if (selectedCharacter?.character_attack && Array.isArray(selectedCharacter.character_attack) && selectedCharacter.character_attack.length > 3) {
+    return selectedCharacter.character_attack[3]; 
+  }
+  return null;
+}, [selectedCharacter]);
+
+  const enemySpriteUrl = useMemo(() => {
+    if (enemy?.enemy_attack && typeof enemy.enemy_attack === 'string') {
+      return enemy.enemy_attack;
+    }
+    return null;
+  }, [enemy]);
+
+
   return (
      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000 }} pointerEvents="box-none">
     <Animated.View style={[{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }, { opacity: fadeOutAnim },
     fadeOutAnim._value === 0 && { pointerEvents: 'none' }
     ]}>
     <View style={styles.modalOverlay}>
-    <ImageBackground source={{ uri: versusBackground }} style={styles.modalBackground} >
-  
-    <Animated.View style={[styles.characterSide, { transform: [{ translateX: characterSlideAnim }] }]}>
-          <View style={styles.characterContainer}>
-            <View style={styles.avatarFrame}>
+    <ImageBackground 
+      source={{ uri: versusBackground }} 
+      style={styles.modalBackground}
+      onLoad={() => setIsBackgroundLoaded(true)}
+    >
+
+     {isBackgroundLoaded && (
+        <>
+          {/* Character side - Top left */}
+          <Animated.View style={[styles.characterSide, { transform: [{ translateX: characterSlideAnim }] }]}>
+            <View style={styles.characterContainer}>
+              <View style={styles.avatarFrame}>
+                {characterSpriteUrl ? (
+                  <SpriteAnimator
+                    sourceUri={characterSpriteUrl}
+                    frameWidth={styles.characterAvatar.width}
+                    frameHeight={styles.characterAvatar.height}
+                    startAnimation={playSpriteAnimation}
+                  />
+                ) : (
+                  <Image 
+                    source={{ uri: selectedCharacter.character_avatar }}
+                    style={styles.characterAvatar}
+                    resizeMode="contain"
+                  />
+                )}
+              </View>
+
+              <View style={styles.nameContainer}>
+                <View>
+                  <Text style={[styles.characterName, styles.heroName]}>
+                    {selectedCharacter.character_name}
+                  </Text>
+                </View>
+                
+                <View style={styles.statsContainer}>
+                  <Text style={styles.roleLabel}>HERO</Text>
+                  <Text style={styles.statsText}>HP: {selectedCharacter.max_health}</Text>
+                  <Text style={styles.statsText}>
+                    DMG: {Array.isArray(selectedCharacter.character_damage) 
+                      ? `${Math.min(...selectedCharacter.character_damage)}-${Math.max(...selectedCharacter.character_damage)}`
+                      : selectedCharacter.character_damage}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </Animated.View>
+
+          {/* VS Text */}
+          <Animated.View style={[styles.vsContainer, { transform: [{ scale: vsScaleAnim }] }]}>
+            <View style={styles.vsBackground}>
               <Image 
-                source={{ uri: selectedCharacter.character_avatar }}
-                style={styles.characterAvatar}
-                resizeMode="contain"
+                source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1761043746/Untitled_design_16_sixivj.png' }}
+                style={styles.vsImage}
               />
             </View>
-            
-             <View style={styles.nameContainer}>
-              <View>
-                <Text style={[styles.characterName, styles.heroName]}>
-                  {selectedCharacter.character_name}
-                </Text>
+          </Animated.View>
+
+          {/* Enemy side - Bottom right */}
+          <Animated.View style={[styles.enemySide, { transform: [{ translateX: enemySlideAnim }] }]}>
+            <View style={styles.characterContainer}>
+              <View style={styles.avatarFrame}>
+                {enemySpriteUrl ? (
+                  <SpriteAnimator
+                    sourceUri={enemySpriteUrl}
+                    frameWidth={styles.enemyAvatar.width}
+                    frameHeight={styles.enemyAvatar.height}
+                    startAnimation={playEnemySpriteAnimation}
+                  />
+                ) : (
+                  <Image 
+                    source={{ uri: enemy.enemy_avatar }}
+                    style={styles.enemyAvatar}
+                    resizeMode="contain" 
+                  />
+                )}
               </View>
+            </View>
               
-              <View style={styles.statsContainer}>
-                <Text style={styles.roleLabel}>HERO</Text>
-                <Text style={styles.statsText}>HP: {selectedCharacter.max_health}</Text>
-                <Text style={styles.statsText}>
-                  DMG: {Array.isArray(selectedCharacter.character_damage) 
-                    ? `${Math.min(...selectedCharacter.character_damage)}-${Math.max(...selectedCharacter.character_damage)}`
-                    : selectedCharacter.character_damage}
+            <View style={styles.enemyNameContainer}>
+              <View>
+                <Text style={[styles.characterName, styles.enemyName]}>
+                  {enemy.enemy_name}
                 </Text>
+                <Text style={styles.enemyRoleLabel}>ENEMY</Text>
+              </View>
+
+              <View style={styles.enemyStatsContainer}>
+                <Text style={styles.statsText}>HP: {enemy.enemy_health}</Text>
+                <Text style={styles.statsText}>DMG: {enemy.enemy_damage}</Text>
               </View>
             </View>
-          </View>
-        </Animated.View>
-
-
-        {/* VS Text */}
-        <Animated.View style={[styles.vsContainer, { transform: [{ scale: vsScaleAnim }] }]}>
-              <View style={styles.vsBackground}>
-                 <Image 
-                  source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1761043746/Untitled_design_16_sixivj.png' }}
-                  style={styles.vsImage}
-                />
-              </View>
-        </Animated.View>
-
-        {/* Enemy side - Bottom right */}
-        <Animated.View style={[styles.enemySide, { transform: [{ translateX: enemySlideAnim }] }]}>
-          <View style={styles.characterContainer}>
-            <View style={styles.avatarFrame}>
-              <Image 
-                source={{ uri: enemy.enemy_avatar }}
-                style={styles.enemyAvatar}
-                resizeMode="contain" 
-              />
-            </View>
-          </View>
-            
-          <View style={styles.enemyNameContainer}>
-            <View>
-              <Text style={[styles.characterName, styles.enemyName]}>
-                {enemy.enemy_name}
-              </Text>
-              <Text style={styles.enemyRoleLabel}>ENEMY</Text>
-            </View>
-
-            <View style={styles.enemyStatsContainer}>
-              <Text style={styles.statsText}>HP: {enemy.enemy_health}</Text>
-              <Text style={styles.statsText}>DMG: {enemy.enemy_damage}</Text>
-            </View>
-          </View>
-        </Animated.View>
+          </Animated.View>
+        </>
+      )}
     </ImageBackground>
     </View>
     </Animated.View>
@@ -238,7 +350,7 @@ const styles = StyleSheet.create({
   },
  enemySide: {
     position: 'absolute',
-    right: 0,
+   right: gameScale(120),  
     bottom: gameScale(844 * 0.14),
     width: gameScale(390 / 2),
     height: gameScale(844 / 2),
@@ -253,7 +365,7 @@ const styles = StyleSheet.create({
   },
   enemyNameContainer: {
     position: 'absolute',
-    left: gameScale(-200),
+    right: gameScale(70),
     top: gameScale(844 * 0.22),
     alignItems: 'flex-end',  
   },
@@ -274,7 +386,7 @@ const styles = StyleSheet.create({
   },
    enemyAvatar: {
     width: gameScale(600), 
-    height: gameScale(600),
+    height: gameScale(600)
   },
   avatarGlow: {
     position: 'absolute',
