@@ -281,12 +281,9 @@ export const useCharacterSelection = (playerId = 11) => {
   }, []);
 
 
-  const purchaseCharacter = useCallback(async (heroToPurchase) => { //  CHANGED: Expects the full hero object now
+ const purchaseCharacter = useCallback(async (heroToPurchase) => {
     try {
       setPurchasing(true);
-      setError(null);
-      
-      //  CHANGED: No need to look up the hero, we receive the full object directly.
       const hero = heroToPurchase;
       if (!hero) {
         throw new Error('Character not found');
@@ -307,8 +304,8 @@ export const useCharacterSelection = (playerId = 11) => {
       
       return response;
     } catch (err) {
-      setError(err.message);
-      console.error('Error purchasing character:', err);
+      
+      console.log('Purchase transaction info:', err.message); // Changed to log to reduce console noise
       throw err;
     } finally {
       setPurchasing(false);

@@ -14,27 +14,37 @@ export const characterService = {
     }
   },
 
-  // Purchase character 
-  purchaseCharacter: async (playerId, characterShopId) => {
+  
+ purchaseCharacter: async (playerId, characterShopId) => {
     try {
       const response = await apiService.post(`/game/buy-character/${playerId}`, {
         characterShopId: characterShopId
       });
       console.log(`💰 Character purchase response for Player ID ${playerId}, Character Shop ID ${characterShopId}:`, response);
 
+      if (response.data && typeof response.data.message === 'string') {
+          if (response.data.message === "Not enough coins" || 
+              response.data.message === "Character already purchased") {
+            // Treat these as application-level errors to be displayed in the modal
+            throw new Error(response.data.message);
+          }
+      }
+      
       if (!response.success) {
-        throw new Error(response.message || 'The purchase could not be completed.');
+        throw new Error(response.message || 'The purchase could not be completed due to an API error.');
       }
-
       return response.data;
+
     } catch (error) {
+      let errorMessage = 'An unexpected error occurred during purchase.';
       if (error.response && error.response.data && error.response.data.message) {
-        console.error(`Purchase API failed with message: "${error.response.data.message}"`);
-        throw new Error(error.response.data.message);
-      } else {
-        console.error('Failed to purchase character (generic/network error):', error);
-        throw error;
+        errorMessage = error.response.data.message; 
+      } else if (error.message) {
+        errorMessage = error.message; 
       }
+      
+      console.log(`Purchase API result: "${errorMessage}"`);
+      throw new Error(errorMessage); // Re-throw with the extracted message
     }
   },
   

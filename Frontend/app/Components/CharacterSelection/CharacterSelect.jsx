@@ -38,7 +38,7 @@ export default function CharacterProfile() {
   } = useCharacterSelection(playerId);
 
   const [showBuyModal, setShowBuyModal] = useState(false);
-  const [errorModal, setErrorModal] = useState({ visible: false, message: '' });
+  const [errorModal, setErrorModal] = useState({ visible: false, message: '', title: 'Purchase Failed' });
   const [showStaticImage, setShowStaticImage] = useState(false);
   const [isCharacterAnimating, setIsCharacterAnimating] = useState(true);
   const [videoReady, setVideoReady] = useState(false);
@@ -131,11 +131,20 @@ export default function CharacterProfile() {
       console.log('✅ Purchase completed successfully:', response);
       
     } catch (error) {
-      console.error('❌ Purchase failed:', error);
+      console.log('Purchase interrupted:', error.message);
       setShowBuyModal(false); 
+     
+      let modalTitle = 'Purchase Failed';
+      if (error.message === 'Not enough coins') {
+        modalTitle = 'Insufficient Funds';
+      } else if (error.message === 'Character already purchased') {
+        modalTitle = 'Info'; // Or 'Already Owned'
+      }
+
       setErrorModal({ 
         visible: true, 
-        message: error.message || 'Unable to purchase character. Please try again.' 
+        message: error.message || 'Unable to purchase character. Please try again.',
+        title: modalTitle // Set the dynamic title
       });
     }
   };
@@ -183,17 +192,11 @@ export default function CharacterProfile() {
     );
   };
 
-  // Handle loading states
-  if (error) {
+  if (loading && getHeroNames().length === 0) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <Text style={styles.errorText}>Error: {error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={() => {
-          clearError();
-          loadCharacters();
-        }}>
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
+        <ActivityIndicator size="large" color="#ffffff" />
+        <Text style={styles.loadingText}>Loading Characters...</Text>
       </View>
     );
   }
@@ -230,14 +233,7 @@ export default function CharacterProfile() {
   }
 
   // Show general loading (if not asset loading)
-  if (loading) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color="#ffffff" />
-        <Text style={styles.loadingText}>Loading Characters...</Text>
-      </View>
-    );
-  }
+
 
   if (!currentHero) {
     return (
@@ -357,7 +353,7 @@ export default function CharacterProfile() {
                 ) : (
                   <>
                     <Image source={{ uri: URLS.coin }} style={styles.modalCoinIcon} />
-                    <Text style={styles.confirmButtonText}>Buy {currentHero.character_price}</Text>
+                    <Text style={styles.confirmButtonText}>{currentHero.character_price}</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -370,24 +366,23 @@ export default function CharacterProfile() {
         animationType="fade"
         transparent={true}
         visible={errorModal.visible}
-        onRequestClose={() => setErrorModal({ visible: false, message: '' })}
+        onRequestClose={() => setErrorModal({ visible: false, message: '', title: 'Purchase Failed' })}
         statusBarTranslucent={true}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Purchase Failed</Text>
+            <Text style={styles.modalTitle}>{errorModal.title}</Text>
             <Text style={styles.modalText}>{errorModal.message}</Text>
             <TouchableOpacity 
               style={styles.modalSingleButton} 
-              onPress={() => setErrorModal({ visible: false, message: '' })}
+              onPress={() => setErrorModal({ visible: false, message: '', title: 'Purchase Failed' })}
             >
               <Text style={styles.confirmButtonText}>OK</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-
-    </View>
+      </View>
   );
 }
 

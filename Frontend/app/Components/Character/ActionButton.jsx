@@ -16,7 +16,6 @@ const ActionButton = ({
 
   // Case 1: Character is already purchased
   if (currentHero.is_purchased) {
-    // Sub-case: Character is also the one currently selected
     if (currentHero.is_selected) {
       return (
         <View style={[styles.selectButton, { backgroundColor: '#0a3d62', borderColor: '#4CAF50' }]}>
@@ -44,14 +43,12 @@ const ActionButton = ({
   return (
     <TouchableOpacity
       style={styles.buyButton}
-      // ✅ FIXED: This onPress event now correctly calls the function
-      // to show the purchase confirmation modal.
       onPress={() => onShowBuyModal(true)}
       disabled={disabled}
     >
       <Image source={{ uri: coinIcon }} style={styles.coinIcon} />
       <Text style={styles.buttonText}>
-        Buy {currentHero.character_price}
+         {currentHero.character_price}
       </Text>
     </TouchableOpacity>
   );
