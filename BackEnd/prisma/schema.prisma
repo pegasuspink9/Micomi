@@ -328,6 +328,7 @@ model Quest {
   reward_coins   Int           @default(0)
   quest_id       Int           @id @default(autoincrement())
   created_at     DateTime      @default(now())
+  quest_period   QuestPeriod?  @default(daily)
   playerQuests   PlayerQuest[]
 }
 
@@ -339,6 +340,8 @@ model PlayerQuest {
   current_value   Int       @default(0)
   is_claimed      Boolean   @default(false)
   is_completed    Boolean   @default(false)
+  expires_at      DateTime?
+  quest_period    QuestPeriod? @default(daily)
   player          Player    @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
   quest           Quest     @relation(fields: [quest_id], references: [quest_id], onDelete: Cascade)
 
@@ -352,6 +355,12 @@ model BackgroundMapping {
   backgroundUrl String
 
   @@unique([mapName, levelNumber]) 
+}
+
+enum QuestPeriod {
+  daily
+  weekly
+  monthly
 }
 
 enum QuestType {

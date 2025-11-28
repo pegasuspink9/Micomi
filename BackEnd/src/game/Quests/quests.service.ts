@@ -1,5 +1,6 @@
 import { QuestType } from "@prisma/client";
 import { prisma } from "../../../prisma/client";
+import { io } from "../../index";
 
 export async function updateQuestProgress(
   playerId: number,
@@ -17,7 +18,7 @@ export async function updateQuestProgress(
   });
 
   console.log(
-    "📊 ALL quests for player (including completed):",
+    "ALL quests for player (including completed):",
     allQuests.map((q) => ({
       player_quest_id: q.player_quest_id,
       quest_id: q.quest_id,
@@ -39,7 +40,7 @@ export async function updateQuestProgress(
   });
 
   console.log(
-    "📋 Found INCOMPLETE quests:",
+    "Found INCOMPLETE quests:",
     playerQuests.length,
     playerQuests.map((q) => ({
       quest_id: q.quest_id,
@@ -56,7 +57,7 @@ export async function updateQuestProgress(
     const completed = newValue >= pq.quest.target_value;
 
     console.log(
-      `  ➡️ Updating quest ${pq.quest.title}: ${pq.current_value} → ${newValue} (target: ${pq.quest.target_value})`
+      `Updating quest ${pq.quest.title}: ${pq.current_value} → ${newValue} (target: ${pq.quest.target_value})`
     );
 
     const updatedPQ = await prisma.playerQuest.update({
@@ -69,7 +70,21 @@ export async function updateQuestProgress(
       include: { quest: true },
     });
 
-    console.log(`  ✅ Updated successfully: ${updatedPQ.current_value}`);
+    console.log(`Updated successfully: ${updatedPQ.current_value}`);
+
+    if (completed) {
+      io.to(playerId.toString()).emit("questCompleted", {
+        quest_id: updatedPQ.quest.quest_id,
+        title: updatedPQ.quest.title,
+        description: updatedPQ.quest.description,
+        reward_exp: updatedPQ.quest.reward_exp,
+        reward_coins: updatedPQ.quest.reward_coins,
+      });
+      console.log(
+        `✅ Quest "${updatedPQ.quest.title}" completed for player ${playerId}`
+      );
+    }
+
     results.push(updatedPQ);
   }
 

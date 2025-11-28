@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, QuestPeriod } from "@prisma/client";
 import { hashPassword, comparePassword } from "../../../utils/hash";
 import { generateAccessToken } from "../../../utils/token";
 import { PlayerCreateInput, PlayerLoginInput } from "./player.types";
@@ -6,6 +6,11 @@ import { checkAchievements } from "../../game/Achievements/achievements.service"
 import { updateQuestProgress } from "../../game/Quests/quests.service";
 import { QuestType } from "@prisma/client";
 import { differenceInCalendarDays } from "date-fns";
+import {
+  getPlayerQuestsByPeriod,
+  getStartDate,
+  getExpirationDate,
+} from "../Quest/periodicQuests.service";
 
 const prisma = new PrismaClient();
 
@@ -50,9 +55,6 @@ export const getPlayerProfile = async (player_id: number) => {
       playerAchievements: {
         include: { achievement: true },
       },
-      playerQuests: {
-        include: { quest: true },
-      },
     },
   });
 
@@ -60,25 +62,75 @@ export const getPlayerProfile = async (player_id: number) => {
 
   await checkAchievements(player_id);
 
-  const [quests, achievements] = await Promise.all([
-    prisma.quest.findMany(),
-    prisma.achievement.findMany(),
-  ]);
+  const now = new Date();
 
-  const playerQuestMap = new Map(
-    player.playerQuests.map((pq) => [pq.quest_id, pq])
-  );
-
-  const mergedQuests = quests.map((quest) => {
-    const pq = playerQuestMap.get(quest.quest_id);
-    return {
-      ...quest,
-      is_completed: pq?.is_completed ?? false,
-      is_claimed: pq?.is_claimed ?? false,
-      current_value: pq?.current_value ?? 0,
-    };
+  const dailyQuests = await prisma.playerQuest.findMany({
+    where: {
+      player_id,
+      quest_period: "daily",
+      expires_at: {
+        gte: getStartDate("daily"),
+        lte: getExpirationDate("daily"),
+      },
+      is_completed: false,
+      is_claimed: false,
+    },
+    include: { quest: true },
+    orderBy: { player_quest_id: "asc" },
   });
 
+  const weeklyQuests = await prisma.playerQuest.findMany({
+    where: {
+      player_id,
+      quest_period: "weekly",
+      expires_at: {
+        gte: getStartDate("weekly"),
+        lte: getExpirationDate("weekly"),
+      },
+      is_completed: false,
+      is_claimed: false,
+    },
+    include: { quest: true },
+    orderBy: { player_quest_id: "asc" },
+  });
+
+  const monthlyQuests = await prisma.playerQuest.findMany({
+    where: {
+      player_id,
+      quest_period: "monthly",
+      expires_at: {
+        gte: getStartDate("monthly"),
+        lte: getExpirationDate("monthly"),
+      },
+      is_completed: false,
+      is_claimed: false,
+    },
+    include: { quest: true },
+    orderBy: { player_quest_id: "asc" },
+  });
+
+  const completedQuests = await prisma.playerQuest.findMany({
+    where: {
+      player_id,
+      is_completed: true,
+      is_claimed: false,
+      expires_at: { gte: now },
+    },
+    include: { quest: true },
+    orderBy: { completed_at: "desc" },
+  });
+
+  const questLog = await prisma.playerQuest.findMany({
+    where: {
+      player_id,
+      is_claimed: true,
+    },
+    include: { quest: true },
+    orderBy: { completed_at: "desc" },
+    take: 50,
+  });
+
+  const achievements = await prisma.achievement.findMany();
   const playerAchievementMap = new Map(
     player.playerAchievements.map((pa) => [pa.achievement_id, pa])
   );
@@ -122,9 +174,56 @@ export const getPlayerProfile = async (player_id: number) => {
     }
   }
 
+  const formatQuestData = (playerQuests: any[]) => {
+    return playerQuests.map((pq) => ({
+      player_quest_id: pq.player_quest_id,
+      quest_id: pq.quest_id,
+      title: pq.quest.title,
+      description: pq.quest.description,
+      objective_type: pq.quest.objective_type,
+      target_value: pq.quest.target_value,
+      current_value: pq.current_value,
+      reward_exp: pq.quest.reward_exp,
+      reward_coins: pq.quest.reward_coins,
+      quest_period: pq.quest_period,
+      is_completed: pq.is_completed,
+      is_claimed: pq.is_claimed,
+      completed_at: pq.completed_at,
+      expires_at: pq.expires_at,
+      progress_percentage: Math.min(
+        100,
+        Math.round((pq.current_value / pq.quest.target_value) * 100)
+      ),
+    }));
+  };
+
   return {
-    ...player,
-    playerQuests: mergedQuests,
+    player_name: player.player_name,
+    username: player.username,
+    coins: player.coins,
+    current_streak: player.current_streak,
+    exp_points: player.exp_points,
+    ownedCharacters: player.ownedCharacters,
+    ownedPotions: player.ownedPotions,
+
+    quests: {
+      dailyQuests: formatQuestData(dailyQuests),
+      weeklyQuests: formatQuestData(weeklyQuests),
+      monthlyQuests: formatQuestData(monthlyQuests),
+      completedQuests: formatQuestData(completedQuests),
+      questLog: formatQuestData(questLog),
+
+      summary: {
+        totalActive:
+          dailyQuests.length + weeklyQuests.length + monthlyQuests.length,
+        totalCompleted: completedQuests.length,
+        totalClaimed: questLog.length,
+        dailyCount: dailyQuests.length,
+        weeklyCount: weeklyQuests.length,
+        monthlyCount: monthlyQuests.length,
+      },
+    },
+
     playerAchievements: mergedAchievements,
     totalActiveMaps: mapsPlayed.size,
     mapsPlayed: Array.from(mapsPlayed.values()),
@@ -166,23 +265,9 @@ export const createPlayer = async (data: PlayerCreateInput) => {
     });
   }
 
-  const allQuests = await prisma.quest.findMany();
-
-  if (allQuests.length > 0) {
-    await prisma.playerQuest.createMany({
-      data: allQuests.map((quest) => ({
-        player_id: newPlayer.player_id,
-        quest_id: quest.quest_id,
-        current_value: 0,
-        is_completed: false,
-        is_claimed: false,
-      })),
-    });
-
-    console.log(
-      `✅ Initialized ${allQuests.length} quests for new player ${newPlayer.player_id}`
-    );
-  }
+  console.log(
+    `New player ${newPlayer.player_id} created. Quests will be auto-generated.`
+  );
 
   return newPlayer;
 };
