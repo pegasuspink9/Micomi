@@ -4,6 +4,8 @@ import * as EnergyService from "../Energy/energy.service";
 import * as LevelService from "../Levels/levels.service";
 import { updateQuestProgress } from "../Quests/quests.service";
 import { formatTimer } from "../../../helper/dateTimeHelper";
+import { grantRewards } from "../../../utils/grantRewards";
+import { calculatePlayerLevel } from "../../models/Player/player.service";
 import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 
 const ENEMY_HEALTH = 30;
@@ -589,14 +591,13 @@ export async function fightEnemy(
 
             // Always give base rewards on win
             await updateQuestProgress(playerId, QuestType.defeat_enemy, 1);
-            await prisma.player.update({
-              where: { player_id: playerId },
-              data: {
-                total_points: { increment: totalPoints },
-                exp_points: { increment: totalExp },
-                coins: { increment: totalCoins },
-              },
+
+            await grantRewards(playerId, {
+              exp: totalExp,
+              coins: totalCoins,
+              total_points: totalPoints,
             });
+
             await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
 
             // Perfect rewards only if no wrongs and no damage
@@ -718,14 +719,13 @@ export async function fightEnemy(
 
           // Always give base rewards on win
           await updateQuestProgress(playerId, QuestType.defeat_enemy, 1);
-          await prisma.player.update({
-            where: { player_id: playerId },
-            data: {
-              total_points: { increment: totalPoints },
-              exp_points: { increment: totalExp },
-              coins: { increment: totalCoins },
-            },
+
+          await grantRewards(playerId, {
+            exp: totalExp,
+            coins: totalCoins,
+            total_points: totalPoints,
           });
+
           await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
 
           // Perfect rewards only if no wrongs and no damage
@@ -784,14 +784,13 @@ export async function fightEnemy(
       const totalCoins = progress.coins_earned ?? 0;
 
       await updateQuestProgress(playerId, QuestType.defeat_enemy, 1);
-      await prisma.player.update({
-        where: { player_id: playerId },
-        data: {
-          total_points: { increment: totalPoints },
-          exp_points: { increment: totalExp },
-          coins: { increment: totalCoins },
-        },
+
+      await grantRewards(playerId, {
+        exp: totalExp,
+        coins: totalCoins,
+        total_points: totalPoints,
       });
+
       await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
 
       if (wrongChallengesCount === 0 && !progress.took_damage) {
@@ -1165,13 +1164,10 @@ export async function fightBossEnemy(
               await updateQuestProgress(playerId, QuestType.defeat_boss, 1);
             }
 
-            await prisma.player.update({
-              where: { player_id: playerId },
-              data: {
-                total_points: { increment: totalPoints },
-                exp_points: { increment: totalExp },
-                coins: { increment: totalCoins },
-              },
+            await grantRewards(playerId, {
+              exp: totalExp,
+              coins: totalCoins,
+              total_points: totalPoints,
             });
 
             await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
@@ -1327,13 +1323,10 @@ export async function fightBossEnemy(
             await updateQuestProgress(playerId, QuestType.defeat_boss, 1);
           }
 
-          await prisma.player.update({
-            where: { player_id: playerId },
-            data: {
-              total_points: { increment: totalPoints },
-              exp_points: { increment: totalExp },
-              coins: { increment: totalCoins },
-            },
+          await grantRewards(playerId, {
+            exp: totalExp,
+            coins: totalCoins,
+            total_points: totalPoints,
           });
 
           await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
@@ -1401,14 +1394,12 @@ export async function fightBossEnemy(
         await updateQuestProgress(playerId, QuestType.defeat_boss, 1);
       }
 
-      await prisma.player.update({
-        where: { player_id: playerId },
-        data: {
-          total_points: { increment: totalPoints },
-          exp_points: { increment: totalExp },
-          coins: { increment: totalCoins },
-        },
+      await grantRewards(playerId, {
+        exp: totalExp,
+        coins: totalCoins,
+        total_points: totalPoints,
       });
+
       await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
 
       if (wrongChallengesCount === 0 && !progress.took_damage) {

@@ -31,12 +31,8 @@ router.post(
   LevelController.enterLevelController
 );
 router.post(
-  "/entryLevel/:playerId/:levelId/done", //for micomi level
-  LevelController.completeMicomiLevel
-);
-router.post(
-  "/entryLevel/:playerId/:levelId/done", //for potion shop level
-  LevelController.completeShopLevel
+  "/entryLevel/:playerId/:levelId/done", //for micomi and shop level
+  LevelController.completeLevelDone
 );
 
 //Challenge route

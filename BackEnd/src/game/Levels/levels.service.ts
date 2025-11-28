@@ -836,11 +836,6 @@ export const unlockNextLevel = async (
       },
     });
 
-    await prisma.player.update({
-      where: { player_id: playerId },
-      data: { level: nextLevel.level_id },
-    });
-
     return nextLevel;
   }
 
@@ -903,11 +898,6 @@ export const unlockNextLevel = async (
       },
     });
 
-    await prisma.player.update({
-      where: { player_id: playerId },
-      data: { level: firstLevel.level_id },
-    });
-
     console.log(
       `Player ${playerId} progressed from ${currentMap.map_name} → ${nextMapName} (unlocked first level player-specifically)`
     );
@@ -918,18 +908,52 @@ export const unlockNextLevel = async (
   return null;
 };
 
-export const completeMicomiLevel = async (
-  playerId: number,
-  levelId: number
-) => {
+export const completeLevelDone = async (playerId: number, levelId: number) => {
   const level = await prisma.level.findUnique({
     where: { level_id: levelId },
-    include: { map: true },
+    include: { map: true, potionShopByLevel: true },
   });
 
   if (!level) throw new Error("Level not found");
-  if (level.level_type !== "micomiButton") {
-    throw new Error("This API is only for micomiButton levels");
+
+  const isMicomiLevel = level.level_type === "micomiButton";
+  const isShopLevel = level.level_type === "shopButton";
+
+  if (!isMicomiLevel && !isShopLevel) {
+    throw new Error(
+      "This endpoint only supports micomiButton and shopButton levels"
+    );
+  }
+
+  if (isShopLevel) {
+    const potionConfig = level.potionShopByLevel;
+    if (potionConfig) {
+      const potions = await prisma.potionShop.findMany();
+      const playerLevelPotions = await prisma.playerLevelPotion.findMany({
+        where: { player_id: playerId, level_id: levelId },
+      });
+
+      const notCompleted = potions.some((p) => {
+        const rawLimit =
+          potionConfig[
+            `${p.potion_type.toLowerCase()}_quantity` as keyof typeof potionConfig
+          ] ?? 0;
+        const limit = Number(rawLimit ?? 0);
+        if (limit <= 0) return false;
+
+        const bought =
+          playerLevelPotions.find(
+            (plp) => plp.potion_shop_id === p.potion_shop_id
+          )?.quantity ?? 0;
+
+        return bought < limit;
+      });
+
+      // Uncomment this if you want to enforce buying all potions
+      // if (notCompleted) {
+      //   throw new Error("You must buy all available potions before completing the shop level");
+      // }
+    }
   }
 
   const existingProgress = await prisma.playerProgress.findUnique({
@@ -943,25 +967,25 @@ export const completeMicomiLevel = async (
     update: {
       is_completed: true,
       completed_at: new Date(),
-      done_micomi_level: true,
+      ...(isMicomiLevel && { done_micomi_level: true }),
+      ...(isShopLevel && { done_shop_level: true }),
     },
     create: {
       player_id: playerId,
       level_id: levelId,
       current_level: level.level_number,
-      attempts: 0,
-      player_answer: {},
+      is_completed: true,
       completed_at: new Date(),
       challenge_start_time: new Date(),
-      is_completed: true,
-      done_micomi_level: true,
       player_hp: 0,
       enemy_hp: 0,
       battle_status: BattleStatus.in_progress,
-      wrong_challenges: [],
       coins_earned: 0,
       total_points_earned: 0,
       total_exp_points_earned: 0,
+      wrong_challenges: [],
+      attempts: 0,
+      player_answer: {},
       consecutive_corrects: 0,
       consecutive_wrongs: 0,
       has_reversed_curse: false,
@@ -970,6 +994,8 @@ export const completeMicomiLevel = async (
       took_damage: false,
       has_strong_effect: false,
       has_freeze_effect: false,
+      ...(isMicomiLevel ? { done_micomi_level: true } : {}),
+      ...(isShopLevel ? { done_shop_level: true } : {}),
     },
   });
 
@@ -979,117 +1005,15 @@ export const completeMicomiLevel = async (
     level.level_number
   );
 
-  if (!wasAlreadyCompleted) {
+  if (!wasAlreadyCompleted && isMicomiLevel) {
     await updateQuestProgress(playerId, QuestType.complete_lesson, 1);
   }
 
   return {
-    message: "Micomi level completed",
-    currentLevel: {
-      level_id: level.level_id,
-      level_number: level.level_number,
-      level_type: level.level_type,
-      level_title: level.level_title,
-    },
-    nextLevel: nextLevel
-      ? {
-          level_id: nextLevel.level_id,
-          level_number: nextLevel.level_number,
-          level_type: nextLevel.level_type,
-          level_title: nextLevel.level_title,
-        }
-      : null,
-    progress,
-  };
-};
-
-export const completeShopLevel = async (playerId: number, levelId: number) => {
-  const level = await prisma.level.findUnique({
-    where: { level_id: levelId },
-    include: { map: true, potionShopByLevel: true },
-  });
-
-  if (!level) throw new Error("Level not found");
-  if (level.level_type !== "shopButton") {
-    throw new Error("This API is only for shopButton levels");
-  }
-
-  const potionConfig = level.potionShopByLevel;
-  if (!potionConfig) {
-    throw new Error("No potion configuration found for this shop level");
-  }
-
-  const potions = await prisma.potionShop.findMany();
-  const playerLevelPotions = await prisma.playerLevelPotion.findMany({
-    where: { player_id: playerId, level_id: levelId },
-  });
-
-  const notCompleted = potions.some((p) => {
-    const rawLimit =
-      potionConfig[
-        `${p.potion_type.toLowerCase()}_quantity` as keyof typeof potionConfig
-      ] ?? 0;
-    const limit = Number(rawLimit ?? 0);
-    if (limit <= 0) return false;
-
-    const bought =
-      playerLevelPotions.find((plp) => plp.potion_shop_id === p.potion_shop_id)
-        ?.quantity ?? 0;
-
-    return bought < limit;
-  });
-
-  // if (notCompleted) {
-  //   throw new Error(
-  //     "Player has not yet bought all limited potions for this level"
-  //   );
-  // }
-
-  //comment daw kog gamay ingon si Noel :>
-
-  const progress = await prisma.playerProgress.upsert({
-    where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
-    update: {
-      is_completed: true,
-      completed_at: new Date(),
-      done_shop_level: true,
-    },
-    create: {
-      player_id: playerId,
-      level_id: levelId,
-      current_level: level.level_number,
-      attempts: 0,
-      player_answer: {},
-      completed_at: new Date(),
-      challenge_start_time: new Date(),
-      is_completed: true,
-      done_shop_level: true,
-      player_hp: 0,
-      enemy_hp: 0,
-      battle_status: BattleStatus.in_progress,
-      wrong_challenges: [],
-      coins_earned: 0,
-      total_points_earned: 0,
-      total_exp_points_earned: 0,
-      consecutive_corrects: 0,
-      consecutive_wrongs: 0,
-      has_reversed_curse: false,
-      has_boss_shield: false,
-      has_force_character_attack_type: false,
-      took_damage: false,
-      has_strong_effect: false,
-      has_freeze_effect: false,
-    },
-  });
-
-  const nextLevel = await unlockNextLevel(
-    playerId,
-    level.map_id,
-    level.level_number
-  );
-
-  return {
-    message: "Shop level completed",
+    message: `${
+      isMicomiLevel ? "Micomi" : "Shop"
+    } level completed successfully`,
+    level_type: level.level_type,
     currentLevel: {
       level_id: level.level_id,
       level_number: level.level_number,

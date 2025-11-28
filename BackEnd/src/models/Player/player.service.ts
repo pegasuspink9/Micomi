@@ -6,6 +6,7 @@ import { checkAchievements } from "../../game/Achievements/achievements.service"
 import { updateQuestProgress } from "../../game/Quests/quests.service";
 import { QuestType } from "@prisma/client";
 import { differenceInCalendarDays } from "date-fns";
+import { io } from "../../index";
 import {
   getPlayerQuestsByPeriod,
   getStartDate,
@@ -13,6 +14,94 @@ import {
 } from "../Quest/periodicQuests.service";
 
 const prisma = new PrismaClient();
+
+const BASE_EXP_REQUIREMENT = 100;
+const EXP_EXPONENT = 1.5;
+const MAX_LEVEL = 50;
+
+const CUMULATIVE_EXP_TABLE = Array.from(
+  { length: MAX_LEVEL + 1 },
+  (_, level) => {
+    if (level <= 1) return 0;
+    let total = 0;
+    for (let i = 2; i <= level; i++) {
+      total += Math.floor(BASE_EXP_REQUIREMENT * Math.pow(i - 1, EXP_EXPONENT));
+    }
+    return total;
+  }
+);
+
+export const calculatePlayerLevel = (expPoints: number): number => {
+  const clampedExp = Math.min(expPoints, CUMULATIVE_EXP_TABLE[MAX_LEVEL]);
+
+  for (let level = MAX_LEVEL; level >= 1; level--) {
+    if (clampedExp >= CUMULATIVE_EXP_TABLE[level]) {
+      return level;
+    }
+  }
+  return 1;
+};
+
+export const addExpAndUpdateLevel = async (
+  playerId: number,
+  expGained: number
+) => {
+  if (expGained <= 0) return;
+
+  return await prisma.$transaction(async (tx) => {
+    const player = await tx.player.findUnique({
+      where: { player_id: playerId },
+      select: { exp_points: true, level: true },
+    });
+
+    if (!player) throw new Error("Player not found");
+
+    const newExp = player.exp_points + expGained;
+    const newLevel = calculatePlayerLevel(newExp);
+
+    const updated = await tx.player.update({
+      where: { player_id: playerId },
+      data: {
+        exp_points: newExp,
+        level: newLevel,
+      },
+    });
+
+    if (newLevel > player.level) {
+      io.to(playerId.toString()).emit("playerLeveledUp", {
+        oldLevel: player.level,
+        newLevel,
+        totalExp: newExp,
+      });
+    }
+
+    return updated;
+  });
+};
+
+export const getLevelProgress = (expPoints: number) => {
+  const currentLevel = calculatePlayerLevel(expPoints);
+  const currentLevelExp = CUMULATIVE_EXP_TABLE[currentLevel];
+  const nextLevelExp =
+    currentLevel < MAX_LEVEL
+      ? CUMULATIVE_EXP_TABLE[currentLevel + 1]
+      : CUMULATIVE_EXP_TABLE[currentLevel];
+
+  const expInCurrentLevel = expPoints - currentLevelExp;
+  const expNeededForNext = nextLevelExp - currentLevelExp;
+
+  return {
+    currentLevel,
+    expPoints,
+    expInCurrentLevel,
+    expNeededForNext,
+    percentage:
+      currentLevel >= MAX_LEVEL
+        ? 100
+        : Math.round((expInCurrentLevel / expNeededForNext) * 100),
+    isMaxLevel: currentLevel >= MAX_LEVEL,
+  };
+};
 
 export const getAllPlayers = () =>
   prisma.player.findMany({
@@ -43,6 +132,7 @@ export const getPlayerProfile = async (player_id: number) => {
       coins: true,
       current_streak: true,
       exp_points: true,
+      level: true,
       ownedCharacters: {
         where: { is_selected: true },
         include: {
@@ -203,6 +293,7 @@ export const getPlayerProfile = async (player_id: number) => {
     coins: player.coins,
     current_streak: player.current_streak,
     exp_points: player.exp_points,
+    player_level: player.level,
     ownedCharacters: player.ownedCharacters,
     ownedPotions: player.ownedPotions,
 
