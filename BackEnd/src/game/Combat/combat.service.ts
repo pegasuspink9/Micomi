@@ -4,6 +4,8 @@ import * as EnergyService from "../Energy/energy.service";
 import * as LevelService from "../Levels/levels.service";
 import { updateQuestProgress } from "../Quests/quests.service";
 import { formatTimer } from "../../../helper/dateTimeHelper";
+import { grantRewards } from "../../../utils/grantRewards";
+import { calculatePlayerLevel } from "../../models/Player/player.service";
 import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 
 const ENEMY_HEALTH = 30;
@@ -21,23 +23,19 @@ const CARD_CONFIG: Record<
   Gino: {
     special_attack: {
       card_type: "Stormfang Surge",
-      character_attack_card:
-        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/4th.png",
+      character_attack_card: "micomi-assets.me/Icons/Skill%20Icons/4th.png",
     },
     third_attack: {
       card_type: "Feral Slash",
-      character_attack_card:
-        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/3rd.png",
+      character_attack_card: "micomi-assets.me/Icons/Skill%20Icons/3rd.png",
     },
     second_attack: {
       card_type: "Ruthless Fang",
-      character_attack_card:
-        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/2nd.png",
+      character_attack_card: "micomi-assets.me/Icons/Skill%20Icons/2nd.png",
     },
     basic_attack: {
       card_type: "Wild Claw",
-      character_attack_card:
-        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/1st.png",
+      character_attack_card: "micomi-assets.me/Icons/Skill%20Icons/1st.png",
     },
   },
 };
@@ -285,7 +283,6 @@ export async function getCurrentFightState(
       enemy_max_health: scaledEnemyMaxHealth,
       enemy_avatar: enemy.avatar_enemy,
       enemy_attack_type: null,
-      enemy_special_skill: null,
     },
     character: {
       character_id: character.character_id,
@@ -590,14 +587,13 @@ export async function fightEnemy(
 
             // Always give base rewards on win
             await updateQuestProgress(playerId, QuestType.defeat_enemy, 1);
-            await prisma.player.update({
-              where: { player_id: playerId },
-              data: {
-                total_points: { increment: totalPoints },
-                exp_points: { increment: totalExp },
-                coins: { increment: totalCoins },
-              },
+
+            await grantRewards(playerId, {
+              exp: totalExp,
+              coins: totalCoins,
+              total_points: totalPoints,
             });
+
             await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
 
             // Perfect rewards only if no wrongs and no damage
@@ -719,14 +715,13 @@ export async function fightEnemy(
 
           // Always give base rewards on win
           await updateQuestProgress(playerId, QuestType.defeat_enemy, 1);
-          await prisma.player.update({
-            where: { player_id: playerId },
-            data: {
-              total_points: { increment: totalPoints },
-              exp_points: { increment: totalExp },
-              coins: { increment: totalCoins },
-            },
+
+          await grantRewards(playerId, {
+            exp: totalExp,
+            coins: totalCoins,
+            total_points: totalPoints,
           });
+
           await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
 
           // Perfect rewards only if no wrongs and no damage
@@ -785,14 +780,13 @@ export async function fightEnemy(
       const totalCoins = progress.coins_earned ?? 0;
 
       await updateQuestProgress(playerId, QuestType.defeat_enemy, 1);
-      await prisma.player.update({
-        where: { player_id: playerId },
-        data: {
-          total_points: { increment: totalPoints },
-          exp_points: { increment: totalExp },
-          coins: { increment: totalCoins },
-        },
+
+      await grantRewards(playerId, {
+        exp: totalExp,
+        coins: totalCoins,
+        total_points: totalPoints,
       });
+
       await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
 
       if (wrongChallengesCount === 0 && !progress.took_damage) {
@@ -968,7 +962,6 @@ export async function fightBossEnemy(
   let enemy_run: string | null = null;
   let character_run: string | null = null;
   let enemy_attack_type: string | null = null;
-  let enemy_special_skill: string | null = null;
   let character_attack_card: string | null = null;
   let card_type: string | null = null;
 
@@ -1167,13 +1160,10 @@ export async function fightBossEnemy(
               await updateQuestProgress(playerId, QuestType.defeat_boss, 1);
             }
 
-            await prisma.player.update({
-              where: { player_id: playerId },
-              data: {
-                total_points: { increment: totalPoints },
-                exp_points: { increment: totalExp },
-                coins: { increment: totalCoins },
-              },
+            await grantRewards(playerId, {
+              exp: totalExp,
+              coins: totalCoins,
+              total_points: totalPoints,
             });
 
             await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
@@ -1233,22 +1223,25 @@ export async function fightBossEnemy(
       enemy_run = enemy.enemy_run || null;
       character_run = null;
       if (progress.has_reversed_curse) {
+        enemy_run = enemy.enemy_run || null;
+        enemy_idle = enemy.enemy_avatar || null;
         enemy_attack_type = "special attack";
-        enemy_special_skill = enemy.special_skill || null;
+        enemy_attack = enemy.special_skill || null;
         console.log("- Reversed curse active: using special skill attack");
       } else if (isBossJoshy && progress.has_boss_shield) {
-        enemy_run = "Boss Joshy run";
-        enemy_idle = "Boss Joshy idle link";
+        enemy_run = "micomi-assets.me/Enemies/Greenland/Boss%20Joshy/Run2.png";
+        enemy_idle =
+          "micomi-assets.me/Enemies/Greenland/Boss%20Joshy/idle2.png";
 
         enemy_attack_type = "special attack";
-        enemy_special_skill = enemy.special_skill || null;
+        enemy_attack = enemy.special_skill || null;
         console.log("- Shield curse active: using special skill attack");
       } else if (isBossDarco && progress.has_force_character_attack_type) {
-        enemy_run = "Boss Darco run";
-        enemy_idle = "Boss Darco idle link";
+        enemy_run = enemy.enemy_run || null;
+        enemy_idle = enemy.enemy_avatar || null;
 
         enemy_attack_type = "special attack";
-        enemy_special_skill = enemy.special_skill || null;
+        enemy_attack = enemy.special_skill || null;
         console.log("- Force basic curse active: using special skill attack");
       } else {
         enemy_attack_type = "basic attack";
@@ -1325,13 +1318,10 @@ export async function fightBossEnemy(
             await updateQuestProgress(playerId, QuestType.defeat_boss, 1);
           }
 
-          await prisma.player.update({
-            where: { player_id: playerId },
-            data: {
-              total_points: { increment: totalPoints },
-              exp_points: { increment: totalExp },
-              coins: { increment: totalCoins },
-            },
+          await grantRewards(playerId, {
+            exp: totalExp,
+            coins: totalCoins,
+            total_points: totalPoints,
           });
 
           await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
@@ -1399,14 +1389,12 @@ export async function fightBossEnemy(
         await updateQuestProgress(playerId, QuestType.defeat_boss, 1);
       }
 
-      await prisma.player.update({
-        where: { player_id: playerId },
-        data: {
-          total_points: { increment: totalPoints },
-          exp_points: { increment: totalExp },
-          coins: { increment: totalCoins },
-        },
+      await grantRewards(playerId, {
+        exp: totalExp,
+        coins: totalCoins,
+        total_points: totalPoints,
       });
+
       await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
 
       if (wrongChallengesCount === 0 && !progress.took_damage) {
@@ -1461,7 +1449,6 @@ export async function fightBossEnemy(
       enemy_run,
       enemy_attack_type,
       enemy_attack,
-      enemy_special_skill,
       enemy_hurt,
       enemy_dies,
       enemy_damage,

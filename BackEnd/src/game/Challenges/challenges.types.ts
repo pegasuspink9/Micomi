@@ -57,6 +57,7 @@ export interface SubmitChallengeControllerResult
   extends SubmitChallengeServiceResult {
   levelStatus?: LevelStatus;
   completionRewards?: CompletionRewards;
+  stars?: number | null;
   nextLevel?: {
     level_id: number;
     level_number: number;
@@ -76,6 +77,8 @@ export interface SubmitChallengeControllerResult
   character_attack_audio?: string | null;
   death_audio?: string | null;
   gameplay_audio?: string | null;
+  is_victory_audio?: string | null;
+  is_victory_image?: string | null;
 }
 
 export interface LevelStatus {
@@ -86,5 +89,6 @@ export interface LevelStatus {
   coinsEarned?: number;
   totalPointsEarned?: number;
   totalExpPointsEarned?: number;
+  stars?: number;
   playerOutputs?: string[] | null;
 }

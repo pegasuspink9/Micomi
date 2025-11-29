@@ -1,5 +1,8 @@
 import { QuestType } from "@prisma/client";
 import { prisma } from "../../../prisma/client";
+import { io } from "../../index";
+import { grantRewards } from "../../../utils/grantRewards";
+import { calculatePlayerLevel } from "../../models/Player/player.service";
 
 export async function updateQuestProgress(
   playerId: number,
@@ -17,7 +20,7 @@ export async function updateQuestProgress(
   });
 
   console.log(
-    "📊 ALL quests for player (including completed):",
+    "ALL quests for player (including completed):",
     allQuests.map((q) => ({
       player_quest_id: q.player_quest_id,
       quest_id: q.quest_id,
@@ -39,7 +42,7 @@ export async function updateQuestProgress(
   });
 
   console.log(
-    "📋 Found INCOMPLETE quests:",
+    "Found INCOMPLETE quests:",
     playerQuests.length,
     playerQuests.map((q) => ({
       quest_id: q.quest_id,
@@ -56,7 +59,7 @@ export async function updateQuestProgress(
     const completed = newValue >= pq.quest.target_value;
 
     console.log(
-      `  ➡️ Updating quest ${pq.quest.title}: ${pq.current_value} → ${newValue} (target: ${pq.quest.target_value})`
+      `Updating quest ${pq.quest.title}: ${pq.current_value} → ${newValue} (target: ${pq.quest.target_value})`
     );
 
     const updatedPQ = await prisma.playerQuest.update({
@@ -69,7 +72,21 @@ export async function updateQuestProgress(
       include: { quest: true },
     });
 
-    console.log(`  ✅ Updated successfully: ${updatedPQ.current_value}`);
+    console.log(`Updated successfully: ${updatedPQ.current_value}`);
+
+    if (completed) {
+      io.to(playerId.toString()).emit("questCompleted", {
+        quest_id: updatedPQ.quest.quest_id,
+        title: updatedPQ.quest.title,
+        description: updatedPQ.quest.description,
+        reward_exp: updatedPQ.quest.reward_exp,
+        reward_coins: updatedPQ.quest.reward_coins,
+      });
+      console.log(
+        `✅ Quest "${updatedPQ.quest.title}" completed for player ${playerId}`
+      );
+    }
+
     results.push(updatedPQ);
   }
 
@@ -94,12 +111,20 @@ export async function claimQuestReward(playerId: number, questId: number) {
     if (!playerQuest.is_completed) throw new Error("Quest not yet completed.");
     if (playerQuest.is_claimed) throw new Error("Reward already claimed.");
 
-    await tx.player.update({
+    const currentPlayer = await tx.player.findUnique({
       where: { player_id: playerId },
-      data: {
-        exp_points: { increment: playerQuest.quest.reward_exp },
-        coins: { increment: playerQuest.quest.reward_coins },
-      },
+    });
+
+    if (!currentPlayer) throw new Error("Player not found.");
+
+    const newExpPoints =
+      currentPlayer.exp_points + playerQuest.quest.reward_exp;
+    const newLevel = calculatePlayerLevel(newExpPoints);
+    const oldLevel = currentPlayer.level;
+
+    await grantRewards(playerId, {
+      exp: playerQuest.quest.reward_exp,
+      coins: playerQuest.quest.reward_coins,
     });
 
     const updatedPQ = await tx.playerQuest.update({
@@ -108,12 +133,26 @@ export async function claimQuestReward(playerId: number, questId: number) {
       include: { quest: true },
     });
 
+    if (newLevel > oldLevel) {
+      io.to(playerId.toString()).emit("playerLeveledUp", {
+        old_level: oldLevel,
+        new_level: newLevel,
+        total_exp: newExpPoints,
+      });
+
+      console.log(
+        `🎉 Player ${playerId} leveled up from ${oldLevel} to ${newLevel}!`
+      );
+    }
+
     return {
       message: "Reward claimed successfully!",
       rewards: {
         exp: playerQuest.quest.reward_exp,
         coins: playerQuest.quest.reward_coins,
+        newLevel: newLevel,
       },
+      leveledUp: newLevel > oldLevel,
       quest: updatedPQ,
     };
   });

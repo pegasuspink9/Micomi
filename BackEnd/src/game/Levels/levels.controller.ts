@@ -65,32 +65,30 @@ export const unlockNextLevel = async (req: Request, res: Response) => {
   }
 };
 
-export const completeMicomiLevel = async (req: Request, res: Response) => {
+export const completeLevelDone = async (req: Request, res: Response) => {
   try {
     const playerId = Number(req.params.playerId);
     const levelId = Number(req.params.levelId);
 
-    const result = await LevelService.completeMicomiLevel(playerId, levelId);
+    const result = await LevelService.completeLevelDone(playerId, levelId);
 
-    return successResponse(res, result, "Successfully unlocked next level.");
+    const levelType = result.level_type;
+    let message = "Level completed successfully!";
+
+    if (levelType === "micomiButton") {
+      message = "Lesson completed! Great job learning!";
+    } else if (levelType === "shopButton") {
+      message = "Shopping done! You've stocked up and are ready to continue.";
+    }
+
+    return successResponse(res, result, message);
   } catch (error) {
-    return errorResponse(res, error, "Failed to unlock next level.");
-  }
-};
-
-export const completeShopLevel = async (req: Request, res: Response) => {
-  try {
-    const playerId = Number(req.params.playerId);
-    const levelId = Number(req.params.levelId);
-
-    const result = await LevelService.completeShopLevel(playerId, levelId);
-
-    return successResponse(
+    const err = error as Error;
+    return errorResponse(
       res,
-      result,
-      "Done purchasing. You will not be able to buy potion in this level again."
+      err.message || "Failed to complete level",
+      err.message,
+      400
     );
-  } catch (error) {
-    return errorResponse(res, error, "Failed to unlock next level");
   }
 };

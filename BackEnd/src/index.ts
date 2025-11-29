@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
 import express from "express";
 import cookieParser from "cookie-parser";
+import { setupCronJobs } from "../helper/cronJobs";
+import { checkAndGenerateMissingQuests } from "./models/Quest/periodicQuests.service";
 import adminRoutes from "./models/Admin/admin.routes";
 import playerRoutes from "./models/Player/player.routes";
 import mapRoutes from "./models/Map/map.routes";
@@ -73,6 +75,18 @@ io.on("connection", (socket) => {
 export { io, server };
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+
+async function startServer() {
+  try {
+    server.listen(PORT, async () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+      await checkAndGenerateMissingQuests();
+      setupCronJobs();
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  }
+}
+
+startServer();

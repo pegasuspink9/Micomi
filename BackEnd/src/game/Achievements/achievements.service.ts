@@ -109,10 +109,10 @@ export const checkAchievements = async (playerId: number) => {
       case "HTML Hero":
         shouldAward = hasCompletedMap("HTML");
         break;
-      case "CSS Conqueror":
+      case "CSS Artist":
         shouldAward = hasCompletedMap("CSS");
         break;
-      case "JS Juggernaut":
+      case "Javascript Hunter":
         shouldAward = hasCompletedMap("JavaScript");
         break;
       case "PC Eater":

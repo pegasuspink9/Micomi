@@ -201,6 +201,49 @@ const generateMotivationalMessage = (
   }
 };
 
+const micomiImages = {
+  Victory: [
+    "micomi-assets.me/Micomi%20Celebrating/micomiceleb1.png",
+    "micomi-assets.me/Micomi%20Celebrating/micomiceleb2.png",
+    "micomi-assets.me/Micomi%20Celebrating/micomiceleb3.png",
+  ],
+  Defeat: [
+    "micomi-assets.me/Micomi%20Celebrating/Failed1.png",
+    "micomi-assets.me/Micomi%20Celebrating/Failed2.png",
+    "micomi-assets.me/Micomi%20Celebrating/Failed3.png",
+  ],
+};
+
+const getRandomMicomiImage = (isVictory: boolean, seed: string): string => {
+  const imageArray = isVictory ? micomiImages.Victory : micomiImages.Defeat;
+
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash << 5) - hash + seed.charCodeAt(i);
+    hash = hash & hash;
+  }
+
+  const index = Math.abs(hash) % imageArray.length;
+  return imageArray[index];
+};
+
+const calculateStars = (
+  wrongChallengesCount: number,
+  totalChallenges: number
+): number => {
+  if (wrongChallengesCount === 0) {
+    return 3;
+  }
+
+  const mistakePercentage = (wrongChallengesCount / totalChallenges) * 100;
+
+  if (mistakePercentage <= 20) {
+    return 2;
+  }
+
+  return 1;
+};
+
 export const submitChallengeService = async (
   playerId: number,
   levelId: number,
@@ -471,16 +514,16 @@ export const submitChallengeService = async (
         case "special_attack":
         case "third_attack":
           character_attack_audio =
-            "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/3rd%20and%204th%20Skill%20Gino.wav";
+            "micomi-assets.me/Sounds/Final/3rd%20and%204th%20Skill%20Gino.wav";
           break;
         case "second_attack":
           character_attack_audio =
-            "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Gino%20Bite.wav";
+            "micomi-assets.me/Sounds/Final/Gino%20Bite.wav";
           break;
         case "basic_attack":
         default:
           character_attack_audio =
-            "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Gino_Basic_Attack.wav";
+            "micomi-assets.me/Sounds/Final/Gino_Basic_Attack.wav";
           break;
       }
     }
@@ -617,10 +660,16 @@ export const submitChallengeService = async (
 
   const playerLost = freshProgress!.player_hp <= 0;
 
+  let is_victory_audio: string | null = null;
+  let is_victory_image: string | null = null;
+  let stars: number | undefined = undefined;
+
   if (allCompleted || playerLost) {
     const wrongCount = freshProgress!.consecutive_wrongs;
     const wasInBonusRound =
       freshProgress!.enemy_hp <= 0 && freshProgress!.player_hp > 0;
+
+    const seed = `${playerId}-${levelId}-${Date.now()}-${Math.random()}`;
 
     if (playerLost) {
       const motivationalMessage = generateMotivationalMessage(
@@ -631,6 +680,12 @@ export const submitChallengeService = async (
         false,
         level.level_number
       );
+
+      stars = 0;
+
+      is_victory_audio = "micomi-assets.me/Sounds/Final/Defeat_Sound.wav";
+
+      is_victory_image = getRandomMicomiImage(false, seed);
 
       completionRewards = {
         feedbackMessage: motivationalMessage,
@@ -662,6 +717,8 @@ export const submitChallengeService = async (
         },
       });
     } else if (allCompleted) {
+      stars = calculateStars(wrongCount, totalChallenges);
+
       const motivationalMessage = generateMotivationalMessage(
         wasFirstCompletion,
         wrongCount,
@@ -671,6 +728,10 @@ export const submitChallengeService = async (
         level.level_number
       );
 
+      is_victory_audio = "micomi-assets.me/Sounds/Final/Victory_Sound.wav";
+
+      is_victory_image = getRandomMicomiImage(true, seed);
+
       if (wasFirstCompletion) {
         await prisma.playerProgress.update({
           where: { progress_id: currentProgress.progress_id },
@@ -679,6 +740,7 @@ export const submitChallengeService = async (
             completed_at: new Date(),
             has_strong_effect: false,
             has_freeze_effect: false,
+            stars_earned: stars,
           },
         });
 
@@ -696,6 +758,22 @@ export const submitChallengeService = async (
           level.level_id
         );
       } else {
+        const currentStars = freshProgress?.stars_earned ?? 0;
+        const improved = stars > currentStars;
+
+        if (improved) {
+          await prisma.playerProgress.update({
+            where: { progress_id: currentProgress.progress_id },
+            data: {
+              stars_earned: stars,
+            },
+          });
+        }
+
+        is_victory_audio = "micomi-assets.me/Sounds/Final/Victory_Sound.wav";
+
+        is_victory_image = getRandomMicomiImage(true, seed);
+
         completionRewards = {
           feedbackMessage:
             motivationalMessage +
@@ -729,17 +807,13 @@ export const submitChallengeService = async (
   let gameplay_audio = "";
 
   if (questionType === "HTML") {
-    gameplay_audio =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Boss.ogg";
+    gameplay_audio = "micomi-assets.me/Sounds/Final/Boss.ogg";
   } else if (questionType === "CSS") {
-    gameplay_audio =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Lavaland.mp3";
+    gameplay_audio = "micomi-assets.me/Sounds/Final/Lavaland.mp3";
   } else if (questionType === "JavaScript") {
-    gameplay_audio =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Snowland.mp3";
+    gameplay_audio = "micomi-assets.me/Sounds/Final/Snowland.mp3";
   } else {
-    gameplay_audio =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Autumnland.mp3";
+    gameplay_audio = "micomi-assets.me/Sounds/Final/Autumnland.mp3";
   }
 
   const isNewBonusRound =
@@ -825,8 +899,8 @@ export const submitChallengeService = async (
   }
 
   const is_correct_audio = isCorrect
-    ? "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Correct.wav"
-    : "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Wrong_2.wav";
+    ? "micomi-assets.me/Sounds/Final/Correct.wav"
+    : "micomi-assets.me/Sounds/Final/Wrong_2.wav";
 
   //enemy attack audio
   let enemy_attack_audio: string | null = null;
@@ -834,12 +908,11 @@ export const submitChallengeService = async (
 
   if (!isCorrect) {
     enemy_attack_audio =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/All%20Universal%20Enemy%20Attack.wav";
+      "micomi-assets.me/Sounds/Final/All%20Universal%20Enemy%20Attack.wav";
   }
 
   if (fightResult.status !== "in_progress") {
-    death_audio =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/All%20Death.wav";
+    death_audio = "micomi-assets.me/Sounds/Final/All%20Death.wav";
   }
 
   return {
@@ -858,6 +931,7 @@ export const submitChallengeService = async (
       coinsEarned: freshProgress?.coins_earned ?? 0,
       totalPointsEarned: freshProgress?.total_points_earned ?? 0,
       totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
+      stars,
       playerOutputs,
     },
     completionRewards,
@@ -878,6 +952,8 @@ export const submitChallengeService = async (
     character_attack_audio,
     death_audio,
     gameplay_audio,
+    is_victory_audio,
+    is_victory_image,
   };
 };
 
