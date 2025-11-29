@@ -201,6 +201,49 @@ const generateMotivationalMessage = (
   }
 };
 
+const micomiImages = {
+  Victory: [
+    "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb1.png",
+    "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb2.png",
+    "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb3.png",
+  ],
+  Defeat: [
+    "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/Failed1.png",
+    "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/Failed2.png",
+    "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/Failed3.png",
+  ],
+};
+
+const getRandomMicomiImage = (isVictory: boolean, seed: string): string => {
+  const imageArray = isVictory ? micomiImages.Victory : micomiImages.Defeat;
+
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash << 5) - hash + seed.charCodeAt(i);
+    hash = hash & hash;
+  }
+
+  const index = Math.abs(hash) % imageArray.length;
+  return imageArray[index];
+};
+
+const calculateStars = (
+  wrongChallengesCount: number,
+  totalChallenges: number
+): number => {
+  if (wrongChallengesCount === 0) {
+    return 3;
+  }
+
+  const mistakePercentage = (wrongChallengesCount / totalChallenges) * 100;
+
+  if (mistakePercentage <= 20) {
+    return 2;
+  }
+
+  return 1;
+};
+
 export const submitChallengeService = async (
   playerId: number,
   levelId: number,
@@ -618,11 +661,15 @@ export const submitChallengeService = async (
   const playerLost = freshProgress!.player_hp <= 0;
 
   let is_victory_audio: string | null = null;
+  let is_victory_image: string | null = null;
+  let stars: number | undefined = undefined;
 
   if (allCompleted || playerLost) {
     const wrongCount = freshProgress!.consecutive_wrongs;
     const wasInBonusRound =
       freshProgress!.enemy_hp <= 0 && freshProgress!.player_hp > 0;
+
+    const seed = `${playerId}-${levelId}-${Date.now()}-${Math.random()}`;
 
     if (playerLost) {
       const motivationalMessage = generateMotivationalMessage(
@@ -634,8 +681,12 @@ export const submitChallengeService = async (
         level.level_number
       );
 
+      stars = 0;
+
       is_victory_audio =
         "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Defeat_Sound.wav";
+
+      is_victory_image = getRandomMicomiImage(false, seed);
 
       completionRewards = {
         feedbackMessage: motivationalMessage,
@@ -667,6 +718,8 @@ export const submitChallengeService = async (
         },
       });
     } else if (allCompleted) {
+      stars = calculateStars(wrongCount, totalChallenges);
+
       const motivationalMessage = generateMotivationalMessage(
         wasFirstCompletion,
         wrongCount,
@@ -679,6 +732,8 @@ export const submitChallengeService = async (
       is_victory_audio =
         "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Victory_Sound.wav";
 
+      is_victory_image = getRandomMicomiImage(true, seed);
+
       if (wasFirstCompletion) {
         await prisma.playerProgress.update({
           where: { progress_id: currentProgress.progress_id },
@@ -687,6 +742,7 @@ export const submitChallengeService = async (
             completed_at: new Date(),
             has_strong_effect: false,
             has_freeze_effect: false,
+            stars_earned: stars,
           },
         });
 
@@ -704,8 +760,22 @@ export const submitChallengeService = async (
           level.level_id
         );
       } else {
+        const currentStars = freshProgress?.stars_earned ?? 0;
+        const improved = stars > currentStars;
+
+        if (improved) {
+          await prisma.playerProgress.update({
+            where: { progress_id: currentProgress.progress_id },
+            data: {
+              stars_earned: stars,
+            },
+          });
+        }
+
         is_victory_audio =
           "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Victory_Sound.wav";
+
+        is_victory_image = getRandomMicomiImage(true, seed);
 
         completionRewards = {
           feedbackMessage:
@@ -869,6 +939,7 @@ export const submitChallengeService = async (
       coinsEarned: freshProgress?.coins_earned ?? 0,
       totalPointsEarned: freshProgress?.total_points_earned ?? 0,
       totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
+      stars,
       playerOutputs,
     },
     completionRewards,
@@ -890,6 +961,7 @@ export const submitChallengeService = async (
     death_audio,
     gameplay_audio,
     is_victory_audio,
+    is_victory_image,
   };
 };
 

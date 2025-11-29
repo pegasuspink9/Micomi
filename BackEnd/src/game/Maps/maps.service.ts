@@ -27,7 +27,11 @@ export const selectMap = async (playerId: number, mapId: number) => {
         include: {
           playerProgress: {
             where: { player_id: playerId },
-            select: { progress_id: true, is_completed: true },
+            select: {
+              progress_id: true,
+              is_completed: true,
+              stars_earned: true,
+            },
           },
         },
       },

@@ -1,10 +1,10 @@
 export const imagesUrls = [
-  //Gino
+  //Gino icons
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/4th.png",
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/3rd.png",
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/2nd.png",
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/1st.png",
-  //ShiShi
+  //ShiShi animations
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Hero/Shi-Shi/Attack1.png",
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Hero/Shi-Shi/attack2.png",
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Hero/Shi-Shi/Attack3.png",
@@ -22,4 +22,12 @@ export const imagesUrls = [
   //Boss Joshy idle 2 and run 2
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Enemies/Greenland/Boss%20Joshy/idle2.png",
   "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Enemies/Greenland/Boss%20Joshy/Run2.png",
+  //Victory micomi image
+  "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb1.png",
+  "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb2.png",
+  "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb3.png",
+  //Defeat micomi image
+  "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/Failed1.png",
+  "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/Failed2.png",
+  "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/Failed3.png",
 ];
