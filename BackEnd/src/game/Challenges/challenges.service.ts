@@ -203,14 +203,14 @@ const generateMotivationalMessage = (
 
 const micomiImages = {
   Victory: [
-    "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb1.png",
-    "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb2.png",
-    "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb3.png",
+    "micomi-assets.me/Micomi%20Celebrating/micomiceleb1.png",
+    "micomi-assets.me/Micomi%20Celebrating/micomiceleb2.png",
+    "micomi-assets.me/Micomi%20Celebrating/micomiceleb3.png",
   ],
   Defeat: [
-    "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/Failed1.png",
-    "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/Failed2.png",
-    "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/Failed3.png",
+    "micomi-assets.me/Micomi%20Celebrating/Failed1.png",
+    "micomi-assets.me/Micomi%20Celebrating/Failed2.png",
+    "micomi-assets.me/Micomi%20Celebrating/Failed3.png",
   ],
 };
 
@@ -514,16 +514,16 @@ export const submitChallengeService = async (
         case "special_attack":
         case "third_attack":
           character_attack_audio =
-            "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/3rd%20and%204th%20Skill%20Gino.wav";
+            "micomi-assets.me/Sounds/Final/3rd%20and%204th%20Skill%20Gino.wav";
           break;
         case "second_attack":
           character_attack_audio =
-            "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Gino%20Bite.wav";
+            "micomi-assets.me/Sounds/Final/Gino%20Bite.wav";
           break;
         case "basic_attack":
         default:
           character_attack_audio =
-            "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Gino_Basic_Attack.wav";
+            "micomi-assets.me/Sounds/Final/Gino_Basic_Attack.wav";
           break;
       }
     }
@@ -683,8 +683,7 @@ export const submitChallengeService = async (
 
       stars = 0;
 
-      is_victory_audio =
-        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Defeat_Sound.wav";
+      is_victory_audio = "micomi-assets.me/Sounds/Final/Defeat_Sound.wav";
 
       is_victory_image = getRandomMicomiImage(false, seed);
 
@@ -729,8 +728,7 @@ export const submitChallengeService = async (
         level.level_number
       );
 
-      is_victory_audio =
-        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Victory_Sound.wav";
+      is_victory_audio = "micomi-assets.me/Sounds/Final/Victory_Sound.wav";
 
       is_victory_image = getRandomMicomiImage(true, seed);
 
@@ -772,8 +770,7 @@ export const submitChallengeService = async (
           });
         }
 
-        is_victory_audio =
-          "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Victory_Sound.wav";
+        is_victory_audio = "micomi-assets.me/Sounds/Final/Victory_Sound.wav";
 
         is_victory_image = getRandomMicomiImage(true, seed);
 
@@ -810,17 +807,13 @@ export const submitChallengeService = async (
   let gameplay_audio = "";
 
   if (questionType === "HTML") {
-    gameplay_audio =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Boss.ogg";
+    gameplay_audio = "micomi-assets.me/Sounds/Final/Boss.ogg";
   } else if (questionType === "CSS") {
-    gameplay_audio =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Lavaland.mp3";
+    gameplay_audio = "micomi-assets.me/Sounds/Final/Lavaland.mp3";
   } else if (questionType === "JavaScript") {
-    gameplay_audio =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Snowland.mp3";
+    gameplay_audio = "micomi-assets.me/Sounds/Final/Snowland.mp3";
   } else {
-    gameplay_audio =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Autumnland.mp3";
+    gameplay_audio = "micomi-assets.me/Sounds/Final/Autumnland.mp3";
   }
 
   const isNewBonusRound =
@@ -906,8 +899,8 @@ export const submitChallengeService = async (
   }
 
   const is_correct_audio = isCorrect
-    ? "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Correct.wav"
-    : "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Wrong_2.wav";
+    ? "micomi-assets.me/Sounds/Final/Correct.wav"
+    : "micomi-assets.me/Sounds/Final/Wrong_2.wav";
 
   //enemy attack audio
   let enemy_attack_audio: string | null = null;
@@ -915,12 +908,11 @@ export const submitChallengeService = async (
 
   if (!isCorrect) {
     enemy_attack_audio =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/All%20Universal%20Enemy%20Attack.wav";
+      "micomi-assets.me/Sounds/Final/All%20Universal%20Enemy%20Attack.wav";
   }
 
   if (fightResult.status !== "in_progress") {
-    death_audio =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/All%20Death.wav";
+    death_audio = "micomi-assets.me/Sounds/Final/All%20Death.wav";
   }
 
   return {

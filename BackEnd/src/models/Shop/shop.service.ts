@@ -91,8 +91,7 @@ export const getAllPlayerCharacter = async (req: Request, res: Response) => {
           characterShop: undefined,
           cards: characterCards,
         },
-        audio:
-          "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Shop.ogg",
+        audio: "micomi-assets.me/Sounds/Final/Shop.ogg",
       };
 
       if (owned) {
@@ -119,26 +118,22 @@ const getCharacterCards = (characterName: string) => {
       {
         attack_type: "Special Attack",
         card_type: "Stormfang Surge",
-        character_attack_card:
-          "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/4th.png",
+        character_attack_card: "micomi-asstes.me/Icons/Skill%20Icons/4th.png",
       },
       {
         attack_type: "Third Attack",
         card_type: "Feral Slash",
-        character_attack_card:
-          "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/3rd.png",
+        character_attack_card: "micomi-asstes.me/Icons/Skill%20Icons/3rd.png",
       },
       {
         attack_type: "Second Attack",
         card_type: "Ruthless Fang",
-        character_attack_card:
-          "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/2nd.png",
+        character_attack_card: "micomi-asstes.me/Icons/Skill%20Icons/2nd.png",
       },
       {
         attack_type: "Basic Attack",
         card_type: "Wild Claw",
-        character_attack_card:
-          "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/1st.png",
+        character_attack_card: "micomi-asstes.me/Icons/Skill%20Icons/1st.png",
       },
     ],
   };

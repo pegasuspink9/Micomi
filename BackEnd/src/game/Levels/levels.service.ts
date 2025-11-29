@@ -206,8 +206,7 @@ export const previewLevel = async (playerId: number, levelId: number) => {
           player_coins: player.coins,
         },
         potionShop,
-        audio:
-          "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Shop.ogg",
+        audio: "micomi-assets.me/Sounds/Final/Shop.ogg",
       };
 
     case "enemyButton":
@@ -429,8 +428,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         player_coins: player.coins,
       },
       potionShop,
-      audio:
-        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Shop.ogg",
+      audio: "micomi-assets.me/Sounds/Final/Shop.ogg",
     };
   }
 
@@ -697,27 +695,21 @@ export const enterLevel = async (playerId: number, levelId: number) => {
   const questionType = level.map.map_name;
 
   const versus_background_audio =
-    "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Versus%20Sound%20Effect%20Final.wav";
+    "micomi-assets.me/Sounds/Final/Versus%20Sound%20Effect%20Final.wav";
 
   let versus_background = "";
   let gameplay_audio = "";
 
   if (questionType === "HTML") {
-    versus_background =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Versus%20Maps/Green.png";
-    gameplay_audio =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Greenland.mp3";
+    versus_background = "micomi-assets.me/Versus%20Maps/Green.png";
+    gameplay_audio = "micomi-assets.me/Sounds/Final/Greenland.mp3";
   } else if (questionType === "CSS") {
-    versus_background =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Versus%20Maps/Lava.png";
-    gameplay_audio =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Lavaland.mp3";
+    versus_background = "micomi-assets.me/Versus%20Maps/Lava.png";
+    gameplay_audio = "micomi-assets.me/Sounds/Final/Lavaland.mp3";
   } else if (questionType === "JavaScript") {
-    versus_background =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Snowland.mp3";
+    versus_background = "micomi-assets.me/Sounds/Final/Snowland.mp3";
   } else {
-    versus_background =
-      "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Autumnland.mp3";
+    versus_background = "micomi-assets.me/Sounds/Final/Autumnland.mp3";
   }
 
   return {

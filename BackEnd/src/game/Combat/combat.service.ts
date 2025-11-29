@@ -23,23 +23,19 @@ const CARD_CONFIG: Record<
   Gino: {
     special_attack: {
       card_type: "Stormfang Surge",
-      character_attack_card:
-        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/4th.png",
+      character_attack_card: "micomi-assets.me/Icons/Skill%20Icons/4th.png",
     },
     third_attack: {
       card_type: "Feral Slash",
-      character_attack_card:
-        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/3rd.png",
+      character_attack_card: "micomi-assets.me/Icons/Skill%20Icons/3rd.png",
     },
     second_attack: {
       card_type: "Ruthless Fang",
-      character_attack_card:
-        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/2nd.png",
+      character_attack_card: "micomi-assets.me/Icons/Skill%20Icons/2nd.png",
     },
     basic_attack: {
       card_type: "Wild Claw",
-      character_attack_card:
-        "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons/Skill%20Icons/1st.png",
+      character_attack_card: "micomi-assets.me/Icons/Skill%20Icons/1st.png",
     },
   },
 };
@@ -1233,10 +1229,9 @@ export async function fightBossEnemy(
         enemy_attack = enemy.special_skill || null;
         console.log("- Reversed curse active: using special skill attack");
       } else if (isBossJoshy && progress.has_boss_shield) {
-        enemy_run =
-          "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Enemies/Greenland/Boss%20Joshy/Run2.png";
+        enemy_run = "micomi-assets.me/Enemies/Greenland/Boss%20Joshy/Run2.png";
         enemy_idle =
-          "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Enemies/Greenland/Boss%20Joshy/idle2.png";
+          "micomi-assets.me/Enemies/Greenland/Boss%20Joshy/idle2.png";
 
         enemy_attack_type = "special attack";
         enemy_attack = enemy.special_skill || null;
