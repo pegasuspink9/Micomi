@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState} from "react";
 import { 
   Text, 
   View, 
@@ -9,21 +9,24 @@ import {
   ImageBackground,
   ActivityIndicator
 } from "react-native";
+
+import {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  Easing,
+  cancelAnimation,
+} from 'react-native-reanimated';
+import ReanimatedAnimated from 'react-native-reanimated'; 
+
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AssetDownloadProgress from '../Components/RoadMap/LoadingState/assetDownloadProgress';
-import {
-  scale,
-  scaleWidth,
-  scaleHeight,
-  scaleFont,
-  wp,
-  hp,
-  SCREEN,
-  RESPONSIVE,
-  layoutHelpers,
-} from '../Components/Responsiveness/gameResponsive';
+import { gameScale } from '../Components/Responsiveness/gameResponsive';
 import { useRouter } from 'expo-router';
 import { usePlayerProfile } from '../hooks/usePlayerProfile';
+import CharacterDisplay from '../Components/Character/CharacterDisplay';
 
 export default function Practice() {
   const playerId = 11; // You can get this from context or props
@@ -36,6 +39,10 @@ export default function Practice() {
     loadPlayerProfile,
     clearError
   } = usePlayerProfile(playerId);
+
+  const [activeTab, setActiveTab] = useState('Profile');
+  const [inventoryTab, setInventoryTab] = useState('Badges');
+
 
   if (loading) {
     return (
@@ -89,84 +96,154 @@ export default function Practice() {
     );
   }
 
-  
 
-  return (
+return (
     <View style={styles.container}>
       <ImageBackground source={{ uri: playerData.containerBackground }} style={styles.ImageBackgroundContainer} resizeMode="cover">
 
-      <View style={styles.backgroundOverlay} />
-      <ScrollView 
-        style={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Hero Selected Header */}
-        <HeroSelectedSection hero={playerData.heroSelected} background={playerData.background} />
+        <View style={styles.backgroundOverlay} />
         
-        {/* Player Info Section */}
-        <PlayerInfoSection 
-          playerName={playerData.playerName}
-          username={playerData.username}
-        />
-        
-        {/* Stats Grid Section */}
-        <StatsGridSection 
-          coins={playerData.coins}
-          daysLogin={playerData.daysLogin}
-          currentStreak={playerData.currentStreak}
-          expPoints={playerData.expPoints}
-          mapsOpened={playerData.mapsOpened}
-          statsIcons={playerData.statsIcons}
-        />
-        
-        {/* Badges Section */}
-        <BadgesSection badges={playerData.badges} />
+        <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
-        
-        {/* Potions Section */}
-        <PotionsSection potions={playerData.potions} />
-        
-        {/* Quests Section */}
-        <QuestsSection quests={playerData.quests} />
-        
-        
-        {/* Bottom Spacing */}
-        <View style={{ height: layoutHelpers.gap.xl }} />
-      </ScrollView>
-    </ImageBackground>
+        {/* The content below will eventually be conditional based on the activeTab */}
+        {activeTab === 'Profile' && (
+          <ScrollView 
+            style={styles.scrollContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Player Info Section */}
+            <PlayerInfoSection 
+              playerName={playerData.playerName}
+              username={playerData.username}
+            />
+            
+            {/* Stats Grid Section */}
+            <StatsGridSection 
+              coins={playerData.coins}
+              currentStreak={playerData.currentStreak}
+              expPoints={playerData.expPoints}
+              mapsOpened={playerData.mapsOpened}
+              statsIcons={playerData.statsIcons}
+              hero={playerData.heroSelected}
+              background={playerData.background}
+            />
+            
+             <InventorySection 
+              activeTab={inventoryTab}
+              setActiveTab={setInventoryTab}
+              badges={playerData.badges}
+              potions={playerData.potions}
+            />
+            
+            {/* Quests Section */}
+            <QuestsSection quests={playerData.quests} />
+            
+            
+            {/* Bottom Spacing */}
+            <View style={{ height: gameScale(16) }} />
+          </ScrollView>
+        )}
+
+        {/* Placeholder for Missions content */}
+        {activeTab === 'Missions' && (
+          <View style={[styles.centered, { flex: 1 }]}>
+            <Text style={styles.loadingText}>Missions Content Goes Here</Text>
+          </View>
+        )}
+
+      </ImageBackground>
     </View>
   );
 }
 
-// Hero Selected Component - Make it pressable
-const HeroSelectedSection = ({ hero, background }) => {
-  const router = useRouter();
-  
-  const handleHeroPress = () => {
-    router.push('/Components/CharacterSelection/CharacterSelect');
-  };
-
+// ✅ ADD New Tabs Component
+const Tabs = ({ activeTab, setActiveTab }) => {
   return (
-    <TouchableOpacity 
-      style={styles.heroSection}
-      onPress={handleHeroPress}
-      activeOpacity={0.8}
-    >
-      <ImageBackground source={{ uri: background }} style={styles.heroSelectionBackground}>
-        <View style={styles.heroContainer}>
-          <Image 
-            source={{ uri: hero.avatar }} 
-            style={styles.heroAvatar}
-          />
-          <View style={styles.heroInfo}>
-            <Text style={styles.heroLabel}>Selected Hero</Text>
-            <Text style={styles.heroName}>{hero.name}</Text>
-          </View>
-        </View>
-      </ImageBackground>
-    </TouchableOpacity>
+    <View style={styles.tabsContainer}>
+      <TouchableOpacity 
+        style={[styles.tab, activeTab === 'Profile' && styles.activeTab]}
+        onPress={() => setActiveTab('Profile')}
+      >
+        <Text style={[styles.tabText, activeTab === 'Profile' && styles.activeTabText]}>
+          Profile
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity 
+        style={[styles.tab, activeTab === 'Missions' && styles.activeTab]}
+        onPress={() => setActiveTab('Missions')}
+      >
+        <Text style={[styles.tabText, activeTab === 'Missions' && styles.activeTabText]}>
+          Missions
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
 };
+
+const ProfileHeroSprite = ({ hero }) => {
+
+  console.log(`🦸‍♂️ ProfileHeroSprite using image URL: ${hero.character_image_display}`);
+
+  const SPRITE_COLUMNS = 8;
+  const SPRITE_ROWS = 6;
+  const TOTAL_FRAMES = 48;
+  const FRAME_DURATION = 40; 
+  const spriteSize = gameScale(150);
+
+  // Animation value for the current frame
+  const frameIndex = useSharedValue(0);
+
+  // Start the animation loop when the component mounts
+  React.useEffect(() => {
+    cancelAnimation(frameIndex);
+
+    frameIndex.value = withRepeat(
+      withTiming(TOTAL_FRAMES - 1, {
+        duration: FRAME_DURATION * TOTAL_FRAMES,
+        easing: Easing.linear,
+      }),
+      -1, // Loop indefinitely
+      false // Don't reverse
+    );
+    // Clean up the animation on unmount
+    return () => cancelAnimation(frameIndex);
+  }, [hero]);
+
+  // Animated style to move the sprite sheet
+  const spriteAnimatedStyle = useAnimatedStyle(() => {
+    const currentFrame = Math.floor(frameIndex.value) % TOTAL_FRAMES;
+    const column = currentFrame % SPRITE_COLUMNS;
+    const row = Math.floor(currentFrame / SPRITE_COLUMNS);
+    
+    // Calculate the X and Y offsets to show the correct frame
+    const xOffset = -(column * spriteSize);
+    const yOffset = -(row * spriteSize);
+    
+    return {
+      transform: [{ translateX: xOffset }, { translateY: yOffset }],
+    };
+  }, [spriteSize]);
+
+  if (!hero?.character_image_display) {
+    return <View style={styles.heroSpriteContainer} />;
+  }
+
+
+  return (
+    <View style={styles.heroSpriteContainer}>
+      <ReanimatedAnimated.View style={[styles.heroSpriteSheet, spriteAnimatedStyle]}>
+        <Image
+          source={{ uri: hero.character_image_display }}
+          style={{ width: '100%', height: '100%' }}
+          resizeMode="stretch"
+        />
+      </ReanimatedAnimated.View>
+    </View>
+  );
+};
+
+ 
+
 
 // Player Info Component
 const PlayerInfoSection = ({ playerName, username }) => (
@@ -176,79 +253,152 @@ const PlayerInfoSection = ({ playerName, username }) => (
   </View>
 );
 
+
 // Stats Grid Component
-const StatsGridSection = ({ coins, daysLogin, currentStreak, expPoints, mapsOpened, statsIcons }) => (
-  <View style={styles.statsSection}>
-    <Text style={[styles.sectionTitle, { textAlign: 'center' }]}>Overview</Text>
-    <View style={styles.statsGrid}>
-      <StatCard 
-        icon={statsIcons.coins}
-        label="Coins" 
-        value={coins.toLocaleString()} 
-      />
-    
-      <StatCard 
-        icon={statsIcons.currentStreak}
-        label="Streak" 
-        value={currentStreak} 
-      />
-      <StatCard 
-        icon={statsIcons.expPoints}
-        label="EXP Points" 
-        value={expPoints.toLocaleString()} 
-      />
-      <StatCard 
-        icon={statsIcons.mapsOpened}
-        label="Maps" 
-        value={mapsOpened} 
-      />
-    </View>
-  </View>
-);
-
-// Stat Card Component
-const StatCard = ({ icon, label, value, color }) => (
-  <View style={styles.statCardContainer}>
-    <View style={styles.statCardShadow} />
-    <View style={[styles.statCard]}>
-      <View style={styles.statCardTopRow}>
-        <Image 
-          source={{ uri: icon }} 
-          style={styles.statIconImage}
-          resizeMode="contain"
-        />
-        <Text style={styles.statValue}>{value}</Text>
-        
-      <Text style={styles.statLabel}>{label}</Text>
-      </View>
-    </View>
-  </View>
-);
-
-const BadgesSection = ({ badges }) => {
+const StatsGridSection = ({ coins, currentStreak, expPoints, mapsOpened, statsIcons, hero, background }) => {
   const router = useRouter();
   
+  const handleHeroPress = () => {
+    router.push('/Components/CharacterSelection/CharacterSelect');
+  };
+
   return (
-    <View style={styles.badgesSection}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Badges</Text>
-        <TouchableOpacity 
-          onPress={() => router.push('/Components/User Labs/BadgesView')}
-          style={styles.viewAllButton}
-        >
-          <Text style={styles.viewAllText}>View All</Text>
-        </TouchableOpacity>
-      </View>
-      <View 
-        style={styles.badgesScrollView}
+    <View style={styles.statsSection}>
+      <Text style={[styles.sectionTitle, { textAlign: 'center' }]}>Overview</Text>
+      
+      <TouchableOpacity 
+        onPress={handleHeroPress}
+        activeOpacity={0.8}
       >
-        {badges.slice(0, 3).map((badge) => ( 
-          <BadgeCard key={badge.id} badge={badge} />
-        ))}
-      </View>
+        <ImageBackground 
+          source={{ uri: background }} 
+          style={styles.heroSelectionBackground}
+          imageStyle={{ borderRadius: gameScale(12) }} 
+        >
+          {/* ✅ REPLACED: The layout is now a three-column structure */}
+          <View style={styles.overviewContainer}>
+            
+            {/* Left Column: Coins & Streak */}
+            <View style={styles.statColumn}>
+              <StatCard 
+                icon={statsIcons.coins}
+                label="Coins" 
+                value={coins.toLocaleString()}
+              />
+              <StatCard 
+                icon={statsIcons.currentStreak}
+                label="Streak" 
+                value={currentStreak}
+              />
+            </View>
+
+            {/* Middle Column: Hero Sprite */}
+            <View style={styles.heroColumn}>
+              <View style={styles.heroInfo}>
+                <Text style={styles.heroLabel}>Selected Hero</Text>
+                <Text style={styles.heroName}>{hero.name}</Text>
+              </View>
+              <ProfileHeroSprite hero={hero} />
+            </View>
+
+            {/* Right Column: EXP & Maps */}
+            <View style={styles.statColumn}>
+              <StatCard 
+                icon={statsIcons.expPoints}
+                label="EXP Points" 
+                value={expPoints.toLocaleString()}
+              />
+              <StatCard 
+                icon={statsIcons.mapsOpened}
+                label="Maps" 
+                value={mapsOpened}
+              />
+            </View>
+
+          </View>
+        </ImageBackground>
+      </TouchableOpacity>
     </View>
   );
 };
+
+const InventorySection = ({ activeTab, setActiveTab, badges, potions }) => {
+  const router = useRouter();
+  
+  // Determine which data to show based on active tab
+  const data = activeTab === 'Badges' ? badges : potions;
+  // Limit to 6 items (2 columns * 3 rows)
+  const displayItems = data.slice(0, 6);
+
+  const handleViewAll = () => {
+    if (activeTab === 'Badges') {
+      router.push('/Components/User Labs/BadgesView');
+    } else {
+      router.push('/Components/User Labs/PotionsView');
+    }
+  };
+
+  return (
+    <View style={styles.inventorySection}>
+      {/* Rounded Tab Switcher */}
+      <View style={styles.inventoryTabsContainer}>
+        <TouchableOpacity 
+          style={[styles.inventoryTab, activeTab === 'Badges' && styles.inventoryTabActive]}
+          onPress={() => setActiveTab('Badges')}
+        >
+          <Text style={[styles.inventoryTabText, activeTab === 'Badges' && styles.inventoryTabTextActive]}>
+            Badges
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.inventoryTab, activeTab === 'Potions' && styles.inventoryTabActive]}
+          onPress={() => setActiveTab('Potions')}
+        >
+          <Text style={[styles.inventoryTabText, activeTab === 'Potions' && styles.inventoryTabTextActive]}>
+            Potions
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Grid Content */}
+      <View style={styles.inventoryGrid}>
+        {displayItems.map((item, index) => (
+          <View key={index} style={styles.inventoryGridItem}>
+            {activeTab === 'Badges' ? (
+              <BadgeCard badge={item} />
+            ) : (
+              <PotionCard potion={item} />
+            )}
+          </View>
+        ))}
+      </View>
+
+      {/* View All Button at Bottom */}
+      <TouchableOpacity onPress={handleViewAll} style={styles.bottomViewAllButton}>
+        <Text style={styles.bottomViewAllText}>View All {activeTab}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+
+
+
+// Stat Card Component
+const StatCard = ({ icon, label, value }) => (
+  <View style={styles.statCardContainer}>
+    <View style={styles.statCard}>
+      <Image 
+        source={{ uri: icon }} 
+        style={styles.statIconImage}
+        resizeMode="contain"
+      />
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  </View>
+);
+
 
 const BadgeCard = ({ badge }) => (
   <View style={[
@@ -353,28 +503,7 @@ const QuestCard = ({ quest }) => {
   );
 };
 
-const PotionsSection = ({ potions }) => {
-  const router = useRouter();
-  
-  return (
-    <View style={styles.potionsSection}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Potions</Text>
-        <TouchableOpacity 
-          onPress={() => router.push('/Components/User Labs/PotionsView')}
-          style={styles.viewAllButton}
-        >
-          <Text style={styles.viewAllText}>View All</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.potionsGrid} >
-        {potions.slice(0, 4).map((potion) => ( 
-          <PotionCard key={potion.id} potion={potion} />
-        ))}
-      </View>
-    </View>
-  );
-}
+
 
 const PotionCard = ({ potion }) => {
   const getBackgroundColor = (name) => {
@@ -405,39 +534,38 @@ const PotionCard = ({ potion }) => {
   );
 };
 
+// ✅ REPLACED: The entire StyleSheet now uses 'gameScale' for perfectly mirrored, responsive UI.
 const styles = StyleSheet.create({
-  // Add loading/error styles
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
     color: 'white',
-    fontSize: RESPONSIVE.fontSize.md,
+    fontSize: gameScale(14),
     fontFamily: 'Computerfont',
-    marginTop: 20,
+    marginTop: gameScale(20),
   },
   errorText: {
     color: 'red',
-    fontSize: RESPONSIVE.fontSize.md,
+    fontSize: gameScale(14),
     fontFamily: 'Computerfont',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: gameScale(20),
   },
   retryButton: {
     backgroundColor: 'rgba(0, 93, 200, 0.8)',
-    padding: 15,
-    borderRadius: 10,
-    borderWidth: 1,
+    padding: gameScale(15),
+    borderRadius: gameScale(10),
+    borderWidth: gameScale(1),
     borderColor: 'rgba(255, 255, 255, 0.5)',
   },
   retryButtonText: {
     color: 'white',
-    fontSize: RESPONSIVE.fontSize.sm,
+    fontSize: gameScale(12),
     fontFamily: 'Computerfont',
   },
 
-  // ... keep all your existing styles ...
   container: {
     flex: 1
   },
@@ -448,199 +576,264 @@ const styles = StyleSheet.create({
   },
   backgroundOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.54)', 
+    backgroundColor: 'rgba(0, 0, 0, 0.54)',
   },
+
+   tabsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: gameScale(50), // Adjust for status bar height
+    paddingBottom: gameScale(10),
+    backgroundColor: 'rgba(10, 20, 40, 0.5)', // A subtle background for the tabs
+  },
+
+  tab: {
+    paddingHorizontal: gameScale(20),
+    paddingVertical: gameScale(10),
+    borderBottomWidth: gameScale(3),
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
+    borderBottomColor: '#2ee7ff', // A bright color for the active indicator
+  },
+
+   tabText: {
+    color: '#a0a0a0', // Dim color for inactive tabs
+    fontSize: gameScale(16),
+    fontFamily: 'GoldenAge',
+  },
+
+   activeTabText: {
+    color: '#ffffff', // Bright white for the active tab text
+  },
+
   scrollContainer: {
     flex: 1
-  },
-  
-  // Hero Section Styles
-  heroSection: {
-    marginTop: layoutHelpers.gap.xl,
-    marginBottom: layoutHelpers.gap.lg,
-    
   },
   heroContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: RESPONSIVE.borderRadius.lg,
+    borderRadius: gameScale(12),
     borderColor: '#2ee7ffff',
-    borderWidth: 2,
-    height: scaleHeight(200),
+    borderWidth: gameScale(2),
+    height: gameScale(200),
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    
+  },
+  heroSelectionBackground: {
+    overflow: 'hidden',
+    borderRadius: gameScale(12),
   },
 
-  heroSelectionBackground:{
-    overflow: 'hidden', 
-    borderRadius: RESPONSIVE.borderRadius.lg,
+   heroSpriteContainer: {
+    width: gameScale(150), 
+    height: gameScale(150),
+    overflow: 'hidden',
   },
-  heroAvatar: {
-    width: scaleWidth(200),
-    height: scaleWidth(300),
-    marginRight: RESPONSIVE.margin.lg,
-    position: 'absolute',
-    marginTop: scaleHeight(100),
+  heroSpriteSheet: {
+    width: gameScale(150) * 8, 
+    height: gameScale(150) * 6,
   },
   heroInfo: {
-    flex: 1,
-    position: 'absolute',
-    right: 9
+    alignItems: 'center',
+    marginBottom: gameScale(10),
   },
   heroLabel: {
-    fontSize: RESPONSIVE.fontSize.sm,
+    fontSize: gameScale(12),
     color: '#ffffffff',
     fontFamily: 'GoldenAge',
-    marginBottom: layoutHelpers.gap.xs,
+    marginBottom: gameScale(2),
   },
-  heroName: {
-    fontSize: RESPONSIVE.fontSize.xxl + 40,
+   heroName: {
+    fontSize: gameScale(36),
     fontFamily: 'GoldenAge',
     color: '#ffffffff',
   },
-  
-  // Player Info Styles
   playerSection: {
     alignItems: 'flex-start',
-    left: layoutHelpers.gap.xl,
-    top: scaleHeight(5),
-    marginBottom: layoutHelpers.gap.lg,
+    left: gameScale(16),
+    top: gameScale(5),
+    marginBottom: gameScale(12),
   },
   playerName: {
-    fontSize: RESPONSIVE.fontSize.header,
+    fontSize: gameScale(28),
     fontFamily: 'MusicVibes',
     color: 'white',
-    marginBottom: layoutHelpers.gap.xs,
+    marginBottom: gameScale(2),
     textShadowColor: '#000000ff',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 10,
     elevation: 0,
   },
   username: {
-    fontSize: RESPONSIVE.fontSize.md,
+    fontSize: gameScale(14),
     color: '#c2c2c2ff',
     fontFamily: 'DynaPuff',
-    marginBottom: layoutHelpers.gap.xl + 2,
+    marginBottom: gameScale(18),
   },
-  
-  // Stats Section Styles
+
   statsSection: {
-    marginBottom: layoutHelpers.gap.xl,
+    marginBottom: gameScale(16),
+    paddingHorizontal: gameScale(16),
+  },
+
+  inventorySection: {
+    paddingHorizontal: gameScale(16),
+    marginBottom: gameScale(20),
+  },
+  inventoryTabsContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(10, 20, 40, 0.5)',
+    borderRadius: gameScale(25),
+    padding: gameScale(4),
+    marginBottom: gameScale(46),
+    borderWidth: gameScale(1),
+    borderColor: 'rgba(46, 231, 255, 0.3)',
+  },
+  inventoryTab: {
+    flex: 1,
+    paddingVertical: gameScale(10),
+    alignItems: 'center',
+    borderRadius: gameScale(20),
+  },
+  inventoryTabActive: {
+    backgroundColor: '#2ee7ff',
+  },
+  inventoryTabText: {
+    fontFamily: 'GoldenAge',
+    fontSize: gameScale(14),
+    color: '#a0a0a0',
+  },
+  inventoryTabTextActive: {
+    color: '#000000',
+  },
+  inventoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  inventoryGridItem: {
+    width: '48%', // 2 Columns
+    marginBottom: gameScale(16),
+    alignItems: 'center',
+  },
+  bottomViewAllButton: {
+    backgroundColor: 'rgba(10, 20, 40, 0.75)',
+    paddingVertical: gameScale(12),
+    borderRadius: gameScale(12),
+    borderWidth: gameScale(1),
+    borderColor: '#2ee7ff',
+    alignItems: 'center',
+    marginTop: gameScale(8),
+  },
+  bottomViewAllText: {
+    fontFamily: 'GoldenAge',
+    fontSize: gameScale(14),
+    color: '#ffffff',
   },
 
   sectionTitle: {
-    fontSize: RESPONSIVE.fontSize.xxl,
+    fontSize: gameScale(40),
     color: 'white',
     fontFamily: 'MusicVibes',
-    marginBottom: layoutHelpers.gap.md,
+    marginBottom: gameScale(20),
     textShadowColor: '#000000ff',
   },
-  statsGrid: {
-    flexDirection: 'row',
-    padding: RESPONSIVE.margin.md,
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingHorizontal: layoutHelpers.gap.xl + 10,
-  },
-  statCardContainer: {
-    width: wp(40),
-    height: scaleHeight(50),
-    borderRadius: RESPONSIVE.borderRadius.xl,
-    marginBottom: layoutHelpers.gap.xl + 10,
-    position: 'relative',
-  },
-
-  statCardShadow: {
-    position: 'absolute',
-    top: scale(4),
-    left: scale(1),
-    right: -scale(1),
-    bottom: -scale(15),
-    backgroundColor: 'rgba(218, 218, 218, 1)',
-    borderRadius: RESPONSIVE.borderRadius.md,
-    zIndex: 1,
-  },
-
-  statCard: {
-    backgroundColor: 'rgba(27, 98, 124, 0.93)',
-    borderRadius: RESPONSIVE.borderRadius.md,
-    padding: RESPONSIVE.margin.lg,
-    paddingBottom: RESPONSIVE.margin.xl + 10,
-    borderWidth: 2,
-    borderColor: '#dfdfdfff',
-
-    shadowColor: '#ffffffff',
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 0.8,
-    shadowRadius: 5,
-    elevation: 8,
-    zIndex: 2,
-    position: 'relative',
-  },
-
-   statCardTopRow: {
+   overviewContainer: {
+    borderRadius: gameScale(12),
+    borderWidth: gameScale(2),
+    borderColor: '#2ee7ffff',
+    backgroundColor: 'rgba(10, 20, 40, 0.75)',
+    padding: gameScale(16),
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'stretch',
+  },
+
+  statColumn: {
+    width: '28%',
+    justifyContent: 'space-between',
+  },
+
+   heroColumn: {
+    width: '40%',
+    justifyContent: 'space-between', 
     alignItems: 'center',
-    marginBottom: layoutHelpers.gap.md,
+    paddingBottom: gameScale(20), // Adds the requested space at the bottom
+  },
+
+  
+   characterDisplay: {
+    width: gameScale(128),
+    height: gameScale(128),
+    marginVertical: gameScale(10),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // This defines the size of the animated sprite itself.
+  characterImage: {
+    width: gameScale(128),
+    height: gameScale(128),
+  },
+
+
+   statCardContainer: {
+    width: '100%',
+  },
+  
+  statCard: {
+    flex: 1,
+    backgroundColor: 'rgba(27, 98, 124, 0.85)',
+    borderRadius: gameScale(12),
+    borderWidth: gameScale(1),
+    borderColor: 'rgba(223, 223, 223, 0.7)',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: gameScale(10),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.6,
+    shadowRadius: 5,
+    elevation: 10,
   },
 
   statValue: {
-    fontSize: RESPONSIVE.fontSize.xl+ 3,
+    fontSize: gameScale(24),
     fontFamily: 'FunkySign',
-    color: '#ffffffff',
-    elevation: 5,
-    left: scale(45),
-    position: 'absolute',
+    color: '#ffffff',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
-  
-   statIconImage: {
-    overflow:'hidden',
-    position: 'absolute',
-    top: -scale(18),
-    left: -scale(10),
-     width: scaleWidth(60),
-    height: scaleWidth(60),
-    shadowColor: '#000000',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 3,
-    elevation: 5,
+  statIconImage: {
+    width: gameScale(50),
+    height: gameScale(50),
+  },
+  statLabel: {
+    fontSize: gameScale(14),
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontFamily: 'Computerfont',
   },
 
-  statLabel: {
-    fontSize: RESPONSIVE.fontSize.sm + 2,
-    color: '#ffffff',
-    textAlign: 'center',
-    fontFamily: 'FunkySign',
-    textShadowColor: '#000000',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
-    elevation: 4,
-    position: 'absolute',
-    top: 12,
-    left: scale(45),
-  },
-  
-  // Badges Section Styles
   badgesSection: {
-    padding: layoutHelpers.gap.xl,
+    padding: gameScale(16),
   },
+
 
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: layoutHelpers.gap.md,
+    marginBottom: gameScale(8),
   },
 
   viewAllButton: {
-    paddingHorizontal: scale(12),
-    paddingVertical: scale(6),
+    paddingHorizontal: gameScale(12),
+    paddingVertical: gameScale(6),
     borderColor: '#2ee7ffff',
   },
 
   viewAllText: {
-    fontSize: RESPONSIVE.fontSize.sm,
+    fontSize: gameScale(12),
     color: '#ffffffff',
     fontFamily: 'GoldenAge',
   },
@@ -649,18 +842,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    borderWidth: 2,
-    borderRadius: 10,
+    borderWidth: gameScale(2),
+    borderRadius: gameScale(10),
     backgroundColor: 'rgba(1, 1, 40, 0.48)',
   },
   badgeCard: {
     alignItems: 'center',
-    borderRightWidth: 2,
+    width: '100%',
   },
-   badgeIconImage: {
-    width: scale(170),
-    height: scale(170),
-    top: scale(-2),
+  badgeIconImage: {
+    width: gameScale(200), 
+    height: gameScale(200),
     shadowColor: '#000000',
     shadowOffset: { width: 1, height: 1 },
     shadowOpacity: 0.6,
@@ -668,34 +860,26 @@ const styles = StyleSheet.create({
     elevation: 3,
     overflow: 'hidden',
   },
-  border:{
-    width: scale(120), height: scale(120), justifyContent: 'center', alignItems: 'center',
+  border: {
+    width: gameScale(100), // Adjusted size
+    height: gameScale(100),
+    justifyContent: 'center',
+    alignItems: 'center',
     pointerEvents: 'none',
   },
-  badgeName: {
-    fontSize: RESPONSIVE.fontSize.sm,
-    color: 'white',
-    textAlign: 'center',
-    marginBottom: layoutHelpers.gap.xs,
+
+  questsSection: {
+    marginBottom: gameScale(16),
+    padding: gameScale(16),
   },
-  badgeEarned: {
-    fontSize: RESPONSIVE.fontSize.md,
-    color: '#4CAF50',
-    fontWeight: 'bold',
-  },
-  
-   questsSection: {
-    marginBottom: layoutHelpers.gap.xl,
-    padding: layoutHelpers.gap.xl,
-  },
-  
-   questCard: {
+
+  questCard: {
     backgroundColor: 'rgba(27, 98, 124, 0.93)',
-    borderRadius: RESPONSIVE.borderRadius.md,
-    padding: RESPONSIVE.margin.lg,
+    borderRadius: gameScale(8),
+    padding: gameScale(16),
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: gameScale(2),
     borderColor: '#dfdfdfff',
     shadowColor: '#ffffffff',
     shadowOffset: { width: 3, height: 3 },
@@ -707,8 +891,8 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 
-   questRewardsSection: {
-    width: scale(60),
+  questRewardsSection: {
+    width: gameScale(60),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -718,13 +902,13 @@ const styles = StyleSheet.create({
   },
 
   rewardIcon: {
-    width: scale(30),
-    height: scale(30),
-    marginBottom: layoutHelpers.gap.xs,
+    width: gameScale(30),
+    height: gameScale(30),
+    marginBottom: gameScale(2),
   },
 
-    rewardAmount: {
-    fontSize: RESPONSIVE.fontSize.sm,
+  rewardAmount: {
+    fontSize: gameScale(12),
     color: '#FFD700',
     fontFamily: 'FunkySign',
     fontWeight: 'bold',
@@ -732,10 +916,10 @@ const styles = StyleSheet.create({
 
   questInfoSection: {
     flex: 1,
-    paddingHorizontal: layoutHelpers.gap.md,
+    paddingHorizontal: gameScale(8),
   },
 
-    progressContainer: {
+  progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -743,56 +927,56 @@ const styles = StyleSheet.create({
 
   progressBarBackground: {
     flex: 1,
-    height: scale(8),
+    height: gameScale(8),
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: scale(4),
-    marginRight: layoutHelpers.gap.sm,
+    borderRadius: gameScale(4),
+    marginRight: gameScale(4),
     overflow: 'hidden',
   },
 
   progressBarFill: {
     height: '100%',
-    borderRadius: scale(4),
+    borderRadius: gameScale(4),
     minWidth: '2%',
   },
 
   progressText: {
-    fontSize: RESPONSIVE.fontSize.sm,
+    fontSize: gameScale(12),
     color: '#ffffff',
     fontFamily: 'FunkySign',
     fontWeight: 'bold',
-    minWidth: scale(40),
+    minWidth: gameScale(40),
     textAlign: 'right',
   },
 
-    questTitle: {
-    fontSize: RESPONSIVE.fontSize.md,
+  questTitle: {
+    fontSize: gameScale(14),
     color: '#ffffff',
     fontFamily: 'FunkySign',
-    marginBottom: layoutHelpers.gap.xs,
+    marginBottom: gameScale(2),
   },
 
   questType: {
-    fontSize: RESPONSIVE.fontSize.sm,
+    fontSize: gameScale(12),
     fontFamily: 'FunkySign',
     fontWeight: 'bold',
-    marginBottom: layoutHelpers.gap.sm,
+    marginBottom: gameScale(4),
   },
 
-    claimSection: {
-    width: scale(80),
+  claimSection: {
+    width: gameScale(80),
     alignItems: 'center',
   },
 
-   claimButton: {
-    paddingHorizontal: scale(16),
-    paddingVertical: scale(8),
-    borderRadius: RESPONSIVE.borderRadius.md,
+  claimButton: {
+    paddingHorizontal: gameScale(16),
+    paddingVertical: gameScale(8),
+    borderRadius: gameScale(8),
     alignItems: 'center',
     justifyContent: 'center',
   },
-    claimButtonText: {
-    fontSize: RESPONSIVE.fontSize.sm,
+  claimButtonText: {
+    fontSize: gameScale(12),
     color: '#ffffff',
     fontFamily: 'FunkySign',
     fontWeight: 'bold',
@@ -800,41 +984,39 @@ const styles = StyleSheet.create({
 
   questCardContainer: {
     width: '100%',
-    height: scaleHeight(80),
-    borderRadius: RESPONSIVE.borderRadius.xl,
-    marginBottom: layoutHelpers.gap.md,
+    height: gameScale(80),
+    borderRadius: gameScale(16),
+    marginBottom: gameScale(8),
     position: 'relative',
-    
   },
 
   questCardShadow: {
     position: 'absolute',
-    top: scale(4),
-    left: scale(1),
-    right: -scale(1),
-    bottom: -scale(15),
+    top: gameScale(4),
+    left: gameScale(1),
+    right: -gameScale(1),
+    bottom: -gameScale(15),
     backgroundColor: 'rgba(218, 218, 218, 1)',
-    borderRadius: RESPONSIVE.borderRadius.md,
+    borderRadius: gameScale(8),
     zIndex: 1,
   },
 
-  // Potions Section Styles
   potionsSection: {
-    marginBottom: layoutHelpers.gap.xl,
-    padding: layoutHelpers.gap.xl,
+    marginBottom: gameScale(16),
+    padding: gameScale(16),
   },
   potionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingHorizontal: layoutHelpers.gap.xl + 20,
+    paddingHorizontal: gameScale(36),
   },
-  
+
   potionCard: {
-    borderRadius: RESPONSIVE.borderRadius.md,
+    borderRadius: gameScale(8),
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
+    borderWidth: gameScale(2),
     borderColor: '#dfdfdfff',
     shadowColor: '#ffffffff',
     shadowOffset: { width: 3, height: 3 },
@@ -847,27 +1029,27 @@ const styles = StyleSheet.create({
   },
 
   potionCardContainer: {
-    width: wp(20),
-    height: scaleHeight(120),
-    borderRadius: RESPONSIVE.borderRadius.xl,
+    width: gameScale(78), // Corresponds to wp(20)
+    height: gameScale(120),
+    borderRadius: gameScale(16),
     position: 'relative',
   },
 
-   potionCardShadow: {
+  potionCardShadow: {
     position: 'absolute',
-    top: scale(4),
-    left: scale(1),
-    right: -scale(1),
-    bottom: -scale(15),
+    top: gameScale(4),
+    left: gameScale(1),
+    right: -gameScale(1),
+    bottom: -gameScale(15),
     backgroundColor: 'rgba(255, 255, 255, 1)',
-    borderRadius: RESPONSIVE.borderRadius.md,
+    borderRadius: gameScale(8),
     zIndex: 1,
   },
 
-potionIconImage: {
-    width: scale(100),
+  potionIconImage: {
+    width: gameScale(100),
     position: 'absolute',
-    height: scale(100),
+    height: gameScale(100),
     alignItems: 'center',
     shadowColor: '#000000',
     shadowOffset: { width: 2, height: 2 },
@@ -876,26 +1058,25 @@ potionIconImage: {
     elevation: 4,
   },
 
-   potionName: {
-    fontSize: RESPONSIVE.fontSize.sm,
+  potionName: {
+    fontSize: gameScale(12),
     color: 'rgba(53, 53, 53, 1)',
     textAlign: 'center',
     position: 'absolute',
-    bottom: -15,
+    bottom: gameScale(-15),
     fontFamily: 'FunkySign',
   },
-   potionCount: {
-    paddingHorizontal: scale(10),
-    paddingVertical: scale(4), 
+  potionCount: {
+    paddingHorizontal: gameScale(10),
+    paddingVertical: gameScale(4),
     top: 0,
     position: 'absolute',
-    right:0,
+    right: 0,
   },
-  
-    potionCountText: {
-    fontSize: RESPONSIVE.fontSize.md,
+
+  potionCountText: {
+    fontSize: gameScale(14),
     color: 'white',
     fontFamily: 'FunkySign',
-
   },
 });

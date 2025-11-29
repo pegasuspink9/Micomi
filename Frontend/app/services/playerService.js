@@ -60,12 +60,12 @@ export const playerService = {
     return {
       heroSelected: {
         name: selectedCharacter?.character.character_name || "No Character",
-        avatar: selectedCharacter?.character.character_image_display || "https://github.com/user-attachments/assets/eced9b8f-eae0-48f5-bc05-d8d5ce018529",
+        character_image_display: selectedCharacter?.character.character_image_display || "https://github.com/user-attachments/assets/eced9b8f-eae0-48f5-bc05-d8d5ce018529",
       },
       playerName: apiData.player_name,
       username: `@${apiData.username}`,
       coins: apiData.coins,
-      daysLogin: apiData.totalActiveMaps || 0, // Using total active maps as a substitute
+      daysLogin: apiData.totalActiveMaps || 0, // Using total active mazps as a substitute
       currentStreak: apiData.current_streak,
       expPoints: apiData.exp_points,
       mapsOpened: apiData.totalActiveMaps,

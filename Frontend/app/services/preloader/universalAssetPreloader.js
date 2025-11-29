@@ -374,7 +374,7 @@ async testR2Download(testUrl) {
     // Hero/Character assets
     if (playerData.heroSelected) {
       assets.push({
-        url: playerData.heroSelected.avatar,
+        url: playerData.heroSelected.character_image_display,
         name: 'hero_avatar',
         type: 'image',
         category: 'player_profile'
@@ -1621,8 +1621,8 @@ transformPotionShopDataWithCache(levelPreviewData) {
     const transformedData = { ...playerData };
     
     // Transform hero avatar
-    if (transformedData.heroSelected && transformedData.heroSelected.avatar) {
-      transformedData.heroSelected.avatar = this.getCachedAssetPath(transformedData.heroSelected.avatar);
+    if (transformedData.heroSelected && transformedData.heroSelected.character_image_display) {
+      transformedData.heroSelected.character_image_display = this.getCachedAssetPath(transformedData.heroSelected.character_image_display);
     }
 
     // Transform backgrounds

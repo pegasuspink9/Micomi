@@ -25,6 +25,7 @@ const Character = ({
   currentState = 'idle',
   onAnimationComplete = null,
   attackAudioUrl = null,
+  containerStyle: propContainerStyle,
 }) => {
   // ========== Shared Animation Values ==========
   const frameIndex = useSharedValue(0);
@@ -245,7 +246,7 @@ const Character = ({
 
   // ========== Render ==========
   return (
-    <Animated.View style={[ styles.characterContainer, containerStyle ]}>
+    <Animated.View style={[ styles.characterContainer, containerStyle, propContainerStyle]}>
       <View style={[styles.spriteContainer, { width: SPRITE_SIZE, height: SPRITE_SIZE }]}>
         <Animated.View style={[ styles.spriteSheet, animatedStyle, { width: SPRITE_SIZE * SPRITE_COLUMNS, height: SPRITE_SIZE * SPRITE_ROWS } ]}>
           {currentAnimationUrl ? (

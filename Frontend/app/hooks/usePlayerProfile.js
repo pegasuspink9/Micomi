@@ -32,19 +32,6 @@ export const usePlayerProfile = (playerId = 11) => {
       
       let transformedData = playerService.transformPlayerData(apiData);
       
-      // Transform character data to find selected hero
-      const transformedCharacters = characterService.transformCharacterData(characterData);
-      const selectedHero = characterService.getSelectedCharacter(transformedCharacters);
-      
-      // Update hero selection if we found a selected character
-      if (selectedHero) {
-        transformedData.heroSelected = {
-          name: selectedHero.character_name,
-          avatar: selectedHero.character_image_display
-        };
-        console.log(`🔄 Updated hero in player data: ${selectedHero.character_name}`);
-      }
-
       // Check if player profile assets are cached
       const cacheStatus = await universalAssetPreloader.arePlayerProfileAssetsCached(transformedData);
       console.log(`📦 Player profile asset cache status:`, cacheStatus);
