@@ -99,7 +99,7 @@ export default function Practice() {
 
 return (
     <View style={styles.container}>
-      <ImageBackground source={{ uri: playerData.containerBackground }} style={styles.ImageBackgroundContainer} resizeMode="cover">
+      <ImageBackground source={require('../ProfileBackground.png')} style={styles.ImageBackgroundContainer} resizeMode="cover">
 
         <View style={styles.backgroundOverlay} />
         
