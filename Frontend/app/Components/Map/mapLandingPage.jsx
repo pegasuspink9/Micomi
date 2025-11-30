@@ -59,13 +59,13 @@ export default function MapLandingPage() {
 
   return (
     <View style={styles.container}>
-      {/* ✅ Background Image Layer */}
+      {/*  Background Image Layer */}
       <ImageBackground
-        source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759495800/Gemini_Generated_Image_ugmdzwugmdzwugmd_krfzr6.png' }}
+        source={require('./Assets/MainBackground.png')}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
-        {/* ✅ Gradient Overlay */}
+        {/*  Gradient Overlay */}
         <LinearGradient
           colors={currentGradient.colors}
           locations={currentGradient.locations}
@@ -73,7 +73,7 @@ export default function MapLandingPage() {
           end={[0, 1]}
           style={styles.gradient}
         >
-          {/* ✅ Lower Hills - Move to back layer */}
+          {/*  Lower Hills - Move to back layer */}
           <LottieView
             source={{ uri: 'https://lottie.host/7a86b8d3-7b6b-4841-994d-3a12acb80eb1/1UKTK3rnbF.lottie' }}
             style={styles.lowerHills}
@@ -84,7 +84,7 @@ export default function MapLandingPage() {
             pointerEvents="none"
           />
 
-          {/* ✅ Clouds - Behind content */}
+          {/*  Clouds - Behind content */}
           <LottieView
             source={{ uri: 'https://lottie.host/6dc90492-37c5-4169-9db7-4a6f79ad0bf9/pR3Q6bxLZq.lottie' }}
             style={styles.clouds}
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     position: 'relative', 
   },
   
-  // ✅ Background animations (lowest z-index)
+  //  Background animations (lowest z-index)
   lowerHills: {
     position: 'absolute',
     bottom: -50,
@@ -154,6 +154,6 @@ const styles = StyleSheet.create({
   navigationContainer: {
     flex: 1,
     position: 'relative',
-    zIndex: 20, // ✅ Highest z-index for touch events
+    zIndex: 20, //  Highest z-index for touch events
   },
 });
