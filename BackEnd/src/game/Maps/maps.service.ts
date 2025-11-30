@@ -55,6 +55,6 @@ export const selectMap = async (playerId: number, mapId: number) => {
 
   return {
     map: enhancedMap,
-    audio: "micomi-assets.me/Sounds/Final/Navigation.mp3",
+    audio: "https://micomi-assets.me/Sounds/Final/Navigation.mp3",
   };
 };

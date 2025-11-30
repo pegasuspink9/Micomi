@@ -54,7 +54,7 @@ export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
       res,
       {
         data: enhancedMaps,
-        audio: "micomi-assets.me/Sounds/Final/Navigation.mp3",
+        audio: "https://micomi-assets.me/Sounds/Final/Navigation.mp3",
       },
       "Maps fetched with player activity"
     );
@@ -71,7 +71,7 @@ export const getAllMaps = async (req: Request, res: Response) => {
       res,
       {
         data: maps,
-        audio: "micomi-assets.me/Sounds/Final/Navigation.mp3",
+        audio: "https://micomi-assets.me/Sounds/Final/Navigation.mp3",
       },
       "All maps fetched"
     );

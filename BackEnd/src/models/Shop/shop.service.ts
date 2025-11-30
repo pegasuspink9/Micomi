@@ -91,7 +91,7 @@ export const getAllPlayerCharacter = async (req: Request, res: Response) => {
           characterShop: undefined,
           cards: characterCards,
         },
-        audio: "micomi-assets.me/Sounds/Final/Shop.ogg",
+        audio: "https://micomi-assets.me/Sounds/Final/Shop.ogg",
       };
 
       if (owned) {
