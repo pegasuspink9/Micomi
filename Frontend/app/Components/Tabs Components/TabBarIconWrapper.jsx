@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View, Image, Pressable, ImageBackground, Animated } from 'react-native'; 
 import { gameScale } from '../Responsiveness/gameResponsive';
 
+
 const TabBarIconWrapper = ({ source, backgroundSource, imageStyle, focused }) => {
   return (
     <View style={styles.container}>
@@ -12,7 +13,7 @@ const TabBarIconWrapper = ({ source, backgroundSource, imageStyle, focused }) =>
       />
       
       <Image 
-        source={{ uri: source }} 
+        source={source} 
         style={[
           styles.icon, 
           imageStyle, 

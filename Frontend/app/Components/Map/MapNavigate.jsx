@@ -21,10 +21,10 @@ import { MAP_THEMES, DEFAULT_THEME } from '../RoadMap/MapLevel/MapDatas/mapData'
 const { width, height } = Dimensions.get('window');
 
 const LEVEL_SELECTOR_IMAGES = {
-  'HTML': 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945741/469539795-f1ade869-bb35-4864-a796-2a964749f83b_hbzsxn.png',
-  'CSS': 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945759/469539799-b20d16ef-7374-4eae-b87e-ec9d61171071_g0qgdf.png',
-  'JavaScript': 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945815/469015824-570e2a1e-a6cb-4f7f-bdfd-54920f810694_yr5mi8.png',
-  'Computer': 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945877/469628154-8ab0728b-8988-46dd-8ad7-395abc4ba273_1_dsr2b5.png'
+  'HTML': require('./Assets/html_selector.png'),
+  'CSS': require('./Assets/css_selector.png'),
+  'JavaScript': require('./Assets/javascript_selector.png'),
+  'Computer': require('./Assets/computer_selector.png')
 };
 
 export default function MapNavigate({ onMapChange }) {
@@ -34,7 +34,6 @@ export default function MapNavigate({ onMapChange }) {
 
    const [animations, setAnimations] = useState([]);
   
-  // ✅ Asset download states
   const [downloadModalVisible, setDownloadModalVisible] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState({
     loaded: 0,
@@ -212,7 +211,7 @@ export default function MapNavigate({ onMapChange }) {
       // Check if assets are already cached
       const cacheStatus = await mapAssetPreloader.areThemeAssetsCached(themeData, mapName);
       if (cacheStatus.cached) {
-        console.log(`✅ All assets for ${mapName} are already cached`);
+        console.log(` All assets for ${mapName} are already cached`);
         return { success: true, fromCache: true };
       }
 
@@ -266,7 +265,7 @@ export default function MapNavigate({ onMapChange }) {
         isComplete: true
       }));
 
-      console.log(`✅ Asset download completed for ${mapName}:`, result);
+      console.log(` Asset download completed for ${mapName}:`, result);
 
       // Auto-close modal after 2 seconds
       setTimeout(() => {
@@ -294,7 +293,7 @@ export default function MapNavigate({ onMapChange }) {
     }
   };
 
-  // ✅ Reset download progress
+  //  Reset download progress
   const resetDownloadProgress = () => {
     setDownloadProgress({
       loaded: 0,
@@ -317,7 +316,7 @@ export default function MapNavigate({ onMapChange }) {
   };
 
 
-  // ✅ Enhanced island click with asset download
+  //  Enhanced island click with asset download
   const handleIslandClick = async () => {
     if (isValidMap && maps[currentMapIndex].is_active) {
       const currentMapName = maps[currentMapIndex].map_name;
@@ -350,7 +349,7 @@ export default function MapNavigate({ onMapChange }) {
     }
   };
 
-  // ✅ Close download modal manually
+  //  Close download modal manually
   const handleDownloadModalClose = () => {
     if (!downloadProgress.isDownloading) {
       setDownloadModalVisible(false);
@@ -485,12 +484,12 @@ export default function MapNavigate({ onMapChange }) {
             style={styles.navArrow} 
             onPress={handlePrevious}
           >
-            <Image source={{uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945991/469163197-5f2b8e72-f49e-4f06-8b76-40b580289d54_mf5hcw.png'}} style={[styles.arrowImage, styles.flippedHorizontal]} />
+            <Image source={require('./Assets/right arrow.png')} style={[styles.arrowImage, styles.flippedHorizontal]} />
           </TouchableOpacity>
           
         <TouchableOpacity onPress={handleIslandClick} activeOpacity={0.7}> 
           <ImageBackground
-              source={{uri: LEVEL_SELECTOR_IMAGES[maps[currentMapIndex]?.map_name || 'HTML']}}
+              source={LEVEL_SELECTOR_IMAGES[maps[currentMapIndex]?.map_name || 'HTML']}
               style={styles.levelSelectorImage}
               resizeMode="contain"
             >
@@ -506,7 +505,7 @@ export default function MapNavigate({ onMapChange }) {
             style={styles.navArrow} 
             onPress={handleNext}
             >
-              <Image source={{uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945991/469163197-5f2b8e72-f49e-4f06-8b76-40b580289d54_mf5hcw.png'}} style={styles.arrowImage} />
+              <Image source={require('./Assets/right arrow.png')} style={styles.arrowImage} />
             </TouchableOpacity>
           </View>
       </View>
@@ -529,7 +528,7 @@ export default function MapNavigate({ onMapChange }) {
                 <Text style={styles.downloadModalSubtitle}>Downloading theme assets...</Text>
               </View>
 
-              {/* ✅ Overall Progress */}
+              {/*  Overall Progress */}
               <View style={styles.progressSection}>
                 <View style={styles.progressLabelContainer}>
                   <Text style={styles.progressLabel}>
@@ -550,7 +549,7 @@ export default function MapNavigate({ onMapChange }) {
                 </View>
               </View>
 
-              {/* ✅ Current Asset Progress */}
+              {/*  Current Asset Progress */}
               {currentAssetProgress.url && (
                 <View style={styles.progressSection}>
                   <View style={styles.progressLabelContainer}>
@@ -578,7 +577,7 @@ export default function MapNavigate({ onMapChange }) {
                 </View>
               )}
 
-              {/* ✅ Status Messages */}
+              {/*  Status Messages */}
               <View style={styles.statusContainer}>
                 {downloadProgress.isDownloading && downloadProgress.currentAsset && (
                   <Text style={styles.statusText}>
@@ -588,12 +587,12 @@ export default function MapNavigate({ onMapChange }) {
                 
                 {downloadProgress.isComplete && (
                   <Text style={styles.statusCompleteText}>
-                    ✅ Assets Ready! Opening {downloadProgress.mapName}...
+                     Assets Ready! Opening {downloadProgress.mapName}...
                   </Text>
                 )}
               </View>
 
-              {/* ✅ Close Button */}
+              {/*  Close Button */}
               {!downloadProgress.isDownloading && (
                 <TouchableOpacity 
                   style={styles.downloadModalCloseButton}
@@ -757,7 +756,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
 
-  // ✅ Download Modal Styles
+  //  Download Modal Styles
   downloadModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',

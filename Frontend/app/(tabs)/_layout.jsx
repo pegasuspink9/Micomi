@@ -6,10 +6,10 @@ import { gameScale } from '../Components/Responsiveness/gameResponsive';
 import TabBarIconWrapper from '../Components/Tabs Components/TabBarIconWrapper';
 import CustomTabBarButton from '../Components/Tabs Components/CustomTabBarButton';
 
-const practiceIconUri = 'https://github.com/user-attachments/assets/f4f6677b-a571-4deb-86a7-77493befd93c';
-const mapIconUri = 'https://github.com/user-attachments/assets/d1ce0b07-6a4a-4923-b6bb-792eac2e7117';
-const leaderboardsIconUri = 'https://github.com/user-attachments/assets/803566b0-4d71-4d04-8fef-c88c6ebe2cd8';
-const profileIconUri = 'https://github.com/user-attachments/assets/c05034ae-bdab-4144-8fb7-f3c44c7ac630';
+const practiceIconUri = require('../Components/Tabs Components/PracticeIcon.png');
+const mapIconUri = require('../Components/Tabs Components/MapIcon.png');
+const leaderboardsIconUri = require('../Components/Tabs Components/LeaderboardIcon.png');
+const profileIconUri = require('../Components/Tabs Components/ProfileIcon.png');
 
 const backgroundIcon = require('../Components/Tabs Components/BackgroundIcon.png');
 

@@ -26,7 +26,8 @@ import AssetDownloadProgress from '../Components/RoadMap/LoadingState/assetDownl
 import { gameScale } from '../Components/Responsiveness/gameResponsive';
 import { useRouter } from 'expo-router';
 import { usePlayerProfile } from '../hooks/usePlayerProfile';
-import CharacterDisplay from '../Components/Character/CharacterDisplay';
+import { LinearGradient } from 'expo-linear-gradient';
+
 
 export default function Practice() {
   const playerId = 11; // You can get this from context or props
@@ -99,7 +100,7 @@ export default function Practice() {
 
 return (
     <View style={styles.container}>
-      <ImageBackground source={require('../ProfileBackground.png')} style={styles.ImageBackgroundContainer} resizeMode="cover">
+      <ImageBackground source={require('../profileBackground.png')} style={styles.ImageBackgroundContainer} opacity={0.8} resizeMode="cover">
 
         <View style={styles.backgroundOverlay} />
         
@@ -156,7 +157,7 @@ return (
   );
 }
 
-// ✅ ADD New Tabs Component
+//  ADD New Tabs Component
 const Tabs = ({ activeTab, setActiveTab }) => {
   return (
     <View style={styles.tabsContainer}>
@@ -190,7 +191,7 @@ const ProfileHeroSprite = ({ hero }) => {
   const FRAME_DURATION = 40; 
   const spriteSize = gameScale(150);
 
-  // Animation value for the current frame
+  // Animation value for the current frameoverview
   const frameIndex = useSharedValue(0);
 
   // Start the animation loop when the component mounts
@@ -270,57 +271,94 @@ const StatsGridSection = ({ coins, currentStreak, expPoints, mapsOpened, statsIc
         onPress={handleHeroPress}
         activeOpacity={0.8}
       >
-        <ImageBackground 
-          source={{ uri: background }} 
-          style={styles.heroSelectionBackground}
-          imageStyle={{ borderRadius: gameScale(12) }} 
-        >
-          {/* ✅ REPLACED: The layout is now a three-column structure */}
-          <View style={styles.overviewContainer}>
+        {/* Outer Layer (Black) */}
+        <View style={styles.overviewBorderOuter}>
+          <View style={styles.overviewBorderMiddle}>
             
-            {/* Left Column: Coins & Streak */}
-            <View style={styles.statColumn}>
-              <StatCard 
-                icon={statsIcons.coins}
-                label="Coins" 
-                value={coins.toLocaleString()}
-              />
-              <StatCard 
-                icon={statsIcons.currentStreak}
-                label="Streak" 
-                value={currentStreak}
-              />
-            </View>
-
-            {/* Middle Column: Hero Sprite */}
-            <View style={styles.heroColumn}>
-              <View style={styles.heroInfo}>
-                <Text style={styles.heroLabel}>Selected Hero</Text>
-                <Text style={styles.heroName}>{hero.name}</Text>
+             <ImageBackground 
+              source={{ uri: background }} 
+              style={styles.overviewContainer}
+            >
+              
+              {/* Left Column: Coins & Streak */}
+              <View style={styles.statColumn}>
+                <StatCard 
+                  icon={statsIcons.coins}
+                  label="Coins" 
+                  value={coins.toLocaleString()}
+                />
+                <StatCard 
+                  icon={statsIcons.currentStreak}
+                  label="Streak" 
+                  value={currentStreak}
+                />
               </View>
-              <ProfileHeroSprite hero={hero} />
-            </View>
 
-            {/* Right Column: EXP & Maps */}
-            <View style={styles.statColumn}>
-              <StatCard 
-                icon={statsIcons.expPoints}
-                label="EXP Points" 
-                value={expPoints.toLocaleString()}
-              />
-              <StatCard 
-                icon={statsIcons.mapsOpened}
-                label="Maps" 
-                value={mapsOpened}
-              />
-            </View>
+              {/* Middle Column: Hero Sprite */}
+              <View style={styles.heroColumn}>
+                <View style={styles.heroInfo}>
+                  <Text style={styles.heroLabel}>Selected Hero</Text>
+                  <Text style={styles.heroName}>{hero.name}</Text>
+                </View>
+                <ProfileHeroSprite hero={hero} />
+              </View>
 
+              {/* Right Column: EXP & Maps */}
+              <View style={styles.statColumn}>
+                <StatCard 
+                  icon={statsIcons.expPoints}
+                  label="EXP Points" 
+                  value={expPoints.toLocaleString()}
+                />
+                <StatCard 
+                  icon={statsIcons.mapsOpened}
+                  label="Maps" 
+                  value={mapsOpened}
+                />
+              </View>
+
+            </ImageBackground> 
           </View>
-        </ImageBackground>
+        </View>
       </TouchableOpacity>
     </View>
   );
 };
+
+
+const InventoryTabButton = ({ label, isActive, onPress }) => {
+  return (
+    <View style={styles.capsuleWrapper}>
+      {/* The 3D Depth Layer (Shadow) */}
+      <View style={[styles.capsuleShadow, isActive && styles.capsuleShadowActive]} />
+
+      {/* The Main Button Layer */}
+      <TouchableOpacity 
+        activeOpacity={1} 
+        onPress={onPress}
+        style={[styles.capsuleButton, isActive && styles.capsuleButtonActive]}
+      >
+        <LinearGradient
+          colors={isActive 
+            ? ['#0c96a9ff', '#006471ff'] 
+            : ['#1598d9ff', '#0f2a38'] 
+          }
+          style={styles.capsuleGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+        >
+          {/* Glossy Highlight for 3D effect */}
+          <View style={styles.capsuleHighlight} />
+          
+          <Text style={[styles.capsuleText, isActive && styles.capsuleTextActive]}>
+            {label}
+          </Text>
+        </LinearGradient>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
 
 const InventorySection = ({ activeTab, setActiveTab, badges, potions }) => {
   const router = useRouter();
@@ -342,36 +380,73 @@ const InventorySection = ({ activeTab, setActiveTab, badges, potions }) => {
     <View style={styles.inventorySection}>
       {/* Rounded Tab Switcher */}
       <View style={styles.inventoryTabsContainer}>
-        <TouchableOpacity 
-          style={[styles.inventoryTab, activeTab === 'Badges' && styles.inventoryTabActive]}
-          onPress={() => setActiveTab('Badges')}
-        >
-          <Text style={[styles.inventoryTabText, activeTab === 'Badges' && styles.inventoryTabTextActive]}>
-            Badges
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.inventoryTab, activeTab === 'Potions' && styles.inventoryTabActive]}
-          onPress={() => setActiveTab('Potions')}
-        >
-          <Text style={[styles.inventoryTabText, activeTab === 'Potions' && styles.inventoryTabTextActive]}>
-            Potions
-          </Text>
-        </TouchableOpacity>
+        <InventoryTabButton 
+          label="Badges" 
+          isActive={activeTab === 'Badges'} 
+          onPress={() => setActiveTab('Badges')} 
+        />
+        
+        {/* Spacer for gap between buttons */}
+        <View style={{ width: gameScale(12) }} />
+
+        <InventoryTabButton 
+          label="Potions" 
+          isActive={activeTab === 'Potions'} 
+          onPress={() => setActiveTab('Potions')} 
+        />
       </View>
 
       {/* Grid Content */}
-      <View style={styles.inventoryGrid}>
-        {displayItems.map((item, index) => (
-          <View key={index} style={styles.inventoryGridItem}>
-            {activeTab === 'Badges' ? (
-              <BadgeCard badge={item} />
-            ) : (
+      {activeTab === 'Badges' && (
+        <View style={styles.badgesGrid}>
+          {displayItems.map((item, index) => {
+            const isFirstInRow = index % 3 === 0;
+            const isLastInRow = index % 3 === 2;
+
+            return (
+              <View key={index} style={styles.badgeGridItem}>
+                {/* Layer 1 - Outer Border */}
+                <View style={[
+                  styles.badgeBorderOuter,
+                  isFirstInRow && styles.badgeGridItemLeft,
+                  isLastInRow && styles.badgeGridItemRight,
+                ]}>
+                  {/* Layer 2 - Middle Border */}
+                  <View style={[
+                    styles.badgeBorderMiddle,
+                    isFirstInRow && styles.badgeGridItemLeft,
+                    isLastInRow && styles.badgeGridItemRight,
+                  ]}>
+                    {/* Layer 3 - Inner Content */}
+                    <LinearGradient
+                      colors={['#ababab76', '#fefefe2b']}
+                      style={[
+                        styles.badgeContent,
+                        isFirstInRow && styles.badgeGridItemLeft,
+                        isLastInRow && styles.badgeGridItemRight,
+                      ]}
+                    >
+                      <BadgeCard badge={item} />
+                    </LinearGradient>
+                  </View>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+
+      {activeTab === 'Potions' && (
+        <View style={styles.potionsGrid}>
+          {displayItems.map((item, index) => (
+            <View key={index} style={styles.potionGridItem}>
               <PotionCard potion={item} />
-            )}
-          </View>
-        ))}
-      </View>
+            </View>
+          ))}
+        </View>
+      )}
+
 
       {/* View All Button at Bottom */}
       <TouchableOpacity onPress={handleViewAll} style={styles.bottomViewAllButton}>
@@ -384,34 +459,47 @@ const InventorySection = ({ activeTab, setActiveTab, badges, potions }) => {
 
 
 
-// Stat Card Component
 const StatCard = ({ icon, label, value }) => (
   <View style={styles.statCardContainer}>
-    <View style={styles.statCard}>
-      <Image 
-        source={{ uri: icon }} 
-        style={styles.statIconImage}
-        resizeMode="contain"
-      />
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+    <View style={styles.statCardBorderOuter}>
+      <View style={styles.statCardBorderMiddle}>
+        
+
+       <LinearGradient
+          colors={['#091f29', '#1b627c', '#1b627c']} 
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0.8, y: 1 }}
+          style={styles.statCard}
+        >
+          <View style={styles.statIconContainer}>
+            <Image 
+              source={{ uri: icon }} 
+              style={styles.statIconImage}
+              resizeMode="contain"
+            />
+          </View>
+
+          <View style={styles.statTextContainer}>
+            <Text style={styles.statValue}>{value}</Text>
+            <Text style={styles.statLabel}>{label}</Text>
+          </View>
+        </LinearGradient>
+
+        </View>
     </View>
   </View>
 );
-
 
 const BadgeCard = ({ badge }) => (
   <View style={[
     styles.badgeCard,
     { opacity: badge.earned ? 1 : 0.1 }
   ]}>
-    <ImageBackground source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760065969/Untitled_design_6_ioccva.png' }} style={styles.border} resizeMode="contain">
     <Image 
       source={{ uri: badge.icon }} 
       style={styles.badgeIconImage}
       resizeMode="contain"
     />
-    </ImageBackground>
   </View>
 );
 
@@ -534,7 +622,7 @@ const PotionCard = ({ potion }) => {
   );
 };
 
-// ✅ REPLACED: The entire StyleSheet now uses 'gameScale' for perfectly mirrored, responsive UI.
+//  REPLACED: The entire StyleSheet now uses 'gameScale' for perfectly mirrored, responsive UI.
 const styles = StyleSheet.create({
   centered: {
     justifyContent: 'center',
@@ -573,6 +661,7 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
     width: '100%',
     height: '100%',
+     backgroundColor: '#0a1428', 
   },
   backgroundOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -583,8 +672,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: gameScale(50), // Adjust for status bar height
-    paddingBottom: gameScale(10),
+    paddingTop: gameScale(50), 
     backgroundColor: 'rgba(10, 20, 40, 0.5)', // A subtle background for the tabs
   },
 
@@ -625,7 +713,7 @@ const styles = StyleSheet.create({
     borderRadius: gameScale(12),
   },
 
-   heroSpriteContainer: {
+  heroSpriteContainer: {
     width: gameScale(150), 
     height: gameScale(150),
     overflow: 'hidden',
@@ -681,42 +769,149 @@ const styles = StyleSheet.create({
     paddingHorizontal: gameScale(16),
     marginBottom: gameScale(20),
   },
+
+
   inventoryTabsContainer: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(10, 20, 40, 0.5)',
     borderRadius: gameScale(25),
-    padding: gameScale(4),
-    marginBottom: gameScale(46),
-    borderWidth: gameScale(1),
-    borderColor: 'rgba(46, 231, 255, 0.3)',
+    width: '100%',
+    alignSelf: 'center',
+    paddingHorizontal: gameScale(50),
+    paddingVertical: gameScale(6),
   },
-  inventoryTab: {
+
+  capsuleWrapper: {
     flex: 1,
-    paddingVertical: gameScale(10),
-    alignItems: 'center',
-    borderRadius: gameScale(20),
+    height: gameScale(48),
+    width: gameScale(20)
   },
+  
+  capsuleShadow: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '100%',
+    backgroundColor: '#003f52', // Dark base for depth
+    borderRadius: gameScale(24),
+  },
+  
+  capsuleShadowActive: {
+    backgroundColor: 'rgba(0,0,0,0.2)', // Hide/dim shadow when pressed
+  },
+  
+  capsuleButton: {
+    flex: 1,
+    marginBottom: gameScale(4), // Creates the 3D height
+    borderRadius: gameScale(24),
+  },
+  
+  capsuleButtonActive: {
+    marginBottom: 0, // Push down effect
+    marginTop: gameScale(4), // Maintain alignment
+  },
+  
+  capsuleGradient: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: gameScale(24),
+    borderWidth: gameScale(1),
+    borderColor: 'rgba(255,255,255,0.2)',
+    overflow: 'hidden',
+  },
+  
+  capsuleHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '45%',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)', // Glossy top
+    borderTopLeftRadius: gameScale(24),
+    borderTopRightRadius: gameScale(24),
+  },
+  
+  capsuleText: {
+    fontFamily: 'MusicVibes',
+    fontSize: gameScale(15),
+    color: '#8baebf',
+    textShadowColor: '#000000ff',
+    textShadowOffset: { width: 1, height: 2 },
+    textShadowRadius: 2,
+    zIndex: 2,
+  },
+  
+  capsuleTextActive: {
+    color: '#ffffff', // Active text color
+    fontSize: gameScale(15),
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+
+
+
   inventoryTabActive: {
     backgroundColor: '#2ee7ff',
   },
   inventoryTabText: {
-    fontFamily: 'GoldenAge',
+    fontFamily: 'MusicVibes',
     fontSize: gameScale(14),
     color: '#a0a0a0',
   },
   inventoryTabTextActive: {
     color: '#000000',
   },
-  inventoryGrid: {
+
+  badgesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    paddingHorizontal: gameScale(4),
   },
-  inventoryGridItem: {
-    width: '48%', // 2 Columns
-    marginBottom: gameScale(16),
+   badgeGridItem: {
+    width: '33.33%',
+    marginBottom: gameScale(8),
+  },
+
+   badgeBorderOuter: {
+    borderWidth: gameScale(1),
+    borderColor: '#fdfdfdff', 
+    overflow: 'hidden'
+  },
+  badgeBorderMiddle: {
+    borderWidth: gameScale(2),
+    borderColor: '#04457eff',
+    overflow: 'hidden',
+  },
+  badgeContent: {
+    alignItems: 'center',
+    paddingVertical: gameScale(10),
+    overflow: 'hidden',
+  },
+
+
+   badgeGridItemLeft: {
+    borderTopLeftRadius: gameScale(12),
+    borderBottomLeftRadius: gameScale(12),
+  },
+
+  badgeGridItemRight: {
+    borderTopRightRadius: gameScale(12),
+    borderBottomRightRadius: gameScale(12),
+  },
+
+  potionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+  },
+  potionGridItem: {
+    width: '33.33%',
+    marginTop: gameScale(10),
     alignItems: 'center',
   },
+
   bottomViewAllButton: {
     backgroundColor: 'rgba(10, 20, 40, 0.75)',
     paddingVertical: gameScale(12),
@@ -724,7 +919,7 @@ const styles = StyleSheet.create({
     borderWidth: gameScale(1),
     borderColor: '#2ee7ff',
     alignItems: 'center',
-    marginTop: gameScale(8),
+    marginTop: gameScale(50),
   },
   bottomViewAllText: {
     fontFamily: 'GoldenAge',
@@ -740,15 +935,39 @@ const styles = StyleSheet.create({
     textShadowColor: '#000000ff',
   },
    overviewContainer: {
+    // Container styles (Layout for children)
     borderRadius: gameScale(12),
-    borderWidth: gameScale(2),
-    borderColor: '#2ee7ffff',
-    backgroundColor: 'rgba(10, 20, 40, 0.75)',
-    padding: gameScale(16),
+    borderWidth: gameScale(3),
+    borderColor: '#015c73ff',
+    padding: gameScale(5),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'stretch',
+    overflow: 'hidden',
   },
+
+
+
+  overviewBorderOuter: {
+    borderRadius: gameScale(18), 
+    borderWidth: gameScale(3),
+    borderColor: '#fdfdfdff', 
+    margin: gameScale(2), 
+  },
+
+  overviewBorderOuter: {
+    borderRadius: gameScale(18), 
+    borderWidth: gameScale(3),
+    borderColor: '#03325bff', 
+    margin: gameScale(2), 
+  },
+
+  overviewBorderMiddle: {
+    borderRadius: gameScale(15), 
+    borderWidth: gameScale(3),
+    borderColor: '#01476dff',
+  },
+
 
   statColumn: {
     width: '28%',
@@ -759,7 +978,7 @@ const styles = StyleSheet.create({
     width: '40%',
     justifyContent: 'space-between', 
     alignItems: 'center',
-    paddingBottom: gameScale(20), // Adds the requested space at the bottom
+    paddingBottom: gameScale(20),
   },
 
   
@@ -776,47 +995,68 @@ const styles = StyleSheet.create({
     height: gameScale(128),
   },
 
+  statCardContainer: {
+    width: '90%',
+    alignSelf: 'center'
+  },
 
-   statCardContainer: {
-    width: '100%',
+  statCardBorderOuter: {
+    borderRadius: gameScale(16),
+    borderWidth: gameScale(1),
+    borderColor: '#050404ff', 
+  },
+
+  statCardBorderMiddle: {
+    borderRadius: gameScale(14),
+    borderWidth: gameScale(1),
+    borderColor: '#0063afff',
   },
   
-  statCard: {
-    flex: 1,
-    backgroundColor: 'rgba(27, 98, 124, 0.85)',
+   statCard: {
+    width: '100%', 
     borderRadius: gameScale(12),
-    borderWidth: gameScale(1),
-    borderColor: 'rgba(223, 223, 223, 0.7)',
+    borderWidth: gameScale(1), 
+    borderColor: '#ffffffff',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: gameScale(10),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.6,
-    shadowRadius: 5,
-    elevation: 10,
+    overflow: 'hidden',
+  },
+
+
+  statTextContainer: {
+    alignItems: 'center',
+    marginVertical: gameScale(3),
+    paddingBottom: gameScale(4), // Added padding for better spacing
   },
 
   statValue: {
     fontSize: gameScale(24),
-    fontFamily: 'FunkySign',
-    color: '#ffffff',
+    fontFamily: 'MusicVibes',
+    color: '#ffffffa2',
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
+
+  statIconContainer: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    width: '100%', // Full width
+    paddingVertical: gameScale(12), 
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderBottomWidth: gameScale(1),
+    borderBottomColor: 'rgba(46, 231, 255, 0.3)',
+  },
+
   statIconImage: {
     width: gameScale(50),
     height: gameScale(50),
   },
-  statLabel: {
-    fontSize: gameScale(14),
-    color: 'rgba(255, 255, 255, 0.85)',
-    fontFamily: 'Computerfont',
-  },
 
-  badgesSection: {
-    padding: gameScale(16),
+  statLabel: {
+    fontSize: gameScale(10),
+    color: '#ffffffa2',
+    fontFamily: 'FunkySign',
   },
 
 
@@ -851,8 +1091,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   badgeIconImage: {
-    width: gameScale(200), 
-    height: gameScale(200),
+    width: gameScale(180), 
+    height: gameScale(180),
     shadowColor: '#000000',
     shadowOffset: { width: 1, height: 1 },
     shadowOpacity: 0.6,
