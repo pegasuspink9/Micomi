@@ -50,16 +50,44 @@ export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
       })
     );
 
+    const freshQuests = await prisma.playerQuest.findMany({
+      where: {
+        player_id: playerIdNum,
+        current_value: 0,
+        is_completed: false,
+      },
+      select: {
+        quest_id: true,
+        quest: {
+          select: {
+            title: true,
+            description: true,
+            objective_type: true,
+            target_value: true,
+            reward_exp: true,
+            reward_coins: true,
+          },
+        },
+        current_value: true,
+        expires_at: true,
+      },
+      orderBy: {
+        quest_id: "asc",
+      },
+    });
+
     return successResponse(
       res,
       {
         data: enhancedMaps,
+        freshQuests: freshQuests,
         audio: "https://micomi-assets.me/Sounds/Final/Navigation.mp3",
       },
-      "Maps fetched with player activity"
+      "Maps and fresh quests fetched successfully"
     );
   } catch (error) {
-    return errorResponse(res, error, "Failed to fetch maps");
+    console.error("Error in getAllMapsByPlayerId:", error);
+    return errorResponse(res, error, "Failed to fetch maps and quests");
   }
 };
 

@@ -234,6 +234,26 @@ export const getPlayerProfile = async (player_id: number) => {
     };
   });
 
+  // Find the latest earned achievement
+  const latestAchievement =
+    player.playerAchievements
+      .filter((pa) => pa.is_owned && pa.earned_at) // only earned ones
+      .sort(
+        (a, b) =>
+          new Date(b.earned_at!).getTime() - new Date(a.earned_at!).getTime()
+      )[0] ?? // newest first
+    null;
+
+  const latestAchievementFormatted = latestAchievement
+    ? {
+        achievement_id: latestAchievement.achievement_id,
+        achievement_name: latestAchievement.achievement.achievement_name,
+        description: latestAchievement.achievement.description,
+        badge_icon: latestAchievement.achievement.badge_icon,
+        earned_at: latestAchievement.earned_at,
+      }
+    : null;
+
   const progress = await prisma.playerProgress.findMany({
     where: { player_id },
     include: {
@@ -296,6 +316,8 @@ export const getPlayerProfile = async (player_id: number) => {
     player_level: player.level,
     ownedCharacters: player.ownedCharacters,
     ownedPotions: player.ownedPotions,
+
+    latestAchievement: latestAchievementFormatted,
 
     quests: {
       dailyQuests: formatQuestData(dailyQuests),
