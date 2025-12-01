@@ -4,7 +4,7 @@ import { successResponse, errorResponse } from "../../../utils/response";
 
 export const selectCharacter = async (req: Request, res: Response) => {
   const playerId = Number(req.params.playerId);
-  const characterId = Number(req.params.characterId); // or character_id depending on your route
+  const characterId = Number(req.params.characterId);
 
   if (!playerId || isNaN(playerId)) {
     return errorResponse(res, null, "Valid playerId is required", 400);

@@ -234,22 +234,20 @@ export const getPlayerProfile = async (player_id: number) => {
     };
   });
 
-  // Find the latest earned achievement
   const latestAchievement =
     player.playerAchievements
-      .filter((pa) => pa.is_owned && pa.earned_at) // only earned ones
+      .filter((pa) => pa.is_owned && pa.earned_at)
       .sort(
         (a, b) =>
           new Date(b.earned_at!).getTime() - new Date(a.earned_at!).getTime()
-      )[0] ?? // newest first
-    null;
+      )[0] ?? null;
 
   const latestAchievementFormatted = latestAchievement
     ? {
         achievement_id: latestAchievement.achievement_id,
         achievement_name: latestAchievement.achievement.achievement_name,
         description: latestAchievement.achievement.description,
-        badge_icon: latestAchievement.achievement.badge_icon,
+        landscape_image: latestAchievement.achievement.landscape_image,
         earned_at: latestAchievement.earned_at,
       }
     : null;
@@ -307,6 +305,23 @@ export const getPlayerProfile = async (player_id: number) => {
     }));
   };
 
+  const selectedBadge = player.playerAchievements.find(
+    (pa) => pa.is_selected && pa.is_owned
+  )
+    ? (() => {
+        const selected = player.playerAchievements.find(
+          (pa) => pa.is_selected && pa.is_owned
+        )!;
+        return {
+          achievement_id: selected.achievement_id,
+          achievement_name: selected.achievement.achievement_name,
+          description: selected.achievement.description,
+          landscape_image: selected.achievement.landscape_image,
+          earned_at: selected.earned_at,
+        };
+      })()
+    : null;
+
   return {
     player_name: player.player_name,
     username: player.username,
@@ -317,6 +332,7 @@ export const getPlayerProfile = async (player_id: number) => {
     ownedCharacters: player.ownedCharacters,
     ownedPotions: player.ownedPotions,
 
+    selectedBadge: selectedBadge,
     latestAchievement: latestAchievementFormatted,
 
     quests: {

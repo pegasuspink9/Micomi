@@ -5,7 +5,6 @@ import * as LevelService from "../Levels/levels.service";
 import { updateQuestProgress } from "../Quests/quests.service";
 import { formatTimer } from "../../../helper/dateTimeHelper";
 import { grantRewards } from "../../../utils/grantRewards";
-import { calculatePlayerLevel } from "../../models/Player/player.service";
 import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 
 const ENEMY_HEALTH = 30;
@@ -157,6 +156,7 @@ export async function getFightSetup(playerId: number, levelId: number) {
       character_avatar: selectedCharacter.character_avatar,
       avatar_image: selectedCharacter.character_avatar,
       is_range: selectedCharacter.is_range,
+      attack_pose: selectedCharacter.attack_pose || null,
     },
     status: progress.battle_status,
     progress,
@@ -302,6 +302,7 @@ export async function getCurrentFightState(
       character_max_health: character.character_max_health,
       character_avatar: character.character_avatar,
       character_is_range: character.is_range,
+      character_attack_pose: character.attack_pose || null,
     },
     timer: "00:00",
     energy: energyStatus.energy,
@@ -401,6 +402,7 @@ export async function fightEnemy(
   let character_run: string | null = null;
   let character_attack_card: string | null = null;
   let card_type: string | null = null;
+  let character_attack_pose: string | null = null;
 
   character_run = character.character_run || null;
   character_idle = character.avatar_image || null;
@@ -434,6 +436,15 @@ export async function fightEnemy(
           character_attack_type,
           true // isNormalFinalBonus for normal levels
         );
+
+        if (
+          character.character_name === "ShiShi" ||
+          character.character_name === "Ryron"
+        ) {
+          character_run = null;
+          character_attack_pose = character.attack_pose;
+        }
+
         card_type = cardInfo.card_type;
         character_attack_card = cardInfo.character_attack_card;
         damage = damageArray[3] ?? 25;
@@ -445,6 +456,15 @@ export async function fightEnemy(
           character.character_name,
           character_attack_type
         );
+
+        if (
+          character.character_name === "ShiShi" ||
+          character.character_name === "Ryron"
+        ) {
+          character_run = null;
+          character_attack_pose = character.attack_pose;
+        }
+
         card_type = cardInfo.card_type;
         character_attack_card = cardInfo.character_attack_card;
         damage = damageArray[2] ?? 15;
@@ -477,8 +497,16 @@ export async function fightEnemy(
           : character_attack_type === "second_attack"
           ? 1
           : 0;
+
+      if (
+        character.character_name === "ShiShi" ||
+        character.character_name === "Ryron"
+      ) {
+        character_run = null;
+        character_attack_pose = character.attack_pose;
+      }
+
       damage = damageArray[damageIndex] ?? 10;
-      character_run = character.character_run || null;
       character_attack = attacksArray[damageIndex] || null;
       character_idle = character.avatar_image || null;
       console.log(`- Bonus round ${character_attack_type} attack displayed!`);
@@ -514,8 +542,16 @@ export async function fightEnemy(
           : character_attack_type === "second_attack"
           ? 1
           : 0;
+
+      if (
+        character.character_name === "ShiShi" ||
+        character.character_name === "Ryron"
+      ) {
+        character_run = null;
+        character_attack_pose = character.attack_pose;
+      }
+
       damage = damageArray[damageIndex] ?? 10;
-      character_run = character.character_run || null;
       character_attack = attacksArray[damageIndex] || null;
       character_idle = character.avatar_image || null;
       console.log(`- ${character_attack_type} triggered!`);
@@ -865,6 +901,7 @@ export async function fightEnemy(
       character_max_health: character.health,
       character_avatar: character.character_avatar,
       character_is_range: character.is_range,
+      character_attack_pose: character.attack_pose || null,
     },
     timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,
@@ -968,6 +1005,7 @@ export async function fightBossEnemy(
   let enemy_attack_type: string | null = null;
   let character_attack_card: string | null = null;
   let card_type: string | null = null;
+  let character_attack_pose: string | null = null;
 
   character_run = character.character_run || null;
   character_idle = character.avatar_image || null;
@@ -1001,6 +1039,14 @@ export async function fightBossEnemy(
           character_attack_type,
           true // isNormalFinalBonus for normal levels
         );
+
+        if (
+          character.character_name === "ShiShi" ||
+          character.character_name === "Ryron"
+        ) {
+          character_run = null;
+          character_attack_pose = character.attack_pose;
+        }
         card_type = cardInfo.card_type;
         character_attack_card = cardInfo.character_attack_card;
         damage = damageArray[3] ?? 25;
@@ -1012,6 +1058,13 @@ export async function fightBossEnemy(
           character.character_name,
           character_attack_type
         );
+        if (
+          character.character_name === "ShiShi" ||
+          character.character_name === "Ryron"
+        ) {
+          character_run = null;
+          character_attack_pose = character.attack_pose;
+        }
         card_type = cardInfo.card_type;
         character_attack_card = cardInfo.character_attack_card;
         damage = damageArray[2] ?? 15;
@@ -1044,8 +1097,16 @@ export async function fightBossEnemy(
           : character_attack_type === "second_attack"
           ? 1
           : 0;
+
+      if (
+        character.character_name === "ShiShi" ||
+        character.character_name === "Ryron"
+      ) {
+        character_run = null;
+        character_attack_pose = character.attack_pose;
+      }
+
       damage = damageArray[damageIndex] ?? 10;
-      character_run = character.character_run || null;
       character_attack = attacksArray[damageIndex] || null;
       character_idle = character.avatar_image || null;
       console.log(`- Bonus round ${character_attack_type} attack displayed!`);
@@ -1081,8 +1142,16 @@ export async function fightBossEnemy(
           : character_attack_type === "second_attack"
           ? 1
           : 0;
+
+      if (
+        character.character_name === "ShiShi" ||
+        character.character_name === "Ryron"
+      ) {
+        character_run = null;
+        character_attack_pose = character.attack_pose;
+      }
+
       damage = damageArray[damageIndex] ?? 10;
-      character_run = character.character_run || null;
       character_attack = attacksArray[damageIndex] || null;
       character_idle = character.avatar_image || null;
       console.log(`- ${character_attack_type} triggered!`);
@@ -1475,6 +1544,7 @@ export async function fightBossEnemy(
       character_max_health: character.health,
       character_avatar: character.character_avatar,
       character_is_range: character.is_range,
+      character_attack_pose: character.attack_pose || null,
     },
     timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,

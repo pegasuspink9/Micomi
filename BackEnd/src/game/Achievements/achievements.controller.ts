@@ -19,3 +19,18 @@ export const getPlayerAchievements = async (req: Request, res: Response) => {
     return errorResponse(res, null, "Failed to fetch achievements", 500);
   }
 };
+
+export const selectBadge = async (req: Request, res: Response) => {
+  const playerId = Number(req.params.playerId);
+  const achievementId = Number(req.params.achievementId);
+
+  try {
+    const result = await AchievementService.selectBadge(
+      playerId,
+      achievementId
+    );
+    return successResponse(res, result, "Badge selected");
+  } catch (error) {
+    return errorResponse(res, error, "Failed to select badge", 400);
+  }
+};

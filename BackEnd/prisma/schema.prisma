@@ -231,6 +231,7 @@ model Character {
 
   //is_range for ShiShi and Ryron
   is_range         Boolean?          @default(false)
+  attack_pose      String?
 
   characterShop     CharacterShop?
   playerCharacter   PlayerCharacter[]
@@ -252,6 +253,7 @@ model PlayerAchievement {
   achievement_id        Int
   earned_at             DateTime
   is_owned              Boolean     @default(false)
+  is_selected           Boolean?    @default(false)
   achievement           Achievement @relation(fields: [achievement_id], references: [achievement_id])
   player                Player      @relation(fields: [player_id], references: [player_id])
 

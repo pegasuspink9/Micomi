@@ -59,6 +59,10 @@ router.get(
   "/player-achievement/:playerId",
   AchievementController.getPlayerAchievements
 );
+router.post(
+  "/select-badge/:playerId/:achievementId",
+  AchievementController.selectBadge
+); //badge selection
 
 //Leaderboard routes
 router.get("/leaderboard/:playerId", LeaderboardController.getLeaderboard);
