@@ -890,7 +890,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
-
    badgeGridItemLeft: {
     borderTopLeftRadius: gameScale(12),
     borderBottomLeftRadius: gameScale(12),
