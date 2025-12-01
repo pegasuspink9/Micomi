@@ -240,6 +240,7 @@ model Achievement {
   achievement_id     Int                 @id @default(autoincrement())
   description        String
   badge_icon         String?
+  landscape_image    String?
   conditions         String
   achievement_name   String
   playerAchievements PlayerAchievement[]
@@ -358,6 +359,46 @@ model BackgroundMapping {
   backgroundUrl String
 
   @@unique([mapName, levelNumber]) 
+}
+
+model GameplayMessage {
+  id           Int              @id @default(autoincrement())
+  key          String           @unique             
+  textTemplate String                           
+  audioUrl     String?          
+  category     MessageCategory
+  tags         MessageTag[]     @default([])              
+  isActive     Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([category])
+  @@index([category, tags])
+}
+
+enum MessageCategory {
+  CORRECT_BASE
+  CORRECT_STREAK
+  CORRECT_QUICK
+  CORRECT_HINT
+  CORRECT_FINAL
+  CORRECT_LOW_HEALTH
+  CORRECT_BONUS
+
+  WRONG_BASE
+  WRONG_LOW_HEALTH
+  WRONG_LOST
+  WRONG_BONUS
+}
+
+enum MessageTag {
+  quick
+  hint
+  streak
+  final_blow
+  low_health
+  bonus
+  lost
 }
 
 enum QuestPeriod {

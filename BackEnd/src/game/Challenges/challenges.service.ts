@@ -214,17 +214,27 @@ const micomiImages = {
   ],
 };
 
-const getRandomMicomiImage = (isVictory: boolean, seed: string): string => {
-  const imageArray = isVictory ? micomiImages.Victory : micomiImages.Defeat;
+const playerMicomiIndex = new Map<
+  number,
+  { victory: number; defeat: number }
+>();
 
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = (hash << 5) - hash + seed.charCodeAt(i);
-    hash = hash & hash;
+const getRandomMicomiImage = (playerId: number, isVictory: boolean): string => {
+  const images = isVictory ? micomiImages.Victory : micomiImages.Defeat;
+  const key = isVictory ? "victory" : "defeat";
+
+  let indices = playerMicomiIndex.get(playerId);
+  if (!indices) {
+    indices = { victory: 0, defeat: 0 };
+    playerMicomiIndex.set(playerId, indices);
   }
 
-  const index = Math.abs(hash) % imageArray.length;
-  return imageArray[index];
+  const currentIndex = indices[key];
+  const image = images[currentIndex];
+
+  indices[key] = (currentIndex + 1) % images.length;
+
+  return image;
 };
 
 const calculateStars = (
@@ -528,7 +538,7 @@ export const submitChallengeService = async (
       }
     }
 
-    const { text, audio } = generateDynamicMessage(
+    const { text, audio } = await generateDynamicMessage(
       true,
       character.character_name,
       hintUsed,
@@ -582,7 +592,7 @@ export const submitChallengeService = async (
       fightResult.character.character_damage = 0;
     }
 
-    const { text, audio } = generateDynamicMessage(
+    const { text, audio } = await generateDynamicMessage(
       false,
       character.character_name,
       false,
@@ -669,8 +679,6 @@ export const submitChallengeService = async (
     const wasInBonusRound =
       freshProgress!.enemy_hp <= 0 && freshProgress!.player_hp > 0;
 
-    const seed = `${playerId}-${levelId}-${Date.now()}-${Math.random()}`;
-
     if (playerLost) {
       const motivationalMessage = generateMotivationalMessage(
         false,
@@ -686,7 +694,7 @@ export const submitChallengeService = async (
       is_victory_audio =
         "https://micomi-assets.me/Sounds/Final/Defeat_Sound.wav";
 
-      is_victory_image = getRandomMicomiImage(false, seed);
+      is_victory_image = getRandomMicomiImage(playerId, false);
 
       completionRewards = {
         feedbackMessage: motivationalMessage,
@@ -732,7 +740,7 @@ export const submitChallengeService = async (
       is_victory_audio =
         "https://micomi-assets.me/Sounds/Final/Victory_Sound.wav";
 
-      is_victory_image = getRandomMicomiImage(true, seed);
+      is_victory_image = getRandomMicomiImage(playerId, true);
 
       if (wasFirstCompletion) {
         await prisma.playerProgress.update({
@@ -775,7 +783,7 @@ export const submitChallengeService = async (
         is_victory_audio =
           "https://micomi-assets.me/Sounds/Final/Victory_Sound.wav";
 
-        is_victory_image = getRandomMicomiImage(true, seed);
+        is_victory_image = getRandomMicomiImage(playerId, true);
 
         completionRewards = {
           feedbackMessage:
@@ -809,14 +817,19 @@ export const submitChallengeService = async (
 
   let gameplay_audio = "";
 
-  if (questionType === "HTML") {
+  if (level.level_type === "bossButton") {
     gameplay_audio = "https://micomi-assets.me/Sounds/Final/Boss.ogg";
-  } else if (questionType === "CSS") {
-    gameplay_audio = "https://micomi-assets.me/Sounds/Final/Lavaland.mp3";
-  } else if (questionType === "JavaScript") {
-    gameplay_audio = "https://micomi-assets.me/Sounds/Final/Snowland.mp3";
   } else {
-    gameplay_audio = "https://micomi-assets.me/Sounds/Final/Autumnland.mp3";
+    if (questionType === "HTML") {
+      gameplay_audio =
+        "https://micomi-assets.me/Sounds/Final/Greenland%20Final.mp3";
+    } else if (questionType === "CSS") {
+      gameplay_audio = "https://micomi-assets.me/Sounds/Final/Lavaland.mp3";
+    } else if (questionType === "JavaScript") {
+      gameplay_audio = "https://micomi-assets.me/Sounds/Final/Snowland.mp3";
+    } else if (questionType === "Computer") {
+      gameplay_audio = "https://micomi-assets.me/Sounds/Final/Autumnland.mp3";
+    }
   }
 
   const isNewBonusRound =
@@ -883,7 +896,7 @@ export const submitChallengeService = async (
   }
 
   if (isBonusRound) {
-    const { text, audio } = generateDynamicMessage(
+    const { text, audio } = await generateDynamicMessage(
       true,
       character.character_name,
       hintUsed,
