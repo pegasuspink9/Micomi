@@ -16,6 +16,7 @@ import {
 } from '../Responsiveness/gameResponsive';
 import { Image } from 'expo-image';
 import { Image as RNImage } from 'react-native';
+import { soundManager } from '../Actual Game/Sounds/UniversalSoundManager';
 
 // Import Reanimated
 import Reanimated, { 
@@ -75,7 +76,8 @@ const GameOverModal = ({
   characterName = 'Character',
   enemyName = 'Enemy',
   isRetrying = false,
-  completionRewards = null
+  completionRewards = null,
+  defeatAudioUrl = null
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [imageReady, setImageReady] = useState(false);
@@ -97,6 +99,12 @@ const GameOverModal = ({
   const reward3Scale = useSharedValue(0);
   
   const buttonsTranslateY = useSharedValue(SCREEN_HEIGHT);
+
+  useEffect(() => {
+    if (visible && defeatAudioUrl) {
+      soundManager.playDefeatSound(defeatAudioUrl);
+    }
+  }, [visible, defeatAudioUrl]);
 
   //  COPIED: Sprite configuration
   const SPRITE_SIZE = Math.round(scale(358));

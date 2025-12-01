@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Animated } from 'react-native';
 import { gameScale, SCREEN } from '../../Responsiveness/gameResponsive';
 import { Image, ImageBackground } from 'expo-image';
 import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
+import { soundManager } from '../Sounds/UniversalSoundManager';
 
 const SpriteAnimator = ({
   sourceUri,
@@ -66,12 +67,20 @@ const CombatVSModal = ({
   selectedCharacter = null,
   enemy = null,
   versusBackground = null,
+  versusAudio = null,
   duration = 4000
 }) => {
 
   const [isBackgroundLoaded, setIsBackgroundLoaded] = useState(false);
   const [playSpriteAnimation, setPlaySpriteAnimation] = useState(false);
   const [playEnemySpriteAnimation, setPlayEnemySpriteAnimation] = useState(false);
+
+   useEffect(() => {
+    if (visible && versusAudio) {
+      console.log('🎵 Playing versus audio:', versusAudio);
+      soundManager.playVersusMusic(versusAudio);
+    }
+  }, [visible, versusAudio]);
 
    useEffect(() => {
       if (visible && versusBackground) {

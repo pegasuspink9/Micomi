@@ -8,7 +8,10 @@ class UniversalSoundManager {
       ui: null,
       combat: null,
       button: null,
-      bgm: null
+      bgm: null,
+      versus: null,
+      victory: null,
+      defeat: null
     };
     
     // State for sequential message audio
@@ -35,9 +38,14 @@ class UniversalSoundManager {
       return;
     }
 
+    let fullUrl = url;
+    if (typeof fullUrl === 'string' && !fullUrl.startsWith('http') && !fullUrl.startsWith('file')) {
+      fullUrl = `https://${fullUrl}`;
+    }
+
     // 2. Load and play the new sound.
     try {
-      const { sound } = await Audio.Sound.createAsync({ uri: url }, { shouldPlay: false });
+      const { sound } = await Audio.Sound.createAsync({ uri: fullUrl }, { shouldPlay: false });
       this.activeSounds[channel] = sound;
 
       await sound.setVolumeAsync(volume);
@@ -75,27 +83,106 @@ class UniversalSoundManager {
   }
 
   playButtonTapSound() {
-    const tapSoundUrl = 'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Tap.wav';
+    const tapSoundUrl = 'https://micomi-assets.me/Sounds/Final/Tap.wav';
     this._playSimpleSound('button', tapSoundUrl, null);
   }
 
    playGameButtonTapSound() {
-    const tapSoundUrl = 'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Tap3.wav';
+    const tapSoundUrl = 'https://micomi-assets.me/Sounds/Final/Tap3.wav';
     this._playSimpleSound('button', tapSoundUrl, null);
   }
 
   playCardFlipSound(volume = 1.0) {
-    const flipSoundUrl = 'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Card_Flip_2.wav';
+    const flipSoundUrl = 'https://micomi-assets.me/Sounds/Final/Card_Flip_2.wav';
     const v = Math.max(0, Math.min(1, volume));
     this._playSimpleSound('ui', flipSoundUrl, null, v);
   }
 
   playBlankTapSound(volume = 1.0) {
-    const blankTapUrl = 'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Sounds/Final/Tap2.wav';
+    const blankTapUrl = 'https://micomi-assets.me/Sounds/Final/Tap2.wav';
     const v = Math.max(0, Math.min(1, volume));
     this._playSimpleSound('button', blankTapUrl, null, v);
   }
 
+  async playVersusMusic(url, volume = 0.5) {
+    console.log(`⚔️ Preparing to play Versus BGM: ${url ? url.slice(-30) : 'None'}`);
+    
+    // Stop any currently playing BGM.
+    await this.stopBackgroundMusic();
+    
+    if (!url) {
+      return;
+    }
+
+    let fullUrl = url;
+    if (typeof fullUrl === 'string' && !fullUrl.startsWith('http') && !fullUrl.startsWith('file')) {
+      fullUrl = `https://${fullUrl}`;
+    }
+
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: fullUrl },
+        { 
+          shouldPlay: true, 
+          isLooping: false, // Versus music should not loop
+          volume: volume 
+        }
+      );
+
+      this.activeSounds.versus = sound;
+      console.log(`⚔️ Versus BGM playback started: ${url.slice(-30)}`);
+      
+      // Self-cleanup listener
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.didJustFinish) {
+          sound.unloadAsync().catch(() => {});
+          if (this.activeSounds.versus === sound) {
+            this.activeSounds.versus = null;
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error(`Error playing versus music [${url}]:`, error);
+      this.activeSounds.versus = null;
+    }
+  }
+
+  async stopVersusMusic() {
+    if (this.activeSounds.versus) {
+      console.log('⚔️ Stopping current Versus BGM...');
+      const soundToUnload = this.activeSounds.versus;
+      this.activeSounds.versus = null;
+      soundToUnload.setOnPlaybackStatusUpdate(null);
+      await soundToUnload.stopAsync().catch(() => {});
+      await soundToUnload.unloadAsync().catch(() => {});
+    }
+  }
+
+  async playVictorySound(url, volume = 0.7) {
+    if (!url) return;
+    
+    console.log(`🏆 Playing Victory Sound: ${url.slice(-30)}`);
+    // Stop other music to ensure the victory sound is clear
+    await this.stopBackgroundMusic();
+    await this.stopVersusMusic();
+    
+    // Use the simple sound player on the 'victory' channel
+    this._playSimpleSound('victory', url, null, volume);
+  }
+
+
+  async playDefeatSound(url, volume = 0.6) {
+    if (!url) return;
+
+    console.log(`💀 Playing Defeat Sound: ${url.slice(-30)}`);
+    // Stop other music to ensure the defeat sound is clear
+    await this.stopBackgroundMusic();
+    await this.stopVersusMusic();
+    
+    // Use the simple sound player on the 'defeat' channel
+    this._playSimpleSound('defeat', url, null, volume);
+  }
 
   async playBackgroundMusic(url, volume = 0.2, loop = true) {
     // 1. If the requested music is already playing, do nothing.
@@ -114,12 +201,17 @@ class UniversalSoundManager {
       return;
     }
 
+    let fullUrl = url;
+    if (typeof fullUrl === 'string' && !fullUrl.startsWith('http') && !fullUrl.startsWith('file')) {
+      fullUrl = `https://${fullUrl}`;
+    }
+
     // 4. Load and play the new background music.
     try {
       this.currentBgmUrl = url; // Set this early to prevent race conditions
       
       const { sound } = await Audio.Sound.createAsync(
-        { uri: url },
+        { uri: fullUrl },
         { 
           shouldPlay: true, 
           isLooping: loop,
@@ -245,6 +337,9 @@ class UniversalSoundManager {
     await this._playSimpleSound('ui', null, null);
     await this._playSimpleSound('combat', null, null); 
     await this._playSimpleSound('button', null, null); 
+    await this._playSimpleSound('victory', null, null); 
+    await this._playSimpleSound('defeat', null, null);
+    await this.stopVersusMusic();
     await this.stopBackgroundMusic();
     console.log('🔊 All sound channels have been stopped.');
   }

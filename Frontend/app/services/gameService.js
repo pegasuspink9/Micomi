@@ -185,8 +185,9 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         character_attack_card: null
       },
       versus_background: data.versus_background || responseData.versus_background || null,
+      versus_audio: data.versus_audio || responseData.versus_audio || null,
       audioLinks: data.audioLinks || responseData.audioLinks || [],
-      gameplay_audio: data.gameplay_audio || responseData.gameplay_audio || null,
+      gameplay_audio: data.gameplay_audio || responseData.gameplay_audio || null, 
     };
 
     // Extract challenge data
@@ -259,6 +260,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         enemyAttackAudio: data.enemy_attack_audio || responseData.enemy_attack_audio || null,
         characterAttackAudio: data.character_attack_audio || responseData.character_attack_audio || null,
         gameplay_audio: data.gameplay_audio || responseData.gameplay_audio || null,
+        is_victory_audio: data.is_victory_audio || responseData.is_victory_audio || null,
 
         fightResult: responseData.fightResult ? {
           status: responseData.fightResult.status,

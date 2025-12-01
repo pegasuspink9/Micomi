@@ -12,7 +12,7 @@ class UniversalAssetPreloader {
     this.maxConcurrentDownloads = 3; 
   }
 
-  // ✅ Create cache directory structure
+  //  Create cache directory structure
   async ensureCacheDirectory(category = '') {
     const targetDir = category ? `${this.cacheDirectory}${category}/` : this.cacheDirectory;
     const dirInfo = await FileSystem.getInfoAsync(targetDir);
@@ -23,11 +23,11 @@ class UniversalAssetPreloader {
     return targetDir;
   }
 
-  // ✅ Generate local file path for asset
+  //  Generate local file path for asset
   getLocalFilePath(url, category = 'general') {
   const urlParts = url.split('/');
   
-  // ✅ Use more of the URL path to ensure uniqueness
+  //  Use more of the URL path to ensure uniqueness
   const pathSegments = urlParts.slice(-3); // Take last 3 segments: ['Hero', 'Gino', 'idle.png']
   const fileName = pathSegments.join('_').split('?')[0]; // 'Hero_Gino_idle.png'
   
@@ -51,6 +51,13 @@ class UniversalAssetPreloader {
   }
 
 async downloadSingleAsset(url, category = 'general', onProgress = null, retries = 2) {
+
+  let fullUrl = url;
+  if (typeof fullUrl === 'string' && !fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
+    console.warn(`⚠️ URL missing scheme, prepending 'https://': ${url}`);
+    fullUrl = `https://${fullUrl}`;
+  }
+
   try {
     console.log(`📥 Starting download: ${url}`);
     
@@ -69,12 +76,11 @@ async downloadSingleAsset(url, category = 'general', onProgress = null, retries 
     console.log(`📦 Downloading ${category} asset: ${url.slice(-50)}`);
     const startTime = Date.now();
     
-    // ✅ NEW: Add request headers for R2
     const downloadResumable = FileSystem.createDownloadResumable(
-      url,
+      fullUrl,
       localPath,
       {
-        // ✅ Add headers for R2 and other CDNs
+        //  Add headers for R2 and other CDNs
         headers: {
           'User-Agent': 'MicomoGame/1.0',
           'Accept': 'image/*'
@@ -112,7 +118,7 @@ async downloadSingleAsset(url, category = 'general', onProgress = null, retries 
         fileSize: downloadedFileInfo.size
       });
       
-      // ✅ Only preload images to memory cache (not videos)
+      //  Only preload images to memory cache (not videos)
       if (this.isImageFile(url)) {
         try {
           await RNImage.prefetch(`file://${result.uri}`);
@@ -130,7 +136,7 @@ async downloadSingleAsset(url, category = 'general', onProgress = null, retries 
       }
 
       const assetType = this.isVideoFile(url) ? 'video' : (this.isAudioFile(url) ? 'audio' : 'image');
-       console.log(`✅ ${category} ${assetType} downloaded in ${downloadTime}ms (${downloadedFileInfo.size} bytes): ${url.slice(-50)}`);
+       console.log(` ${category} ${assetType} downloaded in ${downloadTime}ms (${downloadedFileInfo.size} bytes): ${url.slice(-50)}`);
       return { 
         success: true, 
         localPath: result.uri, 
@@ -187,7 +193,7 @@ async testR2Download(testUrl) {
       }
     });
     
-    console.log(`✅ R2 URL test successful:`, {
+    console.log(` R2 URL test successful:`, {
       status: response.status,
       contentType: response.headers.get('content-type'),
       contentLength: response.headers.get('content-length')
@@ -204,7 +210,7 @@ async testR2Download(testUrl) {
   }
 }
 
-  // ✅ Check if URL is an image file
+  //  Check if URL is an image file
   isImageFile(url) {
     const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'];
     const lowerUrl = url.toLowerCase();
@@ -220,12 +226,13 @@ async testR2Download(testUrl) {
     'githubusercontent.com',
     'r2.dev',
     'pub-',  
+    'micomi-assets.me',
     'cdn.jsdelivr.net'
     ];
     
     // Check if it's from image hosting services
       if (imageHosts.some(host => lowerUrl.includes(host))) {
-    console.log(`✅ Image detected by host: ${imageHosts.find(h => lowerUrl.includes(h))}`);
+    console.log(` Image detected by host: ${imageHosts.find(h => lowerUrl.includes(h))}`);
     return true;
   }
   
@@ -302,6 +309,24 @@ async testR2Download(testUrl) {
       });
     }
 
+     if (levelData && levelData.versus_audio && typeof levelData.versus_audio === 'string' && this.isAudioFile(levelData.versus_audio)) {
+      assets.push({
+        url: levelData.versus_audio,
+        name: 'versus_audio',
+        type: 'audio',
+        category: 'game_audio'
+      });
+    }
+
+     if (levelData && levelData.is_victory_audio && typeof levelData.is_victory_audio === 'string' && this.isAudioFile(levelData.is_victory_audio)) {
+      assets.push({
+        url: levelData.is_victory_audio,
+        name: 'is_victory_audio',
+        type: 'audio',
+        category: 'game_audio'
+      });
+    }
+
 
     if (levelData && Array.isArray(levelData.audioLinks)) {
       levelData.audioLinks.forEach(url => {
@@ -319,7 +344,7 @@ async testR2Download(testUrl) {
     return assets;
   }
 
-  // ✅ Extract character assets from character data
+  //  Extract character assets from character data
   extractCharacterAssets(charactersData) {
     const assets = [];
     
@@ -1249,6 +1274,10 @@ transformPotionShopDataWithCache(levelPreviewData) {
         sub.character_attack_audio = this.getCachedAssetPath(sub.character_attack_audio);
       }
 
+      if (sub.is_victory_audio) {
+        sub.is_victory_audio = this.getCachedAssetPath(sub.is_victory_audio);
+      }
+
       if (sub.gameplay_audio) {
         sub.gameplay_audio = this.getCachedAssetPath(sub.gameplay_audio);
       }
@@ -1306,7 +1335,7 @@ transformPotionShopDataWithCache(levelPreviewData) {
     return transformedGameState;
   }
 
-  // ✅ Download all character assets
+  //  Download all character assets
   async downloadCharacterAssets(charactersData, onProgress = null, onAssetComplete = null) {
     if (this.isDownloading) {
       console.warn('⚠️ Asset downloading already in progress');
@@ -1661,7 +1690,7 @@ transformPotionShopDataWithCache(levelPreviewData) {
     return transformedData;
   }
 
-  // ✅ Get cached asset path (local file or original URL)
+  //  Get cached asset path (local file or original URL)
   getCachedAssetPath(url) {
     const assetInfo = this.downloadedAssets.get(url);
     if (assetInfo && assetInfo.localPath) {
@@ -1807,7 +1836,7 @@ transformPotionShopDataWithCache(levelPreviewData) {
     };
   }
 
-  // ✅ Clear cache for specific category
+  //  Clear cache for specific category
   async clearCategoryCache(category = 'characters') {
     try {
        const cacheKey = `${category}Assets`;
@@ -2079,7 +2108,7 @@ async downloadVideoAssets(videoAssets, onProgress = null, onAssetComplete = null
   }
 }
 
-// ✅ Download character select background video specifically
+//  Download character select background video specifically
 async downloadCharacterSelectVideo(backgroundVideoUrl, onProgress = null, onAssetComplete = null) {
   const videoAsset = {
     url: backgroundVideoUrl,
@@ -2166,7 +2195,7 @@ transformVideoDataWithCache(data) {
 
 
 
-  // ✅ Clear all caches
+  //  Clear all caches
   async clearAllCaches() {
     try {
       // Clear memory caches

@@ -16,6 +16,7 @@ import {
 } from '../Responsiveness/gameResponsive';
 import { Image } from 'expo-image';
 import { Image as RNImage } from 'react-native';
+import { soundManager } from '../Actual Game/Sounds/UniversalSoundManager'; 
 
 // Import Reanimated
 import Reanimated, { 
@@ -105,7 +106,8 @@ const LevelCompletionModal = ({
   onNextLevel,
   completionRewards,
   nextLevel,
-  isLoading
+  isLoading, 
+  victoryAudioUrl
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [imageReady, setImageReady] = useState(false);
@@ -127,6 +129,13 @@ const LevelCompletionModal = ({
   const reward3Scale = useSharedValue(0);
   
   const buttonsTranslateY = useSharedValue(SCREEN_HEIGHT);
+
+  useEffect(() => {
+    if (visible && victoryAudioUrl) {
+      soundManager.playVictorySound(victoryAudioUrl);
+    }
+  }, [visible, victoryAudioUrl]);
+
 
   //  FIXED: Round sprite size to integer to prevent sub-pixel flickering
   const SPRITE_SIZE = Math.round(scale(358));

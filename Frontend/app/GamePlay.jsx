@@ -95,10 +95,10 @@ export default function GamePlay() {
    useEffect(() => {
     const bgmUrl = gameState?.gameplay_audio;
 
-    if (showGameplay && bgmUrl) {
+    if (showGameplay && bgmUrl && !showLevelCompletion && !showLevelCompletionModal) {
       soundManager.playBackgroundMusic(bgmUrl);
     }
-  }, [gameState?.gameplay_audio, showGameplay]);
+  }, [gameState?.gameplay_audio, showGameplay, showLevelCompletion, showLevelCompletionModal]);
 
   const currentChallenge = gameState?.currentChallenge;
   const submissionResult = gameState?.submissionResult;
@@ -628,7 +628,7 @@ export default function GamePlay() {
       <>
         <StatusBar hidden={true} />
         <ImageBackground 
-          source={{uri: './gamebackgroundmain.png'}}
+          source={require('./gamebackgroundmain.png')}
           style={styles.container}  
         >
 
@@ -734,6 +734,7 @@ export default function GamePlay() {
             selectedCharacter={gameState?.selectedCharacter}
             enemy={gameState?.enemy}
             versusBackground={gameState?.versus_background}
+            versusAudio={gameState?.versus_audio}
           />
       )}
 
@@ -823,6 +824,7 @@ export default function GamePlay() {
             enemyName={gameState?.submissionResult?.fightResult?.enemy?.enemy_name || 'Enemy'}
             isRetrying={isRetrying} 
             completionRewards={completionRewards}
+            defeatAudioUrl={gameState?.submissionResult?.is_victory_audio}
           />
             
           <LevelCompletionModal
@@ -833,6 +835,7 @@ export default function GamePlay() {
               completionRewards={completionRewards}
               nextLevel={!!gameState?.submissionResult?.nextLevel}
               isLoading={isLoadingNextLevel}
+              victoryAudioUrl={gameState?.submissionResult?.is_victory_audio}
           />
         
           </View>
