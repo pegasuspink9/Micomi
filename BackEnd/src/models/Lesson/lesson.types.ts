@@ -1,13 +1,11 @@
 export interface LessonCreateInput {
   level_id: number;
-  lesson_title: string;
-  lesson_description: string;
-  lesson_content: string;
+  page_number: number;
+  page_url: string;
 }
 
 export interface LessonUpdateInput {
-  level_id: number;
-  lesson_title: string;
-  lesson_description: string;
-  lesson_content: string;
+  level_id?: number;
+  page_number?: number;
+  page_url?: string;
 }
