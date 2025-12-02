@@ -17,9 +17,9 @@ const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
 
 const BACKGROUND_THEMES = {
-  'HTML': require('./Assets/Greenland MapNavigate.png'),
+  'HTML': require('./Assets/GreenLand Map.png'),
   'CSS': require('./Assets/Fireland MapNavigate.png'),
-  'JavaScript': require('./Assets/Iceland MapNavigate.png'),
+  'JavaScript': require('./Assets/IceLand Map.png'),
   'Computer': require('./Assets/AutumnLand MapNavigate.png')
 };
 

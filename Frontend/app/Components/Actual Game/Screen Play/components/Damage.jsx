@@ -324,9 +324,9 @@ const styles = StyleSheet.create({
     elevation: 9999,
   },
   tickText: {
-    fontSize: gameScale(10),
-    fontFamily: 'FunkySign',
-    color: '#ae0707bf', 
+    fontSize: gameScale(9),
+    fontFamily: 'DynaPuff',
+    color: '#fe3232f8', 
     elevation: 9999,
   },
 });
