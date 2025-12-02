@@ -269,6 +269,7 @@ export const previewLevel = async (playerId: number, levelId: number) => {
           character_dies: character.character_dies,
           character_avatar: character.character_avatar,
           character_is_range: character.is_range,
+          character_attack_pose: character.attack_pose,
         },
         energy: energyStatus.energy,
         timeToNextEnergyRestore: energyStatus.timeToNextRestore,
@@ -753,6 +754,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       character_dies: character.character_dies,
       character_avatar: character.character_avatar,
       character_is_range: character.is_range,
+      character_attack_pose: character.attack_pose,
     },
     card: {
       card_type,

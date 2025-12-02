@@ -240,7 +240,9 @@ export const usePotion = async (
           : [30, 40, 50];
         console.log(`Strong effect activated (only once): ${currentDamages}`);
         dynamicMessage = `Strength surges through ${character.character_name}, attacks doubled!`;
-        audioResponse = ["Strong audio link here"];
+        audioResponse = [
+          "https://micomi-assets.me/Sounds/In%20Game/Potion%20Sound/Strong%20Potion.wav",
+        ];
         usePotionAudio =
           "https://micomi-assets.me/Sounds/Final/All%20Potions.wav";
       } else {
@@ -251,7 +253,9 @@ export const usePotion = async (
       if (!progress.has_freeze_effect) {
         updateData.has_freeze_effect = true;
         dynamicMessage = `Enemy frozen, next counterattack nullified!`;
-        audioResponse = ["Freeze audio link here"];
+        audioResponse = [
+          "https://micomi-assets.me/Sounds/In%20Game/Potion%20Sound/Freeze%20Potion.wav",
+        ];
         usePotionAudio =
           "https://micomi-assets.me/Sounds/Final/All%20Potions.wav";
         console.log(
@@ -264,7 +268,9 @@ export const usePotion = async (
     case "health":
       updateData.player_hp = maxHealth;
       dynamicMessage = `Health fully restored—${character.character_name} feels invigorated!`;
-      audioResponse = ["Health audio link here"];
+      audioResponse = [
+        "https://micomi-assets.me/Sounds/In%20Game/Potion%20Sound/Health%20Potion.wav",
+      ];
       usePotionAudio =
         "https://micomi-assets.me/Sounds/Final/All%20Potions.wav";
 
@@ -339,7 +345,9 @@ export const usePotion = async (
         dynamicMessage = `All blanks revealed: Select "Attack" to confirm and proceed!`;
       }
 
-      audioResponse = ["Hint audio link here"];
+      audioResponse = [
+        "https://micomi-assets.me/Sounds/In%20Game/Potion%20Sound/Hint%20Potion.wav",
+      ];
       usePotionAudio =
         "https://micomi-assets.me/Sounds/Final/All%20Potions.wav";
       break;

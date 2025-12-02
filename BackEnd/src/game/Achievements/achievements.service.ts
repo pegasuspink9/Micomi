@@ -189,3 +189,26 @@ export const checkAchievements = async (playerId: number) => {
     orderBy: { earned_at: "asc" },
   });
 };
+
+export const selectBadge = async (playerId: number, achievementId: number) => {
+  const playerBadge = await prisma.playerAchievement.findUnique({
+    where: {
+      player_id_achievement_id: {
+        player_id: playerId,
+        achievement_id: achievementId,
+      },
+    },
+  });
+
+  await prisma.playerAchievement.updateMany({
+    where: { player_id: playerId },
+    data: { is_selected: false },
+  });
+
+  await prisma.playerAchievement.update({
+    where: { player_achievement_id: playerBadge?.player_achievement_id },
+    data: { is_selected: true },
+  });
+
+  return { message: "Badge selected" };
+};
