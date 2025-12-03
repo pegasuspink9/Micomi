@@ -10,6 +10,8 @@ export const useFonts = () => {
     'MusicVibes': require('./MusicVibes.otf'),
     'Oups': require('./Oups.otf'),
     'DoongaSlash': require('./Doonga Slash.ttf'),
+    'Grobold': require('./GROBOLD.ttf'),
+    'Coco-extrabold': require('./Coco-Sharp-Extrabold-trial.ttf'),
   });
 
   return fontsLoaded;

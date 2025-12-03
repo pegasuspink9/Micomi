@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     fontSize: gameScale(35),
     color: 'white',
     fontFamily: 'MusicVibes',
-    marginBottom: gameScale(10),
+    marginBottom: gameScale(14),
     textShadowColor: '#000000ff',
   },
   overviewBorderOuter: {

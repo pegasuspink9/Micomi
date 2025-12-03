@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   SafeAreaView,
-  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -28,13 +27,14 @@ import {
   SCREEN,
 } from '../Responsiveness/gameResponsive';
 import AssetDownloadProgress from '../../Components/RoadMap/LoadingState/assetDownloadProgress';
+import PotionDetailModal from './Badge Modal/PotionDetailModal';
 
 export default function PotionsView() {
   const router = useRouter();
   const playerId = 11;
   const { playerData, loading, assetsLoading, assetsProgress } = usePlayerProfile(playerId);
   const [selectedPotion, setSelectedPotion] = useState(null);
-  const [showModal, setShowModal] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
 
   if (loading || !playerData) {
     return (
@@ -72,14 +72,7 @@ export default function PotionsView() {
 
   const handlePotionPress = (potion) => {
     setSelectedPotion(potion);
-    setShowModal(true);
-  };
-
-  const handleUsePotion = () => {
-    if (selectedPotion && selectedPotion.count > 0) {
-      console.log(`Used ${selectedPotion.name}`);
-      setShowModal(false);
-    }
+    setModalVisible(true);
   };
 
   return (
@@ -93,16 +86,16 @@ export default function PotionsView() {
         <View style={styles.backgroundOverlay} />
         
         {/* Header */}
-         <View style={styles.headerContainer}>
+        <View style={styles.headerContainer}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
               <Text style={styles.backButtonText}>Back</Text>
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Potion Inventory</Text>
-            <View style={styles.headerSpacer} />
           </View>
           <View style={styles.headerCurve} />
         </View>
+
 
         <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           {/* Summary */}
@@ -139,78 +132,18 @@ export default function PotionsView() {
           <View style={styles.footerCurve} />
           <View style={styles.footer} />
         </View>
-
-
-        {/* Potion Detail Modal */}
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={showModal}
-          onRequestClose={() => setShowModal(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              {selectedPotion && (
-                <>
-                  <View style={styles.modalHeader}>
-                    {/* Modal with Sprite Animation */}
-                    <ModalPotionSprite icon={selectedPotion.icon} />
-                    <Text style={styles.modalTitle}>{selectedPotion.name}</Text>
-                  </View>
-
-                  <View style={styles.modalContent}>
-                    <Text style={styles.modalDescription}>{selectedPotion.description}</Text>
-                    
-                    <View style={styles.detailsContainer}>
-                      <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Type:</Text>
-                        <Text style={[styles.detailValue, { color: selectedPotion.color || '#2ee7ffff' }]}>
-                          {selectedPotion.type}
-                        </Text>
-                      </View>
-                      <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Price:</Text>
-                        <Text style={styles.detailValue}>{selectedPotion.price} coins</Text>
-                      </View>
-                      <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>In Stock:</Text>
-                        <Text style={styles.detailValue}>{selectedPotion.count}</Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.modalButtons}>
-                      <TouchableOpacity 
-                        style={styles.cancelButton} 
-                        onPress={() => setShowModal(false)}
-                      >
-                        <Text style={styles.cancelButtonText}>Close</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={[
-                          styles.useButton, 
-                          { 
-                            backgroundColor: selectedPotion.count > 0 ? '#2ee7ffff' : '#7d7c7cff',
-                            opacity: selectedPotion.count > 0 ? 1 : 0.5
-                          }
-                        ]} 
-                        onPress={handleUsePotion}
-                        disabled={selectedPotion.count === 0}
-                      >
-                        <Text style={styles.useButtonText}>
-                          {selectedPotion.count > 0 ? 'Use Potion' : 'Out of Stock'}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </>
-              )}
-            </View>
-          </View>
-        </Modal>
       </LinearGradient>
+
+      {/* Potion Detail Modal */}
+      <PotionDetailModal
+        visible={modalVisible}
+        potion={selectedPotion}
+        onClose={() => setModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }
+
 
 // UPDATED: Animated Potion Card with Sprite Animation - Fully Responsive
 const PotionCardAnimated = ({ potion }) => {
@@ -368,9 +301,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: gameScale(16),
-    paddingTop: gameScale(40),
-    paddingBottom: gameScale(25),
+    paddingTop: gameScale(6),
+    paddingBottom: gameScale(130),
     backgroundColor: '#3d2115',
     borderBottomLeftRadius: gameScale(0),
     borderBottomRightRadius: gameScale(0),
@@ -413,22 +345,27 @@ const styles = StyleSheet.create({
   },
 
 
-  backButton: {
-    padding: gameScale(8),
+   backButton: {
+    position: 'absolute',
+    top: gameScale(20),   
+    left: gameScale(20),   
+    zIndex: 20,           
+    padding: gameScale(0),
   },
   backButtonText: {
-    color: '#2ee7ffff',
+    color: '#ffffffff',
     fontSize: gameScale(14),
-    fontFamily: 'GoldenAge',
-    fontWeight: 'bold',
+    fontFamily: 'MusicVibes',
+    borderWidth: gameScale(1),
+    padding: gameScale(6),
+    borderColor: 'white',
+    borderRadius: gameScale(6),
   },
    headerTitle: {
     position: 'absolute',
-    left: '50%',
-    top: gameScale(40),
-    transform: [{ translateX: gameScale(-80) }], 
-    fontSize: gameScale(35),
-    width: gameScale(200),
+    top: gameScale(80),
+    transform: [{ translateX: gameScale(36) }], 
+    fontSize: gameScale(40),
     color: 'white',
     fontFamily: 'MusicVibes',
     textAlign: 'center',
@@ -472,7 +409,7 @@ const styles = StyleSheet.create({
     marginTop: gameScale(80),
   },
   summaryLabel: {
-    fontSize: gameScale(38),
+    fontSize: gameScale(30),
     color: 'white',
     fontFamily: 'MusicVibes',
     marginBottom: gameScale(4),
@@ -481,9 +418,9 @@ const styles = StyleSheet.create({
     textShadowRadius: gameScale(5),
   },
   summaryValue: {
-    fontSize: gameScale(38),
+    fontSize: gameScale(30),
     color: 'white',
-    fontFamily: 'MusicVibes',
+    fontFamily: 'Grobold',
     marginBottom: gameScale(10),
     textShadowColor: '#773030ff',
     textShadowOffset: { width: gameScale(2), height: gameScale(2) },

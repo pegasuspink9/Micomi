@@ -31,11 +31,11 @@ model Map {
 }
 
 model Lesson {
-  lesson_id          Int    @id @default(autoincrement())
-  level_id           Int
-  page_number        Int
-  page_url           String
-  level              Level  @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
+  lesson_id   Int    @id @default(autoincrement())
+  level_id    Int
+  page_number Int
+  page_url    String
+  level       Level  @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
 }
 
 model Level {

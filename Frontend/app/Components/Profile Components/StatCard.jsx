@@ -62,11 +62,11 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: gameScale(24),
-    fontFamily: 'MusicVibes',
-    color: '#ffffffa2',
+    fontFamily: 'Grobold',
+    color: '#ffffffff',
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textShadowOffset: { width: 0, height: 0},
+    textShadowRadius: 7,
   },
   statIconContainer: {
     backgroundColor: 'rgba(0, 0, 0, 0.3)',

@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   SafeAreaView,
-  ImageBackground
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -70,13 +69,14 @@ export default function BadgesView() {
     return (
       <>
         <SafeAreaView style={styles.container}>
-          <ImageBackground 
-            source={require('../../gamebackgroundmain.png')} 
-            style={styles.backgroundContainer} 
-            resizeMode="cover"
+          {/* Dark bluish gradient background for loading */}
+          <LinearGradient
+            colors={['#000000ff', '#1a2d4a', '#0f2137', '#000000ff', '#000000ff']}
+            locations={[0, 0.25, 0.5, 0.75, 1]}
+            style={styles.backgroundContainer}
           >
             <View style={styles.backgroundOverlay} />
-          </ImageBackground>
+          </LinearGradient>
         </SafeAreaView>
         <AssetDownloadProgress
           visible={assetsLoading}
@@ -102,7 +102,12 @@ export default function BadgesView() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ImageBackground source={require('../../gamebackgroundmain.png')} style={styles.backgroundContainer} resizeMode="cover">
+      {/* Dark bluish gradient background */}
+      <LinearGradient
+         colors={['#1e1d1dff', '#1a2d4a', '#0f2137', '#1a2d4a', '#1a2d4a']}
+          locations={[0, 0.25, 0.5, 0.75, 1]}
+        style={styles.backgroundContainer}
+      >
         <View style={styles.backgroundOverlay} />
         
         {/* Header */}
@@ -194,11 +199,11 @@ export default function BadgesView() {
                 const gradientColors = getRandomPastelGradient(index + earnedBadges.length);
 
                 return (
-                  <TouchableOpacity // ✅ Changed from View to TouchableOpacity
+                  <TouchableOpacity
                     key={badge.id} 
                     style={styles.badgeGridItem}
                     activeOpacity={0.8}
-                    onPress={() => handleBadgePress(badge, gradientColors)} // ✅ Added onPress
+                    onPress={() => handleBadgePress(badge, gradientColors)}
                   >
                     <View style={[
                       styles.badgeBorderOuter,
@@ -230,7 +235,7 @@ export default function BadgesView() {
 
           <View style={{ height: gameScale(20) }} />
         </ScrollView>
-      </ImageBackground>
+      </LinearGradient>
 
        <BadgeDetailModal
         visible={modalVisible}
