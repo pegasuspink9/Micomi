@@ -40,12 +40,12 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   activeTab: {
-    borderBottomColor: '#2ee7ff',
+    borderBottomColor: '#9ccbd1ff',
   },
   tabText: {
     color: '#a0a0a0',
     fontSize: gameScale(16),
-    fontFamily: 'GoldenAge',
+    fontFamily: 'MusicVibes',
   },
   activeTabText: {
     color: '#ffffff',

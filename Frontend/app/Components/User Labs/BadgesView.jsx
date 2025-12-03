@@ -19,7 +19,7 @@ import BadgeDetailModal from './Badge Modal/BadgeDetailModal';
 export default function BadgesView() {
   const router = useRouter();
   const playerId = 11;
-  const { playerData, loading, assetsLoading, assetsProgress } = usePlayerProfile(playerId);
+  const { playerData, loading, assetsLoading, assetsProgress, loadPlayerProfile } = usePlayerProfile(playerId);
 
 
   const [selectedBadge, setSelectedBadge] = useState(null);
@@ -52,6 +52,11 @@ export default function BadgesView() {
     } else {
       return ['#2E8B57', '#3CB371']; // Green gradient (high progress)
     }
+  };
+
+  const handleBadgeApplied = async (badge) => {
+    console.log(`🎖️ Badge "${badge.name}" was applied, refreshing profile...`);
+    await loadPlayerProfile();
   };
 
   const handleBadgePress = (badge, gradientColors) => {
@@ -232,6 +237,8 @@ export default function BadgesView() {
         badge={selectedBadge}
         gradientColors={selectedGradient}
         onClose={() => setModalVisible(false)}
+        playerId={playerId}
+        onBadgeApplied={handleBadgeApplied}
       />
     </SafeAreaView>
   );

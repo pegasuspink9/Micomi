@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   ImageBackground,
   StyleSheet,
@@ -13,9 +13,6 @@ import { Dimensions } from 'react-native';
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
-
-
-
 const BACKGROUND_THEMES = {
   'HTML': require('./Assets/GreenLand Map.png'),
   'CSS': require('./Assets/Fireland MapNavigate.png'),
@@ -23,66 +20,85 @@ const BACKGROUND_THEMES = {
   'Computer': require('./Assets/AutumnLand MapNavigate.png')
 };
 
+const BACKGROUND_KEYS = ['HTML', 'CSS', 'JavaScript', 'Computer'];
 
 export default function MapLandingPage() {
-
-  //Select the level to be displayed
-  const fadeAnim = useState(new Animated.Value(1))[0];
+  const [currentMapName, setCurrentMapName] = useState('HTML');
   
-  const [currentBackground, setCurrentBackground] = useState(BACKGROUND_THEMES['HTML']);
+  const fadeAnims = useRef(
+    BACKGROUND_KEYS.reduce((acc, key) => {
+      acc[key] = new Animated.Value(key === 'HTML' ? 1 : 0);
+      return acc;
+    }, {})
+  ).current;
    
   const handleGradientChange = (mapName) => {
-      
-
-      const newBackground = BACKGROUND_THEMES[mapName] || BACKGROUND_THEMES['HTML'];
-
-      setCurrentBackground(newBackground);
-      
+    if (mapName === currentMapName) return;
+    
+    const animations = BACKGROUND_KEYS.map((key) => {
+      return Animated.timing(fadeAnims[key], {
+        toValue: key === mapName ? 1 : 0,
+        duration: 300, 
+        useNativeDriver: true,
+      });
+    });
+    
+    Animated.parallel(animations).start();
+    setCurrentMapName(mapName);
   };
 
   return (
     <View style={styles.container}>
-      {/*  Background Image Layer */}
-      <ImageBackground
-        source={currentBackground}
-        style={styles.backgroundImage}
-        resizeMode="cover"
-      >
-        {/*  Gradient Overlay */}
-      
-          {/*  Lower Hills - Move to back layer */}
-          <LottieView
-            source={{ uri: 'https://lottie.host/7a86b8d3-7b6b-4841-994d-3a12acb80eb1/1UKTK3rnbF.lottie' }}
-            style={styles.lowerHills}
-            resizeMode="contain"
-            autoPlay
-            loop
-            speed={2}
-            pointerEvents="none"
-          />
-
-          {/*  Clouds - Behind content */}
-          <LottieView
-            source={{ uri: 'https://lottie.host/6dc90492-37c5-4169-9db7-4a6f79ad0bf9/pR3Q6bxLZq.lottie' }}
-            style={styles.clouds}
+      {BACKGROUND_KEYS.map((mapName) => (
+        <Animated.View
+          key={mapName}
+          style={[
+            styles.absoluteBackground,
+            { opacity: fadeAnims[mapName] }
+          ]}
+        >
+          <ImageBackground
+            source={BACKGROUND_THEMES[mapName]}
+            style={styles.backgroundImage}
             resizeMode="cover"
-            autoPlay
-            loop
-            speed={0.8}
-            pointerEvents="none"
           />
+        </Animated.View>
+      ))}
 
-          {/* Header - Higher z-index */}
-          <View style={styles.headerContainer}>
-            <MapHeader />
-          </View>
+      {/* Content Layer */}
+      <View style={styles.contentLayer}>
+        {/* Lower Hills */}
+        <LottieView
+          source={{ uri: 'https://lottie.host/7a86b8d3-7b6b-4841-994d-3a12acb80eb1/1UKTK3rnbF.lottie' }}
+          style={styles.lowerHills}
+          resizeMode="contain"
+          autoPlay
+          loop
+          speed={2}
+          pointerEvents="none"
+        />
 
-          {/* Map Navigation - Highest z-index for touch events */}
-          <View style={styles.navigationContainer}>
-            <MapNavigate onMapChange={handleGradientChange} />
-          </View>
+        {/* Clouds */}
+        <LottieView
+          source={{ uri: 'https://lottie.host/6dc90492-37c5-4169-9db7-4a6f79ad0bf9/pR3Q6bxLZq.lottie' }}
+          style={styles.clouds}
+          resizeMode="cover"
+          autoPlay
+          loop
+          speed={0.8}
+          pointerEvents="none"
+        />
 
-      </ImageBackground>
+        {/* Header */}
+        <View style={styles.headerContainer}>
+          <MapHeader />
+        </View>
+
+        {/* Map Navigation */}
+        <View style={styles.navigationContainer}>
+          <MapNavigate onMapChange={handleGradientChange} />
+        </View>
+      </View>
     </View>
   );
 }
@@ -91,17 +107,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1
   },
+  absoluteBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
   backgroundImage: {
     flex: 1,
     width: '100%',
     height: '100%',
   },
+  contentLayer: {
+    flex: 1,
+    position: 'relative',
+  },
   gradient: {
     flex: 1,
     position: 'relative', 
   },
-  
-  //  Background animations (lowest z-index)
   lowerHills: {
     position: 'absolute',
     bottom: -50,
@@ -111,7 +136,6 @@ const styles = StyleSheet.create({
     height: Math.max(screenHeight * 0.50, 300), 
     zIndex: 1,
   },
-  
   clouds: {
     position: 'absolute',
     top: 60,
@@ -120,15 +144,13 @@ const styles = StyleSheet.create({
     height: '100%',
     zIndex: 2, 
   },
-  
   headerContainer: {
     position: 'relative',
     zIndex: 10, 
   },
-  
   navigationContainer: {
     flex: 1,
     position: 'relative',
-    zIndex: 20, //  Highest z-index for touch events
+    zIndex: 20,
   },
 });

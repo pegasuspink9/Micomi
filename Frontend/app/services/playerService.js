@@ -1,4 +1,6 @@
 import { apiService } from './api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 export const playerService = {
   // Get player profile data
@@ -13,12 +15,49 @@ export const playerService = {
     }
   },
 
-  // Transform API data to match component structure
+  selectBadge: async (playerId, achievementId) => {
+    try {
+      console.log(`🎖️ Selecting badge ${achievementId} for player ${playerId}...`);
+      
+      const response = await apiService.post(`/game/select-badge/${playerId}/${achievementId}`);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to select badge');
+      }
+      
+      // ✅ ADDED: Save timestamp on successful selection
+      await AsyncStorage.setItem('badge_selection_updated', Date.now().toString());
+      console.log('💾 Badge selection update saved to storage');
+
+      console.log(`🎖️ Badge ${achievementId} selected successfully`);
+      return response;
+    } catch (error) {
+      console.error(`Failed to select badge ${achievementId}:`, error);
+      throw error;
+    }
+  },
+
+  getLastBadgeUpdate: async () => {
+    try {
+      const timestamp = await AsyncStorage.getItem('badge_selection_updated');
+      return timestamp ? parseInt(timestamp) : 0;
+    } catch (error) {
+      console.error('Failed to get badge selection update time:', error);
+      return 0;
+    }
+  },
+
   transformPlayerData: (apiData) => {
-    // Get selected character from owned characters
     const selectedCharacter = apiData.ownedCharacters?.find(char => char.is_selected);
+
+    const selectedBadge = apiData.selectedBadge ? {
+      achievement_id: apiData.selectedBadge.achievement_id,
+      achievement_name: apiData.selectedBadge.achievement_name,
+      description: apiData.selectedBadge.description,
+      landscape_image: apiData.selectedBadge.landscape_image,
+      earned_at: apiData.selectedBadge.earned_at
+    } : null;
     
-    // Transform potions data
     const transformedPotions = apiData.ownedPotions?.map(item => ({
       id: item.player_potion_id,
       name: playerService.getPotionDisplayName(item.potion.potion_type),
@@ -30,12 +69,10 @@ export const playerService = {
       price: item.potion.potion_price
     })) || [];
 
-    // Transform badges/achievements data - Updated to use API badge_icon
     const transformedBadges = apiData.playerAchievements?.map(achievement => ({
       id: achievement.achievement_id,
       name: achievement.achievement_name,
       description: achievement.description,
-      // Use badge_icon from API, fallback to default if null
       icon: achievement.badge_icon || playerService.getDefaultBadgeIcon(achievement.achievement_name),
       earned: achievement.is_owned,
       earnedDate: achievement.earned_at ? new Date(achievement.earned_at).toISOString().split('T')[0] : null,
@@ -63,7 +100,9 @@ export const playerService = {
         character_image_display: selectedCharacter?.character.character_image_display || "https://github.com/user-attachments/assets/eced9b8f-eae0-48f5-bc05-d8d5ce018529",
       },
       playerName: apiData.player_name,
-      username: `@${apiData.username}`,
+      username: apiData.username, 
+      selectedBadge: selectedBadge,
+      playerLevel: apiData.player_level,
       coins: apiData.coins,
       daysLogin: apiData.totalActiveMaps || 0, // Using total active mazps as a substitute
       currentStreak: apiData.current_streak,

@@ -1,6 +1,6 @@
 // Try different possible backend U
 const POSSIBLE_BACKEND_URLS = [
-  'http://192.168.254.124:3000'
+  'http://10.110.23.202:3000'
 ];
 
 class ApiService {
@@ -28,7 +28,7 @@ class ApiService {
         if (response.ok) {
           this.baseURL = url;
           this.isBackendAvailable = true;
-          console.log(`✅ Connected to backend at: ${url}`);
+          console.log(` Connected to backend at: ${url}`);
           return true;
         }
       } catch (error) {
@@ -74,7 +74,7 @@ class ApiService {
       }
       
       const data = await response.json();
-      console.log(`✅ API response for ${endpoint}:`, data);
+      console.log(` API response for ${endpoint}:`, data);
       this.isBackendAvailable = true;
       return data;
     } catch (error) {

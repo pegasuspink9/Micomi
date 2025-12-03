@@ -69,14 +69,14 @@ const StatsGridSection = ({ coins, currentStreak, expPoints, mapsOpened, statsIc
 
 const styles = StyleSheet.create({
   statsSection: {
-    marginBottom: gameScale(16),
+    marginBottom: gameScale(10),
     paddingHorizontal: gameScale(16),
   },
   sectionTitle: {
     fontSize: gameScale(40),
     color: 'white',
     fontFamily: 'MusicVibes',
-    marginBottom: gameScale(20),
+    marginBottom: gameScale(10),
     textShadowColor: '#000000ff',
   },
   overviewBorderOuter: {

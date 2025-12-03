@@ -10,6 +10,7 @@ export const usePlayerProfile = (playerId = 11) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastSelectionCheck, setLastSelectionCheck] = useState(0);
+  const [lastBadgeCheck, setLastBadgeCheck] = useState(0);
   const [assetsLoading, setAssetsLoading] = useState(false);
   const [assetsProgress, setAssetsProgress] = useState({ loaded: 0, total: 0, progress: 0 });
 
@@ -120,6 +121,20 @@ export const usePlayerProfile = (playerId = 11) => {
     }
   }, [lastSelectionCheck, loadPlayerProfile]);
 
+  const checkForBadgeUpdates = useCallback(async () => {
+    try {
+      const lastUpdate = await playerService.getLastBadgeUpdate();
+      
+      if (lastUpdate > lastBadgeCheck) {
+        console.log('🔄 Badge selection updated, refreshing player data...');
+        setLastBadgeCheck(lastUpdate);
+        await loadPlayerProfile();
+      }
+    } catch (error) {
+      console.error('Error checking for badge updates:', error);
+    }
+  }, [lastBadgeCheck, loadPlayerProfile]);
+
   // Get specific data sections
   const getBadges = useCallback(() => {
     return playerData?.badges || [];
@@ -154,6 +169,7 @@ export const usePlayerProfile = (playerId = 11) => {
   useEffect(() => {
     loadPlayerProfile().then(() => {
       characterService.getLastSelectionUpdate().then(setLastSelectionCheck);
+      playerService.getLastBadgeUpdate().then(setLastBadgeCheck); 
     });
   }, [loadPlayerProfile]);
 
@@ -161,21 +177,22 @@ export const usePlayerProfile = (playerId = 11) => {
     const handleAppStateChange = (nextAppState) => {
       if (nextAppState === 'active') {
         checkForCharacterUpdates();
+        checkForBadgeUpdates();
       }
     };
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription?.remove();
-  }, [checkForCharacterUpdates]);
+  }, [checkForCharacterUpdates, checkForBadgeUpdates]);
 
     useEffect(() => {
     const interval = setInterval(() => {
       checkForCharacterUpdates();
+      checkForBadgeUpdates();
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [checkForCharacterUpdates]);
-
+  }, [checkForCharacterUpdates, checkForBadgeUpdates]);
   return {
     // Data
     playerData,

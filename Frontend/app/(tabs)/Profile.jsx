@@ -83,7 +83,7 @@ export default function Profile() {
   if (!playerData) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <Text style={styles.errorText}>No player data available</Text>
+        <Text style={styles.errorText}>No plfayer data available</Text>
       </View>
     );
   }
@@ -106,6 +106,9 @@ export default function Profile() {
             <PlayerInfoSection 
               playerName={playerData.playerName}
               username={playerData.username}
+              selectedBadge={playerData.selectedBadge}
+              playerLevel={playerData.playerLevel}
+              expPoints={playerData.expPoints}
             />
             
             <StatsGridSection 

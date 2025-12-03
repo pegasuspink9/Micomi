@@ -10,7 +10,17 @@ import PotionCard from './PotionCard';
 const InventorySection = ({ activeTab, setActiveTab, badges, potions }) => {
   const router = useRouter();
   
-  const data = activeTab === 'Badges' ? badges : potions;
+  // UPDATED: Sort badges - earned first, then unearned
+  const sortedBadges = activeTab === 'Badges' 
+    ? [...badges].sort((a, b) => {
+        // Earned badges come first (true = 1, false = 0)
+        if (a.earned && !b.earned) return -1;
+        if (!a.earned && b.earned) return 1;
+        return 0;
+      })
+    : badges;
+
+  const data = activeTab === 'Badges' ? sortedBadges : potions;
   const displayItems = data.slice(0, 6);
 
   const handleViewAll = () => {
@@ -203,13 +213,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   
-  // Layer 3 - Inner Content area for the row
   potionContent: {
     alignItems: 'center',
     overflow: 'hidden',
   },
   
-  // Corner radius styles for potion rows
   potionGridItemLeft: {
     borderRadius: gameScale(12),
   },
@@ -218,15 +226,18 @@ const styles = StyleSheet.create({
   },
   
   bottomViewAllButton: {
-    backgroundColor: 'rgba(10, 20, 40, 0.75)',
+    backgroundColor: 'rgba(45, 64, 102, 0.75)',
     paddingVertical: gameScale(12),
+    width: '50%',
+    alignSelf: 'center',
+    borderColor: '#90bfe1ff',
     borderRadius: gameScale(12),
-    borderWidth: gameScale(1),
+    borderWidth: gameScale(2),
     alignItems: 'center',
-    marginTop: gameScale(30),
+    marginTop: gameScale(20),
   },
   bottomViewAllText: {
-    fontFamily: 'GoldenAge',
+    fontFamily: 'MusicVibes',
     fontSize: gameScale(14),
     color: '#ffffff',
   },

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,50 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { gameScale } from '../../Responsiveness/gameResponsive';
+import { playerService } from '../../../services/playerService';
 
-const BadgeDetailModal = ({ visible, badge, onClose }) => {
+const BadgeDetailModal = ({ visible, badge, onClose, playerId = 11, onBadgeApplied }) => {
+  const [isApplying, setIsApplying] = useState(false);
+
   if (!badge) return null;
+
+  const handleApplyBadge = async () => {
+    if (!badge.id || !playerId) {
+      console.error('Missing badge ID or player ID');
+      return;
+    }
+
+    try {
+      setIsApplying(true);
+      
+      await playerService.selectBadge(playerId, badge.id);
+      
+      console.log(`🎖️ Badge "${badge.name}" applied successfully`);
+      
+      // Notify parent component that badge was applied
+      if (onBadgeApplied) {
+        onBadgeApplied(badge);
+      }
+      
+      // Close the modal after successful application
+      onClose();
+      
+    } catch (error) {
+      console.error('Failed to apply badge:', error);
+      Alert.alert(
+        'Error',
+        'Failed to apply badge. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
 
   return (
     <Modal
@@ -53,8 +92,17 @@ const BadgeDetailModal = ({ visible, badge, onClose }) => {
                 {/* Apply Button */}
                 <View style={styles.buttonLayer1}>
                   <View style={styles.buttonLayer2}>
-                    <TouchableOpacity style={[styles.buttonLayer3, styles.applyButton]} activeOpacity={0.8}>
-                      <Text style={styles.buttonText}>Apply Badge</Text>
+                    <TouchableOpacity 
+                      style={[styles.buttonLayer3, styles.applyButton]} 
+                      activeOpacity={0.8}
+                      onPress={handleApplyBadge}
+                      disabled={isApplying}
+                    >
+                      {isApplying ? (
+                        <ActivityIndicator size="small" color="#ffffff" />
+                      ) : (
+                        <Text style={styles.buttonText}>Apply Badge</Text>
+                      )}
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -62,7 +110,12 @@ const BadgeDetailModal = ({ visible, badge, onClose }) => {
                 {/* Cancel Button */}
                 <View style={styles.buttonLayer1}>
                   <View style={styles.buttonLayer2}>
-                    <TouchableOpacity style={[styles.buttonLayer3, styles.cancelButton]} activeOpacity={0.8} onPress={onClose}>
+                    <TouchableOpacity 
+                      style={[styles.buttonLayer3, styles.cancelButton]} 
+                      activeOpacity={0.8} 
+                      onPress={onClose}
+                      disabled={isApplying}
+                    >
                       <Text style={styles.buttonText}>Cancel</Text>
                     </TouchableOpacity>
                   </View>
@@ -86,6 +139,7 @@ const BadgeDetailModal = ({ visible, badge, onClose }) => {
     </Modal>
   );
 };
+
 
 const styles = StyleSheet.create({
   modalOverlay: {
