@@ -17,26 +17,17 @@ const prisma = new PrismaClient();
 
 const BASE_EXP_REQUIREMENT = 100;
 const EXP_EXPONENT = 1.5;
-const MAX_LEVEL = 50;
-
-const CUMULATIVE_EXP_TABLE = Array.from(
-  { length: MAX_LEVEL + 1 },
-  (_, level) => {
-    if (level <= 1) return 0;
-    let total = 0;
-    for (let i = 2; i <= level; i++) {
-      total += Math.floor(BASE_EXP_REQUIREMENT * Math.pow(i - 1, EXP_EXPONENT));
-    }
-    return total;
-  }
-);
 
 export const calculatePlayerLevel = (expPoints: number): number => {
-  const clampedExp = Math.min(expPoints, CUMULATIVE_EXP_TABLE[MAX_LEVEL]);
-
-  for (let level = MAX_LEVEL; level >= 1; level--) {
-    if (clampedExp >= CUMULATIVE_EXP_TABLE[level]) {
-      return level;
+  for (let level = 1; level <= 1000; level++) {
+    let totalExp = 0;
+    for (let i = 2; i <= level; i++) {
+      totalExp += Math.floor(
+        BASE_EXP_REQUIREMENT * Math.pow(i - 1, EXP_EXPONENT)
+      );
+    }
+    if (expPoints < totalExp) {
+      return level - 1;
     }
   }
   return 1;
@@ -81,11 +72,20 @@ export const addExpAndUpdateLevel = async (
 
 export const getLevelProgress = (expPoints: number) => {
   const currentLevel = calculatePlayerLevel(expPoints);
-  const currentLevelExp = CUMULATIVE_EXP_TABLE[currentLevel];
-  const nextLevelExp =
-    currentLevel < MAX_LEVEL
-      ? CUMULATIVE_EXP_TABLE[currentLevel + 1]
-      : CUMULATIVE_EXP_TABLE[currentLevel];
+
+  let currentLevelExp = 0;
+  for (let i = 2; i <= currentLevel; i++) {
+    currentLevelExp += Math.floor(
+      BASE_EXP_REQUIREMENT * Math.pow(i - 1, EXP_EXPONENT)
+    );
+  }
+
+  let nextLevelExp = 0;
+  for (let i = 2; i <= currentLevel + 1; i++) {
+    nextLevelExp += Math.floor(
+      BASE_EXP_REQUIREMENT * Math.pow(i - 1, EXP_EXPONENT)
+    );
+  }
 
   const expInCurrentLevel = expPoints - currentLevelExp;
   const expNeededForNext = nextLevelExp - currentLevelExp;
@@ -95,11 +95,7 @@ export const getLevelProgress = (expPoints: number) => {
     expPoints,
     expInCurrentLevel,
     expNeededForNext,
-    percentage:
-      currentLevel >= MAX_LEVEL
-        ? 100
-        : Math.round((expInCurrentLevel / expNeededForNext) * 100),
-    isMaxLevel: currentLevel >= MAX_LEVEL,
+    percentage: Math.round((expInCurrentLevel / expNeededForNext) * 100),
   };
 };
 
@@ -322,13 +318,15 @@ export const getPlayerProfile = async (player_id: number) => {
       })()
     : null;
 
+  const calculatedLevel = calculatePlayerLevel(player.exp_points);
+
   return {
     player_name: player.player_name,
     username: player.username,
     coins: player.coins,
     current_streak: player.current_streak,
     exp_points: player.exp_points,
-    player_level: player.level,
+    player_level: calculatedLevel,
     ownedCharacters: player.ownedCharacters,
     ownedPotions: player.ownedPotions,
 

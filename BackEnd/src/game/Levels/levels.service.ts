@@ -335,8 +335,19 @@ export const enterLevel = async (playerId: number, levelId: number) => {
   if (level.level_type === "micomiButton") {
     const lessons = await prisma.level.findFirst({
       where: { level_id: levelId },
-      include: { lessons: true },
+      include: {
+        lessons: {
+          orderBy: { lesson_id: "asc" },
+          select: {
+            lesson_id: true,
+            page_number: true,
+            page_url: true,
+          },
+        },
+      },
     });
+
+    const currentLesson = lessons?.lessons?.[0] ?? null;
 
     return {
       level: {
@@ -349,6 +360,13 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         total_points: totalPoints,
         total_coins: totalCoins,
       },
+      currentLesson: currentLesson
+        ? {
+            lesson_id: currentLesson.lesson_id,
+            page_number: currentLesson.page_number,
+            page_url: currentLesson.page_url,
+          }
+        : null,
       energy: energyStatus.energy,
       timeToNextEnergyRestore: energyStatus.timeToNextRestore,
       lessons,

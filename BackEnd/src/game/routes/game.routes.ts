@@ -6,6 +6,7 @@ import * as LevelController from "../Levels/levels.controller";
 import * as MapController from "../Maps/maps.controller";
 import * as LeaderboardController from "../Leaderboard/leaderboard.controller";
 import * as ModelShopService from "../../models/Shop/shop.service";
+import * as LessonsController from "../Lessons/lesson.controller";
 import {
   authenticate,
   requirePlayer,
@@ -33,6 +34,14 @@ router.post(
 router.post(
   "/entryLevel/:playerId/:levelId/done", //for micomi and shop level
   LevelController.completeLevelDone
+);
+router.post(
+  "/lesson/:playerId/:levelId/:lessonId/next",
+  LessonsController.getNextLesson //next page
+);
+router.post(
+  "/lesson/:playerId/:levelId/:lessonId/previous",
+  LessonsController.getPreviousLesson //previous page
 );
 
 //Challenge route

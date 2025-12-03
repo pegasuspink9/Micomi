@@ -4,7 +4,7 @@ import { io } from "../../index";
 export const checkAchievements = async (playerId: number) => {
   const player = await prisma.player.findUnique({
     where: { player_id: playerId },
-    select: { days_logged_in: true, exp_points: true },
+    select: { days_logged_in: true, total_points: true },
   });
   if (!player) throw new Error("Player not found");
 
@@ -42,10 +42,10 @@ export const checkAchievements = async (playerId: number) => {
     prisma.playerPotion.findMany({ where: { player_id: playerId } }),
   ]);
 
-  const leaderboardRank = player.exp_points
+  const leaderboardRank = player.total_points
     ? await prisma.player
         .count({
-          where: { exp_points: { gt: player.exp_points } },
+          where: { total_points: { gt: player.total_points } },
         })
         .then((count) => count + 1)
     : null;
