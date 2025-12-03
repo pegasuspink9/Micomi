@@ -96,6 +96,8 @@ export const checkAchievements = async (playerId: number) => {
     });
   };
 
+  const isFirstLogin = player.days_logged_in === 0;
+
   const newlyUnlockedForEmit: any[] = [];
 
   for (const achievement of achievements) {
@@ -137,6 +139,9 @@ export const checkAchievements = async (playerId: number) => {
         break;
       case "Wake and Bake":
         shouldAward = potionCount >= 5;
+        break;
+      case "Micomi's Friend":
+        shouldAward = isFirstLogin;
         break;
     }
 

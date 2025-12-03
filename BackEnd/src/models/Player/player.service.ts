@@ -390,6 +390,16 @@ export const createPlayer = async (data: PlayerCreateInput) => {
         challenge_start_time: new Date(),
       },
     });
+
+    await prisma.playerAchievement.create({
+      data: {
+        player_id: newPlayer.player_id,
+        achievement_id: 11,
+        is_owned: true,
+        is_selected: true,
+        earned_at: new Date(),
+      },
+    });
   }
 
   console.log(

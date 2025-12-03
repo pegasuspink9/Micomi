@@ -3,6 +3,7 @@ export interface AchievementCreateInput {
   description: string;
   badge_icon?: string;
   conditions: string;
+  landscape_image?: string;
 }
 
 export interface AchievementUpdateInput {
@@ -10,4 +11,5 @@ export interface AchievementUpdateInput {
   description?: string;
   badge_icon?: string;
   conditions?: string;
+  landscape_image?: string;
 }

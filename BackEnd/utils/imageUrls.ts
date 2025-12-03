@@ -4,7 +4,7 @@ export const imagesUrls = [
   "https://micomi-assets.me/Icons/Skill%20Icons/3rd.png",
   "https://micomi-assets.me/Icons/Skill%20Icons/2nd.png",
   "https://micomi-assets.me/Icons/Skill%20Icons/1st.png",
-  "https://micomi-assets/Hero/Gino/gino_entrance.png",
+  "https://micomi-assets.me/Hero%20Selection%20Components/gino_entrance.png",
   "https://micomi-assets.me/Hero/Gino/idle.png",
   "https://micomi-assets.me/Hero/Gino/run.png",
   "https://micomi-assets.me/Hero/Gino/attack1.png",
@@ -13,7 +13,12 @@ export const imagesUrls = [
   "https://micomi-assets.me/Hero/Gino/attack4.png",
   "https://micomi-assets.me/Hero/Gino/hurt.png",
   "https://micomi-assets.me/Hero/Gino/death.png",
-  //ShiShi animations (no icons yet)
+  //ShiShi animations
+  "https://micomi-assets.me/Icons/Skill%20Icons/Basic%20Attack%20Card.png",
+  "https://micomi-assets.me/Icons/Skill%20Icons/Second%20Attack%20Card.png",
+  "https://micomi-assets.me/Icons/Skill%20Icons/Third%20Attack%20Card.png",
+  "https://micomi-assets.me/Icons/Skill%20Icons/Special%20Attack%20Card.png",
+  "https://micomi-assets.me/Hero%20Selection%20Components/shi_entrance.png",
   "https://micomi-assets.me/Hero/Shi-Shi/Attack1.png",
   "https://micomi-assets.me/Hero/Shi-Shi/attack2.png",
   "https://micomi-assets.me/Hero/Shi-Shi/Attack3.png",
@@ -23,6 +28,14 @@ export const imagesUrls = [
   "https://micomi-assets.me/Hero/Shi-Shi/hurt.png",
   "https://micomi-assets.me/Hero/Shi-Shi/death.png",
   "https://micomi-assets.me/Hero%20Portraits/Shi-shi.png",
+  //Leon (no animations yet)
+  "https://micomi-assets.me/Hero%20Portraits/Leon.png",
+  "https://micomi-assets.me/Hero%20Selection%20Components/leon_entrance.png",
+  "https://micomi-assets.me/Hero%20Selection%20Components/Leon.png",
+  //Ryron (no animations yet)
+  "ttps://micomi-assets.me/Hero%20Portraits/Ryron.png",
+  "https://micomi-assets.me/Hero%20Selection%20Components/ryron_entrance.png",
+  "https://micomi-assets.me/Hero%20Selection%20Components/Ryron.png",
   //Potions
   "https://micomi-assets.me/Icons/Potions/health.png",
   "https://micomi-assets.me/Icons/Potions/strong.png",
@@ -80,7 +93,7 @@ export const imagesUrls = [
   "https://micomi-assets.me/Maps/Snowland/8.png",
   "https://micomi-assets.me/Maps/Snowland/9.png",
   "https://micomi-assets.me/Maps/Snowland/10.png",
-  //Badges (no fallback Micomi's Friend Achievement yet) - landscape and badge icon
+  //Badges
   "https://micomi-assets.me/Badges%20Updated/Badges_HTML%20HERO.png",
   "https://micomi-assets.me/Landscape%20Badges/HTML%20Hero.png",
   "https://micomi-assets.me/Badges%20Updated/Badges_CSS%20ARTIST.png",
@@ -101,7 +114,9 @@ export const imagesUrls = [
   "https://micomi-assets.me/Landscape%20Badges/Knowledge%20Keeper.png",
   "https://micomi-assets.me/Badges%20Updated/Badges_MASTER%20BEATER.png",
   "https://micomi-assets.me/Landscape%20Badges/Master%20Beater.png",
-  //Intro comics (no page 7 yet and also 6, to be corrected)
+  "https://micomi-assets.me/Badges/MICOMI'S%20FRIEND.png",
+  "https://micomi-assets.me/Landscape%20Badges/Micomi's%20Friend%201.png",
+  //Intro comics
   "https://micomi-assets.me/Comics/Intro%20Micomi/C_page1.png",
   "https://micomi-assets.me/Comics/Intro%20Micomi/C_page2.png",
   "https://micomi-assets.me/Comics/Intro%20Micomi/C_page3.png",
@@ -195,4 +210,9 @@ export const imagesUrls = [
   "https://micomi-assets.me/Enemies/Greenland/Boss%20Darco/run_lkcbug.png",
   "https://micomi-assets.me/Enemies/Avatar/bossdarko_ppwb8u.png",
   "https://micomi-assets.me/Enemies/Greenland/Boss%20Darco/attack2.png",
+  //Versus Background
+  "https://micomi-assets.me/Versus%20Maps/Green.png",
+  "https://micomi-assets.me/Versus%20Maps/Lava.png",
+  "https://micomi-assets.me/Sounds/Final/Snowland.mp3",
+  "https://micomi-assets.me/Versus%20Maps/Autumn.png",
 ];

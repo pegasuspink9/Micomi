@@ -16,8 +16,6 @@ import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
 import { updateQuestProgress } from "../Quests/quests.service";
 import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 import { getCardForAttackType } from "../Combat/combat.service";
-import { audioLinks } from "../../../utils/audioLinks";
-import { imagesUrls } from "../../../utils/imageUrls";
 
 const prisma = new PrismaClient();
 
@@ -181,8 +179,6 @@ export const previewLevel = async (playerId: number, levelId: number) => {
         energy: energyStatus.energy,
         timeToNextEnergyRestore: energyStatus.timeToNextRestore,
         lessons,
-        audioLinks,
-        imagesUrls,
       };
 
     case "shopButton":
@@ -276,8 +272,6 @@ export const previewLevel = async (playerId: number, levelId: number) => {
         audio:
           "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353796/Navigation_sxwh2g.mp3",
         bossLevelExpectedOutput: level.boss_level_expected_output,
-        audioLinks,
-        imagesUrls,
       };
     }
   }
@@ -370,8 +364,6 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       energy: energyStatus.energy,
       timeToNextEnergyRestore: energyStatus.timeToNextRestore,
       lessons,
-      audioLinks,
-      imagesUrls,
     };
   }
 
@@ -390,6 +382,13 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         where: { player_id: playerId, level_id: levelId },
       });
 
+      const potionTypeFieldMap: { [key: string]: string } = {
+        Life: "health_quantity",
+        Power: "strong_quantity",
+        Immunity: "freeze_quantity",
+        Reveal: "hint_quantity",
+      };
+
       potionShop = potions
         .map((p) => {
           const globalOwned =
@@ -400,11 +399,11 @@ export const enterLevel = async (playerId: number, levelId: number) => {
               (plp) => plp.potion_shop_id === p.potion_shop_id
             )?.quantity ?? 0;
 
+          const fieldName =
+            potionTypeFieldMap[p.potion_type] ||
+            `${p.potion_type.toLowerCase()}_quantity`;
           const rawLimit =
-            potionConfig[
-              `${p.potion_type.toLowerCase()}_quantity` as keyof typeof potionConfig
-            ] ?? 0;
-
+            potionConfig[fieldName as keyof typeof potionConfig] ?? 0;
           const limit = Number(rawLimit ?? 0);
 
           const isAvailable = potionConfig.potions_avail
@@ -719,24 +718,40 @@ export const enterLevel = async (playerId: number, levelId: number) => {
   let versus_background = "";
   let gameplay_audio = "";
 
-  if (level.level_type === "bossButton") {
-    gameplay_audio = "https://micomi-assets.me/Sounds/Final/Boss.ogg";
-  } else {
-    if (questionType === "HTML") {
+  switch (questionType) {
+    case "HTML":
       versus_background = "https://micomi-assets.me/Versus%20Maps/Green.png";
-      gameplay_audio =
-        "https://micomi-assets.me/Sounds/Final/Greenland%20Final.mp3";
-    } else if (questionType === "CSS") {
+      if (level.level_type === "bossButton") {
+        gameplay_audio = "https://micomi-assets.me/Sounds/Final/Boss.ogg";
+      } else {
+        gameplay_audio =
+          "https://micomi-assets.me/Sounds/Final/Greenland%20Final.mp3";
+      }
+      break;
+    case "CSS":
       versus_background = "https://micomi-assets.me/Versus%20Maps/Lava.png";
-      gameplay_audio = "https://micomi-assets.me/Sounds/Final/Lavaland.mp3";
-    } else if (questionType === "JavaScript") {
+      if (level.level_type === "bossButton") {
+        gameplay_audio = "https://micomi-assets.me/Sounds/Final/Boss.ogg";
+      } else {
+        gameplay_audio = "https://micomi-assets.me/Sounds/Final/Lavaland.mp3";
+      }
+      break;
+    case "JavaScript":
       versus_background = "https://micomi-assets.me/Sounds/Final/Snowland.mp3";
-      gameplay_audio = "https://micomi-assets.me/Sounds/Final/Snowland.mp3";
-    } else if (questionType === "Computer") {
+      if (level.level_type === "bossButton") {
+        gameplay_audio = "https://micomi-assets.me/Sounds/Final/Boss.ogg";
+      } else {
+        gameplay_audio = "https://micomi-assets.me/Sounds/Final/Snowland.mp3";
+      }
+      break;
+    case "Computer":
       versus_background =
         "https://micomi-assets.me/Sounds/Final/Autumnland.mp3";
-      gameplay_audio = "https://micomi-assets.me/Sounds/Final/Autumnland.mp3";
-    }
+      if (level.level_type === "bossButton") {
+        gameplay_audio = "https://micomi-assets.me/Sounds/Final/Boss.ogg";
+      } else {
+        gameplay_audio = "https://micomi-assets.me/Sounds/Final/Autumnland.mp3";
+      }
   }
 
   return {
@@ -788,8 +803,6 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     versus_background: versus_background,
     versus_audio: versus_background_audio,
     gameplay_audio: gameplay_audio,
-    audioLinks,
-    imagesUrls,
   };
 };
 
