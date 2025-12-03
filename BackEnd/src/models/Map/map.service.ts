@@ -2,6 +2,8 @@ import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
 import { MapCreateInput, MapUpdateInput } from "./map.types";
 import { successResponse, errorResponse } from "../../../utils/response";
+import { imagesUrls } from "../../../utils/imageUrls";
+import { audioLinks } from "../../../utils/audioLinks";
 
 const prisma = new PrismaClient();
 
@@ -82,6 +84,8 @@ export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
         data: enhancedMaps,
         freshQuests: freshQuests,
         audio: "https://micomi-assets.me/Sounds/Final/Navigation.mp3",
+        imagesUrls,
+        audioLinks,
       },
       "Maps and fresh quests fetched successfully"
     );

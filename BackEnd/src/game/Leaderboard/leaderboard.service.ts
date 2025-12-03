@@ -6,17 +6,17 @@ export const getLeaderboard = async (limit = 10, playerId?: number) => {
     SELECT 
       player_id, 
       username, 
-      exp_points,
-      RANK() OVER (ORDER BY exp_points DESC) AS rank
+      total_points,
+      RANK() OVER (ORDER BY total_points DESC) AS rank
     FROM "Player"
-    ORDER BY exp_points DESC
+    ORDER BY total_points DESC
     LIMIT ${limit};
   `);
 
   const topPlayers = topRows.map((r) => ({
     player_id: Number(r.player_id),
     username: r.username,
-    exp_points: Number(r.exp_points),
+    total_points: Number(r.total_points),
     rank: Number(r.rank),
   }));
 
@@ -39,7 +39,7 @@ export const getLeaderboard = async (limit = 10, playerId?: number) => {
   const separator = {
     player_id: null,
     username: "...",
-    exp_points: null,
+    total_points: null,
     rank: null,
   };
 
@@ -50,7 +50,7 @@ export const getLeaderboard = async (limit = 10, playerId?: number) => {
       {
         player_id: playerRankData.player_id,
         username: playerRankData.username,
-        exp_points: playerRankData.exp_points,
+        total_points: playerRankData.total_points,
         rank: playerRankData.rank,
       },
     ],
@@ -63,7 +63,7 @@ export const getPlayerRank = async (playerId: number) => {
     select: {
       player_id: true,
       username: true,
-      exp_points: true,
+      total_points: true,
     },
   });
 
@@ -71,7 +71,7 @@ export const getPlayerRank = async (playerId: number) => {
 
   const higherRankedCount = await prisma.player.count({
     where: {
-      exp_points: { gt: player.exp_points },
+      total_points: { gt: player.total_points },
     },
   });
 
@@ -80,7 +80,7 @@ export const getPlayerRank = async (playerId: number) => {
   return {
     player_id: player.player_id,
     username: player.username,
-    exp_points: player.exp_points,
+    total_points: player.total_points,
     rank: rank,
   };
 };
