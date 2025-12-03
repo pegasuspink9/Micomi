@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: gameScale(16),
   },
   sectionTitle: {
-    fontSize: gameScale(40),
+    fontSize: gameScale(35),
     color: 'white',
     fontFamily: 'MusicVibes',
     marginBottom: gameScale(10),
