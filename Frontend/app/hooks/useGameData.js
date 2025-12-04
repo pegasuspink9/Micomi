@@ -107,7 +107,7 @@ export const useGameData = (playerId, initialLevelId) => {
         console.log(`📥 Animation download completed: ${downloaded}/${total}`);
         
         if (failedUrls && failedUrls.length > 0) {
-          console.warn('⚠️ Some animations failed to download:', failedUrls);
+          console.warn('⚠️ Some animations :', failedUrls);
         }
       }
       

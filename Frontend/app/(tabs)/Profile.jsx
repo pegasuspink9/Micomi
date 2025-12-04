@@ -4,17 +4,15 @@ import {
   View, 
   ScrollView, 
   StyleSheet,
-  ImageBackground,
   ActivityIndicator,
   TouchableOpacity
 } from "react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 
-import AssetDownloadProgress from '../Components/RoadMap/LoadingState/assetDownloadProgress';
 import { gameScale } from '../Components/Responsiveness/gameResponsive';
 import { usePlayerProfile } from '../hooks/usePlayerProfile';
 
-// Import all Profile components - Fixed imports
+// Import all Profile components
 import Tabs from '../Components/Profile Components/Tabs';
 import PlayerInfoSection from '../Components/Profile Components/PlayerInfoSection';
 import StatsGridSection from '../Components/Profile Components/StatsGridSection';
@@ -27,8 +25,6 @@ export default function Profile() {
     playerData,
     loading,
     error,
-    assetsLoading,
-    assetsProgress,
     loadPlayerProfile,
     clearError
   } = usePlayerProfile(playerId);
@@ -36,54 +32,36 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState('Profile');
   const [inventoryTab, setInventoryTab] = useState('Badges');
 
-  if (loading) {
+  // Simplified loading - assets are already cached from Map API
+  if (loading || !playerData) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color="#ffffff" />
-        <Text style={styles.loadingText}>Loading Profile...</Text>
+        <LinearGradient 
+          colors={['#0a192f', '#172b4aff', '#0a192f']}
+          style={styles.gradientBackground}
+        >
+          <ActivityIndicator size="large" color="#ffffff" />
+          <Text style={styles.loadingText}>Loading Profile...</Text>
+        </LinearGradient>
       </View>
-    );
-  }
-
-  if (assetsLoading) {
-    return (
-      <>
-        <View style={styles.container}>
-          <ImageBackground 
-            source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' }} 
-            style={styles.ImageBackgroundContainer} 
-            resizeMode="cover"
-          >
-            <View style={styles.backgroundOverlay} />
-          </ImageBackground>
-        </View>
-        <AssetDownloadProgress
-          visible={assetsLoading}
-          progress={assetsProgress}
-          currentAsset={assetsProgress.currentAsset}
-        />
-      </>
     );
   }
 
   if (error) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <Text style={styles.errorText}>Error: {error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={() => {
-          clearError();
-          loadPlayerProfile();
-        }}>
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  if (!playerData) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <Text style={styles.errorText}>No plfayer data available</Text>
+        <LinearGradient 
+          colors={['#0a192f', '#172b4aff', '#0a192f']}
+          style={styles.gradientBackground}
+        >
+          <Text style={styles.errorText}>Error: {error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={() => {
+            clearError();
+            loadPlayerProfile();
+          }}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </LinearGradient>
       </View>
     );
   }
@@ -91,7 +69,7 @@ export default function Profile() {
   return (
     <View style={styles.container}>
       <LinearGradient 
-        colors={['#0a192f', '#172b4aff', '#0a192f']} // Dark navy gradient
+        colors={['#0a192f', '#172b4aff', '#0a192f']}
         style={styles.gradientBackground}
       >
         <View style={styles.backgroundOverlay} />
@@ -177,14 +155,14 @@ const styles = StyleSheet.create({
     fontSize: gameScale(12),
     fontFamily: 'Computerfont',
   },
-   gradientBackground: {
+  gradientBackground: {
     flex: 1,
     width: '100%',
     height: '100%'
   },
   backgroundOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)', // Adjusted for subtle depth
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
   },
   scrollContainer: {
     flex: 1

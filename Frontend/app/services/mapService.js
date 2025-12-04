@@ -37,6 +37,8 @@ export const mapService = {
     }
   },
 
+  
+
   extractLevelsFromMap: (mapData) => {
     console.log('🔍 Extracting levels from mapData:', mapData);
     
@@ -57,5 +59,23 @@ export const mapService = {
     
     console.log(`📋 Extracting ${mapData.levels.length} levels from map: ${mapData.map_name}`);
     return mapData.levels;
-  }
+  },
+
+  getMapPreloadData: async (playerId) => {
+    try {
+      console.log(`🗺️ Fetching preload data for player ${playerId}...`);
+      const response = await apiService.get(`/map/${playerId}`);
+
+      if (response.success && response.data) {
+        console.log('🗺️ Map preload data received.');
+        return response.data;
+      }
+
+      console.error('❌ Failed to get map preload data:', response);
+      return null;
+    } catch (error) {
+      console.error('❌ Error fetching map preload data:', error);
+      throw error;
+    }
+  },
 };

@@ -4,50 +4,60 @@ import { AppState } from 'react-native';
 import { characterService } from '../services/characterService';
 import { universalAssetPreloader } from '../services/preloader/universalAssetPreloader';
 
-
 export const usePlayerProfile = (playerId = 11) => {
   const [playerData, setPlayerData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastSelectionCheck, setLastSelectionCheck] = useState(0);
   const [lastBadgeCheck, setLastBadgeCheck] = useState(0);
-  const [assetsLoading, setAssetsLoading] = useState(false);
-  const [assetsProgress, setAssetsProgress] = useState({ loaded: 0, total: 0, progress: 0 });
 
-  // Load player profile from API
-    const loadPlayerProfile = useCallback(async () => {
+  // ✅ Load player profile from API with Map API cache reuse
+  const loadPlayerProfile = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
       console.log(`👤 Loading player profile for ID: ${playerId}...`);
       
-      // First, load cached assets
-      await universalAssetPreloader.loadCachedAssets('player_profile');
-      
-      // Get both player data and character data
-      const [apiData, characterData] = await Promise.all([
-        playerService.getPlayerProfile(playerId),
-        characterService.getPlayerCharacters(playerId)
+      // ✅ Load cached assets from Map API preload into memory
+      await Promise.all([
+        universalAssetPreloader.loadCachedAssets('game_images'),
+        universalAssetPreloader.loadCachedAssets('game_animations'),
+        universalAssetPreloader.loadCachedAssets('map_assets'),
       ]);
       
+      // Get player data from API
+      const apiData = await playerService.getPlayerProfile(playerId);
+      
+      // Transform API data to our format
       let transformedData = playerService.transformPlayerData(apiData);
       
-      // Check if player profile assets are cached
-      const cacheStatus = await universalAssetPreloader.arePlayerProfileAssetsCached(transformedData);
-      console.log(`📦 Player profile asset cache status:`, cacheStatus);
+      // ✅ Check if profile assets are already cached (from Map API preload)
+      const cacheStatus = await universalAssetPreloader.areProfileAssetsCachedFromMap(transformedData);
+      console.log(`📦 Profile asset cache status:`, cacheStatus);
       
-      // If not all assets are cached, download them
-      if (!cacheStatus.cached) {
-        console.log(`📦 Need to download ${cacheStatus.missing} missing player profile assets`);
-        await downloadPlayerProfileAssets(transformedData);
+      if (!cacheStatus.cached && cacheStatus.missing > 0) {
+        // Only download truly missing assets (most should be cached from Map API)
+        console.log(`📦 Need to download ${cacheStatus.missing} missing profile assets`);
+        await universalAssetPreloader.downloadMissingProfileAssets(cacheStatus.missingAssets);
+      } else {
+        console.log(`✅ All ${cacheStatus.total} profile assets already cached from Map API`);
       }
       
-      // Transform data to use cached paths
-      const dataWithCachedPaths = universalAssetPreloader.transformPlayerDataWithCache(transformedData);
+      // ✅ Transform data to use cached paths (reusing Map API cache)
+      let dataWithCachedPaths = transformedData;
+      
+      if (typeof universalAssetPreloader.transformProfileDataWithMapCache === 'function') {
+        dataWithCachedPaths = universalAssetPreloader.transformProfileDataWithMapCache(transformedData);
+      } else {
+        // Fallback to existing transform method
+        console.warn('⚠️ transformProfileDataWithMapCache not found, using transformPlayerDataWithCache');
+        dataWithCachedPaths = universalAssetPreloader.transformPlayerDataWithCache(transformedData);
+      }
+      
       setPlayerData(dataWithCachedPaths);
       
-      console.log('✅ Player profile loaded successfully');
+      console.log('✅ Player profile loaded successfully with cached assets');
       return dataWithCachedPaths;
     } catch (err) {
       setError(err.message);
@@ -57,55 +67,6 @@ export const usePlayerProfile = (playerId = 11) => {
       setLoading(false);
     }
   }, [playerId]);
-
-  
-  const downloadPlayerProfileAssets = useCallback(async (playerData) => {
-    try {
-      setAssetsLoading(true);
-      setAssetsProgress({ loaded: 0, total: 0, progress: 0 });
-      
-      console.log('📦 Starting player profile asset download...');
-      
-      const result = await universalAssetPreloader.downloadPlayerProfileAssets(
-        playerData,
-        // Overall progress callback
-        (progress) => {
-          setAssetsProgress({
-            loaded: progress.loaded,
-            total: progress.total,
-            progress: progress.progress,
-            successCount: progress.successCount,
-            currentAsset: progress.currentAsset
-          });
-        },
-        // Individual asset callback
-        (assetProgress) => {
-          console.log(`📦 Downloading ${assetProgress.name}: ${Math.round(assetProgress.progress * 100)}%`);
-        }
-      );
-      
-      if (result.success) {
-        console.log(`✅ Successfully downloaded ${result.downloaded}/${result.total} player profile assets`);
-        
-        if (result.failedAssets.length > 0) {
-          console.warn(`⚠️ Failed to download ${result.failedAssets.length} assets:`, result.failedAssets);
-        }
-      } else {
-        throw new Error('Failed to download player profile assets');
-      }
-      
-      return result;
-    } catch (error) {
-      console.error('❌ Error downloading player profile assets:', error);
-      setError(`Failed to download assets: ${error.message}`);
-      throw error;
-    } finally {
-      setAssetsLoading(false);
-    }
-  }, []);
-
-
-
 
   const checkForCharacterUpdates = useCallback(async () => {
     try {
@@ -173,7 +134,7 @@ export const usePlayerProfile = (playerId = 11) => {
     });
   }, [loadPlayerProfile]);
 
-   useEffect(() => {
+  useEffect(() => {
     const handleAppStateChange = (nextAppState) => {
       if (nextAppState === 'active') {
         checkForCharacterUpdates();
@@ -185,7 +146,7 @@ export const usePlayerProfile = (playerId = 11) => {
     return () => subscription?.remove();
   }, [checkForCharacterUpdates, checkForBadgeUpdates]);
 
-    useEffect(() => {
+  useEffect(() => {
     const interval = setInterval(() => {
       checkForCharacterUpdates();
       checkForBadgeUpdates();
@@ -193,6 +154,7 @@ export const usePlayerProfile = (playerId = 11) => {
 
     return () => clearInterval(interval);
   }, [checkForCharacterUpdates, checkForBadgeUpdates]);
+
   return {
     // Data
     playerData,
@@ -200,13 +162,9 @@ export const usePlayerProfile = (playerId = 11) => {
     // States
     loading,
     error,
-    assetsLoading,
-    assetsProgress,
     
     // Actions
     loadPlayerProfile,
-    clearError,
-    downloadPlayerProfileAssets,
     clearError,
     
     // Getters

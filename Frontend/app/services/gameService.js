@@ -2,15 +2,19 @@ import { apiService } from './api';
 import { universalAssetPreloader } from './preloader/universalAssetPreloader';
 
 export const gameService = {
- enterLevel: async (playerId, levelId, onAnimationProgress = null, onDownloadProgress = null) => {
+  enterLevel: async (playerId, levelId, onAnimationProgress = null, onDownloadProgress = null) => {
     try {
       console.log(`🎮 Entering level ${levelId} for player ${playerId}...`);
       
-      // Load cached animations on first call
-      await universalAssetPreloader.loadCachedAssets('game_animations');
-      await universalAssetPreloader.loadCachedAssets('game_audio');
-      await universalAssetPreloader.loadCachedAssets('game_visuals');
-      await universalAssetPreloader.loadCachedAssets('game_images');
+      //  FIX: Load cached assets from Map API preload into memory (fast - no download)
+      console.log('📦 Loading Map API cached assets into memory...');
+      await Promise.all([
+        universalAssetPreloader.loadCachedAssets('game_animations'),
+        universalAssetPreloader.loadCachedAssets('game_audio'),
+        universalAssetPreloader.loadCachedAssets('game_visuals'),
+        universalAssetPreloader.loadCachedAssets('game_images'),
+        universalAssetPreloader.loadCachedAssets('map_assets'),
+      ]);
 
       const response = await apiService.post(`/game/entryLevel/${playerId}/${levelId}`);
       
@@ -18,6 +22,7 @@ export const gameService = {
         throw new Error(response.message || 'Failed to enter level');
       }
 
+      // Handle missing enemy data
       if (!response.data.enemy || !response.data.enemy.enemy_id || !response.data.enemy.enemy_name) {
         const level = response.data.level;
         if (level && level.enemy_id) {
@@ -27,8 +32,6 @@ export const gameService = {
             if (enemyResponse.success && enemyResponse.data) {
               response.data.enemy = enemyResponse.data;
               console.log(`🦹 Enemy ${level.enemy_id} fetched successfully`);
-            } else {
-              console.warn(`⚠️ Failed to fetch enemy ${level.enemy_id}, using default`);
             }
           } catch (enemyError) {
             console.warn(`⚠️ Error fetching enemy ${level.enemy_id}:`, enemyError);
@@ -36,39 +39,30 @@ export const gameService = {
         }
       }
 
-      console.log(`🎮 Level ${levelId} data received, starting forced animation download...`);
       
-      const downloadResult = await universalAssetPreloader.downloadGameAnimationAssets(
-        response.data,
-        onDownloadProgress,
-        onAnimationProgress
-      );
+      console.log(`🎮 Level ${levelId} data received, transforming with cache...`);
 
-      await universalAssetPreloader.downloadAudioAssets(response.data);
-      await universalAssetPreloader.downloadGameVisualAssets(response.data);
-      await universalAssetPreloader.downloadGameImageAssets(response.data);
-
-
-
-      if (!downloadResult.success) {
-        console.warn('⚠️ Animation download failed, but continuing with game...');
-      } else {
-        console.log(` All animations downloaded successfully: ${downloadResult.downloaded}/${downloadResult.total}`);
-      }
-
-      //  Transform game state to use cached paths
       const gameStateWithCache = universalAssetPreloader.transformGameStateWithCache(response.data);
+      
+      console.log(`✅ Level ${levelId} ready with cached assets from Map API`);
 
       return {
         ...gameStateWithCache,
-        downloadStats: downloadResult 
+        downloadStats: { 
+          downloaded: 0, 
+          total: 0, 
+          fromCache: true,
+          skippedDownload: true
+        },
       };
     } catch (error) {
       console.error(`Failed to enter level ${levelId}:`, error);
       throw error;
     }
   },
-  
+
+
+
   submitAnswer: async (playerId, levelId, challengeId, selectedAnswers) => {
     try {
       if (!Array.isArray(selectedAnswers) || selectedAnswers.length === 0) {
@@ -261,6 +255,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         characterAttackAudio: data.character_attack_audio || responseData.character_attack_audio || null,
         gameplay_audio: data.gameplay_audio || responseData.gameplay_audio || null,
         is_victory_audio: data.is_victory_audio || responseData.is_victory_audio || null,
+        is_victory_image: data.is_victory_image || responseData.is_victory_image || null,
 
         fightResult: responseData.fightResult ? {
           status: responseData.fightResult.status,

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { levelService } from '../services/levelService';
+import { universalAssetPreloader } from '../services/preloader/universalAssetPreloader';
 
 export const useLevelData = () => {
   const [loading, setLoading] = useState(false);
@@ -37,14 +38,23 @@ export const useLevelData = () => {
       setError(null);
       
       console.log(`🎮 Fetching level preview for level ${levelId}`);
+
+      await universalAssetPreloader.loadCachedAssets('game_animations');
+      await universalAssetPreloader.loadCachedAssets('game_images');
+      await universalAssetPreloader.loadCachedAssets('map_assets');
+      
       const response = await levelService.getLevelPreview(levelId);
+
       
       if (!response.success) {
         throw new Error(response.message || 'Failed to fetch level preview');
       }
       
       console.log('📊 Level preview response:', response);
-      return response;
+      
+      const transformedData = transformLevelPreviewWithCache(response.data);
+      
+      return { ...response, data: transformedData };
       
     } catch (err) {
       console.error('❌ Error fetching level preview:', err);
@@ -53,6 +63,38 @@ export const useLevelData = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const transformLevelPreviewWithCache = (previewData) => {
+    if (!previewData) return previewData;
+
+    const transformed = { ...previewData };
+
+    // Transform enemy avatar
+    if (transformed.enemy?.enemy_avatar) {
+      const cachedPath = universalAssetPreloader.getCachedAssetPath(transformed.enemy.enemy_avatar);
+      if (cachedPath !== transformed.enemy.enemy_avatar) {
+        console.log(`📦 Using cached enemy avatar: ${transformed.enemy.enemy_avatar.slice(-30)}`);
+        transformed.enemy = {
+          ...transformed.enemy,
+          enemy_avatar: cachedPath
+        };
+      }
+    }
+
+    // Transform character avatar
+    if (transformed.character?.character_avatar) {
+      const cachedPath = universalAssetPreloader.getCachedAssetPath(transformed.character.character_avatar);
+      if (cachedPath !== transformed.character.character_avatar) {
+        console.log(`📦 Using cached character avatar: ${transformed.character.character_avatar.slice(-30)}`);
+        transformed.character = {
+          ...transformed.character,
+          character_avatar: cachedPath
+        };
+      }
+    }
+
+    return transformed;
   };
 
   // Get levels by map ID

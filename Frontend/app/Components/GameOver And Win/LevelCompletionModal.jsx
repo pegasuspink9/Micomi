@@ -17,6 +17,7 @@ import {
 import { Image } from 'expo-image';
 import { Image as RNImage } from 'react-native';
 import { soundManager } from '../Actual Game/Sounds/UniversalSoundManager'; 
+import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
 
 // Import Reanimated
 import Reanimated, { 
@@ -50,8 +51,6 @@ const NumberCounter = ({ value, start, duration = 2500 }) => {
     });
   }, [start, value, duration]);
 
-  // Use a derived value or simple text update
-  // Reanimated Text component handles the updates on UI thread
   return (
     <ReanimatedTextInput
       style={styles.rewardValue}
@@ -59,7 +58,7 @@ const NumberCounter = ({ value, start, duration = 2500 }) => {
         text: Math.floor(animatedValue.value).toString()
       }))}
       editable={false}
-      value={Math.floor(animatedValue.value).toString()} // Fallback
+      value={Math.floor(animatedValue.value).toString()}
     />
   );
 };
@@ -70,34 +69,6 @@ const ReanimatedTextInput = Reanimated.createAnimatedComponent(
     return <Text ref={ref} {...props}>{props.value}</Text>;
   })
 );
-// Actually, for simple text updates, a custom component is better to avoid TextInput overhead
-// But for simplicity in this snippet, let's use a simpler approach compatible with standard Text
-const AnimatedText = ({ style, text }) => {
-  return (
-    <Reanimated.Text style={style}>
-      {text}
-    </Reanimated.Text>
-  );
-};
-const ReanimatedCounterText = ({ style, sharedValue }) => {
-  const animatedProps = useAnimatedStyle(() => {
-    return {
-      // This is a hack for some RN versions, but standard way is Reanimated.Text with text prop
-      // or using a TextInput. Let's use the TextInput trick which is robust.
-    };
-  });
-  
-  // Robust Reanimated Text implementation
-  const [displayValue, setDisplayValue] = useState(0);
-  
-  Reanimated.useDerivedValue(() => {
-    const val = Math.floor(sharedValue.value);
-    runOnJS(setDisplayValue)(val);
-  });
-
-  return <Text style={style}>{displayValue}</Text>;
-};
-
 
 const LevelCompletionModal = ({
   visible,
@@ -107,11 +78,11 @@ const LevelCompletionModal = ({
   completionRewards,
   nextLevel,
   isLoading, 
-  victoryAudioUrl
+  victoryAudioUrl,
+  victoryImageUrl
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [imageReady, setImageReady] = useState(false);
-  const [preloadedImages] = useState(new Map());
 
   //  Triggers
   const [startCoinCount, setStartCoinCount] = useState(false);
@@ -136,7 +107,6 @@ const LevelCompletionModal = ({
     }
   }, [visible, victoryAudioUrl]);
 
-
   //  FIXED: Round sprite size to integer to prevent sub-pixel flickering
   const SPRITE_SIZE = Math.round(scale(358));
   const SPRITE_COLUMNS = 6;
@@ -145,46 +115,77 @@ const LevelCompletionModal = ({
   const FRAME_DURATION = 50;
 
   const frameIndex = useSharedValue(0);
-   const animationUrls = [
-    'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb1.png',
-    'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb2.png',
-    'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/micomiceleb3.png'
-  ];
 
-   const [animationUrl, setAnimationUrl] = useState(() => animationUrls[Math.floor(Math.random() * animationUrls.length)]);
+  //  FIXED: Use backend image directly, no fallback arrays
+  const [animationUrl, setAnimationUrl] = useState(null);
 
-
-  // ========== Image Preloading ==========
-  const prefetchWithCache = useCallback(async () => {
-    if (!animationUrl) return;
-    try {
-      if (preloadedImages.has(animationUrl)) {
-        setImageReady(true);
-        return;
-      }
-      await RNImage.prefetch(animationUrl);
-      preloadedImages.set(animationUrl, true);
-      setImageReady(true);
-    } catch (err) {
-      console.warn(`Celebration prefetch failed:`, err);
-    }
-  }, [animationUrl, preloadedImages]);
-
+  //  FIXED: Set image URL from backend prop
   useEffect(() => {
-    let mounted = true;
-    setImageReady(false);
-    if (!animationUrl) return;
-    if (preloadedImages.has(animationUrl)) {
-      if (mounted) setImageReady(true);
+    console.log('🏆 LevelCompletion victoryImageUrl received:', victoryImageUrl);
+    
+    if (victoryImageUrl && typeof victoryImageUrl === 'string') {
+      // Try to get cached path first
+      const cached = universalAssetPreloader.getCachedAssetPath(victoryImageUrl);
+      console.log('🏆 LevelCompletion cached path:', cached);
+      setAnimationUrl(cached);
+      
+      // If it's a cached local file, it's ready immediately
+      if (cached && cached.startsWith('file://')) {
+        console.log('🏆 LevelCompletion image is cached locally, ready immediately');
+        setImageReady(true);
+      } else {
+        // Need to load from remote URL
+        console.log('🏆 LevelCompletion image needs to be loaded from remote:', cached);
+        setImageReady(false);
+      }
+    } else {
+      console.warn('🏆 LevelCompletion: No victoryImageUrl provided!');
+      setAnimationUrl(null);
+      setImageReady(false);
+    }
+  }, [victoryImageUrl]);
+
+  // ========== Image Loading ==========
+  useEffect(() => {
+    if (!animationUrl) {
+      console.log('🏆 LevelCompletion: No animationUrl set yet');
+      setImageReady(false);
       return;
     }
-    prefetchWithCache();
+
+    // If it's already a local file path, it's ready
+    if (animationUrl.startsWith('file://')) {
+      console.log('🏆 LevelCompletion image is cached locally, ready immediately');
+      setImageReady(true);
+      return;
+    }
+
+    // Otherwise prefetch remote URL
+    let mounted = true;
+    setImageReady(false);
+    
+    console.log('🏆 LevelCompletion: Prefetching remote image:', animationUrl);
+    
+    (async () => {
+      try {
+        await RNImage.prefetch(animationUrl);
+        if (mounted) {
+          console.log('🏆 LevelCompletion: Image prefetched successfully');
+          setImageReady(true);
+        }
+      } catch (err) {
+        console.warn(`🏆 LevelCompletion prefetch failed:`, err);
+        // Still set ready to allow rendering with expo-image handling
+        if (mounted) setImageReady(true);
+      }
+    })();
+    
     return () => { mounted = false; };
-  }, [animationUrl, prefetchWithCache]);
+  }, [animationUrl]);
 
   // ========== Sprite Animation Logic ==========
   useEffect(() => {
-    if (visible && imageReady) {
+    if (visible && imageReady && animationUrl) {
       frameIndex.value = 0;
       frameIndex.value = withRepeat(
         withTiming(TOTAL_FRAMES - 1, {
@@ -197,7 +198,7 @@ const LevelCompletionModal = ({
       cancelAnimation(frameIndex);
       frameIndex.value = 0;
     }
-  }, [visible, imageReady, TOTAL_FRAMES, FRAME_DURATION]);
+  }, [visible, imageReady, animationUrl, TOTAL_FRAMES, FRAME_DURATION]);
 
   const spriteSheetStyle = useAnimatedStyle(() => {
     const index = Math.floor(frameIndex.value);
@@ -214,8 +215,6 @@ const LevelCompletionModal = ({
   // ========== ENTRANCE SEQUENCE ==========
   useEffect(() => {
     if (visible) {
-      setAnimationUrl(animationUrls[Math.floor(Math.random() * animationUrls.length)]);
-      
       // Reset triggers
       setStartCoinCount(false);
       setStartPointCount(false);
@@ -283,6 +282,7 @@ const LevelCompletionModal = ({
   }, []);
 
   const handleImageLoadEnd = useCallback(() => {
+    console.log('🏆 LevelCompletion: Image loaded successfully');
     setImageReady(true);
   }, []);
 
@@ -369,7 +369,8 @@ const LevelCompletionModal = ({
                   spriteSheetStyle
                 ]}
               >
-                {animationUrl && imageReady ? (
+                {/*  FIXED: Only render if we have animationUrl */}
+                {animationUrl ? (
                   <Image
                     source={{ uri: animationUrl }}
                     style={styles.spriteImage}
@@ -380,7 +381,9 @@ const LevelCompletionModal = ({
                     priority="high"
                   />
                 ) : (
-                  <View style={[styles.spriteImage, { backgroundColor: 'transparent' }]} />
+                  <View style={[styles.spriteImage, { backgroundColor: 'transparent', justifyContent: 'center', alignItems: 'center' }]}>
+                    <ActivityIndicator size="large" color="#fff" />
+                  </View>
                 )}
               </Reanimated.View>
             </View>
@@ -431,7 +434,6 @@ const LevelCompletionModal = ({
                   style={styles.rewardIcon}
                   resizeMode="contain"
                 />
-                {/* ✅ FIXED: Use NumberCounter instead of ReanimatedCounterText */}
                 <NumberCounter value={completionRewards.currentExpPoints} start={startExpCount} duration={1500} />
               </Reanimated.View>
             </View>
@@ -623,88 +625,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     backgroundColor: 'transparent',
     marginBottom: scale(20),
-  },
-  outerFrame: {
-    flex: 1,
-    backgroundColor: '#b4bdc6ff',
-    borderRadius: scale(12),
-    padding: scale(2),
-    shadowColor: '#052a53ff',
-    shadowOffset: { width: 0, height: scale(12) },
-    shadowOpacity: 0.6,
-    shadowRadius: scale(16),
-    elevation: 20,
-    borderTopWidth: scale(3),
-    borderTopColor: '#2c5282',
-    borderLeftWidth: scale(2),
-    borderLeftColor: '#2c5282',
-    borderBottomWidth: scale(5),
-    borderBottomColor: '#2c5282',
-    borderRightWidth: scale(4),
-    borderRightColor: '#2c5282',
-  },
-  innerContent: {
-    flex: 1,
-    backgroundColor: '#052a53ff',
-    borderRadius: scale(18),
-    padding: scale(8),
-    shadowColor: '#1a365d',
-    shadowOffset: { width: 0, height: scale(8) },
-    shadowOpacity: 0.5,
-    shadowRadius: scale(12),
-    elevation: 18,
-  },
-  innerBorder: {
-    flex: 1,
-    backgroundColor: '#000000fc',
-    borderRadius: scale(12),
-    position: 'relative',
-    overflow: 'hidden',
-    shadowOpacity: 0.3,
-    shadowRadius: scale(6),
-    elevation: 8,
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backlightOverlay: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(135, 206, 235, 0.15)',
-    borderRadius: scale(12),
-    pointerEvents: 'none',
-  },
-  topHighlight: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0,
-    height: scale(30),
-    borderTopLeftRadius: scale(12),
-    borderTopRightRadius: scale(12),
-    pointerEvents: 'none',
-  },
-  bottomShadow: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    height: scale(24),
-    borderBottomLeftRadius: scale(12),
-    borderBottomRightRadius: scale(12),
-    pointerEvents: 'none',
-  },
-  leftHighlight: {
-    position: 'absolute',
-    top: 0, left: 0, bottom: 0,
-    width: scale(16),
-    borderTopLeftRadius: scale(12),
-    borderBottomLeftRadius: scale(12),
-    pointerEvents: 'none',
-  },
-  rightShadow: {
-    position: 'absolute',
-    top: 0, right: 0, bottom: 0,
-    width: scale(12),
-    borderTopRightRadius: scale(12),
-    borderBottomRightRadius: scale(12),
-    pointerEvents: 'none',
   },
   floatingButtonsArea: {
     width: '100%',

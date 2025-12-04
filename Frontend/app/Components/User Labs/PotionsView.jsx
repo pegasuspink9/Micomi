@@ -19,50 +19,32 @@ import Reanimated, {
   cancelAnimation
 } from 'react-native-reanimated';
 import { usePlayerProfile } from '../../hooks/usePlayerProfile';
-import {
-  scale,
-  wp,
-  hp,
-  gameScale,
-  SCREEN,
-} from '../Responsiveness/gameResponsive';
-import AssetDownloadProgress from '../../Components/RoadMap/LoadingState/assetDownloadProgress';
+import { wp, gameScale } from '../Responsiveness/gameResponsive';
 import PotionDetailModal from './Badge Modal/PotionDetailModal';
 
 export default function PotionsView() {
   const router = useRouter();
   const playerId = 11;
-  const { playerData, loading, assetsLoading, assetsProgress } = usePlayerProfile(playerId);
+  //  Simplified - removed assetsLoading and assetsProgress (no longer needed)
+  const { playerData, loading } = usePlayerProfile(playerId);
   const [selectedPotion, setSelectedPotion] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
 
+  //  Simplified loading state - assets are already cached from Map API
   if (loading || !playerData) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={styles.loadingText}>Loading potions...</Text>
+        <LinearGradient
+          colors={['#2c1810', '#4a2c1a', '#3d2115', '#5c3a22', '#2c1810']}
+          locations={[0, 0.25, 0.5, 0.75, 1]}
+          style={styles.backgroundContainer}
+        >
+          <View style={styles.backgroundOverlay} />
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Loading potions...</Text>
+          </View>
+        </LinearGradient>
       </SafeAreaView>
-    );
-  }
-
-  if (assetsLoading) {
-    return (
-      <>
-        <SafeAreaView style={styles.container}>
-          {/* Woody cabinet gradient background for loading */}
-          <LinearGradient
-            colors={['#2c1810', '#4a2c1a', '#3d2115', '#5c3a22', '#2c1810']}
-            locations={[0, 0.25, 0.5, 0.75, 1]}
-            style={styles.backgroundContainer}
-          >
-            <View style={styles.backgroundOverlay} />
-          </LinearGradient>
-        </SafeAreaView>
-        <AssetDownloadProgress
-          visible={assetsLoading}
-          progress={assetsProgress}
-          currentAsset={assetsProgress.currentAsset}
-        />
-      </>
     );
   }
 
@@ -96,33 +78,30 @@ export default function PotionsView() {
           <View style={styles.headerCurve} />
         </View>
 
-
         <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           {/* Summary */}
-           <View style={styles.summarySection}>
+          <View style={styles.summarySection}>
             <Text style={styles.summaryLabel}>Total Potions:</Text>
             <Text style={styles.summaryValue}>{getTotalPotions()}</Text>
           </View>
 
           <View style={styles.potionsGrid}>
-            {playerData.potions.map((potion, index) => {
-              return (
-                <View key={potion.id} style={styles.potionGridItem}>
-                  <TouchableOpacity 
-                    onPress={() => handlePotionPress(potion)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.potionBorderOuter}>
-                      <View style={styles.potionBorderMiddle}>
-                        <View style={styles.potionContent}>
-                          <PotionCardAnimated potion={potion} />
-                        </View>
+            {playerData.potions.map((potion) => (
+              <View key={potion.id} style={styles.potionGridItem}>
+                <TouchableOpacity 
+                  onPress={() => handlePotionPress(potion)}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.potionBorderOuter}>
+                    <View style={styles.potionBorderMiddle}>
+                      <View style={styles.potionContent}>
+                        <PotionCardAnimated potion={potion} />
                       </View>
                     </View>
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
+                  </View>
+                </TouchableOpacity>
+              </View>
+            ))}
           </View>
 
           <View style={{ height: gameScale(20) }} />
@@ -144,8 +123,7 @@ export default function PotionsView() {
   );
 }
 
-
-// UPDATED: Animated Potion Card with Sprite Animation - Fully Responsive
+// Animated Potion Card with Sprite Animation
 const PotionCardAnimated = ({ potion }) => {
   const SPRITE_COLUMNS = 6;
   const SPRITE_ROWS = 4;
@@ -216,61 +194,6 @@ const PotionCardAnimated = ({ potion }) => {
   );
 };
 
-// UPDATED: Modal Sprite Animation - Fully Responsive
-const ModalPotionSprite = ({ icon }) => {
-  const SPRITE_COLUMNS = 6;
-  const SPRITE_ROWS = 4;
-  const TOTAL_FRAMES = 24;
-  const FRAME_DURATION = 40;
-  const FRAME_SIZE = gameScale(120); // Larger for modal
-
-  const frameIndex = useSharedValue(0);
-
-  useEffect(() => {
-    frameIndex.value = withRepeat(
-      withTiming(TOTAL_FRAMES - 1, {
-        duration: TOTAL_FRAMES * FRAME_DURATION,
-        easing: Easing.linear,
-      }),
-      -1,
-      false
-    );
-    return () => cancelAnimation(frameIndex);
-  }, []);
-
-  const spriteSheetStyle = useAnimatedStyle(() => {
-    const index = Math.floor(frameIndex.value);
-    const col = index % SPRITE_COLUMNS;
-    const row = Math.floor(index / SPRITE_COLUMNS);
-    return {
-      transform: [
-        { translateX: -col * FRAME_SIZE },
-        { translateY: -row * FRAME_SIZE },
-      ],
-    };
-  });
-
-  return (
-    <View style={[styles.modalSpriteContainer, { width: FRAME_SIZE, height: FRAME_SIZE }]}>
-      <Reanimated.View style={[
-        styles.spriteSheet,
-        {
-          width: FRAME_SIZE * SPRITE_COLUMNS,
-          height: FRAME_SIZE * SPRITE_ROWS
-        },
-        spriteSheetStyle
-      ]}>
-        <Image
-          source={{ uri: icon }}
-          style={styles.spriteImage}
-          resizeMode="stretch"
-        />
-      </Reanimated.View>
-    </View>
-  );
-};
-
-// UPDATED: All styles now use gameScale for full responsiveness
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -285,18 +208,20 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.54)', 
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   loadingText: {
     color: 'white',
     fontSize: gameScale(14),
     textAlign: 'center',
-    marginTop: gameScale(50),
   },
-  
-  headerContainer:{
+  headerContainer: {
     position: 'relative',
     zIndex: 10,
   },
-  // Header - Responsive
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -304,11 +229,8 @@ const styles = StyleSheet.create({
     paddingTop: gameScale(6),
     paddingBottom: gameScale(130),
     backgroundColor: '#3d2115',
-    borderBottomLeftRadius: gameScale(0),
-    borderBottomRightRadius: gameScale(0),
   },
-
-    headerCurve: {
+  headerCurve: {
     position: 'absolute',
     bottom: gameScale(-20),
     left: '50%',
@@ -320,16 +242,13 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: gameScale(60),
     zIndex: 5,
   },
-  
-   footerContainer: {
+  footerContainer: {
     position: 'relative',
     zIndex: 10,
   },
   footer: {
     height: gameScale(90),
     backgroundColor: '#3d2115',
-    borderTopLeftRadius: gameScale(0),
-    borderTopRightRadius: gameScale(0),
   },
   footerCurve: {
     position: 'absolute',
@@ -343,9 +262,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: gameScale(60),
     zIndex: 5,
   },
-
-
-   backButton: {
+  backButton: {
     position: 'absolute',
     top: gameScale(20),   
     left: gameScale(20),   
@@ -361,7 +278,7 @@ const styles = StyleSheet.create({
     borderColor: 'white',
     borderRadius: gameScale(6),
   },
-   headerTitle: {
+  headerTitle: {
     position: 'absolute',
     top: gameScale(80),
     transform: [{ translateX: gameScale(36) }], 
@@ -371,38 +288,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     zIndex: 10,
   },
-   headerSpacer: {
-    width: gameScale(50), 
-  },
-  headerStats: {
-    backgroundColor: 'rgba(46, 231, 255, 0.2)',
-    paddingHorizontal: gameScale(12),
-    paddingVertical: gameScale(8),
-    borderRadius: gameScale(8),
-    borderWidth: gameScale(1),
-    borderColor: '#2ee7ffff',
-  },
-  statsText: {
-    color: '#2ee7ffff',
-    fontSize: gameScale(14),
-    fontFamily: 'FunkySign',
-    fontWeight: 'bold',
-  },
-  
-  // Scroll Container - Responsive
   scrollContainer: {
     flex: 1,
     paddingHorizontal: gameScale(12),
   },
-  
-  // Summary Section - Responsive
-  summarySection: {
-    alignItems: 'center',
-    paddingVertical: gameScale(16),
-    marginTop: gameScale(80),
-  },
-
-
   summarySection: {
     alignItems: 'center',
     paddingVertical: gameScale(16),
@@ -426,14 +315,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: gameScale(2), height: gameScale(2) },
     textShadowRadius: gameScale(5),
   },
-
-  summarySubtext: {
-    fontSize: gameScale(12),
-    color: '#888',
-    fontFamily: 'DynaPuff',
-  },
-
-  // Potions Grid - 2 columns, centered with gap, Responsive
   potionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -446,8 +327,6 @@ const styles = StyleSheet.create({
     width: '45%',
     marginBottom: gameScale(8),
   },
-  
-  // Potion Border Styles - Responsive
   potionBorderOuter: {
     backgroundColor: '#8b4513',
     borderWidth: gameScale(2),
@@ -480,8 +359,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
   },
-
-  // Potion Card Styles - Responsive
   potionCard: {
     alignItems: 'center',
     width: '100%',
@@ -514,8 +391,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
-  
-  // Sprite Styles - Responsive
   spriteContainer: {
     overflow: 'hidden',
     shadowColor: '#000000',
@@ -524,15 +399,11 @@ const styles = StyleSheet.create({
     shadowRadius: gameScale(3),
     elevation: 3,
   },
-  spriteSheet: {
-    // Dynamic size set in-line
-  },
+  spriteSheet: {},
   spriteImage: {
     width: '100%',
     height: '100%',
   },
-  
-  // Potion Count Badge - Responsive
   potionCountBadge: {
     position: 'absolute',
     top: gameScale(-5),
@@ -549,8 +420,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontFamily: 'DynaPuff',
   },
-  
-  // Potion Name - Responsive
   potionName: {
     fontSize: gameScale(15),
     color: '#f4e7d1ff',
@@ -561,108 +430,5 @@ const styles = StyleSheet.create({
     textShadowRadius: gameScale(3),
     maxWidth: gameScale(90),
     marginTop: gameScale(4),
-  },
-
-  // Modal Styles - Responsive
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    backgroundColor: 'rgba(27, 98, 124, 0.95)',
-    borderRadius: gameScale(16),
-    width: wp(85),
-    maxHeight: '80%',
-    borderWidth: gameScale(2),
-    borderColor: '#dfdfdfff',
-  },
-  modalHeader: {
-    alignItems: 'center',
-    padding: gameScale(16),
-    borderBottomWidth: gameScale(1),
-    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
-    borderTopLeftRadius: gameScale(16),
-    borderTopRightRadius: gameScale(16),
-  },
-  modalSpriteContainer: {
-    overflow: 'hidden',
-    marginBottom: gameScale(12),
-    shadowColor: '#000000',
-    shadowOffset: { width: gameScale(2), height: gameScale(4) },
-    shadowOpacity: 0.5,
-    shadowRadius: gameScale(6),
-    elevation: 5,
-  },
-  modalTitle: {
-    fontSize: gameScale(18),
-    color: 'white',
-    fontFamily: 'MusicVibes',
-    fontWeight: 'bold',
-  },
-  modalContent: {
-    padding: gameScale(16),
-  },
-  modalDescription: {
-    fontSize: gameScale(14),
-    color: '#ccc',
-    fontFamily: 'DynaPuff',
-    textAlign: 'center',
-    marginBottom: gameScale(16),
-  },
-  
-  // Details Container - Responsive
-  detailsContainer: {
-    marginBottom: gameScale(16),
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: gameScale(8),
-  },
-  detailLabel: {
-    fontSize: gameScale(14),
-    color: '#888',
-    fontFamily: 'FunkySign',
-  },
-  detailValue: {
-    fontSize: gameScale(14),
-    color: 'white',
-    fontFamily: 'FunkySign',
-    fontWeight: 'bold',
-  },
-  
-  // Modal Buttons - Responsive
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: gameScale(10),
-  },
-  cancelButton: {
-    flex: 0.4,
-    backgroundColor: '#666',
-    paddingVertical: gameScale(12),
-    borderRadius: gameScale(8),
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    color: 'white',
-    fontSize: gameScale(14),
-    fontFamily: 'FunkySign',
-    fontWeight: 'bold',
-  },
-  useButton: {
-    flex: 0.55,
-    paddingVertical: gameScale(12),
-    borderRadius: gameScale(8),
-    alignItems: 'center',
-  },
-  useButtonText: {
-    color: 'white',
-    fontSize: gameScale(14),
-    fontFamily: 'FunkySign',
-    fontWeight: 'bold',
   },
 });

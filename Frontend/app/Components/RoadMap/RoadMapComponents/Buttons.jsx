@@ -1,9 +1,10 @@
 import { View, Image, StyleSheet, Dimensions, ImageBackground, Pressable, Animated, Text } from 'react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { DEFAULT_THEME } from '../MapLevel/MapDatas/mapData';
 import LevelModal from '../../Actual Game/Level Intro and Outro/LevelModal';
 import { useLevelData } from '../../../hooks/useLevelData';
-import { mapAssetPreloader } from '../../../services/preloader/mapAssetPreloader'; 
+import { universalAssetPreloader } from '../../../services/preloader/universalAssetPreloader';
+
 
 const { height: defaultHeight, width: defaultWidth } = Dimensions.get('window');
 
@@ -53,21 +54,44 @@ export default function LevelButtons({
   const [levelPreviewData, setLevelPreviewData] = useState(null);
 
   const getCachedAssetUrl = (url) => {
-    return mapAssetPreloader.getCachedAssetPath(url);
+    return universalAssetPreloader.getCachedAssetPath(url);
   };
 
- const ICON_IMAGES = {
+ const ICON_IMAGES = useMemo(() => ({
     enemyButton: getCachedAssetUrl(theme?.icons?.enemyButton || DEFAULT_THEME.icons.enemyButton),
     micomiButton: getCachedAssetUrl(theme?.icons?.micomiButton || DEFAULT_THEME.icons.micomiButton),
     shopButton: getCachedAssetUrl(theme?.icons?.shopButton || DEFAULT_THEME.icons.shopButton),
     bossButton: getCachedAssetUrl(theme?.icons?.bossButton || DEFAULT_THEME.icons.bossButton),
-  };
+  }), [theme?.icons]);
 
 
-    const BUTTON_IMAGES = {
+  const BUTTON_IMAGES = useMemo(() => ({
     unlockedButton: getCachedAssetUrl(theme?.buttons?.unlockedButton || DEFAULT_THEME.buttons.unlockedButton),
     lockedButton: getCachedAssetUrl(theme?.buttons?.lockedButton || DEFAULT_THEME.buttons.lockedButton)
-  };
+  }), [theme?.buttons]);
+
+  const cachedStoneImage = useMemo(() => 
+    getCachedAssetUrl(theme?.stones?.stoneImage || DEFAULT_THEME.stones.stoneImage), 
+    [theme?.stones?.stoneImage]
+  );
+
+  const cachedButtonBackground = useMemo(() => 
+    getCachedAssetUrl(theme?.buttons?.buttonBackground), 
+    [theme?.buttons?.buttonBackground]
+  );
+
+  const cachedCommentBackground = useMemo(() => 
+    getCachedAssetUrl(theme?.floatingComment?.commentBackground || DEFAULT_THEME.floatingComment.commentBackground), 
+    [theme?.floatingComment?.commentBackground]
+  );
+
+  const cachedSignageBackground = useMemo(() => 
+    getCachedAssetUrl(theme?.floatingComment?.signageBackground), 
+    [theme?.floatingComment?.signageBackground]
+  );
+  
+
+
 
   useEffect(() => {
     const animation = Animated.loop(
@@ -115,7 +139,7 @@ export default function LevelButtons({
   });
 
   // Handle level button press - show modal instead of direct navigation
-    const handleLevelButtonPress = async (level) => {
+  const handleLevelButtonPress = async (level) => {
     if (level.is_unlocked === false) {
       console.log('Level is locked:', level.level_number);
       return;
@@ -128,28 +152,69 @@ export default function LevelButtons({
     });
 
     try {
+      //  Load cached assets into memory (fast - already downloaded)
+      await Promise.all([
+        universalAssetPreloader.loadCachedAssets('game_animations'),
+        universalAssetPreloader.loadCachedAssets('game_images'),
+        universalAssetPreloader.loadCachedAssets('map_theme_assets'),
+      ]);
+
       // Fetch level preview data
       const previewResponse = await getLevelPreview(level.level_id, playerId);
       
       if (previewResponse.success) {
-        setLevelPreviewData(previewResponse.data);
-        setSelectedLevelId(level.level_id); // This is the API levelId
+        //  Transform avatar URLs to use cached paths
+        const transformedData = transformPreviewDataWithCache(previewResponse.data);
+        setLevelPreviewData(transformedData);
+        setSelectedLevelId(level.level_id);
         setModalVisible(true);
       } else {
         console.error('Failed to fetch level preview:', previewResponse.error);
-        // Fallback: use existing level data for modal
-        setLevelPreviewData(level);
-        setSelectedLevelId(level.level_id); // Use API levelId
+        const transformedLevel = transformPreviewDataWithCache(level);
+        setLevelPreviewData(transformedLevel);
+        setSelectedLevelId(level.level_id);
         setModalVisible(true);
       }
     } catch (error) {
       console.error('Error fetching level preview:', error);
-      // Fallback: use existing level data for modal
-      setLevelPreviewData(level);
-      setSelectedLevelId(level.level_id); // Use API levelId
+      const transformedLevel = transformPreviewDataWithCache(level);
+      setLevelPreviewData(transformedLevel);
+      setSelectedLevelId(level.level_id);
       setModalVisible(true);
     }
   };
+
+const transformPreviewDataWithCache = (data) => {
+  if (!data) return data;
+
+  const transformed = { ...data };
+
+  // Transform enemy avatar
+  if (transformed.enemy?.enemy_avatar) {
+    const cachedPath = universalAssetPreloader.getCachedAssetPath(transformed.enemy.enemy_avatar);
+    if (cachedPath !== transformed.enemy.enemy_avatar) {
+      console.log(`📦 Buttons: Using cached enemy avatar`);
+      transformed.enemy = {
+        ...transformed.enemy,
+        enemy_avatar: cachedPath
+      };
+    }
+  }
+
+  // Transform character avatar
+  if (transformed.character?.character_avatar) {
+    const cachedPath = universalAssetPreloader.getCachedAssetPath(transformed.character.character_avatar);
+    if (cachedPath !== transformed.character.character_avatar) {
+      console.log(`📦 Buttons: Using cached character avatar`);
+      transformed.character = {
+        ...transformed.character,
+        character_avatar: cachedPath
+      };
+    }
+  }
+
+  return transformed;
+};
 
   // Handle modal close
   const handleModalClose = () => {
@@ -252,11 +317,12 @@ export default function LevelButtons({
 
   return (
     <>
-       <View style={styles.buttonContainer}>
+      <View style={styles.buttonContainer}>
+        {/*  Stones using cached image */}
         {stonePositions.map((position, index) => (
           <Image
             key={`stone-${index}`}
-            source={{ uri: getCachedAssetUrl(theme?.stones?.stoneImage || DEFAULT_THEME.stones.stoneImage) }} // ✅ Use cached asset
+            source={{ uri: cachedStoneImage }}
             style={[
               styles.stones,
               {
@@ -278,8 +344,6 @@ export default function LevelButtons({
           const isUnlocked = level.is_unlocked === true;
           const isLocked = level.is_unlocked === false;
 
-          console.log(`🎯 Level ${level.level_number}: type=${level.level_type}, unlocked=${level.is_unlocked}, icon=${iconType}, button=${buttonType}`);
-
           return (
             <Pressable
               key={level.level_id || index}
@@ -295,8 +359,9 @@ export default function LevelButtons({
               onPress={() => handleLevelButtonPress(level)}
               disabled={isLocked}
             >
+              {/*  Button background using cached image */}
               <ImageBackground 
-                source={{ uri: getCachedAssetUrl(theme?.buttons?.buttonBackground) }}
+                source={{ uri: cachedButtonBackground }}
                 style={[styles.buttonImageBackground, theme?.buttons?.buttonBackgroundStyle]}
                 resizeMode="contain"
               >
@@ -312,12 +377,13 @@ export default function LevelButtons({
                 />
               </ImageBackground>
 
+              {/*  Signage using cached image */}
               {level.level_number && 
                level.level_number !== 'null' && 
                level.level_number.toString().trim() !== '' && 
                level.level_number.toString().trim().toLowerCase() !== 'none' && (
                 <ImageBackground
-                  source={{ uri: getCachedAssetUrl(theme.floatingComment.signageBackground) }}
+                  source={{ uri: cachedSignageBackground }}
                   style={[
                     styles.signage,
                     {
@@ -334,7 +400,7 @@ export default function LevelButtons({
                     style={[
                       styles.tagsText, 
                       { fontSize: responsive.textSize },
-                      theme?.floatingComment.textStyle || {}
+                      theme?.floatingComment?.textStyle || {}
                     ]} 
                   >
                     {level.level_number}
@@ -342,6 +408,7 @@ export default function LevelButtons({
                 </ImageBackground>
               )}
 
+              {/*  Floating icon using cached image */}
               {isUnlocked && (
                 <Animated.View
                   style={[
@@ -350,7 +417,7 @@ export default function LevelButtons({
                   ]}
                 >
                   <ImageBackground 
-                    source={{ uri: getCachedAssetUrl(theme?.floatingComment?.commentBackground || DEFAULT_THEME.floatingComment.commentBackground) }} 
+                    source={{ uri: cachedCommentBackground }} 
                     style={[styles.floatComment, theme?.floatingComment?.commentBackgroundStyle || {}]}
                     resizeMode="contain"
                   >
@@ -367,7 +434,6 @@ export default function LevelButtons({
         })}
       </View>
 
-      {/* Level Modal */}
       <LevelModal
         visible={modalVisible}
         onClose={handleModalClose}

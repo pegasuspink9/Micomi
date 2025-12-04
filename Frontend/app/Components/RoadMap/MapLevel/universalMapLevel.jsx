@@ -1,6 +1,5 @@
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useEffect, useState } from "react";
 import { View, StyleSheet, ImageBackground, ScrollView, Dimensions, Text } from "react-native";
-import { useState } from "react";
 import LevelButtons from "../RoadMapComponents/Buttons";
 import LottieView from "lottie-react-native";
 import { useLocalSearchParams } from "expo-router";
@@ -10,6 +9,7 @@ import BushAnimations from '../RoadMapComponents/MapSpecialAnimations/Bush Effec
 import PopAnimations from '../RoadMapComponents/MapSpecialAnimations/Lava Effect/lavaPopAnimation';
 import SnowAndAutumnAnimations from "../RoadMapComponents/MapSpecialAnimations/Snow And Autumn Effect/snowAndAutumnFall";
 import { useNavigation } from '@react-navigation/native';
+import { universalAssetPreloader } from '../../../services/preloader/universalAssetPreloader';
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
@@ -27,7 +27,52 @@ export default function UniversalMapLevel() {
     return MAP_THEMES[mapName] || DEFAULT_THEME;
   };
 
-  const theme = getCurrentTheme();
+  const theme = useMemo(() => {
+    const baseTheme = MAP_THEMES[mapName] || DEFAULT_THEME;
+    
+    // Transform theme URLs to cached paths
+    return {
+      ...baseTheme,
+      backgrounds: baseTheme.backgrounds ? {
+        ...baseTheme.backgrounds,
+        topBackground: universalAssetPreloader.getCachedAssetPath(baseTheme.backgrounds.topBackground),
+        repeatingBackground: universalAssetPreloader.getCachedAssetPath(baseTheme.backgrounds.repeatingBackground),
+        lottieBackground: baseTheme.backgrounds.lottieBackground, // Keep lottie as-is
+      } : baseTheme.backgrounds,
+      buttons: baseTheme.buttons ? {
+        ...baseTheme.buttons,
+        unlockedButton: universalAssetPreloader.getCachedAssetPath(baseTheme.buttons.unlockedButton),
+        lockedButton: universalAssetPreloader.getCachedAssetPath(baseTheme.buttons.lockedButton),
+        buttonBackground: universalAssetPreloader.getCachedAssetPath(baseTheme.buttons.buttonBackground),
+      } : baseTheme.buttons,
+      stones: baseTheme.stones ? {
+        ...baseTheme.stones,
+        stoneImage: universalAssetPreloader.getCachedAssetPath(baseTheme.stones.stoneImage),
+      } : baseTheme.stones,
+      floatingComment: baseTheme.floatingComment ? {
+        ...baseTheme.floatingComment,
+        commentBackground: universalAssetPreloader.getCachedAssetPath(baseTheme.floatingComment.commentBackground),
+        signageBackground: universalAssetPreloader.getCachedAssetPath(baseTheme.floatingComment.signageBackground),
+      } : baseTheme.floatingComment,
+      icons: baseTheme.icons ? {
+        ...baseTheme.icons,
+        enemyButton: universalAssetPreloader.getCachedAssetPath(baseTheme.icons.enemyButton),
+        micomiButton: universalAssetPreloader.getCachedAssetPath(baseTheme.icons.micomiButton),
+        shopButton: universalAssetPreloader.getCachedAssetPath(baseTheme.icons.shopButton),
+        bossButton: universalAssetPreloader.getCachedAssetPath(baseTheme.icons.bossButton),
+      } : baseTheme.icons,
+      colors: baseTheme.colors,
+    };
+  }, [mapName]);
+
+   useEffect(() => {
+    const loadCachedAssets = async () => {
+      await universalAssetPreloader.loadCachedAssets('map_theme_assets');
+    };
+    loadCachedAssets();
+  }, []);
+
+
 
   // Log the levels for debugging
   console.log('🎮 Levels loaded for map:', mapName, 'Count:', levels.length);
@@ -172,11 +217,10 @@ export default function UniversalMapLevel() {
           { marginTop: theme?.backgrounds?.topBackgroundPosition?.marginTop || 0 }
         ]}
         resizeMode="fill"
-        cache="force-cache"
-        priority="high" 
       />
     )), [backgroundCount, theme.backgrounds.repeatingBackground, theme?.backgrounds?.topBackgroundPosition?.marginTop]
   );
+  
 
   // Show loading screen while levels are loading
   if (loading) {
@@ -187,8 +231,7 @@ export default function UniversalMapLevel() {
     );
   }
 
-  // Show error message if there's an error and no levels
-  if (error && levels.length === 0) { // Changed from levelsError to error
+  if (error && levels.length === 0) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
         <Text style={{ color: '#fff', fontSize: 18 }}>Failed to load levels for {mapName}</Text>
@@ -208,7 +251,7 @@ export default function UniversalMapLevel() {
         scrollEventThrottle={100}
         showsVerticalScrollIndicator={false}
       >
-        {/* DYNAMIC Header Background from mapData */}
+        {/* Lottie Background (not cached - loaded from URL) */}
         <LottieView 
           source={{ uri: theme.backgrounds.lottieBackground }}
           autoPlay
@@ -218,9 +261,8 @@ export default function UniversalMapLevel() {
               top: theme?.backgrounds?.positions?.lottieTop || -250,
               left: theme?.backgrounds?.positions?.lottieLeft || 0,
               width: theme?.backgrounds?.positions?.lottieWidth || '120%',
-            }, {
-              ...theme?.backgrounds?.lottieBackgroundStyle
-            }
+            }, 
+            theme?.backgrounds?.lottieBackgroundStyle
           ]}
           loop={true}
           speed={1.5}
@@ -228,11 +270,10 @@ export default function UniversalMapLevel() {
           cacheComposition={true}
         />
 
+        {/*  Top Background using cached URL */}
         <View style={[
             styles.topBackground,
-            {
-              marginTop: theme?.backgrounds?.backgroundPosition?.marginTop || 0 
-            }
+            { marginTop: theme?.backgrounds?.backgroundPosition?.marginTop || 0 }
         ]}>
           <ImageBackground
               source={{ 
@@ -244,15 +285,14 @@ export default function UniversalMapLevel() {
           />
         </View>
         
-        {/* RENDER map-specific content */}
         {renderMapSpecificContent()}
 
-        {/* DYNAMIC Repeating Background from mapData */}
+        {/*  Repeating Background using cached URLs */}
         <View style={styles.backgroundContainer}>
           {backgroundSegments}
         </View>
 
-        {/* Level Buttons with Theme - Now using dynamic levels from backend */}
+        {/*  Level Buttons with cached theme */}
         <View style={styles.levelButtonsContainer}>
           <LevelButtons
             lessons={levels} 

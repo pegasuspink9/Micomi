@@ -1,7 +1,6 @@
 import { apiService } from './api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
 export const playerService = {
   // Get player profile data
   getPlayerProfile: async (playerId) => {
@@ -25,7 +24,6 @@ export const playerService = {
         throw new Error(response.message || 'Failed to select badge');
       }
       
-      // ✅ ADDED: Save timestamp on successful selection
       await AsyncStorage.setItem('badge_selection_updated', Date.now().toString());
       console.log('💾 Badge selection update saved to storage');
 
@@ -47,6 +45,7 @@ export const playerService = {
     }
   },
 
+  //  UPDATED: Include all raw URLs for cache transformation
   transformPlayerData: (apiData) => {
     const selectedCharacter = apiData.ownedCharacters?.find(char => char.is_selected);
 
@@ -54,45 +53,36 @@ export const playerService = {
       achievement_id: apiData.selectedBadge.achievement_id,
       achievement_name: apiData.selectedBadge.achievement_name,
       description: apiData.selectedBadge.description,
-      landscape_image: apiData.selectedBadge.landscape_image,
+      landscape_image: apiData.selectedBadge.landscape_image, //  Raw URL for cache lookup
       earned_at: apiData.selectedBadge.earned_at
     } : null;
     
+    //  Transform potions with raw URLs
     const transformedPotions = apiData.ownedPotions?.map(item => ({
       id: item.player_potion_id,
       name: playerService.getPotionDisplayName(item.potion.potion_type),
       count: item.quantity,
-      icon: item.potion.potion_url || playerService.getDefaultPotionIcon(item.potion.potion_type),
+      icon: item.potion.potion_url, //  Raw URL for cache lookup
       color: playerService.getPotionColor(item.potion.potion_type),
       type: item.potion.potion_type,
       description: item.potion.potion_description,
       price: item.potion.potion_price
     })) || [];
 
+    //  Transform badges with raw URLs from API
     const transformedBadges = apiData.playerAchievements?.map(achievement => ({
       id: achievement.achievement_id,
       name: achievement.achievement_name,
       description: achievement.description,
-      icon: achievement.badge_icon || playerService.getDefaultBadgeIcon(achievement.achievement_name),
+      icon: achievement.badge_icon, //  Raw URL for cache lookup
+      landscape_image: achievement.landscape_image, //  Raw URL for cache lookup
       earned: achievement.is_owned,
       earnedDate: achievement.earned_at ? new Date(achievement.earned_at).toISOString().split('T')[0] : null,
       conditions: achievement.conditions
     })) || [];
 
     // Transform quests data
-    const transformedQuests = apiData.playerQuests?.map(quest => ({
-      id: quest.quest_id,
-      title: quest.title,
-      description: quest.description,
-      progress: quest.current_value,
-      total: quest.target_value,
-      type: playerService.getQuestType(quest.objective_type),
-      reward_coins: quest.reward_coins,
-      reward_exp: quest.reward_exp,
-      is_completed: quest.is_completed,
-      is_claimed: quest.is_claimed,
-      created_at: quest.created_at
-    })) || [];
+    const transformedQuests = playerService.transformQuests(apiData.quests);
 
     return {
       heroSelected: {
@@ -104,13 +94,14 @@ export const playerService = {
       selectedBadge: selectedBadge,
       playerLevel: apiData.player_level,
       coins: apiData.coins,
-      daysLogin: apiData.totalActiveMaps || 0, // Using total active mazps as a substitute
+      daysLogin: apiData.totalActiveMaps || 0,
       currentStreak: apiData.current_streak,
       expPoints: apiData.exp_points,
       mapsOpened: apiData.totalActiveMaps,
       badges: transformedBadges,
       quests: transformedQuests,
       potions: transformedPotions,
+      //  Raw URLs for stats icons (same as Map API)
       statsIcons: {
         coins: "https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd",
         daysLogin: "https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd",
@@ -118,12 +109,39 @@ export const playerService = {
         expPoints: "https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd",
         mapsOpened: "https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd"
       },
+      //  Raw URLs for backgrounds
       background: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759900156/474821932-3bc21bd9-3cdc-48f5-ac18-dbee09e6368c_1_twmle9.png',
       containerBackground: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg'
     };
   },
 
-  // Helper functions
+  //  NEW: Transform quests from API structure
+  transformQuests: (questsData) => {
+    if (!questsData) return [];
+    
+    const allQuests = [
+      ...(questsData.dailyQuests || []),
+      ...(questsData.weeklyQuests || []),
+      ...(questsData.monthlyQuests || [])
+    ];
+
+    return allQuests.map(quest => ({
+      id: quest.quest_id,
+      title: quest.title,
+      description: quest.description,
+      progress: quest.current_value,
+      total: quest.target_value,
+      type: playerService.getQuestType(quest.objective_type),
+      reward_coins: quest.reward_coins,
+      reward_exp: quest.reward_exp,
+      is_completed: quest.is_completed,
+      is_claimed: quest.is_claimed,
+      created_at: quest.created_at,
+      quest_period: quest.quest_period
+    }));
+  },
+
+  // Helper functions (unchanged)
   getPotionDisplayName: (potionType) => {
     const typeMap = {
       'health': 'Health',
@@ -131,6 +149,7 @@ export const playerService = {
       'hint': 'Hint',
       'mana': 'Mana',
       'strength': 'Strength',
+      'strong': 'Strong',
       'speed': 'Speed'
     };
     return typeMap[potionType] || potionType.charAt(0).toUpperCase() + potionType.slice(1);
@@ -143,6 +162,7 @@ export const playerService = {
       'hint': '#054d0571',
       'mana': '#4444ff',
       'strength': '#ff8800',
+      'strong': '#ff8800',
       'speed': '#00ff88'
     };
     return colorMap[potionType] || '#888888';
@@ -150,30 +170,19 @@ export const playerService = {
 
   getDefaultPotionIcon: (potionType) => {
     const iconMap = {
-      'health': "https://github.com/user-attachments/assets/1fb726a5-f63d-44f4-8e33-8d9c961940ff",
-      'freeze': "https://github.com/user-attachments/assets/ff2e041c-9f7b-438c-91e6-1f371cfe1966",
-      'hint': "https://github.com/user-attachments/assets/d2a4ab58-2d5d-4e35-80b2-71e591bdd297",
+      'health': "https://micomi-assets.me/Icons/Potions/health.png",
+      'freeze': "https://micomi-assets.me/Icons/Potions/ice.png",
+      'hint': "https://micomi-assets.me/Icons/Potions/hint.png",
+      'strong': "https://micomi-assets.me/Icons/Potions/strong.png",
       'mana': "https://github.com/user-attachments/assets/d2a4ab58-2d5d-4e35-80b2-71e591bdd297",
       'strength': "https://github.com/user-attachments/assets/3264eb79-0afd-4987-8c64-6d46b0fc03a0"
     };
     return iconMap[potionType] || "https://github.com/user-attachments/assets/ff2e041c-9f7b-438c-91e6-1f371cfe1966";
   },
 
-  // Updated to provide fallback icons for achievements with null badge_icon
   getDefaultBadgeIcon: (achievementName) => {
-    const iconMap = {
-      'HTML Hero': "https://res.cloudinary.com/dpbocuozx/image/upload/v1759991976/Collector_ndqhrw.png",
-      'CSS Conqueror': "https://res.cloudinary.com/dpbocuozx/image/upload/v1759991976/Collector_ndqhrw.png",
-      'JS Juggernaut': "https://res.cloudinary.com/dpbocuozx/image/upload/v1759991976/Collector_ndqhrw.png",
-      'Web Wizard': "https://res.cloudinary.com/dpbocuozx/image/upload/v1759991976/Collector_ndqhrw.png",
-      'Top 1': "https://res.cloudinary.com/dpbocuozx/image/upload/v1759991976/Collector_ndqhrw.png",
-      'Knowledge Keeper': "https://res.cloudinary.com/dpbocuozx/image/upload/v1759991977/Knowledge_Keeper_iti1jc.png",
-      'Wake and Bake': "https://res.cloudinary.com/dpbocuozx/image/upload/v1759991977/Wake_and_Bake_xmqmyd.png",
-      'PC Eater': "https://res.cloudinary.com/dpbocuozx/image/upload/v1759991975/PC_Eater_wmkvhi.png",
-      'Collector': "https://res.cloudinary.com/dpbocuozx/image/upload/v1759991976/Collector_ndqhrw.png",
-      'Master Beater': "https://res.cloudinary.com/dpbocuozx/image/upload/v1759991975/PC_Eater_wmkvhi.png"
-    };
-    return iconMap[achievementName] || "https://res.cloudinary.com/dpbocuozx/image/upload/v1759991976/Collector_ndqhrw.png";
+    // Now using actual URLs from API, this is just fallback
+    return "https://res.cloudinary.com/dpbocuozx/image/upload/v1759991976/Collector_ndqhrw.png";
   },
 
   getQuestType: (objectiveType) => {

@@ -180,9 +180,7 @@ export const previewLevel = async (playerId: number, levelId: number) => {
         },
         energy: energyStatus.energy,
         timeToNextEnergyRestore: energyStatus.timeToNextRestore,
-        lessons,
-        audioLinks,
-        imagesUrls,
+        lessons
       };
 
     case "shopButton":
@@ -276,8 +274,6 @@ export const previewLevel = async (playerId: number, levelId: number) => {
         audio:
           "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353796/Navigation_sxwh2g.mp3",
         bossLevelExpectedOutput: level.boss_level_expected_output,
-        audioLinks,
-        imagesUrls,
       };
     }
   }
@@ -370,8 +366,6 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       energy: energyStatus.energy,
       timeToNextEnergyRestore: energyStatus.timeToNextRestore,
       lessons,
-      audioLinks,
-      imagesUrls,
     };
   }
 
@@ -719,24 +713,40 @@ export const enterLevel = async (playerId: number, levelId: number) => {
   let versus_background = "";
   let gameplay_audio = "";
 
-  if (level.level_type === "bossButton") {
-    gameplay_audio = "https://micomi-assets.me/Sounds/Final/Boss.ogg";
-  } else {
-    if (questionType === "HTML") {
+  switch (questionType) {
+    case "HTML":
       versus_background = "https://micomi-assets.me/Versus%20Maps/Green.png";
-      gameplay_audio =
-        "https://micomi-assets.me/Sounds/Final/Greenland%20Final.mp3";
-    } else if (questionType === "CSS") {
+      if (level.level_type === "bossButton") {
+        gameplay_audio = "https://micomi-assets.me/Sounds/Final/Boss.ogg";
+      } else {
+        gameplay_audio =
+          "https://micomi-assets.me/Sounds/Final/Greenland%20Final.mp3";
+      }
+      break;
+    case "CSS":
       versus_background = "https://micomi-assets.me/Versus%20Maps/Lava.png";
-      gameplay_audio = "https://micomi-assets.me/Sounds/Final/Lavaland.mp3";
-    } else if (questionType === "JavaScript") {
+      if (level.level_type === "bossButton") {
+        gameplay_audio = "https://micomi-assets.me/Sounds/Final/Boss.ogg";
+      } else {
+        gameplay_audio = "https://micomi-assets.me/Sounds/Final/Lavaland.mp3";
+      }
+      break;
+    case "JavaScript":
       versus_background = "https://micomi-assets.me/Sounds/Final/Snowland.mp3";
-      gameplay_audio = "https://micomi-assets.me/Sounds/Final/Snowland.mp3";
-    } else if (questionType === "Computer") {
+      if (level.level_type === "bossButton") {
+        gameplay_audio = "https://micomi-assets.me/Sounds/Final/Boss.ogg";
+      } else {
+        gameplay_audio = "https://micomi-assets.me/Sounds/Final/Snowland.mp3";
+      }
+      break;
+    case "Computer":
       versus_background =
         "https://micomi-assets.me/Sounds/Final/Autumnland.mp3";
-      gameplay_audio = "https://micomi-assets.me/Sounds/Final/Autumnland.mp3";
-    }
+      if (level.level_type === "bossButton") {
+        gameplay_audio = "https://micomi-assets.me/Sounds/Final/Boss.ogg";
+      } else {
+        gameplay_audio = "https://micomi-assets.me/Sounds/Final/Autumnland.mp3";
+      }
   }
 
   return {
@@ -788,8 +798,6 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     versus_background: versus_background,
     versus_audio: versus_background_audio,
     gameplay_audio: gameplay_audio,
-    audioLinks,
-    imagesUrls,
   };
 };
 

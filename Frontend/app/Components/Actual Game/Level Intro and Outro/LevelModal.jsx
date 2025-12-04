@@ -1,5 +1,5 @@
 import { ImageBackground } from 'expo-image';
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { View, Text, Modal, Pressable, StyleSheet, Dimensions, Image, Animated, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { levelService } from '../../../services/levelService';
@@ -9,6 +9,7 @@ import ShopLevelModal from './ShopLevelModal';
 import BossLevelModal from './BossLevelModal';
 import {WebView} from 'react-native-webview';
 import { gameScale, BASE_HEIGHT} from '../../Responsiveness/gameResponsive';
+import { universalAssetPreloader } from '../../../services/preloader/universalAssetPreloader';
 
 const LevelModal = ({ 
   visible = false,
@@ -38,6 +39,11 @@ const LevelModal = ({
   
 
   const [showWebView, setShowWebView] = useState(false); 
+
+  const getCachedAssetUrl = useCallback((url) => {
+    if (!url) return url;
+    return universalAssetPreloader.getCachedAssetPath(url);
+  }, []);
 
   useEffect(() => {
     if (visible && levelId && !levelData) {
@@ -286,11 +292,17 @@ const LevelModal = ({
       setError(null);
       console.log(`🎮 Fetching level preview for level ${levelId}, player ${playerId}`);
       
+      //  Load cached assets into memory first
+      await universalAssetPreloader.loadCachedAssets('game_animations');
+      await universalAssetPreloader.loadCachedAssets('game_images');
+      
       const response = await levelService.getLevelPreview(levelId);
       console.log('📊 Level preview response:', response);
       
       if (response.success) {
-        setPreviewData(response.data);
+        //  Transform avatar URLs to use cached paths
+        const transformedData = transformPreviewDataWithCache(response.data);
+        setPreviewData(transformedData);
       } else {
         setError('Failed to load level data');
       }
@@ -302,7 +314,47 @@ const LevelModal = ({
     }
   };
 
-  const displayData = previewData || levelData;
+  const transformPreviewDataWithCache = (data) => {
+    if (!data) return data;
+
+    const transformed = { ...data };
+
+    // Transform enemy avatar
+    if (transformed.enemy?.enemy_avatar) {
+      const cachedPath = universalAssetPreloader.getCachedAssetPath(transformed.enemy.enemy_avatar);
+      if (cachedPath !== transformed.enemy.enemy_avatar) {
+        console.log(`📦 LevelModal: Using cached enemy avatar`);
+        transformed.enemy = {
+          ...transformed.enemy,
+          enemy_avatar: cachedPath
+        };
+      }
+    }
+
+    // Transform character avatar
+    if (transformed.character?.character_avatar) {
+      const cachedPath = universalAssetPreloader.getCachedAssetPath(transformed.character.character_avatar);
+      if (cachedPath !== transformed.character.character_avatar) {
+        console.log(`📦 LevelModal: Using cached character avatar`);
+        transformed.character = {
+          ...transformed.character,
+          character_avatar: cachedPath
+        };
+      }
+    }
+
+    return transformed;
+  };
+
+
+
+  const displayData = useMemo(() => {
+    const data = previewData || levelData;
+    if (!data) return null;
+    
+    // Transform if not already transformed
+    return transformPreviewDataWithCache(data);
+  }, [previewData, levelData]);
   
   if (!displayData && !loading) {
     return null;

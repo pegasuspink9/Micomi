@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Dimensions,
   Image,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -15,8 +14,9 @@ import {
 import LottieView from 'lottie-react-native';
 import { useRouter } from 'expo-router';
 import { useMapData } from '../../hooks/useMapData'; 
-import { mapAssetPreloader } from '../../services/preloader/mapAssetPreloader';
 import { MAP_THEMES, DEFAULT_THEME } from '../RoadMap/MapLevel/MapDatas/mapData'; 
+import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
+import { mapService } from '../../services/mapService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -31,8 +31,7 @@ export default function MapNavigate({ onMapChange }) {
   const [currentMapIndex, setCurrentMapIndex] = useState(0);
   const router = useRouter();
   
-
-   const [animations, setAnimations] = useState([]);
+  const [animations, setAnimations] = useState([]);
   
   const [downloadModalVisible, setDownloadModalVisible] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState({
@@ -54,14 +53,186 @@ export default function MapNavigate({ onMapChange }) {
     name: ''
   });
   
+  // Track if auto-preload has been done
+  const hasAutoPreloaded = useRef(false);
+  const [assetsReady, setAssetsReady] = useState(false);
+
   const { maps, loading, error, refetch } = useMapData();
 
   // Add safety check for current map
   const currentMap = maps[currentMapIndex];
   const isValidMap = currentMap && typeof currentMap === 'object';
 
+  // UPDATED: Auto-preload assets including static MAP_THEMES
+  useEffect(() => {
+    const autoPreloadAssets = async () => {
+      if (hasAutoPreloaded.current || maps.length === 0) {
+        return;
+      }
 
-   useEffect(() => {
+      hasAutoPreloaded.current = true;
+      const playerId = 11;
+
+      try {
+        console.log('🗺️ Map screen displayed - checking asset cache...');
+        
+        // Step 1: Check and download static MAP_THEMES assets first
+        console.log('📦 Checking static map theme assets...');
+        const themesCacheStatus = await universalAssetPreloader.areMapThemeAssetsCached(MAP_THEMES);
+        
+        if (!themesCacheStatus.cached) {
+          console.log(`📦 ${themesCacheStatus.missing} map theme assets need downloading...`);
+          
+          setDownloadProgress(prev => ({
+            ...prev,
+            isDownloading: true,
+            isComplete: false,
+            mapName: 'Map Themes',
+            loaded: 0,
+            total: themesCacheStatus.total,
+            progress: 0,
+            successCount: themesCacheStatus.available
+          }));
+          setDownloadModalVisible(true);
+
+          await universalAssetPreloader.downloadMapThemeAssets(
+            MAP_THEMES,
+            (progress) => {
+              setDownloadProgress(prev => ({
+                ...prev,
+                loaded: progress.loaded,
+                total: progress.total,
+                progress: progress.progress * 0.5, // First 50%
+                successCount: progress.successCount,
+                currentAsset: progress.currentAsset,
+              }));
+            },
+            (assetProgress) => {
+              setCurrentAssetProgress({
+                url: assetProgress.url,
+                progress: assetProgress.progress,
+                currentIndex: assetProgress.currentIndex,
+                totalAssets: assetProgress.totalAssets,
+                category: assetProgress.category,
+                name: assetProgress.name,
+              });
+            }
+          );
+        } else {
+          console.log(`All ${themesCacheStatus.total} map theme assets already cached`);
+        }
+
+        // Step 2: Fetch and download Map API assets
+        const preloadData = await mapService.getMapPreloadData(playerId);
+
+        if (!preloadData) {
+          console.warn('⚠️ Failed to fetch map preload data');
+          setAssetsReady(true);
+          setDownloadModalVisible(false);
+          return;
+        }
+
+        const cacheStatus = await universalAssetPreloader.areMapAssetsCached(preloadData);
+        
+        if (cacheStatus.cached && themesCacheStatus.cached) {
+          console.log(`✅ All assets are already cached.`);
+          
+          // Load cached assets into memory
+          await Promise.all([
+            universalAssetPreloader.loadCachedAssets('game_animations'),
+            universalAssetPreloader.loadCachedAssets('game_images'),
+            universalAssetPreloader.loadCachedAssets('game_audio'),
+            universalAssetPreloader.loadCachedAssets('game_visuals'),
+            universalAssetPreloader.loadCachedAssets('map_theme_assets'),
+          ]);
+          
+          setAssetsReady(true);
+          setDownloadModalVisible(false);
+          return;
+        }
+
+        if (!cacheStatus.cached) {
+          console.log(`📦 ${cacheStatus.missing} Map API assets need to be downloaded.`);
+
+          if (!downloadModalVisible) {
+            setDownloadProgress(prev => ({
+              ...prev,
+              isDownloading: true,
+              isComplete: false,
+              mapName: 'Game Assets',
+              loaded: 0,
+              total: cacheStatus.total,
+              progress: 0.5, // Start at 50%
+              successCount: cacheStatus.available
+            }));
+            setDownloadModalVisible(true);
+          }
+
+          const result = await universalAssetPreloader.downloadAllMapAssets(
+            preloadData,
+            (progress) => {
+              setDownloadProgress(prev => ({
+                ...prev,
+                loaded: progress.loaded,
+                total: progress.total,
+                progress: 0.5 + (progress.progress * 0.5), // 50-100%
+                successCount: progress.successCount,
+                currentAsset: progress.currentAsset,
+              }));
+            },
+            (assetProgress) => {
+              setCurrentAssetProgress({
+                url: assetProgress.url,
+                progress: assetProgress.progress,
+                currentIndex: assetProgress.currentIndex,
+                totalAssets: assetProgress.totalAssets,
+                category: assetProgress.category,
+                name: assetProgress.name,
+              });
+            }
+          );
+
+          console.log(`Map API download completed:`, result);
+        }
+
+        // Save cache info
+        console.log(`💾 Saving cache info...`);
+        await universalAssetPreloader.saveCacheInfoToStorage();
+
+        // Mark as complete
+        setDownloadProgress(prev => ({
+          ...prev,
+          isDownloading: false,
+          isComplete: true,
+        }));
+
+        // Auto-close modal
+        setTimeout(() => {
+          setDownloadModalVisible(false);
+          resetDownloadProgress();
+          setAssetsReady(true);
+        }, 1500);
+
+      } catch (error) {
+        console.error('❌ Auto-preload failed:', error);
+        setDownloadProgress(prev => ({
+          ...prev,
+          isDownloading: false,
+          isComplete: false,
+        }));
+        
+        setTimeout(() => {
+          setDownloadModalVisible(false);
+          resetDownloadProgress();
+          setAssetsReady(true);
+        }, 2000);
+      }
+    };
+
+    autoPreloadAssets();
+  }, [maps]);
+
+  useEffect(() => {
     if (maps.length > 0) {
       const initialAnimations = maps.map((_, index) => ({
         translateX: new Animated.Value(getInitialTranslateX(index)),
@@ -80,7 +251,7 @@ export default function MapNavigate({ onMapChange }) {
     if (index === currentMapIndex) return 0;
     if (index === prevIndex) return -width * 0.4;
     if (index === nextIndex) return width * 0.4;
-    return index > currentMapIndex ? width * 2 : -width * 2; // Hide others
+    return index > currentMapIndex ? width * 2 : -width * 2;
   };
 
   const getInitialScale = (index) => {
@@ -110,7 +281,7 @@ export default function MapNavigate({ onMapChange }) {
     return 0;
   };
 
-   const animateToIndex = (newIndex) => {
+  const animateToIndex = (newIndex) => {
     if (animations.length === 0) return;
 
     const anims = animations.map((anim, index) => {
@@ -171,9 +342,7 @@ export default function MapNavigate({ onMapChange }) {
     Animated.parallel(anims).start();
   };
 
-
-  
-   const handlePrevious = () => {
+  const handlePrevious = () => {
     const newIndex = currentMapIndex > 0 ? currentMapIndex - 1 : maps.length - 1;
     setCurrentMapIndex(newIndex);
     animateToIndex(newIndex);
@@ -185,7 +354,6 @@ export default function MapNavigate({ onMapChange }) {
     animateToIndex(newIndex);
   };
 
-
   useEffect(() => {
     if (onMapChange && maps.length > 0 && isValidMap) {
       onMapChange(maps[currentMapIndex].map_name);
@@ -195,105 +363,15 @@ export default function MapNavigate({ onMapChange }) {
   useEffect(() => {
     const loadCachedAssets = async () => {
       if (maps.length > 0) {
-        for (const map of maps) {
-          await mapAssetPreloader.loadCachedAssets(map.map_name);
-        }
+        // Load map theme assets into memory
+        await universalAssetPreloader.loadCachedAssets('map_theme_assets');
       }
     };
     
     loadCachedAssets();
   }, [maps]);
 
-  const downloadMapAssets = async (mapName) => {
-    try {
-      const themeData = MAP_THEMES[mapName] || DEFAULT_THEME;
-      
-      // Check if assets are already cached
-      const cacheStatus = await mapAssetPreloader.areThemeAssetsCached(themeData, mapName);
-      if (cacheStatus.cached) {
-        console.log(` All assets for ${mapName} are already cached`);
-        return { success: true, fromCache: true };
-      }
-
-      console.log(`📦 Starting asset download for ${mapName}...`);
-      
-      // Show download modal
-      setDownloadProgress(prev => ({
-        ...prev,
-        isDownloading: true,
-        isComplete: false,
-        mapName: mapName,
-        loaded: 0,
-        total: 0,
-        progress: 0,
-        successCount: 0
-      }));
-      setDownloadModalVisible(true);
-
-      // Start downloading
-      const result = await mapAssetPreloader.downloadThemeAssets(
-        themeData,
-        mapName,
-        // Overall progress callback
-        (progress) => {
-          setDownloadProgress(prev => ({
-            ...prev,
-            loaded: progress.loaded,
-            total: progress.total,
-            progress: progress.progress,
-            successCount: progress.successCount,
-            currentAsset: progress.currentAsset
-          }));
-        },
-        // Individual asset progress callback
-        (assetProgress) => {
-          setCurrentAssetProgress({
-            url: assetProgress.url,
-            progress: assetProgress.progress,
-            currentIndex: assetProgress.currentIndex,
-            totalAssets: assetProgress.totalAssets,
-            category: assetProgress.category,
-            name: assetProgress.name
-          });
-        }
-      );
-
-      // Mark as complete
-      setDownloadProgress(prev => ({
-        ...prev,
-        isDownloading: false,
-        isComplete: true
-      }));
-
-      console.log(` Asset download completed for ${mapName}:`, result);
-
-      // Auto-close modal after 2 seconds
-      setTimeout(() => {
-        setDownloadModalVisible(false);
-        resetDownloadProgress();
-      }, 2000);
-
-      return result;
-
-    } catch (error) {
-      console.error(`❌ Error downloading assets for ${mapName}:`, error);
-      setDownloadProgress(prev => ({ 
-        ...prev, 
-        isDownloading: false, 
-        isComplete: false 
-      }));
-      
-      // Close modal after error
-      setTimeout(() => {
-        setDownloadModalVisible(false);
-        resetDownloadProgress();
-      }, 3000);
-      
-      throw error;
-    }
-  };
-
-  //  Reset download progress
+  // Reset download progress
   const resetDownloadProgress = () => {
     setDownloadProgress({
       loaded: 0,
@@ -315,41 +393,31 @@ export default function MapNavigate({ onMapChange }) {
     });
   };
 
-
-  //  Enhanced island click with asset download
-  const handleIslandClick = async () => {
-    if (isValidMap && maps[currentMapIndex].is_active) {
-      const currentMapName = maps[currentMapIndex].map_name;
-      
-      try {
-        // Download map assets before navigation
-        await downloadMapAssets(currentMapName);
-        
-        // Navigate to the map after assets are downloaded
-        router.push({
-          pathname: '/Components/RoadMap/roadMapLandPage',
-          params: { 
-            mapName: currentMapName,
-            mapType: currentMapName,
-            mapId: maps[currentMapIndex].map_id
-          }
-        });
-      } catch (error) {
-        console.error('Failed to download assets, navigating anyway:', error);
-        // Navigate even if download fails
-        router.push({
-          pathname: '/Components/RoadMap/roadMapLandPage',
-          params: { 
-            mapName: currentMapName,
-            mapType: currentMapName,
-            mapId: maps[currentMapIndex].map_id
-          }
-        });
-      }
+  //  SIMPLIFIED: Island click now just navigates (assets already preloaded)
+  const handleIslandClick = () => {
+    if (!isValidMap || !maps[currentMapIndex].is_active) {
+      return;
     }
+
+    const currentMapName = maps[currentMapIndex].map_name;
+    
+    // Navigate directly - assets are already preloaded
+    navigateToMap(currentMapName);
   };
 
-  //  Close download modal manually
+  // Helper function to navigate to the map
+  const navigateToMap = (mapName) => {
+    router.push({
+      pathname: '/Components/RoadMap/roadMapLandPage',
+      params: {
+        mapName: mapName,
+        mapType: mapName,
+        mapId: maps[currentMapIndex].map_id,
+      },
+    });
+  };
+
+  // Close download modal manually
   const handleDownloadModalClose = () => {
     if (!downloadProgress.isDownloading) {
       setDownloadModalVisible(false);
@@ -424,38 +492,38 @@ export default function MapNavigate({ onMapChange }) {
           </View>
         )}
 
-         <View style={styles.islandsContainer}>
-      {maps.map((map, index) => (
-        <Animated.View
-          key={map.map_id || index}
-          style={[
-            styles.animatedIsland,
-            {
-              opacity: animations[index]?.opacity,
-               zIndex: index === currentMapIndex ? 10 : 1, 
-              transform: [
-                { translateX: animations[index]?.translateX || 0 },
-                { scale: animations[index]?.scale || 0.6 },
-                { 
-                  rotateY: animations[index]?.rotateY?.interpolate({
-                    inputRange: [0, 180],
-                    outputRange: ['0deg', '180deg']
-                  }) || '0deg'
+        <View style={styles.islandsContainer}>
+          {maps.map((map, index) => (
+            <Animated.View
+              key={map.map_id || index}
+              style={[
+                styles.animatedIsland,
+                {
+                  opacity: animations[index]?.opacity,
+                  zIndex: index === currentMapIndex ? 10 : 1, 
+                  transform: [
+                    { translateX: animations[index]?.translateX || 0 },
+                    { scale: animations[index]?.scale || 0.6 },
+                    { 
+                      rotateY: animations[index]?.rotateY?.interpolate({
+                        inputRange: [0, 180],
+                        outputRange: ['0deg', '180deg']
+                      }) || '0deg'
+                    },
+                  ],
                 },
-              ],
-            },
-          ]}
-        >
-          <View 
-            style={[
-              styles.island,
-              {
-                width: index === currentMapIndex ? width * 1 : width * 0.6, 
-                maxWidth: index === currentMapIndex ? width * 2 : width * 1, 
-              }
-            ]}
-            disabled={!map.is_active}
-          >
+              ]}
+            >
+              <View 
+                style={[
+                  styles.island,
+                  {
+                    width: index === currentMapIndex ? width * 1 : width * 0.6, 
+                    maxWidth: index === currentMapIndex ? width * 2 : width * 1, 
+                  }
+                ]}
+                disabled={!map.is_active}
+              >
                 <LottieView
                   source={getMapImageSource(map)}
                   style={styles.islandImage}
@@ -487,8 +555,8 @@ export default function MapNavigate({ onMapChange }) {
             <Image source={require('./Assets/right arrow.png')} style={[styles.arrowImage, styles.flippedHorizontal]} />
           </TouchableOpacity>
           
-        <TouchableOpacity onPress={handleIslandClick} activeOpacity={0.7}> 
-          <ImageBackground
+          <TouchableOpacity onPress={handleIslandClick} activeOpacity={0.7}> 
+            <ImageBackground
               source={LEVEL_SELECTOR_IMAGES[maps[currentMapIndex]?.map_name || 'HTML']}
               style={styles.levelSelectorImage}
               resizeMode="contain"
@@ -501,15 +569,16 @@ export default function MapNavigate({ onMapChange }) {
             </ImageBackground>
           </TouchableOpacity>
           
-           <TouchableOpacity 
+          <TouchableOpacity 
             style={styles.navArrow} 
             onPress={handleNext}
-            >
-              <Image source={require('./Assets/right arrow.png')} style={styles.arrowImage} />
-            </TouchableOpacity>
-          </View>
+          >
+            <Image source={require('./Assets/right arrow.png')} style={styles.arrowImage} />
+          </TouchableOpacity>
+        </View>
       </View>
       
+      {/* Download Modal - Now shows automatically when needed */}
       <Modal
         visible={downloadModalVisible}
         transparent={true}
@@ -524,11 +593,17 @@ export default function MapNavigate({ onMapChange }) {
               resizeMode="cover"
             >
               <View style={styles.downloadModalHeader}>
-                <Text style={styles.downloadModalTitle}>Preparing {downloadProgress.mapName}</Text>
-                <Text style={styles.downloadModalSubtitle}>Downloading theme assets...</Text>
+                <Text style={styles.downloadModalTitle}>
+                  {downloadProgress.isComplete ? ' Ready!' : 'Preparing Game Assets'}
+                </Text>
+                <Text style={styles.downloadModalSubtitle}>
+                  {downloadProgress.isComplete 
+                    ? 'All assets loaded successfully!' 
+                    : 'Downloading assets for smooth gameplay...'}
+                </Text>
               </View>
 
-              {/*  Overall Progress */}
+              {/* Overall Progress */}
               <View style={styles.progressSection}>
                 <View style={styles.progressLabelContainer}>
                   <Text style={styles.progressLabel}>
@@ -549,8 +624,8 @@ export default function MapNavigate({ onMapChange }) {
                 </View>
               </View>
 
-              {/*  Current Asset Progress */}
-              {currentAssetProgress.url && (
+              {/* Current Asset Progress */}
+              {currentAssetProgress.url && !downloadProgress.isComplete && (
                 <View style={styles.progressSection}>
                   <View style={styles.progressLabelContainer}>
                     <Text style={styles.currentAssetLabel}>
@@ -565,7 +640,7 @@ export default function MapNavigate({ onMapChange }) {
                     <View 
                       style={[
                         styles.progressBarFill,
-                        styles.currentAssetProgress,
+                        styles.currentAssetProgressBar,
                         { width: `${currentAssetProgress.progress * 100}%` }
                       ]} 
                     />
@@ -577,7 +652,7 @@ export default function MapNavigate({ onMapChange }) {
                 </View>
               )}
 
-              {/*  Status Messages */}
+              {/* Status Messages */}
               <View style={styles.statusContainer}>
                 {downloadProgress.isDownloading && downloadProgress.currentAsset && (
                   <Text style={styles.statusText}>
@@ -587,12 +662,12 @@ export default function MapNavigate({ onMapChange }) {
                 
                 {downloadProgress.isComplete && (
                   <Text style={styles.statusCompleteText}>
-                     Assets Ready! Opening {downloadProgress.mapName}...
+                    🎮 Ready to play!
                   </Text>
                 )}
               </View>
 
-              {/*  Close Button */}
+              {/* Close Button - Only show when not downloading */}
               {!downloadProgress.isDownloading && (
                 <TouchableOpacity 
                   style={styles.downloadModalCloseButton}
@@ -621,13 +696,12 @@ const styles = StyleSheet.create({
     maxHeight: height * 1,
     paddingVertical: 20,
   },
-   islandsContainer: {
+  islandsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: height * 0.6, // Adjust height as needed
+    height: height * 0.6,
   },
-
   animatedIsland: {
     position: 'absolute',
     alignItems: 'center',
@@ -682,7 +756,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 30,
     textAlign: 'center',
-    color: 'white',
     fontFamily: 'FunkySign',
   },
   loadingContainer: {
@@ -756,14 +829,13 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
 
-  //  Download Modal Styles
+  // Download Modal Styles
   downloadModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  
   downloadModalContainer: {
     width: width * 0.85,
     maxWidth: 400,
@@ -775,18 +847,15 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 20,
   },
-  
   downloadModalBackground: {
     padding: 30,
     alignItems: 'center',
     minHeight: 300,
   },
-  
   downloadModalHeader: {
     alignItems: 'center',
     marginBottom: 25,
   },
-  
   downloadModalTitle: {
     fontSize: 22,
     fontFamily: 'FunkySign',
@@ -796,7 +865,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
-  
   downloadModalSubtitle: {
     fontSize: 14,
     fontFamily: 'FunkySign',
@@ -805,40 +873,34 @@ const styles = StyleSheet.create({
     marginTop: 5,
     opacity: 0.8,
   },
-  
   progressSection: {
     width: '100%',
     marginBottom: 20,
   },
-  
   progressLabelContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
   },
-  
   progressLabel: {
     fontSize: 14,
     fontFamily: 'FunkySign',
     color: '#FFF',
     opacity: 0.9,
   },
-  
   currentAssetLabel: {
     fontSize: 12,
     fontFamily: 'FunkySign',
     color: '#4CAF50',
     opacity: 0.9,
   },
-  
   progressPercent: {
     fontSize: 14,
     fontFamily: 'FunkySign',
     color: '#4CAF50',
     fontWeight: 'bold',
   },
-  
   progressBarContainer: {
     width: '100%',
     height: 8,
@@ -846,17 +908,14 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     overflow: 'hidden',
   },
-  
   progressBarFill: {
     height: '100%',
     backgroundColor: '#4CAF50',
     borderRadius: 4,
   },
-  
-  currentAssetProgress: {
+  currentAssetProgressBar: {
     backgroundColor: '#2196F3',
   },
-  
   currentUrlText: {
     fontSize: 10,
     fontFamily: 'FunkySign',
@@ -865,13 +924,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'center',
   },
-  
   statusContainer: {
     alignItems: 'center',
     marginTop: 15,
     minHeight: 30,
   },
-  
   statusText: {
     fontSize: 12,
     fontFamily: 'FunkySign',
@@ -879,7 +936,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.8,
   },
-  
   statusCompleteText: {
     fontSize: 14,
     fontFamily: 'FunkySign',
@@ -887,7 +943,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: 'bold',
   },
-  
   downloadModalCloseButton: {
     backgroundColor: '#4CAF50',
     paddingHorizontal: 25,
@@ -900,7 +955,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  
   downloadModalCloseText: {
     color: '#FFF',
     fontSize: 14,

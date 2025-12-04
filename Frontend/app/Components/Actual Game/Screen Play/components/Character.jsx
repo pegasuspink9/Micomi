@@ -35,7 +35,7 @@ const Character = ({
   const attackInitiated = useSharedValue(false);
 
   // ========== Animation Configuration ==========
-    const SPRITE_SIZE = useMemo(() => gameScale(128), []);
+  const SPRITE_SIZE = useMemo(() => gameScale(128), []);
   const SPRITE_COLUMNS = 6;
   const SPRITE_ROWS = 4;
   const TOTAL_FRAMES = 24;
@@ -45,7 +45,7 @@ const Character = ({
     idle: -1,
     attack: 1300,
     hurt: 2000,
-    run: 1200, // Duration for the run-off-screen movement
+    run: 1200,
     dies: 2000,
     diesOutro: 500,
   }), []);
@@ -62,14 +62,71 @@ const Character = ({
 
   // ========== State Management ==========
   const initialUrl = useMemo(() => {
-    return [characterAnimations.character_idle, characterAnimations.idle]
-      .filter(url => url && typeof url === 'string')[0] || '';
+    const candidates = [
+      characterAnimations.character_idle, 
+      characterAnimations.idle
+    ].filter(url => url && typeof url === 'string');
+    return candidates[0] || '';
   }, [characterAnimations]);
 
+  //  FIX: Helper function to check if ANY URL is cached (synchronous)
+  const isUrlCached = useCallback((url) => {
+    if (!url) return false;
+    if (url.startsWith('file://')) return true;
+    const cachedPath = universalAssetPreloader.getCachedAssetPath(url);
+    return cachedPath !== url && cachedPath.startsWith('file://');
+  }, []);
+
+  //  FIX: Pre-check ALL animation URLs on mount to populate memory cache
+  const allAnimationUrls = useMemo(() => {
+    const urls = [];
+    if (characterAnimations.character_idle) urls.push(characterAnimations.character_idle);
+    if (characterAnimations.idle) urls.push(characterAnimations.idle);
+    if (characterAnimations.character_run) urls.push(characterAnimations.character_run);
+    if (characterAnimations.run) urls.push(characterAnimations.run);
+    if (characterAnimations.character_hurt) urls.push(characterAnimations.character_hurt);
+    if (characterAnimations.hurt) urls.push(characterAnimations.hurt);
+    if (characterAnimations.character_dies) urls.push(characterAnimations.character_dies);
+    if (characterAnimations.dies) urls.push(characterAnimations.dies);
+    if (Array.isArray(characterAnimations.character_attack)) {
+      characterAnimations.character_attack.filter(Boolean).forEach(url => urls.push(url));
+    } else if (characterAnimations.character_attack) {
+      urls.push(characterAnimations.character_attack);
+    }
+    return urls.filter(url => url && typeof url === 'string');
+  }, [characterAnimations]);
+
+  //  FIX: Check if ALL animations are cached (for immediate playback)
+  const allAnimationsCached = useMemo(() => {
+    return allAnimationUrls.every(url => isUrlCached(url));
+  }, [allAnimationUrls, isUrlCached]);
+
   const [currentAnimationUrl, setCurrentAnimationUrl] = useState(initialUrl);
-  const [imageReady, setImageReady] = useState(false);
+  //  FIX: Set imageReady to true if ALL animations are cached
+  const [imageReady, setImageReady] = useState(allAnimationsCached || isUrlCached(initialUrl));
   const [preloadedImages] = useState(new Map());
   const attackSoundTimeoutRef = useRef(null);
+  const hasInitialized = useRef(false);
+
+  //  FIX: Pre-populate preloadedImages map with all cached URLs on mount
+  useEffect(() => {
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      
+      let cachedCount = 0;
+      allAnimationUrls.forEach(url => {
+        if (isUrlCached(url)) {
+          preloadedImages.set(url, true);
+          cachedCount++;
+        }
+      });
+      
+      if (cachedCount > 0) {
+        console.log(`🎬 Character: ${cachedCount}/${allAnimationUrls.length} animations pre-cached, ready immediately`);
+        setImageReady(true);
+      }
+    }
+  }, [allAnimationUrls, isUrlCached]);
 
   useEffect(() => {
     if (attackSoundTimeoutRef.current) clearTimeout(attackSoundTimeoutRef.current);
@@ -98,14 +155,24 @@ const Character = ({
 
   // ========== Image Preloading ==========
   useEffect(() => {
-    let mounted = true;
     if (!currentAnimationUrl) return;
-    setImageReady(false);
-    const cachedPath = universalAssetPreloader.getCachedAssetPath(currentAnimationUrl);
-    if (cachedPath !== currentAnimationUrl || preloadedImages.has(currentAnimationUrl)) {
-      if (mounted) setImageReady(true);
+    
+    //  FIX: Check cache status synchronously
+    const isCached = isUrlCached(currentAnimationUrl);
+    
+    if (isCached || preloadedImages.has(currentAnimationUrl)) {
+      console.log('🎬 Character: Animation ready:', currentAnimationUrl.slice(-40));
+      preloadedImages.set(currentAnimationUrl, true);
+      if (!imageReady) setImageReady(true);
       return;
     }
+    
+    // Only prefetch if not cached (fallback for missing assets)
+    let mounted = true;
+    setImageReady(false);
+    
+    console.log('🎬 Character: Prefetching uncached animation:', currentAnimationUrl.slice(-40));
+    
     (async () => {
       try {
         await RNImage.prefetch(currentAnimationUrl);
@@ -113,10 +180,14 @@ const Character = ({
           preloadedImages.set(currentAnimationUrl, true);
           setImageReady(true);
         }
-      } catch (err) { console.warn(`Character prefetch failed:`, err); }
+      } catch (err) { 
+        console.warn(`Character prefetch failed:`, err);
+        if (mounted) setImageReady(true);
+      }
     })();
+    
     return () => { mounted = false; };
-  }, [currentAnimationUrl, preloadedImages]);
+  }, [currentAnimationUrl, isUrlCached]);
 
   // ========== Animation Callbacks ==========
   const notifyAnimationComplete = useCallback(() => {
@@ -136,7 +207,12 @@ const Character = ({
       return; 
     }
 
-    if (isPaused || !imageReady) {
+    //  FIX: Check cache for BOTH current URL AND target URL
+    const isCurrentUrlCached = isUrlCached(currentAnimationUrl) || preloadedImages.has(currentAnimationUrl);
+    const isTargetUrlCached = targetUrl ? (isUrlCached(targetUrl) || preloadedImages.has(targetUrl)) : true;
+    const canProceed = imageReady || isCurrentUrlCached || isTargetUrlCached;
+
+    if (isPaused || !canProceed) {
       cancelAnimation(frameIndex);
       cancelAnimation(positionX);
       cancelAnimation(blinkOpacity);
@@ -149,12 +225,9 @@ const Character = ({
     cancelAnimation(frameIndex);
     cancelAnimation(positionX);
     cancelAnimation(opacity);
-
-
     cancelAnimation(blinkOpacity);
     blinkOpacity.value = 0;
     frameIndex.value = 0;
-
 
     positionX.value = 0; 
     opacity.value = 1;
@@ -168,6 +241,10 @@ const Character = ({
         runOnJS(notifyAnimationComplete)();
         return;
       }
+
+      //  FIX: Mark both URLs as ready if cached
+      if (isUrlCached(runUrl)) preloadedImages.set(runUrl, true);
+      if (isUrlCached(attackUrl)) preloadedImages.set(attackUrl, true);
 
       frameIndex.value = withRepeat(withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false);
       positionX.value = withTiming(ATTACK_RUN_DISTANCE, { duration: 400, easing: Easing.in(Easing.quad) }, (finished) => {
@@ -186,7 +263,6 @@ const Character = ({
       return;
     }
     
-    // ✅ ADDED: Specific logic for the "run off-screen" state.
     // --- RUN OFF-SCREEN ---
     if (currentState === 'run' && !config.isCompound) {
       attackInitiated.value = true; 
@@ -202,8 +278,7 @@ const Character = ({
       return;
     }
 
-
-    if (config.shouldLoop) { // Catches 'idle'
+    if (config.shouldLoop) {
       frameIndex.value = withRepeat(withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false);
       return;
     }
@@ -227,7 +302,7 @@ const Character = ({
         }
       }
     });
-  }, [currentState, isPaused, imageReady, currentAnimationUrl, animationConfig, notifyAnimationComplete]);
+  }, [currentState, isPaused, imageReady, currentAnimationUrl, animationConfig, notifyAnimationComplete, isUrlCached]);
 
   // ========== Animated Styles ==========
   const animatedStyle = useAnimatedStyle(() => {

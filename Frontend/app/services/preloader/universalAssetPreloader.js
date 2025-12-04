@@ -23,6 +23,82 @@ class UniversalAssetPreloader {
     return targetDir;
   }
 
+  async saveCacheInfoToStorage() {
+    try {
+      // Group assets by category
+      const assetsByCategory = {};
+      
+      this.downloadedAssets.forEach((assetInfo, url) => {
+        const category = assetInfo.category || 'general';
+        if (!assetsByCategory[category]) {
+          assetsByCategory[category] = [];
+        }
+        assetsByCategory[category].push([url, assetInfo]);
+      });
+
+      // Save each category
+      for (const [category, assets] of Object.entries(assetsByCategory)) {
+        const cacheKey = `${category}Assets`;
+        const cacheInfo = {
+          downloadedAt: Date.now(),
+          category: category,
+          assets: assets,
+          totalAssets: assets.length
+        };
+        await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheInfo));
+        console.log(`💾 Saved ${assets.length} ${category} assets to storage`);
+      }
+
+      // Also save a master list for quick lookup
+      const masterList = {
+        downloadedAt: Date.now(),
+        totalAssets: this.downloadedAssets.size,
+        categories: Object.keys(assetsByCategory)
+      };
+      await AsyncStorage.setItem('masterAssetCache', JSON.stringify(masterList));
+      
+      console.log(`💾 Saved cache info for ${this.downloadedAssets.size} total assets`);
+      return { success: true, totalSaved: this.downloadedAssets.size };
+    } catch (error) {
+      console.error('❌ Failed to save cache info to storage:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async loadAllCachedAssets() {
+    try {
+      console.log('📦 Loading all cached assets from storage...');
+      
+      const categories = [
+        'game_animations',
+        'game_audio', 
+        'game_visuals',
+        'game_images',
+        'map_assets',
+        'characters',
+        'player_profile',
+        'potion_shop'
+      ];
+
+      let totalLoaded = 0;
+      
+      for (const category of categories) {
+        const result = await this.loadCachedAssets(category);
+        if (result.success) {
+          totalLoaded += result.loadedCount;
+        }
+      }
+
+      console.log(`📦 Loaded ${totalLoaded} total cached assets into memory`);
+      return { success: true, totalLoaded };
+    } catch (error) {
+      console.error('❌ Failed to load all cached assets:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+
+
   //  Generate local file path for asset
   getLocalFilePath(url, category = 'general') {
   const urlParts = url.split('/');
@@ -50,130 +126,110 @@ class UniversalAssetPreloader {
   return `${this.cacheDirectory}${category}/${finalFileName}`;
   }
 
-async downloadSingleAsset(url, category = 'general', onProgress = null, retries = 2) {
-
-  let fullUrl = url;
-  if (typeof fullUrl === 'string' && !fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
-    console.warn(`⚠️ URL missing scheme, prepending 'https://': ${url}`);
-    fullUrl = `https://${fullUrl}`;
-  }
-
-  try {
-    console.log(`📥 Starting download: ${url}`);
-    
-    await this.ensureCacheDirectory(category);
-    
-    const localPath = this.getLocalFilePath(url, category);
-    
-    // Check if already downloaded and file exists
-    const fileInfo = await FileSystem.getInfoAsync(localPath);
-    if (fileInfo.exists && fileInfo.size > 0) {
-      console.log(`📦 Asset already cached: ${url.slice(-50)}`);
-      this.downloadedAssets.set(url, { localPath, category, url });
-      return { success: true, localPath, cached: true, url };
+ async downloadSingleAsset(url, category = 'general', onProgress = null, retries = 2) {
+    if (!url || typeof url !== 'string') {
+      console.warn('⚠️ Invalid URL provided to downloadSingleAsset:', url);
+      return { success: false, error: 'Invalid URL', url, category };
     }
 
-    console.log(`📦 Downloading ${category} asset: ${url.slice(-50)}`);
-    const startTime = Date.now();
-    
-    const downloadResumable = FileSystem.createDownloadResumable(
-      fullUrl,
-      localPath,
-      {
-        //  Add headers for R2 and other CDNs
-        headers: {
-          'User-Agent': 'MicomoGame/1.0',
-          'Accept': 'image/*'
-        }
-      },
-      onProgress ? (downloadProgress) => {
-        const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
-        console.log(`📊 ${category} download progress: ${(progress * 100).toFixed(1)}%`);
-        onProgress({ 
-          progress: Math.min(progress, 1), 
-          url, 
-          category,
-          downloadProgress,
-          bytesWritten: downloadProgress.totalBytesWritten,
-          totalBytes: downloadProgress.totalBytesExpectedToWrite
-        });
-      } : undefined
-    );
-
-    const result = await downloadResumable.downloadAsync();
-    const downloadTime = Date.now() - startTime;
-
-    if (result && result.uri) {
-      // Verify the downloaded file
-      const downloadedFileInfo = await FileSystem.getInfoAsync(result.uri);
-      if (!downloadedFileInfo.exists || downloadedFileInfo.size === 0) {
-        throw new Error('Downloaded file is empty or corrupted');
-      }
-
-      this.downloadedAssets.set(url, { 
-        localPath: result.uri, 
-        category, 
-        url,
-        downloadedAt: Date.now(),
-        fileSize: downloadedFileInfo.size
-      });
-      
-      //  Only preload images to memory cache (not videos)
-      if (this.isImageFile(url)) {
-        try {
-          await RNImage.prefetch(`file://${result.uri}`);
-          this.preloadedAssets.set(url, {
-            loadedAt: Date.now(),
-            loadTime: downloadTime,
-            url,
-            localPath: result.uri,
-            category
-          });
-        } catch (prefetchError) {
-          console.warn(`⚠️ Failed to prefetch ${category} asset to memory:`, prefetchError);
-          // Don't fail the download if prefetch fails
-        }
-      }
-
-      const assetType = this.isVideoFile(url) ? 'video' : (this.isAudioFile(url) ? 'audio' : 'image');
-       console.log(` ${category} ${assetType} downloaded in ${downloadTime}ms (${downloadedFileInfo.size} bytes): ${url.slice(-50)}`);
+    if (url.startsWith('file://') || url.startsWith('/data/')) {
+      console.log(`📦 Asset is already a local file, skipping download: ${url.slice(-50)}`);
       return { 
         success: true, 
-        localPath: result.uri, 
-        downloadTime, 
+        localPath: url.replace('file://', ''), 
+        cached: true, 
+        url, 
+        category 
+      };
+    }
+
+    let fullUrl = url;
+    if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
+      console.warn(`⚠️ URL missing scheme, prepending 'https://': ${url}`);
+      fullUrl = `https://${fullUrl}`;
+    }
+
+    try {
+      console.log(`📥 Starting download: ${url.slice(-60)}`);
+      
+      await this.ensureCacheDirectory(category);
+      
+      const localPath = this.getLocalFilePath(url, category);
+      
+      // Check if already downloaded and file exists
+      const fileInfo = await FileSystem.getInfoAsync(localPath);
+      if (fileInfo.exists && fileInfo.size > 0) {
+        console.log(`📦 Asset already cached: ${url.slice(-50)}`);
+        this.downloadedAssets.set(url, {
+          localPath,
+          category,
+          url,
+          downloadedAt: Date.now(),
+          fileSize: fileInfo.size
+        });
+        return { success: true, localPath, cached: true, url, category };
+      }
+
+      console.log(`📦 Downloading ${category} asset: ${url.slice(-50)}`);
+      const startTime = Date.now();
+      
+      const downloadResumable = FileSystem.createDownloadResumable(
+        fullUrl,
+        localPath,
+        {
+          headers: {
+            'User-Agent': 'MicomoGame/1.0',
+            'Accept': 'image/*'
+          }
+        },
+        onProgress ? (downloadProgress) => {
+          const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
+          onProgress({ progress, url, downloadProgress });
+        } : undefined
+      );
+
+      const result = await downloadResumable.downloadAsync();
+      const downloadTime = Date.now() - startTime;
+
+      if (result && result.uri) {
+        this.downloadedAssets.set(url, {
+          localPath: result.uri.replace('file://', ''),
+          category,
+          url,
+          downloadedAt: Date.now(),
+          downloadTime,
+          fileSize: result.headers?.['content-length'] || 0
+        });
+        
+        console.log(` Asset downloaded in ${downloadTime}ms: ${url.slice(-50)}`);
+        return { success: true, localPath: result.uri.replace('file://', ''), downloadTime, url, category };
+      } else {
+        throw new Error('Download failed - no result URI');
+      }
+    } catch (error) {
+      console.error(`❌ Failed to download ${category} asset: ${url}`, {
+        message: error.message,
+        code: error.code,
+        statusCode: error.statusCode
+      });
+      
+      // Retry logic
+      if (retries > 0) {
+        console.log(`🔄 Retrying download (${retries} attempts left): ${url.slice(-50)}`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return this.downloadSingleAsset(url, category, onProgress, retries - 1);
+      }
+      
+      return { 
+        success: false, 
+        error: error.message, 
         url, 
         category,
-        fileSize: downloadedFileInfo.size,
-        assetType
+        errorCode: error.code,
+        statusCode: error.statusCode
       };
-    } else {
-      throw new Error('Download failed - no result URI');
     }
-  } catch (error) {
-    console.error(`❌ Failed to download ${category} asset: ${url}`, {
-      message: error.message,
-      code: error.code,
-      statusCode: error.statusCode
-    });
-    
-    // Retry logic
-    if (retries > 0) {
-      console.log(`🔄 Retrying download (${retries} retries left): ${url.slice(-50)}`);
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
-      return this.downloadSingleAsset(url, category, onProgress, retries - 1);
-    }
-    
-    return { 
-      success: false, 
-      error: error.message, 
-      url, 
-      category,
-      errorCode: error.code,
-      statusCode: error.statusCode
-    };
   }
-}
-
 isAudioFile(url) {
   if (!url || typeof url !== 'string') return false;
   const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a'];
@@ -239,6 +295,344 @@ async testR2Download(testUrl) {
   console.log(`❌ Not recognized as image`);
   return false;
   }
+
+
+  extractAllAssetsFromMapData(mapLevelData) {
+    const assets = [];
+    const addedUrls = new Set(); 
+
+    const addAsset = (url, name, type, category) => {
+      if (url && 
+          typeof url === 'string' && 
+          !addedUrls.has(url) &&
+          !url.startsWith('file://') &&
+          !url.startsWith('/data/') &&
+          (url.startsWith('http://') || url.startsWith('https://') || url.includes('.'))) {
+        addedUrls.add(url);
+        assets.push({ url, name, type, category });
+      }
+    };
+
+    if (!mapLevelData) return assets;
+
+    // --- Enemy Assets ---
+    if (mapLevelData.enemy) {
+      const enemy = mapLevelData.enemy;
+      addAsset(enemy.enemy_idle, `${enemy.enemy_name}_idle`, 'animation', 'game_animations');
+      addAsset(enemy.enemy_run, `${enemy.enemy_name}_run`, 'animation', 'game_animations');
+      addAsset(enemy.enemy_attack, `${enemy.enemy_name}_attack`, 'animation', 'game_animations');
+      addAsset(enemy.enemy_hurt, `${enemy.enemy_name}_hurt`, 'animation', 'game_animations');
+      addAsset(enemy.enemy_dies, `${enemy.enemy_name}_dies`, 'animation', 'game_animations');
+      addAsset(enemy.enemy_avatar, `${enemy.enemy_name}_avatar`, 'image', 'game_images');
+    }
+
+    // --- Character Assets ---
+    if (mapLevelData.character) {
+      const char = mapLevelData.character;
+      addAsset(char.character_idle, `${char.character_name}_idle`, 'animation', 'game_animations');
+      addAsset(char.character_run, `${char.character_name}_run`, 'animation', 'game_animations');
+      addAsset(char.character_hurt, `${char.character_name}_hurt`, 'animation', 'game_animations');
+      addAsset(char.character_dies, `${char.character_name}_dies`, 'animation', 'game_animations');
+      addAsset(char.character_avatar, `${char.character_name}_avatar`, 'image', 'game_images');
+      if (Array.isArray(char.character_attack)) {
+        char.character_attack.forEach((url, i) => addAsset(url, `${char.character_name}_attack_${i}`, 'animation', 'game_animations'));
+      }
+    }
+
+    // --- Card Assets ---
+    if (mapLevelData.card?.character_attack_card) {
+      addAsset(mapLevelData.card.character_attack_card, 'character_attack_card', 'image', 'game_visuals');
+    }
+
+    // --- Background Assets ---
+    if (Array.isArray(mapLevelData.combat_background)) {
+      mapLevelData.combat_background.forEach((url, i) => addAsset(url, `combat_bg_${i}`, 'image', 'game_visuals'));
+    }
+    addAsset(mapLevelData.versus_background, 'versus_background', 'image', 'game_visuals');
+
+    // --- Audio Assets ---
+    addAsset(mapLevelData.versus_audio, 'versus_audio', 'audio', 'game_audio');
+    addAsset(mapLevelData.gameplay_audio, 'gameplay_audio', 'audio', 'game_audio');
+    if (Array.isArray(mapLevelData.audioLinks)) {
+      mapLevelData.audioLinks.forEach((url, i) => addAsset(url, `audio_link_${i}`, 'audio', 'game_audio'));
+    }
+
+    addAsset(mapLevelData.is_victory_image, 'is_victory_image', 'image', 'game_images');
+
+    
+    // --- All Images from imagesUrls ---
+    if (Array.isArray(mapLevelData.imagesUrls)) {
+      mapLevelData.imagesUrls.forEach((url, i) => {
+        const type = this.isAudioFile(url) ? 'audio' : (this.isVideoFile(url) ? 'video' : 'image');
+        const category = type === 'audio' ? 'game_audio' : (type === 'video' ? 'game_videos' : 'game_images');
+        addAsset(url, `image_asset_${i}`, type, category);
+      });
+    }
+
+    console.log(`📦 Extracted ${assets.length} total assets from map data.`);
+    return assets;
+  }
+
+    extractLevelModalAssets(levelPreviewData) {
+    const assets = [];
+    const addedUrls = new Set();
+
+    const addAsset = (url, name, type, category) => {
+      if (url && typeof url === 'string' && !addedUrls.has(url)) {
+        addedUrls.add(url);
+        assets.push({ url, name, type, category });
+      }
+    };
+
+    if (!levelPreviewData) return assets;
+
+    // Enemy assets
+    if (levelPreviewData.enemy) {
+      addAsset(levelPreviewData.enemy.enemy_avatar, 'enemy_avatar', 'image', 'level_modal');
+      addAsset(levelPreviewData.enemy.enemy_idle, 'enemy_idle', 'image', 'level_modal');
+    }
+
+    // Character assets
+    if (levelPreviewData.character) {
+      addAsset(levelPreviewData.character.character_avatar, 'character_avatar', 'image', 'level_modal');
+    }
+
+    // Potion shop assets
+    if (Array.isArray(levelPreviewData.potionShop)) {
+      levelPreviewData.potionShop.forEach((potion, i) => {
+        addAsset(potion.potion_url, `potion_${potion.potion_type || i}`, 'image', 'level_modal');
+      });
+    }
+
+    const staticAssets = [
+      { url: 'https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd', name: 'coin_icon' },
+      { url: 'https://github.com/user-attachments/assets/4e1d0813-aa7d-4dcf-8333-a1ff2cd0971e', name: 'energy_icon' },
+      { url: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg', name: 'modal_background' },
+    ];
+
+    staticAssets.forEach(asset => {
+      addAsset(asset.url, asset.name, 'image', 'level_modal');
+    });
+
+    console.log(`📦 Extracted ${assets.length} level modal assets`);
+    return assets;
+  }
+
+  async downloadAllMapAssets(mapLevelData, onProgress = null, onAssetComplete = null) {
+    // Allow concurrent downloads for map preloading
+    const wasDownloading = this.isDownloading;
+    this.isDownloading = true;
+
+    try {
+      console.log('🗺️ Starting comprehensive map asset download...');
+      const assets = this.extractAllAssetsFromMapData(mapLevelData);
+
+      if (assets.length === 0) {
+        console.log('🗺️ No assets to download from map data.');
+        this.isDownloading = wasDownloading;
+        return { success: true, downloaded: 0, total: 0 };
+      }
+
+      const startTime = Date.now();
+      let successCount = 0;
+      const results = [];
+
+      for (let i = 0; i < assets.length; i += this.maxConcurrentDownloads) {
+        const batch = assets.slice(i, i + this.maxConcurrentDownloads);
+
+        const batchPromises = batch.map(async (asset, batchIndex) => {
+          const globalIndex = i + batchIndex;
+
+          if (onAssetComplete) {
+            onAssetComplete({
+              url: asset.url,
+              name: asset.name,
+              type: asset.type,
+              category: asset.category,
+              progress: 0,
+              currentIndex: globalIndex,
+              totalAssets: assets.length,
+            });
+          }
+
+          const result = await this.downloadSingleAsset(
+            asset.url,
+            asset.category,
+            (downloadProgress) => {
+              if (onAssetComplete) {
+                onAssetComplete({
+                  ...asset,
+                  progress: downloadProgress.progress,
+                  currentIndex: globalIndex,
+                  totalAssets: assets.length,
+                });
+              }
+            }
+          );
+
+          if (result.success) {
+            successCount++;
+          }
+
+          const assetResult = { asset, result };
+          results.push(assetResult);
+
+          if (onProgress) {
+            onProgress({
+              loaded: results.length,
+              total: assets.length,
+              progress: results.length / assets.length,
+              successCount,
+              currentAsset: asset,
+              category: 'map_assets',
+            });
+          }
+          return assetResult;
+        });
+
+        await Promise.all(batchPromises);
+      }
+
+      const totalTime = Date.now() - startTime;
+      this.isDownloading = wasDownloading;
+
+      console.log(`🗺️ Map asset download completed: ${successCount}/${assets.length} in ${totalTime}ms`);
+
+      return {
+        success: true,
+        downloaded: successCount,
+        total: assets.length,
+        totalTime,
+        results,
+        category: 'map_assets',
+        failedAssets: results.filter((r) => !r.result.success).map((r) => r.asset),
+      };
+    } catch (error) {
+      console.error('❌ Error downloading map assets:', error);
+      this.isDownloading = wasDownloading;
+      throw error;
+    }
+  }
+
+  async areMapAssetsCached(mapLevelData) {
+    const assets = this.extractAllAssetsFromMapData(mapLevelData);
+
+    if (assets.length === 0) {
+      return { cached: true, total: 0, available: 0, missing: 0, missingAssets: [] };
+    }
+
+    let availableCount = 0;
+    const missingAssets = [];
+
+    for (const asset of assets) {
+      let isAvailable = false;
+
+      //  FIX: Skip file:// URLs - they're already local
+      if (asset.url.startsWith('file://') || asset.url.startsWith('/data/')) {
+        isAvailable = true;
+        availableCount++;
+        continue;
+      }
+
+      // Step 1: Check in-memory cache first (fast)
+      const assetInfo = this.downloadedAssets.get(asset.url);
+       
+      if (assetInfo && assetInfo.localPath) {
+        try {
+          const fileInfo = await FileSystem.getInfoAsync(assetInfo.localPath);
+          if (fileInfo.exists && fileInfo.size > 0) {
+            isAvailable = true;
+          }
+        } catch (e) {
+          // File check failed, continue to disk check
+        }
+      }
+      
+      // Step 2: If not in memory, check if file exists on disk anyway
+      if (!isAvailable) {
+        const localPath = this.getLocalFilePath(asset.url, asset.category);
+        try {
+          const fileInfo = await FileSystem.getInfoAsync(localPath);
+          if (fileInfo.exists && fileInfo.size > 0) {
+            // Found on disk - add to memory cache
+            this.downloadedAssets.set(asset.url, {
+              localPath,
+              category: asset.category,
+              url: asset.url,
+              downloadedAt: Date.now(),
+              fileSize: fileInfo.size
+            });
+            isAvailable = true;
+          }
+        } catch (e) {
+          // File doesn't exist
+        }
+      }
+
+      if (isAvailable) {
+        availableCount++;
+      } else {
+        missingAssets.push(asset);
+      }
+    }
+
+    const cached = availableCount === assets.length;
+    
+    console.log(`🔍 Asset cache check: ${availableCount}/${assets.length} available`, {
+      cached,
+      missing: missingAssets.length,
+      missingNames: missingAssets.slice(0, 5).map(a => a.name)
+    });
+
+    return {
+      cached,
+      total: assets.length,
+      available: availableCount,
+      missing: assets.length - availableCount,
+      missingAssets
+    };
+  }
+
+  async rebuildMemoryCacheFromDisk(category = 'game_animations') {
+    try {
+      const categoryDir = `${this.cacheDirectory}${category}/`;
+      const dirInfo = await FileSystem.getInfoAsync(categoryDir);
+      
+      if (!dirInfo.exists) {
+        console.log(`📁 Cache directory doesn't exist for ${category}`);
+        return { success: true, rebuilt: 0 };
+      }
+
+      const files = await FileSystem.readDirectoryAsync(categoryDir);
+      let rebuiltCount = 0;
+
+      for (const fileName of files) {
+        const localPath = `${categoryDir}${fileName}`;
+        const fileInfo = await FileSystem.getInfoAsync(localPath);
+        
+        if (fileInfo.exists && fileInfo.size > 0) {
+          // Try to reconstruct the original URL from the filename
+          // This is a reverse lookup - not perfect but helps
+          const existingEntry = Array.from(this.downloadedAssets.entries())
+            .find(([url, info]) => info.localPath === localPath);
+          
+          if (!existingEntry) {
+            // File exists but not in memory - we need to track it
+            // The URL reconstruction isn't perfect, but the file is available
+            console.log(`📦 Found orphaned cache file: ${fileName}`);
+          }
+          rebuiltCount++;
+        }
+      }
+
+      console.log(`🔄 Rebuilt memory cache for ${category}: ${rebuiltCount} files found`);
+      return { success: true, rebuilt: rebuiltCount };
+    } catch (error) {
+      console.warn(`⚠️ Failed to rebuild memory cache for ${category}:`, error);
+      return { success: false, error: error.message };
+    }
+  }
+
 
 
    extractGameVisualAssets(gameState) {
@@ -390,6 +784,276 @@ async testR2Download(testUrl) {
     return assets;
   }
 
+  extractMapThemeAssets(mapThemes) {
+    const assets = [];
+    const addedUrls = new Set();
+
+    const addAsset = (url, name, type, category) => {
+      if (url && 
+          typeof url === 'string' && 
+          !addedUrls.has(url) &&
+          !url.startsWith('file://') &&
+          !url.startsWith('/data/') &&
+          (url.startsWith('http://') || url.startsWith('https://'))) {
+        addedUrls.add(url);
+        assets.push({ url, name, type, category });
+      }
+    };
+
+    if (!mapThemes) return assets;
+
+    // Iterate through all map themes (HTML, CSS, JavaScript, Computer)
+    Object.entries(mapThemes).forEach(([themeName, theme]) => {
+      const prefix = themeName.toLowerCase();
+
+      // --- Backgrounds ---
+      if (theme.backgrounds) {
+        addAsset(theme.backgrounds.topBackground, `${prefix}_top_background`, 'image', 'map_theme_assets');
+        addAsset(theme.backgrounds.repeatingBackground, `${prefix}_repeating_background`, 'image', 'map_theme_assets');
+        // Skip lottie backgrounds - they're loaded differently
+      }
+
+      // --- Buttons ---
+      if (theme.buttons) {
+        addAsset(theme.buttons.unlockedButton, `${prefix}_unlocked_button`, 'image', 'map_theme_assets');
+        addAsset(theme.buttons.lockedButton, `${prefix}_locked_button`, 'image', 'map_theme_assets');
+        addAsset(theme.buttons.buttonBackground, `${prefix}_button_background`, 'image', 'map_theme_assets');
+      }
+
+      // --- Stones ---
+      if (theme.stones) {
+        addAsset(theme.stones.stoneImage, `${prefix}_stone`, 'image', 'map_theme_assets');
+      }
+
+      // --- Floating Comments ---
+      if (theme.floatingComment) {
+        addAsset(theme.floatingComment.commentBackground, `${prefix}_comment_background`, 'image', 'map_theme_assets');
+        addAsset(theme.floatingComment.signageBackground, `${prefix}_signage_background`, 'image', 'map_theme_assets');
+      }
+
+      // --- Icons ---
+      if (theme.icons) {
+        addAsset(theme.icons.enemyButton, `${prefix}_enemy_icon`, 'image', 'map_theme_assets');
+        addAsset(theme.icons.micomiButton, `${prefix}_micomi_icon`, 'image', 'map_theme_assets');
+        addAsset(theme.icons.shopButton, `${prefix}_shop_icon`, 'image', 'map_theme_assets');
+        addAsset(theme.icons.bossButton, `${prefix}_boss_icon`, 'image', 'map_theme_assets');
+      }
+    });
+
+    console.log(`📦 Extracted ${assets.length} map theme assets from static mapData`);
+    return assets;
+  }
+
+  async downloadMapThemeAssets(mapThemes, onProgress = null, onAssetComplete = null) {
+    const wasDownloading = this.isDownloading;
+    this.isDownloading = true;
+
+    try {
+      console.log('🗺️ Starting map theme assets download...');
+      const assets = this.extractMapThemeAssets(mapThemes);
+
+      if (assets.length === 0) {
+        console.log('🗺️ No map theme assets to download.');
+        this.isDownloading = wasDownloading;
+        return { success: true, downloaded: 0, total: 0 };
+      }
+
+      const startTime = Date.now();
+      let successCount = 0;
+      const results = [];
+
+      for (let i = 0; i < assets.length; i += this.maxConcurrentDownloads) {
+        const batch = assets.slice(i, i + this.maxConcurrentDownloads);
+
+        const batchPromises = batch.map(async (asset, batchIndex) => {
+          const globalIndex = i + batchIndex;
+
+          if (onAssetComplete) {
+            onAssetComplete({
+              url: asset.url,
+              name: asset.name,
+              type: asset.type,
+              category: asset.category,
+              progress: 0,
+              currentIndex: globalIndex,
+              totalAssets: assets.length,
+            });
+          }
+
+          const result = await this.downloadSingleAsset(
+            asset.url,
+            asset.category,
+            (downloadProgress) => {
+              if (onAssetComplete) {
+                onAssetComplete({
+                  ...asset,
+                  progress: downloadProgress.progress,
+                  currentIndex: globalIndex,
+                  totalAssets: assets.length,
+                });
+              }
+            }
+          );
+
+          if (result.success) {
+            successCount++;
+          }
+
+          const assetResult = { asset, result };
+          results.push(assetResult);
+
+          if (onProgress) {
+            onProgress({
+              loaded: results.length,
+              total: assets.length,
+              progress: results.length / assets.length,
+              successCount,
+              currentAsset: asset,
+              category: 'map_theme_assets',
+            });
+          }
+          return assetResult;
+        });
+
+        await Promise.all(batchPromises);
+      }
+
+      const totalTime = Date.now() - startTime;
+      this.isDownloading = wasDownloading;
+
+      console.log(`🗺️ Map theme assets download completed: ${successCount}/${assets.length} in ${totalTime}ms`);
+
+      return {
+        success: true,
+        downloaded: successCount,
+        total: assets.length,
+        totalTime,
+        results,
+        category: 'map_theme_assets',
+        failedAssets: results.filter((r) => !r.result.success).map((r) => r.asset),
+      };
+    } catch (error) {
+      console.error('❌ Error downloading map theme assets:', error);
+      this.isDownloading = wasDownloading;
+      throw error;
+    }
+  }
+
+  async areMapThemeAssetsCached(mapThemes) {
+    const assets = this.extractMapThemeAssets(mapThemes);
+
+    if (assets.length === 0) {
+      return { cached: true, total: 0, available: 0, missing: 0, missingAssets: [] };
+    }
+
+    let availableCount = 0;
+    const missingAssets = [];
+
+    for (const asset of assets) {
+      let isAvailable = false;
+
+      // Check memory cache
+      const assetInfo = this.downloadedAssets.get(asset.url);
+      if (assetInfo && assetInfo.localPath) {
+        try {
+          const fileInfo = await FileSystem.getInfoAsync(assetInfo.localPath);
+          if (fileInfo.exists && fileInfo.size > 0) {
+            isAvailable = true;
+          }
+        } catch (e) {
+          // File check failed
+        }
+      }
+
+      // Check disk if not in memory
+      if (!isAvailable) {
+        const localPath = this.getLocalFilePath(asset.url, asset.category);
+        try {
+          const fileInfo = await FileSystem.getInfoAsync(localPath);
+          if (fileInfo.exists && fileInfo.size > 0) {
+            this.downloadedAssets.set(asset.url, {
+              localPath,
+              category: asset.category,
+              url: asset.url,
+              downloadedAt: Date.now(),
+              fileSize: fileInfo.size
+            });
+            isAvailable = true;
+          }
+        } catch (e) {
+          // File doesn't exist
+        }
+      }
+
+      if (isAvailable) {
+        availableCount++;
+      } else {
+        missingAssets.push(asset);
+      }
+    }
+
+    const cached = availableCount === assets.length;
+
+    console.log(`🔍 Map theme assets cache check: ${availableCount}/${assets.length} available`, {
+      cached,
+      missing: missingAssets.length,
+    });
+
+    return {
+      cached,
+      total: assets.length,
+      available: availableCount,
+      missing: assets.length - availableCount,
+      missingAssets
+    };
+  }
+
+  transformMapThemesWithCache(mapThemes) {
+    if (!mapThemes) return mapThemes;
+
+    const transformedThemes = {};
+
+    Object.entries(mapThemes).forEach(([themeName, theme]) => {
+      transformedThemes[themeName] = {
+        ...theme,
+        backgrounds: theme.backgrounds ? {
+          ...theme.backgrounds,
+          topBackground: this.getCachedAssetPath(theme.backgrounds.topBackground),
+          repeatingBackground: this.getCachedAssetPath(theme.backgrounds.repeatingBackground),
+          // Keep lottie as-is (loaded differently)
+          lottieBackground: theme.backgrounds.lottieBackground,
+        } : theme.backgrounds,
+        buttons: theme.buttons ? {
+          ...theme.buttons,
+          unlockedButton: this.getCachedAssetPath(theme.buttons.unlockedButton),
+          lockedButton: this.getCachedAssetPath(theme.buttons.lockedButton),
+          buttonBackground: this.getCachedAssetPath(theme.buttons.buttonBackground),
+        } : theme.buttons,
+        stones: theme.stones ? {
+          ...theme.stones,
+          stoneImage: this.getCachedAssetPath(theme.stones.stoneImage),
+        } : theme.stones,
+        floatingComment: theme.floatingComment ? {
+          ...theme.floatingComment,
+          commentBackground: this.getCachedAssetPath(theme.floatingComment.commentBackground),
+          signageBackground: this.getCachedAssetPath(theme.floatingComment.signageBackground),
+        } : theme.floatingComment,
+        icons: theme.icons ? {
+          ...theme.icons,
+          enemyButton: this.getCachedAssetPath(theme.icons.enemyButton),
+          micomiButton: this.getCachedAssetPath(theme.icons.micomiButton),
+          shopButton: this.getCachedAssetPath(theme.icons.shopButton),
+          bossButton: this.getCachedAssetPath(theme.icons.bossButton),
+        } : theme.icons,
+        colors: theme.colors,
+      };
+    });
+
+    console.log('✅ Map themes transformed with cached paths');
+    return transformedThemes;
+  }
+
+
 
   extractPlayerProfileAssets(playerData) {
     const assets = [];
@@ -509,6 +1173,15 @@ async testR2Download(testUrl) {
     
     if (!gameState) return assets;
 
+    //  Helper to validate URL before adding
+    const isValidRemoteUrl = (url) => {
+      return url && 
+             typeof url === 'string' && 
+             !url.startsWith('file://') && 
+             !url.startsWith('/data/') &&
+             (url.startsWith('http://') || url.startsWith('https://'));
+    };
+
     // Character animations
     if (gameState.character || gameState.selectedCharacter) {
       const char = gameState.character || gameState.selectedCharacter;
@@ -523,7 +1196,7 @@ async testR2Download(testUrl) {
       // Handle character_attack array
       if (Array.isArray(char.character_attack)) {
         char.character_attack.forEach((attackUrl, index) => {
-          if (attackUrl) {
+          if (isValidRemoteUrl(attackUrl)) {
             charAnimations.push({
               url: attackUrl,
               name: `character_attack_${index}`,
@@ -531,7 +1204,7 @@ async testR2Download(testUrl) {
             });
           }
         });
-      } else if (char.character_attack) {
+      } else if (isValidRemoteUrl(char.character_attack)) {
         charAnimations.push({
           url: char.character_attack,
           name: 'character_attack',
@@ -539,15 +1212,14 @@ async testR2Download(testUrl) {
         });
       }
 
-      // Filter out null/undefined URLs and add character context
+      // Filter out invalid URLs and add character context
       charAnimations
-        .filter(asset => asset.url && typeof asset.url === 'string')
+        .filter(asset => isValidRemoteUrl(asset.url))
         .forEach(asset => {
           assets.push({
             ...asset,
-            characterName: char.character_name || char.name,
-            characterId: char.character_id,
-            category: 'game_animations'
+            category: 'game_animations',
+            characterName: char.character_name
           });
         });
     }
@@ -564,82 +1236,16 @@ async testR2Download(testUrl) {
         { url: enemy.enemy_dies, name: 'enemy_dies', type: 'animation' }
       ];
 
-      // Filter out null/undefined URLs and add enemy context
+      // Filter out invalid URLs and add enemy context
       enemyAnimations
-        .filter(asset => asset.url && typeof asset.url === 'string')
+        .filter(asset => isValidRemoteUrl(asset.url))
         .forEach(asset => {
           assets.push({
             ...asset,
-            enemyName: enemy.enemy_name,
-            enemyId: enemy.enemy_id,
-            category: 'game_animations'
+            category: 'game_animations',
+            enemyName: enemy.enemy_name
           });
         });
-    }
-
-    // Fight result animations (from submission data)
-    if (gameState.submissionResult?.fightResult) {
-      const fightChar = gameState.submissionResult.fightResult.character;
-      const fightEnemy = gameState.submissionResult.fightResult.enemy;
-      
-      if (fightChar) {
-        const fightCharAnimations = [
-          { url: fightChar.character_idle, name: 'fight_character_idle', type: 'animation' },
-          { url: fightChar.character_run, name: 'fight_character_run', type: 'animation' },
-          { url: fightChar.character_hurt, name: 'fight_character_hurt', type: 'animation' },
-          { url: fightChar.character_dies, name: 'fight_character_dies', type: 'animation' }
-        ];
-
-        if (Array.isArray(fightChar.character_attack)) {
-          fightChar.character_attack.forEach((url, index) => {
-            if (url) {
-              fightCharAnimations.push({
-                url: url,
-                name: `fight_character_attack_${index}`,
-                type: 'animation'
-              });
-            }
-          });
-        } else if (fightChar.character_attack) {
-          fightCharAnimations.push({
-            url: fightChar.character_attack,
-            name: 'fight_character_attack',
-            type: 'animation'
-          });
-        }
-
-        fightCharAnimations
-          .filter(asset => asset.url && typeof asset.url === 'string')
-          .forEach(asset => {
-            assets.push({
-              ...asset,
-              characterName: fightChar.character_name,
-              characterId: fightChar.character_id,
-              category: 'game_animations'
-            });
-          });
-      }
-      
-      if (fightEnemy) {
-        const fightEnemyAnimations = [
-          { url: fightEnemy.enemy_idle, name: 'fight_enemy_idle', type: 'animation' },
-          { url: fightEnemy.enemy_run, name: 'fight_enemy_run', type: 'animation' },
-          { url: fightEnemy.enemy_attack, name: 'fight_enemy_attack', type: 'animation' },
-          { url: fightEnemy.enemy_hurt, name: 'fight_enemy_hurt', type: 'animation' },
-          { url: fightEnemy.enemy_dies, name: 'fight_enemy_dies', type: 'animation' }
-        ];
-
-        fightEnemyAnimations
-          .filter(asset => asset.url && typeof asset.url === 'string')
-          .forEach(asset => {
-            assets.push({
-              ...asset,
-              enemyName: fightEnemy.enemy_name,
-              enemyId: fightEnemy.enemy_id,
-              category: 'game_animations'
-            });
-          });
-      }
     }
 
     // Remove duplicates based on URL
@@ -647,7 +1253,7 @@ async testR2Download(testUrl) {
       index === self.findIndex(a => a.url === asset.url)
     );
 
-    console.log(`📦 Extracted ${uniqueAssets.length} game animation assets`);
+    console.log(`📦 Extracted ${uniqueAssets.length} game animation assets (remote URLs only)`);
     return uniqueAssets;
   }
 
@@ -674,6 +1280,196 @@ async testR2Download(testUrl) {
   console.log(`📦 Extracted ${assets.length} potion shop assets`);
   return assets;
   }
+
+  extractProfileAssetsForMapReuse(profileData) {
+    const assets = [];
+    const addedUrls = new Set();
+
+    const addAsset = (url, name, type, category) => {
+      if (url && typeof url === 'string' && !addedUrls.has(url)) {
+        addedUrls.add(url);
+        assets.push({ url, name, type, category });
+      }
+    };
+
+    if (!profileData) return assets;
+
+    // Hero/Character display image (same as Map API character assets)
+    if (profileData.heroSelected?.character_image_display) {
+      addAsset(profileData.heroSelected.character_image_display, 'hero_display', 'image', 'game_images');
+    }
+
+    // Badge icons (same URLs as Map API)
+    if (profileData.badges && Array.isArray(profileData.badges)) {
+      profileData.badges.forEach((badge, i) => {
+        if (badge.icon) {
+          addAsset(badge.icon, `badge_icon_${i}`, 'image', 'game_images');
+        }
+        if (badge.landscape_image) {
+          addAsset(badge.landscape_image, `badge_landscape_${i}`, 'image', 'game_images');
+        }
+      });
+    }
+
+    // Selected badge landscape image
+    if (profileData.selectedBadge?.landscape_image) {
+      addAsset(profileData.selectedBadge.landscape_image, 'selected_badge_landscape', 'image', 'game_images');
+    }
+
+    // Potion icons (same URLs as Map API)
+    if (profileData.potions && Array.isArray(profileData.potions)) {
+      profileData.potions.forEach((potion, i) => {
+        if (potion.icon) {
+          addAsset(potion.icon, `potion_icon_${i}`, 'image', 'game_images');
+        }
+      });
+    }
+
+    // Stats icons (coin icon, etc.)
+    if (profileData.statsIcons) {
+      Object.entries(profileData.statsIcons).forEach(([key, url]) => {
+        if (url) {
+          addAsset(url, `stats_icon_${key}`, 'image', 'game_images');
+        }
+      });
+    }
+
+    // Background images
+    if (profileData.background) {
+      addAsset(profileData.background, 'profile_background', 'image', 'game_images');
+    }
+    if (profileData.containerBackground) {
+      addAsset(profileData.containerBackground, 'container_background', 'image', 'game_images');
+    }
+
+    console.log(`📦 Extracted ${assets.length} profile assets for Map cache reuse`);
+    return assets;
+  }
+
+  async areProfileAssetsCachedFromMap(profileData) {
+    const assets = this.extractProfileAssetsForMapReuse(profileData);
+
+    if (assets.length === 0) {
+      return { cached: true, total: 0, available: 0, missing: 0, missingAssets: [] };
+    }
+
+    let availableCount = 0;
+    const missingAssets = [];
+
+    for (const asset of assets) {
+      let isAvailable = false;
+
+      // Check in-memory cache (includes Map API preloaded assets)
+      const assetInfo = this.downloadedAssets.get(asset.url);
+      
+      if (assetInfo && assetInfo.localPath) {
+        try {
+          const fileInfo = await FileSystem.getInfoAsync(assetInfo.localPath);
+          if (fileInfo.exists && fileInfo.size > 0) {
+            isAvailable = true;
+          }
+        } catch (e) {
+          // File check failed
+        }
+      }
+      
+      // If not in memory, check disk in multiple categories (Map API may have stored in different category)
+      if (!isAvailable) {
+        const categoriesToCheck = ['game_images', 'game_animations', 'map_assets', 'player_profile'];
+        
+        for (const category of categoriesToCheck) {
+          const localPath = this.getLocalFilePath(asset.url, category);
+          try {
+            const fileInfo = await FileSystem.getInfoAsync(localPath);
+            if (fileInfo.exists && fileInfo.size > 0) {
+              // Found on disk - add to memory cache
+              this.downloadedAssets.set(asset.url, {
+                localPath,
+                category,
+                url: asset.url,
+                downloadedAt: Date.now(),
+                fileSize: fileInfo.size
+              });
+              isAvailable = true;
+              console.log(`📦 Found profile asset in ${category} cache: ${asset.name}`);
+              break;
+            }
+          } catch (e) {
+            // Continue checking other categories
+          }
+        }
+      }
+
+      if (isAvailable) {
+        availableCount++;
+      } else {
+        missingAssets.push(asset);
+      }
+    }
+
+    const cached = availableCount === assets.length;
+    
+    console.log(`🔍 Profile asset cache check (Map reuse): ${availableCount}/${assets.length} available`, {
+      cached,
+      missing: missingAssets.length,
+      missingNames: missingAssets.slice(0, 5).map(a => a.name)
+    });
+
+    return {
+      cached,
+      total: assets.length,
+      available: availableCount,
+      missing: assets.length - availableCount,
+      missingAssets
+    };
+  }
+
+  async downloadMissingProfileAssets(missingAssets, onProgress = null) {
+    if (!missingAssets || missingAssets.length === 0) {
+      console.log(' No missing profile assets to download');
+      return { success: true, downloaded: 0, total: 0 };
+    }
+
+    console.log(`📦 Downloading ${missingAssets.length} missing profile assets...`);
+    
+    const startTime = Date.now();
+    let successCount = 0;
+
+    for (let i = 0; i < missingAssets.length; i += this.maxConcurrentDownloads) {
+      const batch = missingAssets.slice(i, i + this.maxConcurrentDownloads);
+      
+      const results = await Promise.all(
+        batch.map(asset => 
+          this.downloadSingleAsset(asset.url, 'game_images', null, 2)
+        )
+      );
+
+      results.forEach(result => {
+        if (result.success) successCount++;
+      });
+
+      if (onProgress) {
+        onProgress({
+          loaded: Math.min(i + batch.length, missingAssets.length),
+          total: missingAssets.length,
+          progress: Math.min(i + batch.length, missingAssets.length) / missingAssets.length
+        });
+      }
+    }
+
+    const totalTime = Date.now() - startTime;
+    console.log(`📦 Missing profile assets download completed: ${successCount}/${missingAssets.length} in ${totalTime}ms`);
+
+    return {
+      success: successCount === missingAssets.length,
+      downloaded: successCount,
+      total: missingAssets.length,
+      totalTime
+    };
+  }
+
+
+
 
   async downloadGameVisualAssets(gameState, onProgress = null) {
     try {
@@ -976,6 +1772,88 @@ async arePotionShopAssetsCached(levelPreviewData) {
   };
 }
 
+  isAssetCached(url) {
+    if (!url) return false;
+    
+    // Check if it's already a local file path
+    if (url.startsWith('file://')) return true;
+    
+    // Check memory cache
+    const assetInfo = this.downloadedAssets.get(url);
+    return !!(assetInfo && assetInfo.localPath);
+  }
+
+  //  NEW: Get cached path or return original (sync version)
+  getCachedAssetPathSync(url) {
+    if (!url) return url;
+    if (url.startsWith('file://')) return url;
+    
+    const assetInfo = this.downloadedAssets.get(url);
+    if (assetInfo && assetInfo.localPath) {
+      return `file://${assetInfo.localPath}`;
+    }
+    return url;
+  }
+
+  transformProfileDataWithMapCache(profileData) {
+    if (!profileData) return profileData;
+
+    const transformedData = { ...profileData };
+
+    // Transform hero display image
+    if (transformedData.heroSelected?.character_image_display) {
+      transformedData.heroSelected = {
+        ...transformedData.heroSelected,
+        character_image_display: this.getCachedAssetPath(transformedData.heroSelected.character_image_display)
+      };
+    }
+
+    // Transform selected badge landscape image
+    if (transformedData.selectedBadge?.landscape_image) {
+      transformedData.selectedBadge = {
+        ...transformedData.selectedBadge,
+        landscape_image: this.getCachedAssetPath(transformedData.selectedBadge.landscape_image)
+      };
+    }
+
+    // Transform badge icons and landscape images
+    if (transformedData.badges && Array.isArray(transformedData.badges)) {
+      transformedData.badges = transformedData.badges.map(badge => ({
+        ...badge,
+        icon: badge.icon ? this.getCachedAssetPath(badge.icon) : badge.icon,
+        landscape_image: badge.landscape_image ? this.getCachedAssetPath(badge.landscape_image) : badge.landscape_image
+      }));
+    }
+
+    // Transform potion icons
+    if (transformedData.potions && Array.isArray(transformedData.potions)) {
+      transformedData.potions = transformedData.potions.map(potion => ({
+        ...potion,
+        icon: potion.icon ? this.getCachedAssetPath(potion.icon) : potion.icon
+      }));
+    }
+
+    // Transform stats icons
+    if (transformedData.statsIcons) {
+      const transformedIcons = {};
+      Object.entries(transformedData.statsIcons).forEach(([key, url]) => {
+        transformedIcons[key] = url ? this.getCachedAssetPath(url) : url;
+      });
+      transformedData.statsIcons = transformedIcons;
+    }
+
+    // Transform backgrounds
+    if (transformedData.background) {
+      transformedData.background = this.getCachedAssetPath(transformedData.background);
+    }
+    if (transformedData.containerBackground) {
+      transformedData.containerBackground = this.getCachedAssetPath(transformedData.containerBackground);
+    }
+
+    console.log(' Profile data transformed with Map API cached paths');
+    return transformedData;
+  }
+
 transformPotionShopDataWithCache(levelPreviewData) {
   if (!levelPreviewData || !levelPreviewData.potionShop) return levelPreviewData;
 
@@ -989,6 +1867,92 @@ transformPotionShopDataWithCache(levelPreviewData) {
 
   return transformedData;
 }
+
+
+  transformLevelPreviewWithCache(previewData) {
+    if (!previewData) return previewData;
+
+    const transformed = { ...previewData };
+
+    // Transform enemy avatar
+    if (transformed.enemy?.enemy_avatar) {
+      const cachedPath = this.getCachedAssetPath(transformed.enemy.enemy_avatar);
+      if (cachedPath !== transformed.enemy.enemy_avatar) {
+        console.log(`📦 Using cached enemy avatar for preview`);
+        transformed.enemy = {
+          ...transformed.enemy,
+          enemy_avatar: cachedPath
+        };
+      }
+    }
+
+    // Transform character avatar
+    if (transformed.character?.character_avatar) {
+      const cachedPath = this.getCachedAssetPath(transformed.character.character_avatar);
+      if (cachedPath !== transformed.character.character_avatar) {
+        console.log(`📦 Using cached character avatar for preview`);
+        transformed.character = {
+          ...transformed.character,
+          character_avatar: cachedPath
+        };
+      }
+    }
+
+    return transformed;
+  }
+
+  
+  async areLevelPreviewAssetsCached(previewData) {
+    if (!previewData) return { cached: true, total: 0, available: 0 };
+
+    const avatarUrls = [];
+    
+    if (previewData.enemy?.enemy_avatar) {
+      avatarUrls.push(previewData.enemy.enemy_avatar);
+    }
+    if (previewData.character?.character_avatar) {
+      avatarUrls.push(previewData.character.character_avatar);
+    }
+
+    if (avatarUrls.length === 0) {
+      return { cached: true, total: 0, available: 0 };
+    }
+
+    let availableCount = 0;
+    for (const url of avatarUrls) {
+      const assetInfo = this.downloadedAssets.get(url);
+      if (assetInfo && assetInfo.localPath) {
+        const fileInfo = await FileSystem.getInfoAsync(assetInfo.localPath);
+        if (fileInfo.exists && fileInfo.size > 0) {
+          availableCount++;
+        }
+      } else {
+        // Check disk directly
+        const localPath = this.getLocalFilePath(url, 'game_images');
+        const fileInfo = await FileSystem.getInfoAsync(localPath);
+        if (fileInfo.exists && fileInfo.size > 0) {
+          // Add to memory cache
+          this.downloadedAssets.set(url, {
+            localPath,
+            category: 'game_images',
+            url,
+            downloadedAt: Date.now()
+          });
+          availableCount++;
+        }
+      }
+    }
+
+    const cached = availableCount === avatarUrls.length;
+    console.log(`🔍 Level preview avatars cache check: ${availableCount}/${avatarUrls.length} available`);
+
+    return {
+      cached,
+      total: avatarUrls.length,
+      available: availableCount,
+      missing: avatarUrls.length - availableCount
+    };
+  }
 
 
 
@@ -1169,6 +2133,7 @@ transformPotionShopDataWithCache(levelPreviewData) {
 
     const transformedGameState = { ...gameState };
     
+    
     // Transform character animations
     if (transformedGameState.selectedCharacter) {
       const character = transformedGameState.selectedCharacter;
@@ -1216,6 +2181,10 @@ transformPotionShopDataWithCache(levelPreviewData) {
     }
 
 
+    if (transformedGameState.is_victory_image) {
+      transformedGameState.is_victory_image = this.getCachedAssetPath(transformedGameState.is_victory_image);
+    }
+
     if (Array.isArray(transformedGameState.combat_background)) {
       transformedGameState.combat_background = transformedGameState.combat_background.map(url => this.getCachedAssetPath(url));
     }
@@ -1250,6 +2219,11 @@ transformPotionShopDataWithCache(levelPreviewData) {
     // Transform fight result animations
     if (transformedGameState.submissionResult) {
       const sub = transformedGameState.submissionResult;
+
+      if (sub.is_victory_image) {
+        sub.is_victory_image = this.getCachedAssetPath(sub.is_victory_image);
+      }
+
 
       if (Array.isArray(sub.combat_background)) {
         sub.combat_background = sub.combat_background.map(url => this.getCachedAssetPath(url));
@@ -1714,48 +2688,43 @@ transformPotionShopDataWithCache(levelPreviewData) {
       const cacheKey = category === 'characters' ? 'characterAssets' : `${category}Assets`;
       const cacheInfoString = await AsyncStorage.getItem(cacheKey);
       
+      let loadedCount = 0;
+      
       if (cacheInfoString) {
         const cacheInfo = JSON.parse(cacheInfoString);
         
-        // Verify cached files still exist
-        let loadedCount = 0;
-        for (const [url, assetInfo] of cacheInfo.assets) {
-          if (assetInfo && assetInfo.localPath) {
-            const fileInfo = await FileSystem.getInfoAsync(assetInfo.localPath);
-            if (fileInfo.exists && fileInfo.size > 0) {
-              this.downloadedAssets.set(url, {
-                ...assetInfo,
-                loadedFromCache: true
-              });
-              
-              // Also add to preloaded if it's an image
-              if (this.isImageFile(url)) {
-                this.preloadedAssets.set(url, {
-                  loadedAt: cacheInfo.downloadedAt,
-                  url,
-                  localPath: assetInfo.localPath,
-                  fromCache: true,
-                  category
-                });
+        if (cacheInfo.assets && Array.isArray(cacheInfo.assets)) {
+          for (const [url, assetInfo] of cacheInfo.assets) {
+            if (assetInfo && assetInfo.localPath) {
+              // Verify file still exists
+              const fileInfo = await FileSystem.getInfoAsync(assetInfo.localPath);
+              if (fileInfo.exists && fileInfo.size > 0) {
+                this.downloadedAssets.set(url, assetInfo);
+                loadedCount++;
               }
-              
-              loadedCount++;
-            } else {
-              console.warn(`⚠️ Cached file missing or empty: ${assetInfo.localPath}`);
             }
           }
         }
         
-        console.log(`📂 Loaded ${loadedCount} cached ${category} assets from storage`);
-        return { success: true, loadedCount, totalCached: cacheInfo.assets.length };
+        console.log(`📦 Loaded ${loadedCount} cached ${category} assets from AsyncStorage`);
+      }
+
+      //  Also scan the directory for any files not in AsyncStorage
+      const categoryDir = `${this.cacheDirectory}${category}/`;
+      const dirInfo = await FileSystem.getInfoAsync(categoryDir);
+      
+      if (dirInfo.exists) {
+        const files = await FileSystem.readDirectoryAsync(categoryDir);
+        console.log(`📁 Found ${files.length} files in ${category} cache directory`);
       }
       
-      return { success: true, loadedCount: 0, totalCached: 0 };
+      return { success: true, loadedCount, totalCached: loadedCount };
     } catch (error) {
       console.warn(`⚠️ Failed to load cached ${category} assets:`, error);
       return { success: false, error: error.message };
     }
   }
+
 
   async areCharacterAssetsCached(charactersData) {
     const assets = this.extractCharacterAssets(charactersData);

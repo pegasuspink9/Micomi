@@ -825,6 +825,7 @@ export default function GamePlay() {
             isRetrying={isRetrying} 
             completionRewards={completionRewards}
             defeatAudioUrl={gameState?.submissionResult?.is_victory_audio}
+            defeatImageUrl={gameState?.submissionResult?.is_victory_image} 
           />
             
           <LevelCompletionModal
@@ -836,6 +837,7 @@ export default function GamePlay() {
               nextLevel={!!gameState?.submissionResult?.nextLevel}
               isLoading={isLoadingNextLevel}
               victoryAudioUrl={gameState?.submissionResult?.is_victory_audio}
+              victoryImageUrl={gameState?.submissionResult?.is_victory_image} 
           />
         
           </View>

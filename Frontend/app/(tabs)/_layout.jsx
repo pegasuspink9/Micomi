@@ -1,6 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { StyleSheet, Image } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { gameScale } from '../Components/Responsiveness/gameResponsive';
 import TabBarIconWrapper from '../Components/Tabs Components/TabBarIconWrapper';
@@ -13,13 +12,11 @@ const profileIconUri = require('../Components/Tabs Components/ProfileIcon.png');
 
 const backgroundIcon = require('../Components/Tabs Components/BackgroundIcon.png');
 
-
-
-
 export default function TabLayout() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
     <Tabs
+      initialRouteName="Map" 
       screenOptions={{
         tabBarStyle: styles.tabBar,
         headerShown: false,

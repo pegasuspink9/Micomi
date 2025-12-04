@@ -1,16 +1,28 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, Image, Animated, Pressable, Modal } from 'react-native'; // ✅ Add Modal import
+import React, { useState, useMemo } from 'react';
+import { View, Text, StyleSheet, Dimensions, Image, Animated, Pressable, Modal } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { gameScale } from '../../Responsiveness/gameResponsive';
+import { universalAssetPreloader } from '../../../services/preloader/universalAssetPreloader';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const BossLevelModal = ({ bossData, opacityAnim, bounceAnim, glowAnim }) => {
-  const [showWebView, setShowWebView] = useState(false); // ✅ Add state for WebView
+  const [showWebView, setShowWebView] = useState(false);
+
+  // NEW: Get cached avatar URL
+  const cachedBossAvatar = useMemo(() => {
+    if (!bossData?.enemy_avatar) return null;
+    
+    const cachedPath = universalAssetPreloader.getCachedAssetPath(bossData.enemy_avatar);
+    if (cachedPath !== bossData.enemy_avatar) {
+      console.log(`📦 BossLevelModal: Using cached boss avatar`);
+    }
+    return cachedPath;
+  }, [bossData?.enemy_avatar]);
 
   if (!bossData) return null;
 
-  // ✅ Add glow interpolation to match enemy animation
+  // Add glow interpolation to match enemy animation
   const glowInterpolate = glowAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0.8, 1],
@@ -64,7 +76,7 @@ const BossLevelModal = ({ bossData, opacityAnim, bounceAnim, glowAnim }) => {
 
         <View style={styles.avatarFrame}>
           <Animated.Image 
-            source={{ uri: bossData.enemy_avatar }}
+            source={{ uri: cachedBossAvatar }} // Use cached avatar
             style={[
               styles.enemyAvatar,
               {
@@ -118,10 +130,6 @@ const BossLevelModal = ({ bossData, opacityAnim, bounceAnim, glowAnim }) => {
         </View>
 
       </Animated.View>
-      
-    
-
-     
     </>
   );
 };

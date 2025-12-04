@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,45 +11,43 @@ import {
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { usePlayerProfile } from '../../hooks/usePlayerProfile';
-import AssetDownloadProgress from '../../Components/RoadMap/LoadingState/assetDownloadProgress';
 import { gameScale } from '../Responsiveness/gameResponsive';
 import BadgeDetailModal from './Badge Modal/BadgeDetailModal';
 
 export default function BadgesView() {
   const router = useRouter();
   const playerId = 11;
-  const { playerData, loading, assetsLoading, assetsProgress, loadPlayerProfile } = usePlayerProfile(playerId);
-
+  // ✅ Simplified - removed assetsLoading and assetsProgress (no longer needed)
+  const { playerData, loading, loadPlayerProfile } = usePlayerProfile(playerId);
 
   const [selectedBadge, setSelectedBadge] = useState(null);
   const [selectedGradient, setSelectedGradient] = useState(['#8B4513', '#be874fff']);
   const [modalVisible, setModalVisible] = useState(false);
 
   const getRandomPastelGradient = (index) => {
-        const pastelGradients = [
-      ['#8B4513', '#be874fff'], // Brown/Peru
-      ['#20613cff', '#266944ff'], // Sea Green/Medium Sea Green
-      ['#443268ff', '#6c3978ff'], // Medium Purple/Medium Orchid
-      ['#774052ff', '#764867ff'], // Pale Violet Red/Medium Violet Red
-      ['#1b3448ff', '#213435ff'], // Steel Blue/Cadet Blue
-      ['#3f1a1aff', '#6f4537ff'], // Indian Red/Dark Salmon
-      ['#541c6fff', '#5d2b69ff'], // Dark Orchid/Medium Orchid
-      ['#104e4bff', '#276b69ff'], // Light Sea Green/Medium Turquoise
-      ['#315f4fff', '#212d21ff'], // Medium Aquamarine/Dark Sea Green
-      ['#763f39ff', '#824949ff'], // Salmon/Light Coral
-      ['#342d65ff', '#3b3171ff'], // Slate Blue/Medium Slate Blue
+    const pastelGradients = [
+      ['#8B4513', '#be874fff'],
+      ['#20613cff', '#266944ff'],
+      ['#443268ff', '#6c3978ff'],
+      ['#774052ff', '#764867ff'],
+      ['#1b3448ff', '#213435ff'],
+      ['#3f1a1aff', '#6f4537ff'],
+      ['#541c6fff', '#5d2b69ff'],
+      ['#104e4bff', '#276b69ff'],
+      ['#315f4fff', '#212d21ff'],
+      ['#763f39ff', '#824949ff'],
+      ['#342d65ff', '#3b3171ff'],
     ];
-    
     return pastelGradients[index % pastelGradients.length];
   };
 
   const getProgressColor = (percentage) => {
     if (percentage < 33) {
-      return ['#CD5C5C', '#E9967A']; // Red gradient (low progress)
+      return ['#CD5C5C', '#E9967A'];
     } else if (percentage < 66) {
-      return ['#FFD700', '#FFA500']; // Gold/Orange gradient (medium progress)
+      return ['#FFD700', '#FFA500'];
     } else {
-      return ['#2E8B57', '#3CB371']; // Green gradient (high progress)
+      return ['#2E8B57', '#3CB371'];
     }
   };
 
@@ -64,33 +62,19 @@ export default function BadgesView() {
     setModalVisible(true);
   };
 
-
-  if (assetsLoading) {
-    return (
-      <>
-        <SafeAreaView style={styles.container}>
-          {/* Dark bluish gradient background for loading */}
-          <LinearGradient
-            colors={['#000000ff', '#1a2d4a', '#0f2137', '#000000ff', '#000000ff']}
-            locations={[0, 0.25, 0.5, 0.75, 1]}
-            style={styles.backgroundContainer}
-          >
-            <View style={styles.backgroundOverlay} />
-          </LinearGradient>
-        </SafeAreaView>
-        <AssetDownloadProgress
-          visible={assetsLoading}
-          progress={assetsProgress}
-          currentAsset={assetsProgress.currentAsset}
-        />
-      </>
-    );
-  }
-
   if (loading || !playerData) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={styles.loadingText}>Loading badges...</Text>
+        <LinearGradient
+          colors={['#1e1d1dff', '#1a2d4a', '#0f2137', '#1a2d4a', '#1a2d4a']}
+          locations={[0, 0.25, 0.5, 0.75, 1]}
+          style={styles.backgroundContainer}
+        >
+          <View style={styles.backgroundOverlay} />
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Loading badges...</Text>
+          </View>
+        </LinearGradient>
       </SafeAreaView>
     );
   }
@@ -102,10 +86,9 @@ export default function BadgesView() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Dark bluish gradient background */}
       <LinearGradient
-         colors={['#1e1d1dff', '#1a2d4a', '#0f2137', '#1a2d4a', '#1a2d4a']}
-          locations={[0, 0.25, 0.5, 0.75, 1]}
+        colors={['#1e1d1dff', '#1a2d4a', '#0f2137', '#1a2d4a', '#1a2d4a']}
+        locations={[0, 0.25, 0.5, 0.75, 1]}
         style={styles.backgroundContainer}
       >
         <View style={styles.backgroundOverlay} />
@@ -132,21 +115,16 @@ export default function BadgesView() {
                     colors={progressColors}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    style={[
-                      styles.progressBar,
-                      { width: `${progressPercentage}%` }
-                    ]}
+                    style={[styles.progressBar, { width: `${progressPercentage}%` }]}
                   />
                 </View>
               </View>
             </View>
-            <Text style={styles.progressText}>
-              {progressPercentage}% Complete
-            </Text>
+            <Text style={styles.progressText}>{progressPercentage}% Complete</Text>
           </View>
 
           {/* Earned Badges */}
-         <View style={styles.section}>
+          <View style={styles.section}>
             <Text style={styles.sectionTitle}>Earned Badges ({earnedBadges.length})</Text>
             <View style={styles.badgesGrid}>
               {earnedBadges.map((badge, index) => {
@@ -237,7 +215,7 @@ export default function BadgesView() {
         </ScrollView>
       </LinearGradient>
 
-       <BadgeDetailModal
+      <BadgeDetailModal
         visible={modalVisible}
         badge={selectedBadge}
         gradientColors={selectedGradient}
@@ -264,14 +242,12 @@ const BadgeCard = ({ badge }) => {
         />
       </View>
       
-      {/* Centered Separator Line */}
       <View style={styles.separator} />
       
-      {/* Lower 30% for the Text */}
       <View style={styles.badgeTextContainer}>
         <Text 
           style={styles.badgeDescription} 
-          numberOfLines={2} // Max 2 lines for description
+          numberOfLines={2}
           ellipsizeMode="tail"
         >
           {badge.description}
@@ -280,8 +256,6 @@ const BadgeCard = ({ badge }) => {
     </View>
   );
 };
-
-
 
 const styles = StyleSheet.create({
   container: {
@@ -296,11 +270,15 @@ const styles = StyleSheet.create({
   backgroundOverlay: {
     ...StyleSheet.absoluteFillObject,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   loadingText: {
     color: 'white',
     fontSize: gameScale(14),
     textAlign: 'center',
-    marginTop: gameScale(50),
     fontFamily: 'Computerfont',
   },
   header: {
@@ -357,7 +335,6 @@ const styles = StyleSheet.create({
     fontFamily: 'MusicVibes',
     marginBottom: gameScale(8),
   },
-
   progressBarLayer1: {
     width: '80%',
     height: gameScale(20),
@@ -370,7 +347,6 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 8,
   },
-
   progressBarLayer2: {
     width: '100%',
     height: '100%',
@@ -383,8 +359,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(0, 0, 0, 0.3)',
     borderRightColor: 'rgba(0, 0, 0, 0.3)',
   },
-
-   progressBarLayer3: {
+  progressBarLayer3: {
     width: '100%',
     height: '100%',
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -393,8 +368,7 @@ const styles = StyleSheet.create({
     borderWidth: gameScale(1),
     borderColor: 'rgba(0, 0, 0, 0.4)',
   },
-
-   progressBar: {
+  progressBar: {
     height: '100%',
     borderRadius: gameScale(16),
     shadowColor: '#ffffff',
@@ -403,7 +377,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-
   progressText: {
     fontSize: gameScale(16),
     color: '#ffffffff',
@@ -413,7 +386,6 @@ const styles = StyleSheet.create({
     textShadowRadius: gameScale(3),
     marginTop: gameScale(8),
   },
-
   section: {
     marginBottom: gameScale(24),
   },
@@ -427,8 +399,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: gameScale(1), height: gameScale(1) },
     textShadowRadius: gameScale(3),
   },
-  
-  //  COPIED AND MODIFIED: Badge grid styles from InventorySection
   badgesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -462,14 +432,11 @@ const styles = StyleSheet.create({
   badgeGridItemRight: {
     borderRadius: gameScale(12),
   },
-  
-  // Badge card styles
-   badgeCard: {
+  badgeCard: {
     width: '100%',
     height: '100%',
   },
-
-   badgeIconContainer: {
+  badgeIconContainer: {
     flex: 0.80, 
     width: '100%',
     backgroundColor: 'rgba(0, 100, 124, 0.2)', 
@@ -477,12 +444,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   badgeIconImage: {
     width: gameScale(150),
     height: gameScale(150),
   },
-
   separator: {
     height: gameScale(2),
     width: '100%',
@@ -507,11 +472,5 @@ const styles = StyleSheet.create({
     textShadowColor: '#000000ff',
     textShadowOffset: { width: gameScale(1), height: gameScale(1) },
     textShadowRadius: gameScale(3),
-  },
-  earnedContainer: {
-    alignItems: 'center',
-  },
-  lockedContainer: {
-    alignItems: 'center',
   },
 });

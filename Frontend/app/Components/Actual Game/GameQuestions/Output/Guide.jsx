@@ -218,7 +218,6 @@ const ExampleOutput = useCallback(({ exampleCode, exampleKey }) => {
       contentContainerStyle={styles.guideScrollContent}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.guideTitle}>Lesson</Text>
       <View style={styles.guideContent}>
         {renderGuideContent(currentQuestion?.guide)}
       </View>

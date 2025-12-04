@@ -17,6 +17,7 @@ import {
 import { Image } from 'expo-image';
 import { Image as RNImage } from 'react-native';
 import { soundManager } from '../Actual Game/Sounds/UniversalSoundManager';
+import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
 
 // Import Reanimated
 import Reanimated, { 
@@ -77,11 +78,11 @@ const GameOverModal = ({
   enemyName = 'Enemy',
   isRetrying = false,
   completionRewards = null,
-  defeatAudioUrl = null
+  defeatAudioUrl = null,
+  defeatImageUrl = null
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [imageReady, setImageReady] = useState(false);
-  const [preloadedImages] = useState(new Map());
 
   //  COPIED: Triggers for reward counters
   const [startCoinCount, setStartCoinCount] = useState(false);
@@ -100,6 +101,36 @@ const GameOverModal = ({
   
   const buttonsTranslateY = useSharedValue(SCREEN_HEIGHT);
 
+  //  FIXED: Use backend image directly, no fallback
+  const [animationUrl, setAnimationUrl] = useState(null);
+
+  //  FIXED: Debug and properly set the image URL from backend
+  useEffect(() => {
+    console.log('🎮 GameOver defeatImageUrl received:', defeatImageUrl);
+    
+    if (defeatImageUrl && typeof defeatImageUrl === 'string') {
+      // Try to get cached path first
+      const cached = universalAssetPreloader.getCachedAssetPath(defeatImageUrl);
+      console.log('🎮 GameOver cached path:', cached);
+      setAnimationUrl(cached);
+      
+      // If it's a cached local file, it's ready immediately
+      if (cached && cached.startsWith('file://')) {
+        console.log('🎮 GameOver image is cached locally, ready immediately');
+        setImageReady(true);
+      } else {
+        // Need to load from remote URL
+        console.log('🎮 GameOver image needs to be loaded from remote:', cached);
+        setImageReady(false);
+      }
+    } else {
+      console.warn('🎮 GameOver: No defeatImageUrl provided!');
+      //  Still set a URL so the component doesn't break - use direct URL
+      setAnimationUrl(null);
+      setImageReady(false);
+    }
+  }, [defeatImageUrl]);
+
   useEffect(() => {
     if (visible && defeatAudioUrl) {
       soundManager.playDefeatSound(defeatAudioUrl);
@@ -114,47 +145,48 @@ const GameOverModal = ({
   const FRAME_DURATION = 50;
 
   const frameIndex = useSharedValue(0);
-  
-  //  COPIED: Animation URLs
-  const animationUrls = [
-    'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/Failed1.png',
-    'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/Failed2.png',
-    'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Micomi%20Celebrating/Failed3.png'
-  ];
 
-  const [animationUrl, setAnimationUrl] = useState(() => animationUrls[Math.floor(Math.random() * animationUrls.length)]);
-
-  // ========== Image Preloading ==========
-  const prefetchWithCache = useCallback(async () => {
-    if (!animationUrl) return;
-    try {
-      if (preloadedImages.has(animationUrl)) {
-        setImageReady(true);
-        return;
-      }
-      await RNImage.prefetch(animationUrl);
-      preloadedImages.set(animationUrl, true);
-      setImageReady(true);
-    } catch (err) {
-      console.warn(`GameOver prefetch failed:`, err);
-    }
-  }, [animationUrl, preloadedImages]);
-
+  // ========== Image Loading ==========
   useEffect(() => {
-    let mounted = true;
-    setImageReady(false);
-    if (!animationUrl) return;
-    if (preloadedImages.has(animationUrl)) {
-      if (mounted) setImageReady(true);
+    if (!animationUrl) {
+      console.log('🎮 GameOver: No animationUrl set yet');
+      setImageReady(false);
       return;
     }
-    prefetchWithCache();
+
+    // If it's already a local file path, it's ready
+    if (animationUrl.startsWith('file://')) {
+      console.log('🎮 GameOver image is cached locally, ready immediately');
+      setImageReady(true);
+      return;
+    }
+
+    // Otherwise prefetch remote URL
+    let mounted = true;
+    setImageReady(false);
+    
+    console.log('🎮 GameOver: Prefetching remote image:', animationUrl);
+    
+    (async () => {
+      try {
+        await RNImage.prefetch(animationUrl);
+        if (mounted) {
+          console.log('🎮 GameOver: Image prefetched successfully');
+          setImageReady(true);
+        }
+      } catch (err) {
+        console.warn(`🎮 GameOver prefetch failed:`, err);
+        // Still set ready to allow rendering with expo-image handling
+        if (mounted) setImageReady(true);
+      }
+    })();
+    
     return () => { mounted = false; };
-  }, [animationUrl, prefetchWithCache]);
+  }, [animationUrl]);
 
   // ========== Sprite Animation Logic ==========
   useEffect(() => {
-    if (visible && imageReady) {
+    if (visible && imageReady && animationUrl) {
       frameIndex.value = 0;
       frameIndex.value = withRepeat(
         withTiming(TOTAL_FRAMES - 1, {
@@ -167,7 +199,7 @@ const GameOverModal = ({
       cancelAnimation(frameIndex);
       frameIndex.value = 0;
     }
-  }, [visible, imageReady, TOTAL_FRAMES, FRAME_DURATION]);
+  }, [visible, imageReady, animationUrl, TOTAL_FRAMES, FRAME_DURATION]);
 
   const spriteSheetStyle = useAnimatedStyle(() => {
     const index = Math.floor(frameIndex.value);
@@ -184,8 +216,6 @@ const GameOverModal = ({
   // ========== ENTRANCE SEQUENCE ==========
   useEffect(() => {
     if (visible) {
-      setAnimationUrl(animationUrls[Math.floor(Math.random() * animationUrls.length)]);
-      
       // Reset triggers
       setStartCoinCount(false);
       setStartPointCount(false);
@@ -253,6 +283,7 @@ const GameOverModal = ({
   }, []);
 
   const handleImageLoadEnd = useCallback(() => {
+    console.log('🎮 GameOver: Image loaded successfully');
     setImageReady(true);
   }, []);
 
@@ -288,7 +319,7 @@ const GameOverModal = ({
         
         <Text style={styles.gameOverTitle}>GAME OVER</Text>
 
-          {/* 2. Sprite Animation (Slides Up) -  MOVED BELOW TEXT */}
+          {/* 2. Sprite Animation (Slides Up) */}
           <Reanimated.View 
             style={[
               styles.spriteContainerWrapper,
@@ -306,7 +337,8 @@ const GameOverModal = ({
                   spriteSheetStyle
                 ]}
               >
-                {animationUrl && imageReady ? (
+                {/*  FIXED: Only render if we have animationUrl */}
+                {animationUrl ? (
                   <Image
                     source={{ uri: animationUrl }}
                     style={styles.spriteImage}
@@ -317,14 +349,16 @@ const GameOverModal = ({
                     priority="high"
                   />
                 ) : (
-                  <View style={[styles.spriteImage, { backgroundColor: 'transparent' }]} />
+                  <View style={[styles.spriteImage, { backgroundColor: 'transparent' }]}>
+                    <ActivityIndicator size="large" color="#fff" />
+                  </View>
                 )}
               </Reanimated.View>
             </View>
           </Reanimated.View>
 
             
-          {/* 1. Text (Game Over + Defeated Message) -  MOVED TO TOP */}
+          {/* 1. Text (Game Over + Defeated Message) */}
           <Reanimated.View
             style={[
               {
@@ -339,7 +373,6 @@ const GameOverModal = ({
             <Text style={styles.defeatMessage}>
               {characterName} was defeated by {enemyName}
             </Text>
-            {/*  Added feedback message support */}
             {completionRewards?.feedbackMessage && (
                <Text style={styles.feedbackMessage}>
                  {completionRewards.feedbackMessage}
