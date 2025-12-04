@@ -226,8 +226,12 @@ export function generateQuestsByPeriod(
     t.availableFor.includes(period)
   );
 
-  const shuffled = [...availableTemplates].sort(() => Math.random() - 0.5);
-  const selected = shuffled.slice(0, count);
+  const selected: QuestTemplate[] = [];
+  for (let i = 0; i < count; i++) {
+    const template =
+      availableTemplates[Math.floor(Math.random() * availableTemplates.length)];
+    selected.push(template);
+  }
 
   return selected.map((template) => {
     const targetValue =
@@ -314,7 +318,7 @@ export async function generatePeriodicQuests(period: QuestPeriod) {
   const expirationDate = getExpirationDate(period);
   const startDate = getStartDate(period);
 
-  const questCount = period === "daily" ? 3 : period === "weekly" ? 4 : 5;
+  const questCount = period === "daily" ? 15 : period === "weekly" ? 10 : 7;
 
   try {
     const allPlayers = await prisma.player.findMany({
@@ -473,7 +477,7 @@ export async function forceGenerateQuestsForPlayer(
 ) {
   const expirationDate = getExpirationDate(period);
   const startDate = getStartDate(period);
-  const questCount = period === "daily" ? 3 : period === "weekly" ? 4 : 5;
+  const questCount = period === "daily" ? 15 : period === "weekly" ? 10 : 7;
 
   await prisma.playerQuest.deleteMany({
     where: {

@@ -43,4 +43,6 @@ router.get("/admin/stats", QuestService.adminGetQuestStats);
 
 router.get("/admin/stats/daily", QuestService.adminGetDailyQuestStats);
 
+router.post("/admin/fill-missing", QuestService.adminFillMissingQuests); //temporary only
+
 export default router;

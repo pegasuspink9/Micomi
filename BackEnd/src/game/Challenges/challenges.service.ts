@@ -30,6 +30,14 @@ const reverseString = (str: string): string => str.split("").reverse().join("");
 const isTimedChallengeType = (type: string) =>
   ["multiple choice", "fill in the blank"].includes(type);
 
+function shuffleArray<T>(array: T[]): T[] {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
 const buildChallengeWithTimer = (
   challenge: Challenge,
   timeRemaining: number
@@ -476,7 +484,6 @@ export const submitChallengeService = async (
       characterDamageForCoins
     );
 
-  // Type guard: check if the result is an error response
   if (
     !updatedProgress ||
     "success" in updatedProgress ||
@@ -1139,6 +1146,15 @@ const wrapWithTimer = async (
         "- Reversal curse applied: options strings reversed and jumbled for display"
       );
     }
+  } else if (
+    progress.has_shuffle_ss &&
+    level.enemy?.enemy_name === "Boss Maggmaw"
+  ) {
+    const options = challenge.options as string[];
+    if (Array.isArray(options) && options.length > 0) {
+      modifiedChallenge.options = shuffleArray([...options]);
+      console.log("- Shuffle SS applied: options shuffled for display");
+    }
   }
 
   const challengeStart = new Date(progress.challenge_start_time ?? Date.now());
@@ -1155,7 +1171,12 @@ const wrapWithTimer = async (
     data: { challenge_start_time: new Date() },
   });
 
+  const builtChallenge = buildChallengeWithTimer(
+    modifiedChallenge,
+    timeRemaining
+  );
+
   return {
-    nextChallenge: buildChallengeWithTimer(modifiedChallenge, timeRemaining),
+    nextChallenge: builtChallenge,
   };
 };
