@@ -37,12 +37,13 @@ export interface FightResult {
 }
 
 export interface SubmitChallengeServiceResult {
-  isCorrect: boolean;
-  attempts: number;
-  fightResult: FightResult | null;
+  isCorrect?: boolean;
+  attempts?: number;
+  fightResult?: FightResult | null;
   message: string;
-  audio: string[];
-  nextChallenge: unknown | null;
+  audio?: string[];
+  nextChallenge?: unknown | null;
+  success?: boolean;
 }
 
 export interface CompletionRewards {

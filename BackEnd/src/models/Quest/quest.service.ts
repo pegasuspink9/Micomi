@@ -7,9 +7,126 @@ import {
   cleanupExpiredQuests,
   getPlayerQuestsByPeriod,
   forceGenerateQuestsForPlayer,
+  getStartDate,
+  getExpirationDate,
 } from "./periodicQuests.service";
 
 const prisma = new PrismaClient();
+
+const formatQuestData = (playerQuests: any[]) => {
+  return playerQuests.map((pq) => ({
+    player_quest_id: pq.player_quest_id,
+    quest_id: pq.quest_id,
+    title: pq.quest.title,
+    description: pq.quest.description,
+    objective_type: pq.quest.objective_type,
+    target_value: pq.quest.target_value,
+    current_value: pq.current_value,
+    reward_exp: pq.quest.reward_exp,
+    reward_coins: pq.quest.reward_coins,
+    quest_period: pq.quest_period,
+    is_completed: pq.is_completed,
+    is_claimed: pq.is_claimed,
+    completed_at: pq.completed_at,
+    expires_at: pq.expires_at,
+    progress_percentage: Math.min(
+      100,
+      Math.round((pq.current_value / pq.quest.target_value) * 100)
+    ),
+  }));
+};
+
+export const getAllPlayerQuests = async (playerId: number) => {
+  try {
+    const now = new Date();
+
+    const dailyQuests = await prisma.playerQuest.findMany({
+      where: {
+        player_id: playerId,
+        quest_period: "daily",
+        expires_at: {
+          gte: getStartDate("daily"),
+          lte: getExpirationDate("daily"),
+        },
+        is_completed: false,
+        is_claimed: false,
+      },
+      include: { quest: true },
+      orderBy: { player_quest_id: "asc" },
+    });
+
+    const weeklyQuests = await prisma.playerQuest.findMany({
+      where: {
+        player_id: playerId,
+        quest_period: "weekly",
+        expires_at: {
+          gte: getStartDate("weekly"),
+          lte: getExpirationDate("weekly"),
+        },
+        is_completed: false,
+        is_claimed: false,
+      },
+      include: { quest: true },
+      orderBy: { player_quest_id: "asc" },
+    });
+
+    const monthlyQuests = await prisma.playerQuest.findMany({
+      where: {
+        player_id: playerId,
+        quest_period: "monthly",
+        expires_at: {
+          gte: getStartDate("monthly"),
+          lte: getExpirationDate("monthly"),
+        },
+        is_completed: false,
+        is_claimed: false,
+      },
+      include: { quest: true },
+      orderBy: { player_quest_id: "asc" },
+    });
+
+    const completedQuests = await prisma.playerQuest.findMany({
+      where: {
+        player_id: playerId,
+        is_completed: true,
+        is_claimed: false,
+        expires_at: { gte: now },
+      },
+      include: { quest: true },
+      orderBy: { completed_at: "desc" },
+    });
+
+    const questLog = await prisma.playerQuest.findMany({
+      where: {
+        player_id: playerId,
+        is_claimed: true,
+      },
+      include: { quest: true },
+      orderBy: { completed_at: "desc" },
+      take: 50,
+    });
+
+    return {
+      dailyQuests: formatQuestData(dailyQuests),
+      weeklyQuests: formatQuestData(weeklyQuests),
+      monthlyQuests: formatQuestData(monthlyQuests),
+      completedQuests: formatQuestData(completedQuests),
+      questLog: formatQuestData(questLog),
+      summary: {
+        totalActive:
+          dailyQuests.length + weeklyQuests.length + monthlyQuests.length,
+        totalCompleted: completedQuests.length,
+        totalClaimed: questLog.length,
+        dailyCount: dailyQuests.length,
+        weeklyCount: weeklyQuests.length,
+        monthlyCount: monthlyQuests.length,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching all player quests:", error);
+    throw error;
+  }
+};
 
 /* GET all quest */
 export const getAllQuests = async (_req: Request, res: Response) => {
@@ -78,18 +195,13 @@ export const deleteQuest = async (req: Request, res: Response) => {
 export const getPlayerQuest = async (req: Request, res: Response) => {
   const playerId = Number(req.params.playerId);
   try {
-    const playerQuests = await prisma.playerQuest.findMany({
-      where: { player_id: playerId },
-      include: { quest: true },
-      orderBy: { expires_at: "desc" },
-    });
-    return successResponse(res, playerQuests, "Player quests fetched");
+    const quests = await getAllPlayerQuests(playerId);
+    return successResponse(res, quests, "Player quests fetched successfully");
   } catch (error) {
     return errorResponse(res, error, "Failed to fetch player quests", 500);
   }
 };
 
-/* GET player quests by period (NEW - UNIFIED ENDPOINT) */
 export const getPlayerQuestsByPeriodController = async (
   req: Request,
   res: Response
@@ -109,7 +221,6 @@ export const getPlayerQuestsByPeriodController = async (
   try {
     const quests = await getPlayerQuestsByPeriod(playerId, period);
 
-    // Fallback: If no quests, generate them
     if (quests.length === 0) {
       console.log(
         `Player ${playerId} has no ${period} quests. Generating now...`
@@ -129,7 +240,6 @@ export const getPlayerQuestsByPeriodController = async (
   }
 };
 
-/* DEPRECATED: Use getPlayerQuestsByPeriodController with ?period=daily instead */
 export const getPlayerDailyQuestsController = async (
   req: Request,
   res: Response
@@ -155,7 +265,6 @@ export const getPlayerDailyQuestsController = async (
   }
 };
 
-/* ADMIN: Generate periodic quests (NEW - UNIFIED) */
 export const adminGeneratePeriodicQuests = async (
   req: Request,
   res: Response
@@ -190,7 +299,6 @@ export const adminGeneratePeriodicQuests = async (
   }
 };
 
-/* DEPRECATED: Use adminGeneratePeriodicQuests with body: {period: "daily"} */
 export const adminGenerateDailyQuests = async (
   _req: Request,
   res: Response
@@ -209,7 +317,6 @@ export const adminGenerateDailyQuests = async (
   }
 };
 
-/* ADMIN: Cleanup expired quests */
 export const adminCleanupExpiredQuests = async (
   _req: Request,
   res: Response
@@ -226,7 +333,6 @@ export const adminCleanupExpiredQuests = async (
   }
 };
 
-/* ADMIN: Force refresh for specific player */
 export const adminForceRefreshPlayerQuests = async (
   req: Request,
   res: Response
@@ -260,7 +366,6 @@ export const adminForceRefreshPlayerQuests = async (
   }
 };
 
-/* ADMIN: Get statistics */
 export const adminGetQuestStats = async (req: Request, res: Response) => {
   const period = (req.query.period as QuestPeriod) || "daily";
 
@@ -277,7 +382,6 @@ export const adminGetQuestStats = async (req: Request, res: Response) => {
     const now = new Date();
     let startDate = new Date(now);
 
-    // Calculate start date based on period
     if (period === "daily") {
       startDate.setHours(0, 0, 0, 0);
     } else if (period === "weekly") {
@@ -334,7 +438,6 @@ export const adminGetQuestStats = async (req: Request, res: Response) => {
   }
 };
 
-/* DEPRECATED: Use adminGetQuestStats with ?period=daily */
 export const adminGetDailyQuestStats = async (_req: Request, res: Response) => {
   try {
     const now = new Date();

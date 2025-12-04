@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { success } from "zod";
 const prisma = new PrismaClient();
 
 export async function updateProgressForChallenge(
@@ -12,7 +13,7 @@ export async function updateProgressForChallenge(
   const progress = await prisma.playerProgress.findUnique({
     where: { progress_id: progressId },
   });
-  if (!progress) throw new Error("Progress not found");
+  if (!progress) return { message: "Progress not found", success: false };
 
   let consecutiveCorrects = progress.consecutive_corrects ?? 0;
   let consecutiveWrongs = progress.consecutive_wrongs ?? 0;
@@ -26,7 +27,7 @@ export async function updateProgressForChallenge(
   const challenge = await prisma.challenge.findUnique({
     where: { challenge_id: challengeId },
   });
-  if (!challenge) throw new Error("Challenge not found");
+  if (!challenge) return { message: "Challenge not found", success: false };
 
   const existingAnswers = (progress.player_answer ?? {}) as Record<
     string,

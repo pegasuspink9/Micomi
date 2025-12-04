@@ -6,7 +6,7 @@ export const checkAchievements = async (playerId: number) => {
     where: { player_id: playerId },
     select: { days_logged_in: true, total_points: true },
   });
-  if (!player) throw new Error("Player not found");
+  if (!player) return { message: "Player not found" };
 
   const [
     achievements,

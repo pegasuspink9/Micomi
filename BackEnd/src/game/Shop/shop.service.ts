@@ -6,6 +6,8 @@ import * as LevelService from "../Levels/levels.service";
 import * as EnergyService from "../Energy/energy.service";
 import * as ChallengeService from "../Challenges/challenges.service";
 import { SubmitChallengeControllerResult } from "../Challenges/challenges.types";
+import { UsePotionErrorResponse } from "./shop.types";
+import { success } from "zod";
 
 const prisma = new PrismaClient();
 
@@ -15,7 +17,7 @@ async function spendCoins(playerId: number, amount: number) {
   const player = await prisma.player.findUnique({
     where: { player_id: playerId },
   });
-  if (!player) throw new Error("Player not found");
+  if (!player) return { message: "Player not found", success: false };
   if (player.coins < amount) return { message: "Not enough coins" };
 
   if (player.coins < amount)
@@ -35,7 +37,7 @@ export const buyPotion = async (
   const potion = await prisma.potionShop.findUnique({
     where: { potion_shop_id: potionId },
   });
-  if (!potion) throw new Error("Potion not found");
+  if (!potion) return { message: "Potion not found", success: false };
 
   const potionType = potion.potion_type;
 
@@ -43,7 +45,10 @@ export const buyPotion = async (
     where: { level_id: levelId },
   });
   if (!potionConfig)
-    throw new Error("No potion shop configured for this level");
+    return {
+      message: "No potion shop configured for this level",
+      success: false,
+    };
 
   // Map potion types to their database field names
   const potionTypeFieldMap: { [key: string]: string } = {
@@ -85,7 +90,7 @@ export const buyPotion = async (
   const player = await prisma.player.findUnique({
     where: { player_id: playerId },
   });
-  if (!player) throw new Error("Player not found");
+  if (!player) return { message: "Player not found", success: false };
   if (player.coins < potion.potion_price)
     return { message: "Not enough coins" };
 
@@ -204,13 +209,13 @@ export const usePotion = async (
   levelId: number,
   challengeId: number,
   playerPotionId: number
-): Promise<SubmitChallengeControllerResult> => {
+): Promise<SubmitChallengeControllerResult | UsePotionErrorResponse> => {
   const playerPotion = await prisma.playerPotion.findUnique({
     where: { player_potion_id: playerPotionId },
     include: { potion: true },
   });
   if (!playerPotion || playerPotion.quantity <= 0) {
-    throw new Error("Invalid or insufficient potion");
+    return { message: "Invalid or insufficient potion", success: false };
   }
 
   const potionType = playerPotion.potion.potion_type;
@@ -222,13 +227,15 @@ export const usePotion = async (
   const progress = await prisma.playerProgress.findUnique({
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
   });
-  if (!progress) throw new Error("No active progress for this level");
+  if (!progress)
+    return { message: "No active progress for this level", success: false };
 
   const selectedChar = await prisma.playerCharacter.findFirst({
     where: { player_id: playerId, is_selected: true },
     include: { character: true },
   });
-  if (!selectedChar) throw new Error("No selected character found");
+  if (!selectedChar)
+    return { message: "No selected character found", success: false };
   const maxHealth = selectedChar.character.health;
   const character = selectedChar.character;
 
@@ -337,7 +344,8 @@ export const usePotion = async (
         );
         filledQuestion = filledQuestion.replace(
           /<_( ?[^>]*?)>/g,
-          (match, attrs) => `<${missingTagsOnly.shift()}${attrs}>`
+          (match: string, attrs: string) =>
+            `<${missingTagsOnly.shift()}${attrs}>`
         );
         filledQuestion = filledQuestion.replace(
           /<\/_>/g,

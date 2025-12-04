@@ -11,7 +11,7 @@ export const updatePlayerEnergy = async (playerId: number) => {
     where: { player_id: playerId },
   });
 
-  if (!player) throw new Error("Player not found");
+  if (!player) return { message: "Player not found", success: false };
 
   const now = new Date();
   let currentEnergy = player.energy;
@@ -65,17 +65,21 @@ export const deductEnergy = async (playerId: number, amount: number = 5) => {
   const player = await prisma.player.findUnique({
     where: { player_id: playerId },
   });
-  if (!player) throw new Error("Player not found");
+  if (!player) return { message: "Player not found", success: false };
 
   await updatePlayerEnergy(playerId);
 
   const updatedPlayer = await prisma.player.findUnique({
     where: { player_id: playerId },
   });
-  if (!updatedPlayer) throw new Error("Player not found after update");
+  if (!updatedPlayer)
+    return { message: "Player not found after update", success: false };
 
   if (updatedPlayer.energy <= 0) {
-    throw new Error("Not enough energy to perform this action");
+    return {
+      message: "Not enough energy to perform this action",
+      success: false,
+    };
   }
 
   const newEnergy = Math.max(0, updatedPlayer.energy - amount);
@@ -123,5 +127,8 @@ export const hasEnoughEnergy = async (
   required: number = 5
 ): Promise<boolean> => {
   const energyStatus = await updatePlayerEnergy(playerId);
-  return energyStatus.energy >= required;
+  if ("success" in energyStatus && !energyStatus.success) {
+    return false;
+  }
+  return (energyStatus.energy ?? 0) >= required;
 };

@@ -269,11 +269,12 @@ export const submitChallengeService = async (
   const hasEnergy = await EnergyService.hasEnoughEnergy(playerId, 1);
   if (!hasEnergy) {
     const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
-    throw new Error(
-      `Not enough energy! Next energy restore in: ${
+    return {
+      message: `Not enough energy! Next energy restore in: ${
         energyStatus.timeToNextRestore ?? "N/A"
-      }`
-    );
+      }`,
+      success: false,
+    } as any;
   }
 
   const [challenge, level] = await Promise.all([
@@ -283,12 +284,16 @@ export const submitChallengeService = async (
       include: { challenges: true, map: true, enemy: true },
     }),
   ]);
-  if (!challenge) throw new Error("Challenge not found");
-  if (!level) throw new Error("Level not found");
+  if (!challenge)
+    return { message: "Challenge not found", success: false } as any;
+  if (!level) return { message: "Level not found", success: false } as any;
 
   const enemy = level.enemy;
   if (!enemy)
-    throw new Error("No enemy found for this level's map + difficulty");
+    return {
+      message: "No enemy found for this level's map + difficulty",
+      success: false,
+    } as any;
 
   const player = await prisma.player.findUnique({
     where: { player_id: playerId },
@@ -299,10 +304,11 @@ export const submitChallengeService = async (
       },
     },
   });
-  if (!player) throw new Error("Player not found");
+  if (!player) return { message: "Player not found", success: false } as any;
 
   const character = player.ownedCharacters[0]?.character;
-  if (!character) throw new Error("No selected character found");
+  if (!character)
+    return { message: "No selected character found", success: false } as any;
 
   const enemyMaxHealth = getBaseEnemyHp(level);
 
@@ -469,6 +475,18 @@ export const submitChallengeService = async (
       isBonusRound,
       characterDamageForCoins
     );
+
+  // Type guard: check if the result is an error response
+  if (
+    !updatedProgress ||
+    "success" in updatedProgress ||
+    !("progress_id" in updatedProgress)
+  ) {
+    return {
+      message: "Failed to update challenge progress",
+      success: false,
+    } as any;
+  }
 
   const nextBefore = await getNextChallengeService(playerId, levelId);
   const nextChallengeBefore = nextBefore.nextChallenge;
@@ -989,8 +1007,10 @@ export const getNextChallengeService = async (
     },
   });
 
-  if (!progress) throw new Error("Player progress not found");
-  if (!progress.level) throw new Error("Level not found");
+  if (!progress)
+    return { message: "Player progress not found", success: false } as any;
+  if (!progress.level)
+    return { message: "Level not found", success: false } as any;
 
   const level = progress.level;
 
