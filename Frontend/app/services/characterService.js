@@ -132,12 +132,11 @@ export const characterService = {
   // Get role icon based on character type
   getRoleIcon: (characterType) => {
     const roleIcons = {
-      "Assasin": "https://github.com/user-attachments/assets/d95f6009-ac83-4c34-a486-96b332bf39e4",
-      "Assassin": "https://github.com/user-attachments/assets/d95f6009-ac83-4c34-a486-96b332bf39e4",
-      "Tank": "https://github.com/user-attachments/assets/36859900-5dc8-45b3-91e6-fb3820f215e1",
-      "Mage": "https://github.com/user-attachments/assets/927e2303-ecb2-4009-b64e-1160758f3c1b",
-      "Marksman": "https://github.com/user-attachments/assets/38e408df-acdc-4d46-abcc-29bb6f28ab59",
-      "Archer": "https://github.com/user-attachments/assets/38e408df-acdc-4d46-abcc-29bb6f28ab59"
+      "Assasin": "https://micomi-assets.me/Icons%20Shop/473984818-d95f6009-ac83-4c34-a486-96b332bf39e4.png",
+      "Assassin": "https://micomi-assets.me/Icons%20Shop/473984818-d95f6009-ac83-4c34-a486-96b332bf39e4.png",
+      "Tank": "https://micomi-assets.me/Icons%20Shop/473993721-36859900-5dc8-45b3-91e6-fb3820f215e1.png",
+      "Mage": "https://micomi-assets.me/Icons%20Shop/473975865-927e2303-ecb2-4009-b64e-1160758f3c1b.png",
+      "Marksman": "https://micomi-assets.me/Icons%20Shop/473999709-38e408df-acdc-4d46-abcc-29bb6f28ab59.png",
     };
     return roleIcons[characterType] || roleIcons["Assasin"];
   },
@@ -145,12 +144,11 @@ export const characterService = {
   // Get damage icon based on character type
   getDamageIcon: (characterType) => {
     const damageIcons = {
-      "Assasin": "https://github.com/user-attachments/assets/cbb414c2-500e-46be-ab09-fcc8fb7c636e",
-      "Assassin": "https://github.com/user-attachments/assets/cbb414c2-500e-46be-ab09-fcc8fb7c636e",
-      "Tank": "https://github.com/user-attachments/assets/d2ad1452-beaf-4e76-b263-99f407002354",
-      "Mage": "https://github.com/user-attachments/assets/595c45b0-d3e4-48f6-acd6-983542c128ec",
-      "Marksman": "https://github.com/user-attachments/assets/f41a9cf8-f03d-418a-8d33-af113d326d91",
-      "Archer": "https://github.com/user-attachments/assets/f41a9cf8-f03d-418a-8d33-af113d326d91"
+      "Assasin": "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons%20Shop/fighterIcon.png",
+      "Assassin": "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons%20Shop/fighterIcon.png",
+      "Tank": "https://micomi-assets.me/Icons%20Shop/tankIcon.png",
+      "Mage": "https://micomi-assets.me/Icons%20Shop/mageIcon.png",
+      "Marksman": "https://micomi-assets.me/Icons%20Shop/marksmanIcon.png",
     };
     return damageIcons[characterType] || damageIcons["Assasin"];
   },

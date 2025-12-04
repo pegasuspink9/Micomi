@@ -479,7 +479,7 @@ const LevelModal = ({
             <View style={styles.outerBorder}>
               <View style={styles.visor}>
                 <ImageBackground
-            source={{ uri: isShopLevel ? 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' :  
+                source={{ uri: isShopLevel ? 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' :  
                     'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' }}
             imageStyle={styles.backgroundImage} 
             resizeMode="cover"

@@ -74,8 +74,8 @@ export const playerService = {
       id: achievement.achievement_id,
       name: achievement.achievement_name,
       description: achievement.description,
-      icon: achievement.badge_icon, //  Raw URL for cache lookup
-      landscape_image: achievement.landscape_image, //  Raw URL for cache lookup
+      icon: achievement.badge_icon,
+      landscape_image: achievement.landscape_image, 
       earned: achievement.is_owned,
       earnedDate: achievement.earned_at ? new Date(achievement.earned_at).toISOString().split('T')[0] : null,
       conditions: achievement.conditions
@@ -115,7 +115,6 @@ export const playerService = {
     };
   },
 
-  //  NEW: Transform quests from API structure
   transformQuests: (questsData) => {
     if (!questsData) return [];
     

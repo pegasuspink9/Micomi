@@ -1,16 +1,15 @@
 import React, { useState, useRef } from "react";
-import { Text, View, StyleSheet, Pressable, TouchableOpacity, Animated, ImageBackground, Dimensions, Modal, Image, ActivityIndicator, Alert } from "react-native";
+import { Text, View, StyleSheet, Pressable, TouchableOpacity, Animated, ImageBackground, Dimensions, Modal, Image, ActivityIndicator } from "react-native";
 import MapHeader from '../../Components/Map/mapHeader';
 import CharacterDisplay from '../../Components/Character/CharacterDisplay';
 import ActionButton from '../../Components/Character/ActionButton';
 import AttributePanel from '../../Components/Character/AttributePanel';
 import ScreenLabel from '../../Components/Character/ScreenLabel';
-import { URLS, VIDEO_ASSETS } from '../../Components/Character/CharacterData';
+import { URLS } from '../../Components/Character/CharacterData';
 import { useCharacterSelection } from '../../hooks/useCharacterSelection';
-import AssetDownloadProgress from '../../Components/RoadMap/LoadingState/assetDownloadProgress';
 import { Video } from 'expo-av';
 import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
-import {gameScale} from '../../Components/Responsiveness/gameResponsive';
+import { gameScale } from '../../Components/Responsiveness/gameResponsive';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -25,8 +24,6 @@ export default function CharacterProfile() {
     error,
     purchasing,
     selecting,
-    assetsLoading,
-    assetsProgress,
     userCoins,
     selectCharacter,
     purchaseCharacter,
@@ -34,7 +31,6 @@ export default function CharacterProfile() {
     clearError,
     getHeroNames,
     changeDisplayedCharacter,
-    isVideoAssetCached //  Use the new video cache checker
   } = useCharacterSelection(playerId);
 
   const [showBuyModal, setShowBuyModal] = useState(false);
@@ -43,29 +39,35 @@ export default function CharacterProfile() {
   const [isCharacterAnimating, setIsCharacterAnimating] = useState(true);
   const [videoReady, setVideoReady] = useState(false);
 
-  // Animation refs
   const backgroundOpacity = useRef(new Animated.Value(1)).current;
   const videoRef = useRef(null);
-  
-  // Refs for child components
   const screenLabelRef = useRef(null);
   const attributePanelRef = useRef(null);
 
   const attributeData = currentHero ? [
     { style: styles.heroRole, icon: currentHero.roleIcon, text: `Role:\n${currentHero.character_type}` },
-    { style: styles.health, icon: URLS.healthIcon, text: "Health:", number: currentHero.health },
+    { style: styles.health, icon: universalAssetPreloader.getCachedAssetPath(URLS.healthIcon), text: "Health:", number: currentHero.health },
     { style: styles.skill, icon: currentHero.damageIcon, text: "Damage:", number: currentHero.character_damage }
   ] : [];
 
-  //  Get cached video path
+  // ✅ Get cached video path (preloaded with Map API)
   const getCachedVideoSource = () => {
-    const cachedPath = universalAssetPreloader.getCachedAssetPath(VIDEO_ASSETS.characterSelectBackground);
+    const videoUrl = 'https://micomi-assets.me/Hero%20Selection%20Components/Background.mp4';
+    const cachedPath = universalAssetPreloader.getCachedAssetPath(videoUrl);
     console.log(`🎬 Using video source: ${cachedPath}`);
     return { uri: cachedPath };
   };
 
+  // ✅ Get cached static asset paths
+  const getCachedCoinIcon = () => {
+    return universalAssetPreloader.getCachedAssetPath(URLS.coin);
+  };
+
+  const getCachedHeroBoxBorder = () => {
+    return universalAssetPreloader.getCachedAssetPath('https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760064111/Untitled_design_3_ghewno.png');
+  };
+
   const onVideoLoad = (status) => {
-    console.log('🎬 Video load status:', status);
     if (status.isLoaded) {
       setVideoReady(true);
       console.log('🎬 Character select video loaded successfully');
@@ -83,8 +85,6 @@ export default function CharacterProfile() {
     }
   };
 
-  // ... existing handlers remain the same ...
-
   const handleCharacterAnimationFinish = () => {
     setIsCharacterAnimating(false);
     
@@ -94,9 +94,7 @@ export default function CharacterProfile() {
       useNativeDriver: true 
     }).start(() => {
       setShowStaticImage(true);
-      
       screenLabelRef.current?.startAnimation();
-      
       setTimeout(() => {
         attributePanelRef.current?.startAnimations();
       }, 500);
@@ -112,7 +110,6 @@ export default function CharacterProfile() {
     try {
       console.log(`🎯 Attempting to select character: ${heroName}`);
       await selectCharacter(heroName);
-      
     } catch (error) {
       console.error('Selection Error:', error);
     }
@@ -122,29 +119,25 @@ export default function CharacterProfile() {
     if (!currentHero) return;
 
     try {
-      console.log(`🛒 Initiating purchase for ${currentHero.character_name} (Shop ID: ${currentHero.characterShopId})`);
-      
+      console.log(`🛒 Initiating purchase for ${currentHero.character_name}`);
       const response = await purchaseCharacter(currentHero);
       setShowBuyModal(false);
-
-      
-      console.log(' Purchase completed successfully:', response);
-      
+      console.log('✅ Purchase completed successfully:', response);
     } catch (error) {
       console.log('Purchase interrupted:', error.message);
-      setShowBuyModal(false); 
+      setShowBuyModal(false);
      
       let modalTitle = 'Purchase Failed';
       if (error.message === 'Not enough coins') {
         modalTitle = 'Insufficient Funds';
       } else if (error.message === 'Character already purchased') {
-        modalTitle = 'Info'; // Or 'Already Owned'
+        modalTitle = 'Info';
       }
 
       setErrorModal({ 
         visible: true, 
         message: error.message || 'Unable to purchase character. Please try again.',
-        title: modalTitle // Set the dynamic title
+        title: modalTitle
       });
     }
   };
@@ -176,7 +169,7 @@ export default function CharacterProfile() {
         disabled={selecting}
       >
         <ImageBackground 
-          source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760064111/Untitled_design_3_ghewno.png' }} 
+          source={{ uri: getCachedHeroBoxBorder() }} 
           style={styles.heroBoxBorder} 
           resizeMode="contain"
         >
@@ -192,6 +185,7 @@ export default function CharacterProfile() {
     );
   };
 
+  // ✅ Simple loading state (no asset download progress needed)
   if (loading && getHeroNames().length === 0) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -200,40 +194,6 @@ export default function CharacterProfile() {
       </View>
     );
   }
-
-  // Show asset download progress first
-  if (assetsLoading) {
-    return (
-      <>
-        <View style={styles.container}>
-          <View style={styles.headerContainer}>
-            <MapHeader coins={userCoins} />
-          </View>
-          <Video 
-            ref={videoRef}
-            source={getCachedVideoSource()} 
-            style={styles.fullBackground}
-            shouldPlay={true}
-            isLooping={true}
-            resizeMode="contain" 
-            useNativeControls={false}
-            isMuted={true}
-            onLoad={onVideoLoad}
-            onError={onVideoError}
-            onPlaybackStatusUpdate={onVideoStatusUpdate}
-          />
-        </View>
-        <AssetDownloadProgress
-          visible={assetsLoading}
-          progress={assetsProgress}
-          currentAsset={assetsProgress.currentAsset}
-        />
-      </>
-    );
-  }
-
-  // Show general loading (if not asset loading)
-
 
   if (!currentHero) {
     return (
@@ -246,7 +206,7 @@ export default function CharacterProfile() {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-         <MapHeader coins={userCoins} />
+        <MapHeader coins={userCoins} />
       </View>
 
       <Video 
@@ -263,12 +223,10 @@ export default function CharacterProfile() {
         onPlaybackStatusUpdate={onVideoStatusUpdate}
       />
 
-      {/* Content overlay */}
       <View style={styles.contentOverlay}>
         <View style={styles.topSection}>
           <View style={styles.contentContainer}>
             
-            {/* Screen Label */}
             <ScreenLabel 
               ref={screenLabelRef}
               heroName={currentHero.character_name}
@@ -276,12 +234,8 @@ export default function CharacterProfile() {
               styles={styles}
             />
 
-            {/* Background Animation */}
-            <Animated.View style={{ opacity: backgroundOpacity }}>
-              
-            </Animated.View>
+            <Animated.View style={{ opacity: backgroundOpacity }} />
 
-            {/* Character Display */}
             <View style={styles.characterContainer}>
               <CharacterDisplay
                 currentHero={currentHero}
@@ -295,13 +249,12 @@ export default function CharacterProfile() {
                 currentHero={currentHero}
                 onSelectCharacter={handleCharacterSelection}
                 onShowBuyModal={setShowBuyModal}
-                coinIcon={URLS.coin}
+                coinIcon={getCachedCoinIcon()}
                 styles={styles}
                 disabled={selecting || purchasing}
                 selecting={selecting}
               />
 
-              {/* Attribute Panel */}
               <AttributePanel
                 ref={attributePanelRef}
                 attributeData={attributeData}
@@ -312,7 +265,6 @@ export default function CharacterProfile() {
           </View>
         </View>
 
-        {/* Bottom Character Selection */}
         <View style={styles.bottomBar}>
           <View style={styles.characterSelection}>
             {getHeroNames().map(renderHeroBox)}
@@ -352,7 +304,7 @@ export default function CharacterProfile() {
                   <ActivityIndicator size="small" color="white" />
                 ) : (
                   <>
-                    <Image source={{ uri: URLS.coin }} style={styles.modalCoinIcon} />
+                    <Image source={{ uri: getCachedCoinIcon() }} style={styles.modalCoinIcon} />
                     <Text style={styles.confirmButtonText}>{currentHero.character_price}</Text>
                   </>
                 )}
@@ -362,6 +314,7 @@ export default function CharacterProfile() {
         </View>
       </Modal>
 
+      {/* Error Modal */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -382,14 +335,15 @@ export default function CharacterProfile() {
           </View>
         </View>
       </Modal>
-      </View>
+    </View>
   );
 }
 
+// ... styles remain the same ...
 const styles = StyleSheet.create({
   contentOverlay: {
     position: 'absolute',
-    top: gameScale(-55), // Position relative to scaled layout
+    top: gameScale(-55),
     left: 0,
     right: 0,
     bottom: 0,
@@ -472,7 +426,7 @@ const styles = StyleSheet.create({
     height: gameScale(351),
     top: gameScale(110),
   },
-   bottomBar: {
+  bottomBar: {
     height: gameScale(180), 
     width: '100%',
     justifyContent: 'center',
@@ -533,7 +487,7 @@ const styles = StyleSheet.create({
     shadowRadius: gameScale(10),
     elevation: 30,
     height: gameScale(194),
-    width: gameScale(78), // Make it wider when viewed
+    width: gameScale(78),
   },
   selectedHeroBox: {
     shadowOpacity: 1,
@@ -544,7 +498,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 5,
-    width: '100%', // Use percentage to fill the heroBox
+    width: '100%',
     height: gameScale(168), 
   },
   selectButton: {

@@ -37,7 +37,7 @@ export const imagesUrls = [
   "https://micomi-assets.me/Hero%20Selection%20Components/leon_entrance.png",
   "https://micomi-assets.me/Hero%20Selection%20Components/Leon.png",
   //Ryron (no animations yet)
-  "ttps://micomi-assets.me/Hero%20Portraits/Ryron.png",
+  "https://micomi-assets.me/Hero%20Portraits/Ryron.png",
   "https://micomi-assets.me/Hero%20Selection%20Components/ryron_entrance.png",
   "https://micomi-assets.me/Hero%20Selection%20Components/Ryron.png",
   //Potions

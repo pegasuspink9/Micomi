@@ -63,7 +63,7 @@ export default function MapNavigate({ onMapChange }) {
   const currentMap = maps[currentMapIndex];
   const isValidMap = currentMap && typeof currentMap === 'object';
 
-  // UPDATED: Auto-preload assets including static MAP_THEMES
+  // ✅ UPDATED: Auto-preload assets including static MAP_THEMES AND Character Select assets
   useEffect(() => {
     const autoPreloadAssets = async () => {
       if (hasAutoPreloaded.current || maps.length === 0) {
@@ -76,53 +76,96 @@ export default function MapNavigate({ onMapChange }) {
       try {
         console.log('🗺️ Map screen displayed - checking asset cache...');
         
-        // Step 1: Check and download static MAP_THEMES assets first
-        console.log('📦 Checking static map theme assets...');
-        const themesCacheStatus = await universalAssetPreloader.areMapThemeAssetsCached(MAP_THEMES);
+        // Step 1: Check cache status for ALL asset types
+        console.log('📦 Checking all asset caches...');
+        const [themesCacheStatus, charSelectCacheStatus] = await Promise.all([
+          universalAssetPreloader.areMapThemeAssetsCached(MAP_THEMES),
+          universalAssetPreloader.areStaticCharacterSelectAssetsCached()
+        ]);
         
-        if (!themesCacheStatus.cached) {
-          console.log(`📦 ${themesCacheStatus.missing} map theme assets need downloading...`);
+        const totalStaticMissing = themesCacheStatus.missing + charSelectCacheStatus.missing;
+        const totalStaticAssets = themesCacheStatus.total + charSelectCacheStatus.total;
+
+        console.log(`📦 Static assets status: MapThemes (${themesCacheStatus.available}/${themesCacheStatus.total}), CharSelect (${charSelectCacheStatus.available}/${charSelectCacheStatus.total})`);
+
+        // Step 2: Download static assets if needed (Map Themes + Character Select)
+        if (totalStaticMissing > 0) {
+          console.log(`📦 ${totalStaticMissing} static assets need downloading...`);
           
           setDownloadProgress(prev => ({
             ...prev,
             isDownloading: true,
             isComplete: false,
-            mapName: 'Map Themes',
+            mapName: 'Static Assets',
             loaded: 0,
-            total: themesCacheStatus.total,
+            total: totalStaticAssets,
             progress: 0,
-            successCount: themesCacheStatus.available
+            successCount: themesCacheStatus.available + charSelectCacheStatus.available
           }));
           setDownloadModalVisible(true);
 
-          await universalAssetPreloader.downloadMapThemeAssets(
-            MAP_THEMES,
-            (progress) => {
-              setDownloadProgress(prev => ({
-                ...prev,
-                loaded: progress.loaded,
-                total: progress.total,
-                progress: progress.progress * 0.5, // First 50%
-                successCount: progress.successCount,
-                currentAsset: progress.currentAsset,
-              }));
-            },
-            (assetProgress) => {
-              setCurrentAssetProgress({
-                url: assetProgress.url,
-                progress: assetProgress.progress,
-                currentIndex: assetProgress.currentIndex,
-                totalAssets: assetProgress.totalAssets,
-                category: assetProgress.category,
-                name: assetProgress.name,
-              });
-            }
-          );
+          let downloadedSoFar = 0;
+
+          // Download Map Theme assets
+          if (themesCacheStatus.missing > 0) {
+            console.log(`🗺️ Downloading ${themesCacheStatus.missing} map theme assets...`);
+            await universalAssetPreloader.downloadMapThemeAssets(
+              MAP_THEMES,
+              (progress) => {
+                setDownloadProgress(prev => ({
+                  ...prev,
+                  loaded: progress.loaded,
+                  total: totalStaticMissing,
+                  progress: progress.loaded / totalStaticMissing * 0.5, // First 50% for themes
+                  successCount: progress.successCount,
+                  currentAsset: progress.currentAsset,
+                }));
+              },
+              (assetProgress) => {
+                setCurrentAssetProgress({
+                  url: assetProgress.url,
+                  progress: assetProgress.progress,
+                  currentIndex: assetProgress.currentIndex,
+                  totalAssets: assetProgress.totalAssets,
+                  category: assetProgress.category || 'map_theme',
+                  name: assetProgress.name,
+                });
+              }
+            );
+            downloadedSoFar += themesCacheStatus.missing;
+          }
+
+          // ✅ Download Character Select static assets
+          if (charSelectCacheStatus.missing > 0) {
+            console.log(`🎨 Downloading ${charSelectCacheStatus.missing} character select static assets...`);
+            await universalAssetPreloader.downloadStaticCharacterSelectAssets(
+              (progress) => {
+                setDownloadProgress(prev => ({
+                  ...prev,
+                  loaded: downloadedSoFar + progress.loaded,
+                  total: totalStaticMissing,
+                  progress: 0.5 + (progress.loaded / totalStaticMissing * 0.5), // 50-100% for char select
+                  successCount: themesCacheStatus.total + progress.successCount,
+                  currentAsset: progress.currentAsset,
+                }));
+              },
+              (assetProgress) => {
+                setCurrentAssetProgress({
+                  url: assetProgress.url,
+                  progress: assetProgress.progress,
+                  currentIndex: assetProgress.currentIndex,
+                  totalAssets: assetProgress.totalAssets,
+                  category: assetProgress.category || 'character_select',
+                  name: assetProgress.name,
+                });
+              }
+            );
+          }
         } else {
-          console.log(`All ${themesCacheStatus.total} map theme assets already cached`);
+          console.log(`✅ All ${totalStaticAssets} static assets already cached`);
         }
 
-        // Step 2: Fetch and download Map API assets
+        // Step 3: Fetch and download Map API assets
         const preloadData = await mapService.getMapPreloadData(playerId);
 
         if (!preloadData) {
@@ -132,9 +175,9 @@ export default function MapNavigate({ onMapChange }) {
           return;
         }
 
-        const cacheStatus = await universalAssetPreloader.areMapAssetsCached(preloadData);
+        const mapCacheStatus = await universalAssetPreloader.areMapAssetsCached(preloadData);
         
-        if (cacheStatus.cached && themesCacheStatus.cached) {
+        if (mapCacheStatus.cached && totalStaticMissing === 0) {
           console.log(`✅ All assets are already cached.`);
           
           // Load cached assets into memory
@@ -144,6 +187,8 @@ export default function MapNavigate({ onMapChange }) {
             universalAssetPreloader.loadCachedAssets('game_audio'),
             universalAssetPreloader.loadCachedAssets('game_visuals'),
             universalAssetPreloader.loadCachedAssets('map_theme_assets'),
+            universalAssetPreloader.loadCachedAssets('character_select_ui'),
+            universalAssetPreloader.loadCachedAssets('ui_videos'),
           ]);
           
           setAssetsReady(true);
@@ -151,8 +196,8 @@ export default function MapNavigate({ onMapChange }) {
           return;
         }
 
-        if (!cacheStatus.cached) {
-          console.log(`📦 ${cacheStatus.missing} Map API assets need to be downloaded.`);
+        if (!mapCacheStatus.cached) {
+          console.log(`📦 ${mapCacheStatus.missing} Map API assets need to be downloaded.`);
 
           if (!downloadModalVisible) {
             setDownloadProgress(prev => ({
@@ -161,11 +206,21 @@ export default function MapNavigate({ onMapChange }) {
               isComplete: false,
               mapName: 'Game Assets',
               loaded: 0,
-              total: cacheStatus.total,
-              progress: 0.5, // Start at 50%
-              successCount: cacheStatus.available
+              total: mapCacheStatus.total,
+              progress: 0,
+              successCount: mapCacheStatus.available
             }));
             setDownloadModalVisible(true);
+          } else {
+            // Update progress to show we're now on Map API assets
+            setDownloadProgress(prev => ({
+              ...prev,
+              mapName: 'Game Assets',
+              loaded: 0,
+              total: mapCacheStatus.total,
+              progress: 0,
+              successCount: mapCacheStatus.available
+            }));
           }
 
           const result = await universalAssetPreloader.downloadAllMapAssets(
@@ -175,7 +230,7 @@ export default function MapNavigate({ onMapChange }) {
                 ...prev,
                 loaded: progress.loaded,
                 total: progress.total,
-                progress: 0.5 + (progress.progress * 0.5), // 50-100%
+                progress: progress.progress,
                 successCount: progress.successCount,
                 currentAsset: progress.currentAsset,
               }));
@@ -232,6 +287,7 @@ export default function MapNavigate({ onMapChange }) {
     autoPreloadAssets();
   }, [maps]);
 
+  // ...existing code for animations...
   useEffect(() => {
     if (maps.length > 0) {
       const initialAnimations = maps.map((_, index) => ({
@@ -365,6 +421,7 @@ export default function MapNavigate({ onMapChange }) {
       if (maps.length > 0) {
         // Load map theme assets into memory
         await universalAssetPreloader.loadCachedAssets('map_theme_assets');
+        await universalAssetPreloader.loadCachedAssets('character_select_ui');
       }
     };
     
@@ -393,7 +450,7 @@ export default function MapNavigate({ onMapChange }) {
     });
   };
 
-  //  SIMPLIFIED: Island click now just navigates (assets already preloaded)
+  // Island click now just navigates (assets already preloaded)
   const handleIslandClick = () => {
     if (!isValidMap || !maps[currentMapIndex].is_active) {
       return;
@@ -607,7 +664,7 @@ export default function MapNavigate({ onMapChange }) {
               <View style={styles.progressSection}>
                 <View style={styles.progressLabelContainer}>
                   <Text style={styles.progressLabel}>
-                    Assets ({downloadProgress.successCount}/{downloadProgress.total})
+                    {downloadProgress.mapName || 'Assets'} ({downloadProgress.successCount}/{downloadProgress.total})
                   </Text>
                   <Text style={styles.progressPercent}>
                     {Math.round(downloadProgress.progress * 100)}%
@@ -686,6 +743,7 @@ export default function MapNavigate({ onMapChange }) {
   );
 }
 
+// ... styles remain the same ...
 const styles = StyleSheet.create({
   scrollContent: {
     flex: 1,
@@ -828,8 +886,6 @@ const styles = StyleSheet.create({
     left: -26,
     opacity: 0.9,
   },
-
-  // Download Modal Styles
   downloadModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',

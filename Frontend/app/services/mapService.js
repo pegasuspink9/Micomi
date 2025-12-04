@@ -1,4 +1,5 @@
 import { apiService } from './api';
+import { universalAssetPreloader } from './preloader/universalAssetPreloader';
 
 export const mapService = {
   getAllMapsWithLevels: async () => {
@@ -36,8 +37,6 @@ export const mapService = {
       throw error;
     }
   },
-
-  
 
   extractLevelsFromMap: (mapData) => {
     console.log('🔍 Extracting levels from mapData:', mapData);
@@ -78,4 +77,93 @@ export const mapService = {
       throw error;
     }
   },
+
+  //  Preload all assets including character select static assets
+  preloadAllGameAssets: async (mapLevelData, onProgress = null) => {
+    try {
+      console.log('🎮 Starting comprehensive game asset preload (Map + Character Select)...');
+      
+      const results = {
+        mapAssets: null,
+        characterSelectAssets: null,
+        totalDownloaded: 0,
+        totalAssets: 0,
+        startTime: Date.now()
+      };
+
+      // Step 1: Check what's already cached
+      const [mapCacheStatus, charSelectCacheStatus] = await Promise.all([
+        universalAssetPreloader.areMapAssetsCached(mapLevelData),
+        universalAssetPreloader.areStaticCharacterSelectAssetsCached()
+      ]);
+
+      const totalMissing = mapCacheStatus.missing + charSelectCacheStatus.missing;
+      results.totalAssets = mapCacheStatus.total + charSelectCacheStatus.total;
+
+      console.log(`📦 Cache status: Map (${mapCacheStatus.available}/${mapCacheStatus.total}), CharSelect (${charSelectCacheStatus.available}/${charSelectCacheStatus.total})`);
+
+      if (totalMissing === 0) {
+        console.log(' All game assets already cached!');
+        return {
+          success: true,
+          cached: true,
+          ...results,
+          totalDownloaded: 0
+        };
+      }
+
+      let downloadedSoFar = 0;
+
+      if (mapCacheStatus.missing > 0) {
+        console.log(`📦 Downloading ${mapCacheStatus.missing} missing map assets...`);
+        results.mapAssets = await universalAssetPreloader.downloadAllMapAssets(
+          mapLevelData,
+          (progress) => {
+            if (onProgress) {
+              onProgress({
+                phase: 'map',
+                loaded: progress.loaded,
+                total: totalMissing,
+                progress: progress.loaded / totalMissing,
+                currentAsset: progress.currentAsset
+              });
+            }
+          }
+        );
+        downloadedSoFar += results.mapAssets.downloaded || 0;
+      }
+
+      if (charSelectCacheStatus.missing > 0) {
+        console.log(`🎨 Downloading ${charSelectCacheStatus.missing} missing character select assets...`);
+        results.characterSelectAssets = await universalAssetPreloader.downloadStaticCharacterSelectAssets(
+          (progress) => {
+            if (onProgress) {
+              onProgress({
+                phase: 'character_select',
+                loaded: downloadedSoFar + progress.loaded,
+                total: totalMissing,
+                progress: (downloadedSoFar + progress.loaded) / totalMissing,
+                currentAsset: progress.currentAsset
+              });
+            }
+          }
+        );
+        downloadedSoFar += results.characterSelectAssets.downloaded || 0;
+      }
+
+      results.totalDownloaded = downloadedSoFar;
+      results.totalTime = Date.now() - results.startTime;
+
+      console.log(`🎮 Comprehensive preload completed: ${downloadedSoFar} assets in ${results.totalTime}ms`);
+
+      return {
+        success: true,
+        cached: false,
+        ...results
+      };
+    } catch (error) {
+      console.error('❌ Error in comprehensive game asset preload:', error);
+      throw error;
+    }
+  }
 };

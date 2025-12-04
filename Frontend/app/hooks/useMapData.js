@@ -7,6 +7,7 @@ export const useMapData = (mapId = null) => {
   const [mapInfo, setMapInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [preloadProgress, setPreloadProgress] = useState({ loaded: 0, total: 0, progress: 0 });
 
   const refetch = async () => {
     try {
@@ -14,9 +15,9 @@ export const useMapData = (mapId = null) => {
       setError(null);
       
       if (mapId) {
-        console.log(`🔄 Fetching map data for mapId: ${mapId}`); // Debug log
+        console.log(`🔄 Fetching map data for mapId: ${mapId}`);
         const mapData = await mapService.getMapWithLevels(mapId);
-        console.log('📊 Map data received in hook:', mapData); // Debug log
+        console.log('📊 Map data received in hook:', mapData);
         
         if (!mapData) {
           throw new Error('No map data returned from service');
@@ -24,17 +25,19 @@ export const useMapData = (mapId = null) => {
         
         setMapInfo(mapData);
         const mapLevels = mapService.extractLevelsFromMap(mapData);
-        console.log('📋 Extracted levels in hook:', mapLevels); // Debug log
+        console.log('📋 Extracted levels in hook:', mapLevels);
         
         setLevels(mapLevels.map(level => ({ 
           ...level, 
           id: level.level_id, 
           levelName: `${mapData.map_name} Level ${level.level_number}` 
         })));
+
       } else {
         const fetchedMaps = await mapService.getAllMapsWithLevels();
         console.log('📊 Maps data received:', fetchedMaps);
         setMaps(fetchedMaps);
+        
       }
     } catch (err) {
       console.error('❌ Error in useMapData:', err);
@@ -50,5 +53,5 @@ export const useMapData = (mapId = null) => {
     refetch();
   }, [mapId]);
 
-  return { maps, levels, mapInfo, loading, error, refetch };
+  return { maps, levels, mapInfo, loading, error, refetch, preloadProgress };
 };
