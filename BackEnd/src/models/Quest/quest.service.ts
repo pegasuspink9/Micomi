@@ -9,6 +9,7 @@ import {
   forceGenerateQuestsForPlayer,
   getStartDate,
   getExpirationDate,
+  checkAndGenerateMissingQuests,
 } from "./periodicQuests.service";
 
 const prisma = new PrismaClient();
@@ -48,11 +49,13 @@ export const getAllPlayerQuests = async (playerId: number) => {
           gte: getStartDate("daily"),
           lte: getExpirationDate("daily"),
         },
-        is_completed: false,
         is_claimed: false,
       },
       include: { quest: true },
-      orderBy: { player_quest_id: "asc" },
+      orderBy: [
+        { completed_at: { sort: "desc", nulls: "last" } },
+        { player_quest_id: "asc" },
+      ],
     });
 
     const weeklyQuests = await prisma.playerQuest.findMany({
@@ -63,11 +66,13 @@ export const getAllPlayerQuests = async (playerId: number) => {
           gte: getStartDate("weekly"),
           lte: getExpirationDate("weekly"),
         },
-        is_completed: false,
         is_claimed: false,
       },
       include: { quest: true },
-      orderBy: { player_quest_id: "asc" },
+      orderBy: [
+        { completed_at: { sort: "desc", nulls: "last" } },
+        { player_quest_id: "asc" },
+      ],
     });
 
     const monthlyQuests = await prisma.playerQuest.findMany({
@@ -78,23 +83,28 @@ export const getAllPlayerQuests = async (playerId: number) => {
           gte: getStartDate("monthly"),
           lte: getExpirationDate("monthly"),
         },
-        is_completed: false,
         is_claimed: false,
       },
       include: { quest: true },
-      orderBy: { player_quest_id: "asc" },
+      orderBy: [
+        { completed_at: { sort: "desc", nulls: "last" } },
+        { player_quest_id: "asc" },
+      ],
     });
 
-    const completedQuests = await prisma.playerQuest.findMany({
-      where: {
-        player_id: playerId,
-        is_completed: true,
-        is_claimed: false,
-        expires_at: { gte: now },
-      },
-      include: { quest: true },
-      orderBy: { completed_at: "desc" },
-    });
+    const dailyActiveCount = dailyQuests.filter(
+      (pq) => !pq.is_completed
+    ).length;
+    const weeklyActiveCount = weeklyQuests.filter(
+      (pq) => !pq.is_completed
+    ).length;
+    const monthlyActiveCount = monthlyQuests.filter(
+      (pq) => !pq.is_completed
+    ).length;
+
+    const dailyCompletedCount = dailyQuests.length - dailyActiveCount;
+    const weeklyCompletedCount = weeklyQuests.length - weeklyActiveCount;
+    const monthlyCompletedCount = monthlyQuests.length - monthlyActiveCount;
 
     const questLog = await prisma.playerQuest.findMany({
       where: {
@@ -110,16 +120,15 @@ export const getAllPlayerQuests = async (playerId: number) => {
       dailyQuests: formatQuestData(dailyQuests),
       weeklyQuests: formatQuestData(weeklyQuests),
       monthlyQuests: formatQuestData(monthlyQuests),
-      completedQuests: formatQuestData(completedQuests),
       questLog: formatQuestData(questLog),
       summary: {
-        totalActive:
-          dailyQuests.length + weeklyQuests.length + monthlyQuests.length,
-        totalCompleted: completedQuests.length,
+        totalActive: dailyActiveCount + weeklyActiveCount + monthlyActiveCount,
+        totalCompleted:
+          dailyCompletedCount + weeklyCompletedCount + monthlyCompletedCount,
         totalClaimed: questLog.length,
-        dailyCount: dailyQuests.length,
-        weeklyCount: weeklyQuests.length,
-        monthlyCount: monthlyQuests.length,
+        dailyCount: dailyActiveCount,
+        weeklyCount: weeklyActiveCount,
+        monthlyCount: monthlyActiveCount,
       },
     };
   } catch (error) {
@@ -483,5 +492,20 @@ export const adminGetDailyQuestStats = async (_req: Request, res: Response) => {
     return successResponse(res, stats, "Daily quest statistics");
   } catch (error) {
     return errorResponse(res, error, "Failed to fetch statistics", 500);
+  }
+};
+
+export const adminFillMissingQuests = async (_req: Request, res: Response) => {
+  try {
+    console.log("🔧 Admin triggered missing quest fill for all players");
+    await checkAndGenerateMissingQuests();
+    return successResponse(
+      res,
+      { message: "Missing quests generated successfully" },
+      "All players now have complete quest sets"
+    );
+  } catch (error) {
+    console.error("Admin fill missing quests error:", error);
+    return errorResponse(res, error, "Failed to fill missing quests", 500);
   }
 };
