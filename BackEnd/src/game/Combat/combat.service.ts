@@ -151,6 +151,7 @@ export async function getFightSetup(playerId: number, levelId: number) {
         has_reversed_curse: false,
         has_boss_shield: false,
         has_force_character_attack_type: false,
+        has_both_hp_decrease: false,
       },
     });
   }
@@ -953,6 +954,8 @@ export async function fightBossEnemy(
 
   const isBossDarco = enemy.enemy_name === "Boss Darco";
 
+  const isBossScorcharach = enemy.enemy_name === "Boss Scorcharach";
+
   const level = await prisma.level.findUnique({
     where: { level_id: levelId },
     include: { challenges: true },
@@ -1028,6 +1031,7 @@ export async function fightBossEnemy(
   let character_attack_card: string | null = null;
   let card_type: string | null = null;
   let character_attack_pose: string | null = null;
+  let enemy_ss_type: string | null = null;
 
   character_run = character.character_run || null;
   character_idle = character.avatar_image || null;
@@ -1196,8 +1200,21 @@ export async function fightBossEnemy(
       console.log("- Strong potion applied, damage doubled");
     }
 
-    enemyHealth = Math.max(enemyHealth - damage, 0);
-    enemy_hurt = enemy_hurt || enemy.enemy_hurt || null;
+    if (isBossScorcharach && progress.has_both_hp_decrease) {
+      enemy_ss_type = "shield";
+
+      charHealth = Math.max(charHealth - damage, 0);
+      enemyHealth = Math.max(enemyHealth - damage, 0);
+      enemy_hurt = enemy_hurt || enemy.enemy_hurt || null;
+
+      await prisma.playerProgress.update({
+        where: { progress_id: progress.progress_id },
+        data: { has_both_hp_decrease: false },
+      });
+    } else {
+      enemyHealth = Math.max(enemyHealth - damage, 0);
+      enemy_hurt = enemy_hurt || enemy.enemy_hurt || null;
+    }
 
     if (!effectiveBonusRound || isCompletingBonus) {
       enemy_idle = enemy.enemy_avatar || null;
@@ -1318,12 +1335,14 @@ export async function fightBossEnemy(
       enemy_run = enemy.enemy_run || null;
       character_run = null;
       if (progress.has_reversed_curse) {
+        enemy_ss_type = "reverse";
         enemy_run = enemy.enemy_run || null;
         enemy_idle = enemy.enemy_avatar || null;
         enemy_attack_type = "special attack";
         enemy_attack = enemy.special_skill || null;
         console.log("- Reversed curse active: using special skill attack");
       } else if (isBossJoshy && progress.has_boss_shield) {
+        enemy_ss_type = "shield";
         enemy_run =
           "https://micomi-assets.me/Enemies/Greenland/Boss%20Joshy/Run2.png";
         enemy_idle =
@@ -1333,12 +1352,21 @@ export async function fightBossEnemy(
         enemy_attack = enemy.special_skill || null;
         console.log("- Shield curse active: using special skill attack");
       } else if (isBossDarco && progress.has_force_character_attack_type) {
+        enemy_ss_type = "force_basic_attack";
         enemy_run = enemy.enemy_run || null;
         enemy_idle = enemy.enemy_avatar || null;
 
         enemy_attack_type = "special attack";
         enemy_attack = enemy.special_skill || null;
         console.log("- Force basic curse active: using special skill attack");
+      } else if (isBossScorcharach && progress.has_both_hp_decrease) {
+        enemy_ss_type = "mutual_damage";
+        enemy_run = enemy.enemy_run || null;
+        enemy_idle = enemy.enemy_avatar || null;
+
+        enemy_attack_type = "special attack";
+        enemy_attack = enemy.special_skill || null;
+        console.log("- Both hp decrease: using special skill attack");
       } else {
         enemy_attack_type = "basic attack";
         enemy_attack = enemy.enemy_attack || null;
@@ -1568,6 +1596,7 @@ export async function fightBossEnemy(
       character_is_range: character.is_range,
       character_attack_pose: character.attack_pose || null,
     },
+    enemy_ss_type,
     timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,

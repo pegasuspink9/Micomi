@@ -367,7 +367,7 @@ export const submitChallengeService = async (
       where: {
         player_id: playerId,
         quantity: { gt: 0 },
-        potion: { potion_type: "hint" },
+        potion: { potion_type: "Reveal" },
       },
       include: { potion: true },
     });

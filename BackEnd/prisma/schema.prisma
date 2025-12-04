@@ -196,6 +196,12 @@ model PlayerProgress {
   //Boss Joshy ss
   has_force_character_attack_type Boolean @default(false)
 
+  //Boss Scorcharach ss
+  has_both_hp_decrease  Boolean?       @default(false)
+
+  //Boss Earl ss
+  has_shuffle_ss        Boolean?       @default(false)
+
   //stars earned in the level
   stars_earned Int?
 

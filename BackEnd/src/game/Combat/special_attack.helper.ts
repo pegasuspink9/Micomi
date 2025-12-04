@@ -21,6 +21,7 @@ export async function updateProgressForChallenge(
   let hasBossShield = progress.has_boss_shield ?? false;
   let hasForceCharacterAttackType =
     progress.has_force_character_attack_type ?? false;
+  let hasBothHpDecrease = progress.has_both_hp_decrease ?? false;
 
   const challenge = await prisma.challenge.findUnique({
     where: { challenge_id: challengeId },
@@ -65,6 +66,8 @@ export async function updateProgressForChallenge(
     wrongChallenges = wrongChallenges.filter((id) => id !== challengeId);
     consecutiveCorrects += 1;
     hasReversedCurse = false;
+    hasBossShield = false;
+    hasForceCharacterAttackType = false;
 
     const coinsToAdd =
       isBonusRound && characterDamage
@@ -119,6 +122,11 @@ export async function updateProgressForChallenge(
               "- Force character attack type into basic activated for Boss Darco after multiples of 3 consecutive wrongs"
             );
             break;
+          case "Boss Scorcharach":
+            hasBothHpDecrease = true;
+            console.log(
+              "- Both hp decreases for Boss Scorcharach after multiples of 3 consecutive wrongs"
+            );
         }
       }
     }
@@ -131,6 +139,7 @@ export async function updateProgressForChallenge(
       has_reversed_curse: hasReversedCurse,
       has_boss_shield: hasBossShield,
       has_force_character_attack_type: hasForceCharacterAttackType,
+      has_both_hp_decrease: hasBothHpDecrease,
     };
   }
 
