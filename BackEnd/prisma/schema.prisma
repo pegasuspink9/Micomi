@@ -218,11 +218,11 @@ model PlayerAchievement {
 
 model PotionShop {
   potion_shop_id     Int                 @id @default(autoincrement())
-  potion_name        String
   potion_type        PotionType          @unique
   potion_description String
   potion_price       Int
   potion_url         String?
+  potion_name        String
   levelBuyers        PlayerLevelPotion[]
   buyers             PlayerPotion[]
 }
@@ -383,7 +383,7 @@ enum QuestType {
 }
 
 enum PotionType {
-  Life 
+  Life
   Power
   Immunity
   Reveal
