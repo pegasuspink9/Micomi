@@ -40,12 +40,18 @@ export const usePotion = async (req: Request, res: Response) => {
   const parsedPlayerPotionId = Number(playerPotionId);
 
   try {
-    const result = (await ShopService.usePotion(
+    const result = await ShopService.usePotion(
       playerId,
       levelId,
       challengeId,
       parsedPlayerPotionId
-    )) as SubmitChallengeControllerResult;
+    );
+
+    // Check if result is an error response
+    if ("success" in result && !result.success) {
+      return errorResponse(res, null, result.message, 400);
+    }
+
     return successResponse(
       res,
       result,

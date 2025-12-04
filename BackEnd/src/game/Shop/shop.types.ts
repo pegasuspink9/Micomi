@@ -81,3 +81,8 @@ export interface LevelStatus {
   totalExpPointsEarned?: number;
   playerOutputs?: string[] | null;
 }
+
+export interface UsePotionErrorResponse {
+  message: string;
+  success: false;
+}

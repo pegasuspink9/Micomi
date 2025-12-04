@@ -25,3 +25,8 @@ export interface MicomiNavigationResponse {
     is_micomi_completed: boolean;
   };
 }
+
+export interface MicomiNavigationErrorResponse {
+  message: string;
+  success: false;
+}

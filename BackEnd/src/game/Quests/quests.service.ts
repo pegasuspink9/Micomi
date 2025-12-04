@@ -107,15 +107,35 @@ export async function claimQuestReward(playerId: number, questId: number) {
       include: { quest: true },
     });
 
-    if (!playerQuest) throw new Error("Quest not found for this player.");
-    if (!playerQuest.is_completed) throw new Error("Quest not yet completed.");
-    if (playerQuest.is_claimed) throw new Error("Reward already claimed.");
+    if (!playerQuest) {
+      return {
+        message: "Quest not found for this player.",
+        success: false,
+      };
+    }
+    if (!playerQuest.is_completed) {
+      return {
+        message: "Quest not yet completed.",
+        success: false,
+      };
+    }
+    if (playerQuest.is_claimed) {
+      return {
+        message: "Reward already claimed.",
+        success: false,
+      };
+    }
 
     const currentPlayer = await tx.player.findUnique({
       where: { player_id: playerId },
     });
 
-    if (!currentPlayer) throw new Error("Player not found.");
+    if (!currentPlayer) {
+      return {
+        message: "Player not found.",
+        success: false,
+      };
+    }
 
     const newExpPoints =
       currentPlayer.exp_points + playerQuest.quest.reward_exp;
@@ -147,13 +167,16 @@ export async function claimQuestReward(playerId: number, questId: number) {
 
     return {
       message: "Reward claimed successfully!",
-      rewards: {
-        exp: playerQuest.quest.reward_exp,
-        coins: playerQuest.quest.reward_coins,
-        newLevel: newLevel,
+      success: true,
+      data: {
+        rewards: {
+          exp: playerQuest.quest.reward_exp,
+          coins: playerQuest.quest.reward_coins,
+          newLevel: newLevel,
+        },
+        leveledUp: newLevel > oldLevel,
+        quest: updatedPQ,
       },
-      leveledUp: newLevel > oldLevel,
-      quest: updatedPQ,
     };
   });
 }

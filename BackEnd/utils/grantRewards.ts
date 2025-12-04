@@ -1,3 +1,4 @@
+import { success } from "zod";
 import { prisma } from "../prisma/client";
 import { io } from "../src/index";
 import { calculatePlayerLevel } from "../src/models/Player/player.service";
@@ -19,7 +20,7 @@ export const grantRewards = async (playerId: number, rewards: Rewards) => {
       select: { exp_points: true, level: true },
     });
 
-    if (!player) throw new Error("Player not found");
+    if (!player) return { message: "Player not found", success: false };
 
     const newExp = player.exp_points + exp;
     const newLevel = exp > 0 ? calculatePlayerLevel(newExp) : player.level;

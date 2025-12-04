@@ -4,14 +4,10 @@ import { generateAccessToken } from "../../../utils/token";
 import { PlayerCreateInput, PlayerLoginInput } from "./player.types";
 import { checkAchievements } from "../../game/Achievements/achievements.service";
 import { updateQuestProgress } from "../../game/Quests/quests.service";
+import { getAllPlayerQuests } from "../Quest/quest.service";
 import { QuestType } from "@prisma/client";
 import { differenceInCalendarDays } from "date-fns";
 import { io } from "../../index";
-import {
-  getPlayerQuestsByPeriod,
-  getStartDate,
-  getExpirationDate,
-} from "../Quest/periodicQuests.service";
 
 const prisma = new PrismaClient();
 
@@ -45,7 +41,7 @@ export const addExpAndUpdateLevel = async (
       select: { exp_points: true, level: true },
     });
 
-    if (!player) throw new Error("Player not found");
+    if (!player) return { message: "Player not found", success: false };
 
     const newExp = player.exp_points + expGained;
     const newLevel = calculatePlayerLevel(newExp);
@@ -148,73 +144,7 @@ export const getPlayerProfile = async (player_id: number) => {
 
   await checkAchievements(player_id);
 
-  const now = new Date();
-
-  const dailyQuests = await prisma.playerQuest.findMany({
-    where: {
-      player_id,
-      quest_period: "daily",
-      expires_at: {
-        gte: getStartDate("daily"),
-        lte: getExpirationDate("daily"),
-      },
-      is_completed: false,
-      is_claimed: false,
-    },
-    include: { quest: true },
-    orderBy: { player_quest_id: "asc" },
-  });
-
-  const weeklyQuests = await prisma.playerQuest.findMany({
-    where: {
-      player_id,
-      quest_period: "weekly",
-      expires_at: {
-        gte: getStartDate("weekly"),
-        lte: getExpirationDate("weekly"),
-      },
-      is_completed: false,
-      is_claimed: false,
-    },
-    include: { quest: true },
-    orderBy: { player_quest_id: "asc" },
-  });
-
-  const monthlyQuests = await prisma.playerQuest.findMany({
-    where: {
-      player_id,
-      quest_period: "monthly",
-      expires_at: {
-        gte: getStartDate("monthly"),
-        lte: getExpirationDate("monthly"),
-      },
-      is_completed: false,
-      is_claimed: false,
-    },
-    include: { quest: true },
-    orderBy: { player_quest_id: "asc" },
-  });
-
-  const completedQuests = await prisma.playerQuest.findMany({
-    where: {
-      player_id,
-      is_completed: true,
-      is_claimed: false,
-      expires_at: { gte: now },
-    },
-    include: { quest: true },
-    orderBy: { completed_at: "desc" },
-  });
-
-  const questLog = await prisma.playerQuest.findMany({
-    where: {
-      player_id,
-      is_claimed: true,
-    },
-    include: { quest: true },
-    orderBy: { completed_at: "desc" },
-    take: 50,
-  });
+  const questsData = await getAllPlayerQuests(player_id);
 
   const achievements = await prisma.achievement.findMany();
   const playerAchievementMap = new Map(
@@ -278,29 +208,6 @@ export const getPlayerProfile = async (player_id: number) => {
     }
   }
 
-  const formatQuestData = (playerQuests: any[]) => {
-    return playerQuests.map((pq) => ({
-      player_quest_id: pq.player_quest_id,
-      quest_id: pq.quest_id,
-      title: pq.quest.title,
-      description: pq.quest.description,
-      objective_type: pq.quest.objective_type,
-      target_value: pq.quest.target_value,
-      current_value: pq.current_value,
-      reward_exp: pq.quest.reward_exp,
-      reward_coins: pq.quest.reward_coins,
-      quest_period: pq.quest_period,
-      is_completed: pq.is_completed,
-      is_claimed: pq.is_claimed,
-      completed_at: pq.completed_at,
-      expires_at: pq.expires_at,
-      progress_percentage: Math.min(
-        100,
-        Math.round((pq.current_value / pq.quest.target_value) * 100)
-      ),
-    }));
-  };
-
   const selectedBadge = player.playerAchievements.find(
     (pa) => pa.is_selected && pa.is_owned
   )
@@ -333,23 +240,7 @@ export const getPlayerProfile = async (player_id: number) => {
     selectedBadge: selectedBadge,
     latestAchievement: latestAchievementFormatted,
 
-    quests: {
-      dailyQuests: formatQuestData(dailyQuests),
-      weeklyQuests: formatQuestData(weeklyQuests),
-      monthlyQuests: formatQuestData(monthlyQuests),
-      completedQuests: formatQuestData(completedQuests),
-      questLog: formatQuestData(questLog),
-
-      summary: {
-        totalActive:
-          dailyQuests.length + weeklyQuests.length + monthlyQuests.length,
-        totalCompleted: completedQuests.length,
-        totalClaimed: questLog.length,
-        dailyCount: dailyQuests.length,
-        weeklyCount: weeklyQuests.length,
-        monthlyCount: monthlyQuests.length,
-      },
-    },
+    quests: questsData,
 
     playerAchievements: mergedAchievements,
     totalActiveMaps: mapsPlayed.size,

@@ -1,5 +1,8 @@
 import { PrismaClient } from "@prisma/client";
-import { MicomiNavigationResponse } from "./lesson.types";
+import {
+  MicomiNavigationResponse,
+  MicomiNavigationErrorResponse,
+} from "./lesson.types";
 
 const prisma = new PrismaClient();
 
@@ -7,7 +10,7 @@ export const getNextLessonService = async (
   playerId: number,
   levelId: number,
   lessonId: number
-): Promise<MicomiNavigationResponse> => {
+): Promise<MicomiNavigationResponse | MicomiNavigationErrorResponse> => {
   const level = await prisma.level.findUnique({
     where: { level_id: levelId },
     include: {
@@ -22,12 +25,13 @@ export const getNextLessonService = async (
     },
   });
 
-  if (!level) throw new Error("Level not found");
+  if (!level) return { message: "Level not found", success: false };
 
   const currentIndex = level.lessons.findIndex((l) => l.lesson_id === lessonId);
-  if (currentIndex === -1) throw new Error("Current lesson not found");
+  if (currentIndex === -1)
+    return { message: "Current lesson not found", success: false };
   if (currentIndex === level.lessons.length - 1) {
-    throw new Error("Already at last page");
+    return { message: "Already at last page", success: false };
   }
 
   const nextIndex = currentIndex + 1;
@@ -80,7 +84,7 @@ export const getPreviousLessonService = async (
   playerId: number,
   levelId: number,
   lessonId: number
-): Promise<MicomiNavigationResponse> => {
+): Promise<MicomiNavigationResponse | MicomiNavigationErrorResponse> => {
   const level = await prisma.level.findUnique({
     where: { level_id: levelId },
     include: {
@@ -95,11 +99,13 @@ export const getPreviousLessonService = async (
     },
   });
 
-  if (!level) throw new Error("Level not found");
+  if (!level) return { message: "Level not found", success: false };
 
   const currentIndex = level.lessons.findIndex((l) => l.lesson_id === lessonId);
-  if (currentIndex === -1) throw new Error("Current lesson not found");
-  if (currentIndex === 0) throw new Error("Already at first page");
+  if (currentIndex === -1)
+    return { message: "Current lesson not found", success: false };
+  if (currentIndex === 0)
+    return { message: "Already at first page", success: false };
 
   const prevIndex = currentIndex - 1;
   const prevLesson = level.lessons[prevIndex];

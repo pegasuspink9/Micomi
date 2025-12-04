@@ -40,8 +40,13 @@ export const claimQuestRewardController = async (
     const questId = Number(req.params.questId);
 
     const result = await QuestService.claimQuestReward(playerId, questId);
-    return successResponse(res, result, "Quest reward claimed");
+
+    if (!result.success) {
+      return successResponse(res, { message: result.message }, result.message);
+    }
+
+    return successResponse(res, result.data, result.message);
   } catch (error) {
-    return errorResponse(res, null, (error as Error).message);
+    return errorResponse(res, error, "Failed to claim the quest", 400);
   }
 };

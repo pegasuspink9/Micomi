@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { isMapUnlockedForPlayer } from "../Levels/levels.service";
+import { success } from "zod";
 
 const prisma = new PrismaClient();
 
@@ -11,12 +12,12 @@ export const selectMap = async (playerId: number, mapId: number) => {
   });
 
   if (!map) {
-    throw new Error("Map not found");
+    return { message: "Map not found", success: false };
   }
 
   const mapUnlocked = await isMapUnlockedForPlayer(playerId, map.map_name);
   if (!mapUnlocked) {
-    throw new Error("Map not unlocked yet for this player");
+    return { message: "Map not unlocked yet for this player", success: false };
   }
 
   const fullMap = await prisma.map.findUnique({
@@ -39,7 +40,7 @@ export const selectMap = async (playerId: number, mapId: number) => {
   });
 
   if (!fullMap) {
-    throw new Error("Map not available");
+    return { message: "Map not available", success: false };
   }
 
   const enhancedMap = {

@@ -79,6 +79,11 @@ export const submitChallenge = async (req: Request, res: Response) => {
       adjustedAnswer
     );
 
+    // Handle error responses from service
+    if (!result.success && result.success === false) {
+      return errorResponse(res, null, result.message, 400);
+    }
+
     const freshProgress = await prisma.playerProgress.findUnique({
       where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
     });
