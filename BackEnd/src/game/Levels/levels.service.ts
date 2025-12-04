@@ -16,8 +16,6 @@ import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
 import { updateQuestProgress } from "../Quests/quests.service";
 import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 import { getCardForAttackType } from "../Combat/combat.service";
-import { audioLinks } from "../../../utils/audioLinks";
-import { imagesUrls } from "../../../utils/imageUrls";
 
 const prisma = new PrismaClient();
 
@@ -180,7 +178,7 @@ export const previewLevel = async (playerId: number, levelId: number) => {
         },
         energy: energyStatus.energy,
         timeToNextEnergyRestore: energyStatus.timeToNextRestore,
-        lessons
+        lessons,
       };
 
     case "shopButton":
@@ -384,6 +382,13 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         where: { player_id: playerId, level_id: levelId },
       });
 
+      const potionTypeFieldMap: { [key: string]: string } = {
+        Life: "health_quantity",
+        Power: "strong_quantity",
+        Immunity: "freeze_quantity",
+        Reveal: "hint_quantity",
+      };
+
       potionShop = potions
         .map((p) => {
           const globalOwned =
@@ -394,11 +399,11 @@ export const enterLevel = async (playerId: number, levelId: number) => {
               (plp) => plp.potion_shop_id === p.potion_shop_id
             )?.quantity ?? 0;
 
+          const fieldName =
+            potionTypeFieldMap[p.potion_type] ||
+            `${p.potion_type.toLowerCase()}_quantity`;
           const rawLimit =
-            potionConfig[
-              `${p.potion_type.toLowerCase()}_quantity` as keyof typeof potionConfig
-            ] ?? 0;
-
+            potionConfig[fieldName as keyof typeof potionConfig] ?? 0;
           const limit = Number(rawLimit ?? 0);
 
           const isAvailable = potionConfig.potions_avail

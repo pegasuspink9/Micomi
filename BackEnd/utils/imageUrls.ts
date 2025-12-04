@@ -33,7 +33,7 @@ export const imagesUrls = [
   "https://micomi-assets.me/Hero%20Selection%20Components/leon_entrance.png",
   "https://micomi-assets.me/Hero%20Selection%20Components/Leon.png",
   //Ryron (no animations yet)
-  "https://micomi-assets.me/Hero%20Portraits/Ryron.png",
+  "ttps://micomi-assets.me/Hero%20Portraits/Ryron.png",
   "https://micomi-assets.me/Hero%20Selection%20Components/ryron_entrance.png",
   "https://micomi-assets.me/Hero%20Selection%20Components/Ryron.png",
   //Potions
@@ -90,10 +90,10 @@ export const imagesUrls = [
   "https://micomi-assets.me/Maps/Snowland/5.png",
   "https://micomi-assets.me/Maps/Snowland/6.png",
   "https://micomi-assets.me/Maps/Snowland/7.png",
-  "https://micomi-assets.me/Maps/Snowland/8.png",  
+  "https://micomi-assets.me/Maps/Snowland/8.png",
   "https://micomi-assets.me/Maps/Snowland/9.png",
   "https://micomi-assets.me/Maps/Snowland/10.png",
-  //Badges (no fallback Micomi's Friend Achievement yet) - landscape image
+  //Badges
   "https://micomi-assets.me/Badges%20Updated/Badges_HTML%20HERO.png",
   "https://micomi-assets.me/Landscape%20Badges/HTML%20Hero.png",
   "https://micomi-assets.me/Badges%20Updated/Badges_CSS%20ARTIST.png",
@@ -115,7 +115,8 @@ export const imagesUrls = [
   "https://micomi-assets.me/Badges%20Updated/Badges_MASTER%20BEATER.png",
   "https://micomi-assets.me/Landscape%20Badges/Master%20Beater.png",
   "https://micomi-assets.me/Badges/MICOMI'S%20FRIEND.png",
-  //Intro comics (no page 7 yet and also 6, to be corrected)
+  "https://micomi-assets.me/Landscape%20Badges/Micomi's%20Friend%201.png",
+  //Intro comics
   "https://micomi-assets.me/Comics/Intro%20Micomi/C_page1.png",
   "https://micomi-assets.me/Comics/Intro%20Micomi/C_page2.png",
   "https://micomi-assets.me/Comics/Intro%20Micomi/C_page3.png",

@@ -243,8 +243,8 @@ export const getAllPlayerPotions = async (req: Request, res: Response) => {
 /* POST a Potion in the shop */
 export const createPotion = async (req: Request, res: Response) => {
   try {
-    const data: ShopPotionCreateInput = req.body;
-    const newPotion = await prisma.potionShop.create({ data });
+    const data: ShopPotionCreateInput[] = req.body;
+    const newPotion = await prisma.potionShop.createMany({ data });
     return successResponse(res, newPotion, "Potion in the shop created", 201);
   } catch (error) {
     return errorResponse(res, null, "Failed to create potion in the shop", 400);
@@ -263,7 +263,7 @@ export const updatePotion = async (req: Request, res: Response) => {
   } catch (error) {
     return errorResponse(
       res,
-      null,
+      error,
       "Failed to update the potion in the shop",
       400
     );

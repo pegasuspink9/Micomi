@@ -218,6 +218,7 @@ model PlayerAchievement {
 
 model PotionShop {
   potion_shop_id     Int                 @id @default(autoincrement())
+  potion_name        String
   potion_type        PotionType          @unique
   potion_description String
   potion_price       Int
@@ -382,10 +383,10 @@ enum QuestType {
 }
 
 enum PotionType {
-  health
-  strong
-  freeze
-  hint
+  Life 
+  Power
+  Immunity
+  Reveal
 }
 
 enum DifficultyLevel {

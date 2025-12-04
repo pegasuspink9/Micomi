@@ -45,18 +45,26 @@ export const buyPotion = async (
   if (!potionConfig)
     throw new Error("No potion shop configured for this level");
 
-  const rawLimit =
-    potionConfig[
-      `${potionType.toLowerCase()}_quantity` as keyof typeof potionConfig
-    ] ?? 0;
+  // Map potion types to their database field names
+  const potionTypeFieldMap: { [key: string]: string } = {
+    Life: "health_quantity",
+    Power: "strong_quantity",
+    Immunity: "freeze_quantity",
+    Reveal: "hint_quantity",
+  };
+
+  const fieldName =
+    potionTypeFieldMap[potionType] || `${potionType.toLowerCase()}_quantity`;
+  const rawLimit = potionConfig[fieldName as keyof typeof potionConfig] ?? 0;
   const maxAllowed = Number(rawLimit);
-  if (maxAllowed === 0) {
-    const potionsAvail = potionConfig.potions_avail as string[];
-    if (!potionsAvail.includes(potionType)) {
-      throw new Error(`${potionType} not available in this level`);
-    }
+
+  // Check if potion type is available
+  const potionsAvail = potionConfig.potions_avail as string[];
+  if (!potionsAvail.includes(potionType)) {
+    throw new Error(`${potionType} not available in this level`);
   }
 
+  // Enforce the purchase limit for this level
   const playerLevelPotion = await prisma.playerLevelPotion.findUnique({
     where: {
       player_id_level_id_potion_shop_id: {
@@ -232,7 +240,7 @@ export const usePotion = async (
   let nextChallengeForHint: any = null;
 
   switch (potionType) {
-    case "strong":
+    case "Power":
       if (!progress.has_strong_effect) {
         updateData.has_strong_effect = true;
         const currentDamages = Array.isArray(character.character_damage)
@@ -249,7 +257,7 @@ export const usePotion = async (
         dynamicMessage = `${character.character_name} already empowered—no extra surge!`;
       }
       break;
-    case "freeze":
+    case "Immunity":
       if (!progress.has_freeze_effect) {
         updateData.has_freeze_effect = true;
         dynamicMessage = `Enemy frozen, next counterattack nullified!`;
@@ -265,7 +273,7 @@ export const usePotion = async (
         dynamicMessage = `Already frozen—no extra chill!`;
       }
       break;
-    case "health":
+    case "Life":
       updateData.player_hp = maxHealth;
       dynamicMessage = `Health fully restored—${character.character_name} feels invigorated!`;
       audioResponse = [
@@ -275,7 +283,7 @@ export const usePotion = async (
         "https://micomi-assets.me/Sounds/Final/All%20Potions.wav";
 
       break;
-    case "hint":
+    case "Reveal":
       console.log(`Hint potion consumed for challenge ${challengeId}`);
 
       const currentNext = await ChallengeService.getNextChallengeService(
@@ -388,7 +396,7 @@ export const usePotion = async (
     enemy?.enemy_id ?? 0
   );
 
-  if (potionType === "strong" && freshProgressPostTx?.has_strong_effect) {
+  if (potionType === "Power" && freshProgressPostTx?.has_strong_effect) {
     const originalDamages = Array.isArray(character.character_damage)
       ? (character.character_damage as number[])
       : [30, 40, 50];
@@ -399,7 +407,7 @@ export const usePotion = async (
     );
   }
 
-  if (potionType === "freeze" && freshProgressPostTx?.has_freeze_effect) {
+  if (potionType === "Immunity" && freshProgressPostTx?.has_freeze_effect) {
     fightResult.enemy.enemy_damage = 0;
     fightResult.enemy.enemy_attack = null;
     console.log(
@@ -488,7 +496,9 @@ export const usePotion = async (
       : 0;
 
   const finalNextChallenge =
-    potionType === "hint" ? nextChallengeForHint : nextChallenge;
+    potionType === "Reveal" ? nextChallengeForHint : nextChallenge;
+
+  await updateQuestProgress(playerId, QuestType.use_potion, 1);
 
   return {
     isCorrect: null as any,

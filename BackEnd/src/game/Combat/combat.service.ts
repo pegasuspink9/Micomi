@@ -41,6 +41,28 @@ const CARD_CONFIG: Record<
         "https://micomi-assets.me/Icons/Skill%20Icons/1st.png",
     },
   },
+  ShiShi: {
+    special_attack: {
+      card_type: "Icebound Meteoclaw",
+      character_attack_card:
+        "https://micomi-assets.me/Icons/Skill%20Icons/Special%20Attack%20Card.png",
+    },
+    third_attack: {
+      card_type: "Sparkclaw Cascade",
+      character_attack_card:
+        "https://micomi-assets.me/Icons/Skill%20Icons/Third%20Attack%20Card.png",
+    },
+    second_attack: {
+      card_type: "Flamewhisker Crash",
+      character_attack_card:
+        "https://micomi-assets.me/Icons/Skill%20Icons/Second%20Attack%20Card.png",
+    },
+    basic_attack: {
+      card_type: "Voidflare Drop",
+      character_attack_card:
+        "https://micomi-assets.me/Icons/Skill%20Icons/Basic%20Attack%20Card.png",
+    },
+  },
 };
 
 export function getBaseEnemyHp(level: {

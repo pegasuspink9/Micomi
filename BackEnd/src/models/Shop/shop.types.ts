@@ -2,6 +2,7 @@ import { PotionType } from "@prisma/client";
 
 export interface ShopPotionCreateInput {
   potion_type: PotionType;
+  potion_name: string;
   potion_description: string;
   potion_price: number;
   potion_url?: string;
@@ -9,6 +10,7 @@ export interface ShopPotionCreateInput {
 
 export interface ShopPotionUpdateInput {
   potion_type?: PotionType;
+  potion_name?: string;
   potion_description?: string;
   potion_price?: number;
   potion_url?: string;
