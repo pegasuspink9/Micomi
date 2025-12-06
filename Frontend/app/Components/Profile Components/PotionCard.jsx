@@ -150,8 +150,9 @@ const styles = StyleSheet.create({
   },
   
   potionCountText: {
-    fontSize: gameScale(12),
+    fontSize: gameScale(10),
     color: '#ffffff',
+    paddingTop: gameScale(4),
     fontFamily: 'DynaPuff',
   },
   

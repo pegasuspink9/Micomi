@@ -5,7 +5,8 @@ import {
   ScrollView, 
   StyleSheet,
   ActivityIndicator,
-  TouchableOpacity
+  TouchableOpacity,
+  ImageBackground
 } from "react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -13,11 +14,9 @@ import { gameScale } from '../Components/Responsiveness/gameResponsive';
 import { usePlayerProfile } from '../hooks/usePlayerProfile';
 
 // Import all Profile components
-import Tabs from '../Components/Profile Components/Tabs';
 import PlayerInfoSection from '../Components/Profile Components/PlayerInfoSection';
 import StatsGridSection from '../Components/Profile Components/StatsGridSection';
 import InventorySection from '../Components/Profile Components/InventorySection';
-import QuestsSection from '../Components/Profile Components/QuestsSection';
 
 export default function Profile() {
   const playerId = 11;
@@ -29,7 +28,6 @@ export default function Profile() {
     clearError
   } = usePlayerProfile(playerId);
 
-  const [activeTab, setActiveTab] = useState('Profile');
   const [inventoryTab, setInventoryTab] = useState('Badges');
 
   // Simplified loading - assets are already cached from Map API
@@ -74,49 +72,37 @@ export default function Profile() {
       >
         <View style={styles.backgroundOverlay} />
         
-        <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
-
-        {activeTab === 'Profile' && (
-          <ScrollView 
-            style={styles.scrollContainer}
-            showsVerticalScrollIndicator={false}
-          >
-            <PlayerInfoSection 
-              playerName={playerData.playerName}
-              username={playerData.username}
-              selectedBadge={playerData.selectedBadge}
-              playerLevel={playerData.playerLevel}
-              expPoints={playerData.expPoints}
-            />
-            
-            <StatsGridSection 
-              coins={playerData.coins}
-              currentStreak={playerData.currentStreak}
-              expPoints={playerData.expPoints}
-              mapsOpened={playerData.mapsOpened}
-              statsIcons={playerData.statsIcons}
-              hero={playerData.heroSelected}
-              background={playerData.background}
-            />
-            
-            <InventorySection 
-              activeTab={inventoryTab}
-              setActiveTab={setInventoryTab}
-              badges={playerData.badges}
-              potions={playerData.potions}
-            />
-            
-            <QuestsSection quests={playerData.quests} />
-            
-            <View style={{ height: gameScale(16) }} />
-          </ScrollView>
-        )}
-
-        {activeTab === 'Missions' && (
-          <View style={[styles.centered, { flex: 1 }]}>
-            <Text style={styles.loadingText}>Missions Content Goes Here</Text>
-          </View>
-        )}
+        <ScrollView 
+          style={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          <PlayerInfoSection 
+            playerName={playerData.playerName}
+            username={playerData.username}
+            selectedBadge={playerData.selectedBadge}
+            playerLevel={playerData.playerLevel}
+            expPoints={playerData.expPoints}
+          />
+          
+          <StatsGridSection 
+            coins={playerData.coins}
+            currentStreak={playerData.currentStreak}
+            expPoints={playerData.expPoints}
+            mapsOpened={playerData.mapsOpened}
+            statsIcons={playerData.statsIcons}
+            hero={playerData.heroSelected}
+            background={playerData.background}
+          />
+          
+          <InventorySection 
+            activeTab={inventoryTab}
+            setActiveTab={setInventoryTab}
+            badges={playerData.badges}
+            potions={playerData.potions}
+          />
+          
+          <View style={{ height: gameScale(16) }} />
+        </ScrollView>
       </LinearGradient>
     </View>
   );

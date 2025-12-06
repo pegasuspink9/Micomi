@@ -17,6 +17,7 @@ import { useMapData } from '../../hooks/useMapData';
 import { MAP_THEMES, DEFAULT_THEME } from '../RoadMap/MapLevel/MapDatas/mapData'; 
 import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
 import { mapService } from '../../services/mapService';
+import MiniQuestPreview from './MiniQuestPreview/MiniQuestPreview';
 
 const { width, height } = Dimensions.get('window');
 
@@ -633,6 +634,7 @@ export default function MapNavigate({ onMapChange }) {
             <Image source={require('./Assets/right arrow.png')} style={styles.arrowImage} />
           </TouchableOpacity>
         </View>
+        <MiniQuestPreview playerId={11} />
       </View>
       
       {/* Download Modal - Now shows automatically when needed */}

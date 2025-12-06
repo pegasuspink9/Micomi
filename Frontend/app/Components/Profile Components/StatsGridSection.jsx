@@ -78,6 +78,8 @@ const styles = StyleSheet.create({
     fontFamily: 'MusicVibes',
     marginBottom: gameScale(14),
     textShadowColor: '#000000ff',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
   },
   overviewBorderOuter: {
     borderRadius: gameScale(18), 

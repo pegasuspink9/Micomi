@@ -151,11 +151,11 @@ const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, e
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    height: gameScale(220),
-    marginBottom: gameScale(30),
-    borderRadius: gameScale(12),
+    height: gameScale(250),
+    marginBottom: gameScale(10),
     overflow: 'hidden',
-    borderWidth: gameScale(2),
+    borderBottomLeftRadius: gameScale(15),
+    borderBottomRightRadius: gameScale(15),
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   coverBackground: {
