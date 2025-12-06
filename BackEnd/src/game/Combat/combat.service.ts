@@ -153,6 +153,7 @@ export async function getFightSetup(playerId: number, levelId: number) {
         has_force_character_attack_type: false,
         has_both_hp_decrease: false,
         has_shuffle_ss: false,
+        has_permuted_ss: false,
       },
     });
   }
@@ -1349,6 +1350,15 @@ export async function fightBossEnemy(
         enemy_attack_type = "special attack";
         enemy_attack = enemy.special_skill || null;
         console.log("- Shuffle options active: using special skill attack");
+      } else if (progress.has_permuted_ss) {
+        enemy_ss_type = "permuted";
+        enemy_run = enemy.enemy_run || null;
+        enemy_idle = enemy.enemy_avatar || null;
+        enemy_attack_type = "special attack";
+        enemy_attack = enemy.special_skill || null;
+        console.log(
+          "- Letters shuffled in a word active: using special skill attack"
+        );
       } else if (isBossJoshy && progress.has_boss_shield) {
         enemy_ss_type = "shield";
         enemy_run =

@@ -202,6 +202,10 @@ model PlayerProgress {
   //Boss Maggmaw ss
   has_shuffle_ss        Boolean?       @default(false)
 
+  //Boss Earl ss
+  has_permuted_ss       Boolean?      @default(false)   
+  permutation_mapping   Json?    
+
   //stars earned in the level
   stars_earned Int?
 

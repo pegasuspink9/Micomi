@@ -24,6 +24,7 @@ export async function updateProgressForChallenge(
     progress.has_force_character_attack_type ?? false;
   let hasBothHpDecrease = progress.has_both_hp_decrease ?? false;
   let hasShuffle = progress.has_shuffle_ss ?? false;
+  let hasPermuted = progress.has_permuted_ss ?? false;
 
   const challenge = await prisma.challenge.findUnique({
     where: { challenge_id: challengeId },
@@ -71,6 +72,7 @@ export async function updateProgressForChallenge(
     hasBossShield = false;
     hasForceCharacterAttackType = false;
     hasShuffle = false;
+    hasPermuted = false;
 
     const coinsToAdd =
       isBonusRound && characterDamage
@@ -89,6 +91,7 @@ export async function updateProgressForChallenge(
       has_boss_shield: hasBossShield,
       has_force_character_attack_type: hasForceCharacterAttackType,
       has_shuffle_ss: hasShuffle,
+      has_permuted_ss: hasPermuted,
     };
   } else {
     if (!wrongChallenges.includes(challengeId)) {
@@ -135,8 +138,15 @@ export async function updateProgressForChallenge(
           case "Boss Maggmaw":
             hasShuffle = true;
             console.log(
-              "- Options shuffle after for Boss Maggmaw multiples of 3 consecutive wrongs"
+              "- Options shuffle after for Boss Maggmaw after multiples of 3 consecutive wrongs"
             );
+            break;
+          case "Boss Earl":
+            hasPermuted = true;
+            console.log(
+              "- Options words unordered after for Boss Earl after multiples of 3 consecutive wrongs"
+            );
+            break;
         }
       }
     }
@@ -151,6 +161,7 @@ export async function updateProgressForChallenge(
       has_force_character_attack_type: hasForceCharacterAttackType,
       has_both_hp_decrease: hasBothHpDecrease,
       has_shuffle_ss: hasShuffle,
+      has_permuted_ss: hasPermuted,
     };
   }
 

@@ -27,6 +27,15 @@ const multisetEqual = (a: string[], b: string[]): boolean => {
 
 const reverseString = (str: string): string => str.split("").reverse().join("");
 
+const permuteLetters = (str: string): string => {
+  const chars = str.split("");
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join("");
+};
+
 const isTimedChallengeType = (type: string) =>
   ["multiple choice", "fill in the blank"].includes(type);
 
@@ -376,6 +385,29 @@ export const submitChallengeService = async (
 
   let finalAnswer = answer;
   let hintUsed = false;
+
+  if (currentProgress.has_permuted_ss && enemy.enemy_name === "Boss Earl") {
+    const allMappings = (currentProgress.permutation_mapping as any) || {};
+    const mapping = allMappings[challengeId.toString()];
+
+    if (mapping && mapping.original && mapping.permuted) {
+      const { original, permuted } = mapping;
+
+      finalAnswer = finalAnswer.map((permutedText) => {
+        const index = permuted.findIndex((opt: string) => opt === permutedText);
+        return index !== -1 ? original[index] : permutedText;
+      });
+
+      console.log(
+        `- Permutation SS active: mapped player answer from permuted back to original using stored mapping`
+      );
+    } else {
+      console.log(
+        `- Warning: Permutation mapping not found for challenge ${challengeId}, answer may be incorrect`
+      );
+    }
+  }
+
   if (useHint) {
     const hintPotion = await prisma.playerPotion.findFirst({
       where: {
@@ -1133,6 +1165,7 @@ const wrapWithTimer = async (
   if (!challenge) return { nextChallenge: null };
 
   let modifiedChallenge = { ...challenge };
+
   if (
     progress.has_reversed_curse &&
     level.enemy?.enemy_name === "King Grimnir"
@@ -1154,6 +1187,46 @@ const wrapWithTimer = async (
     if (Array.isArray(options) && options.length > 0) {
       modifiedChallenge.options = shuffleArray([...options]);
       console.log("- Shuffle SS applied: options shuffled for display");
+    }
+  } else if (
+    progress.has_permuted_ss &&
+    level.enemy?.enemy_name === "Boss Earl"
+  ) {
+    const options = challenge.options as string[];
+    if (Array.isArray(options) && options.length > 0) {
+      const permutedOptions = options.map(permuteLetters);
+      modifiedChallenge.options = permutedOptions;
+
+      const currentMapping = (progress.permutation_mapping as any) || {};
+      currentMapping[challenge.challenge_id.toString()] = {
+        original: options,
+        permuted: permutedOptions,
+      };
+
+      await prisma.playerProgress.update({
+        where: {
+          player_id_level_id: {
+            player_id: progress.player_id,
+            level_id: progress.level_id,
+          },
+        },
+        data: {
+          permutation_mapping: currentMapping,
+          challenge_start_time: new Date(),
+        },
+      });
+
+      console.log(
+        "- Permutation SS applied: letters within options shuffled for display and mapping stored"
+      );
+
+      const challengeStart = new Date();
+      const timeRemaining = CHALLENGE_TIME_LIMIT;
+      const builtChallenge = buildChallengeWithTimer(
+        modifiedChallenge,
+        timeRemaining
+      );
+      return { nextChallenge: builtChallenge };
     }
   }
 
