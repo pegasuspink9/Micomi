@@ -25,64 +25,71 @@ model Map {
   created_at       DateTime        @default(now())
   last_updated     DateTime?
   map_image        String
-  difficulty_level DifficultyLevel
   player_id        Int?
+
+  difficulty_level DifficultyLevel
   levels           Level[]
 }
 
-model Lesson {
-  lesson_id   Int    @id @default(autoincrement())
-  level_id    Int
-  page_number Int
-  page_url    String
-  level       Level  @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
+model Lesson {  //Micomi level
+  lesson_id          Int    @id @default(autoincrement())
+  level_id           Int
+  page_number        Int
+  page_url           String
+  level              Level  @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
 }
 
 model Level {
-  level_id                   Int                 @id @default(autoincrement())
-  map_id                     Int
-  level_number               Int
-  content                    String
-  is_unlocked                Boolean             @default(false)
-  feedback_message           String
-  level_difficulty           DifficultyLevel
-  level_type                 String
-  level_title                String?
-  enemy_id                   Int?
-  boss_level_expected_output Json?               @default("[]")
-  challenges                 Challenge[]
-  lessons                    Lesson[]
-  enemy                      Enemy?              @relation(fields: [enemy_id], references: [enemy_id], onDelete: Cascade)
-  map                        Map                 @relation(fields: [map_id], references: [map_id], onDelete: Cascade)
-  potionsBoughtByLevel       PlayerLevelPotion[]
-  playerProgress             PlayerProgress[]
-  potionShopByLevel          PotionShopByLevel?
+  level_id             Int                 @id @default(autoincrement())
+  map_id               Int
+  level_number         Int       
+  content              String
+  is_unlocked          Boolean             @default(false)
+  feedback_message     String
+  level_difficulty     DifficultyLevel
+  level_type           String
+  level_title          String?
+  enemy_id             Int?
+  boss_level_expected_output  Json?   @default("[]")    
+
+  challenges           Challenge[]
+  lessons              Lesson[]
+  enemy                Enemy?              @relation(fields: [enemy_id], references: [enemy_id], onDelete: Cascade)
+  map                  Map                 @relation(fields: [map_id], references: [map_id], onDelete: Cascade)
+  potionsBoughtByLevel PlayerLevelPotion[]
+  playerProgress       PlayerProgress[]
+  potionShopByLevel    PotionShopByLevel?
 }
 
 model Challenge {
-  challenge_id         Int     @id @default(autoincrement())
-  level_id             Int
-  title                String
-  description          String
-  points_reward        Int     @default(0)
-  coins_reward         Int     @default(0)
-  hint                 String
-  challenge_type       String
-  guide                String?
-  correct_answer       Json    @default("[]")
-  test_cases           Json?   @default("[]")
-  options              Json?   @default("[]")
-  question             String?
-  expected_output      Json?   @default("[]")
-  computer_file        String?
-  computer_file_name   String?
-  css_file             String?
-  css_file_name        String?
-  html_file            String?
-  html_file_name       String?
-  javascript_file      String?
-  javascript_file_name String?
-  level                Level   @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
+  challenge_id    Int     @id @default(autoincrement())
+  level_id        Int
+  title           String
+  description     String
+  points_reward   Int     @default(0)
+  coins_reward    Int     @default(0)
+  hint            String
+  challenge_type  String  //Easy: multiple choice and fill in the blank. Hard: code with guide.
+  guide           String?
+  correct_answer  Json    @default("[]")
+  test_cases      Json?   @default("[]")
+  options         Json?   @default("[]")
+  question        String?
+  expected_output Json?   @default("[]")
+
+  //new attri
+  html_file         String?
+  css_file          String?
+  javascript_file   String?
+  computer_file     String?
+
+  //file_names
+  html_file_name        String?
+  css_file_name         String?
+  javascript_file_name  String?
+  computer_file_name    String?
+
+  level           Level   @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
 }
 
 model Enemy {
@@ -94,33 +101,41 @@ model Enemy {
   enemy_skills      String
   enemy_health      Int
   enemy_damage      Int
-  enemy_map         String
+  enemy_map         String  //to determine what map is this enemy (HTML, CSS, JavaScript, Computer)
+
+  //animations
   enemy_attack      String?
   enemy_dies        String?
   enemy_hurt        String?
   enemy_run         String?
-  avatar_enemy      String?
+  avatar_enemy      String?  //idle animation
+
   special_skill     String?
+
   levels            Level[]
 }
 
 model Player {
   player_id          Int                 @id @default(autoincrement())
+  player_name        String              @unique
   username           String              @unique
   email              String              @unique
   password           String
-  total_points       Int                 @default(0)
-  created_at         DateTime            @default(now())
+  total_points       Int                 @default(0)        //point given after completing the level (sum of all points per challenge (only the first won))
+  created_at         DateTime            @default(now())    //point given after completing the level plus the exp points from quest
   last_active        DateTime?
   days_logged_in     Int                 @default(0)
   coins              Int                 @default(100)
   exp_points         Int                 @default(0)
   level              Int                 @default(1)
+
   energy             Int                 @default(25)
   energy_reset_at    DateTime?
-  player_name        String              @unique
+
+   //for quest and achievement streak tracker
   current_streak     Int                 @default(0)
   longest_streak     Int                 @default(0)
+
   playerAchievements PlayerAchievement[]
   ownedCharacters    PlayerCharacter[]
   ownedLevelPotions  PlayerLevelPotion[]
@@ -133,75 +148,111 @@ model Player {
 }
 
 model PlayerProgress {
-  progress_id                     Int           @id @default(autoincrement())
-  player_id                       Int
-  level_id                        Int
-  current_level                   Int
-  is_completed                    Boolean       @default(false)
-  completed_at                    DateTime?
-  attempts                        Int           @default(0)
-  player_answer                   Json          @default("[]")
-  battle_status                   BattleStatus? @default(in_progress)
-  enemy_hp                        Int           @default(0)
-  player_hp                       Int           @default(0)
-  challenge_start_time            DateTime?
-  wrong_challenges                Json          @default("[]")
-  has_freeze_effect               Boolean       @default(false)
-  has_strong_effect               Boolean       @default(false)
-  coins_earned                    Int           @default(0)
-  took_damage                     Boolean?      @default(false)
-  consecutive_corrects            Int           @default(0)
-  player_expected_output          Json?         @default("[]")
-  done_micomi_level               Boolean?      @default(false)
-  done_shop_level                 Boolean?      @default(false)
-  total_exp_points_earned         Int           @default(0)
-  total_points_earned             Int           @default(0)
-  consecutive_wrongs              Int           @default(0)
-  has_reversed_curse              Boolean       @default(false)
-  has_boss_shield                 Boolean       @default(false)
-  has_force_character_attack_type Boolean       @default(false)
-  stars_earned                    Int?
-  has_both_hp_decrease            Boolean?      @default(false)
-  has_shuffle_ss                  Boolean?      @default(false)
-  level                           Level         @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
-  player                          Player        @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
+  progress_id            Int           @id @default(autoincrement())
+  player_id              Int
+  level_id               Int
+  current_level          Int
+  is_completed           Boolean       @default(false)
+  completed_at           DateTime?
+  attempts               Int           @default(0)
+  player_answer          Json          @default("[]")
+  battle_status          BattleStatus? @default(in_progress)
+  enemy_hp               Int           @default(0)
+  player_hp              Int           @default(0)
+  challenge_start_time   DateTime?
+  wrong_challenges       Json          @default("[]")
+
+  //active potion effects during combat
+  has_freeze_effect      Boolean       @default(false)
+  has_strong_effect      Boolean       @default(false)
+
+  //track kuwens during combat
+  coins_earned           Int           @default(0)
+  total_points_earned           Int           @default(0)
+  total_exp_points_earned           Int           @default(0)
+
+  //for quest purpose
+  took_damage            Boolean?      @default(false)
+
+  //streak tracking
+  consecutive_corrects   Int           @default(0)
+  consecutive_wrongs     Int           @default(0)
+
+  //collected player expected output
+  player_expected_output Json?         @default("[]")
+
+   //micomi level done
+  done_micomi_level      Boolean?      @default(false)
+
+  //potion shop level done
+  done_shop_level        Boolean?      @default(false)
+
+  //King Grimnir ss
+  has_reversed_curse    Boolean        @default(false)
+
+  //Boss Darco ss
+  has_boss_shield       Boolean        @default(false)
+
+  //Boss Joshy ss
+  has_force_character_attack_type Boolean @default(false)
+
+  //Boss Scorcharach ss
+  has_both_hp_decrease  Boolean?       @default(false)
+
+  //Boss Maggmaw ss
+  has_shuffle_ss        Boolean?       @default(false)
+
+  //Boss Earl ss
+  has_permuted_ss       Boolean?      @default(false)   
+  permutation_mapping   Json?    
+
+  //stars earned in the level
+  stars_earned Int?
+
+  level                  Level         @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
+  player                 Player        @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
 
   @@unique([player_id, level_id])
   @@index([player_id, level_id])
 }
 
 model Character {
-  character_id            Int               @id @default(autoincrement())
-  character_name          String
-  avatar_image            String?
-  character_type          String
-  weapon_name             String
-  weapon_skill            String
-  health                  Int
-  is_purchased            Boolean           @default(false)
-  is_selected             Boolean           @default(false)
-  character_dies          String?
-  character_hurt          String?
-  character_damage        Json?             @default("[]")
-  character_run           String?
-  character_attacks       Json?             @default("[]")
-  character_avatar        String?
-  character_image_display String?
-  hero_lottie             String?
-  is_range                Boolean?          @default(false)
-  character_image_select  String?
-  attack_pose             String?
-  characterShop           CharacterShop?
-  playerCharacter         PlayerCharacter[]
+  character_id      Int               @id @default(autoincrement())
+  character_name    String
+  character_type    String
+  weapon_name       String
+  weapon_skill      String
+  health            Int
+  is_purchased      Boolean           @default(false)
+  is_selected       Boolean           @default(false)
+
+  //animations
+  character_dies    String?
+  character_hurt    String?
+  avatar_image      String?           //idle 
+  character_damage  Json?             @default("[]") // 30, 40, 50
+  character_run     String?
+  character_attacks Json?             @default("[]") //["basic_attack", "second_attack", "special_attack"] animation links
+  character_avatar  String?           //character icon
+  character_image_display   String?   
+  hero_lottie       String?
+  character_image_select String?
+
+  //is_range for ShiShi and Ryron
+  is_range         Boolean?          @default(false)
+  attack_pose      String?
+
+  characterShop     CharacterShop?
+  playerCharacter   PlayerCharacter[]
 }
 
 model Achievement {
   achievement_id     Int                 @id @default(autoincrement())
   description        String
   badge_icon         String?
+  landscape_image    String?
   conditions         String
   achievement_name   String
-  landscape_image    String?
   playerAchievements PlayerAchievement[]
 }
 
@@ -220,11 +271,11 @@ model PlayerAchievement {
 
 model PotionShop {
   potion_shop_id     Int                 @id @default(autoincrement())
+  potion_name        String
   potion_type        PotionType          @unique
   potion_description String
   potion_price       Int
   potion_url         String?
-  potion_name        String
   levelBuyers        PlayerLevelPotion[]
   buyers             PlayerPotion[]
 }
@@ -246,7 +297,7 @@ model PlayerLevelPotion {
 model PotionShopByLevel {
   potion_shop_by_level_id Int   @id @default(autoincrement())
   level_id                Int   @unique
-  potions_avail           Json  @default("[]")
+  potions_avail           Json  @default("[]") //["health","strong", "freeze", "hint"]
   health_quantity         Int   @default(0)
   strong_quantity         Int   @default(0)
   freeze_quantity         Int   @default(0)
@@ -298,40 +349,40 @@ model Quest {
 }
 
 model PlayerQuest {
-  player_quest_id Int          @id @default(autoincrement())
+  player_quest_id Int       @id @default(autoincrement())
   player_id       Int
   quest_id        Int
   completed_at    DateTime?
-  current_value   Int          @default(0)
-  is_claimed      Boolean      @default(false)
-  is_completed    Boolean      @default(false)
+  current_value   Int       @default(0)
+  is_claimed      Boolean   @default(false)
+  is_completed    Boolean   @default(false)
   expires_at      DateTime?
   quest_period    QuestPeriod? @default(daily)
-  player          Player       @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
-  quest           Quest        @relation(fields: [quest_id], references: [quest_id], onDelete: Cascade)
+  player          Player    @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
+  quest           Quest     @relation(fields: [quest_id], references: [quest_id], onDelete: Cascade)
 
   @@unique([player_id, quest_id])
 }
 
 model BackgroundMapping {
-  id            Int    @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
   mapName       String
   levelNumber   Int
   backgroundUrl String
 
-  @@unique([mapName, levelNumber])
+  @@unique([mapName, levelNumber]) 
 }
 
 model GameplayMessage {
-  id           Int             @id @default(autoincrement())
-  key          String          @unique
-  textTemplate String
-  audioUrl     String?
+  id           Int              @id @default(autoincrement())
+  key          String           @unique             
+  textTemplate String                           
+  audioUrl     String?          
   category     MessageCategory
-  tags         MessageTag[]    @default([])
-  isActive     Boolean         @default(true)
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  tags         MessageTag[]     @default([])              
+  isActive     Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
   @@index([category])
   @@index([category, tags])
@@ -345,6 +396,7 @@ enum MessageCategory {
   CORRECT_FINAL
   CORRECT_LOW_HEALTH
   CORRECT_BONUS
+
   WRONG_BASE
   WRONG_LOW_HEALTH
   WRONG_LOST
@@ -368,24 +420,26 @@ enum QuestPeriod {
 }
 
 enum QuestType {
-  defeat_enemy
-  buy_potion
-  unlock_character
-  complete_lesson
-  solve_challenge
-  spend_coins
-  earn_exp
-  login_days
+  defeat_enemy //already in the combat
+  buy_potion //already in the shop
+  unlock_character //already in the shop
+  complete_lesson //already in the level service
+  solve_challenge //already in the combat
+  spend_coins //already in the shop
+  earn_exp //already in the combat (giving of rewards)
+  login_days //up for testing
+
+  //newly added
   reach_level
-  use_potion
-  solve_challenge_no_hint
-  defeat_enemy_full_hp
-  perfect_level
-  defeat_boss
+  use_potion //already in the shop
+  solve_challenge_no_hint //already in the challenge
+  defeat_enemy_full_hp //already in combat
+  perfect_level //already in the combat
+  defeat_boss //already in the shop
 }
 
 enum PotionType {
-  Life
+  Life 
   Power
   Immunity
   Reveal
@@ -397,7 +451,7 @@ enum DifficultyLevel {
   hard
   expert
   final
-  null
+  null //micomi and potion shop level
 }
 
 enum BattleStatus {

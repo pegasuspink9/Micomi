@@ -69,8 +69,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     objective_type: QuestType.defeat_enemy,
     titleTemplate: "Weekly Warrior",
     descriptionTemplate: "Defeat {count} enemies this week!",
-    minTarget: 20,
-    maxTarget: 50,
+    minTarget: 3,
+    maxTarget: 8,
     baseExpReward: 300,
     baseCoinReward: 150,
     availableFor: ["weekly"],
@@ -109,8 +109,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     objective_type: QuestType.defeat_boss,
     titleTemplate: "Boss Slayer",
     descriptionTemplate: "Defeat {count} bosses this week!",
-    minTarget: 2,
-    maxTarget: 5,
+    minTarget: 1,
+    maxTarget: 3,
     baseExpReward: 600,
     baseCoinReward: 300,
     availableFor: ["weekly"],
@@ -130,8 +130,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     objective_type: QuestType.defeat_enemy,
     titleTemplate: "Monthly Conqueror",
     descriptionTemplate: "Defeat {count} enemies this month!",
-    minTarget: 100,
-    maxTarget: 200,
+    minTarget: 30,
+    maxTarget: 52,
     baseExpReward: 1500,
     baseCoinReward: 750,
     availableFor: ["monthly"],
@@ -180,8 +180,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     objective_type: QuestType.defeat_boss,
     titleTemplate: "Boss Dominator",
     descriptionTemplate: "Defeat {count} bosses this month!",
-    minTarget: 10,
-    maxTarget: 20,
+    minTarget: 3,
+    maxTarget: 12,
     baseExpReward: 2800,
     baseCoinReward: 1400,
     availableFor: ["monthly"],
@@ -226,8 +226,12 @@ export function generateQuestsByPeriod(
     t.availableFor.includes(period)
   );
 
-  const shuffled = [...availableTemplates].sort(() => Math.random() - 0.5);
-  const selected = shuffled.slice(0, count);
+  const selected: QuestTemplate[] = [];
+  for (let i = 0; i < count; i++) {
+    const template =
+      availableTemplates[Math.floor(Math.random() * availableTemplates.length)];
+    selected.push(template);
+  }
 
   return selected.map((template) => {
     const targetValue =
@@ -314,7 +318,7 @@ export async function generatePeriodicQuests(period: QuestPeriod) {
   const expirationDate = getExpirationDate(period);
   const startDate = getStartDate(period);
 
-  const questCount = period === "daily" ? 3 : period === "weekly" ? 4 : 5;
+  const questCount = period === "daily" ? 15 : period === "weekly" ? 10 : 7;
 
   try {
     const allPlayers = await prisma.player.findMany({
@@ -473,7 +477,7 @@ export async function forceGenerateQuestsForPlayer(
 ) {
   const expirationDate = getExpirationDate(period);
   const startDate = getStartDate(period);
-  const questCount = period === "daily" ? 3 : period === "weekly" ? 4 : 5;
+  const questCount = period === "daily" ? 15 : period === "weekly" ? 10 : 7;
 
   await prisma.playerQuest.deleteMany({
     where: {

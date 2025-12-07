@@ -23,6 +23,8 @@ export async function updateProgressForChallenge(
   let hasForceCharacterAttackType =
     progress.has_force_character_attack_type ?? false;
   let hasBothHpDecrease = progress.has_both_hp_decrease ?? false;
+  let hasShuffle = progress.has_shuffle_ss ?? false;
+  let hasPermuted = progress.has_permuted_ss ?? false;
 
   const challenge = await prisma.challenge.findUnique({
     where: { challenge_id: challengeId },
@@ -69,6 +71,8 @@ export async function updateProgressForChallenge(
     hasReversedCurse = false;
     hasBossShield = false;
     hasForceCharacterAttackType = false;
+    hasShuffle = false;
+    hasPermuted = false;
 
     const coinsToAdd =
       isBonusRound && characterDamage
@@ -86,6 +90,8 @@ export async function updateProgressForChallenge(
       has_reversed_curse: hasReversedCurse,
       has_boss_shield: hasBossShield,
       has_force_character_attack_type: hasForceCharacterAttackType,
+      has_shuffle_ss: hasShuffle,
+      has_permuted_ss: hasPermuted,
     };
   } else {
     if (!wrongChallenges.includes(challengeId)) {
@@ -128,6 +134,19 @@ export async function updateProgressForChallenge(
             console.log(
               "- Both hp decreases for Boss Scorcharach after multiples of 3 consecutive wrongs"
             );
+            break;
+          case "Boss Maggmaw":
+            hasShuffle = true;
+            console.log(
+              "- Options shuffle after for Boss Maggmaw after multiples of 3 consecutive wrongs"
+            );
+            break;
+          case "Boss Earl":
+            hasPermuted = true;
+            console.log(
+              "- Options words unordered after for Boss Earl after multiples of 3 consecutive wrongs"
+            );
+            break;
         }
       }
     }
@@ -141,6 +160,8 @@ export async function updateProgressForChallenge(
       has_boss_shield: hasBossShield,
       has_force_character_attack_type: hasForceCharacterAttackType,
       has_both_hp_decrease: hasBothHpDecrease,
+      has_shuffle_ss: hasShuffle,
+      has_permuted_ss: hasPermuted,
     };
   }
 

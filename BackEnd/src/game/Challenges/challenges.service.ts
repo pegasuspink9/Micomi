@@ -27,8 +27,25 @@ const multisetEqual = (a: string[], b: string[]): boolean => {
 
 const reverseString = (str: string): string => str.split("").reverse().join("");
 
+const permuteLetters = (str: string): string => {
+  const chars = str.split("");
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join("");
+};
+
 const isTimedChallengeType = (type: string) =>
   ["multiple choice", "fill in the blank"].includes(type);
+
+function shuffleArray<T>(array: T[]): T[] {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
 
 const buildChallengeWithTimer = (
   challenge: Challenge,
@@ -368,6 +385,29 @@ export const submitChallengeService = async (
 
   let finalAnswer = answer;
   let hintUsed = false;
+
+  if (currentProgress.has_permuted_ss && enemy.enemy_name === "Boss Earl") {
+    const allMappings = (currentProgress.permutation_mapping as any) || {};
+    const mapping = allMappings[challengeId.toString()];
+
+    if (mapping && mapping.original && mapping.permuted) {
+      const { original, permuted } = mapping;
+
+      finalAnswer = finalAnswer.map((permutedText) => {
+        const index = permuted.findIndex((opt: string) => opt === permutedText);
+        return index !== -1 ? original[index] : permutedText;
+      });
+
+      console.log(
+        `- Permutation SS active: mapped player answer from permuted back to original using stored mapping`
+      );
+    } else {
+      console.log(
+        `- Warning: Permutation mapping not found for challenge ${challengeId}, answer may be incorrect`
+      );
+    }
+  }
+
   if (useHint) {
     const hintPotion = await prisma.playerPotion.findFirst({
       where: {
@@ -476,7 +516,6 @@ export const submitChallengeService = async (
       characterDamageForCoins
     );
 
-  // Type guard: check if the result is an error response
   if (
     !updatedProgress ||
     "success" in updatedProgress ||
@@ -688,6 +727,9 @@ export const submitChallengeService = async (
 
   const playerLost = freshProgress!.player_hp <= 0;
 
+  const isNewBonusRound =
+    freshProgress!.enemy_hp <= 0 && freshProgress!.player_hp > 0;
+
   let is_victory_audio: string | null = null;
   let is_victory_image: string | null = null;
   let stars: number | undefined = undefined;
@@ -814,6 +856,71 @@ export const submitChallengeService = async (
         };
       }
     }
+  } else if (isNewBonusRound && answeredIds.length === totalChallenges) {
+    const wrongCount = wrongChallengesArr.length;
+    stars = calculateStars(wrongCount, totalChallenges);
+
+    const motivationalMessage = generateMotivationalMessage(
+      wasFirstCompletion,
+      wrongCount,
+      totalChallenges,
+      true,
+      true,
+      level.level_number
+    );
+
+    is_victory_audio =
+      "https://micomi-assets.me/Sounds/Final/Victory_Sound.wav";
+    is_victory_image = getRandomMicomiImage(playerId, true);
+
+    if (wasFirstCompletion) {
+      await prisma.playerProgress.update({
+        where: { progress_id: currentProgress.progress_id },
+        data: {
+          is_completed: true,
+          completed_at: new Date(),
+          has_strong_effect: false,
+          has_freeze_effect: false,
+          stars_earned: stars,
+        },
+      });
+
+      completionRewards = {
+        feedbackMessage: motivationalMessage,
+        coinsEarned: freshProgress?.coins_earned ?? 0,
+        totalPointsEarned: freshProgress?.total_points_earned ?? 0,
+        totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
+        isVictory: true,
+      };
+
+      nextLevel = await LevelService.unlockNextLevel(
+        playerId,
+        level.map_id,
+        level.level_id
+      );
+    } else {
+      const currentStars = freshProgress?.stars_earned ?? 0;
+      const improved = stars > currentStars;
+
+      if (improved) {
+        await prisma.playerProgress.update({
+          where: { progress_id: currentProgress.progress_id },
+          data: {
+            stars_earned: stars,
+          },
+        });
+      }
+
+      completionRewards = {
+        feedbackMessage:
+          motivationalMessage +
+          "\nAlready completed—no extra rewards. Great practice!",
+        coinsEarned: 0,
+        totalPointsEarned: 0,
+        totalExpPointsEarned: 0,
+        isVictory: true,
+      };
+    }
   }
 
   const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
@@ -849,9 +956,6 @@ export const submitChallengeService = async (
       gameplay_audio = "https://micomi-assets.me/Sounds/Final/Autumnland.mp3";
     }
   }
-
-  const isNewBonusRound =
-    freshProgress!.enemy_hp <= 0 && freshProgress!.player_hp > 0;
 
   const isLastRemainingChallenge = currentAnsweredCount + 1 === totalChallenges;
 
@@ -1126,6 +1230,7 @@ const wrapWithTimer = async (
   if (!challenge) return { nextChallenge: null };
 
   let modifiedChallenge = { ...challenge };
+
   if (
     progress.has_reversed_curse &&
     level.enemy?.enemy_name === "King Grimnir"
@@ -1138,6 +1243,55 @@ const wrapWithTimer = async (
       console.log(
         "- Reversal curse applied: options strings reversed and jumbled for display"
       );
+    }
+  } else if (
+    progress.has_shuffle_ss &&
+    level.enemy?.enemy_name === "Boss Maggmaw"
+  ) {
+    const options = challenge.options as string[];
+    if (Array.isArray(options) && options.length > 0) {
+      modifiedChallenge.options = shuffleArray([...options]);
+      console.log("- Shuffle SS applied: options shuffled for display");
+    }
+  } else if (
+    progress.has_permuted_ss &&
+    level.enemy?.enemy_name === "Boss Earl"
+  ) {
+    const options = challenge.options as string[];
+    if (Array.isArray(options) && options.length > 0) {
+      const permutedOptions = options.map(permuteLetters);
+      modifiedChallenge.options = permutedOptions;
+
+      const currentMapping = (progress.permutation_mapping as any) || {};
+      currentMapping[challenge.challenge_id.toString()] = {
+        original: options,
+        permuted: permutedOptions,
+      };
+
+      await prisma.playerProgress.update({
+        where: {
+          player_id_level_id: {
+            player_id: progress.player_id,
+            level_id: progress.level_id,
+          },
+        },
+        data: {
+          permutation_mapping: currentMapping,
+          challenge_start_time: new Date(),
+        },
+      });
+
+      console.log(
+        "- Permutation SS applied: letters within options shuffled for display and mapping stored"
+      );
+
+      const challengeStart = new Date();
+      const timeRemaining = CHALLENGE_TIME_LIMIT;
+      const builtChallenge = buildChallengeWithTimer(
+        modifiedChallenge,
+        timeRemaining
+      );
+      return { nextChallenge: builtChallenge };
     }
   }
 
@@ -1155,7 +1309,12 @@ const wrapWithTimer = async (
     data: { challenge_start_time: new Date() },
   });
 
+  const builtChallenge = buildChallengeWithTimer(
+    modifiedChallenge,
+    timeRemaining
+  );
+
   return {
-    nextChallenge: buildChallengeWithTimer(modifiedChallenge, timeRemaining),
+    nextChallenge: builtChallenge,
   };
 };

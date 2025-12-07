@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as ShopService from "./shop.service";
 import * as CharacterService from "../../game/Characters/characters.controller";
+import { buyPotionInShop } from "../../game/Shop/shop.service";
 import {
   authenticate,
   requireAdmin,
@@ -25,8 +26,9 @@ router.delete("/delete-character/:id", ShopService.deleteShopCharacter);
 
 //Get all potions in the shop
 router.get("/potions", ShopService.getAllPotionsInShop);
-//Get all player potions
+//Get all player potions (Potion Shop)
 router.get("/potions/:playerId", ShopService.getAllPlayerPotions);
+router.post("/buy-potion/:playerId/:potionShopId", buyPotionInShop);
 
 // CRUD potions in the shop
 router.post("/create-potion", ShopService.createPotion);

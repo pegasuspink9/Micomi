@@ -136,6 +136,32 @@ const getCharacterCards = (characterName: string) => {
         character_attack_card: "micomi-asstes.me/Icons/Skill%20Icons/1st.png",
       },
     ],
+    ShiShi: [
+      {
+        attack_type: "Special Attack",
+        card_type: "Icebound Meteoclaw",
+        character_attack_card:
+          "https://micomi-assets.me/Icons/Skill%20Icons/Special%20Attack%20Card.png",
+      },
+      {
+        attack_type: "Third Attack",
+        card_type: "Sparkclaw Cascade",
+        character_attack_card:
+          "https://micomi-assets.me/Icons/Skill%20Icons/Third%20Attack%20Card.png",
+      },
+      {
+        attack_type: "Second Attack",
+        card_type: "Flamewhisker Crash",
+        character_attack_card:
+          "https://micomi-assets.me/Icons/Skill%20Icons/Second%20Attack%20Card.png",
+      },
+      {
+        attack_type: "Basic Attack",
+        card_type: "Voidflare Drop",
+        character_attack_card:
+          "https://micomi-assets.me/Icons/Skill%20Icons/Basic%20Attack%20Card.png",
+      },
+    ],
   };
 
   return characterCardsData[characterName] || [];
@@ -220,11 +246,21 @@ export const getAllPlayerPotions = async (req: Request, res: Response) => {
       },
     });
 
+    const player = await prisma.player.findUnique({
+      where: { player_id: playerId },
+      select: {
+        player_id: true,
+        player_name: true,
+        coins: true,
+      },
+    });
+
     const formatted = allPotions.map((potion) => {
       const playerPotion = potion.buyers[0];
       return {
         player_potion_id: playerPotion?.player_potion_id ?? null,
         potion_shop_id: potion.potion_shop_id,
+        potion_name: potion.potion_name,
         potion_type: potion.potion_type,
         potion_description: potion.potion_description,
         potion_price: potion.potion_price,
@@ -233,7 +269,18 @@ export const getAllPlayerPotions = async (req: Request, res: Response) => {
       };
     });
 
-    return successResponse(res, formatted, "Player potions fetched");
+    return successResponse(
+      res,
+      {
+        player_info: {
+          player_id: player?.player_id,
+          player_name: player?.player_name,
+          coins: player?.coins,
+        },
+        potions: formatted,
+      },
+      "Player potions fetched"
+    );
   } catch (error) {
     console.error(error);
     return errorResponse(res, null, "Failed to fetch player potions", 500);
