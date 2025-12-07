@@ -83,24 +83,26 @@ export const mapService = {
     try {
       console.log('🎮 Starting comprehensive game asset preload (Map + Character Select)...');
       
-      const results = {
-        mapAssets: null,
-        characterSelectAssets: null,
-        totalDownloaded: 0,
-        totalAssets: 0,
-        startTime: Date.now()
-      };
+    const results = {
+      mapAssets: null,
+      characterSelectAssets: null,
+      soundAssets: null,
+      totalDownloaded: 0,
+      totalAssets: 0,
+      startTime: Date.now()
+    };
 
       // Step 1: Check what's already cached
-      const [mapCacheStatus, charSelectCacheStatus] = await Promise.all([
-        universalAssetPreloader.areMapAssetsCached(mapLevelData),
-        universalAssetPreloader.areStaticCharacterSelectAssetsCached()
-      ]);
+    const [mapCacheStatus, charSelectCacheStatus, soundCacheStatus] = await Promise.all([
+      universalAssetPreloader.areMapAssetsCached(mapLevelData),
+      universalAssetPreloader.areStaticCharacterSelectAssetsCached(),
+      universalAssetPreloader.areStaticSoundAssetsCached()  // NEW
+    ]);
 
-      const totalMissing = mapCacheStatus.missing + charSelectCacheStatus.missing;
-      results.totalAssets = mapCacheStatus.total + charSelectCacheStatus.total;
+    const totalMissing = mapCacheStatus.missing + charSelectCacheStatus.missing + soundCacheStatus.missing;
+    results.totalAssets = mapCacheStatus.total + charSelectCacheStatus.total + soundCacheStatus.total;
 
-      console.log(`📦 Cache status: Map (${mapCacheStatus.available}/${mapCacheStatus.total}), CharSelect (${charSelectCacheStatus.available}/${charSelectCacheStatus.total})`);
+    console.log(`📦 Cache status: Map (${mapCacheStatus.available}/${mapCacheStatus.total}), CharSelect (${charSelectCacheStatus.available}/${charSelectCacheStatus.total}), Sounds (${soundCacheStatus.available}/${soundCacheStatus.total})`);
 
       if (totalMissing === 0) {
         console.log(' All game assets already cached!');
@@ -150,6 +152,24 @@ export const mapService = {
         );
         downloadedSoFar += results.characterSelectAssets.downloaded || 0;
       }
+
+      if (soundCacheStatus.missing > 0) {
+      console.log(`🔊 Downloading ${soundCacheStatus.missing} missing sound assets...`);
+      results.soundAssets = await universalAssetPreloader.downloadStaticSoundAssets(
+        (progress) => {
+          if (onProgress) {
+            onProgress({
+              phase: 'sounds',
+              loaded: downloadedSoFar + progress.loaded,
+              total: totalMissing,
+              progress: (downloadedSoFar + progress.loaded) / totalMissing,
+              currentAsset: progress.currentAsset
+            });
+          }
+        }
+      );
+      downloadedSoFar += results.soundAssets.downloaded || 0;
+    }
 
       results.totalDownloaded = downloadedSoFar;
       results.totalTime = Date.now() - results.startTime;

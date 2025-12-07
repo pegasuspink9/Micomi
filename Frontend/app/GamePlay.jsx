@@ -12,6 +12,7 @@ import GameOverModal from './Components/GameOver And Win/GameOver';
 import LevelCompletionModal from './Components/GameOver And Win/LevelCompletionModal';
 import { soundManager } from './Components/Actual Game/Sounds/UniversalSoundManager';
 import { gameScale } from './Components/Responsiveness/gameResponsive';
+import GamePauseModal from '../app/Components/Actual Game/Screen Play/Pauses/GamePauseModal';
 
 
 export default function GamePlay() {
@@ -27,6 +28,10 @@ export default function GamePlay() {
   //  Simplified card state - only track current image URL
   const [showAttackCard, setShowAttackCard] = useState(false);
   const [previousImageUrl, setPreviousImageUrl] = useState(null);
+
+  const [showPauseModal, setShowPauseModal] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+
 
   console.log('🎮 GamePlay component mounted with:', { 
     playerId, 
@@ -594,6 +599,26 @@ export default function GamePlay() {
      soundManager.stopAllSounds();
     };
   }, []);
+
+  const handlePausePress = useCallback(() => {
+    setShowPauseModal(true);
+  }, []);
+
+  const handleResume = useCallback(() => {
+    setShowPauseModal(false);
+  }, []);
+
+  const handleToggleMute = useCallback(() => {
+    setIsMuted(prev => {
+      const newMuted = !prev;
+      if (newMuted) {
+        soundManager.stopBackgroundMusic();
+      } else if (gameState?.gameplay_audio) {
+        soundManager.playBackgroundMusic(gameState.gameplay_audio);
+      }
+      return newMuted;
+    });
+  }, [gameState?.gameplay_audio]);
   
 
   const handleAllowEnemyCompletion = useCallback((allowCompletionFn) => {
@@ -760,6 +785,7 @@ export default function GamePlay() {
                 fadeOutAnim={fadeOutAnim}
                 isMessageVisible={isMessageVisible}
                 messageText={messageText}
+                onPausePress={handlePausePress}
               />
             </View>
 
@@ -854,6 +880,13 @@ export default function GamePlay() {
         autoCloseDuration={3000}
       />
 
+      <GamePauseModal 
+        visible={showPauseModal}
+        onResume={handleResume}
+        onBack={handleHome}
+        isMuted={isMuted}
+        onToggleMute={handleToggleMute}
+      />
 
 
     

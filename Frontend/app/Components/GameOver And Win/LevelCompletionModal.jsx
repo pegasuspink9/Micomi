@@ -584,14 +584,14 @@ const styles = StyleSheet.create({
     textShadowRadius: scale(2)
   },
   feedbackMessage: {
-    width: '80%',
+    width: '90%',
     textAlign: 'center',
     lineHeight: scale(18),
     alignSelf: 'center',
     fontSize: scale(12),
     color: '#ffffffff',
     marginBottom: scale(20),
-    fontFamily: 'MusicVibes',
+    fontFamily: 'Grobold',
   },
   rewardsDisplay: {
     flexDirection: 'row',
@@ -614,9 +614,9 @@ const styles = StyleSheet.create({
     marginBottom: scale(5),
   },
   rewardValue: {
-    fontSize: scale(30),
+    fontSize: scale(20),
     color: '#ffffffff',
-    fontFamily: 'MusicVibes',
+    fontFamily: 'Grobold',
     textAlign: 'center',
   },
   lowerGridWrapper: {

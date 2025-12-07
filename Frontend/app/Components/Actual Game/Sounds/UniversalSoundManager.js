@@ -1,4 +1,5 @@
 import { Audio } from 'expo-av';
+import { universalAssetPreloader } from '../../../services/preloader/universalAssetPreloader';
 
 class UniversalSoundManager {
   constructor() {
@@ -20,11 +21,11 @@ class UniversalSoundManager {
     this.preloadedMessageSound = null;
     this.isMessagePlaying = false;
     this.onMessagePlaybackStart = null;
+
+    this._urlCache = new Map();
   }
 
-  // --- PRIVATE HELPER for one-shot sounds (UI & Combat) ---
   async _playSimpleSound(channel, url, onPlayCallback, volume = 1.0) {
-    // 1. Stop any sound currently playing on this specific channel.
      if (this.activeSounds[channel]) {
       const soundToUnload = this.activeSounds[channel];
       this.activeSounds[channel] = null;
@@ -55,11 +56,9 @@ class UniversalSoundManager {
       
       await sound.playAsync();
 
-      // 4. Set up a self-cleaning listener.
       sound.setOnPlaybackStatusUpdate((status) => {
         if (status.didJustFinish) {
           sound.unloadAsync().catch(() => {});
-          // Only clear the channel if it hasn't been replaced by a newer sound.
           if (this.activeSounds[channel] === sound) {
             this.activeSounds[channel] = null;
           }
@@ -71,9 +70,7 @@ class UniversalSoundManager {
       if (onPlayCallback) onPlayCallback();
     }
   }
-  
-  // --- PUBLIC METHODS for different sound types ---
-  
+
   playUISound(url, onPlayCallback) {
     this._playSimpleSound('ui', url, onPlayCallback);
   }
@@ -82,26 +79,57 @@ class UniversalSoundManager {
     this._playSimpleSound('combat', url, null, volume);
   }
 
+  _getCachedUrl(url) {
+    if (this._urlCache.has(url)) {
+      return this._urlCache.get(url);
+    }
+
+    const cachedPath = universalAssetPreloader.getCachedAssetPath(url);
+    
+    if (cachedPath && cachedPath.startsWith('file://')) {
+      this._urlCache.set(url, cachedPath);
+      return cachedPath;
+    }
+    
+    let resolvedUrl = url;
+    if (url && !url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('file://')) {
+      resolvedUrl = `https://${url}`;
+    }
+    
+    // Cache the resolved URL too
+    this._urlCache.set(url, resolvedUrl);
+    return resolvedUrl;
+  }
+
+  clearUrlCache() {
+    this._urlCache.clear();
+  }
+
   playButtonTapSound() {
-    const tapSoundUrl = 'https://micomi-assets.me/Sounds/Final/Tap.wav';
+    const tapSoundUrl = this._getCachedUrl('https://micomi-assets.me/Sounds/Final/Tap.wav');
     this._playSimpleSound('button', tapSoundUrl, null);
   }
 
-   playGameButtonTapSound() {
-    const tapSoundUrl = 'https://micomi-assets.me/Sounds/Final/Tap3.wav';
+  playGameButtonTapSound() {
+    const tapSoundUrl = this._getCachedUrl('https://micomi-assets.me/Sounds/Final/Tap3.wav');
     this._playSimpleSound('button', tapSoundUrl, null);
   }
 
   playCardFlipSound(volume = 1.0) {
-    const flipSoundUrl = 'https://micomi-assets.me/Sounds/Final/Card_Flip_2.wav';
+    const flipSoundUrl = this._getCachedUrl('https://micomi-assets.me/Sounds/Final/Card_Flip_2.wav');
     const v = Math.max(0, Math.min(1, volume));
     this._playSimpleSound('ui', flipSoundUrl, null, v);
   }
 
   playBlankTapSound(volume = 1.0) {
-    const blankTapUrl = 'https://micomi-assets.me/Sounds/Final/Tap2.wav';
+    const blankTapUrl = this._getCachedUrl('https://micomi-assets.me/Sounds/Final/Tap2.wav');
     const v = Math.max(0, Math.min(1, volume));
     this._playSimpleSound('button', blankTapUrl, null, v);
+  }
+
+  playCachedSound(url, channel = 'ui', volume = 1.0, onPlayCallback = null) {
+    const resolvedUrl = this._getCachedUrl(url);
+    this._playSimpleSound(channel, resolvedUrl, onPlayCallback, volume);
   }
 
   async playVersusMusic(url, volume = 0.5) {

@@ -578,16 +578,30 @@ const LevelModal = ({
                             </View>
 
                             <View style={styles.avatarFrame}>
-                              <Animated.Image 
-                                source={{ uri: mappedLevelData.enemy_avatar }}
+                              {/* This View now acts as the circular frame, using the original styles */}
+                              <Animated.View 
                                 style={[
                                   styles.enemyAvatar,
                                   {
                                     opacity: glowInterpolate,
+                                    overflow: 'hidden', // Clip the image inside
+                                    justifyContent: 'center', // Center the image horizontally
+                                    alignItems: 'center',     // Center the image vertically
                                   }
                                 ]}
-                                resizeMode="cover"
-                              />
+                              >
+                                {/* The Image is now inside the frame and can be sized independently */}
+                                <Image 
+                                  source={{ uri: mappedLevelData.enemy_avatar }}
+                                  style={{
+                                    width: gameScale(170), 
+                                    marginBottom: gameScale(-10),
+                                    height: '100%',       // Fill the height of the frame
+                                  }}
+                                  resizeMode="cover"
+                                />
+                              </Animated.View>
+
                               <Animated.View 
                                 style={[
                                   styles.enemyAvatarGlow,
@@ -1090,7 +1104,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    height: gameScale(5),
+    height: gameScale(1),
     backgroundColor: 'rgba(40, 255, 255, 1)',
     shadowColor: 'rgba(0, 255, 255, 1)',
     shadowOffset: {

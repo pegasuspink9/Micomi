@@ -12,27 +12,60 @@ const Life = ({
   borderColor = '#FFFFFF',
   showNumbers = true,
   avatarUrl = null,
-  isEnemy = false
+  isEnemy = false,
+  startDelay = 0,
+  trigger = 0
 }) => {
   const effectiveMax = Math.max(0, Math.floor(maxHealth));
-  const displayHealth = Math.max(0, Math.min(health, effectiveMax));
   
   // Animation refs
   const healthBarAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   
-  const [previousHealth, setPreviousHealth] = useState(health);
+  // FIX: Use a ref for the "source of truth" health to compare against.
+  // This prevents re-renders from resetting the comparison value.
+  const previousHealthRef = useRef(health);
+  const [delayedHealth, setDelayedHealth] = useState(health);
+  const delayTimeoutRef = useRef(null);
+
+  const displayHealth = Math.max(0, Math.min(delayedHealth, effectiveMax));
 
   const getAvatarUrl = () => {
     return avatarUrl;
-    
   };
 
-  // Calculate health percentage for bar
+  // 3-Layer border colors - Blue for player, Red for enemy
+  const getBorderColors = () => {
+    if (isEnemy) {
+      return {
+        outerBg: '#5f1e1e',
+        outerBorderTop: '#330d0d',
+        outerBorderBottom: '#872d2d',
+        middleBg: '#4a1515',
+        middleBorderTop: '#d94a4a',
+        middleBorderBottom: '#290a0a',
+        innerBg: 'rgba(217, 74, 74, 0.15)',
+        innerBorder: 'rgba(217, 74, 74, 0.3)',
+        avatarBg: '#3d1515',
+      };
+    }
+    return {
+      outerBg: '#1e3a5f',
+      outerBorderTop: '#0d1f33',
+      outerBorderBottom: '#2d5a87',
+      middleBg: '#152d4a',
+      middleBorderTop: '#4a90d9',
+      middleBorderBottom: '#0a1929',
+      innerBg: 'rgba(74, 144, 217, 0.15)',
+      innerBorder: 'rgba(74, 144, 217, 0.3)',
+      avatarBg: '#15293d',
+    };
+  };
+
+  const borderColors = getBorderColors();
   const healthPercentage = effectiveMax > 0 ? (displayHealth / effectiveMax) * 100 : 0;
 
-  // Determine health bar color based on percentage
   const getHealthBarColors = () => {
     if (healthPercentage > 60) {
       return ['#4CAF50', '#8BC34A'];
@@ -53,64 +86,89 @@ const Life = ({
       onHealthChange(health, maxHealth);
     }
 
+    // FIX: Compare against the ref, not state
+    const previousHealth = previousHealthRef.current;
+
     if (!animated || health === previousHealth) {
-      setPreviousHealth(health);
+      // No change, just sync up
+      previousHealthRef.current = health;
+      setDelayedHealth(health);
       return;
     }
 
     const isLoss = health < previousHealth;
     const isGain = health > previousHealth;
 
-    if (isLoss) {
-      // Health loss animation - shake and flash
-      Animated.sequence([
-        Animated.parallel([
+    // FIX: Apply delay only on health loss
+    const animationDelay = isLoss ? startDelay : 0;
+
+    // Clear any pending timeout from a previous change
+    if (delayTimeoutRef.current) {
+      clearTimeout(delayTimeoutRef.current);
+    }
+
+    // FIX: Update the ref INSIDE the timeout so it doesn't get overwritten
+    // before the animation has a chance to run.
+    delayTimeoutRef.current = setTimeout(() => {
+      // Update the ref here, AFTER the delay
+      previousHealthRef.current = health;
+      setDelayedHealth(health);
+      
+      if (isLoss) {
+        Animated.sequence([
+          Animated.parallel([
+            Animated.timing(scaleAnim, { 
+              toValue: 1.05, 
+              duration: 150, 
+              useNativeDriver: true 
+            }),
+            Animated.timing(healthBarAnim, { 
+              toValue: 0.3, 
+              duration: 150, 
+              useNativeDriver: false 
+            }),
+          ]),
+          Animated.parallel([
+            Animated.timing(scaleAnim, { 
+              toValue: 0.98, 
+              duration: 200, 
+              useNativeDriver: true 
+            }),
+            Animated.timing(healthBarAnim, { 
+              toValue: 1, 
+              duration: 300, 
+              useNativeDriver: false 
+            }),
+          ]),
           Animated.timing(scaleAnim, { 
-            toValue: 1.05, 
+            toValue: 1, 
             duration: 150, 
             useNativeDriver: true 
           }),
-          Animated.timing(healthBarAnim, { 
-            toValue: 0.3, 
-            duration: 150, 
-            useNativeDriver: false 
-          }),
-        ]),
-        Animated.parallel([
-          Animated.timing(scaleAnim, { 
-            toValue: 0.98, 
+        ]).start();
+      } else if (isGain) {
+        Animated.sequence([
+          Animated.timing(pulseAnim, { 
+            toValue: 1.08, 
             duration: 200, 
             useNativeDriver: true 
           }),
-          Animated.timing(healthBarAnim, { 
+          Animated.timing(pulseAnim, { 
             toValue: 1, 
             duration: 300, 
-            useNativeDriver: false 
+            useNativeDriver: true 
           }),
-        ]),
-        Animated.timing(scaleAnim, { 
-          toValue: 1, 
-          duration: 150, 
-          useNativeDriver: true 
-        }),
-      ]).start();
-    } else if (isGain) {
-      Animated.sequence([
-        Animated.timing(pulseAnim, { 
-          toValue: 1.08, 
-          duration: 200, 
-          useNativeDriver: true 
-        }),
-        Animated.timing(pulseAnim, { 
-          toValue: 1, 
-          duration: 300, 
-          useNativeDriver: true 
-        }),
-      ]).start();
-    }
+        ]).start();
+      }
+    }, animationDelay);
 
-    setPreviousHealth(health);
-  }, [health, maxHealth, animated, previousHealth]);
+    // Cleanup timeout on unmount or re-render
+    return () => {
+      if (delayTimeoutRef.current) {
+        clearTimeout(delayTimeoutRef.current);
+      }
+    };
+  }, [health, maxHealth, animated, startDelay, trigger]);
 
   // Continuous pulse when health is critically low
   useEffect(() => {
@@ -150,66 +208,131 @@ const Life = ({
       }
     ]}>
       <View style={styles.lifeContainer}>
+        {/* 3-Layer Avatar Border */}
         <View style={[
           styles.avatarContainer,
           position === 'left' ? styles.leftAvatarPosition : styles.rightAvatarPosition
         ]}>
-          <View style={styles.avatarCircle}>
-            <Image 
-              source={{ uri: getAvatarUrl() }}
-              style={[
-                styles.avatarImage,
-                isEnemy && position === 'right' && { transform: [{ translateX: scale(-1) }] }
-              ]}
-              resizeMode="cover"
-            />
+          <View style={[
+            styles.avatarBorderOuter,
+            {
+              backgroundColor: borderColors.outerBg,
+              borderTopColor: borderColors.outerBorderTop,
+              borderLeftColor: borderColors.outerBorderTop,
+              borderBottomColor: borderColors.outerBorderBottom,
+              borderRightColor: borderColors.outerBorderBottom,
+            }
+          ]}>
+            <View style={[
+              styles.avatarBorderMiddle,
+              {
+                backgroundColor: borderColors.middleBg,
+                borderTopColor: borderColors.middleBorderTop,
+                borderLeftColor: borderColors.middleBorderTop,
+                borderBottomColor: borderColors.middleBorderBottom,
+                borderRightColor: borderColors.middleBorderBottom,
+              }
+            ]}>
+              <View style={[
+                styles.avatarBorderInner,
+                {
+                  backgroundColor: borderColors.innerBg,
+                  borderColor: borderColors.innerBorder,
+                }
+              ]}>
+                <View style={[styles.avatarCircle, { backgroundColor: borderColors.avatarBg }]}>
+                  <Image 
+                    source={{ uri: getAvatarUrl() }}
+                    style={[
+                      styles.avatarImage,
+                      isEnemy && position === 'right' && { 
+                        transform: [{ translateX: gameScale(-20) }],
+                        width: gameScale(85),
+                        marginTop: gameScale(-5),  // Adjust margin top as needed (positive values move it down)
+                      }
+                    ]}
+                    resizeMode="cover"
+                  />
+                </View>
+              </View>
+            </View>
           </View>
         </View>
         
+        {/* 3-Layer Health Bar Border */}
         <View style={[
-          styles.healthBarContainer, 
-          { borderColor },
+          styles.healthBarWrapper,
           position === 'left' ? styles.leftHealthBarMargin : styles.rightHealthBarMargin
         ]}>
-          <View style={styles.healthBarTrack}>
-            <Animated.View 
-              style={[
-                styles.healthBarFillContainer,
+          <View style={[
+            styles.healthBorderOuter,
+            {
+              backgroundColor: borderColors.outerBg,
+              borderTopColor: borderColors.outerBorderTop,
+              borderLeftColor: borderColors.outerBorderTop,
+              borderBottomColor: borderColors.outerBorderBottom,
+              borderRightColor: borderColors.outerBorderBottom,
+            }
+          ]}>
+            <View style={[
+              styles.healthBorderMiddle,
+              {
+                backgroundColor: borderColors.middleBg,
+                borderTopColor: borderColors.middleBorderTop,
+                borderLeftColor: borderColors.middleBorderTop,
+                borderBottomColor: borderColors.middleBorderBottom,
+                borderRightColor: borderColors.middleBorderBottom,
+              }
+            ]}>
+              <View style={[
+                styles.healthBorderInner,
                 {
-                  width: `${healthPercentage}%`,
-                  opacity: healthBarAnim,
+                  backgroundColor: borderColors.innerBg,
+                  borderColor: borderColors.innerBorder,
                 }
-              ]}
-            >
-              <LinearGradient
-                colors={healthBarColors}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.healthBarFill}
-              />
-            </Animated.View>
+              ]}>
+                <View style={styles.healthBarTrack}>
+                  <Animated.View 
+                    style={[
+                      styles.healthBarFillContainer,
+                      {
+                        width: `${healthPercentage}%`,
+                        opacity: healthBarAnim,
+                      }
+                    ]}
+                  >
+                    <LinearGradient
+                      colors={healthBarColors}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.healthBarFill}
+                    />
+                  </Animated.View>
 
-            {showNumbers && (
-              <View style={styles.healthTextContainer}>
-                <Text style={styles.healthText}>
-                  {displayHealth}/{effectiveMax}
-                </Text>
+                  {showNumbers && (
+                    <View style={styles.healthTextContainer}>
+                      <Text style={styles.healthText}>
+                        {displayHealth}/{effectiveMax}
+                      </Text>
+                    </View>
+                  )}
+
+                  {healthPercentage <= 20 && healthPercentage > 0 && (
+                    <Animated.View 
+                      style={[
+                        styles.criticalWarning,
+                        {
+                          opacity: pulseAnim.interpolate({
+                            inputRange: [1, 1.03],
+                            outputRange: [0.3, 0.8],
+                          })
+                        }
+                      ]} 
+                    />
+                  )}
+                </View>
               </View>
-            )}
-
-            {healthPercentage <= 20 && healthPercentage > 0 && (
-              <Animated.View 
-                style={[
-                  styles.criticalWarning,
-                  {
-                    opacity: pulseAnim.interpolate({
-                      inputRange: [1, 1.03],
-                      outputRange: [0.3, 0.8],
-                    })
-                  }
-                ]} 
-              />
-            )}
+            </View>
           </View>
 
           <Animated.View 
@@ -234,7 +357,7 @@ const Life = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: gameScale(11),
+    top: gameScale(5),
     maxWidth: gameScale(156),
     zIndex: 10,
   },
@@ -249,44 +372,45 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
 
-  healthBarContainer: {
-    height: gameScale(20),
-    minWidth: gameScale(100),
-    borderRadius: gameScale(12),
-    borderWidth: gameScale(2),
-    backgroundColor: 'rgba(0, 0, 0, 1)',
-    overflow: 'visible',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: gameScale(4) },
-    shadowOpacity: 0.2,
-    shadowRadius: gameScale(8),
-    elevation: 4,
+  healthBarWrapper: {
     position: 'relative',
     marginTop: 0,
   },
 
-  healthBarTrack: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  // 3-Layer Health Bar Border
+  healthBorderOuter: {
+    borderRadius: gameScale(12),
+    borderWidth: gameScale(1),
+    overflow: 'hidden',
+  },
+  healthBorderMiddle: {
+    borderRadius: gameScale(10),
+    borderWidth: gameScale(1),
+    overflow: 'hidden',
+  },
+  healthBorderInner: {
     borderRadius: gameScale(8),
+    overflow: 'hidden',
+  },
+
+  healthBarTrack: {
+    height: gameScale(16),
+    minWidth: gameScale(90),
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: gameScale(6),
     position: 'relative',
     overflow: 'hidden',
   },
 
   healthBarFillContainer: {
     height: '100%',
-    borderRadius: gameScale(8),
+    borderRadius: gameScale(6),
     overflow: 'hidden',
   },
 
   healthBarFill: {
     flex: 1,
-    borderRadius: gameScale(8),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: gameScale(1) },
-    shadowOpacity: 0.2,
-    shadowRadius: gameScale(2),
-    elevation: 2,
+    borderRadius: gameScale(6),
   },
 
   healthTextContainer: {
@@ -316,7 +440,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: '#F44336',
-    borderRadius: gameScale(8),
+    borderRadius: gameScale(6),
     zIndex: 3,
   },
 
@@ -339,7 +463,7 @@ const styles = StyleSheet.create({
   },
 
   rightAvatarPosition: {
-    right: 0,
+    right: 0
   },
 
   lifeContainer: {
@@ -348,37 +472,49 @@ const styles = StyleSheet.create({
 
   avatarContainer: {
     position: 'absolute',
-    top: gameScale(-2),
+    top: gameScale(-6),
     zIndex: 20,
   },
 
   leftHealthBarMargin: {
-    marginLeft: gameScale(28),
+    marginLeft: gameScale(32),
     marginRight: 0,
   },
 
   rightHealthBarMargin: {
     marginLeft: 0,
-    marginRight: gameScale(28),
+    marginRight: gameScale(32),
+  },
+
+  // 3-Layer Avatar Border
+  avatarBorderOuter: {
+    borderRadius: gameScale(50),
+    borderWidth: gameScale(1),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: gameScale(2) },
+    shadowOpacity: 0.3,
+    shadowRadius: gameScale(4),
+    elevation: 4,
+  },
+  avatarBorderMiddle: {
+    borderRadius: gameScale(50),
+    borderWidth: gameScale(1),
+  },
+  avatarBorderInner: {
+    borderRadius: gameScale(50),
+    borderWidth: gameScale(1),
   },
 
   avatarCircle: {
-    width: gameScale(48),
-    height: gameScale(48),
+    width: gameScale(40),
+    height: gameScale(40),
     borderRadius: gameScale(50),
-    borderWidth: gameScale(2),
-    borderColor: '#FFFFFF',
     overflow: 'hidden',
-    backgroundColor: 'rgba(0, 0, 0, 1)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: gameScale(2) },
-    shadowOpacity: 0.1,
-    shadowRadius: gameScale(4),
-    elevation: 2,
   },
 
   avatarImage: {
-    height: gameScale(84),
+    width: '100%',
+    height: gameScale(70),
   },
 
   avatarText: {

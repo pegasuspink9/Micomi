@@ -499,7 +499,7 @@ const styles = StyleSheet.create({
   defeatMessage: {
     fontSize: scale(20),
     color: '#ffffffff',
-    fontFamily: 'MusicVibes',
+    fontFamily: 'Grobold',
     textAlign: 'center',
     textShadowColor: 'rgba(135, 206, 250, 0.6)',
     textShadowOffset: { width: 0, height: 0 },
@@ -508,14 +508,14 @@ const styles = StyleSheet.create({
     marginBottom: scale(10),
   },
   feedbackMessage: {
-    width: '80%',
+    width: '90%',
     textAlign: 'center',
     lineHeight: scale(18),
     alignSelf: 'center',
     fontSize: scale(12),
     color: '#ffffffff',
     marginBottom: scale(30),
-    fontFamily: 'MusicVibes',
+    fontFamily: 'Grobold',
   },
   rewardsDisplay: {
     flexDirection: 'row',

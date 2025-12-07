@@ -77,7 +77,9 @@ class UniversalAssetPreloader {
         'map_assets',
         'characters',
         'player_profile',
-        'potion_shop'
+        'potion_shop',
+        'static_sounds',
+        'character_select_ui'
       ];
 
       let totalLoaded = 0;
@@ -401,6 +403,135 @@ async testR2Download(testUrl) {
     return assets;
   }
 
+  getStaticSoundAssets() {
+  const assets = [];
+  const addedUrls = new Set();
+
+  const addAsset = (url, name, type, category) => {
+    if (url && typeof url === 'string' && !addedUrls.has(url)) {
+      addedUrls.add(url);
+      assets.push({ url, name, type, category });
+    }
+  };
+
+  // Static UI Sounds
+  addAsset('https://micomi-assets.me/Sounds/Final/Tap.wav', 'button_tap', 'audio', 'static_sounds');
+  addAsset('https://micomi-assets.me/Sounds/Final/Tap2.wav', 'blank_tap', 'audio', 'static_sounds');
+  addAsset('https://micomi-assets.me/Sounds/Final/Tap3.wav', 'game_button_tap', 'audio', 'static_sounds');
+  addAsset('https://micomi-assets.me/Sounds/Final/Card_Flip_2.wav', 'card_flip', 'audio', 'static_sounds');
+
+  console.log(`🔊 Static sound assets: ${assets.length}`);
+  return assets;
+  }
+
+  async areStaticSoundAssetsCached() {
+  const assets = this.getStaticSoundAssets();
+  let available = 0;
+  let missing = 0;
+
+  for (const asset of assets) {
+    const localPath = this.getLocalFilePath(asset.url, asset.category);
+    const fileInfo = await FileSystem.getInfoAsync(localPath);
+    if (fileInfo.exists) {
+      available++;
+    } else {
+      missing++;
+    }
+  }
+
+  return {
+    total: assets.length,
+    available,
+    missing,
+    allCached: missing === 0
+  };
+  }
+
+  async downloadStaticSoundAssets(onProgress = null) {
+  const wasDownloading = this.isDownloading;
+  this.isDownloading = true;
+
+  try {
+    console.log('🔊 Starting static sound assets download...');
+    const assets = this.getStaticSoundAssets();
+
+    if (assets.length === 0) {
+      console.log('✅ No static sound assets to download');
+      return { success: true, downloaded: 0, total: 0 };
+    }
+
+    const startTime = Date.now();
+    let successCount = 0;
+    const results = [];
+
+    for (let i = 0; i < assets.length; i += this.maxConcurrentDownloads) {
+      const batch = assets.slice(i, i + this.maxConcurrentDownloads);
+
+      const batchPromises = batch.map(async (asset, batchIndex) => {
+        const result = await this.downloadSingleAsset(asset.url, asset.category);
+
+        if (result.success) {
+          successCount++;
+        }
+
+        results.push({ asset, result });
+
+        if (onProgress) {
+          onProgress({
+            loaded: results.length,
+            total: assets.length,
+            progress: results.length / assets.length,
+            successCount,
+            currentAsset: asset,
+          });
+        }
+
+        return { asset, result };
+      });
+
+      await Promise.all(batchPromises);
+    }
+
+    const cacheKey = 'static_soundsAssets';
+    const assetsToSave = [];
+    
+    for (const [url, assetInfo] of this.downloadedAssets.entries()) {
+      if (assetInfo.category === 'static_sounds') {
+        assetsToSave.push([url, assetInfo]);
+      }
+    }
+    
+    if (assetsToSave.length > 0) {
+      const cacheInfo = {
+        assets: assetsToSave,
+        savedAt: Date.now(),
+        version: '1.0'
+      };
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheInfo));
+      console.log(`💾 Saved ${assetsToSave.length} static sound assets to AsyncStorage`);
+    }
+
+    const totalTime = Date.now() - startTime;
+    this.isDownloading = wasDownloading;
+
+    console.log(`🔊 Static sound assets download completed: ${successCount}/${assets.length} in ${totalTime}ms`);
+
+    return {
+      success: successCount === assets.length,
+      downloaded: successCount,
+      total: assets.length,
+      totalTime,
+      results,
+    };
+  } catch (error) {
+    this.isDownloading = wasDownloading;
+    console.error('❌ Error downloading static sound assets:', error);
+    throw error;
+  }
+}
+
+
+
   getStaticCharacterSelectAssets() {
     const assets = [];
     const addedUrls = new Set();
@@ -617,18 +748,34 @@ async testR2Download(testUrl) {
     if (Array.isArray(mapLevelData.audioLinks)) {
       mapLevelData.audioLinks.forEach((url, i) => addAsset(url, `audio_link_${i}`, 'audio', 'game_audio'));
     }
+    
+    addAsset(mapLevelData.enemy_attack_audio, 'enemy_attack_audio', 'audio', 'game_audio');
+    addAsset(mapLevelData.character_attack_audio, 'character_attack_audio', 'audio', 'game_audio');
+    addAsset(mapLevelData.is_correct_audio, 'is_correct_audio', 'audio', 'game_audio');
+    addAsset(mapLevelData.death_audio, 'death_audio', 'audio', 'game_audio');
+    addAsset(mapLevelData.is_victory_audio, 'is_victory_audio', 'audio', 'game_audio');
+
+    if (Array.isArray(mapLevelData.audio)) {
+    mapLevelData.audio.forEach((url, i) => addAsset(url, `game_audio_${i}`, 'audio', 'game_audio'));
+    }
+  
+    if (Array.isArray(mapLevelData.audioLinks)) {
+    mapLevelData.audioLinks.forEach((url, i) => addAsset(url, `audio_link_${i}`, 'audio', 'game_audio'));
+    }
+
+
 
     addAsset(mapLevelData.is_victory_image, 'is_victory_image', 'image', 'game_images');
 
     
     // --- All Images from imagesUrls ---
     if (Array.isArray(mapLevelData.imagesUrls)) {
-      mapLevelData.imagesUrls.forEach((url, i) => {
-        const type = this.isAudioFile(url) ? 'audio' : (this.isVideoFile(url) ? 'video' : 'image');
-        const category = type === 'audio' ? 'game_audio' : (type === 'video' ? 'game_videos' : 'game_images');
-        addAsset(url, `image_asset_${i}`, type, category);
-      });
-    }
+    mapLevelData.imagesUrls.forEach((url, i) => {
+      const type = this.isAudioFile(url) ? 'audio' : (this.isVideoFile(url) ? 'video' : 'image');
+      const category = type === 'audio' ? 'game_audio' : (type === 'video' ? 'game_videos' : 'game_images');
+      addAsset(url, `image_asset_${i}`, type, category);
+    });
+  }
 
     console.log(`📦 Extracted ${assets.length} total assets from map data.`);
     return assets;

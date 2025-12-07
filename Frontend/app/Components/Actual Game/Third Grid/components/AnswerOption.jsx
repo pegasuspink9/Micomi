@@ -3,6 +3,40 @@ import { Pressable, Text, StyleSheet, Dimensions, View } from 'react-native';
 import { scale, scaleWidth, scaleHeight, RESPONSIVE, wp, hp } from '../../../Responsiveness/gameResponsive';
 import { soundManager } from '../../Sounds/UniversalSoundManager';
 
+// 3-Layer border colors - Blue theme matching Life component
+const borderColors = {
+  outerBg: '#01547dff',
+  outerBorderTop: '#0d1f33',
+  outerBorderBottom: '#01547dff',
+  middleBg: '#152d4a',
+  middleBorderTop: '#01547dff',
+  middleBorderBottom: '#0a1929',
+  innerBg: 'rgba(74, 144, 217, 0.15)',
+  innerBorder: 'rgba(74, 144, 217, 0.3)',
+};
+
+const selectedBorderColors = {
+  outerBg: '#2d2d30',
+  outerBorderTop: '#1a1a1c',
+  outerBorderBottom: '#454549',
+  middleBg: '#222225',
+  middleBorderTop: '#555559',
+  middleBorderBottom: 'rgba(36, 155, 161, 0.15)',
+  innerBg: 'rgba(36, 155, 161, 0.15)',
+  innerBorder: 'rgba(36, 155, 161, 0.15)',
+};
+
+const disabledBorderColors = {
+  outerBg: '#6b6b6e',
+  outerBorderTop: '#4a4a4c',
+  outerBorderBottom: '#8e8e91',
+  middleBg: '#5a5a5d',
+  middleBorderTop: '#9e9ea1',
+  middleBorderBottom: '#3a3a3c',
+  innerBg: 'rgba(158, 158, 161, 0.15)',
+  innerBorder: 'rgba(158, 158, 161, 0.3)',
+};
+
 
 const AnswerOption = ({ 
   item, 
@@ -12,52 +46,77 @@ const AnswerOption = ({
   onPress,
   customStyles = null
 }) => {
+  const colors = isDisabled ? disabledBorderColors : (isSelected ? selectedBorderColors : borderColors);
+
   return (
-    <View style={[
-      styles.buttonFrame,
-      isSelected && styles.buttonFrameSelected,
-      customStyles?.buttonFrame
-    ]}>
-      <Pressable 
-        style={({ pressed }) => [
-          styles.listItemContainer,
-          isSelected && styles.listItemSelected,
-          isDisabled && styles.listItemDisabled,
-          pressed && !isDisabled && styles.listItemPressed,
-          customStyles?.listItemContainer
-        ]}
-        onPress={() => {
-          if (!isDisabled) {
-            soundManager.playButtonTapSound();
-            onPress(item);    
-          }
-        }}
-        disabled={isDisabled}
-      >
+    <View style={[styles.container, customStyles?.container]}>
+      {/* 3-Layer Border - Outer */}
+      <View style={[
+        styles.borderOuter,
+        {
+          backgroundColor: colors.outerBg,
+          borderTopColor: colors.outerBorderTop,
+          borderLeftColor: colors.outerBorderTop,
+          borderBottomColor: colors.outerBorderBottom,
+          borderRightColor: colors.outerBorderBottom,
+        },
+        isSelected && styles.borderOuterSelected, // Apply selected transform here
+        customStyles?.buttonFrame
+      ]}>
+        {/* 3-Layer Border - Middle */}
         <View style={[
-          styles.innerButton,
-          isSelected && styles.innerButtonSelected,
-          isDisabled && styles.innerButtonDisabled,
-          customStyles?.innerButton // NEW: Apply custom inner button styles
+          styles.borderMiddle,
+          {
+            backgroundColor: colors.middleBg,
+            borderTopColor: colors.middleBorderTop,
+            borderLeftColor: colors.middleBorderTop,
+            borderBottomColor: colors.middleBorderBottom,
+            borderRightColor: colors.middleBorderBottom,
+          }
         ]}>
-          <View style={[
-            styles.buttonHighlight,
-            customStyles?.buttonHighlight // NEW: Custom highlight
-          ]} />
-          <View style={[
-            styles.buttonShadow,
-            customStyles?.buttonShadow // NEW: Custom shadow
-          ]} />
-          <Text style={[
-            styles.listItemText,
-            isSelected && styles.listItemTextSelected,
-            isDisabled && styles.listItemTextDisabled,
-            customStyles?.listItemText // NEW: Custom text styles
-          ]}>
-            {item}
-          </Text>
+          {/* 3-Layer Border - Inner (Pressable) */}
+          <Pressable 
+            style={({ pressed }) => [
+              styles.borderInner,
+              {
+                backgroundColor: colors.innerBg,
+                borderColor: colors.innerBorder,
+              },
+              pressed && !isDisabled && styles.listItemPressed,
+              customStyles?.listItemContainer
+            ]}
+            onPress={() => {
+              if (!isDisabled) {
+                soundManager.playButtonTapSound();
+                onPress(item);    
+              }
+            }}
+            disabled={isDisabled}
+          >
+            <View style={[
+              styles.innerButton,
+              isDisabled && styles.innerButtonDisabled,
+              customStyles?.innerButton
+            ]}>
+              <View style={[
+                styles.buttonHighlight,
+                customStyles?.buttonHighlight
+              ]} />
+              <View style={[
+                styles.buttonShadow,
+                customStyles?.buttonShadow
+              ]} />
+              <Text style={[
+                styles.listItemText,
+                isDisabled && styles.listItemTextDisabled,
+                customStyles?.listItemText
+              ]}>
+                {item}
+              </Text>
+            </View>
+          </Pressable>
         </View>
-      </Pressable>
+      </View>
     </View>
   );
 };
@@ -65,47 +124,42 @@ const AnswerOption = ({
 
 
 const styles = StyleSheet.create({
-  buttonFrame: {
-    marginTop: RESPONSIVE.margin.xs,
-    backgroundColor: '#01547dff', 
-    borderRadius: RESPONSIVE.borderRadius.sm, 
-    borderTopWidth: scale(1),
-    borderTopColor: 'rgba(255, 255, 255, 0.3)',
-    borderLeftWidth: scale(1),
-    borderLeftColor: 'rgba(255, 255, 255, 0.3)',
-    borderBottomWidth: scale(3),
-    borderBottomColor: 'rgba(6, 98, 147, 0.4)',
-    borderRightWidth: scale(2),
-    borderRightColor: 'rgba(6, 98, 147, 0.4)',
+  container: {
+    marginTop: RESPONSIVE.margin.xs + scaleHeight(2),
+    minWidth: wp(20),
   },
 
-
-
-  listItemContainer: {
-    width: wp(20),
-    borderRadius: RESPONSIVE.borderRadius.sm, 
-    position: 'relative',
-    overflow: 'hidden',
-    
-    backgroundColor: '#4a90e2',
-    
-    borderTopWidth: scale(2),
-    borderTopColor: '#93c5fd',
-    borderLeftWidth: scale(2),
-    borderLeftColor: '#93c5fd',
-    borderBottomWidth: scale(3),
-    borderBottomColor: '#1e3a8a',
-    borderRightWidth: scale(3),
-    borderRightColor: '#1e3a8a',
-    
+  // 3-Layer Border styles
+  borderOuter: {
+    borderRadius: scale(10),
+    borderWidth: scale(1),
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: scale(4),
-    },
+    shadowOffset: { width: 0, height: scale(2) },
     shadowOpacity: 0.3,
-    shadowRadius: scale(6),
-    elevation: 10,
+    shadowRadius: scale(4),
+    elevation: 4,
+  },
+  borderMiddle: {
+    borderRadius: scale(10),
+    borderWidth: scale(1),
+  },
+  borderInner: {
+    borderRadius: scale(8),
+    borderWidth: scale(1),
+    overflow: 'hidden',
+  },
+  
+  borderOuterSelected: {
+    transform: [{ translateY: scale(0.6) }],
+  },
+
+  listItemPressed: {
+    transform: [{ translateY: scale(1) }],
+    // Invert border colors for pushed-in effect
+    borderTopColor: 'rgba(0, 0, 0, 0.3)',
+    borderLeftColor: 'rgba(0, 0, 0, 0.2)',
+    borderBottomColor: 'rgba(255, 255, 255, 0.3)',
+    borderRightColor: 'rgba(255, 255, 255, 0.2)',
   },
 
   innerButton: {
@@ -115,24 +169,11 @@ const styles = StyleSheet.create({
     borderRadius: RESPONSIVE.borderRadius.xs,
     paddingVertical: RESPONSIVE.margin.xs,
     paddingHorizontal: RESPONSIVE.margin.xs,
-    backgroundColor: '#014656ae',
-    
-    borderTopWidth: scale(1),
-    borderTopColor: 'rgba(255, 255, 255, 0.3)',
-    borderLeftWidth: scale(1),
-    borderLeftColor: 'rgba(255, 255, 255, 0.2)',
-    borderBottomWidth: scale(1),
-    borderBottomColor: 'rgba(0, 0, 0, 0.3)',
-    borderRightWidth: scale(1),
-    borderRightColor: 'rgba(0, 0, 0, 0.2)',
-  },
-
-  innerButtonSelected: {
-    backgroundColor: '#014656ae',
+    backgroundColor: 'transparent', // Make inner button transparent to see border background
   },
 
   innerButtonDisabled: {
-    backgroundColor: '#b0b0b0',
+    backgroundColor: 'rgba(176, 176, 176, 0.5)',
   },
 
   buttonHighlight: {
@@ -159,41 +200,6 @@ const styles = StyleSheet.create({
     pointerEvents: 'none',
   },
 
-  listItemPressed: {
-    transform: [{ translateY: scale(0.5) }],
-    backgroundColor: '#0044b1ff', 
-    borderTopWidth: scale(3),
-    borderTopColor: '#1e3a8a',
-    borderLeftWidth: scale(3),
-    borderLeftColor: '#1e3a8a',
-    borderBottomWidth: scale(1),
-    borderBottomColor: '#93c5fd',
-    borderRightWidth: scale(1),
-    borderRightColor: '#93c5fd',
-  },
-
-  listItemSelected: {
-     transform: [{ translateY: scale(0.6) }],
-    backgroundColor: '#272b2fff', 
-    borderTopWidth: scale(2),
-    borderTopColor: '#1e3a8a',
-    borderLeftWidth: scale(3),
-    borderLeftColor: '#1e3a8a',
-    borderBottomWidth: scale(2),
-    borderBottomColor: '#1e3a8a',
-    borderRightWidth: scale(1),
-    borderRightColor: '#1e3a8a',
-  },
-
-  listItemDisabled: {
-    opacity: 0.4,
-    backgroundColor: '#8e8e93',
-    borderTopColor: '#aeaeb2',
-    borderLeftColor: '#aeaeb2',
-    borderBottomColor: '#636366',
-    borderRightColor: '#636366',
-  },
-
   listItemText: {
     fontSize: RESPONSIVE.fontSize.sm,
     color: '#ffffff', 
@@ -203,13 +209,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: scale(1), height: scale(1) },
     textShadowRadius: scale(2),
     zIndex: 1,
-  },
-
-  listItemTextSelected: {
-    color: '#ffffff',
-    textShadowColor: 'rgba(0, 0, 0, 0.7)',
-    textShadowOffset: { width: scale(1), height: scale(1) },
-    textShadowRadius: scale(3),
   },
 
   listItemTextDisabled: {

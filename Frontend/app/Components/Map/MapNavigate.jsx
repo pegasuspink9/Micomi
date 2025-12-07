@@ -18,6 +18,7 @@ import { MAP_THEMES, DEFAULT_THEME } from '../RoadMap/MapLevel/MapDatas/mapData'
 import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
 import { mapService } from '../../services/mapService';
 import MiniQuestPreview from './MiniQuestPreview/MiniQuestPreview';
+import { soundManager } from '../Actual Game/Sounds/UniversalSoundManager';
 
 const { width, height } = Dimensions.get('window');
 
@@ -63,9 +64,8 @@ export default function MapNavigate({ onMapChange }) {
   // Add safety check for current map
   const currentMap = maps[currentMapIndex];
   const isValidMap = currentMap && typeof currentMap === 'object';
-
-  // ✅ UPDATED: Auto-preload assets including static MAP_THEMES AND Character Select assets
-  useEffect(() => {
+    
+ useEffect(() => {
     const autoPreloadAssets = async () => {
       if (hasAutoPreloaded.current || maps.length === 0) {
         return;
@@ -77,19 +77,27 @@ export default function MapNavigate({ onMapChange }) {
       try {
         console.log('🗺️ Map screen displayed - checking asset cache...');
         
-        // Step 1: Check cache status for ALL asset types
+        //  IMPORTANT: Load all cached assets into memory FIRST
+        console.log('📦 Loading cached assets into memory...');
+        await universalAssetPreloader.loadAllCachedAssets();
+        
+        //  Clear sound manager URL cache to pick up newly loaded cache
+        soundManager.clearUrlCache();
+        
+        // Step 1: Check cache status for ALL asset types (including sounds)
         console.log('📦 Checking all asset caches...');
-        const [themesCacheStatus, charSelectCacheStatus] = await Promise.all([
+        const [themesCacheStatus, charSelectCacheStatus, soundCacheStatus] = await Promise.all([
           universalAssetPreloader.areMapThemeAssetsCached(MAP_THEMES),
-          universalAssetPreloader.areStaticCharacterSelectAssetsCached()
+          universalAssetPreloader.areStaticCharacterSelectAssetsCached(),
+          universalAssetPreloader.areStaticSoundAssetsCached()  //  NEW: Check sound cache
         ]);
         
-        const totalStaticMissing = themesCacheStatus.missing + charSelectCacheStatus.missing;
-        const totalStaticAssets = themesCacheStatus.total + charSelectCacheStatus.total;
+        const totalStaticMissing = themesCacheStatus.missing + charSelectCacheStatus.missing + soundCacheStatus.missing;
+        const totalStaticAssets = themesCacheStatus.total + charSelectCacheStatus.total + soundCacheStatus.total;
 
-        console.log(`📦 Static assets status: MapThemes (${themesCacheStatus.available}/${themesCacheStatus.total}), CharSelect (${charSelectCacheStatus.available}/${charSelectCacheStatus.total})`);
+        console.log(`📦 Static assets status: MapThemes (${themesCacheStatus.available}/${themesCacheStatus.total}), CharSelect (${charSelectCacheStatus.available}/${charSelectCacheStatus.total}), Sounds (${soundCacheStatus.available}/${soundCacheStatus.total})`);
 
-        // Step 2: Download static assets if needed (Map Themes + Character Select)
+        // Step 2: Download static assets if needed (Map Themes + Character Select + Sounds)
         if (totalStaticMissing > 0) {
           console.log(`📦 ${totalStaticMissing} static assets need downloading...`);
           
@@ -101,7 +109,7 @@ export default function MapNavigate({ onMapChange }) {
             loaded: 0,
             total: totalStaticAssets,
             progress: 0,
-            successCount: themesCacheStatus.available + charSelectCacheStatus.available
+            successCount: themesCacheStatus.available + charSelectCacheStatus.available + soundCacheStatus.available
           }));
           setDownloadModalVisible(true);
 
@@ -117,7 +125,7 @@ export default function MapNavigate({ onMapChange }) {
                   ...prev,
                   loaded: progress.loaded,
                   total: totalStaticMissing,
-                  progress: progress.loaded / totalStaticMissing * 0.5, // First 50% for themes
+                  progress: progress.loaded / totalStaticMissing * 0.4, // First 40% for themes
                   successCount: progress.successCount,
                   currentAsset: progress.currentAsset,
                 }));
@@ -136,7 +144,7 @@ export default function MapNavigate({ onMapChange }) {
             downloadedSoFar += themesCacheStatus.missing;
           }
 
-          // ✅ Download Character Select static assets
+          //  Download Character Select static assets
           if (charSelectCacheStatus.missing > 0) {
             console.log(`🎨 Downloading ${charSelectCacheStatus.missing} character select static assets...`);
             await universalAssetPreloader.downloadStaticCharacterSelectAssets(
@@ -145,7 +153,7 @@ export default function MapNavigate({ onMapChange }) {
                   ...prev,
                   loaded: downloadedSoFar + progress.loaded,
                   total: totalStaticMissing,
-                  progress: 0.5 + (progress.loaded / totalStaticMissing * 0.5), // 50-100% for char select
+                  progress: 0.4 + (progress.loaded / totalStaticMissing * 0.4), // 40-80% for char select
                   successCount: themesCacheStatus.total + progress.successCount,
                   currentAsset: progress.currentAsset,
                 }));
@@ -161,9 +169,30 @@ export default function MapNavigate({ onMapChange }) {
                 });
               }
             );
+            downloadedSoFar += charSelectCacheStatus.missing;
           }
+
+          //  NEW: Download Static Sound assets
+          if (soundCacheStatus.missing > 0) {
+            console.log(`🔊 Downloading ${soundCacheStatus.missing} static sound assets...`);
+            await universalAssetPreloader.downloadStaticSoundAssets(
+              (progress) => {
+                setDownloadProgress(prev => ({
+                  ...prev,
+                  loaded: downloadedSoFar + progress.loaded,
+                  total: totalStaticMissing,
+                  progress: 0.8 + (progress.loaded / totalStaticMissing * 0.2), // 80-100% for sounds
+                  successCount: themesCacheStatus.total + charSelectCacheStatus.total + progress.successCount,
+                  currentAsset: progress.currentAsset,
+                }));
+              }
+            );
+          }
+          
+          //  Clear sound manager cache after downloading new sounds
+          soundManager.clearUrlCache();
         } else {
-          console.log(`✅ All ${totalStaticAssets} static assets already cached`);
+          console.log(` All ${totalStaticAssets} static assets already cached`);
         }
 
         // Step 3: Fetch and download Map API assets
@@ -179,7 +208,7 @@ export default function MapNavigate({ onMapChange }) {
         const mapCacheStatus = await universalAssetPreloader.areMapAssetsCached(preloadData);
         
         if (mapCacheStatus.cached && totalStaticMissing === 0) {
-          console.log(`✅ All assets are already cached.`);
+          console.log(` All assets are already cached.`);
           
           // Load cached assets into memory
           await Promise.all([
@@ -190,7 +219,11 @@ export default function MapNavigate({ onMapChange }) {
             universalAssetPreloader.loadCachedAssets('map_theme_assets'),
             universalAssetPreloader.loadCachedAssets('character_select_ui'),
             universalAssetPreloader.loadCachedAssets('ui_videos'),
+            universalAssetPreloader.loadCachedAssets('static_sounds'),  //  NEW: Load static sounds
           ]);
+          
+          //  Clear sound manager cache after loading
+          soundManager.clearUrlCache();
           
           setAssetsReady(true);
           setDownloadModalVisible(false);
@@ -254,6 +287,9 @@ export default function MapNavigate({ onMapChange }) {
         // Save cache info
         console.log(`💾 Saving cache info...`);
         await universalAssetPreloader.saveCacheInfoToStorage();
+        
+        //  Clear sound manager cache after all downloads complete
+        soundManager.clearUrlCache();
 
         // Mark as complete
         setDownloadProgress(prev => ({

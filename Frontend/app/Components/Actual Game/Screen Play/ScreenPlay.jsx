@@ -11,6 +11,8 @@ import Coin from './components/Coin';
 import Damage from './components/Damage';
 import Message from './components/Message';
 import FadeOutWrapper from './FadeOutWrapper/FadeOutWrapper';
+import PauseButton from './Pauses/PauseButton';
+
 const ScreenPlay = ({ 
   gameState,
   isPaused = false, 
@@ -21,6 +23,7 @@ const ScreenPlay = ({
   fadeOutAnim = null,
   isMessageVisible,
   messageText,
+  onPausePress = null,
 }) => {
   const [attackingEnemies] = useState(new Set());
   const [totalCoins, setTotalCoins] = useState(0);
@@ -197,9 +200,11 @@ const ScreenPlay = ({
     return;
   }
 
+   const isCorrect = gameState?.submissionResult?.isCorrect;
+
   if (fightResult?.status === 'won' && 
     fightResult?.enemy?.enemy_health === 0 &&
-    victoryAnimationPhase === 'idle') {
+    victoryAnimationPhase === 'idle' && isCorrect === true) {
   
     console.log('🎉 Victory detected - starting celebration sequence');
     setVictoryAnimationPhase('celebrating');
@@ -227,7 +232,7 @@ const ScreenPlay = ({
       victoryTimeoutRef.current = null;
     }
   };
-  }, [gameState?.submissionResult?.fightResult?.status, gameState?.submissionResult?.fightResult?.character?.character_health, gameState?.submissionResult?.fightResult?.enemy?.enemy_health, gameState?.currentChallenge?.id, victoryAnimationPhase, handleEnemyRun, onSubmissionAnimationComplete]);
+  }, [gameState?.submissionResult?.fightResult?.status, gameState?.submissionResult?.fightResult?.character?.character_health, gameState?.submissionResult?.fightResult?.enemy?.enemy_health, gameState?.currentChallenge?.id, victoryAnimationPhase, handleEnemyRun, onSubmissionAnimationComplete, gameState?.submissionResult?.isCorrect]);
 
  useEffect(() => {
     if (isEnemyRunning) {
@@ -338,7 +343,7 @@ const ScreenPlay = ({
 
   
 
-  const handleEnemyAnimationComplete = useCallback((index) => {
+   const handleEnemyAnimationComplete = useCallback((index) => {
   return (animationState) => {
     console.log(`🎬 Enemy ${index} ${animationState} animation completed`);
     
@@ -349,33 +354,24 @@ const ScreenPlay = ({
       const enemyHealth = fightResult?.enemy?.enemy_health ?? 0;
       const enemyDiesUrl = fightResult?.enemy?.enemy_dies || gameState?.enemy?.enemy_dies;
 
-      //  FIX: If the fight is WON, the enemy MUST die if a dies animation exists. This overrides the bonus round loop.
+      // FIX: Use strict if/else if structure to prevent multiple triggers
       if (fightResult?.status === 'won' && enemyDiesUrl) {
         console.log('🎉 Fight won! Enemy hurt completed, transitioning to dies.');
         setEnemyAnimationStates(prev => prev.map((state, i) => i === index ? 'dies' : state));
         return;
-      }
-      
-      //  FIX: If it's a bonus round and the fight is NOT won, let it loop and do nothing on completion.
-      // The character's animation will unlock the game state.
-      if (isBonusRound) {
+      } else if (isBonusRound) {
         console.log(`🦹 Enemy is in bonus round, continuing 'hurt' loop.`);
         return;
-      }
-
-      // This handles a lethal hit during a normal round.
-      if (enemyDiesUrl && enemyHealth <= 0) {
+      } else if (enemyDiesUrl && enemyHealth <= 0) {
         console.log('🦹 Enemy hurt completed, health is 0 - transitioning to dies');
         setEnemyAnimationStates(prev => prev.map((state, i) => i === index ? 'dies' : state));
         return;
+      } else {
+        console.log('🦹 Enemy hurt completed, still alive - returning to idle');
+        setEnemyAnimationStates(prev => prev.map((state, i) => i === index ? 'idle' : state));
+        return;
       }
-      
-      // This handles a non-lethal hit during a normal round.
-      console.log('🦹 Enemy hurt completed, still alive - returning to idle');
-      setEnemyAnimationStates(prev => prev.map((state, i) => i === index ? 'idle' : state));
-      return;
-    }
-    
+    } 
     // The 'dies' animation is a terminal state. Its completion means the sequence is over.
     if (animationState === 'dies') {
       console.log('💀 Enemy dies animation completed. Unlocking submission state.');
@@ -472,14 +468,50 @@ useEffect(() => {
       
     } else if (submission.isCorrect === false) {
       const enemyHealth = submission.fightResult?.enemy?.enemy_health ?? 0;
+      const enemyDiesUrl = submission.fightResult?.enemy?.enemy_dies || gameState?.enemy?.enemy_dies;
+      const fightStatus = submission.fightResult?.status;
       
-      console.log(`❌ Wrong answer - enemy will counter attack`);
+      console.log(`❌ Wrong answer - enemy will counter attack`, {
+        enemyHealth,
+        fightStatus,
+        enemyDiesUrl: !!enemyDiesUrl
+      });
+        if (fightStatus === 'won' && enemyDiesUrl && enemyHealth <= 0) {
+        console.log(`🎉 Level won despite wrong answer! Initiating final blow sequence.`);
+        setIsPlayingSubmissionAnimation(true);
+
+        // 1. Trigger Character Attack (if available)
+        const attackUrl = Array.isArray(characterAnimations.character_attack)
+        ? characterAnimations.character_attack.filter(url => url && typeof url === 'string')[0]
+        : characterAnimations.character_attack;
+
+        if (attackUrl) {
+           console.log(`⚔️ Character attacking for final blow`);
+           setCharacterAnimationState('attack');
+        } else {
+           console.log(`⚔️ No attack animation, skipping to enemy reaction`);
+        }
+        
+        // 2. Delay Enemy Hurt/Die to sync with attack
+        const hurtDelay = attackUrl ? 800 : 0; // 800ms delay if attacking, immediate if not
+
+        setTimeout(() => {
+           console.log(`💥 Enemy taking final damage (delayed by ${hurtDelay}ms)`);
+           // Set enemy to hurt first, then handleEnemyAnimationComplete will transition to dies
+           setEnemyAnimationStates(prev => prev.map(() => 'hurt'));
+        }, hurtDelay);
+
+        return;
+      }
+      
+      // Normal Wrong Answer Flow: Enemy attacks
+      console.log(`❌ Normal wrong answer flow - enemy attacking`);
       
       // Enemy begins their attack immediately.
       if (enemyHealth > 0) {
         setEnemyAnimationStates(prev => prev.map(() => 'attack'));
       } else {
-        // If enemy is already defeated, they can't attack.
+        // If enemy is already defeated but no dies animation, return to idle
         setEnemyAnimationStates(prev => prev.map(() => 'idle'));
       }
       
@@ -592,8 +624,15 @@ useEffect(() => {
           avatarUrl={playerAvatar}
           isEnemy={false}
           borderColor="rgba(255, 255, 255, 0.8)"
+          startDelay={1000}     // RENAMED: from healthDelay
+          trigger={submissionSeq}
         />
       </FadeOutWrapper>
+
+      <FadeOutWrapper fadeOutAnim={fadeOutAnim} isInRunMode={isInRunMode}>
+        <PauseButton onPress={onPausePress} />
+      </FadeOutWrapper>
+
 
       <FadeOutWrapper fadeOutAnim={fadeOutAnim} isInRunMode={isInRunMode}>
         <Life 
@@ -607,6 +646,8 @@ useEffect(() => {
           avatarUrl={enemyAvatar}
           isEnemy={true}
           borderColor="#ffffffff"
+          startDelay={600}     
+          trigger={submissionSeq}
         />
       </FadeOutWrapper>
       
@@ -648,7 +689,6 @@ useEffect(() => {
   );
 };
 
-// ...existing code...
 export default React.memo(ScreenPlay, (prevProps, nextProps) => {
   return (
     prevProps.gameState?.submissionResult?.isCorrect === nextProps.gameState?.submissionResult?.isCorrect &&

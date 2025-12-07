@@ -25,12 +25,12 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 //  STEP 1: Move helper functions and child components OUTSIDE the parent component.
 const getPotionColors = (name) => {
   const colorMap = {
-    'Health': { background: 'rgba(220, 38, 38, 1)', border: '#dc2626', frameColor: '#991b1b', innerColor: '#f87171', pressedColor: '#b91c1c' },
-    'Strong': { background: 'rgba(245, 159, 11, 1)', border: '#f59e0b', frameColor: '#d97706', innerColor: '#fbbf24', pressedColor: '#ea580c' },
-    'Hint': { background: 'rgba(37, 100, 235, 1)', border: '#2563eb', frameColor: '#1d4ed8', innerColor: '#60a5fa', pressedColor: '#1e40af' },
+    'Life': { background: 'rgba(220, 38, 38, 1)', border: '#dc2626', frameColor: '#991b1b', innerColor: '#f87171', pressedColor: '#b91c1c' },
+    'Power': { background: 'rgba(245, 159, 11, 1)', border: '#f59e0b', frameColor: '#d97706', innerColor: '#fbbf24', pressedColor: '#ea580c' },
+    'Reveal': { background: 'rgba(37, 100, 235, 1)', border: '#2563eb', frameColor: '#1d4ed8', innerColor: '#60a5fa', pressedColor: '#1e40af' },
     'Mana': { background: 'rgba(0, 213, 255, 0.44)', border: '#00d5ff', frameColor: '#0891b2', innerColor: '#22d3ee', pressedColor: '#0e7490' },
     'Freeze': { background: 'rgba(168, 85, 247, 0.8)', border: '#a855f7', frameColor: '#7c3aed', innerColor: '#c4b5fd', pressedColor: '#6d28d9' },
-    'Speed': { background: 'rgba(34, 197, 94, 0.8)', border: '#22c55e', frameColor: '#16a34a', innerColor: '#86efac', pressedColor: '#15803d' },
+    'Reveal': { background: 'rgba(34, 197, 94, 0.8)', border: '#22c55e', frameColor: '#16a34a', innerColor: '#86efac', pressedColor: '#15803d' },
     'Immune': { background: 'rgba(156, 163, 175, 0.8)', border: '#9ca3af', frameColor: '#6b7280', innerColor: '#d1d5db', pressedColor: '#4b5563' },
   };
   return colorMap[name] || { background: 'rgba(0, 213, 255, 0.44)', border: '#00d5ff', frameColor: '#0891b2', innerColor: '#22d3ee', pressedColor: '#0e7490' };

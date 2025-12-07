@@ -77,6 +77,12 @@ const EnemyCharacter = ({
     return candidates[0] || '';
   }, [enemy, characterAnimations]);
 
+  const onAnimationCompleteRef = useRef(onAnimationComplete);
+  
+  useEffect(() => {
+    onAnimationCompleteRef.current = onAnimationComplete;
+  }, [onAnimationComplete]);
+
   // FIX: Helper function to check if ANY URL is cached (synchronous)
   const isUrlCached = useCallback((url) => {
     if (!url) return false;
@@ -148,11 +154,12 @@ const EnemyCharacter = ({
     }
 
     if (currentState === 'attack' && attackAudioUrl) {
-      const SOUND_DELAY = 1000; 
+      const SOUND_DELAY = 500; 
       attackSoundTimeoutRef.current = setTimeout(() => {
-        soundManager.playCombatSound(attackAudioUrl, 1.0);
+        soundManager.playCachedSound(attackAudioUrl, 'combat', 1.0);
       }, SOUND_DELAY);
     }
+
     return () => {
       if (attackSoundTimeoutRef.current) {
         clearTimeout(attackSoundTimeoutRef.current);
@@ -236,11 +243,10 @@ const EnemyCharacter = ({
 
   // ========== Animation Callbacks ==========
   const notifyAnimationComplete = useCallback(() => {
-    if (onAnimationComplete) {
-      onAnimationComplete(currentState);
+    if (onAnimationCompleteRef.current) {
+      onAnimationCompleteRef.current(currentState);
     }
-  }, [onAnimationComplete, currentState]);
-
+  }, [currentState]);
   // ========== Main Animation Effect ==========
   useEffect(() => {
     if (currentState === 'attack' && attackInitiated.value) {
