@@ -727,6 +727,9 @@ export const submitChallengeService = async (
 
   const playerLost = freshProgress!.player_hp <= 0;
 
+  const isNewBonusRound =
+    freshProgress!.enemy_hp <= 0 && freshProgress!.player_hp > 0;
+
   let is_victory_audio: string | null = null;
   let is_victory_image: string | null = null;
   let stars: number | undefined = undefined;
@@ -853,6 +856,71 @@ export const submitChallengeService = async (
         };
       }
     }
+  } else if (isNewBonusRound && answeredIds.length === totalChallenges) {
+    const wrongCount = wrongChallengesArr.length;
+    stars = calculateStars(wrongCount, totalChallenges);
+
+    const motivationalMessage = generateMotivationalMessage(
+      wasFirstCompletion,
+      wrongCount,
+      totalChallenges,
+      true,
+      true,
+      level.level_number
+    );
+
+    is_victory_audio =
+      "https://micomi-assets.me/Sounds/Final/Victory_Sound.wav";
+    is_victory_image = getRandomMicomiImage(playerId, true);
+
+    if (wasFirstCompletion) {
+      await prisma.playerProgress.update({
+        where: { progress_id: currentProgress.progress_id },
+        data: {
+          is_completed: true,
+          completed_at: new Date(),
+          has_strong_effect: false,
+          has_freeze_effect: false,
+          stars_earned: stars,
+        },
+      });
+
+      completionRewards = {
+        feedbackMessage: motivationalMessage,
+        coinsEarned: freshProgress?.coins_earned ?? 0,
+        totalPointsEarned: freshProgress?.total_points_earned ?? 0,
+        totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
+        isVictory: true,
+      };
+
+      nextLevel = await LevelService.unlockNextLevel(
+        playerId,
+        level.map_id,
+        level.level_id
+      );
+    } else {
+      const currentStars = freshProgress?.stars_earned ?? 0;
+      const improved = stars > currentStars;
+
+      if (improved) {
+        await prisma.playerProgress.update({
+          where: { progress_id: currentProgress.progress_id },
+          data: {
+            stars_earned: stars,
+          },
+        });
+      }
+
+      completionRewards = {
+        feedbackMessage:
+          motivationalMessage +
+          "\nAlready completed—no extra rewards. Great practice!",
+        coinsEarned: 0,
+        totalPointsEarned: 0,
+        totalExpPointsEarned: 0,
+        isVictory: true,
+      };
+    }
   }
 
   const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
@@ -888,9 +956,6 @@ export const submitChallengeService = async (
       gameplay_audio = "https://micomi-assets.me/Sounds/Final/Autumnland.mp3";
     }
   }
-
-  const isNewBonusRound =
-    freshProgress!.enemy_hp <= 0 && freshProgress!.player_hp > 0;
 
   const isLastRemainingChallenge = currentAnsweredCount + 1 === totalChallenges;
 

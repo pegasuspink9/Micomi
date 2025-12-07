@@ -7,7 +7,8 @@ import * as EnergyService from "../Energy/energy.service";
 import * as ChallengeService from "../Challenges/challenges.service";
 import { SubmitChallengeControllerResult } from "../Challenges/challenges.types";
 import { UsePotionErrorResponse } from "./shop.types";
-import { success } from "zod";
+import { successResponse, errorResponse } from "../../../utils/response";
+import { Request, Response } from "express";
 
 const prisma = new PrismaClient();
 
@@ -526,4 +527,89 @@ export const usePotion = async (
     remainingQuantity: playerPotion.quantity - 1,
     appliedImmediately: true,
   } as unknown as SubmitChallengeControllerResult;
+};
+
+//Buy Potion in Shop
+export const buyPotionInShop = async (req: Request, res: Response) => {
+  try {
+    const playerId = Number(req.params.playerId);
+    const potionShopId = Number(req.params.potionShopId);
+
+    if (!potionShopId) {
+      return errorResponse(res, null, "Potion ID is required", 400);
+    }
+
+    const potion = await prisma.potionShop.findUnique({
+      where: { potion_shop_id: potionShopId },
+    });
+
+    if (!potion) {
+      return errorResponse(res, null, "Potion not found", 404);
+    }
+
+    const player = await prisma.player.findUnique({
+      where: { player_id: playerId },
+    });
+
+    if (!player) {
+      return errorResponse(res, null, "Player not found", 404);
+    }
+
+    if (player.coins < potion.potion_price) {
+      return errorResponse(res, null, "Not enough coins", 400);
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.playerPotion.upsert({
+        where: {
+          player_id_potion_shop_id: {
+            player_id: playerId,
+            potion_shop_id: potionShopId,
+          },
+        },
+        update: { quantity: { increment: 1 } },
+        create: {
+          player_id: playerId,
+          potion_shop_id: potionShopId,
+          quantity: 1,
+        },
+      });
+
+      await tx.player.update({
+        where: { player_id: playerId },
+        data: { coins: { decrement: potion.potion_price } },
+      });
+    });
+
+    await updateQuestProgress(playerId, QuestType.buy_potion, 1);
+    await updateQuestProgress(
+      playerId,
+      QuestType.spend_coins,
+      potion.potion_price
+    );
+
+    const updatedPlayerPotion = await prisma.playerPotion.findUnique({
+      where: {
+        player_id_potion_shop_id: {
+          player_id: playerId,
+          potion_shop_id: potionShopId,
+        },
+      },
+    });
+
+    return successResponse(
+      res,
+      {
+        potion_name: potion.potion_name,
+        potion_type: potion.potion_type,
+        quantity: updatedPlayerPotion?.quantity ?? 1,
+        coins_spent: potion.potion_price,
+        remaining_coins: player.coins - potion.potion_price,
+      },
+      `${potion.potion_name} purchased successfully`
+    );
+  } catch (error) {
+    console.error(error);
+    return errorResponse(res, null, "Failed to purchase potion", 500);
+  }
 };
