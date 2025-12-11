@@ -390,26 +390,31 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         throw new Error(response.message || 'Failed to fetch potions');
       }
 
-      // Transform API response to match component structure
-      const transformedPotions = response.data.map(potion => ({
+      const playerPotions = response.data.potions || [];
+
+      const playerInfo = response.data.player_info || {};
+
+      const transformedPotions = playerPotions.map(potion => ({
         id: potion.player_potion_id,
-        name: gameService.getPotionDisplayName(potion.potion_type),
+        potion_name: potion.potion_name, 
+        name: potion.potion_name, // Use potion_name for the 'name' property
         count: potion.quantity,
         image: universalAssetPreloader.getCachedAssetPath(potion.potion_url),
         type: potion.potion_type,
         description: potion.potion_description,
         price: potion.potion_price,
         player_potion_id: potion.player_potion_id,
-        potion_shop_id: potion.potion_shop_id
+        potion_shop_id: potion.potion_shop_id,
       }));
 
       console.log(`🧪 Found ${transformedPotions.length} potions for player ${playerId}`);
-      return { success: true, data: transformedPotions };
+      return { success: true, data: transformedPotions, playerInfo: playerInfo };
     } catch (error) {
       console.error(`Failed to fetch potions for player ${playerId}:`, error);
       throw error;
     }
   },
+
 
   usePotion: async (playerId, levelId, challengeId, playerPotionId) => {
   try {

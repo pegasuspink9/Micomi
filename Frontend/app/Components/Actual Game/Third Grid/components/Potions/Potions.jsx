@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react'; // Import useState
 import { 
   View, 
   Text, 
@@ -20,6 +20,7 @@ import Reanimated, {
   cancelAnimation
 } from 'react-native-reanimated';
 
+
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 //  STEP 1: Move helper functions and child components OUTSIDE the parent component.
@@ -29,15 +30,15 @@ const getPotionColors = (name) => {
     'Power': { background: 'rgba(245, 159, 11, 1)', border: '#f59e0b', frameColor: '#d97706', innerColor: '#fbbf24', pressedColor: '#ea580c' },
     'Reveal': { background: 'rgba(37, 100, 235, 1)', border: '#2563eb', frameColor: '#1d4ed8', innerColor: '#60a5fa', pressedColor: '#1e40af' },
     'Mana': { background: 'rgba(0, 213, 255, 0.44)', border: '#00d5ff', frameColor: '#0891b2', innerColor: '#22d3ee', pressedColor: '#0e7490' },
-    'Freeze': { background: 'rgba(168, 85, 247, 0.8)', border: '#a855f7', frameColor: '#7c3aed', innerColor: '#c4b5fd', pressedColor: '#6d28d9' },
-    'Reveal': { background: 'rgba(34, 197, 94, 0.8)', border: '#22c55e', frameColor: '#16a34a', innerColor: '#86efac', pressedColor: '#15803d' },
-    'Immune': { background: 'rgba(156, 163, 175, 0.8)', border: '#9ca3af', frameColor: '#6b7280', innerColor: '#d1d5db', pressedColor: '#4b5563' },
+    'Freeze': { background: 'rgba(168, 85, 247, 0.8)', border: '#a855f7', frameColor: '#7c3aed', innerColor: '#0a6983ff', pressedColor: '#6d28d9' },
+    'Immunity': { background: 'rgba(0, 213, 255, 0.44)', border: '#00d5ff', frameColor: '#0891b2', innerColor: '#22d3ee', pressedColor: '#0e7490' }, // Added 'Immunity' from your API example
   };
   return colorMap[name] || { background: 'rgba(0, 213, 255, 0.44)', border: '#00d5ff', frameColor: '#0891b2', innerColor: '#22d3ee', pressedColor: '#0e7490' };
 };
 
 const PotionSlot = React.memo(({ potion, isSelected, isDisabled, isOutOfStock, potionUsed, onPotionPress }) => {
-  const colors = getPotionColors(potion.name);
+  const colors = getPotionColors(potion.type);
+  const [isPressed, setIsPressed] = useState(false); // Add this state
 
   const SPRITE_COLUMNS = 6;
   const SPRITE_ROWS = 4;
@@ -76,9 +77,11 @@ const PotionSlot = React.memo(({ potion, isSelected, isDisabled, isOutOfStock, p
       styles.potionFrame,
       { backgroundColor: colors.frameColor },
       isDisabled && styles.outOfStockSlot,
-      isSelected && styles.selectedPotionFrame 
+      isSelected && styles.selectedPotionFrame
     ]}>
-      <Pressable 
+      <Pressable
+        onPressIn={() => setIsPressed(true)} // Set pressed state to true
+        onPressOut={() => setIsPressed(false)} // Set pressed state to false
         style={({ pressed }) => [
           styles.potionSlot,
           {
@@ -92,15 +95,15 @@ const PotionSlot = React.memo(({ potion, isSelected, isDisabled, isOutOfStock, p
             styles.potionSlotPressed,
             { backgroundColor: colors.pressedColor }
           ],
-          isSelected && styles.selectedPotionSlot 
+          isSelected && styles.selectedPotionSlot
         ]}
         onPress={() => {
           if (!isDisabled && onPotionPress) {
             soundManager.playButtonTapSound();
             onPotionPress(potion);
           }
-        }} 
-        disabled={isDisabled} 
+        }}
+        disabled={isDisabled}
       >
         <View style={styles.potionSlotInner}>
           <View style={[
@@ -109,25 +112,25 @@ const PotionSlot = React.memo(({ potion, isSelected, isDisabled, isOutOfStock, p
           ]}>
             <View style={styles.potionHighlight} />
             <View style={styles.potionShadow} />
-            
+
             <View style={styles.dotsContainer}>
               <View style={[styles.dot, styles.dotTopLeft]} />
               <View style={[styles.dot, styles.dotTopRight]} />
               <View style={[styles.dot, styles.dotBottomLeft]} />
               <View style={[styles.dot, styles.dotBottomRight]} />
             </View>
-            
+
             <View style={[
-                styles.spriteContainer, 
+                styles.spriteContainer,
                 { width: FRAME_SIZE, height: FRAME_SIZE },
                 (isOutOfStock || potionUsed) && styles.potionImageDisabled
               ]}>
               <Reanimated.View style={[
-                styles.spriteSheet, 
-                { 
-                  width: FRAME_SIZE * SPRITE_COLUMNS, 
-                  height: FRAME_SIZE * SPRITE_ROWS 
-                }, 
+                styles.spriteSheet,
+                {
+                  width: FRAME_SIZE * SPRITE_COLUMNS,
+                  height: FRAME_SIZE * SPRITE_ROWS
+                },
                 spriteSheetStyle
               ]}>
                 <Image
@@ -136,26 +139,28 @@ const PotionSlot = React.memo(({ potion, isSelected, isDisabled, isOutOfStock, p
                 />
               </Reanimated.View>
             </View>
-            
+
             <View style={[
               styles.countContainer,
               isOutOfStock && styles.countContainerDisabled,
               potionUsed && styles.countContainerDisabled,
-              isSelected && styles.selectedCountContainer 
+              isSelected && styles.selectedCountContainer
             ]}>
               <Text style={[
                 styles.countText,
-                isSelected && styles.selectedCountText 
+                isSelected && styles.selectedCountText
               ]}>
                 {potion.count}
               </Text>
             </View>
-            
+
             <View style={styles.nameContainer}>
               <Text style={[
                 styles.nameText,
                 isSelected && styles.selectedNameText,
-                (isOutOfStock || potionUsed) && styles.nameTextDisabled
+                (isOutOfStock || potionUsed) && styles.nameTextDisabled,
+                // Now use the isPressed state for hiding
+                (isSelected || isPressed) && styles.hiddenNameText
               ]}>
                 {potion.name}
               </Text>
@@ -176,10 +181,10 @@ const PotionSlot = React.memo(({ potion, isSelected, isDisabled, isOutOfStock, p
 });
 
 //  STEP 2: The parent component is now clean and only contains its own logic.
-const PotionGrid = ({ 
+const PotionGrid = ({
   potions = [],
   onPotionPress,
-  selectedPotion = null, 
+  selectedPotion = null,
   loadingPotions = false,
   potionUsed = false
 }) => {
@@ -201,7 +206,7 @@ const PotionGrid = ({
 
   return (
     <View style={styles.gridContainer}>
-      <ScrollView 
+      <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
@@ -214,7 +219,7 @@ const PotionGrid = ({
 
           return (
             <View key={potion.id || index} style={styles.potionSlotWrapper}>
-              <PotionSlot 
+              <PotionSlot
                 potion={potion}
                 isSelected={isSelected}
                 isDisabled={isDisabled}
@@ -289,7 +294,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   potionSlotPressed: {
-    transform: [{ translateY: scale(1) }],
+    transform: [{ translateY: scale(3)}],
     shadowOffset: {
       width: 0,
       height: scale(2),
@@ -431,6 +436,9 @@ const styles = StyleSheet.create({
   nameText: {
     color: '#ffffffff',
     fontSize: scale(8),
+    textShadowColor: '#000000ff',
+    textShadowOffset: { width: 2, height: scale(1) },
+    textShadowRadius: scale(10),
     fontFamily: 'MusicVibes',
     textAlign: 'center',
   },
@@ -463,6 +471,9 @@ const styles = StyleSheet.create({
     color: '#ffffff94',
     fontSize: scale(14),
     fontFamily: 'DynaPuff',
+  },
+   hiddenNameText: {
+    opacity: 0,
   },
 });
 

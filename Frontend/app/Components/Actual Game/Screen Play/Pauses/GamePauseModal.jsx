@@ -6,7 +6,7 @@ import {
   StyleSheet, 
   Animated, 
   Easing,
-  StatusBar
+  // StatusBar // Removed StatusBar import as it will be removed from render
 } from 'react-native';
 import { ImageBackground } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -273,7 +273,8 @@ const GamePauseModal = ({
         { opacity: backgroundOpacityAnim }
       ]}
     >
-      <StatusBar backgroundColor="rgba(0, 0, 0, 0.85)" barStyle="light-content" />
+      {/* <StatusBar backgroundColor="rgba(0, 0, 0, 0.85)" barStyle="light-content" />  */}
+      {/* Removed this line to prevent forcing the status bar black */}
       
       <Animated.View 
         style={[
@@ -447,7 +448,7 @@ const GamePauseModal = ({
 const styles = StyleSheet.create({
   fullScreenOverlay: {
     position: 'absolute',
-    top: -20,
+    top: 0, // Changed from -20 to 0
     left: 0,
     right: 0,
     bottom: 0,
