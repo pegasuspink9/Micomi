@@ -952,12 +952,6 @@ export async function fightBossEnemy(
   const enemy = await prisma.enemy.findUnique({ where: { enemy_id: enemyId } });
   if (!enemy) throw new Error("Enemy not found");
 
-  const isBossJoshy = enemy.enemy_name === "Boss Joshy";
-
-  const isBossDarco = enemy.enemy_name === "Boss Darco";
-
-  const isBossScorcharach = enemy.enemy_name === "Boss Scorcharach";
-
   const level = await prisma.level.findUnique({
     where: { level_id: levelId },
     include: { challenges: true },
@@ -1202,7 +1196,7 @@ export async function fightBossEnemy(
       console.log("- Strong potion applied, damage doubled");
     }
 
-    if (isBossScorcharach && progress.has_both_hp_decrease) {
+    if (progress.has_both_hp_decrease) {
       enemy_ss_type = "shield";
 
       charHealth = Math.max(charHealth - damage, 0);
@@ -1359,7 +1353,7 @@ export async function fightBossEnemy(
         console.log(
           "- Letters shuffled in a word active: using special skill attack"
         );
-      } else if (isBossJoshy && progress.has_boss_shield) {
+      } else if (progress.has_boss_shield) {
         enemy_ss_type = "shield";
         enemy_run =
           "https://micomi-assets.me/Enemies/Greenland/Boss%20Joshy/Run2.png";
@@ -1369,7 +1363,7 @@ export async function fightBossEnemy(
         enemy_attack_type = "special attack";
         enemy_attack = enemy.special_skill || null;
         console.log("- Shield curse active: using special skill attack");
-      } else if (isBossDarco && progress.has_force_character_attack_type) {
+      } else if (progress.has_force_character_attack_type) {
         enemy_ss_type = "force_basic_attack";
         enemy_run = enemy.enemy_run || null;
         enemy_idle = enemy.enemy_avatar || null;
@@ -1377,7 +1371,7 @@ export async function fightBossEnemy(
         enemy_attack_type = "special attack";
         enemy_attack = enemy.special_skill || null;
         console.log("- Force basic curse active: using special skill attack");
-      } else if (isBossScorcharach && progress.has_both_hp_decrease) {
+      } else if (progress.has_both_hp_decrease) {
         enemy_ss_type = "mutual_damage";
         enemy_run = enemy.enemy_run || null;
         enemy_idle = enemy.enemy_avatar || null;

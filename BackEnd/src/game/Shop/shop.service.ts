@@ -312,7 +312,7 @@ export const usePotion = async (
         where: { enemy_id: level?.enemy_id ?? 0 },
       });
 
-      if (progress.has_reversed_curse && enemy?.enemy_name === "King Grimnir") {
+      if (progress.has_reversed_curse && enemy?.enemy_name === "Boss Darco") {
         effectiveCorrectAnswer = rawCorrectAnswer.map(reverseString);
       }
 
