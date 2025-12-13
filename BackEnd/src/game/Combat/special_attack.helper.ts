@@ -111,10 +111,10 @@ export async function updateProgressForChallenge(
         const enemyName = enemy && enemy.enemy_name;
 
         switch (enemyName) {
-          case "King Grimnir":
+          case "Boss Darco":
             hasReversedCurse = true;
             console.log(
-              "- Reversal curse activated for King Grimnir after multiples of 3 consecutive wrongs"
+              "- Reversal curse activated for Boss Darco after multiples of 3 consecutive wrongs"
             );
             break;
           case "Boss Joshy":
@@ -123,10 +123,10 @@ export async function updateProgressForChallenge(
               "- Shield activated for Boss Joshy after multiples of 3 consecutive wrongs"
             );
             break;
-          case "Boss Darco":
+          case "King Grimnir":
             hasForceCharacterAttackType = true;
             console.log(
-              "- Force character attack type into basic activated for Boss Darco after multiples of 3 consecutive wrongs"
+              "- Force character attack type into basic activated for King Grimnir after multiples of 3 consecutive wrongs"
             );
             break;
           case "Boss Scorcharach":
@@ -141,10 +141,10 @@ export async function updateProgressForChallenge(
               "- Options shuffle after for Boss Maggmaw after multiples of 3 consecutive wrongs"
             );
             break;
-          case "Boss Earl":
+          case "Boss Pyroformic":
             hasPermuted = true;
             console.log(
-              "- Options words unordered after for Boss Earl after multiples of 3 consecutive wrongs"
+              "- Options words unordered after for Boss Pyroformic after multiples of 3 consecutive wrongs"
             );
             break;
         }

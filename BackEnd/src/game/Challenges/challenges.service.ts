@@ -373,13 +373,10 @@ export const submitChallengeService = async (
   const rawCorrectAnswer = [...correctAnswer];
 
   let effectiveCorrectAnswer = correctAnswer;
-  if (
-    currentProgress.has_reversed_curse &&
-    enemy.enemy_name === "King Grimnir"
-  ) {
+  if (currentProgress.has_reversed_curse && enemy.enemy_name === "Boss Darco") {
     effectiveCorrectAnswer = rawCorrectAnswer.map(reverseString);
     console.log(
-      `- Reversal curse active for King Grimnir: correct answers reversed for comparison`
+      `- Reversal curse active for Boss Darco: correct answers reversed for comparison`
     );
   }
 
