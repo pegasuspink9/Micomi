@@ -397,7 +397,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
       const transformedPotions = playerPotions.map(potion => ({
         id: potion.player_potion_id,
         potion_name: potion.potion_name, 
-        name: potion.potion_name, // Use potion_name for the 'name' property
+        name: potion.potion_name, 
         count: potion.quantity,
         image: universalAssetPreloader.getCachedAssetPath(potion.potion_url),
         type: potion.potion_type,

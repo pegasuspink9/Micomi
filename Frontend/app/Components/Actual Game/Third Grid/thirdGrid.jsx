@@ -31,8 +31,8 @@ const ThirdGrid = ({
   submitting = false,
   onCorrectAnswer,
   potions = [],
-  selectedPotion = null,
-  onPotionPress,
+  selectedPotion = null, 
+  onPotionPress, 
   loadingPotions = false,
   usingPotion = false,
   setThirdGridHeight,
@@ -51,7 +51,7 @@ const ThirdGrid = ({
   onCharacterRun = null, 
   fadeOutAnim = null,
   isInRunMode = false,
-  setSelectedBlankIndex,
+  setSelectedBlankIndex
 }) => {
 
   if (!currentQuestion) {
@@ -60,48 +60,27 @@ const ThirdGrid = ({
   }
   
   const maxAnswers = useMemo(() => getMaxAnswers(currentQuestion), [currentQuestion]);
-
   const isFillInTheBlank = (currentQuestion.type || currentQuestion.challenge_type) === 'fill in the blank';
-  
   const options = useMemo(() => currentQuestion.options || [], [currentQuestion.options]);
 
   const getPotionBorderColor = (potionName) => {
     switch (potionName) {
-      case 'Life':
-        return 'rgba(130, 0, 0, 1)';
-      case 'Power':
-        return 'rgba(223, 190, 0, 1)';
-      case 'Reveal':
-        return 'rgba(8, 120, 66, 1)';
-      case 'Freeze':
-        return 'rgba(1, 184, 201, 1)';
-      default:
-        return 'white';
+      case "Gino's Blood": return 'rgba(130, 0, 0, 1)';
+      case "Leon's Fury": return 'rgba(223, 190, 0, 1)';
+      case 'Ryron’s Sight': return 'rgba(8, 120, 66, 1)';
+      case 'ShiShi’s Frost': return 'rgba(1, 184, 201, 1)';
+      default: return 'white';
     }
   };
-
-  const challengeType = currentQuestion.type || currentQuestion.challenge_type;
 
   const handleAnswerSelect = useMemo(() => 
   createAnswerSelectHandler(
     currentQuestion, 
     selectedAnswers, 
     setSelectedAnswers,
-    selectedBlankIndex, // ✅ ADDED: Pass selected index
-    setSelectedBlankIndex // ✅ ADDED: Pass setter for auto-advance
-  ), 
-  [currentQuestion, selectedAnswers, setSelectedAnswers, selectedBlankIndex, setSelectedBlankIndex]
-  );
-
-
-  const handleNextQuestion = useMemo(() => 
-    createNextQuestionHandler(
-      currentQuestionIndex,
-      questionsData,
-      setCurrentQuestionIndex,
-      setSelectedAnswers
-    ), [currentQuestionIndex, questionsData, setCurrentQuestionIndex, setSelectedAnswers]
-  );
+    selectedBlankIndex,
+    setSelectedBlankIndex 
+  ), [currentQuestion, selectedAnswers, setSelectedAnswers, selectedBlankIndex, setSelectedBlankIndex]);
 
   const handleCheckAnswer = useMemo(() => 
     createCheckAnswerHandler(
@@ -124,16 +103,27 @@ const ThirdGrid = ({
     setShowPotions(!showPotions);
   }, [showPotions]);
 
-   const runButtonDisabled = useMemo(() => {
-    const hasSelectedAnswer = selectedAnswers.some(answer => answer != null);
+  const runButtonTitle = useMemo(() => {
+    if (usingPotion) return "Using...";
+    if (selectedPotion) return "Activate"; 
+    if (submitting) return "Running";
+    return "Run";
+  }, [usingPotion, selectedPotion, submitting]);
 
-    return (
-      submitting || 
-      usingPotion ||
-      runDisabled  ||
-      (!selectedPotion && !hasSelectedAnswer)
-    );
+  const runButtonVariant = useMemo(() => selectedPotion ? "info" : "primary", [selectedPotion]);
+
+  const runButtonDisabled = useMemo(() => {
+    const hasSelectedAnswer = selectedAnswers.some(answer => answer != null);
+    
+    if (submitting || usingPotion || runDisabled) return true;
+    
+    // If potion is selected, button should be ENABLED (return false)
+    if (selectedPotion) return false;
+
+    // If no potion, button requires an answer
+    return !hasSelectedAnswer;
   }, [submitting, usingPotion, runDisabled, selectedPotion, selectedAnswers]);
+
 
   useEffect(() => {
     setPotionUsed(false);
@@ -146,7 +136,6 @@ const ThirdGrid = ({
       setPotionUsed(true); 
       usePotion(selectedPotion.player_potion_id);
       setBorderColor(getPotionBorderColor(selectedPotion.name)); 
-      console.log('🧪 Potion activated:', selectedPotion.name, 'Border color changed');
     } else {
       handleCheckAnswer();
     }
@@ -155,65 +144,36 @@ const ThirdGrid = ({
     }, 3000);
   }, [selectedPotion, usePotion, handleCheckAnswer, setBorderColor]);
 
-  const runButtonTitle = useMemo(() => {
-    if (usingPotion) return "Using...";
-    if (selectedPotion) return "Activate";
-    if (submitting) return "Running";
-    return "Run";
-  }, [usingPotion, selectedPotion, submitting]);
-
-  const runButtonVariant = useMemo(() => {
-    return selectedPotion ? "info" : "primary";
-  }, [selectedPotion]);
-
-  console.log('ThirdGrid render:', {
-    questionTitle: currentQuestion.title,
-    challenge_type: currentQuestion.type || currentQuestion.challenge_type,
-    optionsLength: options.length,
-    selectedAnswersLength: selectedAnswers?.length,
-    maxAnswers,
-    submitting,
-    canProceed
-  });
-
-       const calculateHeight = (numOptions) => {
-    if (!currentQuestion || !numOptions || numOptions === 0) {
-      return gameScale(BASE_HEIGHT * 0.12);
-    }
-    
-    if (numOptions > 8) {
-      return gameScale(BASE_HEIGHT * 0.2); 
-    }
-
-    const baseHeight = gameScale(BASE_HEIGHT * 0.10);
-    const itemHeight = gameScale(BASE_HEIGHT * 0.04); 
-    const columns = 4; 
-    const rows = Math.ceil(numOptions / columns);
-    const extraHeight = (rows - 1) * itemHeight;
-    return baseHeight + extraHeight;
-  };
-
-   const dynamicHeight = useMemo(() => {
-    if (canProceed || isLevelComplete) {
-      return gameScale(BASE_HEIGHT * 0.12);
-    }
-
-    return calculateHeight(options.length);
-  }, [canProceed, isLevelComplete, options.length, showPotions]);
-
-
   const handleClearAll = useCallback(() => {
     soundManager.playGameButtonTapSound();
     setSelectedAnswers([]); 
     setSelectedBlankIndex(0);
   }, [setSelectedAnswers, setSelectedBlankIndex]);
 
+  // --- DYNAMIC HEIGHT LOGIC ---
+  const [contentHeight, setContentHeight] = useState(0);
+
+  const onContentLayout = useCallback((event) => {
+    const { height } = event.nativeEvent.layout;
+    setContentHeight(height + gameScale(20)); 
+  }, []);
+
+  const dynamicHeight = useMemo(() => {
+    if (canProceed || isLevelComplete) {
+      return gameScale(BASE_HEIGHT * 0.12);
+    }
+    return contentHeight > 0 ? contentHeight : 'auto';
+  }, [canProceed, isLevelComplete, contentHeight]);
 
   useEffect(() => {
     if (setThirdGridHeight) {
       setThirdGridHeight(dynamicHeight);
     }
   }, [dynamicHeight, setThirdGridHeight]);
+
+
+  // Helper variable to decide if content should be shown at all
+  const showContent = !canProceed && !isLevelComplete;
 
   return (
     <GridContainer
@@ -232,7 +192,7 @@ const ThirdGrid = ({
       fadeOutAnim={fadeOutAnim}
       isInRunMode={isInRunMode}
       lowerChildren={
-        <View style={{ flex: 1, position: 'relative' }}>
+        <View style={styles.overlayButtons} pointerEvents="box-none">
           {canProceed ? (
             <View />
           ) : (
@@ -244,7 +204,6 @@ const ThirdGrid = ({
                 onPress={handleRunPress}
                 disabled={runButtonDisabled}
               />
-
               <GameButton 
                 title={showPotions ? "Keyboard" : "Potions"}
                 position="center"
@@ -252,7 +211,6 @@ const ThirdGrid = ({
                 onPress={togglePotions}
                 disabled={submitting || usingPotion}
               />
-
               <GameButton 
                 title="Clear"
                 position="left"
@@ -265,55 +223,89 @@ const ThirdGrid = ({
         </View>
       }
     >
-      {/* REMOVED: AnswerOption proceed button - now in GridContainer */}
-       {!canProceed && !isLevelComplete && showPotions ? (
-        <PotionGrid 
-          potions={potions}
-          onPotionPress={onPotionPress}
-          selectedPotion={selectedPotion}
-          loadingPotions={loadingPotions}
-          potionUsed={potionUsed} 
-          currentQuestionId={currentQuestion.id} 
-        />
-      ) : !canProceed && !isLevelComplete ? (
-        <AnswerGrid
-          options={options}
-          selectedAnswers={selectedAnswers}
-          maxAnswers={maxAnswers}
-          onAnswerSelect={handleAnswerSelect}
-          isFillInTheBlank={isFillInTheBlank}
-          selectedBlankIndex={selectedBlankIndex} 
-          currentQuestionId={currentQuestion.id}
-        />
-      ) : null}
+      <View 
+        onLayout={onContentLayout} 
+        style={[
+            styles.gridContentWrapper, 
+            { minHeight: gameScale(80) } 
+        ]}
+      >
+        {/* 
+           FIX APPLIED HERE:
+           Instead of conditional rendering ( ? : ), we render both views 
+           and use display: 'none' to hide the inactive one. 
+           This prevents unmounting/remounting, thus stopping the re-animation 
+           and stabilizing the height calculation.
+        */}
+        {showContent && (
+          <>
+            {/* POTIONS VIEW */}
+            <View style={{ display: showPotions ? 'flex' : 'none', width: '100%' }}>
+              <PotionGrid 
+                potions={potions}
+                onPotionPress={onPotionPress} 
+                selectedPotion={selectedPotion} 
+                loadingPotions={loadingPotions}
+                potionUsed={potionUsed} 
+                currentQuestionId={currentQuestion.id} 
+              />
+            </View>
+
+            {/* ANSWERS VIEW */}
+            <View style={{ display: !showPotions ? 'flex' : 'none', width: '100%' }}>
+              <AnswerGrid
+                options={options}
+                selectedAnswers={selectedAnswers}
+                maxAnswers={maxAnswers}
+                onAnswerSelect={handleAnswerSelect}
+                isFillInTheBlank={isFillInTheBlank}
+                selectedBlankIndex={selectedBlankIndex} 
+                currentQuestionId={currentQuestion.id}
+              />
+            </View>
+          </>
+        )}
+      </View>
     </GridContainer>
   );
 };
 
 const styles = StyleSheet.create({
-  proceedContainer: {
-    flex: 1,
-    width: gameScale(100),
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: gameScale(10),
+  gridContentWrapper: {
+    width: '100%',
+    flexGrow: 1,
+    paddingBottom: gameScale(10), 
   },
+  overlayButtons: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    top: 0,
+    zIndex: 10,
+    justifyContent: 'center', 
+  }
 });
 
-export default React.memo(ThirdGrid, (prevProps, nextProps) => {
+// Memo comparison
+export default React.memo(ThirdGrid, (prev, next) => {
+    const potionEqual = prev.selectedPotion?.id === next.selectedPotion?.id;
+    
+    const answersEqual = JSON.stringify(prev.selectedAnswers) === JSON.stringify(next.selectedAnswers);
+
     return (
-      prevProps.currentQuestion?.id === nextProps.currentQuestion?.id &&
-      prevProps.currentQuestion?.title === nextProps.currentQuestion?.title &&
-      JSON.stringify(prevProps.selectedAnswers) === JSON.stringify(nextProps.selectedAnswers) &&
-      prevProps.submitting === nextProps.submitting &&
-      prevProps.currentQuestionIndex === nextProps.currentQuestionIndex &&
-      prevProps.canProceed === nextProps.canProceed &&
-      prevProps.isLevelComplete === nextProps.isLevelComplete &&
-      prevProps.showRunButton === nextProps.showRunButton &&
-      prevProps.isInRunMode === nextProps.isInRunMode &&
-      
-      prevProps.setSelectedAnswers === nextProps.setSelectedAnswers &&
-      prevProps.submitAnswer === nextProps.submitAnswer &&
-      prevProps.selectedBlankIndex === nextProps.selectedBlankIndex 
+      potionEqual &&
+      answersEqual &&
+      prev.currentQuestion?.id === next.currentQuestion?.id &&
+      prev.submitting === next.submitting &&
+      prev.currentQuestionIndex === next.currentQuestionIndex &&
+      prev.canProceed === next.canProceed &&
+      prev.showRunButton === next.showRunButton &&
+      prev.isInRunMode === next.isInRunMode &&
+      prev.selectedBlankIndex === next.selectedBlankIndex &&
+      prev.usingPotion === next.usingPotion &&
+      prev.isLevelComplete === next.isLevelComplete &&
+      prev.cardImageUrl === next.cardImageUrl &&
+      prev.cardDisplaySequence === next.cardDisplaySequence
     );
 });

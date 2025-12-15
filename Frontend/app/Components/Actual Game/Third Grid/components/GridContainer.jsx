@@ -348,6 +348,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a2e',
     borderWidth: scale(2),
     borderColor: '#13447196',
+    justifyContent: 'center',
+    alignItems: 'center'
   },
 
   backlightOverlay: {
@@ -518,7 +520,7 @@ const styles = StyleSheet.create({
   },
 
   proceedButtonText: {
-    fontSize: scale(80),
+    fontSize: scale(90),
     width: scale(100),
     color: '#fcfcfcff',
     alignItems: 'center',
@@ -537,8 +539,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: RESPONSIVE.borderRadius.xs,
-    paddingVertical: scale(24),
-    paddingHorizontal: scale(36),
+    paddingVertical: scale(34),
+    paddingHorizontal: scale(50),
     backgroundColor: '#014656ae',
     borderTopWidth: scale(1),
     borderTopColor: 'rgba(255, 255, 255, 0.3)',

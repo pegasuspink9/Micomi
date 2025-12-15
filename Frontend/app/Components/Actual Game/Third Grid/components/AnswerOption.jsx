@@ -1,9 +1,8 @@
 import React from 'react';
-import { Pressable, Text, StyleSheet, Dimensions, View } from 'react-native';
-import { scale, scaleWidth, scaleHeight, RESPONSIVE, wp, hp } from '../../../Responsiveness/gameResponsive';
+import { Pressable, Text, StyleSheet, View } from 'react-native';
+import { scale, scaleHeight, RESPONSIVE, wp } from '../../../Responsiveness/gameResponsive';
 import { soundManager } from '../../Sounds/UniversalSoundManager';
 
-// 3-Layer border colors - Blue theme matching Life component
 const borderColors = {
   outerBg: '#01547dff',
   outerBorderTop: '#0d1f33',
@@ -37,15 +36,7 @@ const disabledBorderColors = {
   innerBorder: 'rgba(158, 158, 161, 0.3)',
 };
 
-
-const AnswerOption = ({ 
-  item, 
-  index, 
-  isSelected, 
-  isDisabled, 
-  onPress,
-  customStyles = null
-}) => {
+const AnswerOption = ({ item, index, isSelected, isDisabled, onPress, customStyles = null }) => {
   const colors = isDisabled ? disabledBorderColors : (isSelected ? selectedBorderColors : borderColors);
 
   return (
@@ -60,7 +51,7 @@ const AnswerOption = ({
           borderBottomColor: colors.outerBorderBottom,
           borderRightColor: colors.outerBorderBottom,
         },
-        isSelected && styles.borderOuterSelected, // Apply selected transform here
+        isSelected && styles.borderOuterSelected, 
         customStyles?.buttonFrame
       ]}>
         {/* 3-Layer Border - Middle */}
@@ -98,14 +89,9 @@ const AnswerOption = ({
               isDisabled && styles.innerButtonDisabled,
               customStyles?.innerButton
             ]}>
-              <View style={[
-                styles.buttonHighlight,
-                customStyles?.buttonHighlight
-              ]} />
-              <View style={[
-                styles.buttonShadow,
-                customStyles?.buttonShadow
-              ]} />
+              <View style={[styles.buttonHighlight, customStyles?.buttonHighlight]} />
+              <View style={[styles.buttonShadow, customStyles?.buttonShadow]} />
+              
               <Text style={[
                 styles.listItemText,
                 isDisabled && styles.listItemTextDisabled,
@@ -121,15 +107,13 @@ const AnswerOption = ({
   );
 };
 
-
-
 const styles = StyleSheet.create({
   container: {
-    marginTop: RESPONSIVE.margin.xs + scaleHeight(2),
+    marginTop: RESPONSIVE.margin.xs,
     minWidth: wp(20),
+    maxWidth: '100%', 
   },
 
-  // 3-Layer Border styles
   borderOuter: {
     borderRadius: scale(10),
     borderWidth: scale(1),
@@ -148,58 +132,42 @@ const styles = StyleSheet.create({
     borderWidth: scale(1),
     overflow: 'hidden',
   },
-  
   borderOuterSelected: {
     transform: [{ translateY: scale(0.6) }],
   },
-
   listItemPressed: {
     transform: [{ translateY: scale(1) }],
-    // Invert border colors for pushed-in effect
     borderTopColor: 'rgba(0, 0, 0, 0.3)',
     borderLeftColor: 'rgba(0, 0, 0, 0.2)',
     borderBottomColor: 'rgba(255, 255, 255, 0.3)',
     borderRightColor: 'rgba(255, 255, 255, 0.2)',
   },
-
   innerButton: {
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: RESPONSIVE.borderRadius.xs,
     paddingVertical: RESPONSIVE.margin.xs,
-    paddingHorizontal: RESPONSIVE.margin.xs,
-    backgroundColor: 'transparent', // Make inner button transparent to see border background
+    paddingHorizontal: RESPONSIVE.margin.sm, // Increased slightly for text breathing room
+    backgroundColor: 'transparent',
   },
-
   innerButtonDisabled: {
     backgroundColor: 'rgba(176, 176, 176, 0.5)',
   },
-
   buttonHighlight: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '40%',
+    position: 'absolute', top: 0, left: 0, right: 0, height: '40%',
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderTopLeftRadius: RESPONSIVE.borderRadius.xs,
     borderTopRightRadius: RESPONSIVE.borderRadius.xs,
     pointerEvents: 'none',
   },
-
   buttonShadow: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '30%',
+    position: 'absolute', bottom: 0, left: 0, right: 0, height: '30%',
     backgroundColor: 'rgba(0, 0, 0, 0.15)', 
     borderBottomLeftRadius: RESPONSIVE.borderRadius.xs,
     borderBottomRightRadius: RESPONSIVE.borderRadius.xs,
     pointerEvents: 'none',
   },
-
   listItemText: {
     fontSize: RESPONSIVE.fontSize.sm,
     color: '#ffffff', 
@@ -209,14 +177,15 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: scale(1), height: scale(1) },
     textShadowRadius: scale(2),
     zIndex: 1,
+    // CRITICAL FIXES FOR LONG TEXT:
+    flexShrink: 1,  // Allows text to shrink
+    flexWrap: 'wrap', // Forces wrapping
   },
-
   listItemTextDisabled: {
     color: '#f2f2f7',
     textShadowColor: 'rgba(0, 0, 0, 0.2)',
   },
 });
-
 
 export default React.memo(AnswerOption, (prevProps, nextProps) => {
   return (

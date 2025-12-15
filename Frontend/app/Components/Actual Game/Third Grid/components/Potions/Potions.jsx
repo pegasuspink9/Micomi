@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'; // Import useState
+import React, { useEffect, useState } from 'react';
 import { 
   View, 
   Text, 
@@ -20,10 +20,8 @@ import Reanimated, {
   cancelAnimation
 } from 'react-native-reanimated';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-//  STEP 1: Move helper functions and child components OUTSIDE the parent component.
 const getPotionColors = (name) => {
   const colorMap = {
     'Life': { background: 'rgba(220, 38, 38, 1)', border: '#dc2626', frameColor: '#991b1b', innerColor: '#f87171', pressedColor: '#b91c1c' },
@@ -31,14 +29,14 @@ const getPotionColors = (name) => {
     'Reveal': { background: 'rgba(37, 100, 235, 1)', border: '#2563eb', frameColor: '#1d4ed8', innerColor: '#60a5fa', pressedColor: '#1e40af' },
     'Mana': { background: 'rgba(0, 213, 255, 0.44)', border: '#00d5ff', frameColor: '#0891b2', innerColor: '#22d3ee', pressedColor: '#0e7490' },
     'Freeze': { background: 'rgba(168, 85, 247, 0.8)', border: '#a855f7', frameColor: '#7c3aed', innerColor: '#0a6983ff', pressedColor: '#6d28d9' },
-    'Immunity': { background: 'rgba(0, 213, 255, 0.44)', border: '#00d5ff', frameColor: '#0891b2', innerColor: '#22d3ee', pressedColor: '#0e7490' }, // Added 'Immunity' from your API example
+    'Immunity': { background: 'rgba(0, 213, 255, 0.44)', border: '#00d5ff', frameColor: '#0891b2', innerColor: '#22d3ee', pressedColor: '#0e7490' },
   };
   return colorMap[name] || { background: 'rgba(0, 213, 255, 0.44)', border: '#00d5ff', frameColor: '#0891b2', innerColor: '#22d3ee', pressedColor: '#0e7490' };
 };
 
 const PotionSlot = React.memo(({ potion, isSelected, isDisabled, isOutOfStock, potionUsed, onPotionPress }) => {
   const colors = getPotionColors(potion.type);
-  const [isPressed, setIsPressed] = useState(false); // Add this state
+  const [isPressed, setIsPressed] = useState(false);
 
   const SPRITE_COLUMNS = 6;
   const SPRITE_ROWS = 4;
@@ -80,8 +78,8 @@ const PotionSlot = React.memo(({ potion, isSelected, isDisabled, isOutOfStock, p
       isSelected && styles.selectedPotionFrame
     ]}>
       <Pressable
-        onPressIn={() => setIsPressed(true)} // Set pressed state to true
-        onPressOut={() => setIsPressed(false)} // Set pressed state to false
+        onPressIn={() => setIsPressed(true)}
+        onPressOut={() => setIsPressed(false)}
         style={({ pressed }) => [
           styles.potionSlot,
           {
@@ -159,7 +157,6 @@ const PotionSlot = React.memo(({ potion, isSelected, isDisabled, isOutOfStock, p
                 styles.nameText,
                 isSelected && styles.selectedNameText,
                 (isOutOfStock || potionUsed) && styles.nameTextDisabled,
-                // Now use the isPressed state for hiding
                 (isSelected || isPressed) && styles.hiddenNameText
               ]}>
                 {potion.name}
@@ -172,7 +169,7 @@ const PotionSlot = React.memo(({ potion, isSelected, isDisabled, isOutOfStock, p
   );
 }, (prevProps, nextProps) => {
   return (
-     JSON.stringify(prevProps.potion) === JSON.stringify(nextProps.potion) &&
+    JSON.stringify(prevProps.potion) === JSON.stringify(nextProps.potion) &&
     prevProps.isSelected === nextProps.isSelected &&
     prevProps.isDisabled === nextProps.isDisabled &&
     prevProps.isOutOfStock === nextProps.isOutOfStock &&
@@ -180,7 +177,6 @@ const PotionSlot = React.memo(({ potion, isSelected, isDisabled, isOutOfStock, p
   );
 });
 
-//  STEP 2: The parent component is now clean and only contains its own logic.
 const PotionGrid = ({
   potions = [],
   onPotionPress,
@@ -211,6 +207,7 @@ const PotionGrid = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
         style={styles.scrollView}
+        bounces={false}
       >
         {potions.map((potion, index) => {
           const isSelected = selectedPotion && selectedPotion.id === potion.id;
@@ -237,18 +234,24 @@ const PotionGrid = ({
 
 const styles = StyleSheet.create({
   gridContainer: {
-    flex: 1,
+    height: scaleHeight(90), // Height of slot + padding
+    width: '100%',
+    justifyContent: 'center',
+ 
   },
   centerContent: {
     justifyContent: 'center',
     alignItems: 'center',
   },
   scrollView: {
-    flex: 1,
+    flexGrow: 0, // Prevent taking up extra space
   },
   scrollContainer: {
     paddingHorizontal: wp(4),
     alignItems: 'center',
+    // Center items if they don't fill screen
+    flexGrow: 1, 
+    justifyContent: 'center'
   },
   potionSlotWrapper: {
     marginHorizontal: wp(1.9),
@@ -259,222 +262,94 @@ const styles = StyleSheet.create({
     borderRadius: wp(3),
     padding: scale(2),
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: scale(6),
-    },
+    shadowOffset: { width: 0, height: scale(6) },
     shadowOpacity: 0.4,
     shadowRadius: scale(8),
     elevation: 12,
-    borderTopWidth: wp(0.4),
-    borderTopColor: 'rgba(255, 255, 255, 0.3)',
-    borderLeftWidth: wp(0.4),
-    borderLeftColor: 'rgba(255, 255, 255, 0.3)',
-    borderBottomWidth: wp(0.6),
-    borderBottomColor: 'rgba(0, 0, 0, 0.4)',
-    borderRightWidth: wp(0.4),
-    borderRightColor: 'rgba(0, 0, 0, 0.3)',
+    borderTopWidth: wp(0.4), borderTopColor: 'rgba(255, 255, 255, 0.3)',
+    borderLeftWidth: wp(0.4), borderLeftColor: 'rgba(255, 255, 255, 0.3)',
+    borderBottomWidth: wp(0.6), borderBottomColor: 'rgba(0, 0, 0, 0.4)',
+    borderRightWidth: wp(0.4), borderRightColor: 'rgba(0, 0, 0, 0.3)',
   },
   potionSlot: {
     flex: 1,
     borderRadius: wp(2.5),
-    position: 'relative',
-    overflow: 'visible',
-    borderTopWidth: scale(2),
-    borderLeftWidth: scale(2),
-    borderBottomWidth: scale(3),
-    borderRightWidth: scale(3),
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: scale(4),
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: scale(6),
-    elevation: 10,
+    borderTopWidth: scale(2), borderLeftWidth: scale(2),
+    borderBottomWidth: scale(3), borderRightWidth: scale(3),
+    shadowColor: '#000', shadowOffset: { width: 0, height: scale(4) },
+    shadowOpacity: 0.3, shadowRadius: scale(6), elevation: 10,
   },
   potionSlotPressed: {
     transform: [{ translateY: scale(3)}],
-    shadowOffset: {
-      width: 0,
-      height: scale(2),
-    },
+    shadowOffset: { width: 0, height: scale(2) },
     shadowOpacity: 0.2,
-    borderTopWidth: scale(3),
-    borderLeftWidth: scale(3),
-    borderBottomWidth: scale(1),
-    borderRightWidth: scale(1),
+    borderTopWidth: scale(3), borderLeftWidth: scale(3),
+    borderBottomWidth: scale(1), borderRightWidth: scale(1),
   },
-  outOfStockSlot: {
-    opacity: 0.4,
-  },
-  potionSlotInner: {
-    flex: 1,
-    borderRadius: wp(2),
-    padding: scale(2),
-    overflow: 'hidden',
-  },
+  outOfStockSlot: { opacity: 0.4 },
+  potionSlotInner: { flex: 1, borderRadius: wp(2), padding: scale(2), overflow: 'hidden' },
   potionSlotContent: {
-    flex: 1,
-    borderRadius: wp(1.5),
-    backgroundColor: '#10075380',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    overflow: 'hidden',
-    borderTopWidth: scale(1),
-    borderTopColor: 'rgba(255, 255, 255, 0.2)',
-    borderLeftWidth: scale(1),
-    borderLeftColor: 'rgba(255, 255, 255, 0.1)',
-    borderBottomWidth: scale(1),
-    borderBottomColor: 'rgba(0, 0, 0, 0.3)',
-    borderRightWidth: scale(1),
-    borderRightColor: 'rgba(0, 0, 0, 0.2)',
+    flex: 1, borderRadius: wp(1.5), backgroundColor: '#10075380',
+    alignItems: 'center', justifyContent: 'center',
+    borderTopWidth: scale(1), borderTopColor: 'rgba(255, 255, 255, 0.2)',
+    borderLeftWidth: scale(1), borderLeftColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomWidth: scale(1), borderBottomColor: 'rgba(0, 0, 0, 0.3)',
+    borderRightWidth: scale(1), borderRightColor: 'rgba(0, 0, 0, 0.2)',
   },
   potionHighlight: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '40%',
+    position: 'absolute', top: 0, left: 0, right: 0, height: '40%',
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderTopLeftRadius: wp(1.5),
-    borderTopRightRadius: wp(1.5),
+    borderTopLeftRadius: wp(1.5), borderTopRightRadius: wp(1.5),
     pointerEvents: 'none',
   },
   potionShadow: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '30%',
+    position: 'absolute', bottom: 0, left: 0, right: 0, height: '30%',
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    borderBottomLeftRadius: wp(1.5),
-    borderBottomRightRadius: wp(1.5),
+    borderBottomLeftRadius: wp(1.5), borderBottomRightRadius: wp(1.5),
     pointerEvents: 'none',
   },
-  dotsContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1,
-  },
-  dot: {
-    position: 'absolute',
-    width: scale(3),
-    height: scale(3),
-    borderRadius: scale(1.5),
-    backgroundColor: '#666',
-  },
-  dotTopLeft: {
-    top: scale(4),
-    left: scale(4),
-  },
-  dotTopRight: {
-    top: scale(4),
-    right: scale(4),
-  },
-  dotBottomLeft: {
-    bottom: scale(4),
-    left: scale(4),
-  },
-  dotBottomRight: {
-    bottom: scale(4),
-    right: scale(4),
-  },
-  spriteContainer: {
-    zIndex: 2,
-    overflow: 'hidden',
-  },
-  spriteSheet: {
-  },
-  spriteImage: {
-    width: '100%',
-    height: '100%',
-  },
-  potionImageDisabled: {
-    opacity: 0.3,
-  },
+  dotsContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 },
+  dot: { position: 'absolute', width: scale(3), height: scale(3), borderRadius: scale(1.5), backgroundColor: '#666' },
+  dotTopLeft: { top: scale(4), left: scale(4) },
+  dotTopRight: { top: scale(4), right: scale(4) },
+  dotBottomLeft: { bottom: scale(4), left: scale(4) },
+  dotBottomRight: { bottom: scale(4), right: scale(4) },
+  spriteContainer: { zIndex: 2, overflow: 'hidden' },
+  spriteImage: { width: '100%', height: '100%' },
+  potionImageDisabled: { opacity: 0.3 },
   countContainer: {
-    position: 'absolute',
-    top: scale(2),
-    right: scale(2),
-    borderRadius: scale(6),
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: scale(1),
-    borderColor: '#000000ff',
+    position: 'absolute', top: scale(2), right: scale(2),
+    borderRadius: scale(6), justifyContent: 'center', alignItems: 'center',
+    borderWidth: scale(1), borderColor: '#000000ff',
     backgroundColor: 'rgba(60, 4, 91, 0.7)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: scale(1) },
-    shadowOpacity: 0.5,
-    shadowRadius: scale(1),
-    elevation: 3,
-    zIndex: 3,
+    zIndex: 3, elevation: 3,
   },
-  countContainerDisabled: {
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    borderColor: '#666',
-  },
-  countText: {
-    color: '#ffffff',
-    fontSize: wp(2),
-    fontFamily: 'DynaPuff',
-  },
+  countContainerDisabled: { backgroundColor: 'rgba(0, 0, 0, 0.4)', borderColor: '#666' },
+  countText: { color: '#ffffff', fontSize: wp(2), fontFamily: 'DynaPuff' },
   nameContainer: {
-    position: 'absolute',
-    bottom: scale(-1),
-    left: scale(2),
-    right: scale(2),
-    borderRadius: scale(4),
-    paddingVertical: scale(1),
-    paddingHorizontal: scale(2),
-    zIndex: 3,
+    position: 'absolute', bottom: scale(-1), left: scale(2), right: scale(2),
+    borderRadius: scale(4), paddingVertical: scale(1), paddingHorizontal: scale(2), zIndex: 3,
   },
   nameText: {
-    color: '#ffffffff',
-    fontSize: scale(8),
-    textShadowColor: '#000000ff',
-    textShadowOffset: { width: 2, height: scale(1) },
-    textShadowRadius: scale(10),
-    fontFamily: 'MusicVibes',
-    textAlign: 'center',
+    color: '#ffffffff', fontSize: scale(8),
+    textShadowColor: '#000000ff', textShadowOffset: { width: 2, height: scale(1) },
+    textShadowRadius: scale(10), fontFamily: 'MusicVibes', textAlign: 'center',
   },
-  nameTextDisabled: {
-    color: '#666',
-  },
+  nameTextDisabled: { color: '#666' },
   selectedPotionFrame: {
-    borderTopColor: 'rgba(255, 255, 255, 0.8)',
-    borderLeftColor: 'rgba(255, 255, 255, 0.8)',
-    borderBottomColor: 'rgba(255, 255, 255, 0.3)',
-    borderRightColor: 'rgba(255, 255, 255, 0.3)',
-    shadowColor: '#fff',
-    shadowOpacity: 0.6,
+    borderTopColor: 'rgba(255, 255, 255, 0.8)', borderLeftColor: 'rgba(255, 255, 255, 0.8)',
+    borderBottomColor: 'rgba(255, 255, 255, 0.3)', borderRightColor: 'rgba(255, 255, 255, 0.3)',
     transform: [{ scale: 1.05 }],
   },
   selectedPotionSlot: {
-    borderTopColor: 'rgba(255, 255, 255, 0.9)',
-    borderLeftColor: 'rgba(255, 255, 255, 0.9)',
+    borderTopColor: 'rgba(255, 255, 255, 0.9)', borderLeftColor: 'rgba(255, 255, 255, 0.9)',
   },
   selectedPotionContent: {
-    borderTopColor: 'rgba(255, 255, 255, 0.4)',
-    borderLeftColor: 'rgba(255, 255, 255, 0.3)',
+    borderTopColor: 'rgba(255, 255, 255, 0.4)', borderLeftColor: 'rgba(255, 255, 255, 0.3)',
   },
-  loadingText: {
-    color: '#ffffff94',
-    fontSize: scale(16),
-    fontFamily: 'DynaPuff',
-  },
-  emptyText: {
-    color: '#ffffff94',
-    fontSize: scale(14),
-    fontFamily: 'DynaPuff',
-  },
-   hiddenNameText: {
-    opacity: 0,
-  },
+  loadingText: { color: '#ffffff94', fontSize: scale(16), fontFamily: 'DynaPuff' },
+  emptyText: { color: '#ffffff94', fontSize: scale(14), fontFamily: 'DynaPuff' },
+  hiddenNameText: { opacity: 0 },
 });
 
 export default PotionGrid;
