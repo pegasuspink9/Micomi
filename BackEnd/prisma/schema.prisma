@@ -202,7 +202,7 @@ model PlayerProgress {
   //Boss Maggmaw ss
   has_shuffle_ss        Boolean?       @default(false)
 
-  //Boss Earl ss
+  //Boss Pyroformic ss
   has_permuted_ss       Boolean?      @default(false)   
   permutation_mapping   Json?    
 

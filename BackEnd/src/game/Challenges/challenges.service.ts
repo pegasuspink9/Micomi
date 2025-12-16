@@ -17,6 +17,10 @@ import { getCardForAttackType } from "../Combat/combat.service";
 
 const prisma = new PrismaClient();
 
+type ChallengeDTO = Omit<Challenge, never> & {
+  answer?: string[];
+};
+
 const multisetEqual = (a: string[], b: string[]): boolean => {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) {
@@ -383,7 +387,10 @@ export const submitChallengeService = async (
   let finalAnswer = answer;
   let hintUsed = false;
 
-  if (currentProgress.has_permuted_ss && enemy.enemy_name === "Boss Earl") {
+  if (
+    currentProgress.has_permuted_ss &&
+    enemy.enemy_name === "Boss Pyroformic"
+  ) {
     const allMappings = (currentProgress.permutation_mapping as any) || {};
     const mapping = allMappings[challengeId.toString()];
 
@@ -440,7 +447,34 @@ export const submitChallengeService = async (
     }
   }
 
-  const isCorrect = multisetEqual(finalAnswer, effectiveCorrectAnswer);
+  type PlayerAnswerMap = Record<string, string[]>;
+
+  const answers: PlayerAnswerMap =
+    (currentProgress.player_answer as PlayerAnswerMap) ?? {};
+
+  const key = String(challengeId);
+  const existingAnswer = answers[key];
+
+  const isRevealConfirmed =
+    Array.isArray(existingAnswer) &&
+    existingAnswer[0] === "_REVEAL_PENDING_" &&
+    finalAnswer.length === 1 &&
+    finalAnswer[0] === "Attack";
+
+  const isCorrect = isRevealConfirmed
+    ? true
+    : multisetEqual(finalAnswer, effectiveCorrectAnswer);
+
+  if (isRevealConfirmed) {
+    answers[key] = effectiveCorrectAnswer;
+
+    await prisma.playerProgress.update({
+      where: { progress_id: currentProgress.progress_id },
+      data: {
+        player_answer: answers,
+      },
+    });
+  }
 
   let wasEverWrong = false;
   if (isCorrect) {
@@ -594,13 +628,11 @@ export const submitChallengeService = async (
 
     const { text, audio } = await generateDynamicMessage(
       true,
-      character.character_name,
       hintUsed,
       updatedProgress.consecutive_corrects ?? 0,
       fightResult.character_health ?? character.health,
       character.health,
       elapsed,
-      enemy.enemy_name,
       fightResult.enemyHealth ??
         fightResult.enemy?.enemy_health ??
         currentProgress.enemy_hp,
@@ -648,7 +680,6 @@ export const submitChallengeService = async (
 
     const { text, audio } = await generateDynamicMessage(
       false,
-      character.character_name,
       false,
       0,
       fightResult.charHealth ??
@@ -656,7 +687,6 @@ export const submitChallengeService = async (
         currentProgress.player_hp,
       character.health,
       elapsed,
-      enemy.enemy_name,
       fightResult.enemyHealth ??
         fightResult.enemy?.enemy_health ??
         currentProgress.enemy_hp,
@@ -709,13 +739,17 @@ export const submitChallengeService = async (
   console.log("- Fight result enemy health:", fightResult?.enemyHealth);
   console.log("- Fight result player health:", fightResult?.charHealth);
 
-  const answeredIds = Object.keys(freshProgress?.player_answer ?? {}).map(
-    Number
-  );
+  const playerAnswer =
+    (freshProgress?.player_answer as Record<string, string[]>) || {};
+  const answeredIds = Object.keys(playerAnswer).map(Number);
+  const effectiveAnsweredIds = answeredIds.filter((id) => {
+    const ans = playerAnswer[id.toString()];
+    return ans && ans[0] !== "_REVEAL_PENDING_";
+  });
   const wrongChallengesArr = (freshProgress?.wrong_challenges ??
     []) as number[];
   const allCompleted =
-    answeredIds.length === level.challenges.length &&
+    effectiveAnsweredIds.length === level.challenges.length &&
     wrongChallengesArr.length === 0;
 
   let completionRewards: CompletionRewards | undefined = undefined;
@@ -853,7 +887,10 @@ export const submitChallengeService = async (
         };
       }
     }
-  } else if (isNewBonusRound && answeredIds.length === totalChallenges) {
+  } else if (
+    isNewBonusRound &&
+    effectiveAnsweredIds.length === totalChallenges
+  ) {
     const wrongCount = wrongChallengesArr.length;
     stars = calculateStars(wrongCount, totalChallenges);
 
@@ -1017,13 +1054,11 @@ export const submitChallengeService = async (
   if (isBonusRound) {
     const { text, audio } = await generateDynamicMessage(
       true,
-      character.character_name,
       hintUsed,
       updatedProgress.consecutive_corrects ?? 0,
       fightResult.character_health ?? character.health,
       character.health,
       elapsed,
-      enemy.enemy_name,
       fightResult.enemyHealth ??
         fightResult.enemy?.enemy_health ??
         currentProgress.enemy_hp,
@@ -1130,9 +1165,13 @@ const getNextChallengeEasy = async (progress: any) => {
   );
 
   const wrongChallenges = (progress.wrong_challenges as number[] | null) ?? [];
-  const answeredIds = Object.keys(
-    (progress.player_answer as Record<string, string[]> | null) ?? {}
-  ).map(Number);
+  const playerAnswer =
+    (progress.player_answer as Record<string, string[]>) || {};
+  const answeredIds = Object.keys(playerAnswer).map(Number);
+  const effectiveAnsweredIds = answeredIds.filter((id) => {
+    const ans = playerAnswer[id.toString()];
+    return ans && ans[0] !== "_REVEAL_PENDING_";
+  });
 
   const enemyDefeated = progress.enemy_hp <= 0;
   const playerAlive = progress.player_hp > 0;
@@ -1141,7 +1180,7 @@ const getNextChallengeEasy = async (progress: any) => {
   if (!enemyDefeated) {
     nextChallenge =
       sortedChallenges.find(
-        (c: Challenge) => !answeredIds.includes(c.challenge_id)
+        (c: Challenge) => !effectiveAnsweredIds.includes(c.challenge_id)
       ) || null;
 
     if (!nextChallenge && wrongChallenges.length > 0) {
@@ -1154,9 +1193,56 @@ const getNextChallengeEasy = async (progress: any) => {
       nextChallenge =
         sortedChallenges.find(
           (c: Challenge) =>
-            !answeredIds.includes(c.challenge_id) &&
+            !effectiveAnsweredIds.includes(c.challenge_id) &&
             !wrongChallenges.includes(c.challenge_id)
         ) || null;
+    }
+  }
+
+  // If nextChallenge is pending, modify to filled version
+  if (nextChallenge) {
+    const challengeKey = nextChallenge.challenge_id.toString();
+    const existing = playerAnswer[challengeKey];
+    if (existing && existing[0] === "_REVEAL_PENDING_") {
+      let effectiveCorrectAnswer = nextChallenge.correct_answer as string[];
+      const rawCorrectAnswer = [...effectiveCorrectAnswer];
+      const enemy = level.enemy;
+
+      if (progress.has_reversed_curse && enemy?.enemy_name === "Boss Darco") {
+        effectiveCorrectAnswer = rawCorrectAnswer.map(reverseString);
+      }
+
+      let filledQuestion = nextChallenge.question ?? "";
+      const answersToFill = [...effectiveCorrectAnswer];
+
+      const universalBlankRegex = /<_([^>]*)>|<\/_>|\{blank\}|\[_+\]|_+/g;
+
+      filledQuestion = filledQuestion.replace(
+        universalBlankRegex,
+        (match: string, htmlAttrs?: string) => {
+          const nextAnswer = answersToFill.shift();
+          if (!nextAnswer) return match;
+
+          if (match.startsWith("<_")) {
+            return `<${nextAnswer}${htmlAttrs || ""}>`;
+          } else if (match === "</_>") {
+            return `</${nextAnswer}>`;
+          } else if (match === "{blank}") {
+            return nextAnswer;
+          } else if (match.startsWith("[")) {
+            return nextAnswer;
+          } else {
+            return nextAnswer;
+          }
+        }
+      );
+
+      nextChallenge = {
+        ...(nextChallenge as Challenge),
+        question: filledQuestion,
+        options: ["Attack"],
+        answer: effectiveCorrectAnswer,
+      } as ChallengeDTO;
     }
   }
 
@@ -1167,12 +1253,15 @@ const getNextChallengeHard = async (progress: any) => {
   const { level } = progress;
 
   const wrongChallenges = (progress.wrong_challenges as number[] | null) ?? [];
-  const attemptedIds = Object.keys(
-    (progress.player_answer as Record<string, string[]> | null) ?? {}
-  ).map(Number);
-  const correctlyAnsweredIds = attemptedIds.filter(
-    (id) => !wrongChallenges.includes(id)
-  );
+  const playerAnswer =
+    (progress.player_answer as Record<string, string[]>) || {};
+  const attemptedIds = Object.keys(playerAnswer).map(Number);
+  const correctlyAnsweredIds = attemptedIds.filter((id) => {
+    const ans = playerAnswer[id.toString()];
+    return (
+      ans && ans[0] !== "_REVEAL_PENDING_" && !wrongChallenges.includes(id)
+    );
+  });
 
   const sortedChallenges = [...level.challenges].sort(
     (a, b) => a.challenge_id - b.challenge_id
@@ -1186,6 +1275,53 @@ const getNextChallengeHard = async (progress: any) => {
       sortedChallenges.find(
         (c: Challenge) => !correctlyAnsweredIds.includes(c.challenge_id)
       ) || null;
+  }
+
+  // If nextChallenge is pending, modify to filled version
+  if (nextChallenge) {
+    const challengeKey = nextChallenge.challenge_id.toString();
+    const existing = playerAnswer[challengeKey];
+    if (existing && existing[0] === "_REVEAL_PENDING_") {
+      let effectiveCorrectAnswer = nextChallenge.correct_answer as string[];
+      const rawCorrectAnswer = [...effectiveCorrectAnswer];
+      const enemy = level.enemy;
+
+      if (progress.has_reversed_curse && enemy?.enemy_name === "Boss Darco") {
+        effectiveCorrectAnswer = rawCorrectAnswer.map(reverseString);
+      }
+
+      let filledQuestion = nextChallenge.question ?? "";
+      const answersToFill = [...effectiveCorrectAnswer];
+
+      const universalBlankRegex = /<_([^>]*)>|<\/_>|\{blank\}|\[_+\]|_+/g;
+
+      filledQuestion = filledQuestion.replace(
+        universalBlankRegex,
+        (match: string, htmlAttrs?: string) => {
+          const nextAnswer = answersToFill.shift();
+          if (!nextAnswer) return match;
+
+          if (match.startsWith("<_")) {
+            return `<${nextAnswer}${htmlAttrs || ""}>`;
+          } else if (match === "</_>") {
+            return `</${nextAnswer}>`;
+          } else if (match === "{blank}") {
+            return nextAnswer;
+          } else if (match.startsWith("[")) {
+            return nextAnswer;
+          } else {
+            return nextAnswer;
+          }
+        }
+      );
+
+      nextChallenge = {
+        ...(nextChallenge as Challenge),
+        question: filledQuestion,
+        options: ["Attack"],
+        answer: effectiveCorrectAnswer,
+      } as ChallengeDTO;
+    }
   }
 
   return wrapWithTimer(progress, nextChallenge, level);
@@ -1252,7 +1388,7 @@ const wrapWithTimer = async (
     }
   } else if (
     progress.has_permuted_ss &&
-    level.enemy?.enemy_name === "Boss Earl"
+    level.enemy?.enemy_name === "Boss Pyroformic"
   ) {
     const options = challenge.options as string[];
     if (Array.isArray(options) && options.length > 0) {

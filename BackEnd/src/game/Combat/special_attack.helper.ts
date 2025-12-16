@@ -26,6 +26,15 @@ export async function updateProgressForChallenge(
   let hasShuffle = progress.has_shuffle_ss ?? false;
   let hasPermuted = progress.has_permuted_ss ?? false;
 
+  // Check if ANY SS was active before this answer
+  const wasAnySsActive =
+    hasReversedCurse ||
+    hasBossShield ||
+    hasForceCharacterAttackType ||
+    hasBothHpDecrease ||
+    hasShuffle ||
+    hasPermuted;
+
   const challenge = await prisma.challenge.findUnique({
     where: { challenge_id: challengeId },
   });
@@ -68,11 +77,6 @@ export async function updateProgressForChallenge(
   if (isCorrect) {
     wrongChallenges = wrongChallenges.filter((id) => id !== challengeId);
     consecutiveCorrects += 1;
-    hasReversedCurse = false;
-    hasBossShield = false;
-    hasForceCharacterAttackType = false;
-    hasShuffle = false;
-    hasPermuted = false;
 
     const coinsToAdd =
       isBonusRound && characterDamage
@@ -87,11 +91,6 @@ export async function updateProgressForChallenge(
       total_exp_points_earned: { increment: challenge.points_reward },
       consecutive_corrects: consecutiveCorrects,
       consecutive_wrongs: consecutiveWrongs,
-      has_reversed_curse: hasReversedCurse,
-      has_boss_shield: hasBossShield,
-      has_force_character_attack_type: hasForceCharacterAttackType,
-      has_shuffle_ss: hasShuffle,
-      has_permuted_ss: hasPermuted,
     };
   } else {
     if (!wrongChallenges.includes(challengeId)) {
@@ -104,10 +103,11 @@ export async function updateProgressForChallenge(
       where: { level_id: progress.level_id },
       include: { map: true, enemy: true },
     });
+
     if (level) {
       const enemy = level.enemy;
 
-      if (consecutiveWrongs % 3 == 0) {
+      if (!wasAnySsActive && consecutiveWrongs % 3 == 0) {
         const enemyName = enemy && enemy.enemy_name;
 
         switch (enemyName) {
@@ -156,14 +156,28 @@ export async function updateProgressForChallenge(
       wrong_challenges: wrongChallenges,
       consecutive_corrects: consecutiveCorrects,
       consecutive_wrongs: consecutiveWrongs,
-      has_reversed_curse: hasReversedCurse,
-      has_boss_shield: hasBossShield,
-      has_force_character_attack_type: hasForceCharacterAttackType,
-      has_both_hp_decrease: hasBothHpDecrease,
-      has_shuffle_ss: hasShuffle,
-      has_permuted_ss: hasPermuted,
     };
   }
+
+  if (wasAnySsActive) {
+    hasReversedCurse = false;
+    hasBossShield = false;
+    hasForceCharacterAttackType = false;
+    hasBothHpDecrease = false;
+    hasShuffle = false;
+    hasPermuted = false;
+    console.log("- SS deactivated after being used for this challenge");
+  }
+
+  updateData = {
+    ...updateData,
+    has_reversed_curse: hasReversedCurse,
+    has_boss_shield: hasBossShield,
+    has_force_character_attack_type: hasForceCharacterAttackType,
+    has_both_hp_decrease: hasBothHpDecrease,
+    has_shuffle_ss: hasShuffle,
+    has_permuted_ss: hasPermuted,
+  };
 
   const updatedProgress = await prisma.playerProgress.update({
     where: { progress_id: progressId },

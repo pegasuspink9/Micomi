@@ -1,23 +1,12 @@
 import { getMessagePool } from "./messageCache";
 
-const CHARACTER_AUDIO: Record<string, string> = {
-  Gino: "https://micomi-assets.me/Sounds/In%20Game/Correct%20Answer!/Gino_gs5neq.wav",
-  Leon: "https://micomi-assets.me/Sounds/In%20Game/Correct%20Answer!/Leon_zh37ro.wav",
-  Ryron:
-    "https://micomi-assets.me/Sounds/In%20Game/Correct%20Answer!/RyRon_yi9vut.wav",
-  ShiShi:
-    "https://micomi-assets.me/Sounds/In%20Game/Correct%20Answer!/ShiShi_aw8bl2.wav",
-};
-
 export const generateDynamicMessage = async (
   isCorrect: boolean,
-  characterName: string,
   hintUsed: boolean,
   consecutiveCorrects: number,
   playerHealth: number,
   playerMaxHealth: number,
   elapsed: number,
-  enemyName: string,
   enemyHealth: number,
   isBonusRound: boolean
 ): Promise<{ text: string; audio: string[] }> => {
@@ -70,31 +59,17 @@ export const generateDynamicMessage = async (
 
   if (pool.length === 0) {
     return {
-      text: `${characterName} fights on!`,
+      text: `Fight on!`,
       audio: [],
     };
   }
 
   const msg = pool[Math.floor(Math.random() * pool.length)];
 
-  const text = msg.textTemplate
-    .replace(/\{character\}/gi, characterName)
-    .replace(/\{enemy\}/gi, enemyName);
+  const text = msg.textTemplate;
 
   const audio: string[] = [];
   if (msg.audioUrl) audio.push(msg.audioUrl);
-
-  const charAudio = CHARACTER_AUDIO[characterName];
-  const nameInText = text.toLowerCase().includes(characterName.toLowerCase());
-  const nameIsFirst = text.trimStart().startsWith(characterName);
-
-  if (charAudio && nameInText) {
-    if (nameIsFirst) {
-      audio.unshift(charAudio);
-    } else {
-      audio.push(charAudio);
-    }
-  }
 
   return { text, audio };
 };
