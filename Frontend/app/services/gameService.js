@@ -133,7 +133,11 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         level_difficulty: data.level?.level_difficulty || responseData.level?.level_difficulty || null,
         level_title: data.level?.level_title || responseData.level?.level_title || null,
         content: data.level?.content || responseData.level?.content || null,
+        level_type: data.level?.level_type || responseData.level?.level_type || null,  // Add level_type extraction
       },
+
+        lessons: data.lessons || responseData.lessons || [],
+        currentLesson: data.currentLesson || responseData.currentLesson || null,
       
       enemy: {
         enemy_id: data.enemy?.enemy_id || responseData.enemy?.enemy_id || null,
@@ -362,12 +366,14 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
     
     const gameStateWithCache = universalAssetPreloader.transformGameStateWithCache(gameState);
     
-    console.log(` Game state extracted (${isSubmission ? 'submission' : 'entry'}):`, {
+   console.log(` Game state extracted (${isSubmission ? 'submission' : 'entry'}):`, {
       hasLevel: !!gameStateWithCache.level.level_id,
+      levelType: gameStateWithCache.level.level_type,  // Add level_type to log
       hasEnemy: !!gameStateWithCache.enemy.enemy_id,
       enemyHealth: gameStateWithCache.enemy.enemy_health,
       hasCharacter: !!gameStateWithCache.selectedCharacter.character_id,
       hasChallenge: !!gameStateWithCache.currentChallenge?.id,
+      hasLessons: !!gameStateWithCache.lessons?.length,  // Add lessons check to log
       card: gameStateWithCache.card,
       cardType: gameStateWithCache.card?.card_type,
     });

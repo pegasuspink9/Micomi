@@ -24,7 +24,7 @@ export default function RootLayout() {
 
     setupImmersiveMode();
 
-    const interval = setInterval(setupImmersiveMode, 2000);
+    const interval = setInterval(setupImmersiveMode, 500);
 
     return () => {
       clearInterval(interval);

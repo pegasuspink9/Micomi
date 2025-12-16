@@ -1,25 +1,27 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   Image, 
-  TouchableOpacity, 
   Dimensions, 
   Animated, 
   StatusBar,
   ImageBackground,
   Easing,
-  ActivityIndicator
+  ActivityIndicator,
+  PanResponder
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router'; // 1. Import useRouter
 import { useGameData } from './hooks/useGameData';
+import { NavigationBar } from 'expo-navigation-bar';
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get('screen');
 
 const PAPER_TEXTURE_URL = 'https://www.transparenttextures.com/patterns/aged-paper.png'; 
 
 export default function Micomic() {
+  const router = useRouter(); 
   const params = useLocalSearchParams();
   const playerId = parseInt(params.playerId) || 11;
   const levelId = parseInt(params.levelId);
@@ -27,27 +29,126 @@ export default function Micomic() {
   const { gameState, loading, error } = useGameData(playerId, levelId);
 
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [entranceFinished, setEntranceFinished] = useState(false); 
+  
   const flipAnim = useRef(new Animated.Value(0)).current;
+  const blinkOpacity = useRef(new Animated.Value(1)).current;
+  const indicatorOpacity = useRef(new Animated.Value(1)).current;
   const isAnimating = useRef(false);
+  const hasInteracted = useRef(false);
 
   const lessons = gameState?.lessons?.lessons || [];
   const currentLesson = gameState?.currentLesson;
-  const pages = lessons.map(lesson => lesson.page_url);
+  
+  const pages = useMemo(() => lessons.map(lesson => lesson.page_url), [lessons]);
+
+  // --- PRELOAD LOGIC ---
+  useEffect(() => {
+    if (pages.length > 0) {
+      const preloadImages = async () => {
+        try {
+          const promises = pages.map((url) => Image.prefetch(url));
+          promises.push(Image.prefetch(PAPER_TEXTURE_URL));
+          await Promise.all(promises);
+          setImagesLoaded(true);
+        } catch (e) {
+          console.warn("Failed to preload images", e);
+          setImagesLoaded(true);
+        }
+      };
+      preloadImages();
+    }
+  }, [pages]);
+
+  // --- ENTRANCE ANIMATION LOGIC ---
+  useEffect(() => {
+    if (imagesLoaded && pages.length > 0 && !entranceFinished) {
+      setCurrentIndex(pages.length - 1);
+      
+      const runEntranceFlip = (index) => {
+        if (index < 0) {
+          setEntranceFinished(true);
+          setCurrentIndex(0); 
+          return;
+        }
+        setCurrentIndex(index);
+        flipAnim.setValue(1); 
+        Animated.timing(flipAnim, {
+          toValue: 0, 
+          duration: 100, 
+          useNativeDriver: true,
+          easing: Easing.out(Easing.quad),
+        }).start(({ finished }) => {
+          if (finished) {
+            runEntranceFlip(index - 1);
+          }
+        });
+      };
+
+      setTimeout(() => {
+        runEntranceFlip(pages.length - 1);
+      }, 500);
+    }
+  }, [imagesLoaded, pages, entranceFinished, flipAnim]);
+
 
   useEffect(() => {
-    if (currentLesson && lessons.length > 0) {
-      const initialIndex = lessons.findIndex(lesson => lesson.lesson_id === currentLesson.lesson_id);
-      if (initialIndex >= 0) {
-        setCurrentIndex(initialIndex);
-      }
+  const hideNavigationBar = async () => {
+    try {
+      await NavigationBar.setVisibilityAsync('hidden');
+      await NavigationBar.setBackgroundColorAsync('#00000000');
+    } catch (error) {
+      console.warn('Failed to hide navigation bar:', error);
     }
-  }, [currentLesson, lessons]);
+  };
+  
+  hideNavigationBar();
+  
+  return () => {};
+}, []);
 
-  const runAnimation = (toValue, callback) => {
+  // --- BLINK ANIMATION ---
+  useEffect(() => {
+    const blinkAnimation = () => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(blinkOpacity, {
+            toValue: 0,
+            duration: 800, 
+            useNativeDriver: true,
+          }),
+          Animated.timing(blinkOpacity, {
+            toValue: 1,
+            duration: 800, 
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    };
+    if (entranceFinished) { 
+       blinkAnimation();
+    }
+  }, [blinkOpacity, entranceFinished]);
+
+  const hideIndicator = useCallback(() => {
+    if (!hasInteracted.current) {
+      hasInteracted.current = true;
+      Animated.timing(indicatorOpacity, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [indicatorOpacity]);
+
+  const runAnimation = useCallback((toValue, callback) => {
+    if (!entranceFinished) return;
+
     isAnimating.current = true;
     Animated.timing(flipAnim, {
       toValue: toValue,
-      duration: 1000, 
+      duration: 800,
       useNativeDriver: true,
       easing: Easing.out(Easing.cubic), 
     }).start(({ finished }) => {
@@ -56,17 +157,30 @@ export default function Micomic() {
         isAnimating.current = false;
       }
     });
-  };
+  }, [flipAnim, entranceFinished]);
 
-  const handleNext = () => {
-    if (isAnimating.current || currentIndex >= pages.length - 1) return;
+  // --- 3. HANDLE NEXT / FINISH LOGIC ---
+  const handleNext = useCallback(() => {
+    // If on the last page, Finish/Exit
+    if (currentIndex >= pages.length - 1) {
+      if (isAnimating.current) return;
+      
+      // Optional: Animate exit before navigating
+      runAnimation(1, () => {
+         console.log("Book finished! Navigating back...");
+         router.back(); // Navigate back to previous screen
+      });
+      return;
+    }
+
+    if (isAnimating.current) return;
     runAnimation(1, () => {
       setCurrentIndex(prev => prev + 1);
       flipAnim.setValue(0);
     });
-  };
+  }, [isAnimating, currentIndex, pages.length, runAnimation, flipAnim, router]);
 
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     if (isAnimating.current || currentIndex <= 0) return;
     setCurrentIndex(prev => {
       const newIndex = prev - 1;
@@ -76,65 +190,71 @@ export default function Micomic() {
       });
       return newIndex;
     });
-  };
+  }, [isAnimating, currentIndex, runAnimation, flipAnim]);
 
-  // --- TRANSFORMATION LOGIC FOR BOTTOM-RIGHT CORNER PEEL ---
+  const panResponder = useMemo(() => 
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        // Only hide indicator if NOT on the last page (keep hint for finish)
+        if(currentIndex < pages.length - 1) {
+             hideIndicator();
+        }
+      },
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 10;
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (!entranceFinished) return; 
 
-  // 1. Curl Angle: Tilts the page so bottom-right lifts up sharply (-45deg)
-  const rotateZ = flipAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '-2deg'], 
-  });
+        const { dx } = gestureState;
+        const SWIPE_THRESHOLD = 50;
 
-  // 2. Flip Over: Standard page flip rotation
-  const rotateY = flipAnim.interpolate({
-    inputRange: [0, 5],
-    outputRange: ['0deg', '-90deg'], 
-  });
+        if (dx < -SWIPE_THRESHOLD) {
+          // Swipe Left -> Next
+          handleNext();
+        } else if (dx > SWIPE_THRESHOLD) {
+          // Swipe Right -> Prev
+          handlePrev();
+        }
+      },
+    }), 
+    [handleNext, handlePrev, hideIndicator, entranceFinished, currentIndex, pages.length] 
+  );
 
-  const rotateX = flipAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '-80deg'], 
-  });
+  // --- TRANSFORMATION LOGIC ---
+  const animatedPageStyle = useMemo(() => {
+    const rotateY = flipAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['0deg', '-20deg'], 
+    });
 
-  // 3. Move Diagonally: Pulls the page up and left
-  const translateX = flipAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -width * 1.2], 
-  });
+    const translateX = flipAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, -width * 1.3], 
+    });
 
-  const translateY = flipAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -height * 0.2], 
-  });
+    const translateY = flipAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, -height * 0.1], 
+    });
 
-  const animatedPageStyle = {
-    transform: [
-      { perspective: 2000 },
-      
-      // Add this line for the tilt
-      { rotateY: '-5deg' },
-      
-      // 1. Move pivot to bottom-right corner
-      { translateX: width / 2.2 },
-      { translateY: height / 2},
+    return {
+      transform: [
+        { perspective: 2000 },
+        { translateX: width / 2 },
+        { translateY: height / 2},
+        { translateX: translateX },
+        { translateY: translateY },
+        { rotateY: rotateY },
+        { translateX: -width / 2 },
+        { translateY: -height / 2 },
+      ],
+      zIndex: 2,
+    };
+  }, [flipAnim]);
 
-      // 2. Apply Peel Motion (Global Movement)
-      { translateX: translateX },
-      { translateY: translateY },
-
-      // 3. Apply Curl Rotation
-      { rotateZ: '1deg' },
-      { rotateY: rotateY },
-
-      // 4. Move pivot back to center
-      { translateX: -width / 2 },
-      { translateY: -height / 2 },
-    ],
-    zIndex: 2,
-  };
-
-  const renderPage = (index, style = {}, key) => {
+  const renderPage = useCallback((index, style = {}, key) => {
     if (index < 0 || index >= pages.length) return null;
     return (
       <Animated.View key={key} style={[styles.pageWrapper, style]}>
@@ -149,17 +269,15 @@ export default function Micomic() {
             resizeMode="contain" 
           />
         </ImageBackground>
-        
-        {/* Shadow Overlay - Removed to prevent darkening */}
       </Animated.View>
     );
-  };
+  }, [pages]);
 
-  if (loading) {
+  if (loading || !imagesLoaded) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#fff" />
-        <Text style={styles.loadingText}>Loading Micomic...</Text>
+        <Text style={styles.loadingText}>Loading Assets...</Text>
       </View>
     );
   }
@@ -172,61 +290,59 @@ export default function Micomic() {
     );
   }
 
-  if (gameState?.level?.level_type !== "micomiButton") {
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>This is not a Micomi level.</Text>
-      </View>
-    );
-  }
+  // Determine text for the last page
+  const isLastPage = currentIndex === pages.length - 1;
+  const indicatorText = isLastPage ? "Swipe Left to Finish" : "Swipe Right or Left to Turn";
 
   return (
-    <View style={styles.container}>
-      <StatusBar hidden />
+    <View style={styles.container} {...panResponder.panHandlers}>
+      <StatusBar hidden translucent backgroundColor="transparent" />
 
       <View style={styles.bookContainer}>
-        {/* LAYER 1: The Static Page (Next Page) */}
         <View style={[styles.pageWrapper, { position: 'absolute', zIndex: 1 }]}>
            {renderPage(currentIndex + 1, {}, 'static-next')}
         </View>
 
-        {/* LAYER 2: The Peeling Page (Current Page) */}
         {renderPage(currentIndex, animatedPageStyle, 'animated-current')}
       </View>
 
-      {/* --- FLOATING UI CONTROLS --- */}
       <View style={styles.floatingHeader}>
         <Text style={styles.pageCounter}>
-          Page {currentIndex + 1} / {pages.length}
+          {currentIndex + 1} / {pages.length}
         </Text>
       </View>
 
-      <View style={styles.floatingControls}>
-        <TouchableOpacity 
-          style={[styles.floatButton, styles.leftBtn, currentIndex === 0 && styles.buttonDisabled]} 
-          onPress={handlePrev}
-          disabled={currentIndex === 0}
+      {entranceFinished && (
+        <Animated.View 
+        style={[
+          styles.swipeIndicatorContainer, 
+          { opacity: isLastPage ? 1 : indicatorOpacity }
+        ]}
+        pointerEvents="none"
         >
-          <Text style={styles.buttonArrow}>←</Text>
-          <Text style={styles.buttonText}>PREV</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[styles.floatButton, styles.rightBtn, currentIndex === pages.length - 1 && styles.buttonDisabled]} 
-          onPress={handleNext}
-          disabled={currentIndex === pages.length - 1}
-        >
-          <Text style={styles.buttonText}>NEXT</Text>
-          <Text style={styles.buttonArrow}>→</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={[styles.swipeIndicatorBox, isLastPage && styles.finishBox]}>
+          <Text style={styles.swipeText}>
+            <Animated.Text style={[styles.middleText, { opacity: blinkOpacity }]}>
+               {indicatorText}
+            </Animated.Text>
+          </Text>
+        </View>
+      </Animated.View>
+      )}
+      
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1, 
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: width,
+    height: height,
+    zIndex: 999, 
+    backgroundColor: '#000',
   },
   bookContainer: {
     flex: 1,
@@ -237,10 +353,12 @@ const styles = StyleSheet.create({
     width: width,
     height: height,
     position: 'absolute',
-    backgroundColor: '#F2E8C9', 
+    backgroundColor: '#fdecb7', 
     overflow: 'hidden',
-    borderColor: '#DDD6B8',
-    borderWidth: 1,
+    borderRightWidth: 1,
+    borderRightColor: '#a3583bff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#a3583bff',
   },
   paperBackground: {
     flex: 1,
@@ -254,76 +372,51 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%', 
     resizeMode: 'contain',
-    borderWidth: 1,
-    borderColor: '#F2E8C9'
   },
-  shadowOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.3)', 
-  },
-  
-  // --- Floating Controls Styles ---
   floatingHeader: {
     position: 'absolute',
     top: 40,
     alignSelf: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     paddingHorizontal: 15,
     paddingVertical: 5,
     borderRadius: 20,
-    zIndex: 10,
-    borderWidth: 1,
-    borderColor: '#ffffff',
+    zIndex: 10
   },
   pageCounter: {
-    color: '#ffffff',
-    fontWeight: 'bold',
+    color: '#000000ff',
+    fontFamily: 'Grobold',
     fontSize: 14,
   },
-  floatingControls: {
+  swipeIndicatorContainer: {
     position: 'absolute',
-    bottom: 40,
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    zIndex: 10,
-  },
-  floatButton: {
-    flexDirection: 'row',
+    bottom: 50, 
+    left: 0,
+    right: 0,
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)', 
-    paddingVertical: 12,
+    zIndex: 20,
+  },
+  swipeIndicatorBox: {
+    paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 30,
-    borderWidth: 2,
-    borderColor: '#ffffff',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  buttonDisabled: {
-    opacity: 0, 
+  swipeText: {
+    textAlign: 'center', 
   },
-  buttonText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-    fontSize: 16,
-    letterSpacing: 1,
-  },
-  buttonArrow: {
-    color: '#fff',
-    fontSize: 18,
-    marginHorizontal: 5,
-    fontWeight: 'bold',
+  middleText: {
+    fontSize: 20, 
+    color: '#000000ff', // Default black text
+    fontFamily: 'Grobold',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#000',
+    width: width,
+    height: height,
+    position: 'absolute',
   },
   loadingText: {
     color: '#fff',
@@ -335,6 +428,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#000',
+    width: width,
+    height: height,
+    position: 'absolute',
   },
   errorText: {
     color: '#ff6b6b',

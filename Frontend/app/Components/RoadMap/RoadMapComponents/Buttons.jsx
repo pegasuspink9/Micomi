@@ -1,4 +1,4 @@
-import { View, Image, StyleSheet, Dimensions, ImageBackground, Pressable, Animated, Text } from 'react-native';
+import { View, Image, StyleSheet, Dimensions, ImageBackground, Pressable, Animated, Text, StatusBar } from 'react-native'; 
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { DEFAULT_THEME } from '../MapLevel/MapDatas/mapData';
 import LevelModal from '../../Actual Game/Level Intro and Outro/LevelModal';
@@ -317,6 +317,7 @@ const transformPreviewDataWithCache = (data) => {
 
   return (
     <>
+    <StatusBar hidden translucent backgroundColor="transparent" /> 
       <View style={styles.buttonContainer}>
         {/*  Stones using cached image */}
         {stonePositions.map((position, index) => (

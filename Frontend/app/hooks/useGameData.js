@@ -81,8 +81,6 @@ export const useGameData = (playerId, initialLevelId) => {
       if (!responseData) {
         throw new Error('No response data received');
       }
-
-      
       
       const unifiedState = gameService.extractUnifiedGameState(responseData, false);
       
@@ -90,14 +88,18 @@ export const useGameData = (playerId, initialLevelId) => {
         throw new Error('Failed to extract game state from response');
       }
 
-      if (!unifiedState.currentChallenge) {
-        throw new Error('No challenge data found in response');
+      // --- MODIFIED: Skip challenge checks for micomiButton levels ---
+      if (unifiedState.level?.level_type !== "micomiButton") {
+        if (!unifiedState.currentChallenge) {
+          throw new Error('No challenge data found in response');
+        }
+        
+        if (!unifiedState.currentChallenge.options || !Array.isArray(unifiedState.currentChallenge.options)) {
+          console.warn('Challenge options are missing or invalid:', unifiedState.currentChallenge.options);
+          unifiedState.currentChallenge.options = [];
+        }
       }
-      
-      if (!unifiedState.currentChallenge.options || !Array.isArray(unifiedState.currentChallenge.options)) {
-        console.warn('Challenge options are missing or invalid:', unifiedState.currentChallenge.options);
-        unifiedState.currentChallenge.options = [];
-      }
+      // --- END MODIFIED ---
       
       setGameState(unifiedState);
       console.log('🎮 Game data loaded successfully');
@@ -124,7 +126,6 @@ export const useGameData = (playerId, initialLevelId) => {
       setLoading(false);
     }
   };
-
   const submitAnswer = async (selectedAnswers) => {
      if (!gameState?.currentChallenge || !playerId || !currentLevelId) {
       console.error('Missing required data for submission');
