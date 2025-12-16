@@ -530,8 +530,35 @@ export const enterLevel = async (playerId: number, levelId: number) => {
 
   let progress: PlayerProgress;
   if (existingProgress) {
-    progress = existingProgress;
-    console.log(`Resuming/replaying level ${levelId} for player ${playerId}`);
+    progress = await prisma.playerProgress.update({
+      where: { progress_id: existingProgress.progress_id },
+      data: {
+        attempts: 0,
+        player_answer: {},
+        wrong_challenges: [],
+        completed_at: null,
+        challenge_start_time: new Date(),
+        player_hp: playerMaxHealth,
+        enemy_hp: enemyMaxHealth,
+        battle_status: BattleStatus.in_progress,
+        is_completed: false,
+        coins_earned: 0,
+        total_points_earned: 0,
+        total_exp_points_earned: 0,
+        consecutive_corrects: 0,
+        consecutive_wrongs: 0,
+        has_reversed_curse: false,
+        has_boss_shield: false,
+        has_force_character_attack_type: false,
+        has_both_hp_decrease: false,
+        has_shuffle_ss: false,
+        has_permuted_ss: false,
+        took_damage: false,
+        has_strong_effect: false,
+        has_freeze_effect: false,
+      },
+    });
+    console.log(`Reset progress for level ${levelId} - fresh start`);
   } else {
     if (level.level_id === firstLevel?.level_id) {
       const mapUnlocked = await isMapUnlockedForPlayer(
@@ -851,6 +878,8 @@ export const unlockNextLevel = async (
   });
 
   if (nextLevel) {
+    const isMicomiLevel = nextLevel.level_type === "micomiButton";
+
     await prisma.playerProgress.upsert({
       where: {
         player_id_level_id: {
@@ -865,12 +894,12 @@ export const unlockNextLevel = async (
         current_level: nextLevel.level_number,
         attempts: 0,
         player_answer: {},
-        completed_at: null,
+        completed_at: isMicomiLevel ? new Date() : null,
         challenge_start_time: new Date(),
         player_hp: 0,
         enemy_hp: 0,
         battle_status: BattleStatus.in_progress,
-        is_completed: false,
+        is_completed: isMicomiLevel,
         wrong_challenges: [],
         coins_earned: 0,
         total_points_earned: 0,
@@ -890,10 +919,74 @@ export const unlockNextLevel = async (
           ? { done_shop_level: false }
           : {}),
         ...(nextLevel.level_type === "micomiButton"
-          ? { done_micomi_level: false }
+          ? { done_micomi_level: true }
           : {}),
       },
     });
+
+    if (isMicomiLevel) {
+      console.log(
+        `Auto-completed micomi level ${nextLevel.level_id}, unlocking next level...`
+      );
+
+      const levelAfterMicomi = await prisma.level.findFirst({
+        where: {
+          map_id: mapId,
+          level_id: { gt: nextLevel.level_id },
+        },
+        orderBy: { level_id: "asc" },
+      });
+
+      if (levelAfterMicomi) {
+        await prisma.playerProgress.upsert({
+          where: {
+            player_id_level_id: {
+              player_id: playerId,
+              level_id: levelAfterMicomi.level_id,
+            },
+          },
+          update: {},
+          create: {
+            player_id: playerId,
+            level_id: levelAfterMicomi.level_id,
+            current_level: levelAfterMicomi.level_number,
+            attempts: 0,
+            player_answer: {},
+            completed_at: null,
+            challenge_start_time: new Date(),
+            player_hp: 0,
+            enemy_hp: 0,
+            battle_status: BattleStatus.in_progress,
+            is_completed: false,
+            wrong_challenges: [],
+            coins_earned: 0,
+            total_points_earned: 0,
+            total_exp_points_earned: 0,
+            consecutive_corrects: 0,
+            consecutive_wrongs: 0,
+            has_reversed_curse: false,
+            has_boss_shield: false,
+            has_force_character_attack_type: false,
+            has_both_hp_decrease: false,
+            has_permuted_ss: false,
+            has_shuffle_ss: false,
+            took_damage: false,
+            has_strong_effect: false,
+            has_freeze_effect: false,
+            ...(levelAfterMicomi.level_type === "shopButton"
+              ? { done_shop_level: false }
+              : {}),
+            ...(levelAfterMicomi.level_type === "micomiButton"
+              ? { done_micomi_level: false }
+              : {}),
+          },
+        });
+
+        console.log(
+          `Unlocked level ${levelAfterMicomi.level_id} after auto-completed micomi level`
+        );
+      }
+    }
 
     return nextLevel;
   }
