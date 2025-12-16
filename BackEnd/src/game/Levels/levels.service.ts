@@ -341,7 +341,12 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       },
     });
 
-    const currentLesson = lessons?.lessons?.[0] ?? null;
+    const lessonList = lessons?.lessons ?? [];
+
+    const currentLesson = lessonList[0] ?? null;
+    const lastLesson = lessonList.length
+      ? lessonList[lessonList.length - 1]
+      : null;
 
     return {
       level: {
@@ -361,6 +366,15 @@ export const enterLevel = async (playerId: number, levelId: number) => {
             page_url: currentLesson.page_url,
           }
         : null,
+
+      lastPage: lastLesson
+        ? {
+            lesson_id: lastLesson.lesson_id,
+            page_number: lastLesson.page_number,
+            page_url: lastLesson.page_url,
+          }
+        : null,
+
       energy: energyStatus.energy,
       timeToNextEnergyRestore: energyStatus.timeToNextRestore,
       lessons,

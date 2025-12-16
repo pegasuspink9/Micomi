@@ -325,32 +325,45 @@ export const usePotion = async (
         (currentPlayerAnswer[challengeKey] as string[] | undefined) ?? [];
       const isAlreadyHinted =
         existingAnswer.length >= effectiveCorrectAnswer.length;
+      const isPending =
+        existingAnswer.length > 0 && existingAnswer[0] === "_REVEAL_PENDING_";
 
-      if (isAlreadyHinted) {
-        dynamicMessage = `Full hint already applied to this challenge—no extra reveal!`;
+      if (isAlreadyHinted || isPending) {
+        dynamicMessage = `Full hint already applied or pending confirmation—no extra reveal!`;
       } else {
         await prisma.playerProgress.update({
           where: { progress_id: progress.progress_id },
           data: {
             player_answer: {
               ...(currentPlayerAnswer as Record<string, unknown>),
-              [challengeKey]: effectiveCorrectAnswer,
+              [challengeKey]: ["_REVEAL_PENDING_"],
             } as Prisma.InputJsonValue,
           },
         });
 
         let filledQuestion = currentChallenge.question ?? "";
-        const missingTagsOnly = effectiveCorrectAnswer.slice(
-          -filledQuestion.split(/<_|<\/_>/).length + 1
-        );
+        const answersToFill = [...effectiveCorrectAnswer];
+
+        const universalBlankRegex = /<_([^>]*)>|<\/_>|\{blank\}|\[_+\]|_+/g;
+
         filledQuestion = filledQuestion.replace(
-          /<_( ?[^>]*?)>/g,
-          (match: string, attrs: string) =>
-            `<${missingTagsOnly.shift()}${attrs}>`
-        );
-        filledQuestion = filledQuestion.replace(
-          /<\/_>/g,
-          () => `</${missingTagsOnly.shift()}>`
+          universalBlankRegex,
+          (match: string, htmlAttrs?: string) => {
+            const nextAnswer = answersToFill.shift();
+            if (!nextAnswer) return match;
+
+            if (match.startsWith("<_")) {
+              return `<${nextAnswer}${htmlAttrs || ""}>`;
+            } else if (match === "</_>") {
+              return `</${nextAnswer}>`;
+            } else if (match === "{blank}") {
+              return nextAnswer;
+            } else if (match.startsWith("[")) {
+              return nextAnswer;
+            } else {
+              return nextAnswer;
+            }
+          }
         );
 
         nextChallengeForHint = {
@@ -449,13 +462,18 @@ export const usePotion = async (
     },
   });
 
-  const answeredIds = Object.keys(freshProgress?.player_answer ?? {}).map(
-    Number
-  );
+  const playerAnswer =
+    (freshProgress?.player_answer as Record<string, string[]>) || {};
+  const answeredIds = Object.keys(playerAnswer).map(Number);
+  const effectiveAnsweredIds = answeredIds.filter((id) => {
+    const ans = playerAnswer[id.toString()];
+    return ans && ans[0] !== "_REVEAL_PENDING_";
+  });
   const wrongChallengesArr = (freshProgress?.wrong_challenges ??
     []) as number[];
   let allCompleted =
-    answeredIds.length === (freshProgress?.level?.challenges?.length ?? 0) &&
+    effectiveAnsweredIds.length ===
+      (freshProgress?.level?.challenges?.length ?? 0) &&
     wrongChallengesArr.length === 0;
 
   const rawPlayerOutputs = freshProgress?.player_expected_output;
