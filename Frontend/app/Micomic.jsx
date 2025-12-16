@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -9,23 +9,39 @@ import {
   Animated, 
   StatusBar,
   ImageBackground,
-  Easing
+  Easing,
+  ActivityIndicator
 } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { useGameData } from './hooks/useGameData';
 
 const { width, height } = Dimensions.get('window');
 
-const COMIC_PAGES = [
-  'https://micomi-assets.me/Comics/Intro%20Micomi/C_page2.png',
-  'https://micomi-assets.me/Comics/Intro%20Micomi/C_page5.png',
-  'https://micomi-assets.me/Comics/Intro%20Micomi/C_page2.png', 
-];
-
 const PAPER_TEXTURE_URL = 'https://www.transparenttextures.com/patterns/aged-paper.png'; 
 
-export default function Leaderboard() {
+export default function Micomic() {
+  const params = useLocalSearchParams();
+  const playerId = parseInt(params.playerId) || 11;
+  const levelId = parseInt(params.levelId);
+
+  const { gameState, loading, error } = useGameData(playerId, levelId);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const flipAnim = useRef(new Animated.Value(0)).current;
   const isAnimating = useRef(false);
+
+  const lessons = gameState?.lessons?.lessons || [];
+  const currentLesson = gameState?.currentLesson;
+  const pages = lessons.map(lesson => lesson.page_url);
+
+  useEffect(() => {
+    if (currentLesson && lessons.length > 0) {
+      const initialIndex = lessons.findIndex(lesson => lesson.lesson_id === currentLesson.lesson_id);
+      if (initialIndex >= 0) {
+        setCurrentIndex(initialIndex);
+      }
+    }
+  }, [currentLesson, lessons]);
 
   const runAnimation = (toValue, callback) => {
     isAnimating.current = true;
@@ -43,7 +59,7 @@ export default function Leaderboard() {
   };
 
   const handleNext = () => {
-    if (isAnimating.current || currentIndex >= COMIC_PAGES.length - 1) return;
+    if (isAnimating.current || currentIndex >= pages.length - 1) return;
     runAnimation(1, () => {
       setCurrentIndex(prev => prev + 1);
       flipAnim.setValue(0);
@@ -119,7 +135,7 @@ export default function Leaderboard() {
   };
 
   const renderPage = (index, style = {}, key) => {
-    if (index < 0 || index >= COMIC_PAGES.length) return null;
+    if (index < 0 || index >= pages.length) return null;
     return (
       <Animated.View key={key} style={[styles.pageWrapper, style]}>
         <ImageBackground 
@@ -128,7 +144,7 @@ export default function Leaderboard() {
           resizeMode="repeat" 
         >
           <Image 
-            source={{ uri: COMIC_PAGES[index] }} 
+            source={{ uri: pages[index] }} 
             style={styles.pageImage} 
             resizeMode="contain" 
           />
@@ -138,6 +154,31 @@ export default function Leaderboard() {
       </Animated.View>
     );
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#fff" />
+        <Text style={styles.loadingText}>Loading Micomic...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
+  if (gameState?.level?.level_type !== "micomiButton") {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>This is not a Micomi level.</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -156,7 +197,7 @@ export default function Leaderboard() {
       {/* --- FLOATING UI CONTROLS --- */}
       <View style={styles.floatingHeader}>
         <Text style={styles.pageCounter}>
-          Page {currentIndex + 1} / {COMIC_PAGES.length}
+          Page {currentIndex + 1} / {pages.length}
         </Text>
       </View>
 
@@ -171,9 +212,9 @@ export default function Leaderboard() {
         </TouchableOpacity>
 
         <TouchableOpacity 
-          style={[styles.floatButton, styles.rightBtn, currentIndex === COMIC_PAGES.length - 1 && styles.buttonDisabled]} 
+          style={[styles.floatButton, styles.rightBtn, currentIndex === pages.length - 1 && styles.buttonDisabled]} 
           onPress={handleNext}
-          disabled={currentIndex === COMIC_PAGES.length - 1}
+          disabled={currentIndex === pages.length - 1}
         >
           <Text style={styles.buttonText}>NEXT</Text>
           <Text style={styles.buttonArrow}>→</Text>
@@ -277,5 +318,27 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginHorizontal: 5,
     fontWeight: 'bold',
-  }
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000',
+  },
+  loadingText: {
+    color: '#fff',
+    fontSize: 18,
+    marginTop: 10,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000',
+  },
+  errorText: {
+    color: '#ff6b6b',
+    fontSize: 18,
+    textAlign: 'center',
+  },
 });

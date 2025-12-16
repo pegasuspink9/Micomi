@@ -107,50 +107,61 @@ const LevelModal = ({
   };
 
   const handlePlayPress = useCallback(() => {
-    if (isAnimating) return;
-    
-    console.log('🎮 Play button pressed:', {
-      levelId,
-      playerId,
-      levelData: displayData,
-      isShopLevel
-    });
+  if (isAnimating) return;
+  
+  const levelType = displayData?.level?.level_type;
+  
+  console.log('🎮 Play button pressed:', {
+    levelId,
+    playerId,
+    levelData: displayData,
+    levelType
+  });
 
-    handleModalClose();
+  handleModalClose();
 
-    setTimeout(() => {
-      try {
-        if (isShopLevel) {
-          //  Navigate to PotionShop for shop levels
-          router.push({
-            pathname: '/PotionShop',
-            params: {
-              playerId: playerId,
-              levelId: levelId,
-              levelData: JSON.stringify(displayData || {})
-            }
-          });
-        } else {
-          //  Existing GamePlay navigation
-          router.push({
-            pathname: '/GamePlay', 
-            params: {
-              playerId: playerId,
-              levelId: levelId,
-              levelData: JSON.stringify(displayData || {})
-            }
-          });
-        }
-      } catch (error) {
-        console.error('Navigation error:', error);
-        onPlay({
-          playerId,
-          levelId,
-          levelData: displayData
+  setTimeout(() => {
+    try {
+      if (levelType === "shopButton") {
+        // Navigate to PotionShop for shop levels
+        router.push({
+          pathname: '/PotionShop',
+          params: {
+            playerId: playerId,
+            levelId: levelId,
+            levelData: JSON.stringify(displayData || {})
+          }
+        });
+      } else if (levelType === "micomiButton") {
+        // Navigate to Micomic for comic levels
+        router.push({
+          pathname: '/Micomic',
+          params: {
+            playerId: playerId,
+            levelId: levelId
+          }
+        });
+      } else {
+        // Existing GamePlay navigation for other levels
+        router.push({
+          pathname: '/GamePlay', 
+          params: {
+            playerId: playerId,
+            levelId: levelId,
+            levelData: JSON.stringify(displayData || {})
+          }
         });
       }
-    }, 100);
-  }, [isAnimating, playerId, levelId, displayData, isShopLevel, handleModalClose, router, onPlay]);
+    } catch (error) {
+      console.error('Navigation error:', error);
+      onPlay({
+        playerId,
+        levelId,
+        levelData: displayData
+      });
+    }
+  }, 100);
+}, [isAnimating, playerId, levelId, displayData, handleModalClose, router, onPlay]);
 
   //  Much smoother entrance animation
   const startEntranceAnimation = () => {
