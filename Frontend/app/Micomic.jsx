@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
   PanResponder
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router'; // 1. Import useRouter
+import { useLocalSearchParams, useRouter } from 'expo-router'; 
 import { useGameData } from './hooks/useGameData';
 import { NavigationBar } from 'expo-navigation-bar';
 

@@ -4,7 +4,7 @@ import { DEFAULT_THEME } from '../MapLevel/MapDatas/mapData';
 import LevelModal from '../../Actual Game/Level Intro and Outro/LevelModal';
 import { useLevelData } from '../../../hooks/useLevelData';
 import { universalAssetPreloader } from '../../../services/preloader/universalAssetPreloader';
-
+import { useRouter } from 'expo-router'; 
 
 const { height: defaultHeight, width: defaultWidth } = Dimensions.get('window');
 
@@ -47,6 +47,7 @@ export default function LevelButtons({
 }) {
   const floatAnim = useRef(new Animated.Value(0)).current;
   const { getLevelPreview } = useLevelData();
+  const router = useRouter();
   
   // Modal state
   const [modalVisible, setModalVisible] = useState(false);
@@ -145,11 +146,19 @@ export default function LevelButtons({
       return;
     }
 
-    console.log('🎮 Level button pressed:', {
+     console.log('🎮 Level button pressed:', {
       levelId: level.level_id,
       levelNumber: level.level_number,
-      levelTitle: level.level_title
+      levelTitle: level.level_title,
+      levelType: level.level_type 
     });
+
+     if (level.level_type === 'micomiButton') {
+      console.log('Navigating directly to Micomic for level:', level.level_id);
+      router.push(`/Micomic?playerId=${playerId}&levelId=${level.level_id}`);
+      return; // Exit early
+    }
+
 
     try {
       //  Load cached assets into memory (fast - already downloaded)
@@ -174,6 +183,10 @@ export default function LevelButtons({
         setLevelPreviewData(transformedLevel);
         setSelectedLevelId(level.level_id);
         setModalVisible(true);
+
+        const previewData = await getLevelPreview(level.level_id, playerId);
+        const transformedData = transformPreviewDataWithCache(previewData);
+        setLevelPreviewData(transformedData);
       }
     } catch (error) {
       console.error('Error fetching level preview:', error);
