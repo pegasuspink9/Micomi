@@ -34,7 +34,7 @@ export const selectMap = async (playerId: number, mapId: number) => {
         where: {
           map_id: mapId,
           level_number: {
-            in: [1, 2],
+            in: [1],
           },
         },
       });

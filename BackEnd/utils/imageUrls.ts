@@ -136,6 +136,13 @@ export const imagesUrls = [
   "https://micomi-assets.me/Comics/Intro%20Micomi/C_page4.png",
   "https://micomi-assets.me/Comics/Intro%20Micomi/C_page5.png",
   /*Greenland Enemies*/
+  //Draco
+  "https://micomi-assets.me/Enemies/Greenland/Draco/idle.png",
+  "https://micomi-assets.me/Enemies/Greenland/Draco/attack.png",
+  "https://micomi-assets.me/Enemies/Greenland/Draco/death.png",
+  "https://micomi-assets.me/Enemies/Greenland/Draco/hurt.png",
+  "https://micomi-assets.me/Enemies/Greenland/Draco/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/draco2.png",
   //Bembug
   "https://micomi-assets.me/Enemies/Greenland/Bembug/idle.png",
   "https://micomi-assets.me/Enemies/Greenland/Bembug/attack.png",
