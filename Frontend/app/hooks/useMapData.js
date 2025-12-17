@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { mapService } from '../services/mapService';
 
 export const useMapData = (mapId = null) => {
@@ -9,7 +9,7 @@ export const useMapData = (mapId = null) => {
   const [error, setError] = useState(null);
   const [preloadProgress, setPreloadProgress] = useState({ loaded: 0, total: 0, progress: 0 });
 
-  const refetch = async () => {
+  const refetch = useCallback(async () => {  
     try {
       setLoading(true);
       setError(null);
@@ -47,11 +47,11 @@ export const useMapData = (mapId = null) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [mapId]); 
 
   useEffect(() => {
     refetch();
-  }, [mapId]);
-
+  }, [refetch]);
+  
   return { maps, levels, mapInfo, loading, error, refetch, preloadProgress };
 };

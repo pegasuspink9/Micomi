@@ -10,6 +10,9 @@ import PopAnimations from '../RoadMapComponents/MapSpecialAnimations/Lava Effect
 import SnowAndAutumnAnimations from "../RoadMapComponents/MapSpecialAnimations/Snow And Autumn Effect/snowAndAutumnFall";
 import { useNavigation } from '@react-navigation/native';
 import { universalAssetPreloader } from '../../../services/preloader/universalAssetPreloader';
+import { useFocusEffect } from '@react-navigation/native'; 
+import { Platform } from 'react-native';
+import * as NavigationBar from 'expo-navigation-bar';
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
@@ -72,6 +75,26 @@ export default function UniversalMapLevel() {
     loadCachedAssets();
   }, []);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🗺️ UniversalMapLevel focused. Refetching map data...');
+      refetch(); // Trigger data refetch
+      return () => {
+        // Optional: Perform cleanup if needed when the screen loses focus
+        console.log('🗺️ UniversalMapLevel unfocused.');
+      };
+    }, [refetch]) // Dependency array includes refetch to ensure it's up-to-date
+  );
+
+  useFocusEffect(
+  React.useCallback(() => {
+    if (Platform.OS === 'android') {
+      NavigationBar.setVisibilityAsync('hidden').catch((error) => {
+        console.log('Failed to hide navigation bar:', error);
+      });
+    }
+  }, [])
+  );
 
 
   // Log the levels for debugging
