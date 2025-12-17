@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Pressable, Image, Dimensions } from "react-native";
+import { View, StyleSheet, Pressable, Image, Dimensions, Text} from "react-native";
 import { useLocalSearchParams, useRouter } from 'expo-router'; 
 
 // Import the universal component
@@ -46,7 +46,7 @@ export default function RoadMapLandPage() {
             top: 140 * responsive.heightRatio,
             right: 20 * responsive.widthRatio,
             width: 80 * responsive.widthRatio,
-            height: 60 * responsive.heightRatio,
+            height: 80 * responsive.heightRatio,  // Increased height to fit text
             justifyContent: 'center',
             alignItems: 'center',
             zIndex: 30,
@@ -56,14 +56,25 @@ export default function RoadMapLandPage() {
             router.push('/PotionShop');
           }}
         >
-          <Image
-            source={require('./ShopButton.png')}
-            style={{
-              width: '100%',
-              height: '100%'
-            }}
-            resizeMode="contain"
-          />
+          <View style={{ alignItems: 'center' }}>
+            <Image
+              source={require('./ShopButton.png')}
+              style={{
+                width: 80 * responsive.widthRatio,  
+                height: 70 * responsive.heightRatio,
+              }}
+              resizeMode="contain"
+            />
+            <Text style={{
+              fontSize: 14 * responsive.widthRatio,
+              color: '#a2e3ceff',
+              fontFamily: 'MusicVibes',  // Assuming this matches your app's font
+              textAlign: 'center',
+              marginTop: -5 * responsive.heightRatio, 
+            }}>
+              ShiShi's Shop
+            </Text>
+          </View>
         </Pressable>
 
         <UniversalMapLevel />

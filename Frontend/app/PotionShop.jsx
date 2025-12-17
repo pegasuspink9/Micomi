@@ -25,7 +25,7 @@ import { useLevelData } from '../app/hooks/useLevelData';
 import { gameService } from './services/gameService';
 import { universalAssetPreloader } from '../app/services/preloader/universalAssetPreloader';
 import { Video } from 'expo-av';
-import { useLocalSearchParams } from 'expo-router'; 
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import Reanimated, {
   useSharedValue,
   useAnimatedStyle,
@@ -187,6 +187,7 @@ const PotionDropAnimation = ({ imageUri, onAnimationComplete }) => {
 
 export default function PotionShop() {
   const params = useLocalSearchParams(); 
+  const router = useRouter()
   
   const levelId = parseInt(params.levelId) || 5; 
   const playerId = parseInt(params.playerId) || 11; 
@@ -356,6 +357,19 @@ export default function PotionShop() {
         resizeMode="cover"
       >
         <View style={styles.backgroundOverlay} />
+
+        <View style={styles.backButtonContainer}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => router.back()}  // Navigate back
+          activeOpacity={0.7}
+        >
+          <View style={{ flexDirection: 'row' }}>
+            <Text style={styles.backButtonText}>{"<"}</Text>
+            <Text style={styles.backButtonTextBack}>Back</Text>
+          </View>
+        </TouchableOpacity>
+        </View>
         
         <View style={styles.topFrame}>
           <Video
@@ -507,8 +521,100 @@ function DetailView({ selected, onBack, playerCoins, getCachedImagePath, onBuy, 
   const colors = getPotionColors(selected.name);
   const cannotBuy = playerCoins < selected.price;
   const cachedImagePath = getCachedImagePath(selected.image);
+  
 
-  return (
+  const buttonBorderColors = {
+    outerBg: '#01547dff',
+    outerBorderTop: '#0d1f33',
+    outerBorderBottom: '#01547dff',
+    middleBg: '#152d4a',
+    middleBorderTop: '#01547dff',
+    middleBorderBottom: '#0a1929',
+    innerBg: 'rgba(74, 144, 217, 0.15)',
+    innerBorder: 'rgba(74, 144, 217, 0.3)',
+  };
+
+  const buttonSelectedBorderColors = {
+    outerBg: '#a77125ff',
+    outerBorderTop: '#a77125ff',
+    outerBorderBottom: '#a77125ff',
+    middleBg: '#a77125ff',
+    middleBorderTop: '#a77125ff',
+    middleBorderBottom: '#a77125ff',
+    innerBg: '#a77125ff',
+    innerBorder: '#a77125ff',
+  };
+
+  const buttonDisabledBorderColors = {
+    outerBg: '#6b6b6e',
+    outerBorderTop: '#4a4a4c',
+    outerBorderBottom: '#8e8e91',
+    middleBg: '#5a5a5d',
+    middleBorderTop: '#9e9ea1',
+    middleBorderBottom: '#3a3a3c',
+    innerBg: 'rgba(158, 158, 161, 0.15)',
+    innerBorder: 'rgba(158, 158, 161, 0.3)',
+  };
+
+  
+  const renderButton = (title, onPress, isDisabled, isBuyButton = false) => {
+    const buttonColors = isDisabled ? buttonDisabledBorderColors : buttonSelectedBorderColors;
+
+    return (
+      <View style={styles.buttonContainer}>
+        {/* 3-Layer Border - Outer */}
+        <View style={[
+          styles.buttonBorderOuter,
+          {
+            backgroundColor: buttonColors.outerBg,
+            borderTopColor: buttonColors.outerBorderTop,
+            borderLeftColor: buttonColors.outerBorderTop,
+            borderBottomColor: buttonColors.outerBorderBottom,
+            borderRightColor: buttonColors.outerBorderBottom,
+          }
+        ]}>
+          {/* 3-Layer Border - Middle */}
+          <View style={[
+            styles.buttonBorderMiddle,
+            {
+              backgroundColor: buttonColors.middleBg,
+              borderTopColor: buttonColors.middleBorderTop,
+              borderLeftColor: buttonColors.middleBorderTop,
+              borderBottomColor: buttonColors.middleBorderBottom,
+              borderRightColor: buttonColors.middleBorderBottom,
+            }
+          ]}>
+            {/* 3-Layer Border - Inner (Touchable) */}
+            <TouchableOpacity 
+              style={[
+                styles.buttonBorderInner,
+                {
+                  backgroundColor: buttonColors.innerBg,
+                  borderColor: buttonColors.innerBorder,
+                }
+              ]}
+              onPress={onPress}
+              disabled={isDisabled}
+            >
+              <View style={styles.buttonInnerContent}>
+                <View style={styles.buttonHighlight} />
+                <View style={styles.buttonShadow} />
+                <Text style={[
+                  styles.buttonText,
+                  isDisabled && styles.buttonTextDisabled
+                ]}>
+                  {title}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+
+   return (
     <View style={[styles.detailCard, { borderColor: colors.border }]}>
       <View style={[styles.potionFrame, { 
         backgroundColor: colors.frameColor, 
@@ -554,28 +660,13 @@ function DetailView({ selected, onBack, playerCoins, getCachedImagePath, onBuy, 
       </View>
 
       <View style={styles.detailActions}>
-        <TouchableOpacity
-          style={[
-            styles.buyButton, 
-            cannotBuy || buyingPotion ? styles.keyDisabled : styles.keyActive 
-          ]}
-          disabled={cannotBuy || buyingPotion} 
-          onPress={() => onBuy(selected)} 
-        >
-          <Text style={[styles.actionText, styles.keyText]}>
-            {buyingPotion ? 'Buying...' : 
-             playerCoins < selected.price ? 'Not Enough Coins' : 'Buy'}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[styles.backButton, styles.keyActive]}
-          activeOpacity={0.9}
-          onPress={onBack}
-          disabled={buyingPotion} 
-        >
-          <Text style={[styles.actionText, styles.keyText]}>Back</Text>
-        </TouchableOpacity>
+        {renderButton(
+          buyingPotion ? 'Buying...' : (playerCoins < selected.price ? 'Not Enough Coins' : 'Buy'),
+          () => onBuy(selected),
+          cannotBuy || buyingPotion,
+          true
+        )}
+        {renderButton('Back', onBack, buyingPotion)}
       </View>
     </View>
   );
@@ -747,6 +838,73 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
+
+  buttonContainer: {
+    flex: 1,
+    marginHorizontal: scaleWidth(5),
+  },
+  buttonBorderOuter: {
+    borderRadius: scale(5),
+    borderWidth: scale(1),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: scale(2) },
+    shadowOpacity: 0.3,
+    shadowRadius: scale(4),
+    elevation: 4,
+  },
+  buttonBorderMiddle: {
+    borderRadius: scale(5),
+    borderWidth: scale(1),
+  },
+  buttonBorderInner: {
+    borderRadius: scale(5),
+    borderWidth: scale(1),
+    overflow: 'hidden',
+  },
+  buttonInnerContent: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: RESPONSIVE.margin.xs,
+    paddingHorizontal: RESPONSIVE.margin.sm,
+  },
+  buttonHighlight: {
+    position: 'absolute', 
+    top: 0, 
+    left: 0, 
+    right: 0, 
+    height: '40%',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderTopLeftRadius: RESPONSIVE.borderRadius.xs,
+    borderTopRightRadius: RESPONSIVE.borderRadius.xs,
+    pointerEvents: 'none',
+  },
+  buttonShadow: {
+    position: 'absolute', 
+    bottom: 0, 
+    left: 0, 
+    right: 0, 
+    height: '30%',
+    backgroundColor: 'rgba(0, 0, 0, 0.15)', 
+    borderBottomLeftRadius: RESPONSIVE.borderRadius.xs,
+    borderBottomRightRadius: RESPONSIVE.borderRadius.xs,
+    pointerEvents: 'none',
+  },
+  buttonText: {
+    fontSize: RESPONSIVE.fontSize.sm,
+    color: '#ffffff', 
+    textAlign: 'center',
+    fontFamily: 'DynaPuff', 
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: scale(1), height: scale(1) },
+    textShadowRadius: scale(2),
+    zIndex: 1,
+  },
+  buttonTextDisabled: {
+    color: '#f2f2f7',
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+  },
+
   
   // --- NEW 3D DOTS STYLES ---
   cornerDot: {
@@ -964,6 +1122,28 @@ const styles = StyleSheet.create({
     width: '100%',
     textAlign: 'center',
     marginTop: 0,
+  },
+  backButtonContainer: {
+    position: 'absolute',
+    top: scaleHeight(20), 
+    left: scaleWidth(20),
+    zIndex: 1000, 
+  },
+  backButton: {
+    paddingHorizontal: scaleWidth(12),
+    paddingVertical: scaleHeight(8),
+  },
+  backButtonText: {
+    color: '#fff',
+    fontSize: scaleWidth(50),
+    fontFamily: 'MusicVibes'
+  },
+  backButtonTextBack: {
+    color: '#fff',
+    fontSize: scaleWidth(20),
+    top: scaleHeight(15),
+    left: scaleWidth(10),
+    fontFamily: 'MusicVibes'
   },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { color: '#fff', fontSize: 16, fontFamily: 'DynaPuff', marginTop: 16 },
