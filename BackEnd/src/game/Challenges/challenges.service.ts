@@ -1263,18 +1263,31 @@ const getNextChallengeHard = async (progress: any) => {
     );
   });
 
+  const effectiveAnsweredIds = attemptedIds.filter((id) => {
+    const ans = playerAnswer[id.toString()];
+    return ans && ans[0] !== "_REVEAL_PENDING_";
+  });
+
   const sortedChallenges = [...level.challenges].sort(
     (a, b) => a.challenge_id - b.challenge_id
   );
 
   const playerAlive = progress.player_hp > 0;
+  const enemyDefeated = progress.enemy_hp <= 0;
   let nextChallenge: Challenge | null = null;
 
   if (playerAlive) {
-    nextChallenge =
-      sortedChallenges.find(
-        (c: Challenge) => !correctlyAnsweredIds.includes(c.challenge_id)
-      ) || null;
+    if (enemyDefeated) {
+      nextChallenge =
+        sortedChallenges.find(
+          (c: Challenge) => !effectiveAnsweredIds.includes(c.challenge_id)
+        ) || null;
+    } else {
+      nextChallenge =
+        sortedChallenges.find(
+          (c: Challenge) => !correctlyAnsweredIds.includes(c.challenge_id)
+        ) || null;
+    }
   }
 
   // If nextChallenge is pending, modify to filled version

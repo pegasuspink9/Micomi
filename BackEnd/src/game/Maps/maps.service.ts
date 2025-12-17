@@ -30,26 +30,101 @@ export const selectMap = async (playerId: number, mapId: number) => {
     });
 
     if (!existingProgress) {
-      const initialLevels = await prisma.level.findMany({
+      const firstLevel = await prisma.level.findFirst({
         where: {
           map_id: mapId,
-          level_number: {
-            in: [1],
-          },
         },
+        orderBy: { level_id: "asc" },
       });
 
-      if (initialLevels.length > 0) {
-        await prisma.playerProgress.createMany({
-          data: initialLevels.map((level) => ({
+      if (firstLevel) {
+        const isMicomiButton = firstLevel.level_type === "micomiButton";
+
+        await prisma.playerProgress.create({
+          data: {
             player_id: playerId,
-            level_id: level.level_id,
-            current_level: level.level_number,
-            is_completed: false,
+            level_id: firstLevel.level_id,
+            current_level: firstLevel.level_number,
+            is_completed: isMicomiButton,
+            completed_at: isMicomiButton ? new Date() : null,
             attempts: 0,
-          })),
-          skipDuplicates: true,
+            player_answer: {},
+            challenge_start_time: new Date(),
+            player_hp: 0,
+            enemy_hp: 0,
+            battle_status: "in_progress",
+            coins_earned: 0,
+            total_points_earned: 0,
+            total_exp_points_earned: 0,
+            wrong_challenges: [],
+            consecutive_corrects: 0,
+            consecutive_wrongs: 0,
+            has_reversed_curse: false,
+            has_boss_shield: false,
+            has_force_character_attack_type: false,
+            has_both_hp_decrease: false,
+            has_permuted_ss: false,
+            has_shuffle_ss: false,
+            took_damage: false,
+            has_strong_effect: false,
+            has_freeze_effect: false,
+            ...(isMicomiButton ? { done_micomi_level: true } : {}),
+          },
         });
+
+        console.log(
+          `Created progress for first level ${firstLevel.level_id}${
+            isMicomiButton ? " (auto-completed micomi)" : ""
+          }`
+        );
+
+        const secondLevel = await prisma.level.findFirst({
+          where: {
+            map_id: mapId,
+            level_id: { gt: firstLevel.level_id },
+          },
+          orderBy: { level_id: "asc" },
+        });
+
+        if (secondLevel) {
+          await prisma.playerProgress.create({
+            data: {
+              player_id: playerId,
+              level_id: secondLevel.level_id,
+              current_level: secondLevel.level_number,
+              is_completed: false,
+              attempts: 0,
+              player_answer: {},
+              challenge_start_time: new Date(),
+              player_hp: 0,
+              enemy_hp: 0,
+              battle_status: "in_progress",
+              coins_earned: 0,
+              total_points_earned: 0,
+              total_exp_points_earned: 0,
+              wrong_challenges: [],
+              consecutive_corrects: 0,
+              consecutive_wrongs: 0,
+              has_reversed_curse: false,
+              has_boss_shield: false,
+              has_force_character_attack_type: false,
+              has_both_hp_decrease: false,
+              has_permuted_ss: false,
+              has_shuffle_ss: false,
+              took_damage: false,
+              has_strong_effect: false,
+              has_freeze_effect: false,
+              ...(secondLevel.level_type === "shopButton"
+                ? { done_shop_level: false }
+                : {}),
+              ...(secondLevel.level_type === "micomiButton"
+                ? { done_micomi_level: false }
+                : {}),
+            },
+          });
+
+          console.log(`Unlocked second level ${secondLevel.level_id}`);
+        }
       }
     }
   }
