@@ -65,6 +65,7 @@ export const imagesUrls = [
   "https://micomi-assets.me/Micomi%20Celebrating/Failed1.png",
   "https://micomi-assets.me/Micomi%20Celebrating/Failed2.png",
   "https://micomi-assets.me/Micomi%20Celebrating/Failed3.png",
+
   //Combat backgrounds (all islands)
   "https://micomi-assets.me/Maps/Greenland/1.png",
   "https://micomi-assets.me/Maps/Greenland/2.png",
@@ -106,6 +107,7 @@ export const imagesUrls = [
   "https://micomi-assets.me/Maps/Snowland/8.png",
   "https://micomi-assets.me/Maps/Snowland/9.png",
   "https://micomi-assets.me/Maps/Snowland/10.png",
+
   //Badges
   "https://micomi-assets.me/Badges%20Updated/Badges_HTML%20HERO.png",
   "https://micomi-assets.me/Landscape%20Badges/HTML%20Hero.png",
@@ -129,12 +131,15 @@ export const imagesUrls = [
   "https://micomi-assets.me/Landscape%20Badges/Master%20Beater.png",
   "https://micomi-assets.me/Badges/MICOMI'S%20FRIEND.png",
   "https://micomi-assets.me/Landscape%20Badges/Micomi's%20Friend%201.png",
+
   //Intro comics
-  "https://micomi-assets.me/Comics/Intro%20Micomi/C_page1.png",
-  "https://micomi-assets.me/Comics/Intro%20Micomi/C_page2.png",
-  "https://micomi-assets.me/Comics/Intro%20Micomi/C_page3.png",
-  "https://micomi-assets.me/Comics/Intro%20Micomi/C_page4.png",
-  "https://micomi-assets.me/Comics/Intro%20Micomi/C_page5.png",
+  "https://micomi-assets.me/Comics/Intro%20Micomi/Cpage1.png",
+  "https://micomi-assets.me/Comics/Intro%20Micomi/Cpage2.png",
+  "https://micomi-assets.me/Comics/Intro%20Micomi/Cpage3.png",
+  "https://micomi-assets.me/Comics/Intro%20Micomi/Cpage4.png",
+  "https://micomi-assets.me/Comics/Intro%20Micomi/Cpage5.png",
+  "https://micomi-assets.me/Comics/Intro%20Micomi/Cpage6.png",
+
   /*Greenland Enemies*/
   //Draco
   "https://micomi-assets.me/Enemies/Greenland/Draco/idle1.png",
@@ -230,6 +235,7 @@ export const imagesUrls = [
   "https://micomi-assets.me/Enemies/Greenland/Boss%20Darco/run_lkcbug.png",
   "https://micomi-assets.me/Enemies/Avatar/bossdarko_ppwb8u.png",
   "https://micomi-assets.me/Enemies/Greenland/Boss%20Darco/attack2.png",
+
   //Autumnland Enemies (no boss yet)
   //Barbalony
   "https://micomi-assets.me/Enemies/Autumn%20Land/Barbalony/idle.png",
@@ -317,7 +323,9 @@ export const imagesUrls = [
   "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Antcool/run.png",
   "https://micomi-assets.me/Enemies/Avatar/Autumn%20Enemies%20Avatar/bossantcool.png",
   "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Antcool/attack2.png",
-  //Boss Scorcharach (Lava I guess and assume)
+
+  //Lavaland Enemies
+  //Boss Scorcharach
   "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Scorcharach/idle.png",
   "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Scorcharach/attack1.png",
   "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Scorcharach/death.png",
@@ -325,9 +333,203 @@ export const imagesUrls = [
   "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Scorcharach/run.png",
   "https://micomi-assets.me/Enemies/Avatar/Autumn%20Enemies%20Avatar/BossScorcharach.png",
   "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Scorcharach/attack2.png",
+  //Alipatone
+  "https://micomi-assets.me/Enemies/Lava%20Land/Alipatone/idle.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Alipatone/attack.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Alipatone/die.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Alipatone/hurt.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Alipatone/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Lava%20Avatar/Alipatone.png",
+  //Termity
+  "https://micomi-assets.me/Enemies/Lava%20Land/Termity/idle.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Termity/attack.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Termity/die.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Termity/hurt.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Termity/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Lava%20Avatar/Termity.png",
+  //Carter De Pelar
+  "https://micomi-assets.me/Enemies/Lava%20Land/Carter%20De%20Pelar/idle.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Carter%20De%20Pelar/attack.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Carter%20De%20Pelar/death.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Carter%20De%20Pelar/hurt.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Carter%20De%20Pelar/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Lava%20Avatar/Carter%20De%20Pelar.png",
+  //Krikrok
+  "https://micomi-assets.me/Enemies/Lava%20Land/Krikrok/idle.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Krikrok/attack.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Krikrok/die.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Krikrok/hurt.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Krikrok/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Lava%20Avatar/Krikrok.png",
+  //Timothymos
+  "https://micomi-assets.me/Enemies/Lava%20Land/Timothymos/idle.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Timothymos/attack.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Timothymos/die.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Timothymos/hurt.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Timothymos/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Lava%20Avatar/Timothymos.png",
+  //Shopper
+  "https://micomi-assets.me/Enemies/Lava%20Land/Shopper/idle.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Shopper/attack.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Shopper/die.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Shopper/hurt.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Shopper/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Lava%20Avatar/Shopper.png",
+  //Ayla Sheesh
+  "https://micomi-assets.me/Enemies/Lava%20Land/Ayla%20Shees/idle.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Ayla%20Shees/attack.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Ayla%20Shees/die.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Ayla%20Shees/hurt.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Ayla%20Shees/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Lava%20Avatar/Ayla%20Shees.png",
+  //Boss Pyroformic
+  "https://micomi-assets.me/Enemies/Lava%20Land/Boss%20Pyroformic/idle.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Boss%20Pyroformic/attack1.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Boss%20Pyroformic/die.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Boss%20Pyroformic/hurt.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Boss%20Pyroformic/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Lava%20Avatar/Boss%20Pyroformic.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Boss%20Pyroformic/attack2.png",
+  //Boss Scorcharach
+  "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Scorcharach/idle.png",
+  "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Scorcharach/attack1.png",
+  "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Scorcharach/death.png",
+  "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Scorcharach/hurt.png",
+  "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Scorcharach/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Lava%20Avatar/Scorcharachc%20FInal.png",
+  "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Scorcharach/attack2.png",
+  //Bossoky
+  "https://micomi-assets.me/Enemies/Lava%20Land/Bossoky/idle.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Bossoky/attack.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Bossoky/die.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Bossoky/hurt.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Bossoky/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Lava%20Avatar/Bossoky.png",
+  //Celhegred
+  "https://micomi-assets.me/Enemies/Lava%20Land/Celhegred/idle.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Bossoky/attack.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Celhegred/die.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Celhegred/hurt.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Celhegred/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Lava%20Avatar/Celhegred.png",
+  //Dahonda
+  "https://micomi-assets.me/Enemies/Lava%20Land/Dahonda/idle.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Dahonda/attack.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Dahonda/die.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Dahonda/hurt.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Dahonda/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Lava%20Avatar/Dahonda.png",
+  //Boss Maggmaw
+  "https://micomi-assets.me/Enemies/Lava%20Land/Boss%20Maggmaw/idle.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Boss%20Maggmaw/attack1.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Boss%20Maggmaw/die.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Boss%20Maggmaw/hurt.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Boss%20Maggmaw/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Lava%20Avatar/Boss%20Maggmaw.png",
+  "https://micomi-assets.me/Enemies/Lava%20Land/Boss%20Maggmaw/attack2.png",
+
+  //Iceland Enemies
+  //Blububee
+  "https://micomi-assets.me/Enemies/Ice%20Land/blububee/idle.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/blububee/attack.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/blububee/death.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/blububee/hurt.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/blububee/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Ice%20Land/Blububee.png",
+  //Beernabee
+  "https://micomi-assets.me/Enemies/Ice%20Land/beernabee/idle.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/beernabee/attack.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/beernabee/death.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/beernabee/hurt.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/beernabee/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Ice%20Land/beernabee.png",
+  //Winkito
+  "https://micomi-assets.me/Enemies/Ice%20Land/Winkito/idle.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Winkito/attack.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Winkito/death.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Winkito/hurt.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Winkito/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Ice%20Land/winkito.png",
+  //Triyaling
+  "https://micomi-assets.me/Enemies/Ice%20Land/Triyaling/idle.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Triyaling/attack.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Triyaling/death.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Triyaling/hurt.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Triyaling/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Ice%20Land/triyaling.png",
+  //Spiky
+  "https://micomi-assets.me/Enemies/Ice%20Land/Spiky/idle.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Spiky/attack.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Spiky/death.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Spiky/hurt.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Spiky/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Ice%20Land/Spiky.png",
+  //Mothier
+  "https://micomi-assets.me/Enemies/Ice%20Land/Mothier/idle.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Mothier/attack.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Mothier/death.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Mothier/hurt.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Mothier/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Ice%20Land/Mothier.png",
+  //Mosicikito
+  "https://micomi-assets.me/Enemies/Ice%20Land/Mosicikito/idle.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Mosicikito/attack.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Mosicikito/death.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Mosicikito/hurt.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Mosicikito/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Ice%20Land/Mosicikito.png",
+  //King Feanaly
+  "https://micomi-assets.me/Enemies/Ice%20Land/King%20Feanaly/idle.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/King%20Feanaly/attack1.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/King%20Feanaly/death.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/King%20Feanaly/hurt.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/King%20Feanaly/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Ice%20Land/Boss%20King%20Feanaly.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/King%20Feanaly/attack2.png",
+  //Icespider
+  "https://micomi-assets.me/Enemies/Ice%20Land/Icespider/idle.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Icespider/attack.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Icespider/death.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Icespider/hurt.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Icespider/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Ice%20Land/icespider.png",
+  //Cooliro
+  "https://micomi-assets.me/Enemies/Ice%20Land/Cooliro/idle.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Cooliro/attack.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Cooliro/death.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Cooliro/hurt.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Cooliro/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Ice%20Land/Cooliro.png",
+  //Coldupillar
+  "https://micomi-assets.me/Enemies/Ice%20Land/Coldupillar/idle.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Coldupillar/attack.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Coldupillar/death.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Coldupillar/hurt.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Coldupillar/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Ice%20Land/coldupillar.png",
+  //Boss Icycreamero
+  "https://micomi-assets.me/Enemies/Ice%20Land/Boss%20Icycreamero/idle.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Boss%20Icycreamero/attack1.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Boss%20Icycreamero/death.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Boss%20Icycreamero/hurt.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Boss%20Icycreamero/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Ice%20Land/Boss%20Icycreamero.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Boss%20Icycreamero/attack1.png",
+  //Boss Scythe
+  "https://micomi-assets.me/Enemies/Ice%20Land/Boss%20Cryo-Scythe%20Broolord/idle.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Boss%20Cryo-Scythe%20Broolord/attack1.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Boss%20Cryo-Scythe%20Broolord/death.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Boss%20Cryo-Scythe%20Broolord/hurt.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Boss%20Cryo-Scythe%20Broolord/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Ice%20Land/Boss%20Cryo-Scythe%20Broodlord.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/Boss%20Cryo-Scythe%20Broolord/attack2.png",
+
   //Versus Background
   "https://micomi-assets.me/Versus%20Maps/Green.png",
   "https://micomi-assets.me/Versus%20Maps/Lava.png",
   "https://micomi-assets.me/Sounds/Final/Snowland.mp3",
   "https://micomi-assets.me/Versus%20Maps/Autumn.png",
+
+  //Potion Shop Button
+  "https://micomi-assets.me/Icons%20Shop/Shop%20Button.png",
 ];
