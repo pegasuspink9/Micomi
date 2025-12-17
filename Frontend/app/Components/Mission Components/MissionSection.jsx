@@ -4,10 +4,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { gameScale } from '../Responsiveness/gameResponsive';
 import { useQuests } from '../../hooks/useQuests';
 import MissionTabButton from './MissionTabButton';
-import QuestCard from './QuestCard';
+import QuestCard, { RewardModal } from './QuestCard'; // Import RewardModal
 
 const MissionSection = ({ playerId = 11 }) => {
   const [activeTab, setActiveTab] = useState('Daily');
+  
+  // Add modal state management
+  const [showRewardModal, setShowRewardModal] = useState(false);
+  const [currentRewards, setCurrentRewards] = useState(null);
   
   const {
     questsData,
@@ -38,12 +42,35 @@ const MissionSection = ({ playerId = 11 }) => {
     }
   };
 
-  const handleClaimReward = async (playerQuestId) => {
+  const handleClaimReward = async (questId) => {
     try {
-      await claimReward(playerQuestId);
+      // Find the quest to get reward values
+      const allQuests = [...getDailyQuests(), ...getWeeklyQuests(), ...getMonthlyQuests()];
+      const quest = allQuests.find(q => q.quest_id === questId);
+      
+      if (!quest) {
+        console.error('Quest not found');
+        return;
+      }
+
+      // Call the claim reward function
+      await claimReward(questId);
+      
+      // Show modal with rewards
+      setCurrentRewards({
+        exp: quest.reward_exp,
+        coins: quest.reward_coins
+      });
+      setShowRewardModal(true);
+      
     } catch (err) {
       console.error('Claim failed:', err);
     }
+  };
+
+  const handleCloseModal = () => {
+    setShowRewardModal(false);
+    setCurrentRewards(null);
   };
 
   if (loading) {
@@ -173,6 +200,13 @@ const MissionSection = ({ playerId = 11 }) => {
           <View/>
         </ScrollView>
       </LinearGradient>
+
+      {/* Reward Modal - Add this at the end */}
+      <RewardModal
+        visible={showRewardModal}
+        onClose={handleCloseModal}
+        rewards={currentRewards}
+      />
     </View>
   );
 };
@@ -262,7 +296,7 @@ const styles = StyleSheet.create({
     left: gameScale(10),
     right: gameScale(10),
   },
-    summaryContainer: {
+  summaryContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',

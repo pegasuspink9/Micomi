@@ -1,12 +1,69 @@
 import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, TouchableWithoutFeedback } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { gameScale } from '../Responsiveness/gameResponsive';
 import { questService } from '../../services/questService';
 
+// --- Reward Modal Component ---
+export const RewardModal = ({ visible, onClose, rewards }) => {
+  if (!visible || !rewards) return null;
+
+  return (
+    <Modal
+      transparent={true}
+      visible={visible}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View style={modalStyles.overlay}>
+          <TouchableWithoutFeedback>
+            <View style={modalStyles.modalContainer}>
+              <LinearGradient
+                colors={['#1e3a5f', '#0d1f33']}
+                style={modalStyles.modalGradient}
+              >
+                <Text style={modalStyles.title}>REWARDS CLAIMED!</Text>
+                
+                <View style={modalStyles.rewardsContainer}>
+                  {/* EXP Reward */}
+                  <View style={modalStyles.rewardItem}>
+                    <View style={[modalStyles.iconContainer, { borderColor: '#4a90d9' }]}>
+                      <Text style={modalStyles.rewardIcon}>⭐</Text>
+                    </View>
+                    <Text style={modalStyles.rewardLabel}>EXP</Text>
+                    <Text style={modalStyles.rewardValue}>+{rewards.exp}</Text>
+                  </View>
+
+                  {/* Divider */}
+                  <View style={modalStyles.divider} />
+
+                  {/* Coins Reward */}
+                  <View style={modalStyles.rewardItem}>
+                    <View style={[modalStyles.iconContainer, { borderColor: '#FFD700' }]}>
+                      <Text style={modalStyles.rewardIcon}>🪙</Text>
+                    </View>
+                    <Text style={modalStyles.rewardLabel}>COINS</Text>
+                    <Text style={modalStyles.rewardValue}>+{rewards.coins}</Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity onPress={onClose} style={modalStyles.tapContainer}>
+                  <Text style={modalStyles.tapText}>Tap to continue</Text>
+                </TouchableOpacity>
+              </LinearGradient>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
+  );
+};
+
 const QuestCard = ({ quest, onClaim, claiming = false }) => {
   const {
     player_quest_id,
+    quest_id,
     title,
     description,
     objective_type,
@@ -24,113 +81,72 @@ const QuestCard = ({ quest, onClaim, claiming = false }) => {
   const isClaimable = is_completed && !is_claimed;
   const objectiveLabel = questService.formatObjectiveType(objective_type);
 
-  // Generate random dots for cartoonish effect - memoized to prevent re-renders
   const dots = useMemo(() => {
     const dotArray = [];
-    const dotCount = 12; // Number of dots
-    
+    const dotCount = 12;
     for (let i = 0; i < dotCount; i++) {
       dotArray.push({
         id: i,
         top: `${Math.random() * 90 + 5}%`,
         left: `${Math.random() * 90 + 5}%`,
-        size: gameScale(Math.random() * 6 + 3), // Random size between 3-9
-        opacity: Math.random() * 0.15 + 0.05, // Random opacity between 0.05-0.2
-        isLight: Math.random() > 0.5, // Randomly light or dark dot
+        size: gameScale(Math.random() * 6 + 3),
+        opacity: Math.random() * 0.15 + 0.05,
+        isLight: Math.random() > 0.5,
       });
     }
     return dotArray;
-  }, [player_quest_id]); // Regenerate only when quest changes
+  }, [player_quest_id]);
 
-    const getGradientColors = () => {
-    if (is_claimed) {
-      return ['#2d4a2d', '#1a2e1a'];
-    }
-    if (isClaimable) {
-      return ['#2d5a2d', '#1a3d1a'];
-    }
+  const getGradientColors = () => {
+    if (is_claimed) return ['#2d4a2d', '#1a2e1a'];
+    if (isClaimable) return ['#2d5a2d', '#1a3d1a'];
     switch (quest_period) {
-      case 'daily':
-        return ['#1e3a5f', '#0d1f33']; // Dark blue
-      case 'weekly':
-        return ['#2a4a6e', '#15304d']; // Medium blue
-      case 'monthly':
-        return ['#1a5276', '#0e3a52']; // Teal blue
-      default:
-        return ['#1e3a5f', '#0d1f33'];
+      case 'daily': return ['#1e3a5f', '#0d1f33'];
+      case 'weekly': return ['#2a4a6e', '#15304d'];
+      case 'monthly': return ['#1a5276', '#0e3a52'];
+      default: return ['#1e3a5f', '#0d1f33'];
     }
   };
 
-  // Get theme-blended border colors based on quest period
- const getBorderColors = () => {
+  const getBorderColors = () => {
     if (is_claimed) {
       return {
-        outerBg: '#3d5a3d',
-        outerBorderTop: '#2d4a2d',
-        outerBorderBottom: '#4a6b4a',
-        middleBg: '#2d4a2d',
-        middleBorderTop: '#4CAF50',
-        middleBorderBottom: '#1a2e1a',
-        innerBg: 'rgba(76, 175, 80, 0.15)',
-        innerBorder: 'rgba(76, 175, 80, 0.3)',
+        outerBg: '#3d5a3d', outerBorderTop: '#2d4a2d', outerBorderBottom: '#4a6b4a',
+        middleBg: '#2d4a2d', middleBorderTop: '#4CAF50', middleBorderBottom: '#1a2e1a',
+        innerBg: 'rgba(76, 175, 80, 0.15)', innerBorder: 'rgba(76, 175, 80, 0.3)',
       };
     }
     if (isClaimable) {
       return {
-        outerBg: '#2d5a2d',
-        outerBorderTop: '#1a3d1a',
-        outerBorderBottom: '#4CAF50',
-        middleBg: '#1a3d1a',
-        middleBorderTop: '#66BB6A',
-        middleBorderBottom: '#0d260d',
-        innerBg: 'rgba(76, 175, 80, 0.2)',
-        innerBorder: 'rgba(102, 187, 106, 0.4)',
+        outerBg: '#2d5a2d', outerBorderTop: '#1a3d1a', outerBorderBottom: '#4CAF50',
+        middleBg: '#1a3d1a', middleBorderTop: '#66BB6A', middleBorderBottom: '#0d260d',
+        innerBg: 'rgba(76, 175, 80, 0.2)', innerBorder: 'rgba(102, 187, 106, 0.4)',
       };
     }
     switch (quest_period) {
       case 'daily':
         return {
-          outerBg: '#1e3a5f',
-          outerBorderTop: '#0d1f33',
-          outerBorderBottom: '#2d5a87',
-          middleBg: '#152d4a',
-          middleBorderTop: '#4a90d9',
-          middleBorderBottom: '#0a1929',
-          innerBg: 'rgba(74, 144, 217, 0.15)',
-          innerBorder: 'rgba(74, 144, 217, 0.3)',
+          outerBg: '#1e3a5f', outerBorderTop: '#0d1f33', outerBorderBottom: '#2d5a87',
+          middleBg: '#152d4a', middleBorderTop: '#4a90d9', middleBorderBottom: '#0a1929',
+          innerBg: 'rgba(74, 144, 217, 0.15)', innerBorder: 'rgba(74, 144, 217, 0.3)',
         };
       case 'weekly':
         return {
-          outerBg: '#2a4a6e',
-          outerBorderTop: '#15304d',
-          outerBorderBottom: '#3d6a94',
-          middleBg: '#1f3a57',
-          middleBorderTop: '#5a9fd4',
-          middleBorderBottom: '#0f2536',
-          innerBg: 'rgba(90, 159, 212, 0.15)',
-          innerBorder: 'rgba(90, 159, 212, 0.3)',
+          outerBg: '#2a4a6e', outerBorderTop: '#15304d', outerBorderBottom: '#3d6a94',
+          middleBg: '#1f3a57', middleBorderTop: '#5a9fd4', middleBorderBottom: '#0f2536',
+          innerBg: 'rgba(90, 159, 212, 0.15)', innerBorder: 'rgba(90, 159, 212, 0.3)',
         };
       case 'monthly':
         return {
-          outerBg: '#1a5276',
-          outerBorderTop: '#0e3a52',
-          outerBorderBottom: '#2980b9',
-          middleBg: '#14415e',
-          middleBorderTop: '#3498db',
-          middleBorderBottom: '#0a2d42',
-          innerBg: 'rgba(52, 152, 219, 0.15)',
-          innerBorder: 'rgba(52, 152, 219, 0.3)',
+          outerBg: '#1a5276', outerBorderTop: '#0e3a52', outerBorderBottom: '#2980b9',
+          middleBg: '#14415e', middleBorderTop: '#3498db', middleBorderBottom: '#0a2d42',
+          innerBg: 'rgba(52, 152, 219, 0.15)', innerBorder: 'rgba(52, 152, 219, 0.3)',
         };
       default:
         return {
-          outerBg: '#1e3a5f',
-          outerBorderTop: '#0d1f33',
-          outerBorderBottom: '#2d5a87',
-          middleBg: '#152d4a',
-          middleBorderTop: '#4a90d9',
-          middleBorderBottom: '#0a1929',
-          innerBg: 'rgba(74, 144, 217, 0.15)',
-          innerBorder: 'rgba(74, 144, 217, 0.3)',
+          outerBg: '#1e3a5f', outerBorderTop: '#0d1f33', outerBorderBottom: '#2d5a87',
+          middleBg: '#152d4a', middleBorderTop: '#4a90d9', middleBorderBottom: '#0a1929',
+          innerBg: 'rgba(74, 144, 217, 0.15)', innerBorder: 'rgba(74, 144, 217, 0.3)',
         };
     }
   };
@@ -144,27 +160,20 @@ const QuestCard = ({ quest, onClaim, claiming = false }) => {
   };
 
   const getButtonBorderColors = () => {
-    if (is_claimed || isClaimable) {
-      return {
-        top: '#66BB6A',
-        bottom: '#2d4a2d',
-      };
-    }
+    if (is_claimed || isClaimable) return { top: '#66BB6A', bottom: '#2d4a2d' };
     switch (quest_period) {
-      case 'daily':
-        return { top: '#4a90d9', bottom: '#0d1f33' }; // Dark blue - matches daily theme
-      case 'weekly':
-        return { top: '#5a9fd4', bottom: '#0f2536' }; // Medium blue - matches weekly theme
-      case 'monthly':
-        return { top: '#3498db', bottom: '#0a2d42' }; // Teal blue - matches monthly theme
-      default:
-        return { top: '#4a90d9', bottom: '#0d1f33' };
+      case 'daily': return { top: '#4a90d9', bottom: '#0d1f33' };
+      case 'weekly': return { top: '#5a9fd4', bottom: '#0f2536' };
+      case 'monthly': return { top: '#3498db', bottom: '#0a2d42' };
+      default: return { top: '#4a90d9', bottom: '#0d1f33' };
     }
   };
 
+  // NOTE: Pass the claim action up to parent. 
+  // The parent component should handle the modal visibility based on the result.
   const handleClaim = () => {
     if (isClaimable && onClaim) {
-      onClaim(player_quest_id);
+      onClaim(quest_id);
     }
   };
 
@@ -206,7 +215,6 @@ const QuestCard = ({ quest, onClaim, claiming = false }) => {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            {/* Cartoonish Dots Overlay */}
             <View style={styles.dotsOverlay} pointerEvents="none">
               {dots.map((dot) => (
                 <View
@@ -228,7 +236,6 @@ const QuestCard = ({ quest, onClaim, claiming = false }) => {
               ))}
             </View>
 
-            {/* Rewards Section - 25% */}
             <View style={styles.rewardsSection}>
               <View style={[styles.rewardBox, { borderColor: borderColors.innerBorder }]}>
                 <Text style={styles.rewardTitle}>Rewards</Text>
@@ -246,15 +253,12 @@ const QuestCard = ({ quest, onClaim, claiming = false }) => {
               </View>
             </View>
 
-            {/* Details Section - 50% */}
             <View style={[styles.detailsSection, { borderRightColor: borderColors.innerBorder }]}>
-              {/* Row 1: Description */}
               <View style={styles.descriptionRow}>
                 <Text style={styles.questTitle} numberOfLines={1}>{title}</Text>
                 <Text style={styles.questDescription} numberOfLines={2}>{description}</Text>
               </View>
               
-              {/* Row 2: Progress Bar */}
               <View style={styles.progressRow}>
                 <View style={[styles.progressBarContainer, { borderColor: borderColors.innerBorder }]}>
                   <View 
@@ -272,7 +276,6 @@ const QuestCard = ({ quest, onClaim, claiming = false }) => {
                 </Text>
               </View>
               
-              {/* Row 3: Objective Type */}
               <View style={styles.objectiveRow}>
                 <View style={[styles.objectiveTag, { borderColor: borderColors.innerBorder }]}>
                   <Text style={styles.objectiveLabel}>{objectiveLabel}</Text>
@@ -285,7 +288,6 @@ const QuestCard = ({ quest, onClaim, claiming = false }) => {
               </View>
             </View>
 
-            {/* Claim Button Section - 25% */}
             <View style={styles.claimSection}>
               <TouchableOpacity
                 style={[
@@ -323,22 +325,98 @@ const QuestCard = ({ quest, onClaim, claiming = false }) => {
   );
 };
 
-const styles = StyleSheet.create({
-   cardBorderOuter: {
+const modalStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '80%',
+    borderRadius: gameScale(20),
+    borderWidth: gameScale(2),
+    borderColor: '#4a90d9',
+    overflow: 'hidden',
+  },
+  modalGradient: {
+    padding: gameScale(20),
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: gameScale(16),
+    fontFamily: 'Grobold',
+    color: '#FFD700',
+    marginBottom: gameScale(15),
+    textShadowColor: '#000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+    textAlign: 'center',
+  },
+  rewardsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: gameScale(20),
+  },
+  rewardItem: {
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: gameScale(40),
+    height: gameScale(40),
+    borderRadius: gameScale(20),
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: gameScale(1),
-    padding: gameScale(1), // Reduced
+    marginBottom: gameScale(5),
+  },
+  rewardIcon: {
+    fontSize: gameScale(20),
+  },
+  rewardLabel: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: gameScale(8),
+    fontFamily: 'Grobold',
+    marginBottom: gameScale(2),
+  },
+  rewardValue: {
+    color: '#fff',
+    fontSize: gameScale(12),
+    fontFamily: 'Grobold',
+  },
+  divider: {
+    width: gameScale(1),
+    height: gameScale(30),
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  tapContainer: {
+    marginTop: gameScale(10),
+  },
+  tapText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: gameScale(10),
+    fontFamily: 'Grobold',
+  },
+});
+
+const styles = StyleSheet.create({
+  cardBorderOuter: {
+    borderWidth: gameScale(1),
+    padding: gameScale(1),
     shadowColor: '#000',
     shadowOffset: { width: gameScale(2), height: gameScale(3) },
     shadowOpacity: 0.6,
     shadowRadius: gameScale(4),
     elevation: 5,
     overflow: 'hidden',
-    borderRadius: gameScale(12), // Slightly smaller
+    borderRadius: gameScale(12),
   },
   claimedCard: {
     opacity: 0.7,
   },
-  // Middle border - theme colored
   cardBorderMiddle: {
     flex: 1,
     borderWidth: gameScale(1),
@@ -346,7 +424,6 @@ const styles = StyleSheet.create({
     borderRadius: gameScale(12),
     overflow: 'hidden',
   },
-  // Inner border - theme colored
   cardBorderInner: {
     flex: 1,
     borderRadius: gameScale(10),
@@ -359,7 +436,6 @@ const styles = StyleSheet.create({
     minHeight: gameScale(75),
     position: 'relative',
   },
-  // Cartoonish dots overlay
   dotsOverlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 0,
@@ -367,7 +443,6 @@ const styles = StyleSheet.create({
   dot: {
     position: 'absolute',
   },
-  // Rewards Section - 25%
   rewardsSection: {
     width: '25%',
     justifyContent: 'center',
@@ -419,7 +494,6 @@ const styles = StyleSheet.create({
     height: gameScale(20),
     opacity: 0.5,
   },
-  // Details Section - 50%
   detailsSection: {
     width: '50%',
     paddingHorizontal: gameScale(8),
@@ -510,7 +584,6 @@ const styles = StyleSheet.create({
     fontSize: gameScale(8),
     fontFamily: 'Grobold',
   },
-  // Claim Button Section - 25%
   claimSection: {
     width: '25%',
     justifyContent: 'center',

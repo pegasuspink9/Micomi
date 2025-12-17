@@ -14,10 +14,10 @@ export const questService = {
   },
 
   // Claim a completed quest reward
-  claimQuestReward: async (playerId, playerQuestId) => {
+  claimQuestReward: async (playerId, questId) => {
     try {
-      console.log(`🎁 Claiming quest reward ${playerQuestId} for player ${playerId}...`);
-      const response = await apiService.post(`/quest/claim/${playerId}/${playerQuestId}`);
+      console.log(`🎁 Claiming quest reward ${questId} for player ${playerId}...`);
+      const response = await apiService.post(`/quest/${playerId}/${questId}/claim`);
       
       if (!response.success) {
         throw new Error(response.message || 'Failed to claim quest reward');
@@ -26,10 +26,11 @@ export const questService = {
       console.log(`🎁 Quest reward claimed successfully`);
       return response;
     } catch (error) {
-      console.error(`Failed to claim quest ${playerQuestId}:`, error);
+      console.error(`Failed to claim quest ${questId}:`, error);
       throw error;
     }
   },
+
 
   // Transform quest data for UI
   transformQuestData: (apiData) => {

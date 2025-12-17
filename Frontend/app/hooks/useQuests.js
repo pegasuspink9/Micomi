@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { questService } from '../services/questService';
+import { Alert } from 'react-native';
 
 export const useQuests = (playerId = 11) => {
   const [questsData, setQuestsData] = useState(null);
@@ -33,15 +34,15 @@ export const useQuests = (playerId = 11) => {
   }, [playerId]);
 
   // Claim quest reward
-  const claimReward = useCallback(async (playerQuestId) => {
+  const claimReward = useCallback(async (questId) => {
     try {
       setClaiming(true);
-      setClaimingQuestId(playerQuestId);
+      setClaimingQuestId(questId);
       setError(null);
       
-      console.log(`🎁 Claiming reward for quest ${playerQuestId}...`);
+      console.log(`🎁 Claiming reward for quest ${questId}...`);
       
-      const response = await questService.claimQuestReward(playerId, playerQuestId);
+      const response = await questService.claimQuestReward(playerId, questId);
       
       // Reload quests to get updated data
       await loadQuests();
@@ -57,6 +58,7 @@ export const useQuests = (playerId = 11) => {
       setClaimingQuestId(null);
     }
   }, [playerId, loadQuests]);
+
 
   // Get quests by period
   const getDailyQuests = useCallback(() => {
