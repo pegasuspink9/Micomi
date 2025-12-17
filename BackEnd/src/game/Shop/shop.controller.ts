@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import * as ShopService from "./shop.service";
-import { errorResponse, successResponse } from "../../../utils/response";
+import {
+  errorShopResponse,
+  successShopResponse,
+} from "../../../utils/response";
 import { SubmitChallengeControllerResult } from "../Challenges/challenges.types";
 
 export const buyPotion = async (req: Request, res: Response) => {
@@ -10,9 +13,14 @@ export const buyPotion = async (req: Request, res: Response) => {
     const potionId = Number(req.params.potionId);
 
     const result = await ShopService.buyPotion(playerId, levelId, potionId);
-    return successResponse(res, result, `Potion purchased successfully`);
+
+    if ("success" in result && !result.success) {
+      return errorShopResponse(res, null, result.message, 400);
+    }
+
+    return successShopResponse(res, result, "Potion purchased successfully");
   } catch (error) {
-    return errorResponse(res, null, (error as Error).message, 400);
+    return errorShopResponse(res, error, (error as Error).message, 400);
   }
 };
 
@@ -21,9 +29,14 @@ export const buyCharacter = async (req: Request, res: Response) => {
   const { characterShopId } = req.body;
   try {
     const result = await ShopService.buyCharacter(playerId, characterShopId);
-    return successResponse(res, result, `Character purchased`, 201);
+
+    if ("success" in result && !result.success) {
+      return errorShopResponse(res, null, result.message, 400);
+    }
+
+    return successShopResponse(res, result, "Character purchased", 201);
   } catch (error) {
-    return errorResponse(res, null, (error as Error).message, 400);
+    return errorShopResponse(res, error, (error as Error).message, 400);
   }
 };
 
@@ -34,7 +47,12 @@ export const usePotion = async (req: Request, res: Response) => {
   const { playerPotionId } = req.body;
 
   if (!playerPotionId || isNaN(Number(playerPotionId))) {
-    return errorResponse(res, null, "playerPotionId is required in body", 400);
+    return errorShopResponse(
+      res,
+      null,
+      "playerPotionId is required in body",
+      400
+    );
   }
 
   const parsedPlayerPotionId = Number(playerPotionId);
@@ -47,17 +65,16 @@ export const usePotion = async (req: Request, res: Response) => {
       parsedPlayerPotionId
     );
 
-    // Check if result is an error response
     if ("success" in result && !result.success) {
-      return errorResponse(res, null, result.message, 400);
+      return errorShopResponse(res, null, result.message, 400);
     }
 
-    return successResponse(
+    return successShopResponse(
       res,
       result,
       `${(result as any).potionType ?? "Unknown"} potion used`
     );
   } catch (error) {
-    return errorResponse(res, null, (error as Error).message, 400);
+    return errorShopResponse(res, error, (error as Error).message, 400);
   }
 };
