@@ -386,6 +386,60 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
   }
 },
 
+  getShopPotions: async (playerId) => {
+    try {
+      console.log(`🧪 Fetching shop potions for player ${playerId}...`);
+      
+      const response = await apiService.get(`/shop/potions/${playerId}`);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to fetch shop potions');
+      }
+
+      const playerPotions = response.data.potions || [];
+      const playerInfo = response.data.player_info || {};
+
+      const transformedPotions = playerPotions.map(potion => ({
+        potion_id: potion.potion_shop_id,
+        potion_name: potion.potion_name,
+        potion_type: potion.potion_type,
+        potion_price: potion.potion_price,
+        player_owned_quantity: potion.quantity,
+        potion_url: universalAssetPreloader.getCachedAssetPath(potion.potion_url),
+        description: potion.potion_description,
+        limit: 10, // default limit
+        boughtInLevel: 0, // default
+        remainToBuy: 10, // default
+      }));
+
+      console.log(`🧪 Found ${transformedPotions.length} shop potions for player ${playerId}`);
+      return { success: true, data: { potionShop: transformedPotions, player_info: playerInfo } };
+    } catch (error) {
+      console.error(`Failed to fetch shop potions for player ${playerId}:`, error);
+      throw error;
+    }
+  },
+
+  buyPotion: async (playerId, potionShopId) => {
+    try {
+      console.log(`🛒 Buying potion ${potionShopId} for player ${playerId}...`);
+
+      const response = await apiService.post(`/shop/buy-potion/${playerId}/${potionShopId}`);
+
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to buy potion');
+      }
+
+      console.log(`🛒 Potion ${potionShopId} purchased successfully for player ${playerId}`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(`❌ Failed to buy potion ${potionShopId}:`, error);
+      return { success: false, error: error.message || 'Failed to buy potion' };
+    }
+  },
+
+  
+
    getPlayerPotions: async (playerId) => {
     try {
       console.log(`🧪 Fetching potions for player ${playerId}...`);
