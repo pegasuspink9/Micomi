@@ -133,7 +133,7 @@ export const selectMap = async (playerId: number, mapId: number) => {
     where: { map_id: mapId },
     include: {
       levels: {
-        orderBy: { level_number: "asc" },
+        orderBy: { level_id: "asc" },
         include: {
           playerProgress: {
             where: { player_id: playerId },

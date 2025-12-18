@@ -15,7 +15,7 @@ export const imagesUrls = [
   "https://micomi-assets.me/Hero/Gino/attack4.png",
   "https://micomi-assets.me/Hero%20Selection%20Components/gino_entrance.png",
   "https://micomi-assets.me/Hero%20Selection%20Components/Gino.png",
-  //ShiShi animations
+  //ShiShi icons and animations
   "https://micomi-assets.me/Icons/Skill%20Icons/Basic%20Attack%20Card.png",
   "https://micomi-assets.me/Icons/Skill%20Icons/Second%20Attack%20Card.png",
   "https://micomi-assets.me/Icons/Skill%20Icons/Third%20Attack%20Card.png",
@@ -32,11 +32,27 @@ export const imagesUrls = [
   "https://micomi-assets.me/Hero/Shi-Shi/death.png",
   "https://micomi-assets.me/Hero%20Portraits/Shi-shi.png",
   "https://micomi-assets.me/Hero/Shi-Shi/attackpose.png",
-  //Leon (no animations yet)
+  //Leon icons and animations
+  "https://micomi-assets.me/Icons/Skill%20Icons/Leon%20Basic%20Final.png",
+  "https://micomi-assets.me/Icons/Skill%20Icons/Leon%202nd%20Final.png",
+  "https://micomi-assets.me/Icons/Skill%20Icons/Leon%20Special.png",
+  "https://micomi-assets.me/Icons/Skill%20Icons/Leon%20Ult.png",
+  "https://micomi-assets.me/Hero/Leon/death.png",
+  "https://micomi-assets.me/Hero/Leon/hurt.png",
+  "https://micomi-assets.me/Hero/Leon/idle.png",
+  "https://micomi-assets.me/Hero/Leon/run.png",
+  "https://micomi-assets.me/Hero/Leon/attack1.png",
+  "https://micomi-assets.me/Hero/Leon/attack2.png",
+  "https://micomi-assets.me/Hero/Leon/attack3.png",
+  "https://micomi-assets.me/Hero/Leon/attack4.png",
   "https://micomi-assets.me/Hero%20Portraits/Leon.png",
   "https://micomi-assets.me/Hero%20Selection%20Components/leon_entrance.png",
   "https://micomi-assets.me/Hero%20Selection%20Components/Leon.png",
-  //Ryron (no animations yet)
+  //Ryron icons and animations
+  "https://micomi-assets.me/Icons/Skill%20Icons/Ryron%20Basic.png",
+  "https://micomi-assets.me/Icons/Skill%20Icons/Ryron%202nd.png",
+  "https://micomi-assets.me/Icons/Skill%20Icons/Ryron%20Special.png",
+  "https://micomi-assets.me/Icons/Skill%20Icons/Ryron%20Ult.png",
   "https://micomi-assets.me/Hero/Ryron/death.png",
   "https://micomi-assets.me/Hero/Ryron/hurt.png",
   "https://micomi-assets.me/Hero/Ryron/idle.png",
@@ -140,6 +156,21 @@ export const imagesUrls = [
   "https://micomi-assets.me/Comics/Intro%20Micomi/Cpage5.png",
   "https://micomi-assets.me/Comics/Intro%20Micomi/Cpage6.png",
 
+  //HTML Intro Comics
+  "https://micomi-assets.me/Comics/HTML%20intro/H_page1.png",
+  "https://micomi-assets.me/Comics/HTML%20intro/H_page2.png",
+  "https://micomi-assets.me/Comics/HTML%20intro/H_page3.png",
+  "https://micomi-assets.me/Comics/HTML%20intro/H_page4.png",
+  "https://micomi-assets.me/Comics/HTML%20intro/H_page5.png",
+  "https://micomi-assets.me/Comics/HTML%20intro/H_page6.png",
+
+  //HTML Greenland 1 [Apple Story]
+  "https://micomi-assets.me/Comics/Greenland%201/G1_page1.png",
+  "https://micomi-assets.me/Comics/Greenland%201/G1_page2.png",
+  "https://micomi-assets.me/Comics/Greenland%201/G1_page3.png",
+  "https://micomi-assets.me/Comics/Greenland%201/G1_page4.png",
+  "https://micomi-assets.me/Comics/Greenland%201/G1_page5.png",
+
   /*Greenland Enemies*/
   //Draco
   "https://micomi-assets.me/Enemies/Greenland/Draco/idle1.png",
@@ -242,7 +273,7 @@ export const imagesUrls = [
   "https://micomi-assets.me/Enemies/Autumn%20Land/Barbalony/idle.png",
   "https://micomi-assets.me/Enemies/Autumn%20Land/Barbalony/death.png",
   "https://micomi-assets.me/Enemies/Autumn%20Land/Barbalony/hurt.png",
-  "https://micomi-assets.me/Enemies/Autumn%20Land/Barbalony/run.png",
+  "https://micomi-assets.me/Enemies/Autumn%20Land/Barbalony/run1.png",
   "https://micomi-assets.me/Enemies/Avatar/Autumn%20Enemies%20Avatar/barbalony.png",
   //Baterlomio
   "https://micomi-assets.me/Enemies/Autumn%20Land/Baterlomio/idle.png",

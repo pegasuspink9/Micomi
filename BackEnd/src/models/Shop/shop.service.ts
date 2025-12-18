@@ -162,6 +162,58 @@ const getCharacterCards = (characterName: string) => {
           "https://micomi-assets.me/Icons/Skill%20Icons/Basic%20Attack%20Card.png",
       },
     ],
+    Ryron: [
+      {
+        attack_type: "Special Attack",
+        card_type: "God’s Judgment",
+        character_attack_card:
+          "https://micomi-assets.me/Icons/Skill%20Icons/Ryron%20Ult.png",
+      },
+      {
+        attack_type: "Third Attack",
+        card_type: "Ether Lance",
+        character_attack_card:
+          "https://micomi-assets.me/Icons/Skill%20Icons/Ryron%20Special.png",
+      },
+      {
+        attack_type: "Second Attack",
+        card_type: "Void Piercer",
+        character_attack_card:
+          "https://micomi-assets.me/Icons/Skill%20Icons/Ryron%202nd.png",
+      },
+      {
+        attack_type: "Basic Attack",
+        card_type: "Velocity Shot",
+        character_attack_card:
+          "https://micomi-assets.me/Icons/Skill%20Icons/Ryron%20Basic.png",
+      },
+    ],
+    Leon: [
+      {
+        attack_type: "Special Attack",
+        card_type: "Inferno Bulwark",
+        character_attack_card:
+          "https://micomi-assets.me/Icons/Skill%20Icons/Leon%20Ult.png",
+      },
+      {
+        attack_type: "Third Attack",
+        card_type: "Cataclysm Break",
+        character_attack_card:
+          "https://micomi-assets.me/Icons/Skill%20Icons/Leon%20Special.png",
+      },
+      {
+        attack_type: "Second Attack",
+        card_type: "Molten Strike",
+        character_attack_card:
+          "https://micomi-assets.me/Icons/Skill%20Icons/Leon%202nd%20Final.png",
+      },
+      {
+        attack_type: "Basic Attack",
+        card_type: "Thunderbound Cleaver",
+        character_attack_card:
+          "https://micomi-assets.me/Icons/Skill%20Icons/Leon%20Basic%20Final.png",
+      },
+    ],
   };
 
   return characterCardsData[characterName] || [];

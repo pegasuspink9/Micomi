@@ -641,6 +641,7 @@ export const submitChallengeService = async (
       fightResult.character_health ?? character.health,
       character.health,
       elapsed,
+      enemy.enemy_name,
       fightResult.enemyHealth ??
         fightResult.enemy?.enemy_health ??
         currentProgress.enemy_hp,
@@ -695,6 +696,7 @@ export const submitChallengeService = async (
         currentProgress.player_hp,
       character.health,
       elapsed,
+      enemy.enemy_name,
       fightResult.enemyHealth ??
         fightResult.enemy?.enemy_health ??
         currentProgress.enemy_hp,
@@ -1067,6 +1069,7 @@ export const submitChallengeService = async (
       fightResult.character_health ?? character.health,
       character.health,
       elapsed,
+      enemy.enemy_name,
       fightResult.enemyHealth ??
         fightResult.enemy?.enemy_health ??
         currentProgress.enemy_hp,

@@ -240,7 +240,8 @@ model Character {
 
   //is_range for ShiShi and Ryron
   is_range         Boolean?          @default(false)
-  attack_pose      String?
+  range_attacks    Json?             @default("[]") //range attacks
+
 
   characterShop     CharacterShop?
   playerCharacter   PlayerCharacter[]

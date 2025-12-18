@@ -161,7 +161,6 @@ export async function updateProgressForChallenge(
 
   if (wasAnySsActive) {
     hasReversedCurse = false;
-    hasBossShield = false;
     hasForceCharacterAttackType = false;
     hasBothHpDecrease = false;
     hasShuffle = false;
