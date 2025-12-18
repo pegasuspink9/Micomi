@@ -249,124 +249,132 @@ const EnemyCharacter = ({
   }, [currentState]);
   // ========== Main Animation Effect ==========
   useEffect(() => {
-    if (currentState === 'attack' && attackInitiated.value) {
-      return;
-    }
+  if (currentState === 'attack' && attackInitiated.value) {
+    return;
+  }
 
-    const config = animationConfig;
-    const targetUrl = config.isCompound ? config.runUrl : config.url;
+  const config = animationConfig;
+  const targetUrl = config.isCompound ? config.runUrl : config.url;
 
-    if (targetUrl && currentAnimationUrl !== targetUrl) {
-      setCurrentAnimationUrl(targetUrl);
-      return; 
-    }
+  if (targetUrl && currentAnimationUrl !== targetUrl) {
+    setCurrentAnimationUrl(targetUrl);
+    return; 
+  }
 
-    // FIX: Check cache for BOTH current URL AND target URL
-    const isCurrentUrlCached = isUrlCached(currentAnimationUrl) || preloadedImages.has(currentAnimationUrl);
-    const isTargetUrlCached = targetUrl ? (isUrlCached(targetUrl) || preloadedImages.has(targetUrl)) : true;
-    const canProceed = imageReady || isCurrentUrlCached || isTargetUrlCached;
-
-    if (isPaused || !canProceed) {
-      cancelAnimation(frameIndex);
-      cancelAnimation(positionX);
-      cancelAnimation(opacity);
-      cancelAnimation(blinkOpacity);
-
-      blinkOpacity.value = 0;
-      return;
-    }
-    
-    if (currentState !== 'attack' && currentState !== 'run') {
-      attackInitiated.value = false;
-    }
+  // FIX: Always allow animations to proceed if cached, regardless of imageReady state
+  const isCurrentUrlCached = isUrlCached(currentAnimationUrl) || preloadedImages.has(currentAnimationUrl);
+  const isTargetUrlCached = targetUrl ? (isUrlCached(targetUrl) || preloadedImages.has(targetUrl)) : true;
+  
+  // FIX: If paused, cancel animations but don't return early if state changes
+  if (isPaused) {
     cancelAnimation(frameIndex);
     cancelAnimation(positionX);
     cancelAnimation(opacity);
     cancelAnimation(blinkOpacity);
     blinkOpacity.value = 0;
-    frameIndex.value = 0;
+    return;
+  }
+
+  // FIX: For attack/hurt/dies states, ALWAYS proceed if URL is cached (ignore imageReady)
+  const isCriticalState = currentState === 'attack' || currentState === 'hurt' || currentState === 'dies';
+  const canProceed = isCriticalState ? (isCurrentUrlCached || isTargetUrlCached) : (imageReady || isCurrentUrlCached || isTargetUrlCached);
+
+  if (!canProceed) {
+    return; // Only block if truly not ready
+  }
+  
+  if (currentState !== 'attack' && currentState !== 'run') {
+    attackInitiated.value = false;
+  }
+  
+  cancelAnimation(frameIndex);
+  cancelAnimation(positionX);
+  cancelAnimation(opacity);
+  cancelAnimation(blinkOpacity);
+  blinkOpacity.value = 0;
+  frameIndex.value = 0;
+
+  positionX.value = 0; 
+  opacity.value = 1;
+
+  if (config.isCompound && currentState === 'attack') {
+    if (attackInitiated.value) return; 
+    attackInitiated.value = true;
+
+    const { runUrl, attackUrl } = config;
+    if (!runUrl || !attackUrl) {
+      runOnJS(notifyAnimationComplete)();
+      return;
+    }
+
+    // FIX: Mark both URLs as ready if cached
+    if (isUrlCached(runUrl)) preloadedImages.set(runUrl, true);
+    if (isUrlCached(attackUrl)) preloadedImages.set(attackUrl, true);
+
+    const RUN_DURATION = 400;
+    const ATTACK_DURATION = ANIMATION_DURATIONS.attack;
 
     positionX.value = 0; 
     opacity.value = 1;
 
-    if (config.isCompound && currentState === 'attack') {
-      if (attackInitiated.value) return; 
-      attackInitiated.value = true;
+    frameIndex.value = withRepeat(
+      withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false
+    );
 
-      const { runUrl, attackUrl } = config;
-      if (!runUrl || !attackUrl) {
-        runOnJS(notifyAnimationComplete)();
-        return;
-      }
+    positionX.value = withTiming(RUN_DISTANCE, { duration: RUN_DURATION, easing: Easing.in(Easing.quad) }, (finished) => {
+      if (!finished) return;
 
-      // FIX: Mark both URLs as ready if cached
-      if (isUrlCached(runUrl)) preloadedImages.set(runUrl, true);
-      if (isUrlCached(attackUrl)) preloadedImages.set(attackUrl, true);
+      cancelAnimation(frameIndex);
+      frameIndex.value = 0;
+      runOnJS(setCurrentAnimationUrl)(attackUrl);
 
-      const RUN_DURATION = 400;
-      const ATTACK_DURATION = ANIMATION_DURATIONS.attack;
-
-      positionX.value = 0; 
-      opacity.value = 1;
-
-      frameIndex.value = withRepeat(
-        withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false
-      );
-
-      positionX.value = withTiming(RUN_DISTANCE, { duration: RUN_DURATION, easing: Easing.in(Easing.quad) }, (finished) => {
-        if (!finished) return;
-
-        cancelAnimation(frameIndex);
-        frameIndex.value = 0;
-        runOnJS(setCurrentAnimationUrl)(attackUrl);
-
-        frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration: ATTACK_DURATION, easing: Easing.linear }, (attackFinished) => {
-          if (attackFinished) {
-            positionX.value = withTiming(0, { duration: 300, easing: Easing.quad }, (returnFinished) => {
-              if (returnFinished) {
-                runOnJS(notifyAnimationComplete)();
-              }
-            });
-          }
-        });
-      });
-      return;
-    }
-
-    if (config.shouldLoop) {
-      if (currentState === 'hurt' && isBonusRound) {
-        blinkOpacity.value = withRepeat(withTiming(0.7, { duration: 100 }), -1, true);
-      }
-      frameIndex.value = withRepeat(
-        withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false
-      );
-      return;
-    }
-
-    if (currentState === 'hurt') {
-      blinkOpacity.value = withRepeat(
-        withTiming(0.7, { duration: 100 }), Math.floor(ANIMATION_DURATIONS.hurt / 200), true
-      );
-    } else {
-      blinkOpacity.value = 0;
-    }
-
-    const duration = ANIMATION_DURATIONS[currentState] || (FRAME_DURATION * TOTAL_FRAMES);
-    frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration, easing: Easing.inOut(Easing.ease) }, (finished) => {
-      if (finished) {
-        if (currentState === 'dies') {
-          opacity.value = withTiming(0, { duration: ANIMATION_DURATIONS.diesOutro }, (fadeFinished) => {
-            if (fadeFinished) runOnJS(notifyAnimationComplete)();
+      frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration: ATTACK_DURATION, easing: Easing.linear }, (attackFinished) => {
+        if (attackFinished) {
+          positionX.value = withTiming(0, { duration: 300, easing: Easing.quad }, (returnFinished) => {
+            if (returnFinished) {
+              runOnJS(notifyAnimationComplete)();
+            }
           });
-        } else {
-          runOnJS(notifyAnimationComplete)();
-          frameIndex.value = 0;
         }
-      }
+      });
     });
-  }, [
-    currentState, isPaused, imageReady, currentAnimationUrl, animationConfig, notifyAnimationComplete, isUrlCached
-  ]);
+    return;
+  }
+
+  if (config.shouldLoop) {
+    if (currentState === 'hurt' && isBonusRound) {
+      blinkOpacity.value = withRepeat(withTiming(0.7, { duration: 100 }), -1, true);
+    }
+    frameIndex.value = withRepeat(
+      withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false
+    );
+    return;
+  }
+
+  if (currentState === 'hurt') {
+    blinkOpacity.value = withRepeat(
+      withTiming(0.7, { duration: 100 }), Math.floor(ANIMATION_DURATIONS.hurt / 200), true
+    );
+  } else {
+    blinkOpacity.value = 0;
+  }
+
+  const duration = ANIMATION_DURATIONS[currentState] || (FRAME_DURATION * TOTAL_FRAMES);
+  frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration, easing: Easing.inOut(Easing.ease) }, (finished) => {
+    if (finished) {
+      if (currentState === 'dies') {
+        opacity.value = withTiming(0, { duration: ANIMATION_DURATIONS.diesOutro }, (fadeFinished) => {
+          if (fadeFinished) runOnJS(notifyAnimationComplete)();
+        });
+      } else {
+        runOnJS(notifyAnimationComplete)();
+        frameIndex.value = 0;
+      }
+    }
+  });
+}, [
+  currentState, isPaused, currentAnimationUrl, animationConfig, notifyAnimationComplete, isUrlCached
+]);
 
   // ========== Animated Styles ==========
   const animatedStyle = useAnimatedStyle(() => {
