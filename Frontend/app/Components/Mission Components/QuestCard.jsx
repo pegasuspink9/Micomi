@@ -1,66 +1,14 @@
-import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, TouchableWithoutFeedback } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { gameScale } from '../Responsiveness/gameResponsive';
 import { questService } from '../../services/questService';
-
-// --- Reward Modal Component ---
-export const RewardModal = ({ visible, onClose, rewards }) => {
-  if (!visible || !rewards) return null;
-
-  return (
-    <Modal
-      transparent={true}
-      visible={visible}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={modalStyles.overlay}>
-          <TouchableWithoutFeedback>
-            <View style={modalStyles.modalContainer}>
-              <LinearGradient
-                colors={['#1e3a5f', '#0d1f33']}
-                style={modalStyles.modalGradient}
-              >
-                <Text style={modalStyles.title}>REWARDS CLAIMED!</Text>
-                
-                <View style={modalStyles.rewardsContainer}>
-                  {/* EXP Reward */}
-                  <View style={modalStyles.rewardItem}>
-                    <View style={[modalStyles.iconContainer, { borderColor: '#4a90d9' }]}>
-                      <Text style={modalStyles.rewardIcon}>⭐</Text>
-                    </View>
-                    <Text style={modalStyles.rewardLabel}>EXP</Text>
-                    <Text style={modalStyles.rewardValue}>+{rewards.exp}</Text>
-                  </View>
-
-                  {/* Divider */}
-                  <View style={modalStyles.divider} />
-
-                  {/* Coins Reward */}
-                  <View style={modalStyles.rewardItem}>
-                    <View style={[modalStyles.iconContainer, { borderColor: '#FFD700' }]}>
-                      <Text style={modalStyles.rewardIcon}>🪙</Text>
-                    </View>
-                    <Text style={modalStyles.rewardLabel}>COINS</Text>
-                    <Text style={modalStyles.rewardValue}>+{rewards.coins}</Text>
-                  </View>
-                </View>
-
-                <TouchableOpacity onPress={onClose} style={modalStyles.tapContainer}>
-                  <Text style={modalStyles.tapText}>Tap to continue</Text>
-                </TouchableOpacity>
-              </LinearGradient>
-            </View>
-          </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
-    </Modal>
-  );
-};
+import { RewardModal } from './RewardModal';
 
 const QuestCard = ({ quest, onClaim, claiming = false }) => {
+  const [showRewardModal, setShowRewardModal] = useState(false);
+  const [rewardData, setRewardData] = useState(null);
+
   const {
     player_quest_id,
     quest_id,
@@ -169,238 +117,170 @@ const QuestCard = ({ quest, onClaim, claiming = false }) => {
     }
   };
 
-  // NOTE: Pass the claim action up to parent. 
-  // The parent component should handle the modal visibility based on the result.
-  const handleClaim = () => {
+  const handleClaim = async () => {
     if (isClaimable && onClaim) {
-      onClaim(quest_id);
+      try {
+        await onClaim(quest_id);
+        setRewardData({ exp: reward_exp, coins: reward_coins });
+        setShowRewardModal(true);
+      } catch (error) {
+        console.error('Claim failed:', error);
+      }
     }
   };
+
+  const closeModal = () => setShowRewardModal(false);
 
   const borderColors = getBorderColors();
   const buttonBorderColors = getButtonBorderColors();
 
   return (
-    <View style={[
-      styles.cardBorderOuter, 
-      { 
-        backgroundColor: borderColors.outerBg,
-        borderTopColor: borderColors.outerBorderTop,
-        borderLeftColor: borderColors.outerBorderTop,
-        borderBottomColor: borderColors.outerBorderBottom,
-        borderRightColor: borderColors.outerBorderBottom,
-      }, 
-      is_claimed && styles.claimedCard
-    ]}>
+    <>
       <View style={[
-        styles.cardBorderMiddle, 
+        styles.cardBorderOuter, 
         { 
-          backgroundColor: borderColors.middleBg,
-          borderTopColor: borderColors.middleBorderTop,
-          borderLeftColor: borderColors.middleBorderTop,
-          borderBottomColor: borderColors.middleBorderBottom,
-          borderRightColor: borderColors.middleBorderBottom,
-        }
+          backgroundColor: borderColors.outerBg,
+          borderTopColor: borderColors.outerBorderTop,
+          borderLeftColor: borderColors.outerBorderTop,
+          borderBottomColor: borderColors.outerBorderBottom,
+          borderRightColor: borderColors.outerBorderBottom,
+        }, 
+        is_claimed && styles.claimedCard
       ]}>
         <View style={[
-          styles.cardBorderInner,
-          {
-            backgroundColor: borderColors.innerBg,
-            borderColor: borderColors.innerBorder,
+          styles.cardBorderMiddle, 
+          { 
+            backgroundColor: borderColors.middleBg,
+            borderTopColor: borderColors.middleBorderTop,
+            borderLeftColor: borderColors.middleBorderTop,
+            borderBottomColor: borderColors.middleBorderBottom,
+            borderRightColor: borderColors.middleBorderBottom,
           }
         ]}>
-          <LinearGradient
-            colors={getGradientColors()}
-            style={styles.cardGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <View style={styles.dotsOverlay} pointerEvents="none">
-              {dots.map((dot) => (
-                <View
-                  key={dot.id}
-                  style={[
-                    styles.dot,
-                    {
-                      top: dot.top,
-                      left: dot.left,
-                      width: dot.size,
-                      height: dot.size,
-                      borderRadius: dot.size / 2,
-                      backgroundColor: dot.isLight 
-                        ? `rgba(255, 255, 255, ${dot.opacity})` 
-                        : `rgba(0, 0, 0, ${dot.opacity})`,
-                    }
-                  ]}
-                />
-              ))}
-            </View>
-
-            <View style={styles.rewardsSection}>
-              <View style={[styles.rewardBox, { borderColor: borderColors.innerBorder }]}>
-                <Text style={styles.rewardTitle}>Rewards</Text>
-                <View style={styles.rewardRow}>
-                  <View style={styles.rewardItem}>
-                    <Text style={styles.rewardIcon}>⭐</Text>
-                    <Text style={styles.rewardValue}>{reward_exp}</Text>
-                  </View>
-                  <View style={[styles.rewardDivider, { backgroundColor: borderColors.middleBorderTop }]} />
-                  <View style={styles.rewardItem}>
-                    <Text style={styles.rewardIcon}>🪙</Text>
-                    <Text style={styles.rewardValue}>{reward_coins}</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            <View style={[styles.detailsSection, { borderRightColor: borderColors.innerBorder }]}>
-              <View style={styles.descriptionRow}>
-                <Text style={styles.questTitle} numberOfLines={1}>{title}</Text>
-                <Text style={styles.questDescription} numberOfLines={2}>{description}</Text>
-              </View>
-              
-              <View style={styles.progressRow}>
-                <View style={[styles.progressBarContainer, { borderColor: borderColors.innerBorder }]}>
-                  <View 
+          <View style={[
+            styles.cardBorderInner,
+            {
+              backgroundColor: borderColors.innerBg,
+              borderColor: borderColors.innerBorder,
+            }
+          ]}>
+            <LinearGradient
+              colors={getGradientColors()}
+              style={styles.cardGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <View style={styles.dotsOverlay} pointerEvents="none">
+                {dots.map((dot) => (
+                  <View
+                    key={dot.id}
                     style={[
-                      styles.progressBarFill,
-                      { 
-                        width: `${Math.min(progressPercent, 100)}%`,
-                        backgroundColor: getProgressBarColor()
+                      styles.dot,
+                      {
+                        top: dot.top,
+                        left: dot.left,
+                        width: dot.size,
+                        height: dot.size,
+                        borderRadius: dot.size / 2,
+                        backgroundColor: dot.isLight 
+                          ? `rgba(255, 255, 255, ${dot.opacity})` 
+                          : `rgba(0, 0, 0, ${dot.opacity})`,
                       }
-                    ]} 
+                    ]}
                   />
-                </View>
-                <Text style={styles.progressText}>
-                  {current_value}/{target_value}
-                </Text>
+                ))}
               </View>
-              
-              <View style={styles.objectiveRow}>
-                <View style={[styles.objectiveTag, { borderColor: borderColors.innerBorder }]}>
-                  <Text style={styles.objectiveLabel}>{objectiveLabel}</Text>
-                </View>
-                {is_claimed && (
-                  <View style={styles.claimedBadge}>
-                    <Text style={styles.claimedBadgeText}>Claimed</Text>
-                  </View>
-                )}
-              </View>
-            </View>
 
-            <View style={styles.claimSection}>
-              <TouchableOpacity
-                style={[
-                  styles.claimButton,
-                  {
-                    borderTopColor: buttonBorderColors.top,
-                    borderLeftColor: buttonBorderColors.top,
-                    borderBottomColor: buttonBorderColors.bottom,
-                    borderRightColor: buttonBorderColors.bottom,
-                  },
-                  !isClaimable && styles.claimButtonDisabled,
-                  isClaimable && styles.claimButtonActive,
-                  is_claimed && styles.claimButtonClaimed
-                ]}
-                onPress={handleClaim}
-                disabled={!isClaimable || claiming}
-                activeOpacity={0.7}
-              >
-                {claiming ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <Text style={[
-                    styles.claimButtonText,
-                    !isClaimable && styles.claimButtonTextDisabled
-                  ]}>
-                    {is_claimed ? '✓' : isClaimable ? 'Claim' : 'In Progress'}
+              <View style={styles.rewardsSection}>
+                <View style={[styles.rewardBox, { borderColor: borderColors.innerBorder }]}>
+                  <Text style={styles.rewardTitle}>Rewards</Text>
+                  <View style={styles.rewardRow}>
+                    <View style={styles.rewardItem}>
+                      <Text style={styles.rewardIcon}>⭐</Text>
+                      <Text style={styles.rewardValue}>{reward_exp}</Text>
+                    </View>
+                    <View style={[styles.rewardDivider, { backgroundColor: borderColors.middleBorderTop }]} />
+                    <View style={styles.rewardItem}>
+                      <Text style={styles.rewardIcon}>🪙</Text>
+                      <Text style={styles.rewardValue}>{reward_coins}</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+
+              <View style={[styles.detailsSection, { borderRightColor: borderColors.innerBorder }]}>
+                <View style={styles.descriptionRow}>
+                  <Text style={styles.questTitle} numberOfLines={1}>{title}</Text>
+                  <Text style={styles.questDescription} numberOfLines={2}>{description}</Text>
+                </View>
+                
+                <View style={styles.progressRow}>
+                  <View style={[styles.progressBarContainer, { borderColor: borderColors.innerBorder }]}>
+                    <View 
+                      style={[
+                        styles.progressBarFill,
+                        { 
+                          width: `${Math.min(progressPercent, 100)}%`,
+                          backgroundColor: getProgressBarColor()
+                        }
+                      ]} 
+                    />
+                  </View>
+                  <Text style={styles.progressText}>
+                    {current_value}/{target_value}
                   </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </LinearGradient>
+                </View>
+                
+                <View style={styles.objectiveRow}>
+                  <View style={[styles.objectiveTag, { borderColor: borderColors.innerBorder }]}>
+                    <Text style={styles.objectiveLabel}>{objectiveLabel}</Text>
+                  </View>
+                  {is_claimed && (
+                    <View style={styles.claimedBadge}>
+                      <Text style={styles.claimedBadgeText}>Claimed</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              <View style={styles.claimSection}>
+                <TouchableOpacity
+                  style={[
+                    styles.claimButton,
+                    {
+                      borderTopColor: buttonBorderColors.top,
+                      borderLeftColor: buttonBorderColors.top,
+                      borderBottomColor: buttonBorderColors.bottom,
+                      borderRightColor: buttonBorderColors.bottom,
+                    },
+                    !isClaimable && styles.claimButtonDisabled,
+                    isClaimable && styles.claimButtonActive,
+                    is_claimed && styles.claimButtonClaimed
+                  ]}
+                  onPress={handleClaim}
+                  disabled={!isClaimable || claiming}
+                  activeOpacity={0.7}
+                >
+                  {claiming ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <Text style={[
+                      styles.claimButtonText,
+                      !isClaimable && styles.claimButtonTextDisabled
+                    ]}>
+                      {is_claimed ? '✓' : isClaimable ? 'Claim' : 'In Progress'}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
+          </View>
         </View>
       </View>
-    </View>
+      <RewardModal visible={showRewardModal} onClose={closeModal} rewards={rewardData} />
+    </>
   );
 };
-
-const modalStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    width: '80%',
-    borderRadius: gameScale(20),
-    borderWidth: gameScale(2),
-    borderColor: '#4a90d9',
-    overflow: 'hidden',
-  },
-  modalGradient: {
-    padding: gameScale(20),
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: gameScale(16),
-    fontFamily: 'Grobold',
-    color: '#FFD700',
-    marginBottom: gameScale(15),
-    textShadowColor: '#000',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-    textAlign: 'center',
-  },
-  rewardsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: gameScale(20),
-  },
-  rewardItem: {
-    alignItems: 'center',
-  },
-  iconContainer: {
-    width: gameScale(40),
-    height: gameScale(40),
-    borderRadius: gameScale(20),
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: gameScale(1),
-    marginBottom: gameScale(5),
-  },
-  rewardIcon: {
-    fontSize: gameScale(20),
-  },
-  rewardLabel: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: gameScale(8),
-    fontFamily: 'Grobold',
-    marginBottom: gameScale(2),
-  },
-  rewardValue: {
-    color: '#fff',
-    fontSize: gameScale(12),
-    fontFamily: 'Grobold',
-  },
-  divider: {
-    width: gameScale(1),
-    height: gameScale(30),
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  tapContainer: {
-    marginTop: gameScale(10),
-  },
-  tapText: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: gameScale(10),
-    fontFamily: 'Grobold',
-  },
-});
 
 const styles = StyleSheet.create({
   cardBorderOuter: {

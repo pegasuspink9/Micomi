@@ -4,7 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { gameScale } from '../Responsiveness/gameResponsive';
 import { useQuests } from '../../hooks/useQuests';
 import MissionTabButton from './MissionTabButton';
-import QuestCard, { RewardModal } from './QuestCard'; // Import RewardModal
+import QuestCard from './QuestCard'; 
+import { RewardModal } from './RewardModal';
 
 const MissionSection = ({ playerId = 11 }) => {
   const [activeTab, setActiveTab] = useState('Daily');
@@ -73,14 +74,6 @@ const MissionSection = ({ playerId = 11 }) => {
     setCurrentRewards(null);
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#ffffff" />
-        <Text style={styles.loadingText}>Loading Missions...</Text>
-      </View>
-    );
-  }
 
   if (error) {
     return (
