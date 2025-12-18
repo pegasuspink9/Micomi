@@ -164,7 +164,6 @@ export const useGameData = (playerId, initialLevelId) => {
       console.log('Submission processed, starting animation sequence...');
 
       pendingSubmissionRef.current = updatedState;
-      setWaitingForAnimation(true);
 
       setGameState(prevState => ({
         ...prevState,
@@ -173,10 +172,27 @@ export const useGameData = (playerId, initialLevelId) => {
         enemy: updatedState.enemy || prevState.enemy,
       }));
 
-      animationTimeoutRef.current = setTimeout(() => {
-        console.warn('Animation timeout reached, proceeding anyway...');
-        handleAnimationComplete();
-      }, 5000);
+      const isCorrect = updatedState.submissionResult?.isCorrect === true;
+      const challengeType = gameState.currentChallenge?.challenge_type;
+
+      if (!isCorrect) {
+        if (challengeType === 'fill in the blank') {
+          setWaitingForAnimation(true);
+          setTimeout(() => handleAnimationComplete(), 5000);
+        } else {
+          setWaitingForAnimation(false);
+          setTimeout(() => {
+            setGameState(prev => ({ ...prev, submissionResult: null }));
+          }, 5000);
+        }
+      } else {
+        setWaitingForAnimation(true);
+
+        animationTimeoutRef.current = setTimeout(() => {
+          console.warn('Animation timeout reached, proceeding anyway...');
+          handleAnimationComplete();
+        }, 5000);
+      }
 
       return { 
         success: true, 
