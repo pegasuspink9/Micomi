@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { success } from "zod";
+
 const prisma = new PrismaClient();
 
 export async function updateProgressForChallenge(
@@ -8,7 +8,8 @@ export async function updateProgressForChallenge(
   isCorrect: boolean,
   finalAnswer: string[],
   isBonusRound: boolean = false,
-  characterDamage?: number
+  characterDamage?: number,
+  isReveal: boolean = false
 ) {
   const progress = await prisma.playerProgress.findUnique({
     where: { progress_id: progressId },
@@ -48,11 +49,10 @@ export async function updateProgressForChallenge(
   const alreadyAnsweredCorrectly =
     !!existingAnswers[challengeId.toString()] &&
     (progress.wrong_challenges as number[]).includes(challengeId) === false;
-
-  const newAnswers = {
-    ...existingAnswers,
-    [challengeId.toString()]: finalAnswer,
-  };
+  let newAnswers = existingAnswers;
+  if (!isReveal) {
+    newAnswers = { ...existingAnswers, [challengeId.toString()]: finalAnswer };
+  }
 
   let wrongChallenges = (progress.wrong_challenges ?? []) as number[];
 
@@ -161,7 +161,6 @@ export async function updateProgressForChallenge(
 
   if (wasAnySsActive) {
     hasReversedCurse = false;
-    hasBossShield = false;
     hasForceCharacterAttackType = false;
     hasBothHpDecrease = false;
     hasShuffle = false;

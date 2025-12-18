@@ -455,6 +455,13 @@ export const submitChallengeService = async (
   const key = String(challengeId);
   const existingAnswer = answers[key];
 
+  const computedAlreadyAnswered =
+    !!existingAnswer &&
+    existingAnswer[0] !== "_REVEAL_PENDING_" &&
+    !((currentProgress.wrong_challenges ?? []) as number[]).includes(
+      challengeId
+    );
+
   const isRevealConfirmed =
     Array.isArray(existingAnswer) &&
     existingAnswer[0] === "_REVEAL_PENDING_" &&
@@ -544,7 +551,8 @@ export const submitChallengeService = async (
       isCorrect,
       finalAnswer,
       isBonusRound,
-      characterDamageForCoins
+      characterDamageForCoins,
+      isRevealConfirmed
     );
 
   if (
@@ -588,7 +596,7 @@ export const submitChallengeService = async (
       true,
       elapsed,
       challengeId,
-      alreadyAnsweredCorrectly,
+      computedAlreadyAnswered,
       wasEverWrong,
       isBonusRound,
       isCompletingBonus,
@@ -633,6 +641,7 @@ export const submitChallengeService = async (
       fightResult.character_health ?? character.health,
       character.health,
       elapsed,
+      enemy.enemy_name,
       fightResult.enemyHealth ??
         fightResult.enemy?.enemy_health ??
         currentProgress.enemy_hp,
@@ -687,6 +696,7 @@ export const submitChallengeService = async (
         currentProgress.player_hp,
       character.health,
       elapsed,
+      enemy.enemy_name,
       fightResult.enemyHealth ??
         fightResult.enemy?.enemy_health ??
         currentProgress.enemy_hp,
@@ -1059,6 +1069,7 @@ export const submitChallengeService = async (
       fightResult.character_health ?? character.health,
       character.health,
       elapsed,
+      enemy.enemy_name,
       fightResult.enemyHealth ??
         fightResult.enemy?.enemy_health ??
         currentProgress.enemy_hp,

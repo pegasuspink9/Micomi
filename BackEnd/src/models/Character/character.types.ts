@@ -19,6 +19,7 @@ export interface CharacterCreateInput {
   character_image_dispaly?: string;
 
   character_attacks?: Prisma.InputJsonValue; //["basic_attack", "second_attack", "special_attack"] animation links
+  range_attacks?: Prisma.InputJsonValue;
 
   is_range?: boolean;
 }
@@ -41,6 +42,7 @@ export interface CharacterUpdateInput {
   character_image_dispaly?: string;
 
   character_attacks?: Prisma.InputJsonValue;
+  range_attacks?: Prisma.InputJsonValue;
 
   is_range?: boolean;
 }

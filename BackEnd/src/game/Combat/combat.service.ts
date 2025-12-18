@@ -63,6 +63,50 @@ const CARD_CONFIG: Record<
         "https://micomi-assets.me/Icons/Skill%20Icons/Basic%20Attack%20Card.png",
     },
   },
+  Ryron: {
+    special_attack: {
+      card_type: "God’s Judgment",
+      character_attack_card:
+        "https://micomi-assets.me/Icons/Skill%20Icons/Ryron%20Ult.png",
+    },
+    third_attack: {
+      card_type: "Ether Lance",
+      character_attack_card:
+        "https://micomi-assets.me/Icons/Skill%20Icons/Ryron%20Special.png",
+    },
+    second_attack: {
+      card_type: "Void Piercer",
+      character_attack_card:
+        "https://micomi-assets.me/Icons/Skill%20Icons/Ryron%202nd.png",
+    },
+    basic_attack: {
+      card_type: "Velocity Shot",
+      character_attack_card:
+        "https://micomi-assets.me/Icons/Skill%20Icons/Ryron%20Basic.png",
+    },
+  },
+  Leon: {
+    special_attack: {
+      card_type: "Inferno Bulwark",
+      character_attack_card:
+        "https://micomi-assets.me/Icons/Skill%20Icons/Leon%20Ult.png",
+    },
+    third_attack: {
+      card_type: "Cataclysm Break",
+      character_attack_card:
+        "https://micomi-assets.me/Icons/Skill%20Icons/Leon%20Special.png",
+    },
+    second_attack: {
+      card_type: "Molten Strike",
+      character_attack_card:
+        "https://micomi-assets.me/Icons/Skill%20Icons/Leon%202nd%20Final.png",
+    },
+    basic_attack: {
+      card_type: "Thunderbound Cleaver",
+      character_attack_card:
+        "https://micomi-assets.me/Icons/Skill%20Icons/Leon%20Basic%20Final.png",
+    },
+  },
 };
 
 export function getBaseEnemyHp(level: {
@@ -181,7 +225,7 @@ export async function getFightSetup(playerId: number, levelId: number) {
       character_avatar: selectedCharacter.character_avatar,
       avatar_image: selectedCharacter.character_avatar,
       is_range: selectedCharacter.is_range,
-      attack_pose: selectedCharacter.attack_pose || null,
+      range_attacks: selectedCharacter.range_attacks,
     },
     status: progress.battle_status,
     progress,
@@ -297,12 +341,19 @@ export async function getCurrentFightState(
     await getBackgroundForLevel(level.map.map_name, level.level_number),
   ];
 
+  let enemyIdleAnimation = isInBonusRound ? null : enemy.enemy_avatar || null;
+
+  if (progress.has_boss_shield && !isInBonusRound) {
+    enemyIdleAnimation =
+      "https://micomi-assets.me/Enemies/Greenland/Boss%20Joshy/idle2.png";
+  }
+
   return {
     status,
     enemy: {
       enemy_id: enemy.enemy_id,
       enemy_name: enemy.enemy_name,
-      enemy_idle: isInBonusRound ? null : enemy.enemy_avatar || null,
+      enemy_idle: enemyIdleAnimation,
       enemy_run: null,
       enemy_attack: null,
       enemy_hurt: isInBonusRound ? enemy.enemy_hurt || null : null,
@@ -320,6 +371,7 @@ export async function getCurrentFightState(
       character_run: null,
       character_attack_type: null,
       character_attack: null,
+      character_range_attack: null,
       character_hurt: null,
       character_dies: null,
       character_damage: displayDamageArray,
@@ -327,7 +379,6 @@ export async function getCurrentFightState(
       character_max_health: character.character_max_health,
       character_avatar: character.character_avatar,
       character_is_range: character.is_range,
-      character_attack_pose: character.attack_pose || null,
     },
     timer: "00:00",
     energy: energyStatus.energy,
@@ -410,12 +461,17 @@ export async function fightEnemy(
     ? (character.character_attacks as string[])
     : [];
 
+  const rangeAttacksArray = Array.isArray(character.range_attacks)
+    ? (character.range_attacks as string[])
+    : [];
+
   console.log("- Character damage array:", damageArray);
 
   let character_attack_type: string | null = null;
   let damage = 0;
   let enemy_damage = 0;
   let character_attack: string | null = null;
+  let character_range_attack: string | null = null;
   let enemy_attack: string | null = null;
   let enemy_hurt: string | null = null;
   let character_hurt: string | null = null;
@@ -467,13 +523,13 @@ export async function fightEnemy(
           character.character_name === "Ryron"
         ) {
           character_run = null;
-          character_attack_pose = character.attack_pose;
         }
 
         card_type = cardInfo.card_type;
         character_attack_card = cardInfo.character_attack_card;
         damage = damageArray[3] ?? 25;
         character_attack = attacksArray[3] || null;
+        character_range_attack = rangeAttacksArray[3] || null;
         console.log("SS is used: ", character_attack);
       } else {
         character_attack_type = "third_attack";
@@ -487,13 +543,13 @@ export async function fightEnemy(
           character.character_name === "Ryron"
         ) {
           character_run = null;
-          character_attack_pose = character.attack_pose;
         }
 
         card_type = cardInfo.card_type;
         character_attack_card = cardInfo.character_attack_card;
         damage = damageArray[2] ?? 15;
         character_attack = attacksArray[2] || null;
+        character_range_attack = rangeAttacksArray[2] || null;
       }
       character_run = character.character_run || null;
       character_idle = character.avatar_image || null;
@@ -528,11 +584,11 @@ export async function fightEnemy(
         character.character_name === "Ryron"
       ) {
         character_run = null;
-        character_attack_pose = character.attack_pose;
       }
 
       damage = damageArray[damageIndex] ?? 10;
       character_attack = attacksArray[damageIndex] || null;
+      character_range_attack = rangeAttacksArray[damageIndex] || null;
       character_idle = character.avatar_image || null;
       console.log(`- Bonus round ${character_attack_type} attack displayed!`);
       enemy_hurt = enemy.enemy_hurt || null;
@@ -573,11 +629,11 @@ export async function fightEnemy(
         character.character_name === "Ryron"
       ) {
         character_run = null;
-        character_attack_pose = character.attack_pose;
       }
 
       damage = damageArray[damageIndex] ?? 10;
       character_attack = attacksArray[damageIndex] || null;
+      character_range_attack = rangeAttacksArray[damageIndex] || null;
       character_idle = character.avatar_image || null;
       console.log(`- ${character_attack_type} triggered!`);
     } else {
@@ -919,6 +975,7 @@ export async function fightEnemy(
       character_run,
       character_attack_type,
       character_attack,
+      character_range_attack,
       character_hurt,
       character_dies,
       character_damage: damage,
@@ -926,7 +983,6 @@ export async function fightEnemy(
       character_max_health: character.health,
       character_avatar: character.character_avatar,
       character_is_range: character.is_range,
-      character_attack_pose: character.attack_pose || null,
     },
     timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,
@@ -1008,12 +1064,17 @@ export async function fightBossEnemy(
     ? (character.character_attacks as string[])
     : [];
 
+  const rangeAttacksArray = Array.isArray(character.range_attacks)
+    ? (character.range_attacks as string[])
+    : [];
+
   console.log("- Character damage array:", damageArray);
 
   let character_attack_type: string | null = null;
   let damage = 0;
   let enemy_damage = 0;
   let character_attack: string | null = null;
+  let character_range_attack: string | null = null;
   let enemy_attack: string | null = null;
   let enemy_hurt: string | null = null;
   let character_hurt: string | null = null;
@@ -1067,12 +1128,12 @@ export async function fightBossEnemy(
           character.character_name === "Ryron"
         ) {
           character_run = null;
-          character_attack_pose = character.attack_pose;
         }
         card_type = cardInfo.card_type;
         character_attack_card = cardInfo.character_attack_card;
         damage = damageArray[3] ?? 25;
         character_attack = attacksArray[3] || null;
+        character_range_attack = rangeAttacksArray[3] || null;
         console.log("SS is used: ", character_attack);
       } else {
         character_attack_type = "third_attack";
@@ -1085,12 +1146,12 @@ export async function fightBossEnemy(
           character.character_name === "Ryron"
         ) {
           character_run = null;
-          character_attack_pose = character.attack_pose;
         }
         card_type = cardInfo.card_type;
         character_attack_card = cardInfo.character_attack_card;
         damage = damageArray[2] ?? 15;
         character_attack = attacksArray[2] || null;
+        character_range_attack = rangeAttacksArray[2] || null;
       }
       character_run = character.character_run || null;
       character_idle = character.avatar_image || null;
@@ -1125,11 +1186,11 @@ export async function fightBossEnemy(
         character.character_name === "Ryron"
       ) {
         character_run = null;
-        character_attack_pose = character.attack_pose;
       }
 
       damage = damageArray[damageIndex] ?? 10;
       character_attack = attacksArray[damageIndex] || null;
+      character_range_attack = rangeAttacksArray[damageIndex] || null;
       character_idle = character.avatar_image || null;
       console.log(`- Bonus round ${character_attack_type} attack displayed!`);
       enemy_hurt = enemy.enemy_hurt || null;
@@ -1170,11 +1231,11 @@ export async function fightBossEnemy(
         character.character_name === "Ryron"
       ) {
         character_run = null;
-        character_attack_pose = character.attack_pose;
       }
 
       damage = damageArray[damageIndex] ?? 10;
       character_attack = attacksArray[damageIndex] || null;
+      character_range_attack = rangeAttacksArray[damageIndex] || null;
       character_idle = character.avatar_image || null;
       console.log(`- ${character_attack_type} triggered!`);
     } else {
@@ -1196,8 +1257,26 @@ export async function fightBossEnemy(
       console.log("- Strong potion applied, damage doubled");
     }
 
-    if (progress.has_both_hp_decrease) {
+    if (progress.has_boss_shield) {
       enemy_ss_type = "shield";
+      enemy_idle =
+        "https://micomi-assets.me/Enemies/Greenland/Boss%20Joshy/idle2.png";
+      enemy_run =
+        "https://micomi-assets.me/Enemies/Greenland/Boss%20Joshy/Run2.png";
+      enemy_hurt = null;
+
+      console.log(
+        "- Boss Joshy's shield active: blocking all damage (",
+        damage,
+        ")"
+      );
+
+      await prisma.playerProgress.update({
+        where: { progress_id: progress.progress_id },
+        data: { has_boss_shield: false },
+      });
+    } else if (progress.has_both_hp_decrease) {
+      enemy_ss_type = "mutual_damage";
 
       charHealth = Math.max(charHealth - damage, 0);
       enemyHealth = Math.max(enemyHealth - damage, 0);
@@ -1599,6 +1678,7 @@ export async function fightBossEnemy(
       character_run,
       character_attack_type,
       character_attack,
+      character_range_attack,
       character_hurt,
       character_dies,
       character_damage: damage,
@@ -1606,7 +1686,6 @@ export async function fightBossEnemy(
       character_max_health: character.health,
       character_avatar: character.character_avatar,
       character_is_range: character.is_range,
-      character_attack_pose: character.attack_pose || null,
     },
     enemy_ss_type,
     timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),

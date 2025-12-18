@@ -7,6 +7,7 @@ export const generateDynamicMessage = async (
   playerHealth: number,
   playerMaxHealth: number,
   elapsed: number,
+  enemy_name: string,
   enemyHealth: number,
   isBonusRound: boolean
 ): Promise<{ text: string; audio: string[] }> => {
@@ -57,16 +58,9 @@ export const generateDynamicMessage = async (
 
   const pool = await getMessagePool(category, tags);
 
-  if (pool.length === 0) {
-    return {
-      text: `Fight on!`,
-      audio: [],
-    };
-  }
-
   const msg = pool[Math.floor(Math.random() * pool.length)];
 
-  const text = msg.textTemplate;
+  const text = msg.textTemplate.replace(/\{enemy\}/gi, enemy_name);
 
   const audio: string[] = [];
   if (msg.audioUrl) audio.push(msg.audioUrl);

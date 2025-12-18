@@ -347,7 +347,8 @@ export const usePotion = async (
         let filledQuestion = currentChallenge.question ?? "";
         const answersToFill = [...effectiveCorrectAnswer];
 
-        const universalBlankRegex = /<_([^>]*)>|<\/_>|\{blank\}|\[_+\]|_+/g;
+        const universalBlankRegex =
+          /<_([^>]*)>|<\/_>|\{blank\}|\[_+\]|_+|"(_*)"|'(_*)'|“(_*)”|‘(_*)’|`(_*)`/g;
 
         filledQuestion = filledQuestion.replace(
           universalBlankRegex,
@@ -363,6 +364,16 @@ export const usePotion = async (
               return nextAnswer;
             } else if (match.startsWith("[")) {
               return nextAnswer;
+            } else if (match.startsWith('"')) {
+              return `"${nextAnswer}"`;
+            } else if (match.startsWith("'")) {
+              return `'${nextAnswer}'`;
+            } else if (match.startsWith("“")) {
+              return `“${nextAnswer}”`;
+            } else if (match.startsWith("‘")) {
+              return `‘${nextAnswer}’`;
+            } else if (match.startsWith("`")) {
+              return `\`${nextAnswer}\``;
             } else {
               return nextAnswer;
             }
