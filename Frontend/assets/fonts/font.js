@@ -12,6 +12,7 @@ export const useFonts = () => {
     'DoongaSlash': require('./Doonga Slash.ttf'),
     'Grobold': require('./GROBOLD.ttf'),
     'Coco-extrabold': require('./Coco-Sharp-Extrabold-trial.ttf'),
+    'Poppins': require('./Poppins-SemiBold.ttf'),
   });
 
   return fontsLoaded;

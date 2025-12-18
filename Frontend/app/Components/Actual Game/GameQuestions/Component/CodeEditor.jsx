@@ -26,6 +26,8 @@ const CodeEditor = ({
   const [activeTab, setActiveTab] = useState('code');
   const [hasAnimated, setHasAnimated] = useState(false); 
   const lineAnimations = useRef([]);
+  // ADDED: State to control if tabs are disabled
+  const [tabsDisabled, setTabsDisabled] = useState(false); 
   
   //  Memoize code text and lines
   const codeText = useMemo(() => currentQuestion.question || '', [currentQuestion.question]);
@@ -56,6 +58,11 @@ const CodeEditor = ({
 
    useEffect(() => {
     setHasAnimated(false);
+    setTabsDisabled(true); 
+    const timer = setTimeout(() => {
+      setTabsDisabled(false);
+    }, 3000); // 3-second delay
+    return () => clearTimeout(timer); 
   }, [currentQuestion?.id]);
 
 
@@ -70,6 +77,9 @@ const CodeEditor = ({
 
   //  Memoize tab change handler
   const handleTabChange = useCallback((tabName) => {
+    // MODIFIED: Only allow tab change if not disabled
+    if (tabsDisabled) return;
+
     if (tabName === 'output' || tabName === 'expected') {
       Keyboard.dismiss();
     }
@@ -78,7 +88,7 @@ const CodeEditor = ({
     if (onTabChange) {
       onTabChange(tabName);
     }
-  }, [onTabChange]);
+  }, [onTabChange, tabsDisabled]); // ADDED tabsDisabled to dependencies
 
 
   const options = currentQuestion?.options || [];
@@ -224,8 +234,11 @@ const CodeEditor = ({
               style={[
                 styles.webTab,
                 activeTab === 'guide' && styles.webTabActive,
-                styles.webTabFirst
+                styles.webTabFirst,
+                // ADDED: Disable tab when tabsDisabled is true
+                tabsDisabled && { opacity: 0.5 } 
               ]}
+              disabled={tabsDisabled} // ADDED: Disable Pressable
             >
               <Text style={[
                 styles.webTabText, 
@@ -241,8 +254,11 @@ const CodeEditor = ({
             style={[
               styles.webTab,
               activeTab === 'code' && styles.webTabActive,
-              !currentQuestion?.guide && styles.webTabFirst
+              !currentQuestion?.guide && styles.webTabFirst,
+              // ADDED: Disable tab when tabsDisabled is true
+              tabsDisabled && { opacity: 0.5 } 
             ]}
+            disabled={tabsDisabled} // ADDED: Disable Pressable
           >
               <Text style={[
               styles.webTabText, 
@@ -260,7 +276,10 @@ const CodeEditor = ({
                 style={[
                   styles.webTab,
                   activeTab === tab.key && styles.webTabActive,
+                  // ADDED: Disable tab when tabsDisabled is true
+                  tabsDisabled && { opacity: 0.5 } 
                 ]}
+                disabled={tabsDisabled} // ADDED: Disable Pressable
               >
                 <Text style={[styles.webTabText, activeTab === tab.key && styles.webTabTextActive]}>
                   {currentQuestion[`${tab.key}_name`] || (activeTab === tab.key ? tab.long : tab.short)}
@@ -273,8 +292,11 @@ const CodeEditor = ({
             onPress={handleOutputTabPress}
             style={[
               styles.webTab,
-              activeTab === 'output' && styles.webTabActive
+              activeTab === 'output' && styles.webTabActive,
+              // ADDED: Disable tab when tabsDisabled is true
+              tabsDisabled && { opacity: 0.5 } 
             ]}
+            disabled={tabsDisabled} // ADDED: Disable Pressable
           >
             <Text style={[
               styles.webTabText, 
@@ -289,8 +311,11 @@ const CodeEditor = ({
             style={[
               styles.webTab,
               activeTab === 'expected' && styles.webTabActive,
-              styles.webTabLast
+              styles.webTabLast,
+              // ADDED: Disable tab when tabsDisabled is true
+              tabsDisabled && { opacity: 0.5 } 
             ]}
+            disabled={tabsDisabled} // ADDED: Disable Pressable
           >
             <Text style={[
               styles.webTabText, 

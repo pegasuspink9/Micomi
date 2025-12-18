@@ -307,5 +307,6 @@ export default React.memo(ThirdGrid, (prev, next) => {
       prev.isLevelComplete === next.isLevelComplete &&
       prev.cardImageUrl === next.cardImageUrl &&
       prev.cardDisplaySequence === next.cardDisplaySequence
+
     );
 });

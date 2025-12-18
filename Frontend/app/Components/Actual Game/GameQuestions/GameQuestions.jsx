@@ -7,8 +7,7 @@ import { scrollToNextBlank, calculateGlobalBlankIndex } from './utils/blankHelpe
 import { soundManager } from '../Sounds/UniversalSoundManager';
 import { gameScale } from '../../Responsiveness/gameResponsive';
 
-
-export default function GameQuestions({ 
+const GameQuestions = ({ 
   currentQuestion, 
   selectedAnswers, 
   getBlankIndex,
@@ -17,7 +16,7 @@ export default function GameQuestions({
   isAnswerCorrect, 
   selectedBlankIndex,
   onBlankPress
-}) {
+}) => {
   const scrollViewRef = useRef(null);
   const blankRefs = useRef({});
   const options = currentQuestion?.options || [];
@@ -161,7 +160,21 @@ const renderSyntaxHighlightedLine = (line, lineIndex) => {
       </View>
     </View>
   );
-}
+};
+
+export default React.memo(GameQuestions, (prevProps, nextProps) => {
+  // Custom comparison: Only rerender if props relevant to thirdGrid or CodeEditor change
+  return (
+    prevProps.currentQuestion?.id === nextProps.currentQuestion?.id &&
+    JSON.stringify(prevProps.selectedAnswers) === JSON.stringify(nextProps.selectedAnswers) &&
+    prevProps.activeTab === nextProps.activeTab && // Include to allow CodeEditor tab updates
+    prevProps.isAnswerCorrect === nextProps.isAnswerCorrect &&
+    prevProps.selectedBlankIndex === nextProps.selectedBlankIndex &&
+    prevProps.onTabChange === nextProps.onTabChange &&
+    prevProps.onBlankPress === nextProps.onBlankPress &&
+    prevProps.getBlankIndex === nextProps.getBlankIndex
+  );
+});
 
 const styles = StyleSheet.create({
   secondGrid: {

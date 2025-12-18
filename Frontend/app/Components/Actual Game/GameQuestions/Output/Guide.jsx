@@ -257,18 +257,18 @@ const styles = StyleSheet.create({
   },
 
   guidePlainText: {
-    fontFamily: 'DynaPuff',
+    fontFamily: 'Poppins',
     color: '#495057',
   },
 
   htmlTag: {
-    fontFamily: 'MusicVibes',
-    color: '#ff0000ff',
+    fontFamily: 'Poppins',
+    color: '#e30000ff',
     fontWeight: '600',
   },
 
   guideAllCaps: {
-    fontFamily: 'MusicVibes',
+    fontFamily: 'Poppins',
     color: '#0077ffff',
   },
 

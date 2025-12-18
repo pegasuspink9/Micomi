@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { View, StyleSheet, Dimensions, ImageBackground, Text, ActivityIndicator, TouchableOpacity, ScrollView, Animated } from "react-native";
 import { StatusBar } from 'expo-status-bar';
 import ScreenPlay from '../app/Components/Actual Game/Screen Play/ScreenPlay';
@@ -648,6 +648,9 @@ export default function GamePlay() {
     setSelectedAnswers(answers);
   }, []);
 
+  
+  const memoizedOptions = useMemo(() => currentChallenge?.options || [], [currentChallenge?.options]);
+
     if (loading || animationsLoading || isLoadingNextLevel || isRetrying) {
     return (
       <>
@@ -801,45 +804,53 @@ export default function GamePlay() {
                 isAnswerCorrect={gameState?.submissionResult?.isCorrect}
               />
 
-              {!shouldHideThirdGrid && (
-              <View style={[styles.thirdGridContainer, { height: thirdGridHeight }]}>
-                <ThirdGrid 
-                  currentQuestion={currentChallenge}
-                  selectedAnswers={selectedAnswers}
-                  setSelectedAnswers={memoizedSetSelectedAnswers}
-                  currentQuestionIndex={0}
-                  setCurrentQuestionIndex={() => {}}
-                  setBorderColor={setBorderColor}
-                  setCorrectAnswerRef={setCorrectAnswerRef}
-                  getBlankIndex={getBlankIndex}
-                  challengeData={currentChallenge}
-                  submitAnswer={submitAnswer}
-                  submitting={submitting}
-                  selectedBlankIndex={selectedBlankIndex} 
-                  potions={potions}
-                  selectedPotion={selectedPotion}
-                  onPotionPress={handlePotionPress}
-                  loadingPotions={loadingPotions}
-                  usingPotion={usingPotion}
-                  setThirdGridHeight={setThirdGridHeight}
-                  usePotion={usePotion}
-                  cardImageUrl={characterAttackCard}
-                  cardDisplaySequence={cardDisplaySequence}
-                  canProceed={canProceed}
-                  onProceed={handleProceed}
-                  isLevelComplete={showLevelCompletion}
-                  showRunButton={showRunButton}
-                  onCharacterRun={handleCharacterRun}
-                  onHome={handleHome}
-                  onRetry={handleRetry}
-                  onNextLevel={handleNextLevel}
-                  hasNextLevel={!!gameState?.submissionResult?.nextLevel}
-                  fadeOutAnim={fadeOutAnim}
-                  isInRunMode={isInRunMode}
-                  setSelectedBlankIndex={setSelectedBlankIndex}
-                />
-              </View>
-              )}
+             <View 
+            style={[
+              styles.thirdGridContainer, 
+              { 
+                height: thirdGridHeight,
+                display: shouldHideThirdGrid ? 'none' : 'flex',
+              }
+            ]}
+             >
+            <ThirdGrid 
+              currentQuestion={currentChallenge}
+              selectedAnswers={selectedAnswers}
+              setSelectedAnswers={memoizedSetSelectedAnswers}
+              currentQuestionIndex={0}
+              setCurrentQuestionIndex={() => {}}
+              setBorderColor={setBorderColor}
+              setCorrectAnswerRef={setCorrectAnswerRef}
+              getBlankIndex={getBlankIndex}
+              challengeData={currentChallenge}
+              submitAnswer={submitAnswer}
+              submitting={submitting}
+              selectedBlankIndex={selectedBlankIndex} 
+              potions={potions}
+              selectedPotion={selectedPotion}
+              onPotionPress={handlePotionPress}
+              loadingPotions={loadingPotions}
+              usingPotion={usingPotion}
+              setThirdGridHeight={setThirdGridHeight}
+              usePotion={usePotion}
+              cardImageUrl={characterAttackCard}
+              cardDisplaySequence={cardDisplaySequence}
+              canProceed={canProceed}
+              onProceed={handleProceed}
+              isLevelComplete={showLevelCompletion}
+              showRunButton={showRunButton}
+              onCharacterRun={handleCharacterRun}
+              onHome={handleHome}
+              onRetry={handleRetry}
+              onNextLevel={handleNextLevel}
+              hasNextLevel={!!gameState?.submissionResult?.nextLevel}
+              fadeOutAnim={fadeOutAnim}
+              isInRunMode={isInRunMode}
+              setSelectedBlankIndex={setSelectedBlankIndex}
+              options={memoizedOptions}
+              // REMOVED: isVisible prop is no longer needed here
+            />
+          </View>
 
 
           <GameOverModal
