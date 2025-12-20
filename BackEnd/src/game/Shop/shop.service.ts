@@ -8,6 +8,10 @@ import * as ChallengeService from "../Challenges/challenges.service";
 import { SubmitChallengeControllerResult } from "../Challenges/challenges.types";
 import { UsePotionErrorResponse } from "./shop.types";
 import {
+  revealAllBlanks,
+  applyRevealPotion,
+} from "../../../helper/revealPotionHelper";
+import {
   successShopResponse,
   errorShopResponse,
 } from "../../../utils/response";
@@ -306,6 +310,7 @@ export const usePotion = async (
 
       let effectiveCorrectAnswer = currentChallenge.correct_answer as string[];
       const rawCorrectAnswer = [...effectiveCorrectAnswer];
+
       const level = await prisma.level.findUnique({
         where: { level_id: levelId },
         include: { enemy: true },
@@ -334,6 +339,17 @@ export const usePotion = async (
       if (isAlreadyHinted || isPending) {
         dynamicMessage = `Full hint already applied or pending confirmation—no extra reveal!`;
       } else {
+        const revealResult = revealAllBlanks(
+          currentChallenge.question ?? "",
+          effectiveCorrectAnswer
+        );
+
+        if (!revealResult.success) {
+          throw new Error(
+            `Cannot reveal challenge ${challengeId}: ${revealResult.error}`
+          );
+        }
+
         await prisma.playerProgress.update({
           where: { progress_id: progress.progress_id },
           data: {
@@ -344,49 +360,18 @@ export const usePotion = async (
           },
         });
 
-        let filledQuestion = currentChallenge.question ?? "";
-        const answersToFill = [...effectiveCorrectAnswer];
-
-        const universalBlankRegex =
-          /<_([^>]*)>|<\/_>|\{blank\}|\[_+\]|_+|"(_*)"|'(_*)'|“(_*)”|‘(_*)’|`(_*)`/g;
-
-        filledQuestion = filledQuestion.replace(
-          universalBlankRegex,
-          (match: string, htmlAttrs?: string) => {
-            const nextAnswer = answersToFill.shift();
-            if (!nextAnswer) return match;
-
-            if (match.startsWith("<_")) {
-              return `<${nextAnswer}${htmlAttrs || ""}>`;
-            } else if (match === "</_>") {
-              return `</${nextAnswer}>`;
-            } else if (match === "{blank}") {
-              return nextAnswer;
-            } else if (match.startsWith("[")) {
-              return nextAnswer;
-            } else if (match.startsWith('"')) {
-              return `"${nextAnswer}"`;
-            } else if (match.startsWith("'")) {
-              return `'${nextAnswer}'`;
-            } else if (match.startsWith("“")) {
-              return `“${nextAnswer}”`;
-            } else if (match.startsWith("‘")) {
-              return `‘${nextAnswer}’`;
-            } else if (match.startsWith("`")) {
-              return `\`${nextAnswer}\``;
-            } else {
-              return nextAnswer;
-            }
-          }
-        );
-
         nextChallengeForHint = {
           ...currentChallenge,
-          question: filledQuestion,
+          question: revealResult.filledQuestion,
           options: ["Attack"],
           answer: effectiveCorrectAnswer,
         } as any;
+
         dynamicMessage = `All blanks revealed: Select "Attack" to confirm and proceed!`;
+
+        console.log(
+          `Successfully revealed ${effectiveCorrectAnswer.length} blanks for challenge ${challengeId}`
+        );
       }
 
       audioResponse = [
