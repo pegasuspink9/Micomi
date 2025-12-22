@@ -126,6 +126,8 @@ export const useGameData = (playerId, initialLevelId) => {
       setLoading(false);
     }
   };
+  
+  
   const submitAnswer = async (selectedAnswers) => {
      if (!gameState?.currentChallenge || !playerId || !currentLevelId) {
       console.error('Missing required data for submission');
