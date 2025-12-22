@@ -515,7 +515,7 @@ export async function fightEnemy(
         const cardInfo = getCardForAttackType(
           character.character_name,
           character_attack_type,
-          true // isNormalFinalBonus for normal levels
+          true
         );
 
         if (
@@ -596,6 +596,12 @@ export async function fightEnemy(
       // Normal or celebratory (HP <=0 but not bonus)
       if (
         !alreadyAnsweredCorrectly &&
+        character.character_name === "Gino" &&
+        progress.consecutive_corrects === 4
+      ) {
+        character_attack_type = "special_attack";
+      } else if (
+        !alreadyAnsweredCorrectly &&
         !wasEverWrong &&
         correctAnswerLength >= 8
       ) {
@@ -617,12 +623,22 @@ export async function fightEnemy(
       card_type = cardInfo.card_type;
       character_attack_card = cardInfo.character_attack_card;
 
-      const damageIndex =
-        character_attack_type === "third_attack"
-          ? 2
-          : character_attack_type === "second_attack"
-          ? 1
-          : 0;
+      let damageIndex = 0;
+      let animIndex = 0;
+
+      if (character_attack_type === "special_attack") {
+        damageIndex = 2;
+        animIndex = 3;
+      } else if (character_attack_type === "third_attack") {
+        damageIndex = 2;
+        animIndex = 2;
+      } else if (character_attack_type === "second_attack") {
+        damageIndex = 1;
+        animIndex = 1;
+      } else {
+        damageIndex = 0;
+        animIndex = 0;
+      }
 
       if (
         character.character_name === "ShiShi" ||
@@ -632,8 +648,10 @@ export async function fightEnemy(
       }
 
       damage = damageArray[damageIndex] ?? 10;
-      character_attack = attacksArray[damageIndex] || null;
-      character_range_attack = rangeAttacksArray[damageIndex] || null;
+      character_attack =
+        attacksArray[animIndex] || attacksArray[damageIndex] || null;
+      character_range_attack =
+        rangeAttacksArray[animIndex] || rangeAttacksArray[damageIndex] || null;
       character_idle = character.avatar_image || null;
       console.log(`- ${character_attack_type} triggered!`);
     } else {
@@ -1198,6 +1216,12 @@ export async function fightBossEnemy(
       // Normal or celebratory (HP <=0 but not bonus)
       if (
         !alreadyAnsweredCorrectly &&
+        character.character_name === "Gino" &&
+        progress.consecutive_corrects === 4
+      ) {
+        character_attack_type = "special_attack";
+      } else if (
+        !alreadyAnsweredCorrectly &&
         !wasEverWrong &&
         correctAnswerLength >= 8
       ) {
@@ -1219,12 +1243,22 @@ export async function fightBossEnemy(
       card_type = cardInfo.card_type;
       character_attack_card = cardInfo.character_attack_card;
 
-      const damageIndex =
-        character_attack_type === "third_attack"
-          ? 2
-          : character_attack_type === "second_attack"
-          ? 1
-          : 0;
+      let damageIndex = 0;
+      let animIndex = 0;
+
+      if (character_attack_type === "special_attack") {
+        damageIndex = 2;
+        animIndex = 3;
+      } else if (character_attack_type === "third_attack") {
+        damageIndex = 2;
+        animIndex = 2;
+      } else if (character_attack_type === "second_attack") {
+        damageIndex = 1;
+        animIndex = 1;
+      } else {
+        damageIndex = 0;
+        animIndex = 0;
+      }
 
       if (
         character.character_name === "ShiShi" ||
@@ -1234,8 +1268,10 @@ export async function fightBossEnemy(
       }
 
       damage = damageArray[damageIndex] ?? 10;
-      character_attack = attacksArray[damageIndex] || null;
-      character_range_attack = rangeAttacksArray[damageIndex] || null;
+      character_attack =
+        attacksArray[animIndex] || attacksArray[damageIndex] || null;
+      character_range_attack =
+        rangeAttacksArray[animIndex] || rangeAttacksArray[damageIndex] || null;
       character_idle = character.avatar_image || null;
       console.log(`- ${character_attack_type} triggered!`);
     } else {
