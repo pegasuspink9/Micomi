@@ -556,6 +556,24 @@ export const submitChallengeService = async (
     );
 
   if (
+    isCorrect &&
+    character.character_name === "Gino" &&
+    updatedProgress?.consecutive_corrects === 3
+  ) {
+    const healAmount = Math.floor(character.health * 0.25); 
+    const currentHp = updatedProgress.player_hp;
+    const newHp = Math.min(character.health, currentHp + healAmount);
+
+    await prisma.playerProgress.update({
+      where: { progress_id: currentProgress.progress_id },
+      data: { player_hp: newHp },
+    });
+
+    updatedProgress.player_hp = newHp;
+    console.log(`- Gino's Passive Triggered: Healed ${healAmount} HP`);
+  }
+
+  if (
     !updatedProgress ||
     "success" in updatedProgress ||
     !("progress_id" in updatedProgress)
@@ -1012,6 +1030,11 @@ export const submitChallengeService = async (
 
     if (isRetryOfWrong) {
       attackType = "basic_attack";
+    } else if (
+      character.character_name === "Gino" &&
+      updatedProgress.consecutive_corrects === 3
+    ) {
+      attackType = "special_attack";
     } else if (isLastRemaining && isNewBonusRound) {
       attackType = "special_attack";
     } else if (
@@ -1210,7 +1233,6 @@ const getNextChallengeEasy = async (progress: any) => {
     }
   }
 
-  // If nextChallenge is pending, modify to filled version
   if (nextChallenge) {
     const challengeKey = nextChallenge.challenge_id.toString();
     const existing = playerAnswer[challengeKey];
@@ -1301,7 +1323,6 @@ const getNextChallengeHard = async (progress: any) => {
     }
   }
 
-  // If nextChallenge is pending, modify to filled version
   if (nextChallenge) {
     const challengeKey = nextChallenge.challenge_id.toString();
     const existing = playerAnswer[challengeKey];
