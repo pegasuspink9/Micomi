@@ -58,7 +58,7 @@ export async function updateProgressForChallenge(
 
   let newExpectedOutput = progress.player_expected_output ?? [];
 
-  if (isCorrect && !alreadyAnsweredCorrectly && !progress.is_completed) {
+  if (isCorrect && !alreadyAnsweredCorrectly) {
     const challengeExpected = challenge.expected_output ?? [];
     newExpectedOutput = [
       ...(Array.isArray(newExpectedOutput) ? newExpectedOutput : []),

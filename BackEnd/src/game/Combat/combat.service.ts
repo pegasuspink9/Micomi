@@ -527,7 +527,7 @@ export async function fightEnemy(
 
         card_type = cardInfo.card_type;
         character_attack_card = cardInfo.character_attack_card;
-        damage = damageArray[3] ?? 25;
+        damage = damageArray[2] ?? 25;
         character_attack = attacksArray[3] || null;
         character_range_attack = rangeAttacksArray[3] || null;
         console.log("SS is used: ", character_attack);
@@ -1131,7 +1131,7 @@ export async function fightBossEnemy(
         }
         card_type = cardInfo.card_type;
         character_attack_card = cardInfo.character_attack_card;
-        damage = damageArray[3] ?? 25;
+        damage = damageArray[1] ?? 25;
         character_attack = attacksArray[3] || null;
         character_range_attack = rangeAttacksArray[3] || null;
         console.log("SS is used: ", character_attack);

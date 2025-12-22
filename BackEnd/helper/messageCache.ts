@@ -31,15 +31,23 @@ export async function getMessagePool(category: string, tags: string[] = []) {
 
     cache.pools = {};
     for (const msg of all) {
-      const matchesTags =
-        tags.length === 0 || tags.every((t) => msg.tags.includes(t as any));
-      if (matchesTags) {
-        if (!cache.pools[msg.category]) cache.pools[msg.category] = [];
-        cache.pools[msg.category].push(msg);
+      if (!cache.pools[msg.category]) {
+        cache.pools[msg.category] = [];
       }
+      cache.pools[msg.category].push(msg);
     }
     cache.lastRefresh = now;
   }
 
-  return cache.pools[category] || [];
+  const categoryMessages = cache.pools[category] || [];
+
+  if (tags.length === 0) {
+    return categoryMessages;
+  }
+
+  const filtered = categoryMessages.filter((msg) =>
+    tags.every((t) => msg.tags.includes(t))
+  );
+
+  return filtered.length > 0 ? filtered : categoryMessages;
 }

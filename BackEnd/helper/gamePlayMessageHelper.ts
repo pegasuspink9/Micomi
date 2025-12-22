@@ -58,7 +58,29 @@ export const generateDynamicMessage = async (
 
   const pool = await getMessagePool(category, tags);
 
+  if (!pool || pool.length === 0) {
+    console.error(
+      `[GameMessage] No messages found for category: ${category}, tags: ${tags.join(
+        ", "
+      )}`
+    );
+    return {
+      text: isCorrect ? "Great job!" : "Try again!",
+      audio: [],
+    };
+  }
+
   const msg = pool[Math.floor(Math.random() * pool.length)];
+
+  if (!msg || !msg.textTemplate) {
+    console.error(
+      `[GameMessage] Invalid message selected from pool for category: ${category}`
+    );
+    return {
+      text: isCorrect ? "Great job!" : "Try again!",
+      audio: [],
+    };
+  }
 
   const text = msg.textTemplate.replace(/\{enemy\}/gi, enemy_name);
 
