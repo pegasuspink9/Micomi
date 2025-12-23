@@ -560,7 +560,7 @@ export const submitChallengeService = async (
     character.character_name === "Gino" &&
     updatedProgress?.consecutive_corrects === 3
   ) {
-    const healAmount = Math.floor(character.health * 0.25); 
+    const healAmount = Math.floor(character.health * 0.25);
     const currentHp = updatedProgress.player_hp;
     const newHp = Math.min(character.health, currentHp + healAmount);
 
@@ -1035,6 +1035,36 @@ export const submitChallengeService = async (
       updatedProgress.consecutive_corrects === 3
     ) {
       attackType = "special_attack";
+
+      let damageIndex = 0;
+      if (nextCorrectAnswerLength >= 8) {
+        damageIndex = 2;
+      } else if (nextCorrectAnswerLength >= 5) {
+        damageIndex = 1;
+      } else {
+        damageIndex = 0;
+      }
+
+      const damageArray = Array.isArray(character.character_damage)
+        ? (character.character_damage as number[])
+        : [10, 15, 25];
+
+      character_damage_card = damageArray[damageIndex] ?? 10;
+
+      if (freshProgress?.has_strong_effect) {
+        character_damage_card *= 2;
+      }
+
+      const cardInfo = getCardForAttackType(
+        character.character_name,
+        attackType
+      );
+      card_type = cardInfo.card_type;
+      character_attack_card = cardInfo.character_attack_card;
+
+      console.log(
+        `Next challenge card preview: Gino's SS (special_attack), damage based on ${nextCorrectAnswerLength} blanks: ${character_damage_card}`
+      );
     } else if (isLastRemaining && isNewBonusRound) {
       attackType = "special_attack";
     } else if (
@@ -1051,32 +1081,43 @@ export const submitChallengeService = async (
       attackType = "basic_attack";
     }
 
-    const damageIndexMap: Record<string, number> = {
-      basic_attack: 0,
-      second_attack: 1,
-      third_attack: 2,
-      special_attack: 2,
-    };
+    if (
+      !(
+        character.character_name === "Gino" &&
+        updatedProgress.consecutive_corrects === 3 &&
+        !isRetryOfWrong
+      )
+    ) {
+      const damageIndexMap: Record<string, number> = {
+        basic_attack: 0,
+        second_attack: 1,
+        third_attack: 2,
+        special_attack: 2,
+      };
 
-    const damageIndex = damageIndexMap[attackType] ?? 0;
+      const damageIndex = damageIndexMap[attackType] ?? 0;
 
-    const damageArray = Array.isArray(character.character_damage)
-      ? (character.character_damage as number[])
-      : [10, 15, 25];
+      const damageArray = Array.isArray(character.character_damage)
+        ? (character.character_damage as number[])
+        : [10, 15, 25];
 
-    character_damage_card = damageArray[damageIndex] ?? 10;
+      character_damage_card = damageArray[damageIndex] ?? 10;
 
-    if (freshProgress?.has_strong_effect) {
-      character_damage_card *= 2;
+      if (freshProgress?.has_strong_effect) {
+        character_damage_card *= 2;
+      }
+
+      const cardInfo = getCardForAttackType(
+        character.character_name,
+        attackType
+      );
+      card_type = cardInfo.card_type;
+      character_attack_card = cardInfo.character_attack_card;
+
+      console.log(
+        `Next challenge card preview: ${attackType}, damage: ${character_damage_card}, answer length: ${nextCorrectAnswerLength}`
+      );
     }
-
-    const cardInfo = getCardForAttackType(character.character_name, attackType);
-    card_type = cardInfo.card_type;
-    character_attack_card = cardInfo.character_attack_card;
-
-    console.log(
-      `Next challenge card preview: ${attackType}, damage: ${character_damage_card}, answer length: ${nextCorrectAnswerLength}`
-    );
   } else {
     attackType = null;
     card_type = null;

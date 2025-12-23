@@ -55,7 +55,10 @@ router.get(
   "/player-characters/:playerId",
   ModelShopService.getAllPlayerCharacter
 );
-router.post("/buy-character/:playerId", ShopController.buyCharacter);
+router.post(
+  "/buy-character/:playerId/:characterShopId",
+  ShopController.buyCharacter
+);
 router.get("/potion/:playerId", ModelShopService.getAllPlayerPotions);
 router.post(
   "/submit-challenge/:playerId/:levelId/:challengeId/use-potion",
