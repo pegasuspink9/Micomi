@@ -384,7 +384,7 @@ export async function getCurrentFightState(
     energy: energyStatus.energy,
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
     combat_background: combatBackground,
-    isEnemyFreeze: progress.has_freeze_effect || false,
+    isEnemyFrozen: progress?.has_freeze_effect || false,
   };
 }
 
@@ -631,6 +631,43 @@ export async function fightEnemy(
         console.log(
           `- Leon's SS triggered (Boss)! Animation: special_attack, Base Damage: ${baseDamage}, Final 2x Damage: ${damage}`
         );
+      } else if (
+        !alreadyAnsweredCorrectly &&
+        character.character_name === "ShiShi" &&
+        progress.consecutive_corrects === 4
+      ) {
+        character_attack_type = "special_attack";
+
+        // Logic for damage calculation
+        let damageIndex = 0;
+        if (correctAnswerLength >= 8) damageIndex = 2;
+        else if (correctAnswerLength >= 5) damageIndex = 1;
+
+        damage = damageArray[damageIndex] ?? 10;
+
+        character_attack = attacksArray[3] || null;
+        character_range_attack = rangeAttacksArray[3] || null;
+
+        // ShiShi usually doesn't run for SS if ranged/magic
+        character_run = null;
+        character_idle = character.avatar_image || null;
+
+        const cardInfo = getCardForAttackType(
+          character.character_name,
+          "special_attack"
+        );
+        card_type = cardInfo.card_type;
+        character_attack_card = cardInfo.character_attack_card;
+
+        await prisma.playerProgress.update({
+          where: { progress_id: progress.progress_id },
+          data: { has_freeze_effect: false },
+        });
+        progress.has_freeze_effect = false;
+
+        console.log(
+          `- ShiShi's SS Execution! Animation: special_attack, Freeze Re-applied`
+        );
       } else if (correctAnswerLength >= 8) {
         character_attack_type = "third_attack";
       } else if (correctAnswerLength >= 5) {
@@ -725,6 +762,41 @@ export async function fightEnemy(
         character_attack_card = cardInfo.character_attack_card;
 
         character_idle = character.avatar_image || null;
+      } else if (
+        !alreadyAnsweredCorrectly &&
+        character.character_name === "ShiShi" &&
+        progress.consecutive_corrects === 4
+      ) {
+        character_attack_type = "special_attack";
+
+        let damageIndex = 0;
+        if (correctAnswerLength >= 8) damageIndex = 2;
+        else if (correctAnswerLength >= 5) damageIndex = 1;
+
+        damage = damageArray[damageIndex] ?? 10;
+
+        character_attack = attacksArray[3] || null;
+        character_range_attack = rangeAttacksArray[3] || null;
+
+        character_run = null;
+        character_idle = character.avatar_image || null;
+
+        const cardInfo = getCardForAttackType(
+          character.character_name,
+          "special_attack"
+        );
+        card_type = cardInfo.card_type;
+        character_attack_card = cardInfo.character_attack_card;
+
+        await prisma.playerProgress.update({
+          where: { progress_id: progress.progress_id },
+          data: { has_freeze_effect: false },
+        });
+        progress.has_freeze_effect = false;
+
+        console.log(
+          `- ShiShi's SS Execution! Animation: special_attack, Freeze Re-applied`
+        );
       } else if (
         !alreadyAnsweredCorrectly &&
         !wasEverWrong &&
@@ -1115,6 +1187,12 @@ export async function fightEnemy(
     playerId
   );
 
+  progress = await prisma.playerProgress.findUnique({
+    where: {
+      player_id_level_id: { player_id: playerId, level_id: level.level_id },
+    },
+  });
+
   console.log("Final result:");
   console.log("- Enemy health:", enemyHealth);
   console.log("- Enemy max health:", scaledEnemyMaxHealth);
@@ -1154,7 +1232,7 @@ export async function fightEnemy(
     timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,
-    isEnemyFreeze: progress.has_freeze_effect || false,
+    isEnemyFrozen: progress?.has_freeze_effect || false,
   };
 }
 
@@ -1396,6 +1474,48 @@ export async function fightBossEnemy(
         console.log(
           `- Leon's SS triggered (Boss)! Animation: special_attack, Base Damage: ${baseDamage}, Final 2x Damage: ${damage}`
         );
+      } else if (
+        !alreadyAnsweredCorrectly &&
+        character.character_name === "ShiShi" &&
+        progress.consecutive_corrects === 4
+      ) {
+        character_attack_type = "special_attack";
+
+        let damageIndex = 0;
+        if (correctAnswerLength >= 8) {
+          damageIndex = 2;
+        } else if (correctAnswerLength >= 5) {
+          damageIndex = 1;
+        } else {
+          damageIndex = 0;
+        }
+
+        damage = damageArray[damageIndex] ?? 10;
+
+        character_attack = attacksArray[3] || null;
+        character_range_attack = rangeAttacksArray[3] || null;
+
+        const cardInfo = getCardForAttackType(
+          character.character_name,
+          "special_attack"
+        );
+        card_type = cardInfo.card_type;
+        character_attack_card = cardInfo.character_attack_card;
+
+        character_idle = character.avatar_image || null;
+
+        character_run = null;
+
+        await prisma.playerProgress.update({
+          where: { progress_id: progress.progress_id },
+          data: { has_freeze_effect: false },
+        });
+
+        progress.has_freeze_effect = false;
+
+        console.log(
+          `- ShiShi's SS triggered! Animation: special_attack, Enemy Frozen set to TRUE`
+        );
       } else if (correctAnswerLength >= 8) {
         character_attack_type = "third_attack";
       } else if (correctAnswerLength >= 5) {
@@ -1493,6 +1613,46 @@ export async function fightBossEnemy(
 
         console.log(
           `- Leon's SS triggered (Boss)! Animation: special_attack, Base Damage: ${baseDamage}, Final 2x Damage: ${damage}`
+        );
+      } else if (
+        !alreadyAnsweredCorrectly &&
+        character.character_name === "ShiShi" &&
+        progress.consecutive_corrects === 4
+      ) {
+        character_attack_type = "special_attack";
+
+        let damageIndex = 0;
+        if (correctAnswerLength >= 8) {
+          damageIndex = 2;
+        } else if (correctAnswerLength >= 5) {
+          damageIndex = 1;
+        } else {
+          damageIndex = 0;
+        }
+
+        damage = damageArray[damageIndex] ?? 10;
+
+        character_attack = attacksArray[3] || null;
+        character_range_attack = rangeAttacksArray[3] || null;
+
+        const cardInfo = getCardForAttackType(
+          character.character_name,
+          "special_attack"
+        );
+        card_type = cardInfo.card_type;
+        character_attack_card = cardInfo.character_attack_card;
+
+        character_idle = character.avatar_image || null;
+        character_run = null;
+
+        await prisma.playerProgress.update({
+          where: { progress_id: progress.progress_id },
+          data: { has_freeze_effect: false },
+        });
+        progress.has_freeze_effect = false;
+
+        console.log(
+          `- ShiShi's SS triggered! Animation: special_attack, Enemy Frozen set to TRUE`
         );
       } else if (
         !alreadyAnsweredCorrectly &&
@@ -1984,6 +2144,12 @@ export async function fightBossEnemy(
     playerId
   );
 
+  progress = await prisma.playerProgress.findUnique({
+    where: {
+      player_id_level_id: { player_id: playerId, level_id: level.level_id },
+    },
+  });
+
   console.log("Final result (Boss):");
   console.log("- Enemy health:", enemyHealth);
   console.log("- Enemy max health:", scaledEnemyMaxHealth);
@@ -2025,6 +2191,6 @@ export async function fightBossEnemy(
     timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,
-    isEnemyFreeze: progress.has_freeze_effect || false,
+    isEnemyFrozen: progress?.has_freeze_effect || false,
   };
 }

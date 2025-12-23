@@ -555,22 +555,33 @@ export const submitChallengeService = async (
       isRevealConfirmed
     );
 
-  if (
-    isCorrect &&
-    character.character_name === "Gino" &&
-    updatedProgress?.consecutive_corrects === 3
-  ) {
-    const healAmount = Math.floor(character.health * 0.25);
-    const currentHp = updatedProgress.player_hp;
-    const newHp = Math.min(character.health, currentHp + healAmount);
+  if (isCorrect && updatedProgress?.consecutive_corrects === 3) {
+    if (character.character_name === "Gino") {
+      const healAmount = Math.floor(character.health * 0.25);
+      const currentHp = updatedProgress.player_hp;
+      const newHp = Math.min(character.health, currentHp + healAmount);
 
-    await prisma.playerProgress.update({
-      where: { progress_id: currentProgress.progress_id },
-      data: { player_hp: newHp },
-    });
+      await prisma.playerProgress.update({
+        where: { progress_id: currentProgress.progress_id },
+        data: { player_hp: newHp },
+      });
 
-    updatedProgress.player_hp = newHp;
-    console.log(`- Gino's Passive Triggered: Healed ${healAmount} HP`);
+      updatedProgress.player_hp = newHp;
+      console.log(`- Gino's Passive Triggered: Healed ${healAmount} HP`);
+    }
+
+    if (character.character_name === "ShiShi") {
+      await prisma.playerProgress.update({
+        where: { progress_id: currentProgress.progress_id },
+        data: { has_freeze_effect: true },
+      });
+
+      currentProgress.has_freeze_effect = true;
+
+      console.log(
+        `- ShiShi's Passive Triggered: Enemy Frozen! (Safe for next turn)`
+      );
+    }
   }
 
   if (
@@ -1032,7 +1043,8 @@ export const submitChallengeService = async (
       attackType = "basic_attack";
     } else if (
       (character.character_name === "Gino" ||
-        character.character_name === "Leon") &&
+        character.character_name === "Leon" ||
+        character.character_name === "ShiShi") &&
       updatedProgress.consecutive_corrects === 3
     ) {
       attackType = "special_attack";
@@ -1085,7 +1097,8 @@ export const submitChallengeService = async (
     if (
       !(
         (character.character_name === "Gino" ||
-          character.character_name === "Leon") &&
+          character.character_name === "Leon" ||
+          character.character_name === "ShiShi") &&
         updatedProgress.consecutive_corrects === 3 &&
         !isRetryOfWrong
       )
