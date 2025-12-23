@@ -597,9 +597,39 @@ export async function fightEnemy(
         character_attack_card = cardInfo.character_attack_card;
 
         character_idle = character.avatar_image || null;
+      } else if (
+        !alreadyAnsweredCorrectly &&
+        character.character_name === "Leon" &&
+        progress.consecutive_corrects === 4
+      ) {
+        character_attack_type = "special_attack";
+
+        let damageIndex = 0;
+        if (correctAnswerLength >= 8) {
+          damageIndex = 2;
+        } else if (correctAnswerLength >= 5) {
+          damageIndex = 1;
+        } else {
+          damageIndex = 0;
+        }
+
+        const baseDamage = damageArray[damageIndex] ?? 10;
+        damage = baseDamage * 2;
+
+        character_attack = attacksArray[3] || null;
+        character_range_attack = rangeAttacksArray[3] || null;
+
+        const cardInfo = getCardForAttackType(
+          character.character_name,
+          "special_attack"
+        );
+        card_type = cardInfo.card_type;
+        character_attack_card = cardInfo.character_attack_card;
+
+        character_idle = character.avatar_image || null;
 
         console.log(
-          `- Bonus Round: Gino's SS triggered! Animation: special_attack`
+          `- Leon's SS triggered (Boss)! Animation: special_attack, Base Damage: ${baseDamage}, Final 2x Damage: ${damage}`
         );
       } else if (correctAnswerLength >= 8) {
         character_attack_type = "third_attack";
@@ -665,10 +695,36 @@ export async function fightEnemy(
         character_attack_card = cardInfo.character_attack_card;
 
         character_idle = character.avatar_image || null;
+      } else if (
+        !alreadyAnsweredCorrectly &&
+        character.character_name === "Leon" &&
+        progress.consecutive_corrects === 4
+      ) {
+        character_attack_type = "special_attack";
 
-        console.log(
-          `- Gino's SS triggered! Animation: special_attack, Damage based on ${correctAnswerLength} blanks: ${damage}`
+        let damageIndex = 0;
+        if (correctAnswerLength >= 8) {
+          damageIndex = 2;
+        } else if (correctAnswerLength >= 5) {
+          damageIndex = 1;
+        } else {
+          damageIndex = 0;
+        }
+
+        const baseDamage = damageArray[damageIndex] ?? 10;
+        damage = baseDamage * 2;
+
+        character_attack = attacksArray[3] || null;
+        character_range_attack = rangeAttacksArray[3] || null;
+
+        const cardInfo = getCardForAttackType(
+          character.character_name,
+          "special_attack"
         );
+        card_type = cardInfo.card_type;
+        character_attack_card = cardInfo.character_attack_card;
+
+        character_idle = character.avatar_image || null;
       } else if (
         !alreadyAnsweredCorrectly &&
         !wasEverWrong &&
@@ -1306,9 +1362,39 @@ export async function fightBossEnemy(
         character_attack_card = cardInfo.character_attack_card;
 
         character_idle = character.avatar_image || null;
+      } else if (
+        !alreadyAnsweredCorrectly &&
+        character.character_name === "Leon" &&
+        progress.consecutive_corrects === 4
+      ) {
+        character_attack_type = "special_attack";
+
+        let damageIndex = 0;
+        if (correctAnswerLength >= 8) {
+          damageIndex = 2;
+        } else if (correctAnswerLength >= 5) {
+          damageIndex = 1;
+        } else {
+          damageIndex = 0;
+        }
+
+        const baseDamage = damageArray[damageIndex] ?? 10;
+        damage = baseDamage * 2;
+
+        character_attack = attacksArray[3] || null;
+        character_range_attack = rangeAttacksArray[3] || null;
+
+        const cardInfo = getCardForAttackType(
+          character.character_name,
+          "special_attack"
+        );
+        card_type = cardInfo.card_type;
+        character_attack_card = cardInfo.character_attack_card;
+
+        character_idle = character.avatar_image || null;
 
         console.log(
-          `- Bonus Round: Gino's SS triggered! Animation: special_attack`
+          `- Leon's SS triggered (Boss)! Animation: special_attack, Base Damage: ${baseDamage}, Final 2x Damage: ${damage}`
         );
       } else if (correctAnswerLength >= 8) {
         character_attack_type = "third_attack";
@@ -1374,9 +1460,39 @@ export async function fightBossEnemy(
         character_attack_card = cardInfo.character_attack_card;
 
         character_idle = character.avatar_image || null;
+      } else if (
+        !alreadyAnsweredCorrectly &&
+        character.character_name === "Leon" &&
+        progress.consecutive_corrects === 4
+      ) {
+        character_attack_type = "special_attack";
+
+        let damageIndex = 0;
+        if (correctAnswerLength >= 8) {
+          damageIndex = 2;
+        } else if (correctAnswerLength >= 5) {
+          damageIndex = 1;
+        } else {
+          damageIndex = 0;
+        }
+
+        const baseDamage = damageArray[damageIndex] ?? 10;
+        damage = baseDamage * 2;
+
+        character_attack = attacksArray[3] || null;
+        character_range_attack = rangeAttacksArray[3] || null;
+
+        const cardInfo = getCardForAttackType(
+          character.character_name,
+          "special_attack"
+        );
+        card_type = cardInfo.card_type;
+        character_attack_card = cardInfo.character_attack_card;
+
+        character_idle = character.avatar_image || null;
 
         console.log(
-          `- Gino's SS triggered! Animation: special_attack, Damage based on ${correctAnswerLength} blanks: ${damage}`
+          `- Leon's SS triggered (Boss)! Animation: special_attack, Base Damage: ${baseDamage}, Final 2x Damage: ${damage}`
         );
       } else if (
         !alreadyAnsweredCorrectly &&

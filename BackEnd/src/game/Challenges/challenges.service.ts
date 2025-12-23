@@ -1031,7 +1031,8 @@ export const submitChallengeService = async (
     if (isRetryOfWrong) {
       attackType = "basic_attack";
     } else if (
-      character.character_name === "Gino" &&
+      (character.character_name === "Gino" ||
+        character.character_name === "Leon") &&
       updatedProgress.consecutive_corrects === 3
     ) {
       attackType = "special_attack";
@@ -1049,7 +1050,11 @@ export const submitChallengeService = async (
         ? (character.character_damage as number[])
         : [10, 15, 25];
 
-      character_damage_card = damageArray[damageIndex] ?? 10;
+      if (character.character_name === "Leon") {
+        character_damage_card = damageArray[damageIndex] * 2;
+      } else {
+        character_damage_card = damageArray[damageIndex] ?? 10;
+      }
 
       if (freshProgress?.has_strong_effect) {
         character_damage_card *= 2;
@@ -1061,10 +1066,6 @@ export const submitChallengeService = async (
       );
       card_type = cardInfo.card_type;
       character_attack_card = cardInfo.character_attack_card;
-
-      console.log(
-        `Next challenge card preview: Gino's SS (special_attack), damage based on ${nextCorrectAnswerLength} blanks: ${character_damage_card}`
-      );
     } else if (isLastRemaining && isNewBonusRound) {
       attackType = "special_attack";
     } else if (
@@ -1083,7 +1084,8 @@ export const submitChallengeService = async (
 
     if (
       !(
-        character.character_name === "Gino" &&
+        (character.character_name === "Gino" ||
+          character.character_name === "Leon") &&
         updatedProgress.consecutive_corrects === 3 &&
         !isRetryOfWrong
       )
@@ -1113,10 +1115,6 @@ export const submitChallengeService = async (
       );
       card_type = cardInfo.card_type;
       character_attack_card = cardInfo.character_attack_card;
-
-      console.log(
-        `Next challenge card preview: ${attackType}, damage: ${character_damage_card}, answer length: ${nextCorrectAnswerLength}`
-      );
     }
   } else {
     attackType = null;
