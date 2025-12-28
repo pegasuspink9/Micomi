@@ -175,6 +175,8 @@ const ThirdGrid = ({
   // Helper variable to decide if content should be shown at all
   const showContent = !canProceed && !isLevelComplete;
 
+
+  
   return (
     <GridContainer
       mainHeight={dynamicHeight}

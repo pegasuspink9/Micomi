@@ -18,6 +18,7 @@ const Card = ({
   imageUrl, 
   cardType = null,
   onClose,
+  damage = null,
   autoClose = true,
   autoCloseDuration = 3000
 }) => {
@@ -233,18 +234,23 @@ const Card = ({
       
       <View style={styles.contentWrapper}>
 
-        {imageSource ? (
-          <Animated.View style={[styles.imageWrapper, animatedStyle]}>
-            <Image
-              source={imageSource}
-              style={styles.image}
-              onLoadStart={() => setLoading(true)}
-              onLoadEnd={() => setLoading(false)}
-              onError={handleImageError}
-              resizeMode="contain"
-            />
-          </Animated.View>
-        ) : (
+      {imageSource ? (
+        <Animated.View style={[styles.imageWrapper, animatedStyle]}>
+          <Image
+            source={imageSource}
+            style={styles.image}
+            onLoadStart={() => setLoading(true)}
+            onLoadEnd={() => setLoading(false)}
+            onError={handleImageError}
+            resizeMode="contain"
+          />
+          {damage && (
+            <View style={styles.damageOverlay}>
+              <Text style={styles.damageText}>+{damage}</Text>
+            </View>
+          )}
+        </Animated.View>
+      ): (
           <View style={styles.imageWrapper}>
             <ActivityIndicator size="large" color="#ffffff" />
           </View>
@@ -301,13 +307,29 @@ const styles = StyleSheet.create({
     minWidth: wp(40),
   },
   cardTypeText: {
-    fontSize: scale(30),
+    fontSize: scale(35),
     textAlign: 'center',
     color: '#5d9ab3ff',
     textShadowColor: 'rgba(4, 44, 78, 1)',
-    fontFamily: 'MusicVibes',
+    fontFamily: 'Grobold',
     textShadowOffset: { width: scale(-2), height: scale(1) },
     textShadowRadius: scale(1),
+  },
+  damageOverlay: {
+    position: 'absolute',
+    top: scale(70),
+    right: scale(45),
+    borderRadius: scale(50),
+    paddingHorizontal: scale(8),
+    paddingVertical: scale(4),
+  },
+  damageText: {
+    color: '#ffffffcf',
+    textShadowColor: 'rgba(0, 0, 0, 1)',
+    textShadowOffset: { width: scale(1), height: scale(1) },
+    textShadowRadius: scale(2),
+    fontSize: scale(25),
+    fontFamily: 'Grobold',
   },
 });
 

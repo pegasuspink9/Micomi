@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
-import { Animated, View } from 'react-native';
+import { Animated, View, Modal, StyleSheet } from 'react-native';
 import enemiesData from '../GameData/Enemy Game Data/EnemyGameData';
 import GameContainer from './components/GameContainer';
 import GameBackground from './components/GameBackground';
@@ -12,6 +12,8 @@ import Damage from './components/Damage';
 import Message from './components/Message';
 import FadeOutWrapper from './FadeOutWrapper/FadeOutWrapper';
 import PauseButton from './Pauses/PauseButton';
+import { gameScale } from '../../Responsiveness/gameResponsive';
+import BonusRoundModal from './components/BonusRoundModal'; // ✅ NEW IMPORT
 
 const ScreenPlay = ({ 
   gameState,
@@ -35,6 +37,10 @@ const ScreenPlay = ({
 
   const [hasRunCompleted, setHasRunCompleted] = useState(false);
   const [isEnemyRunning, setIsEnemyRunning] = useState(false);
+  
+  const firstBonusShownRef = useRef(false); 
+  const [showBonusRoundText, setShowBonusRoundText] = useState(false); 
+
   const lastPlayedEnemyAttackKey = useRef(null);
 
   const enemyRunTimeoutsRef = useRef({});
@@ -42,8 +48,6 @@ const ScreenPlay = ({
   const enemyFadeCompleteRef = useRef(false);
   const animationCompleteNotifiedRef = useRef(false); 
   const lastProcessedSubmissionIdRef = useRef(null); 
-
-
 
   const enemies = useMemo(() => processEnemyData(enemiesData), []);
 
@@ -168,10 +172,22 @@ const ScreenPlay = ({
     };
   }, []);
 
+  // ✅ NEW CALLBACK: When the BonusRoundModal finishes its hide animation
+  const handleBonusModalHide = useCallback(() => {
+    console.log('🎉 Bonus Round Modal finished hiding, resetting active state.');
+    setShowBonusRoundText(false); // Reset the state that controls the modal's visibility
+  }, []);
 
 
   useEffect(() => {
   const fightResult = gameState?.submissionResult?.fightResult;
+
+  console.log('DEBUG: Bonus Modal Check', {
+  firstBonusShownRefCurrent: firstBonusShownRef.current,
+  showBonusRoundText: showBonusRoundText,
+});
+
+  // The BonusRoundModal component itself will handle the timers and fade animations.
 
   //  NEW: Create unique submission ID including timestamp to prevent duplicates
   const submissionId = fightResult ? 
@@ -232,7 +248,29 @@ const ScreenPlay = ({
       victoryTimeoutRef.current = null;
     }
   };
-  }, [gameState?.submissionResult?.fightResult?.status, gameState?.submissionResult?.fightResult?.character?.character_health, gameState?.submissionResult?.fightResult?.enemy?.enemy_health, gameState?.currentChallenge?.id, victoryAnimationPhase, handleEnemyRun, onSubmissionAnimationComplete, gameState?.submissionResult?.isCorrect]);
+  }, [
+  gameState?.submissionResult?.fightResult?.status, 
+  gameState?.submissionResult?.fightResult?.character?.character_health, 
+  gameState?.submissionResult?.fightResult?.enemy?.enemy_health, 
+  gameState?.currentChallenge?.id, 
+  victoryAnimationPhase, 
+  handleEnemyRun, 
+  onSubmissionAnimationComplete, 
+  gameState?.submissionResult?.isCorrect, 
+  showBonusRoundText
+]);
+
+ useEffect(() => {
+  console.log('Enemy health changed to:', enemyHealth);
+  if (enemyHealth === 0 && gameState.currentChallenge && !firstBonusShownRef.current && !showBonusRoundText) {
+    console.log('🎉 Enemy defeated, next challenge exists - scheduling bonus modal');
+    firstBonusShownRef.current = true;
+    
+    setTimeout(() => {
+      setShowBonusRoundText(true);
+    }, 5000); 
+  }
+}, [enemyHealth, gameState.currentChallenge]);
 
  useEffect(() => {
     if (isEnemyRunning) {
@@ -343,7 +381,7 @@ const ScreenPlay = ({
 
   
 
-   const handleEnemyAnimationComplete = useCallback((index) => {
+  const handleEnemyAnimationComplete = useCallback((index) => {
   return (animationState) => {
     console.log(`🎬 Enemy ${index} ${animationState} animation completed`);
     
@@ -682,12 +720,22 @@ useEffect(() => {
           animated={true}
         />
       </FadeOutWrapper>
+        
+      {/* ✅ NEW: Render the BonusRoundModal component */}
+      <BonusRoundModal 
+        visible={showBonusRoundText} // ✅ Controlled by the new state
+        message="Bonus Round!" 
+        duration={3000} 
+        onHide={handleBonusModalHide} 
+      />
 
        
       </GameBackground>
     </GameContainer>
   );
 };
+
+
 
 export default React.memo(ScreenPlay, (prevProps, nextProps) => {
   return (

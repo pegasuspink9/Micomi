@@ -180,7 +180,8 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
       // Extract card from ROOT level - it's alongside challenge data, not inside it
       card: data.card || responseData.card || {
         card_type: null,
-        character_attack_card: null
+        character_attack_card: null,
+        character_damage_card: null
       },
       versus_background: data.versus_background || responseData.versus_background || null,
       versus_audio: data.versus_audio || responseData.versus_audio || null,
@@ -237,6 +238,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         html_file_name: challengeSource.html_file_name,
         javascript_file: challengeSource.javascript_file,
         javascript_file_name: challengeSource.javascript_file_name,
+        isBonus: data.is_bonus_round || false,
       };
     }
 

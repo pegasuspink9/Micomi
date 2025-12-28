@@ -7,6 +7,7 @@ import {
   Dimensions,
   Easing,
   Pressable,
+  Image
 } from 'react-native';
 import { gameScale } from '../../../Responsiveness/gameResponsive';
 
@@ -89,13 +90,20 @@ const TickItem = ({ amount = 1, index = 0, animated = true, isBonusRound = false
         },
       ]}
     >
-     <Text style={[
-        styles.tickText,
-        { color: isBonusRound ? 'rgba(218, 200, 0, 0.88)' : 'rgba(174, 7, 7, 0.77)' }
-      ]}>
-        {isBonusRound ? `+${amount}` : `-${amount}`}
-      </Text>
-  </Animated.View>
+     {isBonusRound ? (
+        <View style={styles.coinContainer}>
+          <Text style={styles.coinText}>+{amount}</Text>
+          <Image source={require('./Image/coin.png')} style={styles.coinImage} />
+        </View>
+      ) : (
+        <Text style={[
+          styles.tickText,
+          { color: 'rgba(174, 7, 7, 0.77)' }  // Removed bonus color since it's now handled by image
+        ]}>
+          -{amount}
+        </Text>
+      )}
+    </Animated.View>
   );
 };
 
@@ -328,5 +336,19 @@ const styles = StyleSheet.create({
     fontFamily: 'DynaPuff',
     color: '#fe3232f8', 
     elevation: 9999,
+  },
+    coinContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  coinImage: {
+    width: gameScale(12),
+    height: gameScale(12),
+    marginRight: gameScale(2),
+  },
+  coinText: {
+    fontSize: gameScale(9),
+    fontFamily: 'DynaPuff',
+    color: 'rgba(218, 200, 0, 0.88)',  // Gold color for bonus text
   },
 });

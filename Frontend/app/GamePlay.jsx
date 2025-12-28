@@ -112,6 +112,7 @@ export default function GamePlay() {
   //  Get character attack card from gameState
   const characterAttackCard = gameState?.card?.character_attack_card;
   const cardType = gameState?.card?.card_type;
+  const characterDamageCard = gameState?.card?.character_damage_card;
 
   const [isInRunMode, setIsInRunMode] = useState(false);
   const fadeOutAnimRef = useRef(new Animated.Value(1)).current;
@@ -886,9 +887,10 @@ export default function GamePlay() {
         visible={showAttackCard}
         imageUrl={characterAttackCard}
         cardType={cardType}
+        damage={characterDamageCard}
         onClose={handleCloseAttackCard}
         autoClose={true}
-        autoCloseDuration={3000}
+        autoCloseDuration={5000}
       />
 
       <GamePauseModal 
