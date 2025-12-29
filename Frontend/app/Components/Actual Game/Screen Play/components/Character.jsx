@@ -6,7 +6,7 @@ import Animated, {
   useAnimatedStyle,
   withRepeat,
   withTiming,
-  withDelay, //  Added withDelay import
+  withDelay, 
   cancelAnimation,
   runOnJS,
   Easing,
@@ -36,11 +36,38 @@ const Character = ({
   const blinkOpacity = useSharedValue(0);
   const attackInitiated = useSharedValue(false);
   
-  // Shared value specifically for the range projectile movement
   const rangeProjectileX = useSharedValue(0);
 
+  // ========== State Management (Lifted up for use in effectiveName) ==========
+  const initialUrl = useMemo(() => {
+    const candidates = [
+      characterAnimations.character_idle, 
+      characterAnimations.idle
+    ].filter(url => url && typeof url === 'string');
+    return candidates[0] || '';
+  }, [characterAnimations]);
+
+  const [currentAnimationUrl, setCurrentAnimationUrl] = useState(initialUrl);
+
+  //  NEW: Robust Character Name Detection
+  // If characterName prop is missing (during transition), fallback to checking the URL
+  const effectiveCharacterName = useMemo(() => {
+    if (characterName) return characterName;
+    if (currentAnimationUrl?.includes('Leon')) return 'Leon';
+    if (currentAnimationUrl?.includes('Ryron')) return 'Ryron';
+    return '';
+  }, [characterName, currentAnimationUrl]);
+
   // ========== Animation Configuration ==========
-  const SPRITE_SIZE = useMemo(() => gameScale(128), []);
+  
+  //  UPDATED: Uses effectiveCharacterName so size persists even if prop is lost
+  const SPRITE_SIZE = useMemo(() => {
+    if (effectiveCharacterName === 'Leon') {
+      return gameScale(155); 
+    }
+    return gameScale(128); 
+  }, [effectiveCharacterName]);
+
   const SPRITE_COLUMNS = 6;
   const SPRITE_ROWS = 4;
   const TOTAL_FRAMES = 24;
@@ -64,15 +91,6 @@ const Character = ({
     };
     return distanceMap[deviceType] || SCREEN.width * 0.48;
   }, []);
-
-  // ========== State Management ==========
-  const initialUrl = useMemo(() => {
-    const candidates = [
-      characterAnimations.character_idle, 
-      characterAnimations.idle
-    ].filter(url => url && typeof url === 'string');
-    return candidates[0] || '';
-  }, [characterAnimations]);
 
   const isUrlCached = useCallback((url) => {
     if (!url) return false;
@@ -110,7 +128,7 @@ const Character = ({
     return allAnimationUrls.every(url => isUrlCached(url));
   }, [allAnimationUrls, isUrlCached]);
 
-  const [currentAnimationUrl, setCurrentAnimationUrl] = useState(initialUrl);
+  
   const [imageReady, setImageReady] = useState(allAnimationsCached || isUrlCached(initialUrl));
   const [preloadedImages] = useState(new Map());
   const attackSoundTimeoutRef = useRef(null);
@@ -259,7 +277,6 @@ const Character = ({
   cancelAnimation(positionX);
   cancelAnimation(opacity);
   cancelAnimation(blinkOpacity);
-  // Reset range projectile animation
   cancelAnimation(rangeProjectileX);
   
   blinkOpacity.value = 0;
@@ -326,19 +343,13 @@ const Character = ({
   
   //  LOGIC FOR RANGE ATTACK MOVEMENT
   if (currentState === 'attack' && config.isRange) {
-    // We check for "Ryron" explicitly
-    if (characterName === 'Ryron') {
-        // Start at 0 (Character idle) and move to Enemy position
+    if (effectiveCharacterName === 'Ryron') { //  Updated to use effectiveCharacterName
         rangeProjectileX.value = 0;
-        
-        //  Add a 400ms DELAY before the arrow flies (simulates drawing the bow)
-        // flight duration is reduced so it still lands before the animation state ends
         rangeProjectileX.value = withDelay(700, withTiming(ATTACK_RUN_DISTANCE, {
             duration: duration * 0.4, 
             easing: Easing.linear
         }));
     } else {
-        // Others spawn at enemy
         rangeProjectileX.value = ATTACK_RUN_DISTANCE + gameScale(50);
     }
   }
@@ -355,7 +366,7 @@ const Character = ({
       }
     }
   });
-  }, [currentState, isPaused, currentAnimationUrl, animationConfig, notifyAnimationComplete, isUrlCached, characterName]);
+  }, [currentState, isPaused, currentAnimationUrl, animationConfig, notifyAnimationComplete, isUrlCached, effectiveCharacterName, SPRITE_SIZE]); //  Added effectiveCharacterName dependency
 
   // ========== Animated Styles ==========
   const animatedStyle = useAnimatedStyle(() => {
@@ -363,7 +374,7 @@ const Character = ({
     const column = frame % SPRITE_COLUMNS;
     const row = Math.floor(frame / SPRITE_COLUMNS);
     return { transform: [{ translateX: -(column * SPRITE_SIZE) }, { translateY: -(row * SPRITE_SIZE) }] };
-  }, [SPRITE_SIZE]);
+  }, [SPRITE_SIZE]); 
 
   const containerStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -372,7 +383,6 @@ const Character = ({
 
   const redFlashStyle = useAnimatedStyle(() => ({ opacity: blinkOpacity.value }), []);
   
-  //  Applied animated X position here
   const rangeContainerStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: rangeProjectileX.value }]
   }));
@@ -384,7 +394,16 @@ const Character = ({
     <Animated.View style={[ styles.characterContainer, containerStyle, propContainerStyle]}>
       
       {/* 1. Main Character Sprite Container */}
-      <View style={[styles.spriteContainer, { width: SPRITE_SIZE, height: SPRITE_SIZE }]}>
+          <View style={[
+          styles.spriteContainer,
+          { width: SPRITE_SIZE, height: SPRITE_SIZE },
+          //  Updated to use effectiveCharacterName
+          effectiveCharacterName === 'Leon' 
+            ? { marginTop: gameScale(-19), marginLeft: gameScale(-12) } 
+            : effectiveCharacterName === 'Ryron' 
+              ? { marginTop: gameScale(7) } // Adjust this value as needed for Ryron
+              : null 
+        ]}>
         <Animated.View style={[ styles.spriteSheet, animatedStyle, { width: SPRITE_SIZE * SPRITE_COLUMNS, height: SPRITE_SIZE * SPRITE_ROWS } ]}>
           {currentAnimationUrl ? (
             <Image source={{ uri: currentAnimationUrl }} style={styles.spriteImage} contentFit="cover" cachePolicy="disk" />
@@ -409,8 +428,9 @@ const Character = ({
               width: SPRITE_SIZE, 
               height: SPRITE_SIZE,
               zIndex: 20,
-              marginTop: characterName === 'Ryron' ? gameScale(-20) : 0,
-              marginLeft: characterName === 'Ryron' ? gameScale(24) : 0
+              //  Updated to use effectiveCharacterName
+              marginTop: effectiveCharacterName === 'Ryron' ? gameScale(-15) : 0,
+              marginLeft: effectiveCharacterName === 'Ryron' ? gameScale(27) : 0
             }
         ]}>
             <Animated.View style={[ 

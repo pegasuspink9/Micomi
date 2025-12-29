@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
   modalText: {
     fontSize: gameScale(44),
     fontFamily: 'Oups', 
-    color: '#c51a1aff',
+    color: '#b6d509ff',
     textAlign: 'center',
   },
 });

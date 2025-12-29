@@ -247,6 +247,7 @@ const EnemyCharacter = ({
       onAnimationCompleteRef.current(currentState);
     }
   }, [currentState]);
+
   // ========== Main Animation Effect ==========
   useEffect(() => {
   if (currentState === 'attack' && attackInitiated.value) {
@@ -261,11 +262,9 @@ const EnemyCharacter = ({
     return; 
   }
 
-  // FIX: Always allow animations to proceed if cached, regardless of imageReady state
   const isCurrentUrlCached = isUrlCached(currentAnimationUrl) || preloadedImages.has(currentAnimationUrl);
   const isTargetUrlCached = targetUrl ? (isUrlCached(targetUrl) || preloadedImages.has(targetUrl)) : true;
   
-  // FIX: If paused, cancel animations but don't return early if state changes
   if (isPaused) {
     cancelAnimation(frameIndex);
     cancelAnimation(positionX);
@@ -275,12 +274,11 @@ const EnemyCharacter = ({
     return;
   }
 
-  // FIX: For attack/hurt/dies states, ALWAYS proceed if URL is cached (ignore imageReady)
   const isCriticalState = currentState === 'attack' || currentState === 'hurt' || currentState === 'dies';
   const canProceed = isCriticalState ? (isCurrentUrlCached || isTargetUrlCached) : (imageReady || isCurrentUrlCached || isTargetUrlCached);
 
   if (!canProceed) {
-    return; // Only block if truly not ready
+    return; 
   }
   
   if (currentState !== 'attack' && currentState !== 'run') {
@@ -307,7 +305,6 @@ const EnemyCharacter = ({
       return;
     }
 
-    // FIX: Mark both URLs as ready if cached
     if (isUrlCached(runUrl)) preloadedImages.set(runUrl, true);
     if (isUrlCached(attackUrl)) preloadedImages.set(attackUrl, true);
 
@@ -341,12 +338,21 @@ const EnemyCharacter = ({
     return;
   }
 
+  // --- LOOPING LOGIC ---
   if (config.shouldLoop) {
     if (currentState === 'hurt' && isBonusRound) {
       blinkOpacity.value = withRepeat(withTiming(0.7, { duration: 100 }), -1, true);
     }
+
+    // ✅ FIX: Determine if we should "Ping-Pong" (reverse loop).
+    // We want this for IDLE and HURT to make them look smooth. 
+    // We do NOT want this for RUN (running backwards looks weird).
+    const shouldPingPong = currentState === 'idle' || currentState === 'hurt';
+
     frameIndex.value = withRepeat(
-      withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false
+      withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), 
+      -1, 
+      shouldPingPong // ✅ True for idle/hurt (0->23->0), False for run (0->23, 0->23)
     );
     return;
   }
