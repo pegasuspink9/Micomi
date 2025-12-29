@@ -70,6 +70,15 @@ const ReanimatedTextInput = Reanimated.createAnimatedComponent(
   })
 );
 
+// Helper for Diagonal Lines (Shadow Effect)
+const StripedFill = () => (
+  <View style={styles.stripeContainer}>
+    {Array.from({ length: 20 }).map((_, i) => (
+      <View key={i} style={styles.stripeLine} />
+    ))}
+  </View>
+);
+
 const LevelCompletionModal = ({
   visible,
   onRetry,
@@ -81,6 +90,9 @@ const LevelCompletionModal = ({
   victoryAudioUrl,
   victoryImageUrl
 }) => {
+  //  1. Placeholder Data for Stars
+  const stars = 3; 
+
   const [isAnimating, setIsAnimating] = useState(false);
   const [imageReady, setImageReady] = useState(false);
 
@@ -100,6 +112,15 @@ const LevelCompletionModal = ({
   const reward3Scale = useSharedValue(0);
   
   const buttonsTranslateY = useSharedValue(SCREEN_HEIGHT);
+
+  //  2. New Shared Values for Progress Bar & Stars
+  const progressValue = useSharedValue(0);
+  const starsOpacity = useSharedValue(0); // To fade the bar in
+  
+  // Star pop animations
+  const star1Scale = useSharedValue(1); 
+  const star2Scale = useSharedValue(1);
+  const star3Scale = useSharedValue(1);
 
   useEffect(() => {
     if (visible && victoryAudioUrl) {
@@ -124,22 +145,15 @@ const LevelCompletionModal = ({
     console.log('🏆 LevelCompletion victoryImageUrl received:', victoryImageUrl);
     
     if (victoryImageUrl && typeof victoryImageUrl === 'string') {
-      // Try to get cached path first
       const cached = universalAssetPreloader.getCachedAssetPath(victoryImageUrl);
-      console.log('🏆 LevelCompletion cached path:', cached);
       setAnimationUrl(cached);
       
-      // If it's a cached local file, it's ready immediately
       if (cached && cached.startsWith('file://')) {
-        console.log('🏆 LevelCompletion image is cached locally, ready immediately');
         setImageReady(true);
       } else {
-        // Need to load from remote URL
-        console.log('🏆 LevelCompletion image needs to be loaded from remote:', cached);
         setImageReady(false);
       }
     } else {
-      console.warn('🏆 LevelCompletion: No victoryImageUrl provided!');
       setAnimationUrl(null);
       setImageReady(false);
     }
@@ -148,34 +162,25 @@ const LevelCompletionModal = ({
   // ========== Image Loading ==========
   useEffect(() => {
     if (!animationUrl) {
-      console.log('🏆 LevelCompletion: No animationUrl set yet');
       setImageReady(false);
       return;
     }
 
-    // If it's already a local file path, it's ready
     if (animationUrl.startsWith('file://')) {
-      console.log('🏆 LevelCompletion image is cached locally, ready immediately');
       setImageReady(true);
       return;
     }
 
-    // Otherwise prefetch remote URL
     let mounted = true;
     setImageReady(false);
-    
-    console.log('🏆 LevelCompletion: Prefetching remote image:', animationUrl);
     
     (async () => {
       try {
         await RNImage.prefetch(animationUrl);
         if (mounted) {
-          console.log('🏆 LevelCompletion: Image prefetched successfully');
           setImageReady(true);
         }
       } catch (err) {
-        console.warn(`🏆 LevelCompletion prefetch failed:`, err);
-        // Still set ready to allow rendering with expo-image handling
         if (mounted) setImageReady(true);
       }
     })();
@@ -215,16 +220,20 @@ const LevelCompletionModal = ({
   // ========== ENTRANCE SEQUENCE ==========
   useEffect(() => {
     if (visible) {
-      // Reset triggers
       setStartCoinCount(false);
       setStartPointCount(false);
       setStartExpCount(false);
-      
       startEntranceAnimation();
     } else {
       resetAnimations();
     }
   }, [visible]);
+
+  const popStar = (starScaleValue) => {
+    starScaleValue.value = withSpring(1.8, { damping: 4, stiffness: 200 }, () => {
+      starScaleValue.value = withSpring(1.2, { damping: 10, stiffness: 100 });
+    });
+  };
 
   const startEntranceAnimation = () => {
     setIsAnimating(true);
@@ -238,34 +247,63 @@ const LevelCompletionModal = ({
     reward2Scale.value = 0;
     reward3Scale.value = 0;
     buttonsTranslateY.value = SCREEN_HEIGHT;
+    progressValue.value = 0;
+    starsOpacity.value = 0;
+    star1Scale.value = 1;
+    star2Scale.value = 1;
+    star3Scale.value = 1;
 
-    //  FIXED: Reanimated Sequence (Runs on UI Thread)
-    
+    // Determine target percentage based on stars
+    let targetPercentage = 0;
+    if (stars === 1) targetPercentage = 30;
+    else if (stars === 2) targetPercentage = 70;
+    else if (stars === 3) targetPercentage = 100;
+
     // 0. Background
     backgroundOpacity.value = withTiming(1, { duration: 300 });
 
-    // 1. Sprite (Slide Up)
+    // 1. Sprite
     spriteTranslateY.value = withDelay(100, withSpring(0, { damping: 12, stiffness: 90 }));
 
-    // 2. Text (Drop In)
-    textScale.value = withDelay(300, withSpring(1, { damping: 12, stiffness: 100 }));
-    textOpacity.value = withDelay(300, withTiming(1, { duration: 300 }));
+    //  2. Progress Bar (Moved here, after sprite)
+    starsOpacity.value = withDelay(400, withTiming(1, { duration: 500 }));
+    
+    // Fill the bar
+    progressValue.value = withDelay(500, withTiming(targetPercentage, {
+      duration: 1500,
+      easing: Easing.out(Easing.cubic)
+    }));
 
-    // 3. Rewards (Pop In)
-    reward1Scale.value = withDelay(500, withSpring(1, { damping: 10, stiffness: 120 }, (finished) => {
+    // Trigger star pops based on timing relative to fill duration
+    if (stars >= 1) {
+      setTimeout(() => runOnJS(popStar)(star1Scale), 900); // ~30% filled
+    }
+    if (stars >= 2) {
+      setTimeout(() => runOnJS(popStar)(star2Scale), 1300); // ~70% filled
+    }
+    if (stars >= 3) {
+      setTimeout(() => runOnJS(popStar)(star3Scale), 1700); // ~100% filled
+    }
+
+    // 3. Text (Delayed further)
+    textScale.value = withDelay(1800, withSpring(1, { damping: 12, stiffness: 100 }));
+    textOpacity.value = withDelay(1800, withTiming(1, { duration: 300 }));
+
+    // 4. Rewards
+    reward1Scale.value = withDelay(2000, withSpring(1, { damping: 10, stiffness: 120 }, (finished) => {
       if (finished) runOnJS(setStartCoinCount)(true);
     }));
 
-    reward2Scale.value = withDelay(700, withSpring(1, { damping: 10, stiffness: 120 }, (finished) => {
+    reward2Scale.value = withDelay(2200, withSpring(1, { damping: 10, stiffness: 120 }, (finished) => {
       if (finished) runOnJS(setStartPointCount)(true);
     }));
 
-    reward3Scale.value = withDelay(900, withSpring(1, { damping: 10, stiffness: 120 }, (finished) => {
+    reward3Scale.value = withDelay(2400, withSpring(1, { damping: 10, stiffness: 120 }, (finished) => {
       if (finished) runOnJS(setStartExpCount)(true);
     }));
 
-    // 4. Buttons
-    buttonsTranslateY.value = withDelay(1100, withSpring(0, { damping: 14, stiffness: 80 }, (finished) => {
+    // 5. Buttons
+    buttonsTranslateY.value = withDelay(2600, withSpring(0, { damping: 14, stiffness: 80 }, (finished) => {
       if (finished) runOnJS(setIsAnimating)(false);
     }));
   };
@@ -275,6 +313,10 @@ const LevelCompletionModal = ({
     setStartCoinCount(false);
     setStartPointCount(false);
     setStartExpCount(false);
+    progressValue.value = 0;
+    star1Scale.value = 1;
+    star2Scale.value = 1;
+    star3Scale.value = 1;
   };
 
   const handleImageError = useCallback((error) => {
@@ -282,7 +324,6 @@ const LevelCompletionModal = ({
   }, []);
 
   const handleImageLoadEnd = useCallback(() => {
-    console.log('🏆 LevelCompletion: Image loaded successfully');
     setImageReady(true);
   }, []);
 
@@ -297,6 +338,20 @@ const LevelCompletionModal = ({
   const reward2Style = useAnimatedStyle(() => ({ transform: [{ scale: reward2Scale.value }] }));
   const reward3Style = useAnimatedStyle(() => ({ transform: [{ scale: reward3Scale.value }] }));
   const buttonsStyle = useAnimatedStyle(() => ({ transform: [{ translateY: buttonsTranslateY.value }] }));
+
+  //  Progress Bar Animated Styles
+  const progressBarStyle = useAnimatedStyle(() => ({
+    width: `${progressValue.value}%`
+  }));
+  
+  const starContainerStyle = useAnimatedStyle(() => ({
+    opacity: starsOpacity.value,
+    transform: [{ translateY: interpolate(starsOpacity.value, [0, 1], [20, 0]) }]
+  }));
+
+  const animatedStar1Style = useAnimatedStyle(() => ({ transform: [{ scale: star1Scale.value }] }));
+  const animatedStar2Style = useAnimatedStyle(() => ({ transform: [{ scale: star2Scale.value }] }));
+  const animatedStar3Style = useAnimatedStyle(() => ({ transform: [{ scale: star3Scale.value }] }));
 
   if (!visible) return null;
 
@@ -355,7 +410,8 @@ const LevelCompletionModal = ({
           <Reanimated.View 
             style={[
               styles.spriteContainerWrapper,
-              spriteContainerStyle
+              spriteContainerStyle,
+              { marginTop: scale(30) } 
             ]}
           >
             <View style={[styles.spriteContainer, { width: SPRITE_SIZE, height: SPRITE_SIZE }]}>
@@ -389,12 +445,49 @@ const LevelCompletionModal = ({
             </View>
           </Reanimated.View>
 
-          {/* 2. Text & Feedback (Drops In) */}
+          {/*  2. PROGRESS BAR (Stars) - MOVED HERE (After Sprite) */}
+          {!isLoading && (
+            <Reanimated.View style={[styles.progressBarContainer, starContainerStyle]}>
+              {/* Background Track with 3D Border Effect */}
+              <View style={styles.progressTrackBorder}>
+                <View style={styles.progressTrack}>
+                  {/* Animated Fill */}
+                  <Reanimated.View style={[styles.progressFill, progressBarStyle]}>
+                    <LinearGradient
+                      colors={['#FFD700', '#FFA500']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 0, y: 1 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    {/* Diagonal Lines Effect */}
+                    <StripedFill />
+                  </Reanimated.View>
+                  
+                  {/* Star Markers (Animated Pop) */}
+                  {/* 1st Star (30%) */}
+                  <Reanimated.View style={[styles.starMarker, { left: '30%' }, animatedStar1Style]}>
+                    <Image source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760510778/Untitled_design_13_ginrqf.png' }} style={styles.starIcon} contentFit="contain" />
+                  </Reanimated.View>
+                  {/* 2nd Star (70%) */}
+                  <Reanimated.View style={[styles.starMarker, { left: '70%' }, animatedStar2Style]}>
+                    <Image source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760510778/Untitled_design_13_ginrqf.png' }} style={styles.starIcon} contentFit="contain" />
+                  </Reanimated.View>
+                  {/* 3rd Star (100%) */}
+                  <Reanimated.View style={[styles.starMarker, { left: '98%' }, animatedStar3Style]}> 
+                    <Image source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760510778/Untitled_design_13_ginrqf.png' }} style={styles.starIcon} contentFit="contain" />
+                  </Reanimated.View>
+                </View>
+              </View>
+            </Reanimated.View>
+          )}
+
+          {/* 3. Text & Feedback (Drops In) */}
           <Reanimated.View
             style={[
               {
                 alignItems: 'center',
-                width: '100%'
+                width: '100%',
+                marginTop: scale(20) // Added margin to separate from progress bar
               },
               textStyle
             ]}
@@ -404,7 +497,7 @@ const LevelCompletionModal = ({
             </Text>
           </Reanimated.View>
 
-          {/* 3. Rewards Display (Pop In Sequence) */}
+          {/* 4. Rewards Display (Pop In Sequence) */}
           {completionRewards && (
             <View style={styles.rewardsDisplay}>
               {/* Coins */}
@@ -439,7 +532,7 @@ const LevelCompletionModal = ({
             </View>
           )}
 
-          {/* 4. Buttons (Slide Up) */}
+          {/* 5. Buttons (Slide Up) */}
           {isLoading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#ffffff" />
@@ -510,6 +603,7 @@ const LevelCompletionModal = ({
                     </View>
             </Reanimated.View>
           )}
+
         </View>
       </ImageBackground>
     </Reanimated.View>
@@ -562,7 +656,8 @@ const styles = StyleSheet.create({
   spriteContainer: {
     overflow: 'hidden',
   },
-  spriteSheet: {},
+  spriteSheet: {
+  },
   spriteImage: {
     width: '100%',
     height: '100%',
@@ -624,7 +719,7 @@ const styles = StyleSheet.create({
     width: '70%',
     alignSelf: 'center',
     backgroundColor: 'transparent',
-    marginBottom: scale(20),
+    marginBottom: scale(10), 
   },
   floatingButtonsArea: {
     width: '100%',
@@ -691,4 +786,73 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 3,
   },
+  
+  //  UPDATED: Cartoonish 3D Progress Bar Styles
+  progressBarContainer: {
+    width: '80%',
+    height: scale(50), 
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // The outer 3D border container
+  progressTrackBorder: {
+    width: '100%',
+    height: scale(17), // Taller to accommodate border/shadow
+    backgroundColor: '#ffffffff', // Dark base for 3D depth
+    borderRadius: scale(11),
+    borderWidth: 2,
+    borderColor: '#000000ff', // Outer grey border
+    padding: 2, // Inner spacing
+    // Shadow for 3D pop
+    shadowColor: '#87810bff',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 0,
+    elevation: 6,
+  },
+  // The inner track
+  progressTrack: {
+    flex: 1,
+    backgroundColor: '#ffffffff', // Darker inner track
+    borderRadius: scale(8),
+    overflow: 'visible', 
+    justifyContent: 'center',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: scale(8),
+    overflow: 'hidden',
+    borderRightWidth: 2,
+    borderRightColor: '#FFFACD', // Highlight on right edge of fill
+  },
+  // Stripe lines for shadow effect
+  stripeContainer: {
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    opacity: 0.1, // Subtle effect
+  },
+  stripeLine: {
+    width: 5,
+    height: '150%',
+    backgroundColor: '#9c8500ff',
+    transform: [{ rotate: '30deg' }, { translateY: -5 }],
+  },
+  starMarker: {
+    position: 'absolute',
+    top: scale(-14), // Pull star slightly above to center on thicker bar
+    width: scale(34),
+    height: scale(34),
+    marginLeft: scale(-17), 
+    zIndex: 10,
+    // Drop shadow for stars to make them pop
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+  },
+  starIcon: {
+    width: '100%',
+    height: '100%',
+  }
 });

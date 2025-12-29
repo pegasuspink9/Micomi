@@ -890,7 +890,7 @@ export default function GamePlay() {
         damage={characterDamageCard}
         onClose={handleCloseAttackCard}
         autoClose={true}
-        autoCloseDuration={5000}
+        autoCloseDuration={10000}
       />
 
       <GamePauseModal 

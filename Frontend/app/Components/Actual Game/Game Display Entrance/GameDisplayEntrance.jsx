@@ -261,7 +261,13 @@ const CombatVSModal = ({
 
               <View style={styles.nameContainer}>
                 <View>
-                  <Text style={[styles.characterName, styles.heroName]}>
+                  {/* ✅ FIXED: Added adjustsFontSizeToFit and numberOfLines */}
+                  <Text 
+                    style={[styles.characterName, styles.heroName]}
+                    adjustsFontSizeToFit={true}
+                    numberOfLines={1}
+                    minimumFontScale={0.5} // Don't let it get too tiny
+                  >
                     {selectedCharacter.character_name}
                   </Text>
                 </View>
@@ -312,7 +318,13 @@ const CombatVSModal = ({
               
             <View style={styles.enemyNameContainer}>
               <View>
-                <Text style={[styles.characterName, styles.enemyName]}>
+                {/* ✅ Optional: Applied same logic to enemy name for consistency */}
+                <Text 
+                  style={[styles.characterName, styles.enemyName]}
+                  adjustsFontSizeToFit={true}
+                  numberOfLines={1}
+                  minimumFontScale={0.5}
+                >
                   {enemy.enemy_name}
                 </Text>
                 <Text style={styles.enemyRoleLabel}>ENEMY</Text>
@@ -435,13 +447,16 @@ const styles = StyleSheet.create({
     color: '#1f637dff',
     textShadowColor: 'rgba(124, 169, 209, 1)',
     fontSize: gameScale(390 * 0.2),
-    fontFamily: 'MusicVibes'
+    fontFamily: 'MusicVibes',
+    // ✅ ADDED: maxWidth ensures adjustsFontSizeToFit knows the boundary
+    maxWidth: gameScale(390 * 0.8), 
   },
   enemyName: {  
     color: '#8b3f3fff',
     fontFamily: 'MusicVibes',
     textShadowColor: 'rgba(100, 0, 0, 0.8)',
-    fontSize: gameScale(390 * 0.1),
+    fontSize: gameScale(390 * 0.2),
+    maxWidth: gameScale(390 * 0.8),
   },
   roleLabel: {
     fontSize: gameScale(12),
