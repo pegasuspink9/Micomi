@@ -6,6 +6,7 @@ import Animated, {
   useAnimatedStyle,
   withRepeat,
   withTiming,
+  withDelay, //  Added withDelay import
   cancelAnimation,
   runOnJS,
   Easing,
@@ -22,6 +23,7 @@ import {
 const Character = ({
   isPaused,
   characterAnimations = {},
+  characterName = '', 
   currentState = 'idle',
   onAnimationComplete = null,
   attackAudioUrl = null,
@@ -33,6 +35,9 @@ const Character = ({
   const opacity = useSharedValue(1);
   const blinkOpacity = useSharedValue(0);
   const attackInitiated = useSharedValue(false);
+  
+  // Shared value specifically for the range projectile movement
+  const rangeProjectileX = useSharedValue(0);
 
   // ========== Animation Configuration ==========
   const SPRITE_SIZE = useMemo(() => gameScale(128), []);
@@ -69,7 +74,6 @@ const Character = ({
     return candidates[0] || '';
   }, [characterAnimations]);
 
-  //  FIX: Helper function to check if ANY URL is cached (synchronous)
   const isUrlCached = useCallback((url) => {
     if (!url) return false;
     if (url.startsWith('file://')) return true;
@@ -77,7 +81,6 @@ const Character = ({
     return cachedPath !== url && cachedPath.startsWith('file://');
   }, []);
 
-  //  FIX: Pre-check ALL animation URLs on mount to populate memory cache
   const allAnimationUrls = useMemo(() => {
     const urls = [];
     if (characterAnimations.character_idle) urls.push(characterAnimations.character_idle);
@@ -88,27 +91,31 @@ const Character = ({
     if (characterAnimations.hurt) urls.push(characterAnimations.hurt);
     if (characterAnimations.character_dies) urls.push(characterAnimations.character_dies);
     if (characterAnimations.dies) urls.push(characterAnimations.dies);
+    
     if (Array.isArray(characterAnimations.character_attack)) {
       characterAnimations.character_attack.filter(Boolean).forEach(url => urls.push(url));
     } else if (characterAnimations.character_attack) {
       urls.push(characterAnimations.character_attack);
     }
+    
+    if (characterAnimations.character_range_attack) {
+        urls.push(characterAnimations.character_range_attack);
+    }
+
     return urls.filter(url => url && typeof url === 'string');
   }, [characterAnimations]);
 
-  //  FIX: Check if ALL animations are cached (for immediate playback)
+
   const allAnimationsCached = useMemo(() => {
     return allAnimationUrls.every(url => isUrlCached(url));
   }, [allAnimationUrls, isUrlCached]);
 
   const [currentAnimationUrl, setCurrentAnimationUrl] = useState(initialUrl);
-  //  FIX: Set imageReady to true if ALL animations are cached
   const [imageReady, setImageReady] = useState(allAnimationsCached || isUrlCached(initialUrl));
   const [preloadedImages] = useState(new Map());
   const attackSoundTimeoutRef = useRef(null);
   const hasInitialized = useRef(false);
 
-  //  FIX: Pre-populate preloadedImages map with all cached URLs on mount
   useEffect(() => {
     if (!hasInitialized.current) {
       hasInitialized.current = true;
@@ -143,9 +150,30 @@ const Character = ({
 
   // ========== Animation Configuration Logic ==========
   const animationConfig = useMemo(() => {
+    const isRange = characterAnimations.character_is_range === true;
+    const rangeUrl = characterAnimations.character_range_attack;
+    
+    const attackUrl = Array.isArray(characterAnimations.character_attack) 
+      ? characterAnimations.character_attack.filter(Boolean)[0] 
+      : characterAnimations.character_attack;
+
+    const runUrl = characterAnimations.character_run || characterAnimations.run;
+
     const configs = {
-      idle: { url: characterAnimations.character_idle || characterAnimations.idle, shouldLoop: true, isCompound: false },
-      attack: { runUrl: characterAnimations.character_run || characterAnimations.run, attackUrl: Array.isArray(characterAnimations.character_attack) ? characterAnimations.character_attack.filter(Boolean)[0] : characterAnimations.character_attack, shouldLoop: false, isCompound: true },
+      idle: { 
+        url: characterAnimations.character_idle || characterAnimations.idle, 
+        shouldLoop: true, 
+        isCompound: false 
+      },
+      attack: { 
+          url: isRange ? attackUrl : runUrl, 
+          runUrl: runUrl, 
+          attackUrl: attackUrl, 
+          rangeUrl: rangeUrl,
+          isRange: isRange,
+          shouldLoop: false, 
+          isCompound: !isRange && !!runUrl 
+      },
       hurt: { url: characterAnimations.character_hurt || characterAnimations.hurt, shouldLoop: false, isCompound: false },
       run: { url: characterAnimations.character_run || characterAnimations.run, shouldLoop: true, isCompound: false },
       dies: { url: characterAnimations.character_dies || characterAnimations.dies, shouldLoop: false, isCompound: false },
@@ -157,25 +185,24 @@ const Character = ({
   useEffect(() => {
     if (!currentAnimationUrl) return;
     
-    //  FIX: Check cache status synchronously
     const isCached = isUrlCached(currentAnimationUrl);
     
     if (isCached || preloadedImages.has(currentAnimationUrl)) {
-      console.log('🎬 Character: Animation ready:', currentAnimationUrl.slice(-40));
       preloadedImages.set(currentAnimationUrl, true);
       if (!imageReady) setImageReady(true);
       return;
     }
     
-    // Only prefetch if not cached (fallback for missing assets)
     let mounted = true;
     setImageReady(false);
-    
-    console.log('🎬 Character: Prefetching uncached animation:', currentAnimationUrl.slice(-40));
     
     (async () => {
       try {
         await RNImage.prefetch(currentAnimationUrl);
+        if (animationConfig.rangeUrl) {
+           await RNImage.prefetch(animationConfig.rangeUrl);
+        }
+
         if (mounted) {
           preloadedImages.set(currentAnimationUrl, true);
           setImageReady(true);
@@ -187,7 +214,7 @@ const Character = ({
     })();
     
     return () => { mounted = false; };
-  }, [currentAnimationUrl, isUrlCached]);
+  }, [currentAnimationUrl, isUrlCached, animationConfig.rangeUrl]);
 
   // ========== Animation Callbacks ==========
   const notifyAnimationComplete = useCallback(() => {
@@ -207,25 +234,23 @@ const Character = ({
     return; 
   }
 
-  // FIX: Always allow animations to proceed if cached, regardless of imageReady state
   const isCurrentUrlCached = isUrlCached(currentAnimationUrl) || preloadedImages.has(currentAnimationUrl);
   const isTargetUrlCached = targetUrl ? (isUrlCached(targetUrl) || preloadedImages.has(targetUrl)) : true;
   
-  // FIX: If paused, cancel animations but don't return early if state changes
   if (isPaused) {
     cancelAnimation(frameIndex);
     cancelAnimation(positionX);
     cancelAnimation(blinkOpacity);
+    cancelAnimation(rangeProjectileX);
     blinkOpacity.value = 0;
     return;
   }
 
-  // FIX: For attack/hurt/dies states, ALWAYS proceed if URL is cached (ignore imageReady)
   const isCriticalState = currentState === 'attack' || currentState === 'hurt' || currentState === 'dies';
   const canProceed = isCriticalState ? (isCurrentUrlCached || isTargetUrlCached) : (imageReady || isCurrentUrlCached || isTargetUrlCached);
 
   if (!canProceed) {
-    return; // Only block if truly not ready
+    return;
   }
   
   if (currentState !== 'attack' && currentState !== 'run') attackInitiated.value = false;
@@ -234,13 +259,15 @@ const Character = ({
   cancelAnimation(positionX);
   cancelAnimation(opacity);
   cancelAnimation(blinkOpacity);
+  // Reset range projectile animation
+  cancelAnimation(rangeProjectileX);
+  
   blinkOpacity.value = 0;
   frameIndex.value = 0;
 
   positionX.value = 0; 
   opacity.value = 1;
 
-  // --- COMPOUND ATTACK (RUN -> ATTACK -> RETURN) ---
   if (config.isCompound && currentState === 'attack') {
     if (attackInitiated.value) return; 
     attackInitiated.value = true;
@@ -250,7 +277,6 @@ const Character = ({
       return;
     }
 
-    // FIX: Mark both URLs as ready if cached
     if (isUrlCached(runUrl)) preloadedImages.set(runUrl, true);
     if (isUrlCached(attackUrl)) preloadedImages.set(attackUrl, true);
 
@@ -271,7 +297,6 @@ const Character = ({
     return;
   }
   
-  // --- RUN OFF-SCREEN ---
   if (currentState === 'run' && !config.isCompound) {
     attackInitiated.value = true; 
     const RUN_AWAY_DISTANCE = SCREEN.width; 
@@ -298,6 +323,26 @@ const Character = ({
   }
 
   const duration = ANIMATION_DURATIONS[currentState] || (FRAME_DURATION * TOTAL_FRAMES);
+  
+  //  LOGIC FOR RANGE ATTACK MOVEMENT
+  if (currentState === 'attack' && config.isRange) {
+    // We check for "Ryron" explicitly
+    if (characterName === 'Ryron') {
+        // Start at 0 (Character idle) and move to Enemy position
+        rangeProjectileX.value = 0;
+        
+        //  Add a 400ms DELAY before the arrow flies (simulates drawing the bow)
+        // flight duration is reduced so it still lands before the animation state ends
+        rangeProjectileX.value = withDelay(700, withTiming(ATTACK_RUN_DISTANCE, {
+            duration: duration * 0.4, 
+            easing: Easing.linear
+        }));
+    } else {
+        // Others spawn at enemy
+        rangeProjectileX.value = ATTACK_RUN_DISTANCE + gameScale(50);
+    }
+  }
+
   frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration, easing: Easing.inOut(Easing.ease) }, (finished) => {
     if (finished) {
       if (currentState === 'dies') {
@@ -310,7 +355,7 @@ const Character = ({
       }
     }
   });
-  }, [currentState, isPaused, currentAnimationUrl, animationConfig, notifyAnimationComplete, isUrlCached]);
+  }, [currentState, isPaused, currentAnimationUrl, animationConfig, notifyAnimationComplete, isUrlCached, characterName]);
 
   // ========== Animated Styles ==========
   const animatedStyle = useAnimatedStyle(() => {
@@ -326,10 +371,19 @@ const Character = ({
   }), []);
 
   const redFlashStyle = useAnimatedStyle(() => ({ opacity: blinkOpacity.value }), []);
+  
+  //  Applied animated X position here
+  const rangeContainerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: rangeProjectileX.value }]
+  }));
+
+  const showRangeAttack = currentState === 'attack' && animationConfig.isRange && animationConfig.rangeUrl;
 
   // ========== Render ==========
   return (
     <Animated.View style={[ styles.characterContainer, containerStyle, propContainerStyle]}>
+      
+      {/* 1. Main Character Sprite Container */}
       <View style={[styles.spriteContainer, { width: SPRITE_SIZE, height: SPRITE_SIZE }]}>
         <Animated.View style={[ styles.spriteSheet, animatedStyle, { width: SPRITE_SIZE * SPRITE_COLUMNS, height: SPRITE_SIZE * SPRITE_ROWS } ]}>
           {currentAnimationUrl ? (
@@ -344,6 +398,36 @@ const Character = ({
           )}
         </Animated.View>
       </View>
+
+      {/* 2. Range Attack Sprite Container */}
+      {showRangeAttack && (
+        <Animated.View style={[
+            styles.spriteContainer, 
+            rangeContainerStyle, 
+            { 
+              position: 'absolute',
+              width: SPRITE_SIZE, 
+              height: SPRITE_SIZE,
+              zIndex: 20,
+              marginTop: characterName === 'Ryron' ? gameScale(-20) : 0,
+              marginLeft: characterName === 'Ryron' ? gameScale(24) : 0
+            }
+        ]}>
+            <Animated.View style={[ 
+                styles.spriteSheet, 
+                animatedStyle, 
+                { width: SPRITE_SIZE * SPRITE_COLUMNS, height: SPRITE_SIZE * SPRITE_ROWS } 
+            ]}>
+                <Image 
+                    source={{ uri: animationConfig.rangeUrl }} 
+                    style={styles.spriteImage} 
+                    contentFit="cover" 
+                    cachePolicy="disk" 
+                />
+            </Animated.View>
+        </Animated.View>
+      )}
+
     </Animated.View>
   );
 };

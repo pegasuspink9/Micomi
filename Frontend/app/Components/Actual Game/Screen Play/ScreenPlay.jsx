@@ -93,7 +93,11 @@ const ScreenPlay = ({
 
   const enemyAvatar = useMemo(() => gameState.avatar?.enemy, [gameState.avatar?.enemy]);
 
-
+  const characterName = useMemo(() => {
+    return gameState.submissionResult?.fightResult?.character?.character_name ?? 
+           gameState.selectedCharacter?.character_name ?? 
+           '';
+  }, [gameState.submissionResult, gameState.selectedCharacter]);
 
   const characterAnimations = useMemo(() => {
     const base = gameState.selectedCharacter;
@@ -105,6 +109,8 @@ const ScreenPlay = ({
       character_hurt: action?.character_hurt ?? base?.character_hurt,
       character_run: action?.character_run ?? base?.character_run,
       character_dies: action?.character_dies ?? base?.character_dies,
+      character_range_attack: action?.character_range_attack ?? base?.character_range_attack,
+      character_is_range: action?.character_is_range ?? base?.character_is_range,
     };
   }, [gameState.submissionResult?.fightResult?.character, gameState.selectedCharacter]);
 
@@ -624,6 +630,7 @@ useEffect(() => {
           currentState={characterAnimationState}
           onAnimationComplete={handleCharacterAnimationComplete}
           attackAudioUrl={gameState.submissionResult?.characterAttackAudio}
+          characterName={characterName} 
         />
 
         {enemies.map((enemy, index) => {
@@ -724,7 +731,7 @@ useEffect(() => {
       {/* ✅ NEW: Render the BonusRoundModal component */}
       <BonusRoundModal 
         visible={showBonusRoundText} // ✅ Controlled by the new state
-        message="Bonus Round!" 
+        message="Bonus Cache!" 
         duration={3000} 
         onHide={handleBonusModalHide} 
       />

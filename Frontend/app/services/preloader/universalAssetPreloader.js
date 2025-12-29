@@ -1719,7 +1719,8 @@ async testR2Download(testUrl) {
         { url: char.character_idle, name: 'character_idle', type: 'animation' },
         { url: char.character_run, name: 'character_run', type: 'animation' },
         { url: char.character_hurt, name: 'character_hurt', type: 'animation' },
-        { url: char.character_dies, name: 'character_dies', type: 'animation' }
+        { url: char.character_dies, name: 'character_dies', type: 'animation' },
+        { url: char.character_range_attack, name: 'character_range_attack', type: 'animation' }
       ];
 
       // Handle character_attack array
@@ -2930,7 +2931,8 @@ transformPotionShopDataWithCache(levelPreviewData) {
         'character_idle',
         'character_run',
         'character_hurt',
-        'character_dies'
+        'character_dies',
+        'character_range_attack' 
       ];
       
       animationFields.forEach(field => {
@@ -3092,6 +3094,13 @@ transformPotionShopDataWithCache(levelPreviewData) {
           });
         }
       }
+    }
+
+      if (transformedGameState.submissionResult?.fightResult?.character) {
+        const fightChar = transformedGameState.submissionResult.fightResult.character;
+        if (fightChar.character_range_attack) {
+            fightChar.character_range_attack = this.getCachedAssetPath(fightChar.character_range_attack);
+        }
     }
 
     return transformedGameState;
