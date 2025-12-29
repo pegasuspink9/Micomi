@@ -638,7 +638,6 @@ export async function fightEnemy(
       ) {
         character_attack_type = "special_attack";
 
-        // Logic for damage calculation
         let damageIndex = 0;
         if (correctAnswerLength >= 8) damageIndex = 2;
         else if (correctAnswerLength >= 5) damageIndex = 1;
@@ -648,7 +647,6 @@ export async function fightEnemy(
         character_attack = attacksArray[3] || null;
         character_range_attack = rangeAttacksArray[3] || null;
 
-        // ShiShi usually doesn't run for SS if ranged/magic
         character_run = null;
         character_idle = character.avatar_image || null;
 
@@ -667,6 +665,40 @@ export async function fightEnemy(
 
         console.log(
           `- ShiShi's SS Execution! Animation: special_attack, Freeze Re-applied`
+        );
+      } else if (
+        !alreadyAnsweredCorrectly &&
+        character.character_name === "Ryron" &&
+        progress.consecutive_corrects === 4
+      ) {
+        character_attack_type = "special_attack";
+
+        let damageIndex = 0;
+        if (correctAnswerLength >= 8) {
+          damageIndex = 2;
+        } else if (correctAnswerLength >= 5) {
+          damageIndex = 1;
+        } else {
+          damageIndex = 0;
+        }
+
+        damage = damageArray[damageIndex] ?? 10;
+
+        character_attack = attacksArray[3] || null;
+        character_range_attack = rangeAttacksArray[3] || null;
+
+        const cardInfo = getCardForAttackType(
+          character.character_name,
+          "special_attack"
+        );
+        card_type = cardInfo.card_type;
+        character_attack_card = cardInfo.character_attack_card;
+
+        character_idle = character.avatar_image || null;
+        character_run = null;
+
+        console.log(
+          `- Ryron's SS triggered! Animation: special_attack, Damage: ${damage}`
         );
       } else if (correctAnswerLength >= 8) {
         character_attack_type = "third_attack";
@@ -1515,6 +1547,40 @@ export async function fightBossEnemy(
 
         console.log(
           `- ShiShi's SS triggered! Animation: special_attack, Enemy Frozen set to TRUE`
+        );
+      } else if (
+        !alreadyAnsweredCorrectly &&
+        character.character_name === "Ryron" &&
+        progress.consecutive_corrects === 4
+      ) {
+        character_attack_type = "special_attack";
+
+        let damageIndex = 0;
+        if (correctAnswerLength >= 8) {
+          damageIndex = 2;
+        } else if (correctAnswerLength >= 5) {
+          damageIndex = 1;
+        } else {
+          damageIndex = 0;
+        }
+
+        damage = damageArray[damageIndex] ?? 10;
+
+        character_attack = attacksArray[3] || null;
+        character_range_attack = rangeAttacksArray[3] || null;
+
+        const cardInfo = getCardForAttackType(
+          character.character_name,
+          "special_attack"
+        );
+        card_type = cardInfo.card_type;
+        character_attack_card = cardInfo.character_attack_card;
+
+        character_idle = character.avatar_image || null;
+        character_run = null;
+
+        console.log(
+          `- Ryron's SS triggered! Animation: special_attack, Damage: ${damage}`
         );
       } else if (correctAnswerLength >= 8) {
         character_attack_type = "third_attack";

@@ -31,7 +31,7 @@ export const imagesUrls = [
   "https://micomi-assets.me/Hero/Shi-Shi/hurt.png",
   "https://micomi-assets.me/Hero/Shi-Shi/death.png",
   "https://micomi-assets.me/Hero%20Portraits/Shi-shi.png",
-  "https://micomi-assets.me/Hero/Shi-Shi/attackpose.png",
+  "https://micomi-assets.me/Hero/Shi-Shi/attackposefinal.png",
   //Leon icons and animations
   "https://micomi-assets.me/Icons/Skill%20Icons/Leon%20Basic%20Final.png",
   "https://micomi-assets.me/Icons/Skill%20Icons/Leon%202nd%20Final.png",

@@ -14,6 +14,7 @@ import {
   CompletionRewards,
 } from "./challenges.types";
 import { getCardForAttackType } from "../Combat/combat.service";
+import { revealAllBlanks } from "../../../helper/revealPotionHelper";
 
 const prisma = new PrismaClient();
 
@@ -582,6 +583,19 @@ export const submitChallengeService = async (
         `- ShiShi's Passive Triggered: Enemy Frozen! (Safe for next turn)`
       );
     }
+
+    if (character.character_name === "Ryron") {
+      await prisma.playerProgress.update({
+        where: { progress_id: currentProgress.progress_id },
+        data: { has_ryron_reveal: true },
+      });
+
+      currentProgress.has_ryron_reveal = true;
+
+      console.log(
+        `- Ryron's Passive Triggered: Next challenge will be auto-revealed!`
+      );
+    }
   }
 
   if (
@@ -1044,7 +1058,8 @@ export const submitChallengeService = async (
     } else if (
       (character.character_name === "Gino" ||
         character.character_name === "Leon" ||
-        character.character_name === "ShiShi") &&
+        character.character_name === "ShiShi" ||
+        character.character_name === "Ryron") &&
       updatedProgress.consecutive_corrects === 3
     ) {
       attackType = "special_attack";
@@ -1098,7 +1113,8 @@ export const submitChallengeService = async (
       !(
         (character.character_name === "Gino" ||
           character.character_name === "Leon" ||
-          character.character_name === "ShiShi") &&
+          character.character_name === "ShiShi" ||
+          character.character_name === "Ryron") &&
         updatedProgress.consecutive_corrects === 3 &&
         !isRetryOfWrong
       )
@@ -1460,6 +1476,70 @@ const wrapWithTimer = async (
   if (!challenge) return { nextChallenge: null };
 
   let modifiedChallenge = { ...challenge };
+
+  if (progress.has_ryron_reveal) {
+    let effectiveCorrectAnswer = challenge.correct_answer as string[];
+    const rawCorrectAnswer = [...effectiveCorrectAnswer];
+    const enemy = level.enemy;
+
+    if (progress.has_reversed_curse && enemy?.enemy_name === "Boss Darco") {
+      effectiveCorrectAnswer = rawCorrectAnswer.map(reverseString);
+    }
+
+    const revealResult = revealAllBlanks(
+      challenge.question ?? "",
+      effectiveCorrectAnswer
+    );
+
+    if (!revealResult.success) {
+      console.error(
+        `Ryron's Passive - Cannot reveal challenge ${challenge.challenge_id}: ${revealResult.error}`
+      );
+    } else {
+      const filledQuestion = revealResult.filledQuestion;
+
+      const challengeKey = challenge.challenge_id.toString();
+      const currentPlayerAnswer =
+        progress.player_answer && typeof progress.player_answer === "object"
+          ? (progress.player_answer as Record<string, unknown>)
+          : {};
+
+      await prisma.playerProgress.update({
+        where: {
+          player_id_level_id: {
+            player_id: progress.player_id,
+            level_id: progress.level_id,
+          },
+        },
+        data: {
+          player_answer: {
+            ...(currentPlayerAnswer as Record<string, unknown>),
+            [challengeKey]: ["_REVEAL_PENDING_"],
+          } as any,
+          has_ryron_reveal: false,
+          challenge_start_time: new Date(),
+        },
+      });
+
+      modifiedChallenge = {
+        ...(challenge as Challenge),
+        question: filledQuestion,
+        options: ["Attack"],
+        answer: effectiveCorrectAnswer,
+      } as ChallengeDTO;
+
+      console.log(
+        `- Ryron's Passive Applied: All blanks revealed for challenge ${challenge.challenge_id}`
+      );
+
+      const timeRemaining = CHALLENGE_TIME_LIMIT;
+      const builtChallenge = buildChallengeWithTimer(
+        modifiedChallenge,
+        timeRemaining
+      );
+      return { nextChallenge: builtChallenge };
+    }
+  }
 
   if (
     progress.has_reversed_curse &&
