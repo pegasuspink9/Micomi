@@ -1819,11 +1819,11 @@ export async function fightBossEnemy(
 
     if (progress.has_boss_shield) {
       enemy_ss_type = "shield";
+
       enemy_idle =
         "https://micomi-assets.me/Enemies/Greenland/Boss%20Joshy/idle2.png";
-      enemy_run =
-        "https://micomi-assets.me/Enemies/Greenland/Boss%20Joshy/Run2.png";
-      enemy_hurt = null;
+      enemy_run = null;
+      enemy_hurt = "Shield nga nabungkag ag animation ari";
 
       console.log(
         "- Boss Joshy's shield active: blocking all damage (",

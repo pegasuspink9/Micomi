@@ -133,6 +133,7 @@ export const submitChallenge = async (req: Request, res: Response) => {
           coinsEarned: result.levelStatus?.coinsEarned ?? 0,
           totalPointsEarned: result.levelStatus?.totalPointsEarned ?? 0,
           totalExpPointsEarned: result.levelStatus?.totalExpPointsEarned ?? 0,
+          stars: result.completionRewards?.stars ?? 0,
           playerOutputs: result.levelStatus?.playerOutputs ?? [],
         };
 

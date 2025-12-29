@@ -675,6 +675,72 @@ export const submitChallengeService = async (
             "https://micomi-assets.me/Sounds/Final/Gino_Basic_Attack.wav";
           break;
       }
+    } else if (character.character_name === "ShiShi") {
+      const type = fightResult.character?.character_attack_type;
+
+      switch (type) {
+        case "special_attack":
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Shi%20Attacks/Ult.wav";
+          break;
+        case "third_attack":
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Shi%20Attacks/Special.wav";
+          break;
+        case "second_attack":
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Shi%20Attacks/2nd.wav";
+          break;
+        case "basic_attack":
+        default:
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Shi%20Attacks/Basic.mp3";
+          break;
+      }
+    } else if (character.character_name === "Ryron") {
+      const type = fightResult.character?.character_attack_type;
+
+      switch (type) {
+        case "special_attack":
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Ryron%20Attacks/Ult.wav";
+          break;
+        case "third_attack":
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Ryron%20Attacks/Special.wav";
+          break;
+        case "second_attack":
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Ryron%20Attacks/2nd.wav";
+          break;
+        case "basic_attack":
+        default:
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Ryron%20Attacks/Basic.wav";
+          break;
+      }
+    } else if (character.character_name === "Leon") {
+      const type = fightResult.character?.character_attack_type;
+
+      switch (type) {
+        case "special_attack":
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Ult.wav";
+          break;
+        case "third_attack":
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Special.wav";
+          break;
+        case "second_attack":
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/2nd.wav";
+          break;
+        case "basic_attack":
+        default:
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Basic.wav";
+          break;
+      }
     }
 
     const { text, audio } = await generateDynamicMessage(
@@ -846,6 +912,7 @@ export const submitChallengeService = async (
         totalPointsEarned: 0,
         totalExpPointsEarned: 0,
         isVictory: false,
+        stars,
       };
 
       await prisma.playerProgress.update({
@@ -904,6 +971,7 @@ export const submitChallengeService = async (
           totalPointsEarned: freshProgress?.total_points_earned ?? 0,
           totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
           isVictory: true,
+          stars,
         };
 
         nextLevel = await LevelService.unlockNextLevel(
@@ -937,6 +1005,7 @@ export const submitChallengeService = async (
           totalPointsEarned: 0,
           totalExpPointsEarned: 0,
           isVictory: true,
+          stars,
         };
       }
     }
@@ -978,6 +1047,7 @@ export const submitChallengeService = async (
         totalPointsEarned: freshProgress?.total_points_earned ?? 0,
         totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
         isVictory: true,
+        stars,
       };
 
       nextLevel = await LevelService.unlockNextLevel(
@@ -1006,6 +1076,7 @@ export const submitChallengeService = async (
         totalPointsEarned: 0,
         totalExpPointsEarned: 0,
         isVictory: true,
+        stars,
       };
     }
   }
@@ -1203,7 +1274,6 @@ export const submitChallengeService = async (
       coinsEarned: freshProgress?.coins_earned ?? 0,
       totalPointsEarned: freshProgress?.total_points_earned ?? 0,
       totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
-      stars,
       playerOutputs,
     },
     completionRewards,

@@ -221,9 +221,9 @@ export const imagesUrls = [
   "https://micomi-assets.me/Enemies/Greenland/Formica/hurt_not06o.png",
   "https://micomi-assets.me/Enemies/Greenland/Formica/run_fckkty.png",
   "https://micomi-assets.me/Enemies/Avatar/formica_fbpsc9.png",
-  //Aristotle
+  //Antristotle
   "https://micomi-assets.me/Enemies/Greenland/Antristotle/idle_cc2nak.png",
-  "https://micomi-assets.me/Enemies/Greenland/Antristotle/attack_smwbyb.png",
+  "https://micomi-assets.me/Enemies/Greenland/Antristotle/attackfinal.png",
   "https://micomi-assets.me/Enemies/Greenland/Antristotle/death_lctnzt.png",
   "https://micomi-assets.me/Enemies/Greenland/Antristotle/hurt_g7mv9f.png",
   "https://micomi-assets.me/Enemies/Greenland/Antristotle/run_wa0wsl.png",
@@ -322,7 +322,7 @@ export const imagesUrls = [
   "https://micomi-assets.me/Enemies/Autumn%20Land/Regreden/attack.png",
   "https://micomi-assets.me/Enemies/Autumn%20Land/Regreden/death.png",
   "https://micomi-assets.me/Enemies/Autumn%20Land/Regreden/hurt.png",
-  "https://micomi-assets.me/Enemies/Autumn%20Land/Regreden/run.png",
+  "https://micomi-assets.me/Enemies/Autumn%20Land/Regreden/run1.png",
   "https://micomi-assets.me/Enemies/Avatar/Autumn%20Enemies%20Avatar/regreden.png",
   //Thumbug
   "https://micomi-assets.me/Enemies/Autumn%20Land/Thumbug/idle.png",

@@ -186,6 +186,21 @@ export const audioLinks = [
   "https://micomi-assets.me/Sounds/Final/3rd%20and%204th%20Skill%20Gino.wav",
   "https://micomi-assets.me/Sounds/Final/Gino%20Bite.wav",
   "https://micomi-assets.me/Sounds/Final/Gino_Basic_Attack.wav",
+  //ShiShi attacks audio
+  "https://micomi-assets.me/Sounds/In%20Game/Shi%20Attacks/Ult.wav",
+  "https://micomi-assets.me/Sounds/In%20Game/Shi%20Attacks/Special.wav",
+  "https://micomi-assets.me/Sounds/In%20Game/Shi%20Attacks/2nd.wav",
+  "https://micomi-assets.me/Sounds/In%20Game/Shi%20Attacks/Basic.mp3",
+  //Ryron attacks audio
+  "https://micomi-assets.me/Sounds/In%20Game/Ryron%20Attacks/Basic.wav",
+  "https://micomi-assets.me/Sounds/In%20Game/Ryron%20Attacks/2nd.wav",
+  "https://micomi-assets.me/Sounds/In%20Game/Ryron%20Attacks/Special.wav",
+  "https://micomi-assets.me/Sounds/In%20Game/Ryron%20Attacks/Ult.wav",
+  //Leon attacks audio
+  "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Basic.wav",
+  "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/2nd.wav",
+  "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Special.wav",
+  "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Ult.wav",
   //Use potion audio
   "https://micomi-assets.me/Sounds/Final/All%20Potions.wav",
   //Is victory audio
