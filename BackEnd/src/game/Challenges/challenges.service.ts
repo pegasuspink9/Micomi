@@ -725,11 +725,11 @@ export const submitChallengeService = async (
       switch (type) {
         case "special_attack":
           character_attack_audio =
-            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Ult.wav";
+            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Ult.mp3";
           break;
         case "third_attack":
           character_attack_audio =
-            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Special.wav";
+            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Special.mp3";
           break;
         case "second_attack":
           character_attack_audio =
@@ -1131,7 +1131,7 @@ export const submitChallengeService = async (
         character.character_name === "Leon" ||
         character.character_name === "ShiShi" ||
         character.character_name === "Ryron") &&
-      updatedProgress.consecutive_corrects === 3
+      updatedProgress.consecutive_corrects === 2
     ) {
       attackType = "special_attack";
 
@@ -1186,7 +1186,7 @@ export const submitChallengeService = async (
           character.character_name === "Leon" ||
           character.character_name === "ShiShi" ||
           character.character_name === "Ryron") &&
-        updatedProgress.consecutive_corrects === 3 &&
+        updatedProgress.consecutive_corrects === 2 &&
         !isRetryOfWrong
       )
     ) {

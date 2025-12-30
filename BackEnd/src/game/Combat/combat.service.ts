@@ -484,6 +484,7 @@ export async function fightEnemy(
   let character_attack_card: string | null = null;
   let card_type: string | null = null;
   let character_attack_pose: string | null = null;
+  let wasEnemyFrozenThisTurn = progress.has_freeze_effect || false;
 
   character_run = character.character_run || null;
   character_idle = character.avatar_image || null;
@@ -571,7 +572,7 @@ export async function fightEnemy(
       // Non-final bonus correct: determine attack based on correctAnswerLength
       if (
         character.character_name === "Gino" &&
-        progress.consecutive_corrects === 4
+        progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
 
@@ -600,7 +601,7 @@ export async function fightEnemy(
       } else if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "Leon" &&
-        progress.consecutive_corrects === 4
+        progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
 
@@ -634,7 +635,7 @@ export async function fightEnemy(
       } else if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "ShiShi" &&
-        progress.consecutive_corrects === 4
+        progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
 
@@ -669,7 +670,7 @@ export async function fightEnemy(
       } else if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "Ryron" &&
-        progress.consecutive_corrects === 4
+        progress.consecutive_corrects === 2
       ) {
         character_attack_type = "special_attack";
 
@@ -739,7 +740,7 @@ export async function fightEnemy(
       if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "Gino" &&
-        progress.consecutive_corrects === 4
+        progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
 
@@ -767,7 +768,7 @@ export async function fightEnemy(
       } else if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "Leon" &&
-        progress.consecutive_corrects === 4
+        progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
 
@@ -797,7 +798,7 @@ export async function fightEnemy(
       } else if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "ShiShi" &&
-        progress.consecutive_corrects === 4
+        progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
 
@@ -1264,7 +1265,7 @@ export async function fightEnemy(
     timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,
-    isEnemyFrozen: progress?.has_freeze_effect || false,
+    isEnemyFrozen: wasEnemyFrozenThisTurn,
   };
 }
 
@@ -1366,6 +1367,7 @@ export async function fightBossEnemy(
   let card_type: string | null = null;
   let character_attack_pose: string | null = null;
   let enemy_ss_type: string | null = null;
+  let wasEnemyFrozenThisTurn = progress.has_freeze_effect || false;
 
   character_run = character.character_run || null;
   character_idle = character.avatar_image || null;
@@ -1446,7 +1448,7 @@ export async function fightBossEnemy(
       // Non-final bonus correct: determine attack based on correctAnswerLength
       if (
         character.character_name === "Gino" &&
-        progress.consecutive_corrects === 4
+        progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
 
@@ -1475,7 +1477,7 @@ export async function fightBossEnemy(
       } else if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "Leon" &&
-        progress.consecutive_corrects === 4
+        progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
 
@@ -1509,7 +1511,7 @@ export async function fightBossEnemy(
       } else if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "ShiShi" &&
-        progress.consecutive_corrects === 4
+        progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
 
@@ -1551,7 +1553,7 @@ export async function fightBossEnemy(
       } else if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "Ryron" &&
-        progress.consecutive_corrects === 4
+        progress.consecutive_corrects === 2
       ) {
         character_attack_type = "special_attack";
 
@@ -1621,7 +1623,7 @@ export async function fightBossEnemy(
       if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "Gino" &&
-        progress.consecutive_corrects === 4
+        progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
 
@@ -1649,7 +1651,7 @@ export async function fightBossEnemy(
       } else if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "Leon" &&
-        progress.consecutive_corrects === 4
+        progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
 
@@ -1683,7 +1685,7 @@ export async function fightBossEnemy(
       } else if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "ShiShi" &&
-        progress.consecutive_corrects === 4
+        progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
 
@@ -1820,10 +1822,10 @@ export async function fightBossEnemy(
     if (progress.has_boss_shield) {
       enemy_ss_type = "shield";
 
-      enemy_idle =
-        "https://micomi-assets.me/Enemies/Greenland/Boss%20Joshy/idle2.png";
+      enemy_idle = enemy.enemy_hurt || null;
       enemy_run = null;
-      enemy_hurt = "Shield nga nabungkag ag animation ari";
+      enemy_hurt =
+        "https://micomi-assets.me/Enemies/Greenland/Boss%20Joshy/idle2.png";
 
       console.log(
         "- Boss Joshy's shield active: blocking all damage (",
@@ -2257,6 +2259,6 @@ export async function fightBossEnemy(
     timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,
-    isEnemyFrozen: progress?.has_freeze_effect || false,
+    isEnemyFrozen: wasEnemyFrozenThisTurn,
   };
 }
