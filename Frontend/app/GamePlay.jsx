@@ -333,7 +333,7 @@ export default function GamePlay() {
     const handleBlankSelect = useCallback((blankIndex) => {
     console.log('🎯 Blank selected in GamePlay:', blankIndex);
     
-    // ✅ ADDED: Toggle logic for the blank itself
+    //  ADDED: Toggle logic for the blank itself
     // If clicking the blank that is ALREADY selected, clear its answer
     if (selectedBlankIndex === blankIndex) {
       setSelectedAnswers(prev => {
@@ -361,7 +361,6 @@ export default function GamePlay() {
 
   
   const handleEnemyComplete = useCallback(() => {
-    // ✅ CHANGED: Reset to array of nulls so slots exist
     setSelectedAnswers(new Array(maxAnswers).fill(null));
     setBorderColor('white'); 
     setActiveGameTab('code');
@@ -402,6 +401,7 @@ export default function GamePlay() {
         coinsEarned: submissionResult?.completionRewards?.coinsEarned || 0,
         currentTotalPoints: submissionResult?.completionRewards?.totalPointsEarned || 0,
         currentExpPoints: submissionResult?.completionRewards?.totalExpPointsEarned || 0,
+        stars: submissionResult?.completionRewards?.stars || 0,
       });
 
 
@@ -460,6 +460,7 @@ export default function GamePlay() {
         coinsEarned: submissionResult?.completionRewards?.coinsEarned || 0,
         currentTotalPoints: submissionResult?.completionRewards?.totalPointsEarned || 0,
         currentExpPoints: submissionResult?.completionRewards?.totalExpPointsEarned || 0,
+        stars: submissionResult?.completionRewards?.stars || 0,
       });
 
       setShowLevelCompletion(true);

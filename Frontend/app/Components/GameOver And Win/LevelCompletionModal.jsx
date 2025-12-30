@@ -91,7 +91,7 @@ const LevelCompletionModal = ({
   victoryImageUrl
 }) => {
   //  1. Placeholder Data for Stars
-  const stars = 3; 
+  const stars = completionRewards?.stars || 0; 
 
   const [isAnimating, setIsAnimating] = useState(false);
   const [imageReady, setImageReady] = useState(false);
@@ -465,16 +465,16 @@ const LevelCompletionModal = ({
                   
                   {/* Star Markers (Animated Pop) */}
                   {/* 1st Star (30%) */}
-                  <Reanimated.View style={[styles.starMarker, { left: '30%' }, animatedStar1Style]}>
-                    <Image source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760510778/Untitled_design_13_ginrqf.png' }} style={styles.starIcon} contentFit="contain" />
+                    <Reanimated.View style={[styles.starMarker, { left: '30%' }, animatedStar1Style]}>
+                    <Image source={require('../RoadMap/stars.png')} style={styles.starIcon} contentFit="contain" />
                   </Reanimated.View>
                   {/* 2nd Star (70%) */}
                   <Reanimated.View style={[styles.starMarker, { left: '70%' }, animatedStar2Style]}>
-                    <Image source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760510778/Untitled_design_13_ginrqf.png' }} style={styles.starIcon} contentFit="contain" />
+                    <Image source={require('../RoadMap/stars.png')} style={styles.starIcon} contentFit="contain" />
                   </Reanimated.View>
                   {/* 3rd Star (100%) */}
                   <Reanimated.View style={[styles.starMarker, { left: '98%' }, animatedStar3Style]}> 
-                    <Image source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760510778/Untitled_design_13_ginrqf.png' }} style={styles.starIcon} contentFit="contain" />
+                    <Image source={require('../RoadMap/stars.png')} style={styles.starIcon} contentFit="contain" />
                   </Reanimated.View>
                 </View>
               </View>
@@ -840,7 +840,7 @@ const styles = StyleSheet.create({
   },
   starMarker: {
     position: 'absolute',
-    top: scale(-14), // Pull star slightly above to center on thicker bar
+    top: scale(-15), // Pull star slightly above to center on thicker bar
     width: scale(34),
     height: scale(34),
     marginLeft: scale(-17), 

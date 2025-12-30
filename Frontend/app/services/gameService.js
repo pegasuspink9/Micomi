@@ -313,18 +313,21 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
           coinsEarned: responseData.levelStatus.coinsEarned || 0
         } : null,
 
-                completionRewards: responseData.completionRewards ? {
+        completionRewards: responseData.completionRewards ? {
           feedbackMessage: responseData.completionRewards.feedbackMessage || null,
           coinsEarned: responseData.completionRewards.coinsEarned || responseData.levelStatus?.coinsEarned || 0,
           currentTotalPoints: responseData.completionRewards.totalPointsEarned || 
                             responseData.levelStatus?.totalPointsEarned || 0,
           currentExpPoints: responseData.completionRewards.totalExpPointsEarned || 
                           responseData.levelStatus?.totalExpPointsEarned || 0,
+          stars: responseData.completionRewards.stars || 0,
+
         } : (responseData.levelStatus && responseData.levelStatus.isCompleted ? {
           feedbackMessage: "Level completed successfully!",
           coinsEarned: responseData.levelStatus.coinsEarned || 0,
           currentTotalPoints: responseData.levelStatus.totalPointsEarned || 0,
           currentExpPoints: responseData.levelStatus.totalExpPointsEarned || 0,
+          stars: responseData.levelStatus.stars || 0,
         } : null),
 
         nextLevel: responseData.nextLevel ? {

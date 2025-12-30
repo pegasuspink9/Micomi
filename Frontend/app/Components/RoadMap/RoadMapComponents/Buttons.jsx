@@ -13,6 +13,10 @@ const BASE_WIDTH = 390;
 const PATTERN_HEIGHT = 700;
 const STONES_PER_PATTERN = 37;
 
+
+// Star Image URL
+const starImage = require('../stars.png');
+
 const BASE_STONE_PATTERN = [
   { top: 220, left: '50%' }, { top: 240, left: '55%' }, { top: 260, left: '60%' }, 
   { top: 280, left: '65%' }, { top: 300, left: '68%' }, { top: 320, left: '69%' }, 
@@ -91,8 +95,6 @@ export default function LevelButtons({
     [theme?.floatingComment?.signageBackground]
   );
   
-
-
 
   useEffect(() => {
     const animation = Animated.loop(
@@ -318,6 +320,47 @@ const transformPreviewDataWithCache = (data) => {
 
   const stonePositions = generateStonePositions();
 
+  // ✅ Helper to render stars in a curved/arch layout
+  const renderStars = (count) => {
+    // Configurations for positioning stars in an arc
+    const starLayouts = {
+      1: [{ translateY: 0, rotate: '0deg', scale: 1.2 }],
+      2: [
+        { translateY: 5, rotate: '-10deg', scale: 1 }, 
+        { translateY: 5, rotate: '15deg', scale: 1 }
+      ],
+      3: [
+        { translateY: 10, rotate: '-25deg', scale: 0.9 }, 
+        { translateY: 0, rotate: '0deg', scale: 1.2 }, 
+        { translateY: 10, rotate: '25deg', scale: 0.9 }
+      ]
+    };
+
+    const layout = starLayouts[count] || [];
+
+    return (
+      <View style={styles.starWrapper}>
+        {layout.map((style, i) => (
+          <Image
+            key={i}
+            source={starImage} 
+            style={[
+              styles.starIcon,
+              { 
+                transform: [
+                  { translateY: style.translateY }, 
+                  { rotate: style.rotate },
+                  { scale: style.scale }
+                ] 
+              }
+            ]}
+            resizeMode="contain"
+          />
+        ))}
+      </View>
+    );
+  };
+
   if (!lessons?.length) {
     return (
       <View style={styles.buttonContainer}>
@@ -357,6 +400,9 @@ const transformPreviewDataWithCache = (data) => {
           
           const isUnlocked = level.is_unlocked === true;
           const isLocked = level.is_unlocked === false;
+
+          const starCount = level.playerProgress?.[0]?.stars_earned || 0;
+          const hasStars = starCount > 0;
 
           return (
             <Pressable
@@ -422,26 +468,34 @@ const transformPreviewDataWithCache = (data) => {
                 </ImageBackground>
               )}
 
-              {/*  Floating icon using cached image */}
+              {/* ✅ CONDITIONAL RENDERING: Stars (Static) OR Float Icon (Animated) */}
               {isUnlocked && (
-                <Animated.View
-                  style={[
-                    styles.floatComment,
-                    { transform: [{ translateY: floatTransform }] }
-                  ]}
-                >
-                  <ImageBackground 
-                    source={{ uri: cachedCommentBackground }} 
-                    style={[styles.floatComment, theme?.floatingComment?.commentBackgroundStyle || {}]}
-                    resizeMode="contain"
-                  >
-                    <Image
-                      source={{ uri: ICON_IMAGES[iconType] }}
-                      style={[styles.floatIcon, theme?.icons?.iconStyles || {}]}
-                      resizeMode="contain"
-                    />
-                  </ImageBackground>
-                </Animated.View>
+                <View style={styles.floatElementContainer}>
+                  {hasStars ? (
+                    // 🌟 Render Stars (Static View, no movement)
+                    renderStars(starCount)
+                  ) : (
+                    // 💬 Else render Float Comment (Animated View)
+                    <Animated.View
+                        style={[
+                            styles.floatComment,
+                            { transform: [{ translateY: floatTransform }] }
+                        ]}
+                    >
+                        <ImageBackground 
+                        source={{ uri: cachedCommentBackground }} 
+                        style={[styles.floatComment, theme?.floatingComment?.commentBackgroundStyle || {}]}
+                        resizeMode="contain"
+                        >
+                        <Image
+                            source={{ uri: ICON_IMAGES[iconType] }}
+                            style={[styles.floatIcon, theme?.icons?.iconStyles || {}]}
+                            resizeMode="contain"
+                        />
+                        </ImageBackground>
+                    </Animated.View>
+                  )}
+                </View>
               )}
             </Pressable>
           );
@@ -487,7 +541,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 20,
   },
-  floatComment: {
+  // Container for floating elements (Stars or Comment Bubble)
+  floatElementContainer: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 25,
+  },
+    floatComment: {
     position: 'absolute',
     width: '95%',
     height: '95%',
@@ -529,5 +592,18 @@ const styles = StyleSheet.create({
   stones: {
     position: 'absolute',
     zIndex: 2,
+  },
+  // ✅ New Star Styles
+  starWrapper: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    width: '120%',
+    marginTop: -138,
+  },
+  starIcon: {
+    width: 30,
+    height:25,
+    marginHorizontal: -5, 
   }
 });
