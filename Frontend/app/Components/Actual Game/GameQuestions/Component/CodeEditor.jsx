@@ -8,8 +8,6 @@ import {
 import Guide from '../Output/Guide';
 import FileViewer from '../Output/FileViewer';
 
-
-
 const CodeEditor = ({
   currentQuestion,
   selectedAnswers,
@@ -24,12 +22,11 @@ const CodeEditor = ({
   activeTab: externalActiveTab
 }) => {
   const [activeTab, setActiveTab] = useState('code');
+  // Initialize as false so the useEffect triggers the animation on mount
   const [hasAnimated, setHasAnimated] = useState(false); 
   const lineAnimations = useRef([]);
-  // ADDED: State to control if tabs are disabled
   const [tabsDisabled, setTabsDisabled] = useState(false); 
   
-  //  Memoize code text and lines
   const codeText = useMemo(() => currentQuestion.question || '', [currentQuestion.question]);
   const lines = useMemo(() => codeText.split('\n'), [codeText]);
 
@@ -43,7 +40,7 @@ const CodeEditor = ({
       case 'javascript':
         return { long: 'script.js', short: 'JS' };
       default:
-        return { long: 'index.html', short: 'File' }; // Fallback
+        return { long: 'index.html', short: 'File' }; 
     }
   }, [currentQuestion?.question_type]);
 
@@ -55,15 +52,15 @@ const CodeEditor = ({
     { key: 'computer_file', short: 'File', long: 'file.txt' },
   ], []);
 
-
+  //  UPDATED: Only handle tab disabling here. 
+  // We removed the setHasAnimated(false) logic because the key prop in parent handles component reset.
    useEffect(() => {
-    setHasAnimated(false);
     setTabsDisabled(true); 
     const timer = setTimeout(() => {
       setTabsDisabled(false);
-    }, 3000); // 3-second delay
+    }, 3000); 
     return () => clearTimeout(timer); 
-  }, [currentQuestion?.id]);
+  }, []); // Run on mount (which happens every new question now due to key)
 
 
   useEffect(() => {
@@ -75,9 +72,7 @@ const CodeEditor = ({
     }
   }, [externalActiveTab, activeTab]);
 
-  //  Memoize tab change handler
   const handleTabChange = useCallback((tabName) => {
-    // MODIFIED: Only allow tab change if not disabled
     if (tabsDisabled) return;
 
     if (tabName === 'output' || tabName === 'expected') {
@@ -88,7 +83,7 @@ const CodeEditor = ({
     if (onTabChange) {
       onTabChange(tabName);
     }
-  }, [onTabChange, tabsDisabled]); // ADDED tabsDisabled to dependencies
+  }, [onTabChange, tabsDisabled]); 
 
 
   const options = currentQuestion?.options || [];
@@ -108,7 +103,7 @@ const CodeEditor = ({
             nestedScrollEnabled={true}
           >
             {lines.map((line, lineIndex) => {
-              //  Initialize animation values if not exists
+              //  CRITICAL: Ensure new lines start with 0 opacity
               if (!lineAnimations.current[lineIndex]) {
                 lineAnimations.current[lineIndex] = {
                   opacity: new Animated.Value(0),
@@ -177,9 +172,11 @@ const CodeEditor = ({
     }
   }, [activeTab, lines, renderSyntaxHighlightedLine, currentQuestion, selectedAnswers, userOutput, isCorrect, scrollViewRef]);
 
+ // Animation logic remains the same, but now guarantees running from 0 opacity because component is fresh
  useEffect(() => {
     if (!hasAnimated && activeTab === 'code' && lines && lines.length > 0) {
-      // Reset animations
+      
+      // Safety reset (though strictly not needed if unmounted, good for tab switching)
       lineAnimations.current.forEach(anim => {
         if (anim) {
           anim.opacity.setValue(0);
@@ -187,18 +184,17 @@ const CodeEditor = ({
         }
       });
 
-      // Stagger animation for each line
       const anims = lineAnimations.current.slice(0, lines.length).map((anim, index) =>
         Animated.parallel([
           Animated.timing(anim.opacity, {
             toValue: 1,
-            duration: 400,
+            duration: 200,
             delay: index * 90,
             useNativeDriver: true,
           }),
           Animated.timing(anim.translateY, {
             toValue: 0,
-            duration: 400,
+            duration: 200,
             delay: index * 50,
             useNativeDriver: true,
           }),
@@ -235,10 +231,9 @@ const CodeEditor = ({
                 styles.webTab,
                 activeTab === 'guide' && styles.webTabActive,
                 styles.webTabFirst,
-                // ADDED: Disable tab when tabsDisabled is true
                 tabsDisabled && { opacity: 0.5 } 
               ]}
-              disabled={tabsDisabled} // ADDED: Disable Pressable
+              disabled={tabsDisabled} 
             >
               <Text style={[
                 styles.webTabText, 
@@ -255,10 +250,9 @@ const CodeEditor = ({
               styles.webTab,
               activeTab === 'code' && styles.webTabActive,
               !currentQuestion?.guide && styles.webTabFirst,
-              // ADDED: Disable tab when tabsDisabled is true
               tabsDisabled && { opacity: 0.5 } 
             ]}
-            disabled={tabsDisabled} // ADDED: Disable Pressable
+            disabled={tabsDisabled} 
           >
               <Text style={[
               styles.webTabText, 
@@ -276,10 +270,9 @@ const CodeEditor = ({
                 style={[
                   styles.webTab,
                   activeTab === tab.key && styles.webTabActive,
-                  // ADDED: Disable tab when tabsDisabled is true
                   tabsDisabled && { opacity: 0.5 } 
                 ]}
-                disabled={tabsDisabled} // ADDED: Disable Pressable
+                disabled={tabsDisabled} 
               >
                 <Text style={[styles.webTabText, activeTab === tab.key && styles.webTabTextActive]}>
                   {currentQuestion[`${tab.key}_name`] || (activeTab === tab.key ? tab.long : tab.short)}
@@ -293,16 +286,15 @@ const CodeEditor = ({
             style={[
               styles.webTab,
               activeTab === 'output' && styles.webTabActive,
-              // ADDED: Disable tab when tabsDisabled is true
               tabsDisabled && { opacity: 0.5 } 
             ]}
-            disabled={tabsDisabled} // ADDED: Disable Pressable
+            disabled={tabsDisabled} 
           >
             <Text style={[
               styles.webTabText, 
               activeTab === 'output' && styles.webTabTextActive
             ]}>
-              {activeTab === 'output' ? 'Output' : 'Output'} {/*  ADDED: Abbreviated version */}
+              {activeTab === 'output' ? 'Output' : 'Output'} 
             </Text>
           </Pressable>
 
@@ -312,10 +304,9 @@ const CodeEditor = ({
               styles.webTab,
               activeTab === 'expected' && styles.webTabActive,
               styles.webTabLast,
-              // ADDED: Disable tab when tabsDisabled is true
               tabsDisabled && { opacity: 0.5 } 
             ]}
-            disabled={tabsDisabled} // ADDED: Disable Pressable
+            disabled={tabsDisabled} 
           >
             <Text style={[
               styles.webTabText, 
@@ -562,8 +553,6 @@ const styles = StyleSheet.create({
   },
 
 });
-
-// ...existing export remains unchanged...
 
 export default React.memo(CodeEditor, (prevProps, nextProps) => {
   return (

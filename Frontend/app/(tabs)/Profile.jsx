@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { 
   Text, 
   View, 
@@ -9,6 +9,7 @@ import {
   ImageBackground
 } from "react-native";
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { gameScale } from '../Components/Responsiveness/gameResponsive';
 import { usePlayerProfile } from '../hooks/usePlayerProfile';
@@ -29,6 +30,13 @@ export default function Profile() {
   } = usePlayerProfile(playerId);
 
   const [inventoryTab, setInventoryTab] = useState('Badges');
+
+    useFocusEffect(
+    useCallback(() => {
+      console.log('🔄 Profile tab focused - refreshing data...');
+      loadPlayerProfile();  
+    }, [loadPlayerProfile])
+  );
 
   // Simplified loading - assets are already cached from Map API
   if (loading || !playerData) {

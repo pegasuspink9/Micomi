@@ -64,15 +64,12 @@ export const renderHighlightedText = (text, language = 'html', themeName = 'oneD
   const selectedTheme = themes[themeName] || themes.oneDarkPro;
   const styles = createStyles(selectedTheme);
 
-  // ✅ FIXED: All patterns now use a single, top-level capturing group and
-  // non-capturing groups (?:...) for internal logic. This is critical for
-  // the String.prototype.split() method to work correctly.
   const patterns = {
     html: [
       { pattern: /(<!--[\s\S]*?-->)/g, style: styles.comment },
       { pattern: /(<!DOCTYPE[^>]*>)/g, style: styles.doctype },
-      { pattern: /(<\/?[a-zA-Z0-9\s-]+)/g, style: styles.tag },
-      { pattern: /([\w-]+(?==))/g, style: styles.attribute }, // Use lookahead to not consume '=', handle '=' in punctuation
+      { pattern: /(<\/?[a-zA-Z0-9\s-]+>?)/g, style: styles.tag },
+      { pattern: /([\w-]+(?==))/g, style: styles.attribute },
       { pattern: /(".*?"|'.*?')/g, style: styles.string },
       { pattern: /([<>=\/])/g, style: styles.punctuation },
     ],
@@ -80,7 +77,7 @@ export const renderHighlightedText = (text, language = 'html', themeName = 'oneD
       { pattern: /(\/\*[\s\S]*?\*\/)/g, style: styles.comment },
       { pattern: /(".*?"|'.*?')/g, style: styles.string },
       { pattern: /((?:\.|#|::?)[a-zA-Z0-9_-]+)/g, style: styles.className },
-      { pattern: /([a-zA-Z-]+(?=:))/g, style: styles.property }, // Use lookahead
+      { pattern: /([a-zA-Z-]+(?=:))/g, style: styles.property },
       { pattern: /(#[\da-fA-F]{3,6}\b|-?\d*\.?\d+(?:px|%|em|rem|vw|vh|s|ms|deg)?\b)/g, style: styles.number },
       { pattern: /(\b(?:absolute|relative|fixed|bold|italic|none|center|block|inline-block|auto|inherit|initial|sans-serif|arial)\b)/g, style: styles.keyword },
       { pattern: /(\b(?:body|h1|h2|h3|p|div|span|a|ul|li|img|html)\b)/g, style: styles.tag },
@@ -88,10 +85,10 @@ export const renderHighlightedText = (text, language = 'html', themeName = 'oneD
     ],
     javascript: [
       { pattern: /(\/\*[\s\S]*?\*\/|\/\/.*)/g, style: styles.comment },
-      { pattern: /(".*?"|'.*?'|`.*?`)/g, style: styles.string }, // Safer string pattern
+      { pattern: /(".*?"|'.*?'|`.*?`)/g, style: styles.string },
       { pattern: /(\b(?:const|let|var|function|return|if|else|for|while|import|export|from|async|await|new|this|class|extends|super)\b)/g, style: styles.keyword },
       { pattern: /(\b(?:true|false|null|undefined)\b)/g, style: styles.number },
-      { pattern: /(\b\d+(?:\.\d+)?\b)/g, style: styles.number }, // Non-capturing inner group for decimals
+      { pattern: /(\b\d+(?:\.\d+)?\b)/g, style: styles.number },
       { pattern: /((?<=\.)[a-zA-Z_]\w*)/g, style: styles.property },
       { pattern: /([a-zA-Z_]\w*(?=\())/g, style: styles.function },
       { pattern: /([=+\-*/%<>!&|?:])/g, style: styles.operator },

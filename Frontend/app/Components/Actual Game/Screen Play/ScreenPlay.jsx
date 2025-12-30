@@ -268,7 +268,11 @@ const ScreenPlay = ({
 
  useEffect(() => {
   console.log('Enemy health changed to:', enemyHealth);
-  if (enemyHealth === 0 && gameState.currentChallenge && !firstBonusShownRef.current && !showBonusRoundText) {
+  if (enemyHealth === 0 && 
+      gameState.currentChallenge && 
+      gameState.submissionResult?.fightResult?.enemy?.enemy_dies === null &&
+      !firstBonusShownRef.current && 
+      !showBonusRoundText) {
     console.log('🎉 Enemy defeated, next challenge exists - scheduling bonus modal');
     firstBonusShownRef.current = true;
     
@@ -276,7 +280,7 @@ const ScreenPlay = ({
       setShowBonusRoundText(true);
     }, 5000); 
   }
-}, [enemyHealth, gameState.currentChallenge]);
+}, [enemyHealth, gameState.currentChallenge, gameState.submissionResult?.fightResult?.enemy?.enemy_dies]);
 
  useEffect(() => {
     if (isEnemyRunning) {

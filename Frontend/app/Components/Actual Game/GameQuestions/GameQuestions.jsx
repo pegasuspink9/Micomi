@@ -73,16 +73,13 @@ const renderSyntaxHighlightedLine = (line, lineIndex) => {
   }
 
   const parts = line.split('_');
-  // Removed localBlankIndex variable as partIndex is sufficient and safer
   
   const blanksBeforeCurrent = calculateGlobalBlankIndex(currentQuestion, lineIndex);
   
   return (
-    //  CHANGED: Use View with row layout instead of Text to fix touch handling
     <View style={styles.codeLineContainer}>
       {parts.map((part, partIndex) => (
         <React.Fragment key={partIndex}>
-            {/* Wrap text parts in Text component to apply styles */}
             {part ? <Text style={styles.codeText}>{renderHighlightedText(part)}</Text> : null}
             
             {partIndex < parts.length - 1 && (
@@ -99,7 +96,6 @@ const renderSyntaxHighlightedLine = (line, lineIndex) => {
                     blankRefs.current[globalIndex] = ref;
                   }
                 }}
-                //  Keep hitSlop for better usability
                 hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
                 style={[
                   styles.codeBlankContainer,
@@ -136,9 +132,12 @@ const renderSyntaxHighlightedLine = (line, lineIndex) => {
           currentQuestion.challenge_type === 'code with guide' || 
           currentQuestion.challenge_type === 'multiple choice') ? (
           <CodeEditor 
+            //  FIX: Adding key forces component to re-mount when ID changes.
+            // This ensures animations start from 0 opacity and state is reset.
+            key={currentQuestion.id} 
             currentQuestion={{
               ...currentQuestion,
-              question: displayQuestion // MODIFIED: Pass the appropriate question text
+              question: displayQuestion 
             }}
             selectedAnswers={selectedAnswers}
             getBlankIndex={getBlankIndex}
@@ -150,9 +149,11 @@ const renderSyntaxHighlightedLine = (line, lineIndex) => {
           />
         ) : (
           <DocumentQuestion 
+            //  FIX: Adding key here as well for consistency
+            key={currentQuestion.id}
             currentQuestion={{
               ...currentQuestion,
-              question: displayQuestion // MODIFIED: Pass the appropriate question text
+              question: displayQuestion 
             }}
             selectedAnswers={selectedAnswers}
           />
@@ -163,11 +164,10 @@ const renderSyntaxHighlightedLine = (line, lineIndex) => {
 };
 
 export default React.memo(GameQuestions, (prevProps, nextProps) => {
-  // Custom comparison: Only rerender if props relevant to thirdGrid or CodeEditor change
   return (
     prevProps.currentQuestion?.id === nextProps.currentQuestion?.id &&
     JSON.stringify(prevProps.selectedAnswers) === JSON.stringify(nextProps.selectedAnswers) &&
-    prevProps.activeTab === nextProps.activeTab && // Include to allow CodeEditor tab updates
+    prevProps.activeTab === nextProps.activeTab && 
     prevProps.isAnswerCorrect === nextProps.isAnswerCorrect &&
     prevProps.selectedBlankIndex === nextProps.selectedBlankIndex &&
     prevProps.onTabChange === nextProps.onTabChange &&
