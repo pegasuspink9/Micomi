@@ -14,6 +14,7 @@ import {
   CompletionRewards,
 } from "./challenges.types";
 import { getCardForAttackType } from "../Combat/combat.service";
+import { revealAllBlanks } from "../../../helper/revealPotionHelper";
 
 const prisma = new PrismaClient();
 
@@ -555,6 +556,48 @@ export const submitChallengeService = async (
       isRevealConfirmed
     );
 
+  if (isCorrect && updatedProgress?.consecutive_corrects === 3) {
+    if (character.character_name === "Gino") {
+      const healAmount = Math.floor(character.health * 0.25);
+      const currentHp = updatedProgress.player_hp;
+      const newHp = Math.min(character.health, currentHp + healAmount);
+
+      await prisma.playerProgress.update({
+        where: { progress_id: currentProgress.progress_id },
+        data: { player_hp: newHp },
+      });
+
+      updatedProgress.player_hp = newHp;
+      console.log(`- Gino's Passive Triggered: Healed ${healAmount} HP`);
+    }
+
+    if (character.character_name === "ShiShi") {
+      await prisma.playerProgress.update({
+        where: { progress_id: currentProgress.progress_id },
+        data: { has_freeze_effect: true },
+      });
+
+      currentProgress.has_freeze_effect = true;
+
+      console.log(
+        `- ShiShi's Passive Triggered: Enemy Frozen! (Safe for next turn)`
+      );
+    }
+
+    if (character.character_name === "Ryron") {
+      await prisma.playerProgress.update({
+        where: { progress_id: currentProgress.progress_id },
+        data: { has_ryron_reveal: true },
+      });
+
+      currentProgress.has_ryron_reveal = true;
+
+      console.log(
+        `- Ryron's Passive Triggered: Next challenge will be auto-revealed!`
+      );
+    }
+  }
+
   if (
     !updatedProgress ||
     "success" in updatedProgress ||
@@ -630,6 +673,72 @@ export const submitChallengeService = async (
         default:
           character_attack_audio =
             "https://micomi-assets.me/Sounds/Final/Gino_Basic_Attack.wav";
+          break;
+      }
+    } else if (character.character_name === "ShiShi") {
+      const type = fightResult.character?.character_attack_type;
+
+      switch (type) {
+        case "special_attack":
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Shi%20Attacks/Ult.wav";
+          break;
+        case "third_attack":
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Shi%20Attacks/Special.wav";
+          break;
+        case "second_attack":
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Shi%20Attacks/2nd.wav";
+          break;
+        case "basic_attack":
+        default:
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Shi%20Attacks/Basic.mp3";
+          break;
+      }
+    } else if (character.character_name === "Ryron") {
+      const type = fightResult.character?.character_attack_type;
+
+      switch (type) {
+        case "special_attack":
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Ryron%20Attacks/Ult.wav";
+          break;
+        case "third_attack":
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Ryron%20Attacks/Special.wav";
+          break;
+        case "second_attack":
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Ryron%20Attacks/2nd.wav";
+          break;
+        case "basic_attack":
+        default:
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Ryron%20Attacks/Basic.wav";
+          break;
+      }
+    } else if (character.character_name === "Leon") {
+      const type = fightResult.character?.character_attack_type;
+
+      switch (type) {
+        case "special_attack":
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Ult.wav";
+          break;
+        case "third_attack":
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Special.wav";
+          break;
+        case "second_attack":
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/2nd.wav";
+          break;
+        case "basic_attack":
+        default:
+          character_attack_audio =
+            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Basic.wav";
           break;
       }
     }
@@ -803,6 +912,7 @@ export const submitChallengeService = async (
         totalPointsEarned: 0,
         totalExpPointsEarned: 0,
         isVictory: false,
+        stars,
       };
 
       await prisma.playerProgress.update({
@@ -861,6 +971,7 @@ export const submitChallengeService = async (
           totalPointsEarned: freshProgress?.total_points_earned ?? 0,
           totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
           isVictory: true,
+          stars,
         };
 
         nextLevel = await LevelService.unlockNextLevel(
@@ -894,6 +1005,7 @@ export const submitChallengeService = async (
           totalPointsEarned: 0,
           totalExpPointsEarned: 0,
           isVictory: true,
+          stars,
         };
       }
     }
@@ -935,6 +1047,7 @@ export const submitChallengeService = async (
         totalPointsEarned: freshProgress?.total_points_earned ?? 0,
         totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
         isVictory: true,
+        stars,
       };
 
       nextLevel = await LevelService.unlockNextLevel(
@@ -963,6 +1076,7 @@ export const submitChallengeService = async (
         totalPointsEarned: 0,
         totalExpPointsEarned: 0,
         isVictory: true,
+        stars,
       };
     }
   }
@@ -1012,6 +1126,44 @@ export const submitChallengeService = async (
 
     if (isRetryOfWrong) {
       attackType = "basic_attack";
+    } else if (
+      (character.character_name === "Gino" ||
+        character.character_name === "Leon" ||
+        character.character_name === "ShiShi" ||
+        character.character_name === "Ryron") &&
+      updatedProgress.consecutive_corrects === 3
+    ) {
+      attackType = "special_attack";
+
+      let damageIndex = 0;
+      if (nextCorrectAnswerLength >= 8) {
+        damageIndex = 2;
+      } else if (nextCorrectAnswerLength >= 5) {
+        damageIndex = 1;
+      } else {
+        damageIndex = 0;
+      }
+
+      const damageArray = Array.isArray(character.character_damage)
+        ? (character.character_damage as number[])
+        : [10, 15, 25];
+
+      if (character.character_name === "Leon") {
+        character_damage_card = damageArray[damageIndex] * 2;
+      } else {
+        character_damage_card = damageArray[damageIndex] ?? 10;
+      }
+
+      if (freshProgress?.has_strong_effect) {
+        character_damage_card *= 2;
+      }
+
+      const cardInfo = getCardForAttackType(
+        character.character_name,
+        attackType
+      );
+      card_type = cardInfo.card_type;
+      character_attack_card = cardInfo.character_attack_card;
     } else if (isLastRemaining && isNewBonusRound) {
       attackType = "special_attack";
     } else if (
@@ -1028,32 +1180,42 @@ export const submitChallengeService = async (
       attackType = "basic_attack";
     }
 
-    const damageIndexMap: Record<string, number> = {
-      basic_attack: 0,
-      second_attack: 1,
-      third_attack: 2,
-      special_attack: 2,
-    };
+    if (
+      !(
+        (character.character_name === "Gino" ||
+          character.character_name === "Leon" ||
+          character.character_name === "ShiShi" ||
+          character.character_name === "Ryron") &&
+        updatedProgress.consecutive_corrects === 3 &&
+        !isRetryOfWrong
+      )
+    ) {
+      const damageIndexMap: Record<string, number> = {
+        basic_attack: 0,
+        second_attack: 1,
+        third_attack: 2,
+        special_attack: 2,
+      };
 
-    const damageIndex = damageIndexMap[attackType] ?? 0;
+      const damageIndex = damageIndexMap[attackType] ?? 0;
 
-    const damageArray = Array.isArray(character.character_damage)
-      ? (character.character_damage as number[])
-      : [10, 15, 25];
+      const damageArray = Array.isArray(character.character_damage)
+        ? (character.character_damage as number[])
+        : [10, 15, 25];
 
-    character_damage_card = damageArray[damageIndex] ?? 10;
+      character_damage_card = damageArray[damageIndex] ?? 10;
 
-    if (freshProgress?.has_strong_effect) {
-      character_damage_card *= 2;
+      if (freshProgress?.has_strong_effect) {
+        character_damage_card *= 2;
+      }
+
+      const cardInfo = getCardForAttackType(
+        character.character_name,
+        attackType
+      );
+      card_type = cardInfo.card_type;
+      character_attack_card = cardInfo.character_attack_card;
     }
-
-    const cardInfo = getCardForAttackType(character.character_name, attackType);
-    card_type = cardInfo.card_type;
-    character_attack_card = cardInfo.character_attack_card;
-
-    console.log(
-      `Next challenge card preview: ${attackType}, damage: ${character_damage_card}, answer length: ${nextCorrectAnswerLength}`
-    );
   } else {
     attackType = null;
     card_type = null;
@@ -1112,7 +1274,6 @@ export const submitChallengeService = async (
       coinsEarned: freshProgress?.coins_earned ?? 0,
       totalPointsEarned: freshProgress?.total_points_earned ?? 0,
       totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
-      stars,
       playerOutputs,
     },
     completionRewards,
@@ -1210,7 +1371,6 @@ const getNextChallengeEasy = async (progress: any) => {
     }
   }
 
-  // If nextChallenge is pending, modify to filled version
   if (nextChallenge) {
     const challengeKey = nextChallenge.challenge_id.toString();
     const existing = playerAnswer[challengeKey];
@@ -1301,7 +1461,6 @@ const getNextChallengeHard = async (progress: any) => {
     }
   }
 
-  // If nextChallenge is pending, modify to filled version
   if (nextChallenge) {
     const challengeKey = nextChallenge.challenge_id.toString();
     const existing = playerAnswer[challengeKey];
@@ -1387,6 +1546,70 @@ const wrapWithTimer = async (
   if (!challenge) return { nextChallenge: null };
 
   let modifiedChallenge = { ...challenge };
+
+  if (progress.has_ryron_reveal) {
+    let effectiveCorrectAnswer = challenge.correct_answer as string[];
+    const rawCorrectAnswer = [...effectiveCorrectAnswer];
+    const enemy = level.enemy;
+
+    if (progress.has_reversed_curse && enemy?.enemy_name === "Boss Darco") {
+      effectiveCorrectAnswer = rawCorrectAnswer.map(reverseString);
+    }
+
+    const revealResult = revealAllBlanks(
+      challenge.question ?? "",
+      effectiveCorrectAnswer
+    );
+
+    if (!revealResult.success) {
+      console.error(
+        `Ryron's Passive - Cannot reveal challenge ${challenge.challenge_id}: ${revealResult.error}`
+      );
+    } else {
+      const filledQuestion = revealResult.filledQuestion;
+
+      const challengeKey = challenge.challenge_id.toString();
+      const currentPlayerAnswer =
+        progress.player_answer && typeof progress.player_answer === "object"
+          ? (progress.player_answer as Record<string, unknown>)
+          : {};
+
+      await prisma.playerProgress.update({
+        where: {
+          player_id_level_id: {
+            player_id: progress.player_id,
+            level_id: progress.level_id,
+          },
+        },
+        data: {
+          player_answer: {
+            ...(currentPlayerAnswer as Record<string, unknown>),
+            [challengeKey]: ["_REVEAL_PENDING_"],
+          } as any,
+          has_ryron_reveal: false,
+          challenge_start_time: new Date(),
+        },
+      });
+
+      modifiedChallenge = {
+        ...(challenge as Challenge),
+        question: filledQuestion,
+        options: ["Attack"],
+        answer: effectiveCorrectAnswer,
+      } as ChallengeDTO;
+
+      console.log(
+        `- Ryron's Passive Applied: All blanks revealed for challenge ${challenge.challenge_id}`
+      );
+
+      const timeRemaining = CHALLENGE_TIME_LIMIT;
+      const builtChallenge = buildChallengeWithTimer(
+        modifiedChallenge,
+        timeRemaining
+      );
+      return { nextChallenge: builtChallenge };
+    }
+  }
 
   if (
     progress.has_reversed_curse &&

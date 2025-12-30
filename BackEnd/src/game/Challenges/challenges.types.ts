@@ -52,6 +52,7 @@ export interface CompletionRewards {
   totalExpPointsEarned?: number;
   coinsEarned?: number;
   isVictory?: boolean;
+  stars?: number;
   playerOutputs?: string[] | null;
 }
 
@@ -59,7 +60,6 @@ export interface SubmitChallengeControllerResult
   extends SubmitChallengeServiceResult {
   levelStatus?: LevelStatus;
   completionRewards?: CompletionRewards;
-  stars?: number | null;
   nextLevel?: {
     level_id: number;
     level_number: number;
@@ -91,6 +91,5 @@ export interface LevelStatus {
   coinsEarned?: number;
   totalPointsEarned?: number;
   totalExpPointsEarned?: number;
-  stars?: number;
   playerOutputs?: string[] | null;
 }
