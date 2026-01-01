@@ -177,7 +177,7 @@ model PlayerProgress {
   //streak tracking
   consecutive_corrects   Int           @default(0)
   consecutive_wrongs     Int           @default(0)
-  wrong_challenges_count  Int           @default(0)
+  wrong_challenges_count  Int          @default(0)
 
   //collected player expected output
   player_expected_output Json?         @default("[]")

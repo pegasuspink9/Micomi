@@ -277,6 +277,125 @@ export const previewLevel = async (playerId: number, levelId: number) => {
   }
 };
 
+const SS_HERO_ICON_CONFIG: Record<
+  string,
+  { special_skill_image: string; special_skill_description: string }
+> = {
+  Gino: {
+    special_skill_image: "SS icon skill ni Gino",
+    special_skill_description:
+      "Unleashes a powerful lightning attack and heals 25% HP",
+  },
+  ShiShi: {
+    special_skill_image: "SS icon skill ni ShiShi",
+    special_skill_description:
+      "Freezes the enemy, preventing their next attack",
+  },
+  Ryron: {
+    special_skill_image: "SS icon skill ni Ryron",
+    special_skill_description:
+      "God's Judgment: Reveals all blanks in the next challenge",
+  },
+  Leon: {
+    special_skill_image: "SS icon skill ni Leon",
+    special_skill_description: "Deals 2x damage with a devastating fire attack",
+  },
+};
+
+const SS_BOSS_ICON_CONFIG: Record<
+  string,
+  {
+    special_skill_image: string;
+    special_skill_description: string;
+    ss_type: string;
+  }
+> = {
+  "Boss Joshy": {
+    special_skill_image: "SS icon skill ni Boss Joshy",
+    special_skill_description: "Blocks all damage for one turn",
+    ss_type: "shield",
+  },
+  "King Grimnir": {
+    special_skill_image: "SS icon skill ni King Grimnir",
+    special_skill_description: "Forces player to use only basic attacks",
+    ss_type: "force_basic_attack",
+  },
+  "Boss Darco": {
+    special_skill_image: "SS icon skill ni Boss Darco",
+    special_skill_description: "Reverses all text in the challenge",
+    ss_type: "reverse",
+  },
+  "Boss Scorcharach": {
+    special_skill_image: "SS icon skill ni Boss Scorcharach",
+    special_skill_description: "Both the hero and the boss take damage",
+    ss_type: "mutual_damage",
+  },
+  "Boss Maggmaw": {
+    special_skill_image: "SS icon skill ni Boss Maggmaw",
+    special_skill_description: "Randomly shuffles all answer options",
+    ss_type: "shuffle",
+  },
+  "Boss Pyroformic": {
+    special_skill_image: "SS icon skill ni Boss Pyroformic",
+    special_skill_description: "Scrambles letters within each option",
+    ss_type: "permuted",
+  },
+};
+
+function getHeroSpecialSkillInfo(
+  characterName: string,
+  streak?: number
+): {
+  special_skill_image: string | null;
+  special_skill_description: string | null;
+  streak: number;
+} {
+  const safeStreak = streak ?? 0;
+  const config = SS_HERO_ICON_CONFIG[characterName];
+  if (!config) {
+    return {
+      special_skill_image: null,
+      special_skill_description: null,
+      streak: safeStreak,
+    };
+  }
+
+  return {
+    special_skill_image: config.special_skill_image,
+    special_skill_description: config.special_skill_description,
+    streak: safeStreak,
+  };
+}
+
+function getBossSpecialSkillInfo(
+  enemyName: string,
+  ssType: string | null,
+  streak?: number
+): {
+  special_skill_image: string | null;
+  special_skill_description: string | null;
+  streak: number;
+  ss_type: string | null;
+} {
+  const safeStreak = streak ?? 0;
+  const config = SS_BOSS_ICON_CONFIG[enemyName];
+  if (!config) {
+    return {
+      special_skill_image: null,
+      special_skill_description: null,
+      streak: safeStreak,
+      ss_type: ssType,
+    };
+  }
+
+  return {
+    special_skill_image: config.special_skill_image,
+    special_skill_description: config.special_skill_description,
+    streak: safeStreak,
+    ss_type: ssType,
+  };
+}
+
 export const enterLevel = async (playerId: number, levelId: number) => {
   const level:
     | (Level & {
@@ -812,6 +931,16 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       }
   }
 
+  const heroSS = getHeroSpecialSkillInfo(
+    character.character_name,
+    progress.consecutive_corrects
+  );
+  const bossSS = getBossSpecialSkillInfo(
+    enemy.enemy_name,
+    null,
+    progress.consecutive_wrongs
+  );
+
   return {
     level: {
       level_id: level.level_id,
@@ -833,9 +962,10 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       enemy_dies: enemy.enemy_dies,
       enemy_avatar: enemy.avatar_enemy,
       special_skill: {
-        special_skill_image: "Need pa i set-up",
+        special_skill_image: bossSS.special_skill_image,
         streak: progress.consecutive_wrongs,
-        special_skill_description: "Need pa i set-up",
+        special_skill_description: bossSS.special_skill_description,
+        ss_type: bossSS.ss_type,
       },
     },
     character: {
@@ -853,9 +983,9 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       character_attack_pose: character.attack_pose,
       character_range_attack: character.range_attacks,
       special_skill: {
-        special_skill_image: "Need pa i set-up",
+        special_skill_image: heroSS.special_skill_image,
         streak: progress.consecutive_corrects,
-        special_skill_description: "Need pa i set-up",
+        special_skill_description: heroSS.special_skill_description,
       },
     },
     card: {

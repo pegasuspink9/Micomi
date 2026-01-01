@@ -18,7 +18,6 @@ export async function updateProgressForChallenge(
 
   let consecutiveCorrects = progress.consecutive_corrects ?? 0;
   let consecutiveWrongs = progress.consecutive_wrongs ?? 0;
-  let wrongChallengesCount = progress.wrong_challenges_count ?? 0;
 
   let hasReversedCurse = progress.has_reversed_curse ?? false;
   let hasBossShield = progress.has_boss_shield ?? false;
@@ -36,8 +35,6 @@ export async function updateProgressForChallenge(
     hasBothHpDecrease ||
     hasShuffle ||
     hasPermuted;
-
-  const bossSkillActivated = wasAnySsActive && !isCorrect;
 
   const challenge = await prisma.challenge.findUnique({
     where: { challenge_id: challengeId },
@@ -77,6 +74,8 @@ export async function updateProgressForChallenge(
     attempts: { increment: 1 },
   };
 
+  let bossSkillActivated = false;
+
   if (isCorrect) {
     wrongChallenges = wrongChallenges.filter((id) => id !== challengeId);
     consecutiveCorrects += 1;
@@ -95,14 +94,14 @@ export async function updateProgressForChallenge(
       total_exp_points_earned: { increment: challenge.points_reward },
       consecutive_corrects: consecutiveCorrects,
       consecutive_wrongs: consecutiveWrongs,
-      boss_skill_activated: bossSkillActivated,
+      boss_skill_activated: false,
     };
   } else {
-    wrongChallenges.push(challengeId);
-
+    if (!wrongChallenges.includes(challengeId)) {
+      wrongChallenges.push(challengeId);
+    }
     consecutiveCorrects = 0;
     consecutiveWrongs += 1;
-    wrongChallengesCount += 1;
 
     const level = await prisma.level.findUnique({
       where: { level_id: progress.level_id },
@@ -112,9 +111,9 @@ export async function updateProgressForChallenge(
     if (level) {
       const enemy = level.enemy;
 
-      const wrongAnswerCount = progress.wrong_challenges_count;
+      if (!wasAnySsActive && consecutiveWrongs % 3 == 0) {
+        bossSkillActivated = true;
 
-      if (!wasAnySsActive && wrongAnswerCount % 3 == 0) {
         const enemyName = enemy && enemy.enemy_name;
 
         switch (enemyName) {
@@ -155,15 +154,17 @@ export async function updateProgressForChallenge(
             );
             break;
         }
+      } else {
+        bossSkillActivated = false;
       }
     }
 
     updateData = {
       ...updateData,
       wrong_challenges: wrongChallenges,
-      wrong_challenges_count: wrongChallengesCount,
       consecutive_corrects: consecutiveCorrects,
       consecutive_wrongs: consecutiveWrongs,
+      boss_skill_activated: bossSkillActivated,
     };
   }
 
@@ -184,7 +185,6 @@ export async function updateProgressForChallenge(
     has_both_hp_decrease: hasBothHpDecrease,
     has_shuffle_ss: hasShuffle,
     has_permuted_ss: hasPermuted,
-    boss_skill_activated: bossSkillActivated,
   };
 
   const updatedProgress = await prisma.playerProgress.update({

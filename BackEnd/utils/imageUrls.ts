@@ -570,4 +570,10 @@ export const imagesUrls = [
 
   //Potion Shop Button
   "https://micomi-assets.me/Icons%20Shop/Shop%20Button.png",
+
+  //Use potion effects
+  "https://micomi-assets.me/Icons/Potions/Strongeffect.png",
+  "https://micomi-assets.me/Icons/Potions/Iceeffect.png",
+  "https://micomi-assets.me/Icons/Potions/Healeffect.png",
+  "https://micomi-assets.me/Icons/Potions/Hinteffect.png",
 ];

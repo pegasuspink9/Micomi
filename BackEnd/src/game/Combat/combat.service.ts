@@ -152,17 +152,15 @@ const SS_BOSS_ICON_CONFIG: Record<
   },
   "Boss Scorcharach": {
     special_skill_image: "SS icon skill ni Boss Scorcharach",
-    special_skill_description:
-      "Mutual Damage: Both you and the boss take damage",
+    special_skill_description: "Both the hero and the boss take damage",
   },
   "Boss Maggmaw": {
     special_skill_image: "SS icon skill ni Boss Maggmaw",
-    special_skill_description: "Shuffle: Randomly shuffles all answer options",
+    special_skill_description: "Randomly shuffles all answer options",
   },
   "Boss Pyroformic": {
     special_skill_image: "SS icon skill ni Boss Pyroformic",
-    special_skill_description:
-      "Permutation: Scrambles letters within each option",
+    special_skill_description: "Scrambles letters within each option",
   },
 };
 
@@ -175,17 +173,7 @@ function getHeroSpecialSkillInfo(
   streak: number;
 } {
   const safeStreak = streak ?? 0;
-
-  if (safeStreak < 3) {
-    return {
-      special_skill_image: null,
-      special_skill_description: null,
-      streak: safeStreak,
-    };
-  }
-
   const config = SS_HERO_ICON_CONFIG[characterName];
-
   if (!config) {
     return {
       special_skill_image: null,
@@ -212,18 +200,7 @@ function getBossSpecialSkillInfo(
   ss_type: string | null;
 } {
   const safeStreak = streak ?? 0;
-
-  if (!ssType) {
-    return {
-      special_skill_image: null,
-      special_skill_description: null,
-      streak: safeStreak,
-      ss_type: null,
-    };
-  }
-
   const config = SS_BOSS_ICON_CONFIG[enemyName];
-
   if (!config) {
     return {
       special_skill_image: null,
