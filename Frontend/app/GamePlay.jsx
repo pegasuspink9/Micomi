@@ -260,14 +260,19 @@ export default function GamePlay() {
   const setCorrectAnswerRef = useRef(null);
   const maxAnswers = currentChallenge ? (currentChallenge.question?.match(/_/g) || []).length : 0;
 
-  useEffect(() => {
+   useEffect(() => {
     if (currentChallenge) {
+      console.log('🔄 Refreshing challenge UI:', { 
+        challengeId: currentChallenge.id, 
+        attemptId: gameState?.attemptId 
+      });
+      
       setSelectedAnswers(new Array(maxAnswers).fill(null));
       setBorderColor('white');
       setActiveGameTab('code');
       setSelectedBlankIndex(0);
     }
-  }, [currentChallenge?.id, maxAnswers]);
+  }, [currentChallenge?.id, maxAnswers, gameState?.attemptId]); 
 
   useEffect(() => {
     if (currentChallenge && !loading && !animationsLoading && !hasShownVSModalRef.current) {
@@ -825,6 +830,7 @@ export default function GamePlay() {
               setCorrectAnswerRef={setCorrectAnswerRef}
               getBlankIndex={getBlankIndex}
               challengeData={currentChallenge}
+              gameState={gameState}
               submitAnswer={submitAnswer}
               submitting={submitting}
               selectedBlankIndex={selectedBlankIndex} 

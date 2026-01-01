@@ -2,7 +2,14 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { gameService } from '../services/gameService';
 
 export const useGameData = (playerId, initialLevelId) => {
-  const [gameState, setGameState] = useState(null);
+    const [gameState, setGameState] = useState({
+    level: {},
+    enemy: {},
+    selectedCharacter: {},
+    currentChallenge: null,
+    submissionResult: null,
+    attemptId: 0, // Add this to track submission attempts
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -361,6 +368,7 @@ export const useGameData = (playerId, initialLevelId) => {
       fightResult: pendingData.fightResult || prevState.fightResult,
       submissionResult: null,
       nextChallengeData: null,
+      attemptId: (prevState.attemptId || 0) + 1, // Increment attemptId to force UI refresh
     }));
     
     setCanProceed(false);

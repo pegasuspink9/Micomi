@@ -63,6 +63,27 @@ const ThirdGrid = ({
   const isFillInTheBlank = (currentQuestion.type || currentQuestion.challenge_type) === 'fill in the blank';
   const options = useMemo(() => currentQuestion.options || [], [currentQuestion.options]);
 
+  const enemyAttackType = useMemo(() => 
+    gameState?.submissionResult?.fightResult?.enemy?.enemy_attack_type ?? 
+    gameState?.enemy?.enemy_attack_type,
+    [
+      gameState?.submissionResult?.fightResult?.enemy?.enemy_attack_type, 
+      gameState?.enemy?.enemy_attack_type
+    ]
+  );
+  
+  const isSpecialAttack = useMemo(() => {
+    const isSpecial = enemyAttackType === 'special attack' || enemyAttackType === 'special skill';
+    
+    console.log('🎯 ThirdGrid Special Attack Detection:', {
+      enemyAttackType,
+      isSpecialAttack: isSpecial,
+    });
+    
+    return isSpecial;
+  }, [enemyAttackType]); 
+
+
   const getPotionBorderColor = (potionName) => {
     switch (potionName) {
       case "Gino's Blood": return 'rgba(130, 0, 0, 1)';
@@ -193,6 +214,7 @@ const ThirdGrid = ({
       onRun={onCharacterRun}
       fadeOutAnim={fadeOutAnim}
       isInRunMode={isInRunMode}
+      isSpecialAttack={isSpecialAttack}
       lowerChildren={
         <View style={styles.overlayButtons} pointerEvents="box-none">
           {canProceed ? (
@@ -232,13 +254,6 @@ const ThirdGrid = ({
             { minHeight: gameScale(80) } 
         ]}
       >
-        {/* 
-           FIX APPLIED HERE:
-           Instead of conditional rendering ( ? : ), we render both views 
-           and use display: 'none' to hide the inactive one. 
-           This prevents unmounting/remounting, thus stopping the re-animation 
-           and stabilizing the height calculation.
-        */}
         {showContent && (
           <>
             {/* POTIONS VIEW */}
@@ -263,6 +278,7 @@ const ThirdGrid = ({
                 isFillInTheBlank={isFillInTheBlank}
                 selectedBlankIndex={selectedBlankIndex} 
                 currentQuestionId={currentQuestion.id}
+                isSpecialAttack={isSpecialAttack}
               />
             </View>
           </>
@@ -295,9 +311,18 @@ export default React.memo(ThirdGrid, (prev, next) => {
     
     const answersEqual = JSON.stringify(prev.selectedAnswers) === JSON.stringify(next.selectedAnswers);
 
+    // Check if the attack type changed
+    const prevAttackType = prev.gameState?.submissionResult?.fightResult?.enemy?.enemy_attack_type ?? 
+                          prev.gameState?.enemy?.enemy_attack_type;
+    const nextAttackType = next.gameState?.submissionResult?.fightResult?.enemy?.enemy_attack_type ?? 
+                          next.gameState?.enemy?.enemy_attack_type;
+    
+    const attackTypeEqual = prevAttackType === nextAttackType;
+
     return (
       potionEqual &&
       answersEqual &&
+      attackTypeEqual && // Add this check
       prev.currentQuestion?.id === next.currentQuestion?.id &&
       prev.submitting === next.submitting &&
       prev.currentQuestionIndex === next.currentQuestionIndex &&
@@ -309,6 +334,5 @@ export default React.memo(ThirdGrid, (prev, next) => {
       prev.isLevelComplete === next.isLevelComplete &&
       prev.cardImageUrl === next.cardImageUrl &&
       prev.cardDisplaySequence === next.cardDisplaySequence
-
     );
 });

@@ -4,7 +4,7 @@ import { scale, scaleHeight, RESPONSIVE, wp } from '../../../Responsiveness/game
 import { soundManager } from '../../Sounds/UniversalSoundManager';
 
 const borderColors = {
-  outerBg: '#01547dff',
+  outerBg: '#044160ff',
   outerBorderTop: '#0d1f33',
   outerBorderBottom: '#01547dff',
   middleBg: '#152d4a',
@@ -36,8 +36,20 @@ const disabledBorderColors = {
   innerBorder: 'rgba(158, 158, 161, 0.3)',
 };
 
-const AnswerOption = ({ item, index, isSelected, isDisabled, onPress, customStyles = null }) => {
-  const colors = isDisabled ? disabledBorderColors : (isSelected ? selectedBorderColors : borderColors);
+const specialAttackBorderColors = {
+  outerBg: '#3a3a3a', // Darker gray
+  outerBorderTop: '#2a2a2a',
+  outerBorderBottom: '#4a4a4a',
+  middleBg: '#444444', // Solid gray
+  middleBorderTop: '#555555',
+  middleBorderBottom: '#2a2a2a',
+  innerBg: 'rgba(60, 60, 60, 0.8)', // Much more opaque gray
+  innerBorder: 'rgba(100, 100, 100, 0.5)',
+};
+
+const AnswerOption = ({ item, index, isSelected, isDisabled, onPress, customStyles = null, isSpecialAttack = false }) => {
+    console.log('isSpecialAttack:', isSpecialAttack); // Add this line to debug
+  const colors = isSpecialAttack ? specialAttackBorderColors : (isDisabled ? disabledBorderColors : (isSelected ? selectedBorderColors : borderColors));
 
   return (
     <View style={[styles.container, customStyles?.container]}>
@@ -66,7 +78,7 @@ const AnswerOption = ({ item, index, isSelected, isDisabled, onPress, customStyl
           }
         ]}>
           {/* 3-Layer Border - Inner (Pressable) */}
-          <Pressable 
+           <Pressable 
             style={({ pressed }) => [
               styles.borderInner,
               {
@@ -86,15 +98,16 @@ const AnswerOption = ({ item, index, isSelected, isDisabled, onPress, customStyl
           >
             <View style={[
               styles.innerButton,
-              isDisabled && styles.innerButtonDisabled,
+              isDisabled && !isSpecialAttack && styles.innerButtonDisabled,
               customStyles?.innerButton
             ]}>
               <View style={[styles.buttonHighlight, customStyles?.buttonHighlight]} />
               <View style={[styles.buttonShadow, customStyles?.buttonShadow]} />
               
               <Text style={[
-                styles.listItemText,
+                 styles.listItemText,
                 isDisabled && styles.listItemTextDisabled,
+                isSpecialAttack && styles.listItemTextSpecialAttack, 
                 customStyles?.listItemText
               ]}>
                 {item}
@@ -193,6 +206,7 @@ export default React.memo(AnswerOption, (prevProps, nextProps) => {
     prevProps.index === nextProps.index &&
     prevProps.isSelected === nextProps.isSelected &&
     prevProps.isDisabled === nextProps.isDisabled &&
-    prevProps.onPress === nextProps.onPress
+    prevProps.onPress === nextProps.onPress &&
+    prevProps.isSpecialAttack === nextProps.isSpecialAttack 
   );
 });

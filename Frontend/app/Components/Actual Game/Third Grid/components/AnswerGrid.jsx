@@ -10,6 +10,7 @@ const AnswerGrid = ({
   onAnswerSelect,
   isFillInTheBlank = false,
   selectedBlankIndex = 0, 
+  isSpecialAttack = false,
 }) => {
 
   const animations = useRef([]);
@@ -68,7 +69,7 @@ const AnswerGrid = ({
         
         return (
         <Animated.View
-          key={`option-${index}-${trimmedItem}`}
+          key={`option-${index}-${trimmedItem}-${isSpecialAttack}`}
           style={{
             opacity: animations.current[index].opacity,
             transform: [{ scale: animations.current[index].scale }],
@@ -80,6 +81,7 @@ const AnswerGrid = ({
             isSelected={isSelected}
             isDisabled={isDisabled}
             onPress={() => onAnswerSelect(index)}
+            isSpecialAttack={isSpecialAttack}
           />
         </Animated.View>
       );

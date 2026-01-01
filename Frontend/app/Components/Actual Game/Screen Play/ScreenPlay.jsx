@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
-import { Animated, View, Modal, StyleSheet } from 'react-native';
+import { Animated, View, Modal, StyleSheet, Text} from 'react-native';
 import enemiesData from '../GameData/Enemy Game Data/EnemyGameData';
 import GameContainer from './components/GameContainer';
 import GameBackground from './components/GameBackground';
@@ -13,7 +13,7 @@ import Message from './components/Message';
 import FadeOutWrapper from './FadeOutWrapper/FadeOutWrapper';
 import PauseButton from './Pauses/PauseButton';
 import { gameScale } from '../../Responsiveness/gameResponsive';
-import BonusRoundModal from './components/BonusRoundModal'; // ✅ NEW IMPORT
+import BonusRoundModal from './components/BonusRoundModal'; 
 
 const ScreenPlay = ({ 
   gameState,
@@ -92,6 +92,12 @@ const ScreenPlay = ({
   const playerAvatar = useMemo(() => gameState.avatar?.player, [gameState.avatar?.player]);
 
   const enemyAvatar = useMemo(() => gameState.avatar?.enemy, [gameState.avatar?.enemy]);
+
+  const enemyAttackType = useMemo(() => 
+    gameState.submissionResult?.fightResult?.enemy?.enemy_attack_type ?? 
+    gameState.enemy?.enemy_attack_type,
+    [gameState.submissionResult, gameState.enemy]
+  );
 
   const characterName = useMemo(() => {
     return gameState.submissionResult?.fightResult?.character?.character_name ?? 
@@ -676,6 +682,25 @@ useEffect(() => {
           startDelay={1000}     // RENAMED: from healthDelay
           trigger={submissionSeq}
         />
+
+                {enemyAttackType === 'special attack' && (
+          <View style={{ 
+            position: 'absolute', 
+            top: gameScale(65), 
+            left: gameScale(10),
+            backgroundColor: 'rgba(255, 0, 0, 0.8)',
+            paddingHorizontal: gameScale(8),
+            paddingVertical: gameScale(2),
+            borderRadius: gameScale(4),
+            borderWidth: 1,
+            borderColor: 'white',
+            zIndex: 1000
+          }}>
+            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: gameScale(10), fontFamily: 'DynaPuff' }}>
+              SPECIAL ATTACK!
+            </Text>
+          </View>
+        )}
       </FadeOutWrapper>
 
       <FadeOutWrapper fadeOutAnim={fadeOutAnim} isInRunMode={isInRunMode}>
@@ -753,6 +778,10 @@ export default React.memo(ScreenPlay, (prevProps, nextProps) => {
     prevProps.gameState?.submissionResult?.isCorrect === nextProps.gameState?.submissionResult?.isCorrect &&
     prevProps.gameState?.selectedCharacter?.current_health === nextProps.gameState?.selectedCharacter?.current_health &&
     prevProps.gameState?.enemy?.enemy_health === nextProps.gameState?.enemy?.enemy_health &&
+    (prevProps.gameState?.submissionResult?.fightResult?.enemy?.enemy_attack_type === 
+     nextProps.gameState?.submissionResult?.fightResult?.enemy?.enemy_attack_type) &&
+    (prevProps.gameState?.enemy?.enemy_attack_type === 
+     nextProps.gameState?.enemy?.enemy_attack_type) &&
     prevProps.borderColor === nextProps.borderColor &&
     prevProps.characterRunState === nextProps.characterRunState && 
     prevProps.isPaused === nextProps.isPaused &&

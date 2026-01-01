@@ -25,6 +25,7 @@ const GridContainer = ({
   onRun = null,
   isInRunMode = false,
   fadeOutAnim = null,
+  isSpecialAttack = false,
 }) => {
   const [imageSource, setImageSource] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -34,6 +35,31 @@ const GridContainer = ({
   
   const dropAnim = useRef(new Animated.Value(-500)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
+  const shakeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    let animation;
+    if (isSpecialAttack) {
+      // Earthquake shake effect - 200ms per cycle
+      const shake = Animated.sequence([
+        Animated.timing(shakeAnim, { toValue: scale(3), duration: 40, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: scale(-3), duration: 40, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: scale(2), duration: 40, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: scale(-2), duration: 40, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: 0, duration: 40, useNativeDriver: true }),
+      ]);
+      
+      // 10 iterations * 200ms = 2000ms (2 seconds)
+      animation = Animated.loop(shake, { iterations: 10 });
+      animation.start();
+    } else {
+      shakeAnim.setValue(0);
+    }
+
+    return () => {
+      if (animation) animation.stop();
+    };
+  }, [isSpecialAttack]);
 
   useEffect(() => {
     const url = cardImageUrl;
@@ -86,10 +112,32 @@ const GridContainer = ({
     opacity: opacityAnim,
   };
 
+    const CrackEffect = () => (
+    <View style={styles.crackOverlay} pointerEvents="none">
+      {/* Top Left Crack */}
+      <View style={[styles.crackLine, { top: '15%', left: '5%', width: '25%', transform: [{ rotate: '20deg' }] }]} />
+      <View style={[styles.crackLine, { top: '22%', left: '25%', width: '15%', transform: [{ rotate: '-15deg' }] }]} />
+      
+      {/* Bottom Right Crack */}
+      <View style={[styles.crackLine, { bottom: '20%', right: '10%', width: '30%', transform: [{ rotate: '-10deg' }] }]} />
+      <View style={[styles.crackLine, { bottom: '28%', right: '35%', width: '12%', transform: [{ rotate: '45deg' }] }]} />
+
+      {/* Center Crack */}
+      <View style={[styles.crackLine, { top: '45%', left: '40%', width: '20%', transform: [{ rotate: '75deg' }] }]} />
+      
+      {/* Small scattered cracks */}
+      <View style={[styles.crackLine, { top: '10%', right: '15%', width: '10%', transform: [{ rotate: '-40deg' }] }]} />
+      <View style={[styles.crackLine, { bottom: '10%', left: '20%', width: '8%', transform: [{ rotate: '110deg' }] }]} />
+    </View>
+  );
+
 
 
     return (
-    <View style={styles.containerWrapper}>
+     <Animated.View style={[
+      styles.containerWrapper,
+      { transform: [{ translateX: shakeAnim }] } // Apply shake to the whole container
+    ]}>
       <View style={[
         styles.thirdGrid, 
         { height: mainHeight },
@@ -120,23 +168,28 @@ const GridContainer = ({
         )}
         
         
-        <View style={[
+         <View style={[
           styles.outerFrame,
-          (isProceedMode || isLevelComplete) && styles.outerFrameProceed
+          (isProceedMode || isLevelComplete) && styles.outerFrameProceed,
+          isSpecialAttack && styles.outerFrameSpecialAttack 
         ]}>
           <View style={[
             styles.innerContent,
-            (isProceedMode || isLevelComplete) && styles.innerContentProceed
+            (isProceedMode || isLevelComplete) && styles.innerContentProceed,
+            isSpecialAttack && styles.innerContentSpecialAttack
           ]}>
-            <View style={[
+             <View style={[
               styles.innerBorder,
-              (isProceedMode || isLevelComplete) && styles.innerBorderProceed
+              (isProceedMode || isLevelComplete) && styles.innerBorderProceed,
+              isSpecialAttack && styles.innerBorderSpecialAttack
             ]}>
               <View style={styles.backlightOverlay} />
               <View style={styles.topHighlight} />
               <View style={styles.bottomShadow} />
               <View style={styles.leftHighlight} />
               <View style={styles.rightShadow} />
+
+               {isSpecialAttack && <CrackEffect />} 
               
               {/* LEVEL COMPLETE BUTTONS */}
               {isLevelComplete && showRunButton ? (
@@ -187,21 +240,34 @@ const GridContainer = ({
       </View>
 
       {/*  REMOVED FadeOutWrapper - Direct View rendering */}
-      <View style={styles.lowerGrid}>
-        <View style={styles.outerFrame}>
-          <View style={styles.innerContent}>
-            <View style={styles.innerBorder}>
+       <View style={styles.lowerGrid}>
+        <View style={[
+          styles.outerFrame,
+          isSpecialAttack && styles.outerFrameSpecialAttack
+        ]}>
+          <View style={[
+            styles.innerContent,
+            isSpecialAttack && styles.innerContentSpecialAttack
+          ]}>
+            <View style={[
+              styles.innerBorder,
+              isSpecialAttack && styles.innerBorderSpecialAttack
+            ]}>
               <View style={styles.backlightOverlay} />
               <View style={styles.topHighlight} />
               <View style={styles.bottomShadow} />
               <View style={styles.leftHighlight} />
               <View style={styles.rightShadow} />
+
+              {isSpecialAttack && <CrackEffect />}
+
+
               {lowerChildren}
             </View>
           </View>
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 };
 
@@ -312,6 +378,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.8,
   },
 
+  outerFrameSpecialAttack: {
+    backgroundColor: '#4a4a4a',
+    borderTopColor: '#666',
+    borderLeftColor: '#666',
+    borderBottomColor: '#333',
+    borderRightColor: '#333',
+  },
+
+  
   innerContent: {
     flex: 1,
     backgroundColor: '#052a53ff',
@@ -329,6 +404,10 @@ const styles = StyleSheet.create({
 
   innerContentProceed: {
     backgroundColor: '#0a3a66',
+  },
+
+  innerContentSpecialAttack: {
+    backgroundColor: '#333333',
   },
 
   innerBorder: {
@@ -350,6 +429,25 @@ const styles = StyleSheet.create({
     borderColor: '#13447196',
     justifyContent: 'center',
     alignItems: 'center'
+  },
+
+  innerBorderSpecialAttack: {
+    backgroundColor: '#1a1a1a'
+  },
+
+  crackOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 5,
+    opacity: 0.7,
+  },
+  crackLine: {
+    position: 'absolute',
+    height: scale(1.5),
+    backgroundColor: '#000',
+    shadowColor: '#444',
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.5,
+    shadowRadius: 1,
   },
 
   backlightOverlay: {

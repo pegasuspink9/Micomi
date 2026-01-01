@@ -151,6 +151,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         enemy_hurt: data.enemy?.enemy_hurt || responseData.enemy?.enemy_hurt || null,
         enemy_dies: data.enemy?.enemy_dies || responseData.enemy?.enemy_dies || null,
         enemy_avatar: data.enemy?.enemy_avatar || responseData.enemy?.enemy_avatar || null, 
+        enemy_attack_type: data.enemy?.enemy_attack_type || responseData.enemy?.enemy_attack_type || null,
       },
 
       avatar: {
@@ -251,8 +252,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
       gameState.submissionResult = {
         isCorrect: data.isCorrect,
         message: data.message,
-        fightResult: fightResult,
-        levelStatus: levelStatus,
+        // levelStatus: levelStatus, <--- REMOVED DUPLICATE KEY
         nextLevel: responseData.nextLevel || data.nextLevel || null,
         completionRewards: responseData.completionRewards || data.completionRewards || null,
         isBonusRound: data.is_bonus_round || responseData.is_bonus_round || false,
@@ -264,54 +264,58 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         is_victory_audio: data.is_victory_audio || responseData.is_victory_audio || null,
         is_victory_image: data.is_victory_image || responseData.is_victory_image || null,
 
-        fightResult: responseData.fightResult ? {
-          status: responseData.fightResult.status,
-          timer: responseData.fightResult.timer,
-          energy: responseData.fightResult.energy,
-          timeToNextEnergyRestore: responseData.fightResult.timeToNextEnergyRestore,
+        // FIX: Use the 'fightResult' variable we extracted above and REMOVE the duplicate key below
+        fightResult: fightResult ? {
+          status: fightResult.status,
+          timer: fightResult.timer,
+          energy: fightResult.energy,
+          timeToNextEnergyRestore: fightResult.timeToNextEnergyRestore,
           
-          character: responseData.fightResult.character ? {
-            character_id: responseData.fightResult.character.character_id,
-            character_name: responseData.fightResult.character.character_name,
-            character_idle: responseData.fightResult.character.character_idle,
-            character_run: responseData.fightResult.character.character_run,
-            character_attack_type: responseData.fightResult.character.character_attack_type,
-            character_attack: responseData.fightResult.character.character_attack,
-            character_range_attack: responseData.fightResult.character.character_range_attack || null,
-            character_is_range: responseData.fightResult.character.character_is_range || false,
-            character_hurt: responseData.fightResult.character.character_hurt,
-            character_dies: responseData.fightResult.character.character_dies,
-            character_damage: responseData.fightResult.character.character_damage,
-            character_health: responseData.fightResult.character.character_health,
-            character_max_health: responseData.fightResult.character.character_max_health,
-            character_avatar: responseData.fightResult.character.character_avatar
+          character: fightResult.character ? {
+            character_id: fightResult.character.character_id,
+            character_name: fightResult.character.character_name,
+            character_idle: fightResult.character.character_idle,
+            character_run: fightResult.character.character_run,
+            character_attack_type: fightResult.character.character_attack_type,
+            character_attack: fightResult.character.character_attack,
+            character_range_attack: fightResult.character.character_range_attack || null,
+            character_is_range: fightResult.character.character_is_range || false,
+            character_hurt: fightResult.character.character_hurt,
+            character_dies: fightResult.character.character_dies,
+            character_damage: fightResult.character.character_damage,
+            character_health: fightResult.character.character_health,
+            character_max_health: fightResult.character.character_max_health,
+            character_avatar: fightResult.character.character_avatar
           } : null,
           
-          enemy: responseData.fightResult.enemy ? {
-            enemy_id: responseData.fightResult.enemy.enemy_id,
-            enemy_name: responseData.fightResult.enemy.enemy_name,
-            enemy_idle: responseData.fightResult.enemy.enemy_idle,
-            enemy_run: responseData.fightResult.enemy.enemy_run,
-            enemy_attack: responseData.fightResult.enemy.enemy_attack,
-            enemy_hurt: responseData.fightResult.enemy.enemy_hurt,
-            enemy_dies: responseData.fightResult.enemy.enemy_dies,
-            enemy_damage: responseData.fightResult.enemy.enemy_damage,
-            enemy_health: responseData.fightResult.enemy.enemy_health,
-            enemy_max_health: responseData.fightResult.enemy.enemy_max_health,
-            enemy_avatar: responseData.fightResult?.enemy.enemy_avatar || null, 
+          enemy: fightResult.enemy ? {
+            enemy_id: fightResult.enemy.enemy_id,
+            enemy_name: fightResult.enemy.enemy_name,
+            enemy_idle: fightResult.enemy.enemy_idle,
+            enemy_run: fightResult.enemy.enemy_run,
+            enemy_attack: fightResult.enemy.enemy_attack,
+            enemy_attack_type: fightResult.enemy.enemy_attack_type, 
+            enemy_hurt: fightResult.enemy.enemy_hurt,
+            enemy_dies: fightResult.enemy.enemy_dies,
+            enemy_damage: fightResult.enemy.enemy_damage,
+            enemy_health: fightResult.enemy.enemy_health,
+            enemy_max_health: fightResult.enemy.enemy_max_health,
+            enemy_avatar: fightResult.enemy.enemy_avatar || null,
           } : null,
+        } : null,
+      
+
+        levelStatus: levelStatus ? {
+          isCompleted: levelStatus.isCompleted || false,
+          battleWon: levelStatus.battleWon || false,
+          battleLost: levelStatus.battleLost || false,
+          canProceed: levelStatus.canProceed || false,
+          showFeedback: levelStatus.showFeedback || false,
+          playerHealth: levelStatus.playerHealth || 0,
+          enemyHealth: levelStatus.enemyHealth || 0,
+          coinsEarned: levelStatus.coinsEarned || 0
         } : null,
 
-        levelStatus: responseData.levelStatus ? {
-          isCompleted: responseData.levelStatus.isCompleted || false,
-          battleWon: responseData.levelStatus.battleWon || false,
-          battleLost: responseData.levelStatus.battleLost || false,
-          canProceed: responseData.levelStatus.canProceed || false,
-          showFeedback: responseData.levelStatus.showFeedback || false,
-          playerHealth: responseData.levelStatus.playerHealth || 0,
-          enemyHealth: responseData.levelStatus.enemyHealth || 0,
-          coinsEarned: responseData.levelStatus.coinsEarned || 0
-        } : null,
 
         completionRewards: responseData.completionRewards ? {
           feedbackMessage: responseData.completionRewards.feedbackMessage || null,
@@ -344,6 +348,12 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
       if (responseData.fightResult?.character?.character_max_health) {
         gameState.selectedCharacter.max_health = responseData.fightResult.character.character_max_health;
       }
+
+       if (responseData.fightResult?.enemy?.enemy_attack_type !== undefined) {
+        gameState.enemy.enemy_attack_type = responseData.fightResult.enemy.enemy_attack_type;
+      }
+
+      
       if (responseData.fightResult?.enemy?.enemy_health !== undefined) {
         gameState.enemy.enemy_health = responseData.fightResult.enemy.enemy_health;
       }

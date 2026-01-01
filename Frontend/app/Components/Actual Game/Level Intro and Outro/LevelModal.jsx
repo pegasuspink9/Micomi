@@ -388,7 +388,8 @@ const LevelModal = ({
     character_health: displayData.character?.character_health || 0,
     character_avatar: displayData.character?.character_avatar || null,
     energy_cost: displayData.energy || 0,
-    player_coins: displayData.player_info?.player_coins || 0
+    player_coins: displayData.player_info?.player_coins || 0,
+    boss_output: displayData.bossLevelExpectedOutput?.[0] || null
   } : {};
 
   //  Smooth interpolations
@@ -854,7 +855,7 @@ const LevelModal = ({
         <View style={styles.modalOverlay}>
           <View style={styles.webviewContainer}>
             <WebView
-              source={{ html: '<html><head><title>Hello World</title><style>body { font-family: Arial, sans-serif; font-size: 24px; text-align: center; margin: 50px; }</style></head><body><h1>Hello World</h1><p>This is a placeholder for the project content.</p></body></html>' }}
+              source={{ html: mappedLevelData.boss_output || '<html><head><title>Hello World</title><style>body { font-family: Arial, sans-serif; font-size: 24px; text-align: center; margin: 50px; }</style></head><body><h1>Hello World</h1><p>This is a placeholder for the project content.</p></body></html>' }}
               style={styles.webview}
               scalesPageToFit={true}
               startInLoadingState={false}
