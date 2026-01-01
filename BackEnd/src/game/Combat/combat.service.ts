@@ -109,6 +109,138 @@ const CARD_CONFIG: Record<
   },
 };
 
+const SS_HERO_ICON_CONFIG: Record<
+  string,
+  { special_skill_image: string; special_skill_description: string }
+> = {
+  Gino: {
+    special_skill_image: "SS icon skill ni Gino",
+    special_skill_description:
+      "Unleashes a powerful lightning attack and heals 25% HP",
+  },
+  ShiShi: {
+    special_skill_image: "SS icon skill ni ShiShi",
+    special_skill_description:
+      "Freezes the enemy, preventing their next attack",
+  },
+  Ryron: {
+    special_skill_image: "SS icon skill ni Ryron",
+    special_skill_description:
+      "God's Judgment: Reveals all blanks in the next challenge",
+  },
+  Leon: {
+    special_skill_image: "SS icon skill ni Leon",
+    special_skill_description: "Deals 2x damage with a devastating fire attack",
+  },
+};
+
+const SS_BOSS_ICON_CONFIG: Record<
+  string,
+  { special_skill_image: string; special_skill_description: string }
+> = {
+  "Boss Joshy": {
+    special_skill_image: "SS icon skill ni Boss Joshy",
+    special_skill_description: "Blocks all damage for one turn",
+  },
+  "King Grimnir": {
+    special_skill_image: "SS icon skill ni King Grimnir",
+    special_skill_description: "Forces player to use only basic attacks",
+  },
+  "Boss Darco": {
+    special_skill_image: "SS icon skill ni Boss Darco",
+    special_skill_description: "Reverses all text in the challenge",
+  },
+  "Boss Scorcharach": {
+    special_skill_image: "SS icon skill ni Boss Scorcharach",
+    special_skill_description:
+      "Mutual Damage: Both you and the boss take damage",
+  },
+  "Boss Maggmaw": {
+    special_skill_image: "SS icon skill ni Boss Maggmaw",
+    special_skill_description: "Shuffle: Randomly shuffles all answer options",
+  },
+  "Boss Pyroformic": {
+    special_skill_image: "SS icon skill ni Boss Pyroformic",
+    special_skill_description:
+      "Permutation: Scrambles letters within each option",
+  },
+};
+
+function getHeroSpecialSkillInfo(
+  characterName: string,
+  streak?: number
+): {
+  special_skill_image: string | null;
+  special_skill_description: string | null;
+  streak: number;
+} {
+  const safeStreak = streak ?? 0;
+
+  if (safeStreak < 3) {
+    return {
+      special_skill_image: null,
+      special_skill_description: null,
+      streak: safeStreak,
+    };
+  }
+
+  const config = SS_HERO_ICON_CONFIG[characterName];
+
+  if (!config) {
+    return {
+      special_skill_image: null,
+      special_skill_description: null,
+      streak: safeStreak,
+    };
+  }
+
+  return {
+    special_skill_image: config.special_skill_image,
+    special_skill_description: config.special_skill_description,
+    streak: safeStreak,
+  };
+}
+
+function getBossSpecialSkillInfo(
+  enemyName: string,
+  ssType: string | null,
+  streak?: number
+): {
+  special_skill_image: string | null;
+  special_skill_description: string | null;
+  streak: number;
+  ss_type: string | null;
+} {
+  const safeStreak = streak ?? 0;
+
+  if (!ssType) {
+    return {
+      special_skill_image: null,
+      special_skill_description: null,
+      streak: safeStreak,
+      ss_type: null,
+    };
+  }
+
+  const config = SS_BOSS_ICON_CONFIG[enemyName];
+
+  if (!config) {
+    return {
+      special_skill_image: null,
+      special_skill_description: null,
+      streak: safeStreak,
+      ss_type: ssType,
+    };
+  }
+
+  return {
+    special_skill_image: config.special_skill_image,
+    special_skill_description: config.special_skill_description,
+    streak: safeStreak,
+    ss_type: ssType,
+  };
+}
+
 export function getBaseEnemyHp(level: {
   level_difficulty: string;
   challenges?: any[];
@@ -192,12 +324,14 @@ export async function getFightSetup(playerId: number, levelId: number) {
         challenge_start_time: new Date(),
         consecutive_corrects: 0,
         consecutive_wrongs: 0,
+        wrong_challenges_count: 0,
         has_reversed_curse: false,
         has_boss_shield: false,
         has_force_character_attack_type: false,
         has_both_hp_decrease: false,
         has_shuffle_ss: false,
         has_permuted_ss: false,
+        boss_skill_activated: false,
       },
     });
   }
@@ -363,6 +497,33 @@ export async function getCurrentFightState(
       enemy_max_health: scaledEnemyMaxHealth,
       enemy_avatar: enemy.avatar_enemy,
       enemy_attack_type: null,
+      special_skill: (() => {
+        const isBossLevel =
+          level.level_difficulty === "hard" ||
+          level.level_difficulty === "final";
+
+        if (!isBossLevel) {
+          return {
+            special_skill_image: null,
+            special_skill_description: null,
+            streak: progress?.consecutive_wrongs ?? 0,
+          };
+        }
+
+        const hasAnyCurse =
+          progress?.has_reversed_curse ||
+          progress?.has_boss_shield ||
+          progress?.has_force_character_attack_type ||
+          progress?.has_both_hp_decrease ||
+          progress?.has_shuffle_ss ||
+          progress?.has_permuted_ss;
+
+        return getBossSpecialSkillInfo(
+          enemy.enemy_name,
+          hasAnyCurse ? "active" : null,
+          progress?.consecutive_wrongs
+        );
+      })(),
     },
     character: {
       character_id: character.character_id,
@@ -379,11 +540,16 @@ export async function getCurrentFightState(
       character_max_health: character.character_max_health,
       character_avatar: character.character_avatar,
       character_is_range: character.is_range,
+      special_skill: getHeroSpecialSkillInfo(
+        character.character_name,
+        progress?.consecutive_corrects
+      ),
     },
     timer: "00:00",
     energy: energyStatus.energy,
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
     combat_background: combatBackground,
+    boss_skill_activated: progress?.boss_skill_activated || false,
     isEnemyFrozen: progress?.has_freeze_effect || false,
   };
 }
@@ -670,7 +836,7 @@ export async function fightEnemy(
       } else if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "Ryron" &&
-        progress.consecutive_corrects === 2
+        progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
 
@@ -1245,6 +1411,11 @@ export async function fightEnemy(
       enemy_health: enemyHealth,
       enemy_max_health: scaledEnemyMaxHealth,
       enemy_avatar: enemy.avatar_enemy,
+      special_skill: {
+        special_skill_image: null,
+        special_skill_description: null,
+        streak: progress?.consecutive_wrongs ?? 0,
+      },
     },
     character: {
       character_id: character.character_id,
@@ -1261,10 +1432,15 @@ export async function fightEnemy(
       character_max_health: character.health,
       character_avatar: character.character_avatar,
       character_is_range: character.is_range,
+      special_skill: getHeroSpecialSkillInfo(
+        character.character_name,
+        progress?.consecutive_corrects
+      ),
     },
     timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,
+    boss_skill_activated: progress?.boss_skill_activated || false,
     isEnemyFrozen: wasEnemyFrozenThisTurn,
   };
 }
@@ -1553,7 +1729,7 @@ export async function fightBossEnemy(
       } else if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "Ryron" &&
-        progress.consecutive_corrects === 2
+        progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
 
@@ -2238,6 +2414,11 @@ export async function fightBossEnemy(
       enemy_health: enemyHealth,
       enemy_max_health: scaledEnemyMaxHealth,
       enemy_avatar: enemy.avatar_enemy,
+      special_skill: getBossSpecialSkillInfo(
+        enemy.enemy_name,
+        enemy_ss_type,
+        progress?.consecutive_wrongs
+      ),
     },
     character: {
       character_id: character.character_id,
@@ -2254,11 +2435,15 @@ export async function fightBossEnemy(
       character_max_health: character.health,
       character_avatar: character.character_avatar,
       character_is_range: character.is_range,
+      special_skill: getHeroSpecialSkillInfo(
+        character.character_name,
+        progress?.consecutive_corrects
+      ),
     },
-    enemy_ss_type,
     timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,
+    boss_skill_activated: progress?.boss_skill_activated || false,
     isEnemyFrozen: wasEnemyFrozenThisTurn,
   };
 }

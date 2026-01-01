@@ -177,6 +177,7 @@ model PlayerProgress {
   //streak tracking
   consecutive_corrects   Int           @default(0)
   consecutive_wrongs     Int           @default(0)
+  wrong_challenges_count  Int           @default(0)
 
   //collected player expected output
   player_expected_output Json?         @default("[]")
@@ -205,6 +206,9 @@ model PlayerProgress {
   //Boss Pyroformic ss
   has_permuted_ss       Boolean?      @default(false)   
   permutation_mapping   Json?    
+
+  // Boss ss activation tracker
+  boss_skill_activated  Boolean?      @default(false)
 
   //stars earned in the level
   stars_earned Int?
