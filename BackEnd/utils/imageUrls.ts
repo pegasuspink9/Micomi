@@ -39,7 +39,7 @@ export const imagesUrls = [
   "https://micomi-assets.me/Icons/Skill%20Icons/Leon%20Ult.png",
   "https://micomi-assets.me/Hero/Leon/death.png",
   "https://micomi-assets.me/Hero/Leon/hurt.png",
-  "https://micomi-assets.me/Hero/Leon/idle.png",
+  "https://micomi-assets.me/Hero/Leon/idle2.png",
   "https://micomi-assets.me/Hero/Leon/run.png",
   "https://micomi-assets.me/Hero/Leon/attack1.png",
   "https://micomi-assets.me/Hero/Leon/attack2.png",
@@ -61,10 +61,10 @@ export const imagesUrls = [
   "https://micomi-assets.me/Hero/Ryron/attack2.png",
   "https://micomi-assets.me/Hero/Ryron/attack3.png",
   "https://micomi-assets.me/Hero/Ryron/attack4.png",
-  "https://micomi-assets.me/Hero%20Portraits/Ryron.png",
-  "https://micomi-assets.me/Hero%20Selection%20Components/ryron_entrance.png",
+  "https://micomi-assets.me/Hero%20Selection%20Components/ryron_entrance2.png",
   "https://micomi-assets.me/Hero%20Selection%20Components/Ryron.png",
   "https://micomi-assets.me/Hero/Ryron/pose.png",
+  "https://micomi-assets.me/Hero%20Portraits/RyronFinale.png",
   //Potions
   "https://micomi-assets.me/Icons/Potions/health.png",
   "https://micomi-assets.me/Icons/Potions/strong.png",
@@ -579,4 +579,11 @@ export const imagesUrls = [
 
   //Micomi Avatar
   "https://micomi-assets.me/Hero%20Portraits/Micomi.png",
+
+  //Star (not used in the backend)
+  "https://micomi-assets.me/Icons/Miscellaneous/Micomi%20Star2.png",
+  //Muscle ni Leon (not used in the backend)
+  "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png",
+  //Ice overlay (not used in the backend)
+  "https://micomi-assets.me/Icons/Miscellaneous/Ice%20Overlay.png",
 ];

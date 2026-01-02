@@ -597,6 +597,20 @@ export const submitChallengeService = async (
         `- Ryron's Passive Triggered: Next challenge will be auto-revealed!`
       );
     }
+
+    if (character.character_name === "Leon") {
+      await prisma.playerProgress.update({
+        where: { progress_id: currentProgress.progress_id },
+        data: {
+          has_strong_effect: true,
+        },
+      });
+
+      updatedProgress.has_strong_effect = true;
+      console.log(
+        `- Leon's Passive Triggered: Next attack will deal double damage`
+      );
+    }
   }
 
   if (
@@ -1150,11 +1164,7 @@ export const submitChallengeService = async (
         ? (character.character_damage as number[])
         : [10, 15, 25];
 
-      if (character.character_name === "Leon") {
-        character_damage_card = damageArray[damageIndex] * 2;
-      } else {
-        character_damage_card = damageArray[damageIndex] ?? 10;
-      }
+      character_damage_card = damageArray[damageIndex] ?? 10;
 
       if (freshProgress?.has_strong_effect) {
         character_damage_card *= 2;

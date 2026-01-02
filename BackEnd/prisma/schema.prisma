@@ -65,8 +65,7 @@ model Level {
 model Dialogue {
   dialogue_id    Int     @id @default(autoincrement())
   level_id       Int
-  micomi_line    String?
-  enemy_line     String?
+  script         String?
 
   level          Level   @relation(fields: [level_id], references: [level_id], onDelete: Cascade) 
 }

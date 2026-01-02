@@ -406,6 +406,11 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         lessons: any;
         potionShopByLevel: any;
         enemy: Enemy | null;
+        dialogue: {
+          dialogue_id: number;
+          level_id: number;
+          script: string | null;
+        }[];
       })
     | null = await prisma.level.findUnique({
     where: { level_id: levelId },
@@ -500,6 +505,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       energy: energyStatus.energy,
       timeToNextEnergyRestore: energyStatus.timeToNextRestore,
       lessons,
+      dialogue: [],
     };
   }
 
@@ -583,6 +589,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       },
       potionShop,
       audio: "https://micomi-assets.me/Sounds/Final/Shop.ogg",
+      dialogue: [],
     };
   }
 
@@ -944,39 +951,41 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     progress.consecutive_wrongs
   );
 
-  const dialogue = await prisma.dialogue.findMany({
-    where: {
-      level_id: level.level_id,
-    },
-    orderBy: {
-      dialogue_id: "asc",
-    },
-  });
+  let dialogue: any = [];
+  if (level.dialogue.length > 0) {
+    const rawScript = level.dialogue[0].script ?? "";
+    const enemyName = enemy.enemy_name;
+    const characterName = character.character_name || "Player";
+    const replacedScript = rawScript
+      .replace(/{enemy_name}/g, enemyName)
+      .replace(/{character_name}/g, characterName);
 
-  const transformedDialogue = dialogue.map((d) => {
-    let micomiText = d.micomi_line || null;
-    if (micomiText) {
-      micomiText = micomiText
-        .replace(/{character_name}/g, character.character_name)
-        .replace(/{enemy_name}/g, enemy.enemy_name);
+    const lines = replacedScript
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    const dialoguePairs: { speaker: string; text: string }[] = [];
+    for (const line of lines) {
+      const separatorIndex = line.indexOf(":");
+      if (separatorIndex === -1) continue;
+      const speaker = line.slice(0, separatorIndex).trim();
+      const text = line.slice(separatorIndex + 1).trim();
+      dialoguePairs.push({ speaker, text });
     }
 
-    let enemyText = d.enemy_line || null;
-    if (enemyText) {
-      enemyText = enemyText
-        .replace(/{character_name}/g, character.character_name)
-        .replace(/{enemy_name}/g, enemy.enemy_name);
-    }
+    const scriptArray: Record<string, string>[] = dialoguePairs.map((pair) => ({
+      [pair.speaker]: pair.text,
+    }));
 
-    return {
-      dialogue_id: d.dialogue_id,
-      level_id: d.level_id,
-      micomi_avatar: micomiText ? MICOMI_AVATAR || null : null,
-      Micomi: micomiText,
-      enemy_avatar: enemyText ? enemy.avatar_enemy || null : null,
-      [enemy.enemy_name]: enemyText,
+    dialogue = {
+      dialogue_id: level.dialogue[0].dialogue_id,
+      level_id: level.dialogue[0].level_id,
+      micomi_image: MICOMI_AVATAR,
+      enemy_image: enemy.avatar_enemy ?? "",
+      script: scriptArray,
     };
-  });
+  }
 
   return {
     level: {
@@ -1030,7 +1039,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       character_attack_card,
       character_damage_card,
     },
-    dialogue: transformedDialogue,
+    dialogue,
     currentChallenge: firstChallenge,
     energy: energyStatus.energy,
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
