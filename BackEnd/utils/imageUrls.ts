@@ -43,8 +43,8 @@ export const imagesUrls = [
   "https://micomi-assets.me/Hero/Leon/run.png",
   "https://micomi-assets.me/Hero/Leon/attack1.png",
   "https://micomi-assets.me/Hero/Leon/attack2.png",
-  "https://micomi-assets.me/Hero/Leon/attack3.png",
-  "https://micomi-assets.me/Hero/Leon/attack4.png",
+  "https://micomi-assets.me/Hero/Leon/Leon%20Special.png",
+  "https://micomi-assets.me/Hero/Leon/Leon%20Ult.png",
   "https://micomi-assets.me/Hero%20Portraits/Leon.png",
   "https://micomi-assets.me/Hero%20Selection%20Components/leon_entrance.png",
   "https://micomi-assets.me/Hero%20Selection%20Components/Leon.png",
@@ -570,4 +570,13 @@ export const imagesUrls = [
 
   //Potion Shop Button
   "https://micomi-assets.me/Icons%20Shop/Shop%20Button.png",
+
+  //Use potion effects
+  "https://micomi-assets.me/Icons/Potions/Strongeffect.png",
+  "https://micomi-assets.me/Icons/Potions/Iceeffect.png",
+  "https://micomi-assets.me/Icons/Potions/Healeffect.png",
+  "https://micomi-assets.me/Icons/Potions/Hinteffect.png",
+
+  //Micomi Avatar
+  "https://micomi-assets.me/Hero%20Portraits/Micomi.png",
 ];

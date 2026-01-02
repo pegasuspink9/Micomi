@@ -43,6 +43,7 @@ export interface SubmitChallengeServiceResult {
   message: string;
   audio: string[];
   use_potion_audio?: string;
+  use_potion_effect?: string;
   nextChallenge: unknown | null;
 }
 

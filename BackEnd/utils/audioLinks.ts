@@ -199,8 +199,8 @@ export const audioLinks = [
   //Leon attacks audio
   "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Basic.wav",
   "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/2nd.wav",
-  "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Special.wav",
-  "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Ult.wav",
+  "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Special.mp3",
+  "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Ult.mp3",
   //Use potion audio
   "https://micomi-assets.me/Sounds/Final/All%20Potions.wav",
   //Is victory audio

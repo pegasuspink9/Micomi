@@ -277,6 +277,127 @@ export const previewLevel = async (playerId: number, levelId: number) => {
   }
 };
 
+const SS_HERO_ICON_CONFIG: Record<
+  string,
+  { special_skill_image: string; special_skill_description: string }
+> = {
+  Gino: {
+    special_skill_image: "SS icon skill ni Gino",
+    special_skill_description:
+      "Unleashes a powerful lightning attack and heals 25% HP",
+  },
+  ShiShi: {
+    special_skill_image: "SS icon skill ni ShiShi",
+    special_skill_description:
+      "Freezes the enemy, preventing their next attack",
+  },
+  Ryron: {
+    special_skill_image: "SS icon skill ni Ryron",
+    special_skill_description:
+      "God's Judgment: Reveals all blanks in the next challenge",
+  },
+  Leon: {
+    special_skill_image: "SS icon skill ni Leon",
+    special_skill_description: "Deals 2x damage with a devastating fire attack",
+  },
+};
+
+const SS_BOSS_ICON_CONFIG: Record<
+  string,
+  {
+    special_skill_image: string;
+    special_skill_description: string;
+    ss_type: string;
+  }
+> = {
+  "Boss Joshy": {
+    special_skill_image: "SS icon skill ni Boss Joshy",
+    special_skill_description: "Blocks all damage for one turn",
+    ss_type: "shield",
+  },
+  "King Grimnir": {
+    special_skill_image: "SS icon skill ni King Grimnir",
+    special_skill_description: "Forces player to use only basic attacks",
+    ss_type: "force_basic_attack",
+  },
+  "Boss Darco": {
+    special_skill_image: "SS icon skill ni Boss Darco",
+    special_skill_description: "Reverses all text in the challenge",
+    ss_type: "reverse",
+  },
+  "Boss Scorcharach": {
+    special_skill_image: "SS icon skill ni Boss Scorcharach",
+    special_skill_description: "Both the hero and the boss take damage",
+    ss_type: "mutual_damage",
+  },
+  "Boss Maggmaw": {
+    special_skill_image: "SS icon skill ni Boss Maggmaw",
+    special_skill_description: "Randomly shuffles all answer options",
+    ss_type: "shuffle",
+  },
+  "Boss Pyroformic": {
+    special_skill_image: "SS icon skill ni Boss Pyroformic",
+    special_skill_description: "Scrambles letters within each option",
+    ss_type: "permuted",
+  },
+};
+
+function getHeroSpecialSkillInfo(
+  characterName: string,
+  streak?: number
+): {
+  special_skill_image: string | null;
+  special_skill_description: string | null;
+  streak: number;
+} {
+  const safeStreak = streak ?? 0;
+  const config = SS_HERO_ICON_CONFIG[characterName];
+  if (!config) {
+    return {
+      special_skill_image: null,
+      special_skill_description: null,
+      streak: safeStreak,
+    };
+  }
+
+  return {
+    special_skill_image: config.special_skill_image,
+    special_skill_description: config.special_skill_description,
+    streak: safeStreak,
+  };
+}
+
+function getBossSpecialSkillInfo(
+  enemyName: string,
+  ssType: string | null,
+  streak?: number
+): {
+  special_skill_image: string | null;
+  special_skill_description: string | null;
+  streak: number;
+  ss_type: string | null;
+} {
+  const safeStreak = streak ?? 0;
+  const config = SS_BOSS_ICON_CONFIG[enemyName];
+  if (!config) {
+    return {
+      special_skill_image: null,
+      special_skill_description: null,
+      streak: safeStreak,
+      ss_type: ssType,
+    };
+  }
+
+  return {
+    special_skill_image: config.special_skill_image,
+    special_skill_description: config.special_skill_description,
+    streak: safeStreak,
+    ss_type: ssType,
+  };
+}
+
+const MICOMI_AVATAR = "https://micomi-assets.me/Hero%20Portraits/Micomi.png";
+
 export const enterLevel = async (playerId: number, levelId: number) => {
   const level:
     | (Level & {
@@ -294,6 +415,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       lessons: true,
       potionShopByLevel: true,
       enemy: true,
+      dialogue: true,
     },
   });
 
@@ -547,12 +669,14 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         total_exp_points_earned: 0,
         consecutive_corrects: 0,
         consecutive_wrongs: 0,
+        wrong_challenges_count: 0,
         has_reversed_curse: false,
         has_boss_shield: false,
         has_force_character_attack_type: false,
         has_both_hp_decrease: false,
         has_shuffle_ss: false,
         has_permuted_ss: false,
+        boss_skill_activated: false,
         took_damage: false,
         has_strong_effect: false,
         has_freeze_effect: false,
@@ -617,12 +741,14 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         total_exp_points_earned: 0,
         consecutive_corrects: 0,
         consecutive_wrongs: 0,
+        wrong_challenges_count: 0,
         has_reversed_curse: false,
         has_boss_shield: false,
         has_force_character_attack_type: false,
         has_both_hp_decrease: false,
         has_shuffle_ss: false,
         has_permuted_ss: false,
+        boss_skill_activated: false,
         took_damage: false,
         has_strong_effect: false,
         has_freeze_effect: false,
@@ -660,12 +786,14 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         total_exp_points_earned: 0,
         consecutive_corrects: 0,
         consecutive_wrongs: 0,
+        wrong_challenges_count: 0,
         has_reversed_curse: false,
         has_boss_shield: false,
         has_force_character_attack_type: false,
         has_both_hp_decrease: false,
         has_shuffle_ss: false,
         has_permuted_ss: false,
+        boss_skill_activated: false,
         took_damage: false,
         has_strong_effect: false,
         has_freeze_effect: false,
@@ -685,11 +813,13 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         challenge_start_time: new Date(),
         consecutive_corrects: 0,
         consecutive_wrongs: 0,
+        wrong_challenges_count: 0,
         has_reversed_curse: false,
         has_boss_shield: false,
         has_force_character_attack_type: false,
         has_both_hp_decrease: false,
         has_permuted_ss: false,
+        boss_skill_activated: false,
         has_shuffle_ss: false,
         took_damage: false,
         has_strong_effect: false,
@@ -804,6 +934,50 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       }
   }
 
+  const heroSS = getHeroSpecialSkillInfo(
+    character.character_name,
+    progress.consecutive_corrects
+  );
+  const bossSS = getBossSpecialSkillInfo(
+    enemy.enemy_name,
+    null,
+    progress.consecutive_wrongs
+  );
+
+  const dialogue = await prisma.dialogue.findMany({
+    where: {
+      level_id: level.level_id,
+    },
+    orderBy: {
+      dialogue_id: "asc",
+    },
+  });
+
+  const transformedDialogue = dialogue.map((d) => {
+    let micomiText = d.micomi_line || null;
+    if (micomiText) {
+      micomiText = micomiText
+        .replace(/{character_name}/g, character.character_name)
+        .replace(/{enemy_name}/g, enemy.enemy_name);
+    }
+
+    let enemyText = d.enemy_line || null;
+    if (enemyText) {
+      enemyText = enemyText
+        .replace(/{character_name}/g, character.character_name)
+        .replace(/{enemy_name}/g, enemy.enemy_name);
+    }
+
+    return {
+      dialogue_id: d.dialogue_id,
+      level_id: d.level_id,
+      micomi_avatar: micomiText ? MICOMI_AVATAR || null : null,
+      Micomi: micomiText,
+      enemy_avatar: enemyText ? enemy.avatar_enemy || null : null,
+      [enemy.enemy_name]: enemyText,
+    };
+  });
+
   return {
     level: {
       level_id: level.level_id,
@@ -824,6 +998,12 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       enemy_hurt: enemy.enemy_hurt,
       enemy_dies: enemy.enemy_dies,
       enemy_avatar: enemy.avatar_enemy,
+      special_skill: {
+        special_skill_image: bossSS.special_skill_image,
+        streak: progress.consecutive_wrongs,
+        special_skill_description: bossSS.special_skill_description,
+        ss_type: bossSS.ss_type,
+      },
     },
     character: {
       character_id: character.character_id,
@@ -839,12 +1019,18 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       character_is_range: character.is_range,
       character_attack_pose: character.attack_pose,
       character_range_attack: character.range_attacks,
+      special_skill: {
+        special_skill_image: heroSS.special_skill_image,
+        streak: progress.consecutive_corrects,
+        special_skill_description: heroSS.special_skill_description,
+      },
     },
     card: {
       card_type,
       character_attack_card,
       character_damage_card,
     },
+    dialogue: transformedDialogue,
     currentChallenge: firstChallenge,
     energy: energyStatus.energy,
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
@@ -854,6 +1040,8 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     versus_background: versus_background,
     versus_audio: versus_background_audio,
     gameplay_audio: gameplay_audio,
+    boss_skill_activated: progress.boss_skill_activated,
+    isEnemyFrozen: progress.has_freeze_effect,
   };
 };
 
@@ -907,11 +1095,13 @@ export const unlockNextLevel = async (
         total_exp_points_earned: 0,
         consecutive_corrects: 0,
         consecutive_wrongs: 0,
+        wrong_challenges_count: 0,
         has_reversed_curse: false,
         has_boss_shield: false,
         has_force_character_attack_type: false,
         has_both_hp_decrease: false,
         has_permuted_ss: false,
+        boss_skill_activated: false,
         has_shuffle_ss: false,
         took_damage: false,
         has_strong_effect: false,
@@ -965,11 +1155,13 @@ export const unlockNextLevel = async (
             total_exp_points_earned: 0,
             consecutive_corrects: 0,
             consecutive_wrongs: 0,
+            wrong_challenges_count: 0,
             has_reversed_curse: false,
             has_boss_shield: false,
             has_force_character_attack_type: false,
             has_both_hp_decrease: false,
             has_permuted_ss: false,
+            boss_skill_activated: false,
             has_shuffle_ss: false,
             took_damage: false,
             has_strong_effect: false,
@@ -1036,11 +1228,13 @@ export const unlockNextLevel = async (
         total_exp_points_earned: 0,
         consecutive_corrects: 0,
         consecutive_wrongs: 0,
+        wrong_challenges_count: 0,
         has_reversed_curse: false,
         has_boss_shield: false,
         has_force_character_attack_type: false,
         has_both_hp_decrease: false,
         has_permuted_ss: false,
+        boss_skill_activated: false,
         has_shuffle_ss: false,
         took_damage: false,
         has_strong_effect: false,
@@ -1144,11 +1338,13 @@ export const completeLevelDone = async (playerId: number, levelId: number) => {
       player_answer: {},
       consecutive_corrects: 0,
       consecutive_wrongs: 0,
+      wrong_challenges_count: 0,
       has_reversed_curse: false,
       has_boss_shield: false,
       has_force_character_attack_type: false,
       has_both_hp_decrease: false,
       has_permuted_ss: false,
+      boss_skill_activated: false,
       has_shuffle_ss: false,
       took_damage: false,
       has_strong_effect: false,

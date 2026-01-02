@@ -74,9 +74,12 @@ export async function updateProgressForChallenge(
     attempts: { increment: 1 },
   };
 
+  let bossSkillActivated = false;
+
   if (isCorrect) {
     wrongChallenges = wrongChallenges.filter((id) => id !== challengeId);
     consecutiveCorrects += 1;
+    consecutiveWrongs = 0;
 
     const coinsToAdd =
       isBonusRound && characterDamage
@@ -91,6 +94,7 @@ export async function updateProgressForChallenge(
       total_exp_points_earned: { increment: challenge.points_reward },
       consecutive_corrects: consecutiveCorrects,
       consecutive_wrongs: consecutiveWrongs,
+      boss_skill_activated: false,
     };
   } else {
     if (!wrongChallenges.includes(challengeId)) {
@@ -108,6 +112,8 @@ export async function updateProgressForChallenge(
       const enemy = level.enemy;
 
       if (!wasAnySsActive && consecutiveWrongs % 3 == 0) {
+        bossSkillActivated = true;
+
         const enemyName = enemy && enemy.enemy_name;
 
         switch (enemyName) {
@@ -148,6 +154,8 @@ export async function updateProgressForChallenge(
             );
             break;
         }
+      } else {
+        bossSkillActivated = false;
       }
     }
 
@@ -156,6 +164,7 @@ export async function updateProgressForChallenge(
       wrong_challenges: wrongChallenges,
       consecutive_corrects: consecutiveCorrects,
       consecutive_wrongs: consecutiveWrongs,
+      boss_skill_activated: bossSkillActivated,
     };
   }
 

@@ -251,6 +251,7 @@ export const usePotion = async (
   let dynamicMessage = "Potion activated!";
   let audioResponse: string[] = [];
   let usePotionAudio: string = "";
+  let use_potion_effect: string = "";
 
   let nextChallengeForHint: any = null;
 
@@ -268,6 +269,8 @@ export const usePotion = async (
         ];
         usePotionAudio =
           "https://micomi-assets.me/Sounds/Final/All%20Potions.wav";
+        use_potion_effect =
+          "https://micomi-assets.me/Icons/Potions/Strongeffect.png";
       } else {
         dynamicMessage = `${character.character_name} already empowered—no extra surge!`;
       }
@@ -281,6 +284,8 @@ export const usePotion = async (
         ];
         usePotionAudio =
           "https://micomi-assets.me/Sounds/Final/All%20Potions.wav";
+        use_potion_effect =
+          "https://micomi-assets.me/Icons/Potions/Iceeffect.png";
         console.log(
           `Freeze effect activated (only once): Next enemy attack nullified.`
         );
@@ -296,7 +301,8 @@ export const usePotion = async (
       ];
       usePotionAudio =
         "https://micomi-assets.me/Sounds/Final/All%20Potions.wav";
-
+      use_potion_effect =
+        "https://micomi-assets.me/Icons/Potions/Healeffect.png";
       break;
     case "Reveal":
       console.log(`Hint potion consumed for challenge ${challengeId}`);
@@ -379,6 +385,8 @@ export const usePotion = async (
       ];
       usePotionAudio =
         "https://micomi-assets.me/Sounds/Final/All%20Potions.wav";
+      use_potion_effect =
+        "https://micomi-assets.me/Icons/Potions/Hinteffect.png";
       break;
     default:
       throw new Error(`Unknown potion type: ${potionType}`);
@@ -534,6 +542,7 @@ export const usePotion = async (
     nextChallenge: finalNextChallenge,
     audio: audioResponse,
     use_potion_audio: usePotionAudio,
+    use_potion_effect,
     levelStatus,
     completionRewards,
     nextLevel,

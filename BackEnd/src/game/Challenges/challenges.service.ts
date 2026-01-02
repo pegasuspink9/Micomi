@@ -359,6 +359,7 @@ export const submitChallengeService = async (
         total_exp_points_earned: 0,
         consecutive_corrects: 0,
         consecutive_wrongs: 0,
+        wrong_challenges_count: 0,
         has_reversed_curse: false,
         has_boss_shield: false,
         has_force_character_attack_type: false,
@@ -725,11 +726,11 @@ export const submitChallengeService = async (
       switch (type) {
         case "special_attack":
           character_attack_audio =
-            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Ult.wav";
+            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Ult.mp3";
           break;
         case "third_attack":
           character_attack_audio =
-            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Special.wav";
+            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Special.mp3";
           break;
         case "second_attack":
           character_attack_audio =
@@ -885,7 +886,7 @@ export const submitChallengeService = async (
   let stars: number | undefined = undefined;
 
   if (allCompleted || playerLost) {
-    const wrongCount = freshProgress!.consecutive_wrongs;
+    const wrongCount = wrongChallengesArr.length;
     const wasInBonusRound =
       freshProgress!.enemy_hp <= 0 && freshProgress!.player_hp > 0;
 
@@ -928,6 +929,7 @@ export const submitChallengeService = async (
           total_exp_points_earned: 0,
           consecutive_corrects: 0,
           consecutive_wrongs: 0,
+          wrong_challenges_count: 0,
           has_strong_effect: false,
           has_freeze_effect: false,
           has_reversed_curse: false,
@@ -1117,7 +1119,7 @@ export const submitChallengeService = async (
 
   const isLastRemainingChallenge = currentAnsweredCount + 1 === totalChallenges;
 
-  const hasConsecutiveWrongs = updatedProgress.consecutive_wrongs > 0;
+  const hasWrongCounts = updatedProgress.wrong_challenges_count > 0;
 
   if (nextChallenge) {
     const isRetryOfWrong = updatedWrongChallenges.includes(
@@ -1131,7 +1133,7 @@ export const submitChallengeService = async (
         character.character_name === "Leon" ||
         character.character_name === "ShiShi" ||
         character.character_name === "Ryron") &&
-      updatedProgress.consecutive_corrects === 3
+      updatedProgress.consecutive_corrects === 2
     ) {
       attackType = "special_attack";
 
@@ -1166,11 +1168,7 @@ export const submitChallengeService = async (
       character_attack_card = cardInfo.character_attack_card;
     } else if (isLastRemaining && isNewBonusRound) {
       attackType = "special_attack";
-    } else if (
-      isLastRemainingChallenge &&
-      hasConsecutiveWrongs &&
-      isNewBonusRound
-    ) {
+    } else if (isLastRemainingChallenge && hasWrongCounts && isNewBonusRound) {
       attackType = "third_attack";
     } else if (nextCorrectAnswerLength >= 8) {
       attackType = "third_attack";
@@ -1186,7 +1184,7 @@ export const submitChallengeService = async (
           character.character_name === "Leon" ||
           character.character_name === "ShiShi" ||
           character.character_name === "Ryron") &&
-        updatedProgress.consecutive_corrects === 3 &&
+        updatedProgress.consecutive_corrects === 2 &&
         !isRetryOfWrong
       )
     ) {
