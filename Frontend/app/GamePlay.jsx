@@ -272,7 +272,7 @@ export default function GamePlay() {
       setActiveGameTab('code');
       setSelectedBlankIndex(0);
     }
-  }, [currentChallenge?.id, maxAnswers, gameState?.attemptId]); 
+  }, [currentChallenge?.id, maxAnswers, gameState?.attemptId]);   
 
   useEffect(() => {
     if (currentChallenge && !loading && !animationsLoading && !hasShownVSModalRef.current) {
@@ -842,6 +842,7 @@ export default function GamePlay() {
               setThirdGridHeight={setThirdGridHeight}
               usePotion={usePotion}
               cardImageUrl={characterAttackCard}
+              cardDamage={characterDamageCard}
               cardDisplaySequence={cardDisplaySequence}
               canProceed={canProceed}
               onProceed={handleProceed}

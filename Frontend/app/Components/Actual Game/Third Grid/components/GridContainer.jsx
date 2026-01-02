@@ -26,6 +26,7 @@ const GridContainer = ({
   isInRunMode = false,
   fadeOutAnim = null,
   isSpecialAttack = false,
+  cardDamage = null,
 }) => {
   const [imageSource, setImageSource] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -144,14 +145,21 @@ const GridContainer = ({
         isProceedMode && styles.thirdGridProceed
       ]}>
       
-        {imageSource && showCardInGrid && !isProceedMode && (
-          <Animated.Image
-            source={imageSource}
-            style={[styles.cardImageInGrid, animatedStyle]}
-            onLoadStart={() => setLoading(true)}
-            onLoadEnd={() => setLoading(false)}
-            resizeMode="contain"
-          />
+          {imageSource && showCardInGrid && !isProceedMode && (
+          <Animated.View style={[styles.cardImageInGrid, animatedStyle]}>
+            <Image
+              source={imageSource}
+              style={styles.imageInGrid}
+              onLoadStart={() => setLoading(true)}
+              onLoadEnd={() => setLoading(false)}
+              resizeMode="contain"
+            />
+            {cardDamage && (
+              <View style={styles.damageOverlay}>
+                <Text style={styles.damageText}>+{cardDamage}</Text>
+              </View>
+            )}
+          </Animated.View>
         )}
 
         {loading && showCardInGrid && !isProceedMode && (
@@ -330,6 +338,27 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: hp(-8),
     right: wp(2),
+  },
+
+  imageInGrid: {
+    width: '100%',
+    height: '100%',
+  },
+  damageOverlay: {
+    position: 'absolute',
+    top: scale(31),
+    right: scale(10),
+    borderRadius: scale(50),
+    paddingHorizontal: scale(4),
+    paddingVertical: scale(2),
+  },
+  damageText: {
+    color: '#ffffffcf',
+    textShadowColor: 'rgba(0, 0, 0, 1)',
+    textShadowOffset: { width: scale(1), height: scale(1) },
+    textShadowRadius: scale(2),
+    fontSize: scale(8),
+    fontFamily: 'Grobold',
   },
    
   loaderInGrid: {

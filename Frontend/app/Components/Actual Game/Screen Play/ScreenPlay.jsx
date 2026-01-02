@@ -14,6 +14,7 @@ import FadeOutWrapper from './FadeOutWrapper/FadeOutWrapper';
 import PauseButton from './Pauses/PauseButton';
 import { gameScale } from '../../Responsiveness/gameResponsive';
 import BonusRoundModal from './components/BonusRoundModal'; 
+import SpecialSkillIcon from './components/SpecialSkillIcon';
 
 const ScreenPlay = ({ 
   gameState,
@@ -104,6 +105,27 @@ const ScreenPlay = ({
            gameState.selectedCharacter?.character_name ?? 
            '';
   }, [gameState.submissionResult, gameState.selectedCharacter]);
+
+     const characterSpecialSkill = useMemo(() => {
+    const skill = gameState.submissionResult?.fightResult?.character?.special_skill ??
+                 gameState.selectedCharacter?.special_skill;
+    if (!skill) return null;
+    return {
+      ...skill,
+      special_skill_image: require("../Screen Play/components/specialIcon.png") // Static image override
+    };
+  }, [gameState]);
+
+  const enemySpecialSkill = useMemo(() => {
+    const skill = gameState.submissionResult?.fightResult?.enemy?.special_skill ??
+                 gameState.enemy?.special_skill;
+    if (!skill) return null;
+    return {
+      ...skill,
+      special_skill_image: require("../Screen Play/components/specialIcon.png") // Static image override
+    };
+  }, [gameState]);
+
 
   const characterAnimations = useMemo(() => {
     const base = gameState.selectedCharacter;
@@ -683,24 +705,15 @@ useEffect(() => {
           trigger={submissionSeq}
         />
 
-                {enemyAttackType === 'special attack' && (
-          <View style={{ 
-            position: 'absolute', 
-            top: gameScale(65), 
-            left: gameScale(10),
-            backgroundColor: 'rgba(255, 0, 0, 0.8)',
-            paddingHorizontal: gameScale(8),
-            paddingVertical: gameScale(2),
-            borderRadius: gameScale(4),
-            borderWidth: 1,
-            borderColor: 'white',
-            zIndex: 1000
-          }}>
-            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: gameScale(10), fontFamily: 'DynaPuff' }}>
-              SPECIAL ATTACK!
-            </Text>
-          </View>
+        {characterSpecialSkill && (
+          <SpecialSkillIcon 
+            image={characterSpecialSkill.special_skill_image}
+            description={characterSpecialSkill.special_skill_description}
+            position="left"
+            streak={characterSpecialSkill.streak}
+          />
         )}
+
       </FadeOutWrapper>
 
       <FadeOutWrapper fadeOutAnim={fadeOutAnim} isInRunMode={isInRunMode}>
@@ -723,6 +736,15 @@ useEffect(() => {
           startDelay={600}     
           trigger={submissionSeq}
         />
+        
+         {enemySpecialSkill && (
+          <SpecialSkillIcon 
+            image={enemySpecialSkill.special_skill_image}
+            description={enemySpecialSkill.special_skill_description}
+            position="right"
+            streak={enemySpecialSkill.streak}
+          />
+        )}
       </FadeOutWrapper>
       
       <Damage

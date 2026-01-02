@@ -39,6 +39,7 @@ const ThirdGrid = ({
   selectedBlankIndex = 0, 
   usePotion,
   cardImageUrl,
+  cardDamage,
   cardDisplaySequence,
   canProceed = false,
   onProceed = null,
@@ -205,6 +206,7 @@ const ThirdGrid = ({
       showCardInGrid={cardDisplaySequence === 'grid'}
       isProceedMode={canProceed && !isLevelComplete}
       onProceed={onProceed}
+      cardDamage={cardDamage}
       isLevelComplete={isLevelComplete} 
       showRunButton={showRunButton}
       onRetry={onRetry} 
@@ -333,6 +335,7 @@ export default React.memo(ThirdGrid, (prev, next) => {
       prev.usingPotion === next.usingPotion &&
       prev.isLevelComplete === next.isLevelComplete &&
       prev.cardImageUrl === next.cardImageUrl &&
+      prev.cardDamage === next.cardDamage &&
       prev.cardDisplaySequence === next.cardDisplaySequence
     );
 });

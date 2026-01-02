@@ -152,6 +152,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         enemy_dies: data.enemy?.enemy_dies || responseData.enemy?.enemy_dies || null,
         enemy_avatar: data.enemy?.enemy_avatar || responseData.enemy?.enemy_avatar || null, 
         enemy_attack_type: data.enemy?.enemy_attack_type || responseData.enemy?.enemy_attack_type || null,
+        special_skill: data.enemy?.special_skill || responseData.enemy?.special_skill || null,
       },
 
       avatar: {
@@ -172,6 +173,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         character_hurt: data.character?.character_hurt || responseData.character?.character_hurt || null,
         character_dies: data.character?.character_dies || responseData.character?.character_dies || null,
         character_avatar: data.character?.character_avatar || responseData.character?.character_avatar || null,
+        special_skill: data.character?.special_skill || responseData.character?.special_skill || null,
       },
       
       energy: data.energy || responseData.energy || 0,
@@ -345,6 +347,11 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
       if (responseData.fightResult?.character?.character_health !== undefined) {
         gameState.selectedCharacter.current_health = responseData.fightResult.character.character_health;
       }
+
+      if (responseData.fightResult?.character?.special_skill) {
+        gameState.selectedCharacter.special_skill = responseData.fightResult.character.special_skill;
+      }
+
       if (responseData.fightResult?.character?.character_max_health) {
         gameState.selectedCharacter.max_health = responseData.fightResult.character.character_max_health;
       }
@@ -357,6 +364,12 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
       if (responseData.fightResult?.enemy?.enemy_health !== undefined) {
         gameState.enemy.enemy_health = responseData.fightResult.enemy.enemy_health;
       }
+
+      if (responseData.fightResult?.enemy?.special_skill) {
+        gameState.enemy.special_skill = responseData.fightResult.enemy.special_skill;
+      }
+
+
       if (responseData.fightResult?.enemy?.enemy_max_health) {
         gameState.enemy.enemy_max_health = responseData.fightResult.enemy.enemy_max_health;
       }
