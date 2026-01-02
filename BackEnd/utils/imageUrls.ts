@@ -576,4 +576,7 @@ export const imagesUrls = [
   "https://micomi-assets.me/Icons/Potions/Iceeffect.png",
   "https://micomi-assets.me/Icons/Potions/Healeffect.png",
   "https://micomi-assets.me/Icons/Potions/Hinteffect.png",
+
+  //Micomi Avatar
+  "https://micomi-assets.me/Hero%20Portraits/Micomi.png",
 ];

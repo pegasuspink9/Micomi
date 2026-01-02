@@ -396,6 +396,8 @@ function getBossSpecialSkillInfo(
   };
 }
 
+const MICOMI_AVATAR = "https://micomi-assets.me/Hero%20Portraits/Micomi.png";
+
 export const enterLevel = async (playerId: number, levelId: number) => {
   const level:
     | (Level & {
@@ -413,6 +415,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       lessons: true,
       potionShopByLevel: true,
       enemy: true,
+      dialogue: true,
     },
   });
 
@@ -941,6 +944,40 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     progress.consecutive_wrongs
   );
 
+  const dialogue = await prisma.dialogue.findMany({
+    where: {
+      level_id: level.level_id,
+    },
+    orderBy: {
+      dialogue_id: "asc",
+    },
+  });
+
+  const transformedDialogue = dialogue.map((d) => {
+    let micomiText = d.micomi_line || null;
+    if (micomiText) {
+      micomiText = micomiText
+        .replace(/{character_name}/g, character.character_name)
+        .replace(/{enemy_name}/g, enemy.enemy_name);
+    }
+
+    let enemyText = d.enemy_line || null;
+    if (enemyText) {
+      enemyText = enemyText
+        .replace(/{character_name}/g, character.character_name)
+        .replace(/{enemy_name}/g, enemy.enemy_name);
+    }
+
+    return {
+      dialogue_id: d.dialogue_id,
+      level_id: d.level_id,
+      micomi_avatar: micomiText ? MICOMI_AVATAR || null : null,
+      Micomi: micomiText,
+      enemy_avatar: enemyText ? enemy.avatar_enemy || null : null,
+      [enemy.enemy_name]: enemyText,
+    };
+  });
+
   return {
     level: {
       level_id: level.level_id,
@@ -993,6 +1030,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       character_attack_card,
       character_damage_card,
     },
+    dialogue: transformedDialogue,
     currentChallenge: firstChallenge,
     energy: energyStatus.energy,
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,

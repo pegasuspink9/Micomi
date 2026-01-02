@@ -17,6 +17,7 @@ import gameRoutes from "./game/routes/game.routes";
 import lessonRoutes from "./models/Lesson/lesson.routes";
 import questRoutes from "./models/Quest/quest.routes";
 import levelPotionShopRoutes from "./models/Potion Shop by Level/levelPotionShop.routes";
+import dialogueRoutes from "./models/Dialogue/dialogue.routes";
 import authRoutes from "../middleware/auth.routes";
 import { getAllPlayerProgress } from "../src/models/Player/playerProgress.service";
 
@@ -54,6 +55,7 @@ app.use("/shop", shopRoutes);
 app.use("/lesson", lessonRoutes);
 app.use("/quest", questRoutes);
 app.use("/level-potion-shop", levelPotionShopRoutes);
+app.use("/dialogue", dialogueRoutes);
 app.use("/game", gameRoutes);
 
 //temporary
