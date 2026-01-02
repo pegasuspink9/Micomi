@@ -83,6 +83,41 @@ const EnemyCharacter = ({
     onAnimationCompleteRef.current = onAnimationComplete;
   }, [onAnimationComplete]);
 
+  const animationConfig = useMemo(() => {
+    const configs = {
+      idle: {
+        url: characterAnimations.character_idle || characterAnimations.idle,
+        shouldLoop: true,
+        isCompound: false,
+      },
+      attack: {
+        runUrl: characterAnimations.character_run || characterAnimations.run,
+        attackUrl: Array.isArray(characterAnimations.character_attack)
+          ? characterAnimations.character_attack.filter(url => url && typeof url === 'string')[0]
+          : characterAnimations.character_attack,
+        shouldLoop: false,
+        isCompound: true,
+      },
+      hurt: {
+        url: characterAnimations.character_hurt || characterAnimations.hurt,
+        shouldLoop: isBonusRound && fightStatus !== 'won',
+        isCompound: false,
+      },
+      run: {
+        url: characterAnimations.character_run || characterAnimations.run,
+        shouldLoop: true,
+        isCompound: false,
+      },
+      dies: {
+        url: characterAnimations.character_dies || characterAnimations.dies,
+        shouldLoop: false,
+        isCompound: false,
+      },
+    };
+    return configs[currentState] || configs.idle;
+  }, [currentState, characterAnimations, isBonusRound, fightStatus]);
+
+
   // FIX: Helper function to check if ANY URL is cached (synchronous)
   const isUrlCached = useCallback((url) => {
     if (!url) return false;
@@ -122,6 +157,21 @@ const EnemyCharacter = ({
   }, [allAnimationUrls, isUrlCached]);
 
   const [currentAnimationUrl, setCurrentAnimationUrl] = useState(initialUrl);
+
+   useEffect(() => {
+    const targetUrl = animationConfig.isCompound ? animationConfig.runUrl : animationConfig.url;
+    if (targetUrl && currentAnimationUrl !== targetUrl) {
+      setCurrentAnimationUrl(targetUrl);
+    }
+  }, [animationConfig.url, animationConfig.runUrl, animationConfig.isCompound]);
+
+
+    useEffect(() => {
+    if (currentState !== 'hurt') {
+      blinkOpacity.value = 0;
+    }
+  }, [currentState]);
+
   // FIX: Set imageReady to true if ALL animations are cached
   const [imageReady, setImageReady] = useState(allAnimationsCached || isUrlCached(initialUrl));
   const [preloadedImages] = useState(new Map());
@@ -171,40 +221,7 @@ const EnemyCharacter = ({
   else if (currentState === 'idle') wasBonusRound.current = false;
 
   // ========== Animation Configuration Logic ==========
-  const animationConfig = useMemo(() => {
-    const configs = {
-      idle: {
-        url: characterAnimations.character_idle || characterAnimations.idle,
-        shouldLoop: true,
-        isCompound: false,
-      },
-      attack: {
-        runUrl: characterAnimations.character_run || characterAnimations.run,
-        attackUrl: Array.isArray(characterAnimations.character_attack)
-          ? characterAnimations.character_attack.filter(url => url && typeof url === 'string')[0]
-          : characterAnimations.character_attack,
-        shouldLoop: false,
-        isCompound: true,
-      },
-      hurt: {
-        url: characterAnimations.character_hurt || characterAnimations.hurt,
-        shouldLoop: isBonusRound && fightStatus !== 'won',
-        isCompound: false,
-      },
-      run: {
-        url: characterAnimations.character_run || characterAnimations.run,
-        shouldLoop: true,
-        isCompound: false,
-      },
-      dies: {
-        url: characterAnimations.character_dies || characterAnimations.dies,
-        shouldLoop: false,
-        isCompound: false,
-      },
-    };
-    return configs[currentState] || configs.idle;
-  }, [currentState, characterAnimations, isBonusRound, fightStatus]);
-
+  
   // ========== Image Preloading ==========
   useEffect(() => {
     if (!currentAnimationUrl) return;
@@ -417,11 +434,12 @@ const EnemyCharacter = ({
               style={styles.spriteImage}
               contentFit="cover"
               cachePolicy="disk"
+              transition={0}
             />
           ) : (
             <View style={[styles.spriteImage, { backgroundColor: 'transparent' }]} />
           )}
-          {currentAnimationUrl && (
+          {currentAnimationUrl && currentState === 'hurt' && (
             <Animated.View style={[StyleSheet.absoluteFill, redFlashStyle]}>
               <Image
                 source={{ uri: currentAnimationUrl }}
@@ -459,4 +477,15 @@ const styles = StyleSheet.create({
   },
 });
 
-export default EnemyCharacter;
+
+export default React.memo(EnemyCharacter, (prev, next) => {
+  return (
+    prev.currentState === next.currentState &&
+    prev.isPaused === next.isPaused &&
+    prev.isAttacking === next.isAttacking &&
+    prev.isBonusRound === next.isBonusRound &&
+    prev.fightStatus === next.fightStatus &&
+    JSON.stringify(prev.characterAnimations) === JSON.stringify(next.characterAnimations)
+  );
+});
+
