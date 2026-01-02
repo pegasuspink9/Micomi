@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   iconBackground: {
-    opacity: 0.6,
+    opacity: 0.3,
   },
   fillContainer: {
     position: 'absolute',
@@ -192,6 +192,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 2,
+    borderWidth: 1,
     bottom: 0,
   },
   circularRunner: {

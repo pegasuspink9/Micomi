@@ -27,6 +27,7 @@ const ScreenPlay = ({
   isMessageVisible,
   messageText,
   onPausePress = null,
+  setBorderColor
 }) => {
   const [attackingEnemies] = useState(new Set());
   const [totalCoins, setTotalCoins] = useState(0);
@@ -654,7 +655,7 @@ useEffect(() => {
   //  DEPENDENCY FIX: Re-calculate whenever fight result enemy or base enemy data changes.
   }, [gameState.submissionResult?.fightResult?.enemy, gameState.enemy]);
   return (
-    <GameContainer borderColor={borderColor}>
+    <GameContainer borderColor={borderColor}   setBorderColor={setBorderColor}>
       <GameBackground isPaused={isPaused} combatBackground={combatBackground}>
         <DogCharacter 
           isPaused={isPaused} 

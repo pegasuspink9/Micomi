@@ -248,7 +248,7 @@ const Life = ({
                       isEnemy && position === 'right' && { 
                         transform: [{ translateX: gameScale(-20) }],
                         width: gameScale(85),
-                        marginTop: gameScale(-5),  // Adjust margin top as needed (positive values move it down)
+                        marginTop: gameScale(-10),  // Adjust margin top as needed (positive values move it down)
                       }
                     ]}
                     resizeMode="cover"

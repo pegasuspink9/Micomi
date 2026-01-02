@@ -1,19 +1,97 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { gameScale } from '../../../Responsiveness/gameResponsive';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming, 
+  withDelay, 
+  runOnJS,   
+  Easing, 
+  cancelAnimation
+} from 'react-native-reanimated'; 
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+// Pre-calculate the scale factor once to use inside the animation worklet
+const GS_FACTOR = gameScale(100) / 100;
 
-const GameContainer = ({ children, borderColor }) => {
+const CollisionOverlay = ({ color, onReset }) => {
+  const progress = useSharedValue(0);
+  const [displayColor, setDisplayColor] = useState('transparent');
+
+  useEffect(() => {
+    cancelAnimation(progress);
+    
+    if (color && color !== 'white' && color !== 'transparent') {
+      progress.value = 0;
+
+      let newColor = color;
+      if (color === 'correct') newColor = '#08ce29ff';
+      else if (color === 'incorrect') newColor = '#c01300ff';
+      
+      setDisplayColor(newColor);
+      
+      // 3. Start the animation with a tiny delay to ensure displayColor is ready
+      progress.value = withDelay(50, withTiming(1, { 
+        duration: 600, 
+        easing: Easing.out(Easing.back(1.5)) 
+      }, (finished) => {
+        if (finished) {
+          progress.value = withDelay(3000, withTiming(0, { duration: 200 }, (done) => {
+            if (done) {
+              // 4. Clear the color state when finished to prevent "ghosting" next time
+              runOnJS(setDisplayColor)('transparent');
+              if (onReset) {
+                runOnJS(onReset)();
+              }
+            }
+          }));
+        }
+      }));
+    }
+  }, [color]);
+
+  const animatedGlowStyle = useAnimatedStyle(() => {
+    const glowIntensity = progress.value;
+    return {
+      height: `${progress.value * 50}%`,
+      borderColor: displayColor,
+      opacity: progress.value > 0.001 ? 1 : 0,
+      borderWidth: (6 + progress.value * 3) * GS_FACTOR,
+      shadowColor: displayColor,
+      shadowOpacity: glowIntensity * 1,
+      shadowRadius: glowIntensity * 25
+    };
+  });
+
+  return (
+    <>
+      <Animated.View 
+        style={[styles.collisionBase, styles.collisionTop, animatedGlowStyle]} 
+        pointerEvents="none" 
+      />
+      <Animated.View 
+        style={[styles.collisionBase, styles.collisionBottom, animatedGlowStyle]} 
+        pointerEvents="none" 
+      />
+    </>
+  );
+};
+
+const GameContainer = ({ children, borderColor, setBorderColor }) => {
   return (
     <View style={styles.outerFrame}>
-      {/* 3-Layer Cabinet Border */}
       <View style={styles.containerBorderOuter}>
         <View style={styles.containerBorderMiddle}>
           <View style={styles.containerBorderInner}>
-            <View style={[styles.innerBorderContainer, { borderColor }]}>
-              {/* 3-Layer Content Border */}
+            
+            <CollisionOverlay 
+              color={borderColor} 
+              onReset={() => setBorderColor && setBorderColor('white')} 
+            />
+
+            <View style={styles.innerBorderContainer}>
               <View style={styles.contentBorderOuter}>
                 <View style={styles.contentBorderMiddle}>
                   <View style={styles.contentBorderInner}>
@@ -61,29 +139,51 @@ const styles = StyleSheet.create({
     borderBottomColor: '#2c75c3ff',
     borderRightColor: '#2c75c3ff',
   },
-  containerBorderInner: {
+    containerBorderInner: {
     flex: 1,
     backgroundColor: 'rgba(74, 144, 217, 0.15)',
     borderRadius: gameScale(14),
     padding: gameScale(4),
     borderWidth: gameScale(1),
     borderColor: 'rgba(74, 144, 217, 0.3)',
+    position: 'relative', // Ensure children can use absolute positioning
   },
-  innerBorderContainer: {
+    collisionBase: {
+    position: 'absolute',
+    left: gameScale(4),
+    right: gameScale(4),
+    borderWidth: gameScale(6),
+    backgroundColor: 'transparent',
+    zIndex: 9999,
+  },
+    collisionTop: {
+    top: gameScale(4),
+    borderTopLeftRadius: gameScale(31),
+    borderTopRightRadius: gameScale(31),
+    borderBottomWidth: 0, // Don't show border where they meet
+  },
+  collisionBottom: {
+    bottom: gameScale(4),
+    borderBottomLeftRadius: gameScale(31),
+    borderBottomRightRadius: gameScale(31),
+    borderTopWidth: 0, // Don't show border where they meet
+  },
+    innerBorderContainer: {
     flex: 1,
     borderWidth: gameScale(6),
     overflow: 'hidden',
     borderRadius: gameScale(31),
     position: 'relative',
-    backgroundColor: '#a51010ff',
+    // FIX: Changed from #a51010ff (red) to #152d4a (dark blue) to stop the red flicker
+    backgroundColor: '#152d4a', 
     borderTopWidth: gameScale(6),
     borderTopColor: '#f0f8ffff', 
     borderLeftWidth: gameScale(6),
     borderLeftColor: '#e0f0ffff',
     borderBottomWidth: gameScale(6),
-    borderBottomColor: '#1a4a6aff',
+    borderBottomColor: '#e0f0ffff',
     borderRightWidth: gameScale(6),
-    borderRightColor: '#0a4166ff',
+    borderRightColor: '#e0f0ffff',
   },
   // 3-Layer Content Border (replacing old contentContainer)
   contentBorderOuter: {

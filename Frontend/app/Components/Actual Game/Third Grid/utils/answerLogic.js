@@ -213,7 +213,7 @@ export const createCheckAnswerHandler = (
             const correctAudioUrl = submissionResult.isCorrectAudio;
             
             const onSoundStart = () => {
-              setBorderColor(isCorrect ? 'green' : 'red');
+              setBorderColor(isCorrect ? 'correct' : 'incorrect');
 
               if (!isCorrect) {
                 console.log('📳 VIBRATION ATTEMPTED - If your phone settings are correct, it should vibrate now.');
@@ -262,12 +262,12 @@ export const createCheckAnswerHandler = (
             }
           } else {
             console.error('❌ No submission result found in updated game state');
-            setBorderColor('red');
+            setBorderColor('incorrect');
           }
         } else {
           // Handle submission error
           console.error('❌ Failed to submit answer:', result.error);
-          setBorderColor('red');
+          setBorderColor('incorrect');
           
           // Set error state
           if (setCorrectAnswerRef && setCorrectAnswerRef.current) {
@@ -276,7 +276,7 @@ export const createCheckAnswerHandler = (
         }
       } catch (error) {
         const isCorrect = checkAnswer(currentQuestion, actualAnswers); 
-        setBorderColor(isCorrect ? 'green' : 'red');
+        setBorderColor(isCorrect ? 'correct' : 'incorrect');
         
         if (isCorrect && onCorrectAnswer) {
           onCorrectAnswer();
@@ -289,7 +289,7 @@ export const createCheckAnswerHandler = (
     } else {
       // Fallback to local checking if no submit function provided
       const isCorrect = checkAnswer(currentQuestion, selectedAnswers);
-      setBorderColor(isCorrect ? 'green' : 'red');
+      setBorderColor(isCorrect ? 'correct' : 'incorrect');
       
       // NEW: Automatically switch to Output tab on correct answer (local mode)
       if (isCorrect && onCorrectAnswer) {

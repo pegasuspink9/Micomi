@@ -796,6 +796,7 @@ export default function GamePlay() {
                 isMessageVisible={isMessageVisible}
                 messageText={messageText}
                 onPausePress={handlePausePress}
+                setBorderColor={setBorderColor}
               />
             </View>
 
