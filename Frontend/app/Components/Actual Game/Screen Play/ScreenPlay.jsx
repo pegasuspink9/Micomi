@@ -663,7 +663,8 @@ useEffect(() => {
           currentState={characterAnimationState}
           onAnimationComplete={handleCharacterAnimationComplete}
           attackAudioUrl={gameState.submissionResult?.characterAttackAudio}
-          characterName={characterName} 
+          characterName={characterName}
+          potionEffectUrl={gameState.submissionResult?.use_potion_effect}
         />
 
         {enemies.map((enemy, index) => {
