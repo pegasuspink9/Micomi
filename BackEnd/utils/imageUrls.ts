@@ -577,6 +577,12 @@ export const imagesUrls = [
   "https://micomi-assets.me/Icons/Potions/Healeffect.png",
   "https://micomi-assets.me/Icons/Potions/Hinteffect.png",
 
+  //Hero SS Icons
+  "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Gino_SS.png",
+
+  //Boss Darko SS Icons
+  "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossDarko_SS.png",
+
   //Micomi Avatar
   "https://micomi-assets.me/Hero%20Portraits/Micomi.png",
 
