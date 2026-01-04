@@ -195,8 +195,7 @@ const SS_HERO_ICON_CONFIG: Record<
   { special_skill_image: string; special_skill_description: string }
 > = {
   Gino: {
-    special_skill_image:
-      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Gino_SS.png",
+    special_skill_image: "SS icon skill ni Gino",
     special_skill_description:
       "Unleashes a powerful lightning attack and heals 25% HP",
   },
@@ -235,8 +234,7 @@ const SS_BOSS_ICON_CONFIG: Record<
     ss_type: "force_basic_attack",
   },
   "Boss Darco": {
-    special_skill_image:
-      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossDarko_SS.png",
+    special_skill_image: "SS icon skill ni Boss Darco",
     special_skill_description: "Reverses all text in the challenge",
     ss_type: "reverse",
   },
@@ -770,13 +768,8 @@ export const enterLevel = async (playerId: number, levelId: number) => {
   let dialogue: any = [];
   if (level.dialogue.length > 0) {
     const rawScript = level.dialogue[0].script ?? "";
-    const enemyName = enemy.enemy_name;
-    const characterName = character.character_name || "Player";
-    const replacedScript = rawScript
-      .replace(/{enemy_name}/g, enemyName)
-      .replace(/{character_name}/g, characterName);
 
-    const lines = replacedScript
+    const lines = rawScript
       .split("\n")
       .map((l) => l.trim())
       .filter(Boolean);
@@ -797,7 +790,9 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     dialogue = {
       dialogue_id: level.dialogue[0].dialogue_id,
       level_id: level.dialogue[0].level_id,
+      character_name: character.character_name,
       micomi_image: MICOMI_AVATAR,
+      enemy_name: enemy.enemy_name,
       enemy_image: enemy.avatar_enemy ?? "",
       script: scriptArray,
     };
