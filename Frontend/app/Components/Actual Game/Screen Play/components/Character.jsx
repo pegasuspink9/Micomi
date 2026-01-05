@@ -28,6 +28,7 @@ const Character = ({
   onAnimationComplete = null,
   attackAudioUrl = null,
   containerStyle: propContainerStyle,
+  potionEffectUrl = null,
 }) => {
   // ========== Shared Animation Values ==========
   const frameIndex = useSharedValue(0);
