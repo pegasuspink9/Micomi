@@ -13,7 +13,6 @@ export const getAllLevels = async (req: Request, res: Response) => {
         challenges: true,
         playerProgress: true,
         lessons: true,
-        potionShopByLevel: true,
       },
     });
     return successResponse(res, levels, "Fetched all levels");
@@ -32,7 +31,6 @@ export const getLevelById = async (req: Request, res: Response) => {
         challenges: true,
         playerProgress: true,
         lessons: true,
-        potionShopByLevel: true,
       },
     });
 

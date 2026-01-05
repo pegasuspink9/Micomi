@@ -114,7 +114,8 @@ const SS_HERO_ICON_CONFIG: Record<
   { special_skill_image: string; special_skill_description: string }
 > = {
   Gino: {
-    special_skill_image: "SS icon skill ni Gino",
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Gino_SS.png",
     special_skill_description:
       "Unleashes a powerful lightning attack and heals 25% HP",
   },
@@ -147,7 +148,8 @@ const SS_BOSS_ICON_CONFIG: Record<
     special_skill_description: "Forces player to use only basic attacks",
   },
   "Boss Darco": {
-    special_skill_image: "SS icon skill ni Boss Darco",
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossDarko_SS.png",
     special_skill_description: "Reverses all text in the challenge",
   },
   "Boss Scorcharach": {
@@ -757,9 +759,6 @@ export async function fightEnemy(
           damageIndex = 0;
         }
 
-        const baseDamage = damageArray[damageIndex] ?? 10;
-        damage = baseDamage * 2;
-
         character_attack = attacksArray[3] || null;
         character_range_attack = rangeAttacksArray[3] || null;
 
@@ -771,10 +770,6 @@ export async function fightEnemy(
         character_attack_card = cardInfo.character_attack_card;
 
         character_idle = character.avatar_image || null;
-
-        console.log(
-          `- Leon's SS triggered (Boss)! Animation: special_attack, Base Damage: ${baseDamage}, Final 2x Damage: ${damage}`
-        );
       } else if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "ShiShi" &&
@@ -925,7 +920,7 @@ export async function fightEnemy(
         }
 
         const baseDamage = damageArray[damageIndex] ?? 10;
-        damage = baseDamage * 2;
+        damage = baseDamage;
 
         character_attack = attacksArray[3] || null;
         character_range_attack = rangeAttacksArray[3] || null;
@@ -1062,12 +1057,23 @@ export async function fightEnemy(
     console.log("- Paired attack URL:", character_attack);
 
     if (progress.has_strong_effect) {
-      damage *= 2;
-      await prisma.playerProgress.update({
-        where: { progress_id: progress.progress_id },
-        data: { has_strong_effect: false },
-      });
-      console.log("- Strong potion applied, damage doubled");
+      const isLeonSSTurn =
+        character.character_name === "Leon" &&
+        progress.consecutive_corrects === 3 &&
+        character_attack_type === "special_attack";
+
+      if (isLeonSSTurn) {
+        console.log(
+          "- Leon's SS turn: Double damage will apply on NEXT correct answer"
+        );
+      } else {
+        damage *= 2;
+        await prisma.playerProgress.update({
+          where: { progress_id: progress.progress_id },
+          data: { has_strong_effect: false },
+        });
+        console.log("- Leon's passive applied: damage doubled to", damage);
+      }
     }
 
     enemyHealth = Math.max(enemyHealth - damage, 0);
@@ -1818,7 +1824,7 @@ export async function fightBossEnemy(
         }
 
         const baseDamage = damageArray[damageIndex] ?? 10;
-        damage = baseDamage * 2;
+        damage = baseDamage;
 
         character_attack = attacksArray[3] || null;
         character_range_attack = rangeAttacksArray[3] || null;
@@ -1964,13 +1970,25 @@ export async function fightBossEnemy(
     console.log("- Paired attack URL:", character_attack);
 
     if (progress.has_strong_effect) {
-      damage *= 2;
-      await prisma.playerProgress.update({
-        where: { progress_id: progress.progress_id },
-        data: { has_strong_effect: false },
-      });
-      console.log("- Strong potion applied, damage doubled");
+      const isLeonSSTurn =
+        character.character_name === "Leon" &&
+        progress.consecutive_corrects === 3 &&
+        character_attack_type === "special_attack";
+
+      if (isLeonSSTurn) {
+        console.log(
+          "- Leon's SS turn: Double damage will apply on NEXT correct answer"
+        );
+      } else {
+        damage *= 2;
+        await prisma.playerProgress.update({
+          where: { progress_id: progress.progress_id },
+          data: { has_strong_effect: false },
+        });
+      }
     }
+
+    enemyHealth = Math.max(enemyHealth - damage, 0);
 
     if (progress.has_boss_shield) {
       enemy_ss_type = "shield";
