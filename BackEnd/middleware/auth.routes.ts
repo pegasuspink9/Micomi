@@ -1,9 +1,12 @@
 import express from "express";
-import * as AuthController from "../middleware/auth.controller";
+import * as OAuthController from "../middleware/auth.controller";
 
 const router = express.Router();
 
-router.post("/refresh", AuthController.refreshAccessToken);
-router.post("/logout", AuthController.logout);
+// Mobile Google OAuth endpoint
+router.post("/google/mobile", OAuthController.googleMobileAuth);
+
+// Mobile Facebook OAuth endpoint
+router.post("/facebook/mobile", OAuthController.facebookMobileAuth);
 
 export default router;
