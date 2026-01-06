@@ -113,26 +113,21 @@ const ScreenPlay = ({
             'Enemy';
   }, [gameState.submissionResult, gameState.enemy]);
 
-     const characterSpecialSkill = useMemo(() => {
-    const skill = gameState.submissionResult?.fightResult?.character?.special_skill ??
-                 gameState.selectedCharacter?.special_skill;
-    if (!skill) return null;
-    return {
-      ...skill,
-      special_skill_image: require("../Screen Play/components/specialIcon.png") // Static image override
-    };
+  const characterSpecialSkill = useMemo(() => {
+    const skill = gameState.submissionResult?.fightResult?.character?.special_skill ?? gameState.selectedCharacter?.special_skill;
+    if (!skill || !skill.special_skill_image) return null;
+    
+    return skill;
   }, [gameState]);
 
   const enemySpecialSkill = useMemo(() => {
     const skill = gameState.submissionResult?.fightResult?.enemy?.special_skill ??
                  gameState.enemy?.special_skill;
-    if (!skill) return null;
-    return {
-      ...skill,
-      special_skill_image: require("../Screen Play/components/specialIcon.png") // Static image override
-    };
-  }, [gameState]);
+    
+    if (!skill || !skill.special_skill_image) return null;
 
+    return skill;
+  }, [gameState]);
 
   const characterAnimations = useMemo(() => {
     const base = gameState.selectedCharacter;

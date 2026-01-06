@@ -73,6 +73,8 @@ const SpecialSkillIcon = ({ image, description, position = 'left', streak = 0 })
   const themeColor = isRight ? '#ff4d4dff' : '#8ef7f5ff'; 
   const shadowColor = isRight ? '#ff0000ff' : '#62e0d4ff';
 
+  const imageSource = (typeof image === 'string' && image) ? { uri: image } : image;
+
 
   return (
     <View style={[styles.container, position === 'right' ? styles.rightContainer : styles.leftContainer]}>
@@ -106,16 +108,17 @@ const SpecialSkillIcon = ({ image, description, position = 'left', streak = 0 })
           }
         ]}>
           {/* Background Image (Dark/Empty) */}
-          <Image 
-            source={require('./specialIcon.png')} 
+           <Image 
+            source={imageSource} 
             style={[styles.icon, styles.iconBackground]}
             resizeMode="contain"
           />
-          
+
+
           {/* Foreground Image (Colored/Filled) */}
           <Animated.View style={[styles.fillContainer, { height: fillHeight }]}>
             <Image 
-              source={require('./specialIcon.png')} 
+              source={imageSource}
               style={styles.iconForeground}
               resizeMode="contain"
             />

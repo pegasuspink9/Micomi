@@ -267,6 +267,9 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         is_victory_audio: data.is_victory_audio || responseData.is_victory_audio || null,
         is_victory_image: data.is_victory_image || responseData.is_victory_image || null,
 
+        use_potion_effect: data.use_potion_effect || responseData.use_potion_effect || null,
+        use_potion_audio: data.use_potion_audio || responseData.use_potion_audio || null,
+
         // FIX: Use the 'fightResult' variable we extracted above and REMOVE the duplicate key below
         fightResult: fightResult ? {
           status: fightResult.status,
