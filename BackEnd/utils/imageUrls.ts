@@ -592,4 +592,47 @@ export const imagesUrls = [
   "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png",
   //Ice overlay (not used in the backend)
   "https://micomi-assets.me/Icons/Miscellaneous/Ice%20Overlay.png",
+
+  // Enemies Recolored HTML (not yet added in db and used)
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Broodmax/idle.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Broodmax/attack.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Broodmax/death.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Broodmax/hurt.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Broodmax/run.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Broodmax/Broodmax.png",
+
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Carapaceer/idle.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Carapaceer/attack.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Carapaceer/death.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Carapaceer/hurt.png ",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Carapaceer/run.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Carapaceer/Carapaceer.png",
+
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Chitinlurker/idle.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Chitinlurker/attack.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Chitinlurker/death.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Chitinlurker/hurt.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Chitinlurker/run.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Chitinlurker/Chitinlurker.png",
+
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Chitinlurker/idle.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Crawlnyx/attack.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Crawlnyx/death.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Crawlnyx/hurt.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Crawlnyx/run.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Crawlnyx/Crawlnyx.png",
+
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Hexaprodrex/idle.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Hexaprodrex/attack.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Hexaprodrex/death.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Hexaprodrex/hurt.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Hexaprodrex/run.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Hexaprodrex/Hexaprodrex.png",
+
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Mandiblade/idle.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Mandiblade/attack.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Mandiblade/death.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Mandiblade/hurt.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Mandiblade/run.png",
+  // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Mandiblade/Mandiblade.png",
 ];

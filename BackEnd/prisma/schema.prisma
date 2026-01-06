@@ -126,7 +126,9 @@ model Player {
   player_name        String              @unique
   username           String              @unique
   email              String              @unique
-  password           String
+  password           String?
+  google_id          String?             @unique
+  facebook_id        String?             @unique
   total_points       Int                 @default(0)        //point given after completing the level (sum of all points per challenge (only the first won))
   created_at         DateTime            @default(now())    //point given after completing the level plus the exp points from quest
   last_active        DateTime?

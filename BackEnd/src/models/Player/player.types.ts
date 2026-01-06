@@ -4,10 +4,12 @@ export interface PlayerLoginInput {
 }
 
 export interface PlayerCreateInput {
-  email: string;
-  password: string;
-  username: string;
   player_name: string;
+  email: string;
+  username: string;
+  password?: string;
+  google_id?: string;
+  facebook_id?: string;
 }
 
 export interface PlayerUpdateInput {

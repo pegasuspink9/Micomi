@@ -195,7 +195,8 @@ const SS_HERO_ICON_CONFIG: Record<
   { special_skill_image: string; special_skill_description: string }
 > = {
   Gino: {
-    special_skill_image: "SS icon skill ni Gino",
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Gino_SS.png",
     special_skill_description:
       "Unleashes a powerful lightning attack and heals 25% HP",
   },
@@ -234,7 +235,8 @@ const SS_BOSS_ICON_CONFIG: Record<
     ss_type: "force_basic_attack",
   },
   "Boss Darco": {
-    special_skill_image: "SS icon skill ni Boss Darco",
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossDarko_SS.png",
     special_skill_description: "Reverses all text in the challenge",
     ss_type: "reverse",
   },

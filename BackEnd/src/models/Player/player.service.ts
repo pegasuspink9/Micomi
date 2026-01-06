@@ -248,21 +248,8 @@ export const getPlayerProfile = async (player_id: number) => {
   };
 };
 
-export const createPlayer = async (data: PlayerCreateInput) => {
-  const hashedPassword = await hashPassword(data.password);
-
-  const newPlayer = await prisma.player.create({
-    data: {
-      player_name: data.player_name,
-      email: data.email,
-      username: data.username,
-      password: hashedPassword,
-      created_at: new Date(),
-      last_active: new Date(),
-      days_logged_in: 0,
-    },
-  });
-
+// This ensures Google, Facebook, and Email users all start with the exact same setup.
+const initializeNewGameState = async (playerId: number) => {
   const firstLevel = await prisma.level.findFirst({
     orderBy: { level_number: "asc" },
   });
@@ -270,7 +257,7 @@ export const createPlayer = async (data: PlayerCreateInput) => {
   if (firstLevel) {
     await prisma.playerProgress.create({
       data: {
-        player_id: newPlayer.player_id,
+        player_id: playerId,
         level_id: firstLevel.level_id,
         current_level: firstLevel.level_number,
         attempts: 0,
@@ -284,7 +271,7 @@ export const createPlayer = async (data: PlayerCreateInput) => {
 
     await prisma.playerAchievement.create({
       data: {
-        player_id: newPlayer.player_id,
+        player_id: playerId,
         achievement_id: 11,
         is_owned: true,
         is_selected: true,
@@ -292,12 +279,100 @@ export const createPlayer = async (data: PlayerCreateInput) => {
       },
     });
   }
+};
 
-  console.log(
-    `New player ${newPlayer.player_id} created. Quests will be auto-generated.`
-  );
+// --- MODIFIED: Create Player (Generic) ---
+export const createPlayer = async (data: PlayerCreateInput) => {
+  // Only hash password if it exists (it won't exist for OAuth)
+  const finalPassword = data.password
+    ? await hashPassword(data.password)
+    : null;
 
+  const newPlayer = await prisma.player.create({
+    data: {
+      player_name: data.player_name,
+      email: data.email,
+      username: data.username,
+      password: finalPassword,
+      // For OAuth, these might be passed in data, otherwise null
+      google_id: (data as any).google_id || null,
+      facebook_id: (data as any).facebook_id || null,
+      created_at: new Date(),
+      last_active: new Date(),
+      days_logged_in: 0,
+    },
+  });
+
+  // Call the helper
+  await initializeNewGameState(newPlayer.player_id);
+
+  console.log(`New player ${newPlayer.player_id} created.`);
   return newPlayer;
+};
+
+// --- NEW: Handle OAuth Logic (Google/Facebook) ---
+interface OAuthUserParams {
+  provider: "google" | "facebook";
+  providerId: string;
+  email: string;
+  name: string;
+}
+
+export const findOrCreateOAuthPlayer = async ({
+  provider,
+  providerId,
+  email,
+  name,
+}: OAuthUserParams) => {
+  // 1. Check if player exists by the specific provider ID
+  let player = await prisma.player.findUnique({
+    where:
+      provider === "google"
+        ? { google_id: providerId }
+        : { facebook_id: providerId },
+  });
+
+  // 2. If found, return immediately
+  if (player) return player;
+
+  // 3. If not found, check if a player exists with this email
+  // (e.g., User signed up with Email/Pass before, now using Google)
+  const existingPlayerByEmail = await prisma.player.findUnique({
+    where: { email },
+  });
+
+  if (existingPlayerByEmail) {
+    // Link the accounts
+    player = await prisma.player.update({
+      where: { player_id: existingPlayerByEmail.player_id },
+      data: {
+        [provider === "google" ? "google_id" : "facebook_id"]: providerId,
+      },
+    });
+    console.log(
+      `Linked ${provider} account to existing player ${player.player_id}`
+    );
+    return player;
+  }
+
+  // 4. If absolutely no record, create a new player
+  // Generate a unique username based on the provider ID
+  const newUsername = `user_${provider}_${providerId.slice(0, 8)}`;
+
+  // Reuse the createPlayer function we modified above
+  player = await createPlayer({
+    player_name: name,
+    email: email,
+    username: newUsername,
+    password: "", // No password for OAuth
+    // Pass the specific ID to be saved
+    ...({
+      [provider === "google" ? "google_id" : "facebook_id"]: providerId,
+    } as any),
+  });
+
+  console.log(`Created new player ${player.player_id} via ${provider}`);
+  return player;
 };
 
 export const updatePlayer = async (
@@ -326,31 +401,24 @@ export const deletePlayer = (player_id: number) =>
 export const loginPlayer = async ({ email, password }: PlayerLoginInput) => {
   const player = await prisma.player.findUnique({ where: { email } });
   if (!player || !(await comparePassword(password, player.password))) {
-    console.log("Login failed: Player not found or password mismatch", {
-      email,
-      password,
-    });
     return null;
   }
 
+  // Just return the player data, don't generate token here
   const updatedPlayer = await updatePlayerActivity(player.player_id);
-
   if (updatedPlayer) {
     await updateQuestProgress(player.player_id, QuestType.login_days, 1);
     await checkAchievements(player.player_id);
   }
 
-  const token = generateAccessToken({ id: player.player_id, role: "player" });
-
   return {
-    token,
-    player: {
-      id: player.player_id,
-      email: player.email,
-      days_logged_in: updatedPlayer?.days_logged_in,
-      current_streak: updatedPlayer?.current_streak,
-      longest_streak: updatedPlayer?.longest_streak,
-    },
+    // Return the Full Player object so the controller has IDs
+    player_id: player.player_id,
+    email: player.email,
+    player_name: player.player_name,
+    days_logged_in: updatedPlayer?.days_logged_in,
+    current_streak: updatedPlayer?.current_streak,
+    longest_streak: updatedPlayer?.longest_streak,
   };
 };
 

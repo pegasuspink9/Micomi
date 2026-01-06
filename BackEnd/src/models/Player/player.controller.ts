@@ -85,11 +85,11 @@ export const loginPlayer = async (req: Request, res: Response) => {
     }
 
     const accessToken = generateAccessToken({
-      id: result.player.id,
+      id: result.player_id,
       role: "player",
     });
     const refreshToken = generateRefreshToken({
-      id: result.player.id,
+      id: result.player_id,
       role: "player",
     });
 
@@ -102,7 +102,7 @@ export const loginPlayer = async (req: Request, res: Response) => {
 
     return successResponse(
       res,
-      { accessToken, player: result.player },
+      { accessToken, player: result },
       "Login successful"
     );
   } catch (error) {

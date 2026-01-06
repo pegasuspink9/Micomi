@@ -20,6 +20,8 @@ import dialogueRoutes from "./models/Dialogue/dialogue.routes";
 import authRoutes from "../middleware/auth.routes";
 import { getAllPlayerProgress } from "../src/models/Player/playerProgress.service";
 
+import testRoutes from "../middleware/testing.toutes";
+
 import { Server } from "socket.io";
 import http from "http";
 
@@ -40,7 +42,8 @@ app.use(
   })
 );
 
-app.use("/auth", authRoutes);
+app.use("/test/auth", testRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/admin", adminRoutes);
 app.use("/player", playerRoutes);
 app.use("/map", mapRoutes);
