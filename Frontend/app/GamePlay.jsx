@@ -13,7 +13,7 @@ import LevelCompletionModal from './Components/GameOver And Win/LevelCompletionM
 import { soundManager } from './Components/Actual Game/Sounds/UniversalSoundManager';
 import { gameScale } from './Components/Responsiveness/gameResponsive';
 import GamePauseModal from '../app/Components/Actual Game/Screen Play/Pauses/GamePauseModal';
-
+import DialogueOverlay from './Components/Actual Game/Dialogue/DialogueOverlay';
 
 export default function GamePlay() {
   const router = useRouter();
@@ -32,6 +32,11 @@ export default function GamePlay() {
   const [showPauseModal, setShowPauseModal] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
 
+
+  const [showDialogue, setShowDialogue] = useState(false);
+
+
+  const dialogueData = useMemo(() => gameState?.dialogue, [gameState?.dialogue]);
 
   console.log('🎮 GamePlay component mounted with:', { 
     playerId, 
@@ -145,6 +150,7 @@ export default function GamePlay() {
       characterAttackCard && 
       showGameplay && 
       !showVSModal &&
+      !showDialogue &&
       characterAttackCard !== previousImageUrl
     ) {
       console.log('📸 NEW CARD DETECTED - Showing card');
@@ -152,7 +158,7 @@ export default function GamePlay() {
       setShowAttackCard(true);
       setPreviousImageUrl(characterAttackCard);
     }
-  }, [characterAttackCard, showGameplay, showVSModal]);
+  }, [characterAttackCard, showGameplay, showVSModal, showDialogue]);
 
   useEffect(() => {
     const submission = gameState?.submissionResult;
@@ -308,6 +314,7 @@ export default function GamePlay() {
     }
   }, [currentChallenge?.id, loading, animationsLoading, showGameOver]);
 
+  
 
 
   const handlePotionPress = useCallback((potion) => {
@@ -321,11 +328,25 @@ export default function GamePlay() {
     }
   }, [selectedPotion, clearSelectedPotion, selectPotion]);
 
-  const handleVSComplete = useCallback(() => {
+   const handleVSComplete = useCallback(() => {
     console.log('handleVSComplete called, setting showVSModal to false');
     setShowVSModal(false);
+    
+    setShowGameplay(true);
+
+    if (gameState?.dialogue?.script && gameState.dialogue.script.length > 0) {
+      setShowDialogue(true);
+    } else {
+      setShowDialogue(false); // Explicitly ensure dialogue is false if no content
+    }
+  }, [gameState?.dialogue]);
+
+  const handleDialogueComplete = useCallback(() => {
+    console.log('Dialogue finished');
+    setShowDialogue(false);
     setShowGameplay(true);
   }, []);
+
 
   const handleGameTabChange = useCallback((tabName) => {
     setActiveGameTab(tabName);
@@ -861,6 +882,14 @@ export default function GamePlay() {
               // REMOVED: isVisible prop is no longer needed here
             />
           </View>
+
+           <DialogueOverlay 
+             visible={showDialogue}
+             dialogueData={gameState?.dialogue}
+             onComplete={handleDialogueComplete}
+           />
+           
+
 
 
           <GameOverModal

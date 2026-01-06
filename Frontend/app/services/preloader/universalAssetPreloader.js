@@ -3005,6 +3005,17 @@ transformPotionShopDataWithCache(levelPreviewData) {
       transformedGameState.gameplay_audio = this.getCachedAssetPath(transformedGameState.gameplay_audio);
     }
 
+     if (transformedGameState.dialogue) {
+      const dialogue = transformedGameState.dialogue;
+      if (dialogue.micomi_image) {
+        dialogue.micomi_image = this.getCachedAssetPath(dialogue.micomi_image);
+      }
+      if (dialogue.enemy_image) {
+        dialogue.enemy_image = this.getCachedAssetPath(dialogue.enemy_image);
+      }
+    }
+
+
 
     // Transform fight result animations
     if (transformedGameState.submissionResult) {
