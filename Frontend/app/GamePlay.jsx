@@ -337,7 +337,7 @@ export default function GamePlay() {
     if (gameState?.dialogue?.script && gameState.dialogue.script.length > 0) {
       setShowDialogue(true);
     } else {
-      setShowDialogue(false); // Explicitly ensure dialogue is false if no content
+      setShowDialogue(false); 
     }
   }, [gameState?.dialogue]);
 

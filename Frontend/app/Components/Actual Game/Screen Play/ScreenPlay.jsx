@@ -107,6 +107,12 @@ const ScreenPlay = ({
            '';
   }, [gameState.submissionResult, gameState.selectedCharacter]);
 
+  const enemyName = useMemo(() => {
+    return gameState.submissionResult?.fightResult?.enemy?.enemy_name ?? 
+           gameState.enemy?.enemy_name ??
+            'Enemy';
+  }, [gameState.submissionResult, gameState.enemy]);
+
      const characterSpecialSkill = useMemo(() => {
     const skill = gameState.submissionResult?.fightResult?.character?.special_skill ??
                  gameState.selectedCharacter?.special_skill;
@@ -682,6 +688,7 @@ useEffect(() => {
               isAttacking={attackingEnemies.has(index)}
               isPaused={isPaused || isCharacterRunning} 
               characterAnimations={enemyAnimations}
+              enemyName={enemyName}
               currentState={currentEnemyState} 
               isBonusRound={gameState.submissionResult?.isBonusRound ?? false}
               fightStatus={gameState.submissionResult?.fightResult?.status}

@@ -400,7 +400,7 @@ const Character = ({
           { width: SPRITE_SIZE, height: SPRITE_SIZE },
           //  Updated to use effectiveCharacterName
           effectiveCharacterName === 'Leon' 
-            ? { marginTop: gameScale(-19), marginLeft: gameScale(-12) } 
+            ? { marginTop: gameScale(-15), marginLeft: gameScale(-12) } 
             : effectiveCharacterName === 'Ryron' 
               ? { marginTop: gameScale(7) } // Adjust this value as needed for Ryron
               : null 

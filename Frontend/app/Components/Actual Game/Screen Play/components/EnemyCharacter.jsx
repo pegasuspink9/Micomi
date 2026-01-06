@@ -29,7 +29,8 @@ const EnemyCharacter = ({
   attackMovement = 'fade',
   isBonusRound = false,
   fightStatus = null,
-  attackAudioUrl = null
+  attackAudioUrl = null,
+  enemyName = '',
 }) => {
   // ========== Shared Animation Values ==========
   const frameIndex = useSharedValue(0);
@@ -37,11 +38,78 @@ const EnemyCharacter = ({
   const opacity = useSharedValue(1);
   const blinkOpacity = useSharedValue(0);
   const attackInitiated = useSharedValue(false);
+  const detectedNameRef = useRef(null);
+
+
+  const effectiveEnemyName = useMemo(() => {
+    // 1. Return already detected name if we have one (prevents flickering to default)
+    if (detectedNameRef.current) return detectedNameRef.current;
+
+    let detected = '';
+
+    // 2. Direct prop check
+    if (enemyName === 'Boss Darco' || enemy?.enemy_name === 'Boss Darco') detected = 'Boss Darco';
+    else if (enemyName === 'King Grimnir' || enemy?.enemy_name === 'King Grimnir') detected = 'King Grimnir';
+    else if (enemyName === 'Draco' || enemy?.enemy_name === 'Draco') detected = 'Draco';
+    
+    // 3. URL fallback if props are missing/transitioning
+    else if (currentAnimationUrl?.includes('Boss%20Darco') || currentAnimationUrl?.includes('Boss Darco')) detected = 'Boss Darco';
+    else if (currentAnimationUrl?.includes('King') || currentAnimationUrl?.includes('Grimnir')) detected = 'King Grimnir'; 
+    else if (currentAnimationUrl?.includes('Draco')) detected = 'Draco';
+
+    // 4. Update Ref if valid name found
+    if (detected) {
+      detectedNameRef.current = detected;
+      return detected;
+    }
+
+    // 5. Fallback (only if never detected)
+    return enemyName || enemy?.enemy_name || 'Enemy';
+  }, [enemyName, enemy?.enemy_name, currentAnimationUrl]);
+
+
+    const bossLayout = useMemo(() => {
+    if (effectiveEnemyName === 'Boss Darco') {
+      return {
+        marginTop: gameScale(-37),
+        left: gameScale(210), // Positioning from left
+        right: undefined,     // CLEAR the default 'right' style
+      };
+    } 
+    else if (effectiveEnemyName === 'King Grimnir') {
+      return {  // Slightly higher due to larger size
+        marginTop: gameScale(-32),
+        left: gameScale(205), // Adjusted left for larger width to keep relative center
+        right: undefined,    
+      };
+    }
+    else if (effectiveEnemyName === 'Draco') {
+      return {
+        marginTop: gameScale(-5)
+      };
+    }
+
+    
+    // Default for regular enemies (empty object allows default styles to apply)
+    return {};
+  }, [effectiveEnemyName]);
+
+
 
   const wasBonusRound = useRef(false);
 
   // ========== Animation Configuration ==========
-  const SPRITE_SIZE = useMemo(() => gameScale(150), []);
+   const SPRITE_SIZE = useMemo(() => {
+    if (effectiveEnemyName === 'Boss Darco') {
+      return gameScale(190); 
+    }
+    if (effectiveEnemyName === 'King Grimnir') {
+      return gameScale(200); // Example: King Grimnir is even bigger
+    }
+    return gameScale(150); // Default size
+
+    
+  }, [effectiveEnemyName]);
   const SPRITE_COLUMNS = 6;
   const SPRITE_ROWS = 4;
   const TOTAL_FRAMES = 24;
@@ -400,7 +468,7 @@ const EnemyCharacter = ({
 ]);
 
   // ========== Animated Styles ==========
-  const animatedStyle = useAnimatedStyle(() => {
+    const animatedStyle = useAnimatedStyle(() => {
     const frame = Math.floor(frameIndex.value) % TOTAL_FRAMES;
     const column = frame % SPRITE_COLUMNS;
     const row = Math.floor(frame / SPRITE_COLUMNS);
@@ -425,7 +493,7 @@ const EnemyCharacter = ({
 
   // ========== Render ==========
   return (
-    <Animated.View style={[ styles.enemyContainer, containerStyle, isFront && styles.front ]} >
+     <Animated.View style={[ styles.enemyContainer, bossLayout, containerStyle, isFront && styles.front ]} >
       <View style={[styles.spriteContainer, { width: SPRITE_SIZE, height: SPRITE_SIZE }]}>
         <Animated.View style={[ styles.spriteSheet, animatedStyle, { width: SPRITE_SIZE * SPRITE_COLUMNS, height: SPRITE_SIZE * SPRITE_ROWS }]} >
           {currentAnimationUrl ? (
