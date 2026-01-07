@@ -5,17 +5,18 @@ import { buyPotionInShop } from "../../game/Shop/shop.service";
 import {
   authenticate,
   requireAdmin,
+  requirePlayer,
 } from "../../../middleware/auth.middleware";
 
 const router = Router();
 
 //Get all characters in the shop
 router.get("/character", ShopService.getAllCharactersInShop);
-//Get player characters
-router.get("/player-characters/:playerId", ShopService.getAllPlayerCharacter);
 //Character selection
 router.post(
-  "/select-character/:playerId/:characterId",
+  "/select-character/:characterId",
+  authenticate,
+  requirePlayer,
   CharacterService.selectCharacter
 );
 
@@ -27,18 +28,17 @@ router.delete("/delete-character/:id", ShopService.deleteShopCharacter);
 //Get all potions in the shop
 router.get("/potions", ShopService.getAllPotionsInShop);
 //Get all player potions (Potion Shop)
-router.get("/potions/:playerId", ShopService.getAllPlayerPotions);
-router.post("/buy-potion/:playerId/:potionShopId", buyPotionInShop);
+router.get("/potions", ShopService.getAllPlayerPotions);
+router.post(
+  "/buy-potion/:potionShopId",
+  authenticate,
+  requirePlayer,
+  buyPotionInShop
+);
 
 // CRUD potions in the shop
 router.post("/create-potion", ShopService.createPotion);
 router.put("/update-potion/:id", ShopService.updatePotion);
 router.delete("/delete-potion/:id", ShopService.deletePotion);
-
-//temporary
-router.put(
-  "/update-isPurchased/:playerCharacterId",
-  ShopService.editIsPurchased
-);
 
 export default router;

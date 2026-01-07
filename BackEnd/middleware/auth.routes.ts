@@ -9,4 +9,7 @@ router.post("/google/mobile", OAuthController.googleMobileAuth);
 // Mobile Facebook OAuth endpoint
 router.post("/facebook/mobile", OAuthController.facebookMobileAuth);
 
+// Refresh Token
+router.post("/refresh", OAuthController.refreshToken);
+
 export default router;

@@ -10,12 +10,17 @@ import {
 
 const router = express.Router();
 
-router.get("/", MapService.getAllMaps);
+// router.get("/", MapService.getAllMaps);
 router.post("/", MapService.createMap);
 router.put("/:id", MapService.updateMap);
 router.delete("/:id", MapService.deleteMap);
 
-router.get("/:playerId", MapService.getAllMapsByPlayerId); //player map display
-router.post("/select-map/:playerId/:mapId", GameMapController.selectMap); //player map selection
+router.get("/", authenticate, requirePlayer, MapService.getAllMapsByPlayerId); //player map display
+router.post(
+  "/select-map/:mapId",
+  authenticate,
+  requirePlayer,
+  GameMapController.selectMap
+); //player map selection
 
 export default router;

@@ -20,89 +20,91 @@ const prisma = new PrismaClient();
 
 const reverseString = (str: string): string => str.split("").reverse().join("");
 
-async function spendCoins(playerId: number, amount: number) {
-  const player = await prisma.player.findUnique({
-    where: { player_id: playerId },
-  });
-  if (!player) return { message: "Player not found", success: false };
-  if (player.coins < amount)
-    return { message: "Not enough coins", success: false };
-
-  await prisma.player.update({
-    where: { player_id: playerId },
-    data: { coins: { decrement: amount } },
-  });
-
-  await updateQuestProgress(playerId, QuestType.spend_coins, amount);
-}
+type BuyCharacterResult =
+  | { success: true; character_name: string; remaining_coins: number }
+  | { success: false; message: string };
 
 export const buyCharacter = async (
   playerId: number,
   characterShopId: number
-) => {
-  const player = await prisma.player.findUnique({
-    where: { player_id: playerId },
-  });
-  if (!player) return { message: "Player not found", success: false };
+): Promise<BuyCharacterResult> => {
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const player = await tx.player.findUnique({
+        where: { player_id: playerId },
+      });
+      if (!player) throw new Error("Player not found");
 
-  const charShop = await prisma.characterShop.findUnique({
-    where: { character_shop_id: characterShopId },
-    include: { character: true },
-  });
-  if (!charShop) return { message: "Character not found", success: false };
+      const charShop = await tx.characterShop.findUnique({
+        where: { character_shop_id: characterShopId },
+        include: { character: true },
+      });
+      if (!charShop) throw new Error("Character not found");
 
-  if (player.coins < charShop.character_price)
-    return { message: "Not enough coins", success: false };
+      if (Number(player.coins) < Number(charShop.character_price)) {
+        throw new Error("Not enough coins");
+      }
 
-  const existing = await prisma.playerCharacter.findUnique({
-    where: {
-      player_id_character_id: {
-        player_id: playerId,
-        character_id: charShop.character.character_id,
-      },
-    },
-  });
+      const existing = await tx.playerCharacter.findUnique({
+        where: {
+          player_id_character_id: {
+            player_id: playerId,
+            character_id: charShop.character.character_id,
+          },
+        },
+      });
 
-  if (existing?.is_purchased)
-    return { message: "Character already purchased", success: false };
+      if (existing?.is_purchased) {
+        throw new Error("Character already purchased");
+      }
 
-  await prisma.playerCharacter.updateMany({
-    where: { player_id: playerId },
-    data: { is_selected: false },
-  });
+      await tx.playerCharacter.updateMany({
+        where: { player_id: playerId },
+        data: { is_selected: false },
+      });
 
-  await prisma.playerCharacter.upsert({
-    where: {
-      player_id_character_id: {
-        player_id: playerId,
-        character_id: charShop.character.character_id,
-      },
-    },
-    update: { is_purchased: true, is_selected: true },
-    create: {
-      player_id: playerId,
-      character_id: charShop.character.character_id,
-      is_purchased: true,
-      is_selected: true,
-    },
-  });
+      await tx.playerCharacter.upsert({
+        where: {
+          player_id_character_id: {
+            player_id: playerId,
+            character_id: charShop.character.character_id,
+          },
+        },
+        update: { is_purchased: true, is_selected: true },
+        create: {
+          player_id: playerId,
+          character_id: charShop.character.character_id,
+          is_purchased: true,
+          is_selected: true,
+        },
+      });
 
-  await prisma.player.update({
-    where: { player_id: playerId },
-    data: { coins: { decrement: charShop.character_price } },
-  });
+      const updatedPlayer = await tx.player.update({
+        where: { player_id: playerId },
+        data: { coins: { decrement: charShop.character_price } },
+      });
 
-  await updateQuestProgress(playerId, QuestType.unlock_character, 1);
-  await spendCoins(playerId, charShop.character_price);
-  await updateQuestProgress(
-    playerId,
-    QuestType.spend_coins,
-    charShop.character_price
-  );
+      return {
+        character_name: charShop.character.character_name,
+        price: charShop.character_price,
+        remaining_coins: updatedPlayer.coins,
+      };
+    });
 
-  return {
-    character_name: charShop.character.character_name,
-  };
+    await updateQuestProgress(playerId, QuestType.unlock_character, 1);
+    await updateQuestProgress(playerId, QuestType.spend_coins, result.price);
+
+    return {
+      success: true,
+      character_name: result.character_name,
+      remaining_coins: result.remaining_coins,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message || "Failed to purchase character",
+    };
+  }
 };
 
 export const usePotion = async (
@@ -451,7 +453,7 @@ export const usePotion = async (
 //Buy Potion in Shop
 export const buyPotionInShop = async (req: Request, res: Response) => {
   try {
-    const playerId = Number(req.params.playerId);
+    const playerId = (req as any).user.id;
     const potionShopId = Number(req.params.potionShopId);
 
     if (!potionShopId) {
