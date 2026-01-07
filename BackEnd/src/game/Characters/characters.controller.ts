@@ -3,7 +3,7 @@ import * as ShopService from "./characters.service";
 import { successResponse, errorResponse } from "../../../utils/response";
 
 export const selectCharacter = async (req: Request, res: Response) => {
-  const playerId = Number(req.params.playerId);
+  const playerId = (req as any).user.id;
   const characterId = Number(req.params.characterId);
 
   if (!playerId || isNaN(playerId)) {

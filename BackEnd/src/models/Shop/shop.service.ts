@@ -25,7 +25,7 @@ export const getAllCharactersInShop = async (req: Request, res: Response) => {
 
 /* GET all player characters */
 export const getAllPlayerCharacter = async (req: Request, res: Response) => {
-  const playerId = Number(req.params.playerId);
+  const playerId = (req as any).user.id;
 
   try {
     const player = await prisma.player.findUnique({
@@ -288,7 +288,7 @@ export const getAllPotionsInShop = async (req: Request, res: Response) => {
 /* GET all player potions */
 export const getAllPlayerPotions = async (req: Request, res: Response) => {
   try {
-    const playerId = Number(req.params.playerId);
+    const playerId = (req as any).user.id;
 
     const allPotions = await prisma.potionShop.findMany({
       include: {
@@ -377,34 +377,5 @@ export const deletePotion = async (req: Request, res: Response) => {
     return successResponse(res, null, "Potion in the shop deleted");
   } catch (error) {
     return errorResponse(res, null, "Failed to delete potion in the shop", 400);
-  }
-};
-
-//temporary
-export const editIsPurchased = async (req: Request, res: Response) => {
-  const id = Number(req.params.playerCharacterId);
-
-  if (isNaN(id)) {
-    return errorResponse(res, null, "Invalid player_character_id", 400);
-  }
-
-  try {
-    const updateIsPurchased = await prisma.playerCharacter.update({
-      where: { player_character_id: id },
-      data: { is_purchased: req.body.is_purchased },
-    });
-
-    return successResponse(
-      res,
-      updateIsPurchased,
-      "is_purchased updated successfully"
-    );
-  } catch (error: any) {
-    console.error(error);
-    return errorResponse(
-      res,
-      error.message || error,
-      "Failed to update is_purchased"
-    );
   }
 };

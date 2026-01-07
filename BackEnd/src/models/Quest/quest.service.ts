@@ -202,7 +202,7 @@ export const deleteQuest = async (req: Request, res: Response) => {
 
 /* GET player quests */
 export const getPlayerQuest = async (req: Request, res: Response) => {
-  const playerId = Number(req.params.playerId);
+  const playerId = (req as any).user.id;
   try {
     const quests = await getAllPlayerQuests(playerId);
     return successResponse(res, quests, "Player quests fetched successfully");
@@ -215,37 +215,27 @@ export const getPlayerQuestsByPeriodController = async (
   req: Request,
   res: Response
 ) => {
-  const playerId = Number(req.params.playerId);
+  const playerId = (req as any).user.id;
+
   const period = req.query.period as QuestPeriod;
 
   if (!period || !["daily", "weekly", "monthly"].includes(period)) {
-    return errorResponse(
-      res,
-      null,
-      "Invalid period. Must be daily, weekly, or monthly",
-      400
-    );
+    return errorResponse(res, null, "Invalid period...", 400);
   }
 
   try {
     const quests = await getPlayerQuestsByPeriod(playerId, period);
 
     if (quests.length === 0) {
-      console.log(
-        `Player ${playerId} has no ${period} quests. Generating now...`
-      );
+      console.log(`Player ${playerId} has no ${period} quests. Generating...`);
       const newQuests = await forceGenerateQuestsForPlayer(playerId, period);
-      return successResponse(
-        res,
-        newQuests,
-        `${period} quests generated (missed cron)`
-      );
+      return successResponse(res, newQuests, `${period} quests generated`);
     }
 
     return successResponse(res, quests, `${period} quests fetched`);
   } catch (error) {
     console.error(`Error fetching ${period} quests:`, error);
-    return errorResponse(res, error, `Failed to fetch ${period} quests`, 500);
+    return errorResponse(res, error, `Failed to fetch quests`, 500);
   }
 };
 

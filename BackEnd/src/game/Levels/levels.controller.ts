@@ -5,7 +5,7 @@ import { successResponse, errorResponse } from "../../../utils/response";
 
 export const previewLevelController = async (req: Request, res: Response) => {
   try {
-    const playerId = Number(req.params.playerId);
+    const playerId = (req as any).user.id;
     const levelId = Number(req.params.levelId);
 
     const result = await LevelService.previewLevel(playerId, levelId);
@@ -22,20 +22,21 @@ export const previewLevelController = async (req: Request, res: Response) => {
 
 export const enterLevelController = async (req: Request, res: Response) => {
   try {
-    const playerId = Number(req.params.playerId);
+    const playerId = (req as any).user.id;
     const levelId = Number(req.params.levelId);
 
-    const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
-    if (energyStatus.energy <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Not enough energy! Next energy restore in: ${
-          energyStatus.timeToNextRestore ?? "N/A"
-        }`,
-        error: "Challenge submission failed.",
-        restoreInMs: energyStatus.restoreInMs,
-      });
-    }
+    // const deductionResult = await EnergyService.deductEnergy(playerId, 5);
+
+    // if (deductionResult.success === false) {
+    //    return res.status(400).json({
+    //     success: false,
+    //     message: deductionResult.message || "Not enough energy!",
+    //     error: "Insufficient energy to enter level.",
+    //     data: {
+    //          restoreInMs: deductionResult.timeToNextRestore
+    //     }
+    //   });
+    // }
 
     const result = await LevelService.enterLevel(playerId, levelId);
     return successResponse(res, result, "Entered level");

@@ -2,7 +2,11 @@ import axios from "axios";
 import { Request, Response } from "express";
 import { OAuth2Client } from "google-auth-library";
 import { successResponse, errorResponse } from "../utils/response";
-import { generateAccessToken, generateRefreshToken } from "../utils/token";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} from "../utils/token";
 import { updateQuestProgress } from "../src/game/Quests/quests.service";
 import { checkAchievements } from "../src/game/Achievements/achievements.service";
 import {
@@ -146,5 +150,32 @@ export const facebookMobileAuth = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Facebook auth error:", error);
     return errorResponse(res, error, "Authentication failed", 500);
+  }
+};
+
+export const refreshToken = async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return errorResponse(res, null, "Refresh token is required", 401);
+    }
+
+    const decoded = verifyRefreshToken(refreshToken) as any;
+
+    const newAccessToken = generateAccessToken({
+      id: decoded.id,
+      role: decoded.role,
+    });
+
+    return successResponse(
+      res,
+      {
+        token: newAccessToken,
+      },
+      "Token refreshed successfully"
+    );
+  } catch (error) {
+    return errorResponse(res, error, "Invalid or expired refresh token", 403);
   }
 };

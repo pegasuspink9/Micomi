@@ -4,28 +4,9 @@ import {
   errorShopResponse,
   successShopResponse,
 } from "../../../utils/response";
-import { SubmitChallengeControllerResult } from "../Challenges/challenges.types";
-
-export const buyPotion = async (req: Request, res: Response) => {
-  try {
-    const playerId = Number(req.params.playerId);
-    const levelId = Number(req.params.levelId);
-    const potionId = Number(req.params.potionId);
-
-    const result = await ShopService.buyPotion(playerId, levelId, potionId);
-
-    if ("success" in result && !result.success) {
-      return errorShopResponse(res, null, result.message, 400);
-    }
-
-    return successShopResponse(res, result, "Potion purchased successfully");
-  } catch (error) {
-    return errorShopResponse(res, error, (error as Error).message, 400);
-  }
-};
 
 export const buyCharacter = async (req: Request, res: Response) => {
-  const playerId = Number(req.params.playerId);
+  const playerId = (req as any).user.id;
   const characterShopId = Number(req.params.characterShopId);
   try {
     const result = await ShopService.buyCharacter(playerId, characterShopId);
@@ -41,7 +22,7 @@ export const buyCharacter = async (req: Request, res: Response) => {
 };
 
 export const usePotion = async (req: Request, res: Response) => {
-  const playerId = Number(req.params.playerId);
+  const playerId = (req as any).user.id;
   const levelId = Number(req.params.levelId);
   const challengeId = Number(req.params.challengeId);
   const { playerPotionId } = req.body;

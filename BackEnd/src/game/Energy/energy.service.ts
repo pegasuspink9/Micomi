@@ -112,6 +112,16 @@ export const deductEnergy = async (playerId: number, amount: number = 5) => {
 export const getPlayerEnergyStatus = async (playerId: number) => {
   const status = await updatePlayerEnergy(playerId);
 
+  if ("success" in status && !status.success) {
+    return {
+      energy: 0,
+      energyResetAt: null,
+      restoreInMs: null,
+      timeToNextRestore: null,
+      success: false,
+    };
+  }
+
   return {
     energy: status.energy,
     energyResetAt: status.energyResetAt,
@@ -119,6 +129,7 @@ export const getPlayerEnergyStatus = async (playerId: number) => {
     timeToNextRestore: status.timeToNextRestore
       ? formatTimeInHours(status.timeToNextRestore)
       : null,
+    success: true,
   };
 };
 

@@ -1168,6 +1168,17 @@ export async function fightEnemy(
     }
   } else {
     if (!effectiveBonusRound && enemyHealth > 0) {
+      if (progress.has_strong_effect) {
+        await prisma.playerProgress.update({
+          where: { progress_id: progress.progress_id },
+          data: { has_strong_effect: false },
+        });
+        progress.has_strong_effect = false;
+        console.log(
+          "- Wrong answer (Normal Enemy): Leon's Strong Effect has dissipated."
+        );
+      }
+
       if (progress.has_freeze_effect) {
         enemy_damage = 0;
         await prisma.playerProgress.update({
@@ -2135,6 +2146,17 @@ export async function fightBossEnemy(
         });
         progress.has_freeze_effect = false;
         console.log("- Freeze potion active, enemy attack nullified");
+      }
+
+      if (progress.has_strong_effect) {
+        await prisma.playerProgress.update({
+          where: { progress_id: progress.progress_id },
+          data: { has_strong_effect: false },
+        });
+        progress.has_strong_effect = false;
+        console.log(
+          "- Wrong answer submitted (Boss): Leon's Strong Effect has dissipated."
+        );
       }
 
       enemy_damage = enemy.enemy_damage;

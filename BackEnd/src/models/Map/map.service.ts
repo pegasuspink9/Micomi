@@ -9,15 +9,15 @@ const prisma = new PrismaClient();
 
 export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
   try {
-    const { playerId } = req.params;
-    if (!playerId) {
+    const user = (req as any).user;
+    if (!user) {
       return errorResponse(
         res,
         new Error("Player not authenticated"),
         "Player ID required"
       );
     }
-    const playerIdNum = Number(playerId);
+    const playerIdNum = Number(user.id);
 
     const maps = await prisma.map.findMany({
       orderBy: { map_id: "asc" },
@@ -46,7 +46,7 @@ export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
           created_at: map.created_at,
           last_updated: map.last_updated,
           map_image: map.map_image,
-          player_id: map.player_id,
+          player_id: playerIdNum,
           difficulty_level: map.difficulty_level,
         };
       })

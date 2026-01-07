@@ -32,6 +32,7 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.json());
 app.use(cookieParser());
+app.use(express.urlencoded({ extended: true }));
 
 const cors = require("cors");
 app.use(
@@ -43,7 +44,7 @@ app.use(
 );
 
 app.use("/test/auth", testRoutes);
-app.use("/api/auth", authRoutes);
+app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
 app.use("/player", playerRoutes);
 app.use("/map", mapRoutes);
