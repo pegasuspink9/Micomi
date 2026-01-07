@@ -15,6 +15,8 @@ import PauseButton from './Pauses/PauseButton';
 import { gameScale } from '../../Responsiveness/gameResponsive';
 import BonusRoundModal from './components/BonusRoundModal'; 
 import SpecialSkillIcon from './components/SpecialSkillIcon';
+import { soundManager } from '../Sounds/UniversalSoundManager';
+
 
 const ScreenPlay = ({ 
   gameState,
@@ -328,6 +330,15 @@ const ScreenPlay = ({
       });
     }
   }, [coinsEarned]);
+
+   useEffect(() => {
+    const potionAudio = gameState.submissionResult?.use_potion_audio;
+    if (potionAudio) {
+      // Play using soundManager on 'ui' or 'combat' channel
+      console.log('🧪 Playing potion audio:', potionAudio);
+      soundManager.playCachedSound(potionAudio, 'ui', 1.0);
+    }
+  }, [gameState.submissionResult?.use_potion_audio]);
 
   useEffect(() => {
   const submission = gameState.submissionResult;

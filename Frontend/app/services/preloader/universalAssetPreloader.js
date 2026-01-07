@@ -419,6 +419,7 @@ async testR2Download(testUrl) {
   addAsset('https://micomi-assets.me/Sounds/Final/Tap2.wav', 'blank_tap', 'audio', 'static_sounds');
   addAsset('https://micomi-assets.me/Sounds/Final/Tap3.wav', 'game_button_tap', 'audio', 'static_sounds');
   addAsset('https://micomi-assets.me/Sounds/Final/Card_Flip_2.wav', 'card_flip', 'audio', 'static_sounds');
+  
 
   console.log(`🔊 Static sound assets: ${assets.length}`);
   return assets;
@@ -689,7 +690,7 @@ async testR2Download(testUrl) {
   }
 
 
-  extractAllAssetsFromMapData(mapLevelData) {
+    extractAllAssetsFromMapData(mapLevelData) {
     const assets = [];
     const addedUrls = new Set(); 
 
@@ -707,75 +708,91 @@ async testR2Download(testUrl) {
 
     if (!mapLevelData) return assets;
 
-    // --- Enemy Assets ---
-    if (mapLevelData.enemy) {
-      const enemy = mapLevelData.enemy;
-      addAsset(enemy.enemy_idle, `${enemy.enemy_name}_idle`, 'animation', 'game_animations');
-      addAsset(enemy.enemy_run, `${enemy.enemy_name}_run`, 'animation', 'game_animations');
-      addAsset(enemy.enemy_attack, `${enemy.enemy_name}_attack`, 'animation', 'game_animations');
-      addAsset(enemy.enemy_hurt, `${enemy.enemy_name}_hurt`, 'animation', 'game_animations');
-      addAsset(enemy.enemy_dies, `${enemy.enemy_name}_dies`, 'animation', 'game_animations');
-      addAsset(enemy.enemy_avatar, `${enemy.enemy_name}_avatar`, 'image', 'game_images');
-    }
+    // ADDED: Helper function to extract assets from a single level
+    const extractLevelAssets = (level, levelIndex = 0) => {
+      if (!level) return;
 
-    // --- Character Assets ---
-    if (mapLevelData.character) {
-      const char = mapLevelData.character;
-      addAsset(char.character_idle, `${char.character_name}_idle`, 'animation', 'game_animations');
-      addAsset(char.character_run, `${char.character_name}_run`, 'animation', 'game_animations');
-      addAsset(char.character_hurt, `${char.character_name}_hurt`, 'animation', 'game_animations');
-      addAsset(char.character_dies, `${char.character_name}_dies`, 'animation', 'game_animations');
-      addAsset(char.character_avatar, `${char.character_name}_avatar`, 'image', 'game_images');
-      if (Array.isArray(char.character_attack)) {
-        char.character_attack.forEach((url, i) => addAsset(url, `${char.character_name}_attack_${i}`, 'animation', 'game_animations'));
+      // Enemy Assets
+      if (level.enemy) {
+        const enemy = level.enemy;
+        addAsset(enemy.enemy_idle, `${enemy.enemy_name}_idle`, 'animation', 'game_animations');
+        addAsset(enemy.enemy_run, `${enemy.enemy_name}_run`, 'animation', 'game_animations');
+        addAsset(enemy.enemy_attack, `${enemy.enemy_name}_attack`, 'animation', 'game_animations');
+        addAsset(enemy.enemy_hurt, `${enemy.enemy_name}_hurt`, 'animation', 'game_animations');
+        addAsset(enemy.enemy_dies, `${enemy.enemy_name}_dies`, 'animation', 'game_animations');
+        addAsset(enemy.enemy_avatar, `${enemy.enemy_name}_avatar`, 'image', 'game_images');
       }
+
+      // Character Assets
+      if (level.character) {
+        const char = level.character;
+        addAsset(char.character_idle, `${char.character_name}_idle`, 'animation', 'game_animations');
+        addAsset(char.character_run, `${char.character_name}_run`, 'animation', 'game_animations');
+        addAsset(char.character_hurt, `${char.character_name}_hurt`, 'animation', 'game_animations');
+        addAsset(char.character_dies, `${char.character_name}_dies`, 'animation', 'game_animations');
+        addAsset(char.character_avatar, `${char.character_name}_avatar`, 'image', 'game_images');
+        if (Array.isArray(char.character_attack)) {
+          char.character_attack.forEach((url, i) => addAsset(url, `${char.character_name}_attack_${i}`, 'animation', 'game_animations'));
+        }
+      }
+
+      // Card Assets
+      if (level.card?.character_attack_card) {
+        addAsset(level.card.character_attack_card, `level_${levelIndex}_attack_card`, 'image', 'game_visuals');
+      }
+
+      // ADDED: Potion Effect & Audio (from each level's challenges/potions)
+      if (level.use_potion_effect) {
+        addAsset(level.use_potion_effect, `level_${levelIndex}_potion_effect`, 'image', 'game_visuals');
+      }
+      if (level.use_potion_audio) {
+        addAsset(level.use_potion_audio, `level_${levelIndex}_potion_audio`, 'audio', 'game_audio');
+      }
+
+      // Background Assets
+      if (Array.isArray(level.combat_background)) {
+        level.combat_background.forEach((url, i) => addAsset(url, `level_${levelIndex}_combat_bg_${i}`, 'image', 'game_visuals'));
+      }
+      addAsset(level.versus_background, `level_${levelIndex}_versus_background`, 'image', 'game_visuals');
+
+      // Audio Assets
+      addAsset(level.versus_audio, `level_${levelIndex}_versus_audio`, 'audio', 'game_audio');
+      addAsset(level.gameplay_audio, `level_${levelIndex}_gameplay_audio`, 'audio', 'game_audio');
+      if (Array.isArray(level.audioLinks)) {
+        level.audioLinks.forEach((url, i) => addAsset(url, `level_${levelIndex}_audio_link_${i}`, 'audio', 'game_audio'));
+      }
+      
+      addAsset(level.enemy_attack_audio, `level_${levelIndex}_enemy_attack_audio`, 'audio', 'game_audio');
+      addAsset(level.character_attack_audio, `level_${levelIndex}_character_attack_audio`, 'audio', 'game_audio');
+      addAsset(level.is_correct_audio, `level_${levelIndex}_is_correct_audio`, 'audio', 'game_audio');
+      addAsset(level.death_audio, `level_${levelIndex}_death_audio`, 'audio', 'game_audio');
+      addAsset(level.is_victory_audio, `level_${levelIndex}_is_victory_audio`, 'audio', 'game_audio');
+
+      if (Array.isArray(level.audio)) {
+        level.audio.forEach((url, i) => addAsset(url, `level_${levelIndex}_game_audio_${i}`, 'audio', 'game_audio'));
+      }
+
+      addAsset(level.is_victory_image, `level_${levelIndex}_is_victory_image`, 'image', 'game_images');
+
+      // All Images from imagesUrls
+      if (Array.isArray(level.imagesUrls)) {
+        level.imagesUrls.forEach((url, i) => {
+          const type = this.isAudioFile(url) ? 'audio' : (this.isVideoFile(url) ? 'video' : 'image');
+          const category = type === 'audio' ? 'game_audio' : (type === 'video' ? 'game_videos' : 'game_images');
+          addAsset(url, `level_${levelIndex}_image_asset_${i}`, type, category);
+        });
+      }
+    };
+
+    // UPDATED: If mapLevelData has a 'levels' array (from map API), extract from all levels
+    if (Array.isArray(mapLevelData.levels)) {
+      mapLevelData.levels.forEach((level, index) => {
+        extractLevelAssets(level, index);
+      });
+    } else {
+      // Fallback: treat mapLevelData as a single level (for enterLevel response)
+      extractLevelAssets(mapLevelData, 0);
     }
-
-    // --- Card Assets ---
-    if (mapLevelData.card?.character_attack_card) {
-      addAsset(mapLevelData.card.character_attack_card, 'character_attack_card', 'image', 'game_visuals');
-    }
-
-    // --- Background Assets ---
-    if (Array.isArray(mapLevelData.combat_background)) {
-      mapLevelData.combat_background.forEach((url, i) => addAsset(url, `combat_bg_${i}`, 'image', 'game_visuals'));
-    }
-    addAsset(mapLevelData.versus_background, 'versus_background', 'image', 'game_visuals');
-
-    // --- Audio Assets ---
-    addAsset(mapLevelData.versus_audio, 'versus_audio', 'audio', 'game_audio');
-    addAsset(mapLevelData.gameplay_audio, 'gameplay_audio', 'audio', 'game_audio');
-    if (Array.isArray(mapLevelData.audioLinks)) {
-      mapLevelData.audioLinks.forEach((url, i) => addAsset(url, `audio_link_${i}`, 'audio', 'game_audio'));
-    }
-    
-    addAsset(mapLevelData.enemy_attack_audio, 'enemy_attack_audio', 'audio', 'game_audio');
-    addAsset(mapLevelData.character_attack_audio, 'character_attack_audio', 'audio', 'game_audio');
-    addAsset(mapLevelData.is_correct_audio, 'is_correct_audio', 'audio', 'game_audio');
-    addAsset(mapLevelData.death_audio, 'death_audio', 'audio', 'game_audio');
-    addAsset(mapLevelData.is_victory_audio, 'is_victory_audio', 'audio', 'game_audio');
-
-    if (Array.isArray(mapLevelData.audio)) {
-    mapLevelData.audio.forEach((url, i) => addAsset(url, `game_audio_${i}`, 'audio', 'game_audio'));
-    }
-  
-    if (Array.isArray(mapLevelData.audioLinks)) {
-    mapLevelData.audioLinks.forEach((url, i) => addAsset(url, `audio_link_${i}`, 'audio', 'game_audio'));
-    }
-
-
-
-    addAsset(mapLevelData.is_victory_image, 'is_victory_image', 'image', 'game_images');
-
-    
-    // --- All Images from imagesUrls ---
-    if (Array.isArray(mapLevelData.imagesUrls)) {
-    mapLevelData.imagesUrls.forEach((url, i) => {
-      const type = this.isAudioFile(url) ? 'audio' : (this.isVideoFile(url) ? 'video' : 'image');
-      const category = type === 'audio' ? 'game_audio' : (type === 'video' ? 'game_videos' : 'game_images');
-      addAsset(url, `image_asset_${i}`, type, category);
-    });
-  }
 
     console.log(`📦 Extracted ${assets.length} total assets from map data.`);
     return assets;

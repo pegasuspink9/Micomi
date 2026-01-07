@@ -39,6 +39,9 @@ const Character = ({
   
   const rangeProjectileX = useSharedValue(0);
 
+  const potionFrameIndex = useSharedValue(0);
+  const potionOpacity = useSharedValue(0);
+
   // ========== State Management (Lifted up for use in effectiveName) ==========
   const initialUrl = useMemo(() => {
     const candidates = [
@@ -235,6 +238,28 @@ const Character = ({
     return () => { mounted = false; };
   }, [currentAnimationUrl, isUrlCached, animationConfig.rangeUrl]);
 
+    useEffect(() => {
+    if (potionEffectUrl) {
+      // Reset
+      potionFrameIndex.value = 0;
+      potionOpacity.value = 1;
+      
+      // Play 12 frames (4 cols * 3 rows)
+      // Assuming rough duration of ~800ms for the effect
+      potionFrameIndex.value = withTiming(11, { 
+        duration: 800, 
+        easing: Easing.linear 
+      }, (finished) => {
+        if (finished) {
+          potionOpacity.value = withTiming(0, { duration: 200 });
+        }
+      });
+    } else {
+      potionOpacity.value = 0;
+    }
+  }, [potionEffectUrl]);
+
+
   // ========== Animation Callbacks ==========
   const notifyAnimationComplete = useCallback(() => {
     if (onAnimationComplete) onAnimationComplete(currentState);
@@ -377,6 +402,23 @@ const Character = ({
     return { transform: [{ translateX: -(column * SPRITE_SIZE) }, { translateY: -(row * SPRITE_SIZE) }] };
   }, [SPRITE_SIZE]); 
 
+  const POTION_COLS = 4;
+  const POTION_ROWS = 3;
+
+  const potionAnimatedStyle = useAnimatedStyle(() => {
+    const frame = Math.floor(potionFrameIndex.value);
+    const column = frame % POTION_COLS;
+    const row = Math.floor(frame / POTION_COLS);
+    
+    return {
+      opacity: potionOpacity.value,
+      transform: [
+        { translateX: -(column * SPRITE_SIZE) }, 
+        { translateY: -(row * SPRITE_SIZE) }
+      ]
+    };
+  }, [SPRITE_SIZE]);
+
   const containerStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
     transform: [{ translateX: positionX.value }],
@@ -400,7 +442,7 @@ const Character = ({
           { width: SPRITE_SIZE, height: SPRITE_SIZE },
           //  Updated to use effectiveCharacterName
           effectiveCharacterName === 'Leon' 
-            ? { marginTop: gameScale(-15), marginLeft: gameScale(-12) } 
+            ? { marginTop: gameScale(-19), marginLeft: gameScale(-12) } 
             : effectiveCharacterName === 'Ryron' 
               ? { marginTop: gameScale(7) } // Adjust this value as needed for Ryron
               : null 
@@ -417,6 +459,32 @@ const Character = ({
             </Animated.View>
           )}
         </Animated.View>
+
+        {potionEffectUrl && (
+           <Animated.View 
+             style={[
+               styles.spriteSheet, 
+               { 
+                 position: 'absolute', 
+                 top: 0, 
+                 left: 0, 
+                 width: SPRITE_SIZE * POTION_COLS, 
+                 height: SPRITE_SIZE * POTION_ROWS,
+                 zIndex: 5
+               }, 
+               potionAnimatedStyle
+             ]}
+           >
+             <Image 
+               source={{ uri: potionEffectUrl }} 
+               style={styles.spriteImage} 
+               contentFit="cover" 
+               cachePolicy="disk" 
+             />
+           </Animated.View>
+        )}
+
+
       </View>
 
       {/* 2. Range Attack Sprite Container */}
