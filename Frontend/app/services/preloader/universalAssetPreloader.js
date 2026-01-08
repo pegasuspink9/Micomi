@@ -690,7 +690,7 @@ async testR2Download(testUrl) {
   }
 
 
-    extractAllAssetsFromMapData(mapLevelData) {
+  extractAllAssetsFromMapData(mapLevelData) {
     const assets = [];
     const addedUrls = new Set(); 
 

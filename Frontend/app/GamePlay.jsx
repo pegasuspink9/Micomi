@@ -14,6 +14,7 @@ import { soundManager } from './Components/Actual Game/Sounds/UniversalSoundMana
 import { gameScale } from './Components/Responsiveness/gameResponsive';
 import GamePauseModal from '../app/Components/Actual Game/Screen Play/Pauses/GamePauseModal';
 import DialogueOverlay from './Components/Actual Game/Dialogue/DialogueOverlay';
+import MainLoading from './Components/Actual Game/Loading/MainLoading';
 
 export default function GamePlay() {
   const router = useRouter();
@@ -679,87 +680,79 @@ export default function GamePlay() {
   
   const memoizedOptions = useMemo(() => currentChallenge?.options || [], [currentChallenge?.options]);
 
-    if (loading || animationsLoading || isLoadingNextLevel || isRetrying) {
-    return (
-      <>
-        <StatusBar hidden={true} />
-        <ImageBackground 
-          source={require('./gamebackgroundmain.png')}
-          style={styles.container}  
-        >
+  // COMBINED LOADING STATE: Used to trigger the MainLoading entrance/exit
+  const showLoadingScreen = loading || animationsLoading || isLoadingNextLevel || isRetrying;
 
-      
+  // Extract the specific loading text/progress bars to a variable
+  // We will render this ON TOP of the MainLoading doors
+  const loadingProgressOverlay = (
+      <View style={[styles.container, styles.centerContent, { position: 'absolute', width: '100%', height: '100%', zIndex: 100000, backgroundColor: 'transparent' }]}>
 
-          <View style={[styles.container, styles.centerContent]}>
-            <ActivityIndicator size="large" color="#ffffff" />
+        {isRetrying ? (
+          <Text style={styles.loadingText}>Restarting level...</Text>
+        ) : isLoadingNextLevel ? (
+          <Text style={styles.loadingText}>Loading next level...</Text>
+        ) : loading ? (
+          <Text style={styles.loadingText}></Text>
+        ) : (
+          <View style={styles.downloadContainer}>
+            <Text style={styles.loadingText}>Downloading animations...</Text>
             
-            {isRetrying ? (
-              <Text style={styles.loadingText}>Restarting level...</Text>
-            ) : isLoadingNextLevel ? (
-              <Text style={styles.loadingText}>Loading next level...</Text>
-            ) : loading ? (
-              <Text style={styles.loadingText}>Loading challenge...</Text>
-            ) : (
-              <View style={styles.downloadContainer}>
-                <Text style={styles.loadingText}>Downloading animations...</Text>
-                
-                {downloadProgress.total > 0 && (
-                  <View style={styles.progressSection}>
-                    <Text style={styles.progressLabel}>
-                      Overall Progress: {downloadProgress.loaded}/{downloadProgress.total}
-                    </Text>
-                    <View style={styles.progressBar}>
-                      <View 
-                        style={[
-                          styles.progressFill, 
-                          { width: `${Math.round(downloadProgress.progress * 100)}%` }
-                        ]} 
-                      />
-                    </View>
-                    <Text style={styles.progressPercentage}>
-                      {Math.round(downloadProgress.progress * 100)}%
-                    </Text>
-                  </View>
-                )}
-                
-                {individualAnimationProgress.url && (
-                  <View style={styles.progressSection}>
-                    <Text style={styles.currentAnimationText}>
-                      Downloading: ...{individualAnimationProgress.url}
-                    </Text>
-                    <View style={styles.progressBar}>
-                      <View 
-                        style={[
-                          styles.progressFill, 
-                          { 
-                            width: `${Math.round(individualAnimationProgress.progress * 100)}%`,
-                            backgroundColor: '#4dabf7' 
-                          }
-                        ]} 
-                      />
-                    </View>
-                    <Text style={styles.progressPercentage}>
-                      {Math.round(individualAnimationProgress.progress * 100)}%
-                    </Text>
-                  </View>
-                )}
-                
-                {downloadProgress.currentUrl && (
-                  <Text style={styles.currentUrlText}>
-                    Current: ...{downloadProgress.currentUrl}
-                  </Text>
-                )}
-                
-                <Text style={styles.downloadHint}>
-                  📥 Downloading animations for smooth gameplay...
+            {downloadProgress.total > 0 && (
+              <View style={styles.progressSection}>
+                <Text style={styles.progressLabel}>
+                  Overall Progress: {downloadProgress.loaded}/{downloadProgress.total}
+                </Text>
+                <View style={styles.progressBar}>
+                  <View 
+                    style={[
+                      styles.progressFill, 
+                      { width: `${Math.round(downloadProgress.progress * 100)}%` }
+                    ]} 
+                  />
+                </View>
+                <Text style={styles.progressPercentage}>
+                  {Math.round(downloadProgress.progress * 100)}%
                 </Text>
               </View>
             )}
+            
+            {individualAnimationProgress.url && (
+              <View style={styles.progressSection}>
+                <Text style={styles.currentAnimationText}>
+                  Downloading: ...{individualAnimationProgress.url}
+                </Text>
+                <View style={styles.progressBar}>
+                  <View 
+                    style={[
+                      styles.progressFill, 
+                      { 
+                        width: `${Math.round(individualAnimationProgress.progress * 100)}%`,
+                        backgroundColor: '#4dabf7' 
+                      }
+                    ]} 
+                  />
+                </View>
+                <Text style={styles.progressPercentage}>
+                  {Math.round(individualAnimationProgress.progress * 100)}%
+                </Text>
+              </View>
+            )}
+            
+            {downloadProgress.currentUrl && (
+              <Text style={styles.currentUrlText}>
+                Current: ...{downloadProgress.currentUrl}
+              </Text>
+            )}
+            
+            <Text style={styles.downloadHint}>
+              📥 Downloading animations for smooth gameplay...
+            </Text>
           </View>
-        </ImageBackground>
-      </>
-    );
-  }
+        )}
+      </View>
+  );
+
 
   // Error state
   if (error) {
@@ -939,8 +932,9 @@ export default function GamePlay() {
         onToggleMute={handleToggleMute}
       />
 
+      <MainLoading visible={showLoadingScreen} />
+      {showLoadingScreen && loadingProgressOverlay}
 
-    
     </>
   );
 }

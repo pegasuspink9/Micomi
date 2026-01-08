@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Dimensions,
   Image,
@@ -12,13 +12,14 @@ import {
   Animated
 } from 'react-native';
 import LottieView from 'lottie-react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useMapData } from '../../hooks/useMapData'; 
 import { MAP_THEMES, DEFAULT_THEME } from '../RoadMap/MapLevel/MapDatas/mapData'; 
 import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
 import { mapService } from '../../services/mapService';
 import MiniQuestPreview from './MiniQuestPreview/MiniQuestPreview';
 import { soundManager } from '../Actual Game/Sounds/UniversalSoundManager';
+import MainLoading from '../Actual Game/Loading/MainLoading';
 
 const { width, height } = Dimensions.get('window');
 
@@ -31,7 +32,14 @@ const LEVEL_SELECTOR_IMAGES = {
 
 export default function MapNavigate({ onMapChange }) {
   const [currentMapIndex, setCurrentMapIndex] = useState(0);
+  const [isNavigating, setIsNavigating] = useState(false);
   const router = useRouter();
+
+  useFocusEffect(
+    useCallback(() => {
+      setIsNavigating(false);
+    }, [])
+  );
   
   const [animations, setAnimations] = useState([]);
   
@@ -494,9 +502,13 @@ export default function MapNavigate({ onMapChange }) {
     }
 
     const currentMapName = maps[currentMapIndex].map_name;
+
+    setIsNavigating(true);
     
     // Navigate directly - assets are already preloaded
-    navigateToMap(currentMapName);
+    setTimeout(() => {
+        navigateToMap(currentMapName);
+    }, 400); 
   };
 
   // Helper function to navigate to the map
@@ -519,15 +531,7 @@ export default function MapNavigate({ onMapChange }) {
     }
   };
 
-  // Loading state
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#fff" />
-        <Text style={styles.loadingText}>Loading Maps...</Text>
-      </View>
-    );
-  }
+ 
 
   // Error state with no maps available
   if (error && maps.length === 0) {
@@ -777,6 +781,8 @@ export default function MapNavigate({ onMapChange }) {
           </View>
         </View>
       </Modal>
+
+      <MainLoading visible={isNavigating}/>
     </>
   );
 }

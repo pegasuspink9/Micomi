@@ -361,13 +361,6 @@ const transformPreviewDataWithCache = (data) => {
     );
   };
 
-  if (!lessons?.length) {
-    return (
-      <View style={styles.buttonContainer}>
-        <Text style={styles.noLessonsText}>Loading levels...</Text>
-      </View>
-    );
-  }   
 
   console.log('🔥 Rendering buttons for levels:', lessons);
 
