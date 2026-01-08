@@ -14,8 +14,8 @@ const StatCard = ({ icon, label, value }) => (
           style={styles.statCard}
         >
           <View style={styles.statIconContainer}>
-            <Image 
-              source={{ uri: icon }} 
+             <Image 
+              source={typeof icon === 'string' ? { uri: icon } : icon} 
               style={styles.statIconImage}
               resizeMode="contain"
             />
@@ -78,8 +78,8 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(46, 231, 255, 0.3)',
   },
   statIconImage: {
-    width: gameScale(50),
-    height: gameScale(50),
+    width: gameScale(55),
+    height: gameScale(55),
   },
   statLabel: {
     fontSize: gameScale(10),

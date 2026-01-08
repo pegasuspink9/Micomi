@@ -27,17 +27,18 @@ const StatsGridSection = ({ coins, currentStreak, expPoints, mapsOpened, statsIc
               style={styles.overviewContainer}
             >
               <View style={styles.statColumn}>
-                <StatCard 
-                  icon={statsIcons.coins}
+               <StatCard 
+                  icon={require('../icons/coins.png')}
                   label="Coins" 
                   value={coins.toLocaleString()}
                 />
                 <StatCard 
-                  icon={statsIcons.currentStreak}
+                  icon={require('../icons/fire.png')}
                   label="Streak" 
                   value={currentStreak}
                 />
               </View>
+
 
               <View style={styles.heroColumn}>
                 <View style={styles.heroInfo}>
@@ -47,14 +48,14 @@ const StatsGridSection = ({ coins, currentStreak, expPoints, mapsOpened, statsIc
                 <ProfileHeroSprite hero={hero} />
               </View>
 
-              <View style={styles.statColumn}>
+               <View style={styles.statColumn}>
                 <StatCard 
-                  icon={statsIcons.expPoints}
+                  icon={require('../icons/exp.png')} 
                   label="EXP Points" 
                   value={expPoints.toLocaleString()}
                 />
                 <StatCard 
-                  icon={statsIcons.mapsOpened}
+                  icon={require('../icons/map.png')} 
                   label="Maps" 
                   value={mapsOpened}
                 />

@@ -63,6 +63,7 @@ export default function MapHeader() {
         
         {/* Column: Name Top, Level+Bar Bottom */}
         <View style={styles.nameAndXpColumn}>
+
             <Text style={styles.usernameText} numberOfLines={1}>{username}</Text>
             
             {/* Row: Level Badge + XP Bar */}
@@ -110,7 +111,12 @@ export default function MapHeader() {
       {/* Resources Section */}
       <View style={styles.resources}>
         <View style={styles.resourceItem}>
-          <FontAwesome name="money" size={gameScale(20)} color="#FFD700" />
+          <Image 
+            source={require('../icons/coins.png')} 
+            style={styles.coinImage} 
+            contentFit="contain"
+            cachePolicy="memory-disk"
+          />
           <Text style={styles.resourceText}>{coins}</Text>
         </View>
         <View style={styles.resourceItem}>
@@ -164,11 +170,16 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 
+  coinImage:{
+    width: gameScale(20),
+    height: gameScale(20),
+  },
+
   nameAndXpColumn: {
     flex: 1,
     flexDirection: 'column',
     justifyContent: 'center',
-    gap: gameScale(2),
+    marginLeft: gameScale(-9), // Align with username text
   },
   usernameText: {
     color: '#fff',
@@ -184,7 +195,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    // Removed gap to control overlap via margin
+    marginTop: gameScale(-2),
   },
 
   // Mini Level Badge
@@ -234,8 +245,8 @@ const styles = StyleSheet.create({
 
   // XP Bar Styles
   xpBarLayer1: {
-    height: gameScale(14),
-    flex: 1, 
+    height: gameScale(12),
+    width: gameScale(80),
     backgroundColor: '#000000ff',
     borderRadius: gameScale(10),
     shadowColor: '#000000',
@@ -243,7 +254,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     elevation: 3,
     zIndex: 1,
-    marginLeft: gameScale(-8), // Pulls the bar underneath the badge
+    marginLeft: gameScale(-8),
   },
   xpBarLayer2: {
     flex: 1,
@@ -272,11 +283,10 @@ const styles = StyleSheet.create({
   },
   xpText: {
     fontSize: gameScale(8),
-    fontFamily: 'Computerfont',
+    fontFamily: 'Poppins',
     color: '#FFF',
     textShadowColor: 'rgba(0, 0, 0, 1)',
-    textShadowRadius: 2,
-    marginTop: gameScale(1),
+    textShadowRadius: 2
   },
 
   // Resources
@@ -294,8 +304,8 @@ const styles = StyleSheet.create({
   },
   resourceText: {
     color: '#fff',
-    fontSize: gameScale(16),
-    fontFamily: 'Computerfont',
+    fontSize: gameScale(12),
+    fontFamily: 'Poppins',
   },
   headerIcons: {
   flexDirection: 'row',

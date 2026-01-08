@@ -87,14 +87,9 @@ const Character = ({
   }), []);
   
   const ATTACK_RUN_DISTANCE = useMemo(() => {
-    const deviceType = getDeviceType();
-    const distanceMap = {
-      'tablet': SCREEN.width * 0.6,
-      'large-phone': SCREEN.width * 0.8,
-      'small-phone': SCREEN.width * 0.9,
-    };
-    return distanceMap[deviceType] || SCREEN.width * 0.48;
+    return gameScale(205); 
   }, []);
+
 
   const isUrlCached = useCallback((url) => {
     if (!url) return false;

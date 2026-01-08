@@ -124,15 +124,11 @@ const EnemyCharacter = ({
     diesOutro: 500
   }), []);
 
-  const RUN_DISTANCE = useMemo(() => {
-    const deviceType = getDeviceType();
-    const distanceMap = {
-      'tablet': SCREEN.width * 0.6,
-      'large-phone': SCREEN.width * 0.8,
-      'small-phone': SCREEN.width * 0.9,
-    };
-    return -(distanceMap[deviceType] || SCREEN.width * 0.5);
+    const RUN_DISTANCE = useMemo(() => {
+    // -160 mirrors the character's movement
+    return -gameScale(200); 
   }, []);
+
 
   // ========== State Management ==========
   const initialUrl = useMemo(() => {
