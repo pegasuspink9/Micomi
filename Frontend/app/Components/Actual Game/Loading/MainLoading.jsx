@@ -4,6 +4,7 @@ import Animated, {
   useSharedValue, 
   useAnimatedStyle, 
   withTiming, 
+  withDelay,
   Easing, 
   runOnJS 
 } from 'react-native-reanimated';
@@ -15,8 +16,6 @@ const HALF_WIDTH = width / 2;
 const MainLoading = ({ visible, onAnimationComplete }) => {
   const [isRendered, setIsRendered] = useState(visible);
   
-  // Shared Values for Sliding Animation
-  // Start off-screen if visible is false, or at center if visible is true
   const leftTranslateX = useSharedValue(visible ? 0 : -HALF_WIDTH);
   const rightTranslateX = useSharedValue(visible ? 0 : HALF_WIDTH);
 
@@ -90,6 +89,11 @@ const MainLoading = ({ visible, onAnimationComplete }) => {
 
 const styles = StyleSheet.create({
   container: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     ...StyleSheet.absoluteFillObject,
     zIndex: 99999, // High z-index to overlay everything
     flexDirection: 'row',

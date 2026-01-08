@@ -46,8 +46,7 @@ export default function Profile() {
           colors={['#0a192f', '#172b4aff', '#0a192f']}
           style={styles.gradientBackground}
         >
-          <ActivityIndicator size="large" color="#ffffff" />
-          <Text style={styles.loadingText}>Loading Profile...</Text>
+        
         </LinearGradient>
       </View>
     );

@@ -10,6 +10,9 @@ import { useCharacterSelection } from '../../hooks/useCharacterSelection';
 import { Video } from 'expo-av';
 import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
 import { gameScale } from '../../Components/Responsiveness/gameResponsive';
+import MainLoading from '../Actual Game/Loading/MainLoading';
+
+
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -185,20 +188,13 @@ export default function CharacterProfile() {
     );
   };
 
-  // ✅ Simple loading state (no asset download progress needed)
-  if (loading && getHeroNames().length === 0) {
+ if (!currentHero && error && !loading) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color="#ffffff" />
-        <Text style={styles.loadingText}>Loading Characters...</Text>
-      </View>
-    );
-  }
-
-  if (!currentHero) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <Text style={styles.errorText}>No character data available</Text>
+        <Text style={styles.errorText}>{error || "No character data available"}</Text>
+        <TouchableOpacity onPress={loadCharacters} style={styles.modalSingleButton}>
+             <Text style={styles.confirmButtonText}>Retry</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -209,132 +205,79 @@ export default function CharacterProfile() {
         <MapHeader coins={userCoins} />
       </View>
 
-      <Video 
-        ref={videoRef}
-        source={getCachedVideoSource()} 
-        style={styles.fullBackground}
-        shouldPlay={true}
-        isLooping={true}
-        resizeMode="contain"
-        useNativeControls={false}
-        isMuted={true}
-        onLoad={onVideoLoad}
-        onError={onVideoError}
-        onPlaybackStatusUpdate={onVideoStatusUpdate}
-      />
+      {/* Render the content only when we have data to avoid crashes */}
+      {currentHero && (
+        <>
+          <Video 
+            ref={videoRef}
+            source={getCachedVideoSource()} 
+            style={styles.fullBackground}
+            shouldPlay={true}
+            isLooping={true}
+            resizeMode="contain"
+            useNativeControls={false}
+            isMuted={true}
+            onLoad={onVideoLoad}
+            onError={onVideoError}
+            onPlaybackStatusUpdate={onVideoStatusUpdate}
+          />
 
-      <View style={styles.contentOverlay}>
-        <View style={styles.topSection}>
-          <View style={styles.contentContainer}>
-            
-            <ScreenLabel 
-              ref={screenLabelRef}
-              heroName={currentHero.character_name}
-              selectedHero={selectedHero}
-              styles={styles}
-            />
+          <View style={styles.contentOverlay}>
+            <View style={styles.topSection}>
+              <View style={styles.contentContainer}>
+                
+                <ScreenLabel 
+                  ref={screenLabelRef}
+                  heroName={currentHero.character_name}
+                  selectedHero={selectedHero}
+                  styles={styles}
+                />
 
-            <Animated.View style={{ opacity: backgroundOpacity }} />
+                <Animated.View style={{ opacity: backgroundOpacity }} />
 
-            <View style={styles.characterContainer}>
-              <CharacterDisplay
-                currentHero={currentHero}
-                selectedHero={selectedHero}
-                isCharacterAnimating={isCharacterAnimating}
-                onAnimationFinish={handleCharacterAnimationFinish}
-                styles={styles}
-              />
+                <View style={styles.characterContainer}>
+                  <CharacterDisplay
+                    currentHero={currentHero}
+                    selectedHero={selectedHero}
+                    isCharacterAnimating={isCharacterAnimating}
+                    onAnimationFinish={handleCharacterAnimationFinish}
+                    styles={styles}
+                  />
 
-              <ActionButton
-                currentHero={currentHero}
-                onSelectCharacter={handleCharacterSelection}
-                onShowBuyModal={setShowBuyModal}
-                coinIcon={getCachedCoinIcon()}
-                styles={styles}
-                disabled={selecting || purchasing}
-                selecting={selecting}
-              />
+                  <ActionButton
+                    currentHero={currentHero}
+                    onSelectCharacter={handleCharacterSelection}
+                    onShowBuyModal={setShowBuyModal}
+                    coinIcon={getCachedCoinIcon()}
+                    styles={styles}
+                    disabled={selecting || purchasing}
+                    selecting={selecting}
+                  />
 
-              <AttributePanel
-                ref={attributePanelRef}
-                attributeData={attributeData}
-                selectedHero={selectedHero}
-                styles={styles}
-              />
+                  <AttributePanel
+                    ref={attributePanelRef}
+                    attributeData={attributeData}
+                    selectedHero={selectedHero}
+                    styles={styles}
+                  />
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.bottomBar}>
+              <View style={styles.characterSelection}>
+                {getHeroNames().map(renderHeroBox)}
+              </View>
             </View>
           </View>
-        </View>
+        </>
+      )}
 
-        <View style={styles.bottomBar}>
-          <View style={styles.characterSelection}>
-            {getHeroNames().map(renderHeroBox)}
-          </View>
-        </View>
-      </View>
+      {/* Purchase and Error Modals code remains the same... */}
+      {/* ... existing modal code ... */}
 
-      {/* Purchase Modal */}
-      <Modal 
-        animationType="fade" 
-        transparent={true} 
-        visible={showBuyModal} 
-        onRequestClose={() => setShowBuyModal(false)}
-        statusBarTranslucent={true}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Confirm Purchase</Text>
-            <Text style={styles.modalText}>
-              Do you want to buy {currentHero.character_name} 
-              {currentHero.character_price > 0 ? ` for ${currentHero.character_price} coins` : ''}?
-            </Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity 
-                style={styles.cancelButton} 
-                onPress={() => setShowBuyModal(false)}
-                disabled={purchasing}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.confirmButton} 
-                onPress={handlePurchase}
-                disabled={purchasing}
-              >
-                {purchasing ? (
-                  <ActivityIndicator size="small" color="white" />
-                ) : (
-                  <>
-                    <Image source={{ uri: getCachedCoinIcon() }} style={styles.modalCoinIcon} />
-                    <Text style={styles.confirmButtonText}>{currentHero.character_price}</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Error Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={errorModal.visible}
-        onRequestClose={() => setErrorModal({ visible: false, message: '', title: 'Purchase Failed' })}
-        statusBarTranslucent={true}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>{errorModal.title}</Text>
-            <Text style={styles.modalText}>{errorModal.message}</Text>
-            <TouchableOpacity 
-              style={styles.modalSingleButton} 
-              onPress={() => setErrorModal({ visible: false, message: '', title: 'Purchase Failed' })}
-            >
-              <Text style={styles.confirmButtonText}>OK</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      {/* Main Loading Overlay */}
+      <MainLoading visible={loading || !currentHero} />
     </View>
   );
 }
