@@ -9,8 +9,11 @@ import {
   ImageBackground,
   ActivityIndicator,
   Modal,
-  Animated
+  Animated,
+  Platform,
+  StatusBar
 } from 'react-native';
+import * as NavigationBar from 'expo-navigation-bar';
 import LottieView from 'lottie-react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useMapData } from '../../hooks/useMapData'; 
@@ -35,11 +38,15 @@ export default function MapNavigate({ onMapChange }) {
   const [isNavigating, setIsNavigating] = useState(false);
   const router = useRouter();
 
+
   useFocusEffect(
     useCallback(() => {
       setIsNavigating(false);
     }, [])
   );
+
+
+  
   
   const [animations, setAnimations] = useState([]);
   
@@ -580,6 +587,7 @@ export default function MapNavigate({ onMapChange }) {
 
   return (
     <>
+     <StatusBar hidden={true} translucent={true} backgroundColor="transparent" /> 
       <View style={styles.scrollContent}>
         {/* Show error banner if there was an error but we have data */}
         {error && maps.length > 0 && (

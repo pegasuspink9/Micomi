@@ -14,7 +14,6 @@ export default function RootLayout() {
       try {
         if (Platform.OS === 'android') {
           await NavigationBar.setVisibilityAsync('hidden');
-          
           await SystemUI.setBackgroundColorAsync('transparent');
         }
       } catch (error) {
@@ -24,6 +23,7 @@ export default function RootLayout() {
 
     setupImmersiveMode();
 
+    // Keep interval to enforce state, but overlay-swipe should do most of the work
     const interval = setInterval(setupImmersiveMode, 500);
 
     return () => {
@@ -40,14 +40,14 @@ export default function RootLayout() {
         backgroundColor: '#034251' 
       }}>
         <ActivityIndicator size="large" color="#fff" />
-        <StatusBar hidden={true} />
+        <StatusBar hidden={true} translucent={true} backgroundColor="transparent" />
       </View>
     );
   }
 
   return (
     <>
-      <StatusBar hidden={true} />
+      <StatusBar hidden={true} translucent={true} backgroundColor="transparent" />
       <Stack 
         screenOptions={{ 
           headerShown: false,

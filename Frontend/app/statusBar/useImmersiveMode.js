@@ -12,7 +12,6 @@ export const useImmersiveMode = (enabled = true) => {
         try {
           if (Platform.OS === 'android') {
             await NavigationBar.setVisibilityAsync('hidden');
-            await NavigationBar.setBehaviorAsync('overlay-swipe');
             await NavigationBar.setBackgroundColorAsync('#00000000');
           }
         } catch (error) {

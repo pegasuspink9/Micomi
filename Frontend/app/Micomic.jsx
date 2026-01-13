@@ -29,6 +29,7 @@ export default function Micomic() {
   const { gameState, loading, error } = useGameData(playerId, levelId);
 
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [nextIndex, setNextIndex] = useState(1);
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [entranceFinished, setEntranceFinished] = useState(false); 
   
@@ -43,17 +44,28 @@ export default function Micomic() {
   
   const pages = useMemo(() => lessons.map(lesson => lesson.page_url), [lessons]);
 
-  // --- PRELOAD LOGIC ---
-  useEffect(() => {
+
+    useEffect(() => {
     if (pages.length > 0) {
       const preloadImages = async () => {
         try {
-          const promises = pages.map((url) => Image.prefetch(url));
-          promises.push(Image.prefetch(PAPER_TEXTURE_URL));
-          await Promise.all(promises);
+          // Filter out null/undefined and skip already cached file:// paths
+          const promises = pages
+            .filter(url => url && typeof url === 'string' && !url.startsWith('file://'))
+            .map((url) => Image.prefetch(url));
+
+          // Always try to prefetch texture if it's remote
+          if (PAPER_TEXTURE_URL && !PAPER_TEXTURE_URL.startsWith('file://')) {
+             promises.push(Image.prefetch(PAPER_TEXTURE_URL).catch(() => null));
+          }
+
+          if (promises.length > 0) {
+             await Promise.all(promises);
+          }
+          
           setImagesLoaded(true);
         } catch (e) {
-          console.warn("Failed to preload images", e);
+          console.warn("Preload notice:", e);
           setImagesLoaded(true);
         }
       };
@@ -61,18 +73,22 @@ export default function Micomic() {
     }
   }, [pages]);
 
+
   // --- ENTRANCE ANIMATION LOGIC ---
   useEffect(() => {
     if (imagesLoaded && pages.length > 0 && !entranceFinished) {
       setCurrentIndex(pages.length - 1);
+      setNextIndex(pages.length - 1);
       
       const runEntranceFlip = (index) => {
         if (index < 0) {
           setEntranceFinished(true);
-          setCurrentIndex(0); 
+          setCurrentIndex(0);
+          setNextIndex(1); 
           return;
         }
         setCurrentIndex(index);
+        setNextIndex(index);
         flipAnim.setValue(1); 
         Animated.timing(flipAnim, {
           toValue: 0, 
@@ -159,38 +175,48 @@ export default function Micomic() {
     });
   }, [flipAnim, entranceFinished]);
 
-  // --- 3. HANDLE NEXT / FINISH LOGIC ---
+  // --- HANDLE NEXT / FINISH LOGIC ---
   const handleNext = useCallback(() => {
-    // If on the last page, Finish/Exit
     if (currentIndex >= pages.length - 1) {
       if (isAnimating.current) return;
       
-      // Optional: Animate exit before navigating
       runAnimation(1, () => {
          console.log("Book finished! Navigating back...");
-         router.back(); // Navigate back to previous screen
+         router.back(); 
       });
       return;
     }
 
     if (isAnimating.current) return;
+    
     runAnimation(1, () => {
-      setCurrentIndex(prev => prev + 1);
+      // After animation completes, move to the next page
+      const newIndex = currentIndex + 1;
+      setCurrentIndex(newIndex);
+      setNextIndex(newIndex + 1);
       flipAnim.setValue(0);
     });
   }, [isAnimating, currentIndex, pages.length, runAnimation, flipAnim, router]);
 
   const handlePrev = useCallback(() => {
     if (isAnimating.current || currentIndex <= 0) return;
-    setCurrentIndex(prev => {
-      const newIndex = prev - 1;
-      flipAnim.setValue(1); 
-      requestAnimationFrame(() => {
-        runAnimation(0);
+    
+    // Move to previous page first
+    const newIndex = currentIndex - 1;
+    setCurrentIndex(newIndex);
+    setNextIndex(newIndex);
+    
+    // Set flip to "flipped" state, then animate back to normal
+    flipAnim.setValue(1); 
+    requestAnimationFrame(() => {
+      runAnimation(0, () => {
+        // After animation, set next page for underlay
+        setNextIndex(newIndex + 1);
       });
-      return newIndex;
     });
   }, [isAnimating, currentIndex, runAnimation, flipAnim]);
+
+  
 
   const panResponder = useMemo(() => 
     PanResponder.create({
@@ -299,10 +325,12 @@ export default function Micomic() {
       <StatusBar hidden translucent backgroundColor="transparent" />
 
       <View style={styles.bookContainer}>
+        {/* Underlay Page - Shows the NEXT page that will be revealed */}
         <View style={[styles.pageWrapper, { position: 'absolute', zIndex: 1 }]}>
-           {renderPage(currentIndex + 1, {}, 'static-next')}
+           {renderPage(nextIndex, {}, 'static-next')}
         </View>
 
+        {/* Animated Overlay Page - The CURRENT page being flipped */}
         {renderPage(currentIndex, animatedPageStyle, 'animated-current')}
       </View>
 

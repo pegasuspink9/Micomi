@@ -725,18 +725,18 @@ const LevelModal = ({
                             <View style={styles.rewardSubFrames}>
                               <View style={styles.rewardItem}>
                                 <Image 
-                                  source={{uri: 'https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd'}} 
+                                  source={require('../../icons/coins.png')} 
                                   style={styles.rewardImage}
-                                  resizeMode="cover"
+                                  resizeMode="contain"
                                 />
                                 <Text style={styles.rewardText}>{mappedLevelData.coins_reward}</Text>
                               </View>
 
                               <View style={styles.rewardItem}>
                                 <Image 
-                                  source={{uri: 'https://github.com/user-attachments/assets/4e1d0813-aa7d-4dcf-8333-a1ff2cd0971e'}} 
+                                  source={require('../../icons/points.png')} 
                                   style={styles.rewardImage}
-                                  resizeMode="cover"
+                                  resizeMode="contain"
                                 />
                                 <Text style={styles.rewardText}>{mappedLevelData.points_reward}</Text>
                               </View> 
@@ -746,11 +746,11 @@ const LevelModal = ({
                           <View style={styles.rewardSection}>
                             <Text style={styles.sectionLabel}>Energy Cost</Text>
                             <View style={styles.rewardItem}>
-                              <Image 
-                                source={{uri: 'https://github.com/user-attachments/assets/4e1d0813-aa7d-4dcf-8333-a1ff2cd0971e'}} 
-                                style={styles.rewardImage}
-                                resizeMode="cover"
-                              />
+                                <Image 
+                                  source={require('../../icons/energy.png')} 
+                                  style={styles.rewardImage}
+                                  resizeMode="contain"
+                                />
                               <Text style={styles.rewardText}>{mappedLevelData.energy_cost}</Text>
                             </View>
                           </View>
@@ -885,8 +885,8 @@ const styles = StyleSheet.create({
     marginHorizontal: gameScale(5),
   },
   rewardImage: {
-    width: gameScale(39),
-    height: gameScale(39),
+    width: gameScale(35),
+    height: gameScale(35),
     borderRadius: gameScale(4),
     marginBottom: gameScale(5),
   },

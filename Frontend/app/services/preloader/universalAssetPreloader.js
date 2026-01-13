@@ -774,6 +774,15 @@ async testR2Download(testUrl) {
 
       addAsset(level.is_victory_image, `level_${levelIndex}_is_victory_image`, 'image', 'game_images');
 
+       if (level.lessons && Array.isArray(level.lessons.lessons)) {
+        level.lessons.lessons.forEach((lesson, i) => {
+          if (lesson.page_url) {
+            addAsset(lesson.page_url, `level_${levelIndex}_lesson_${i}_page`, 'image', 'game_images');
+          }
+        });
+      }
+
+
       // All Images from imagesUrls
       if (Array.isArray(level.imagesUrls)) {
         level.imagesUrls.forEach((url, i) => {
@@ -3131,6 +3140,22 @@ transformPotionShopDataWithCache(levelPreviewData) {
         }
     }
 
+     if (transformedGameState.lessons) {
+      const lessonArray = Array.isArray(transformedGameState.lessons) 
+        ? transformedGameState.lessons 
+        : (transformedGameState.lessons.lessons || []);
+        
+      lessonArray.forEach(lesson => {
+        if (lesson && lesson.page_url) {
+          lesson.page_url = this.getCachedAssetPath(lesson.page_url);
+        }
+      });
+    }
+
+    if (transformedGameState.currentLesson && transformedGameState.currentLesson.page_url) {
+      transformedGameState.currentLesson.page_url = this.getCachedAssetPath(transformedGameState.currentLesson.page_url);
+    }
+
     return transformedGameState;
   }
 
@@ -3491,12 +3516,36 @@ transformPotionShopDataWithCache(levelPreviewData) {
 
   //  Get cached asset path (local file or original URL)
   getCachedAssetPath(url) {
-    const assetInfo = this.downloadedAssets.get(url);
+    if (!url) return url;
+    
+    // 1. Try exact match
+    let assetInfo = this.downloadedAssets.get(url);
+    
+    // 2. Try encoded match (if url is unencoded but cache has encoded)
+    if (!assetInfo) {
+      try {
+        const encodedUrl = encodeURI(url);
+        if (encodedUrl !== url) {
+             assetInfo = this.downloadedAssets.get(encodedUrl);
+        }
+      } catch (e) {}
+    }
+    // 3. Try decoded match (if url is encoded but cache has unencoded)
+    if (!assetInfo) {
+      try {
+        const decodedUrl = decodeURI(url);
+         if (decodedUrl !== url) {
+            assetInfo = this.downloadedAssets.get(decodedUrl);
+         }
+      } catch (e) {}
+    }
+
     if (assetInfo && assetInfo.localPath) {
       return `file://${assetInfo.localPath}`;
     }
     return url; // Fallback to original URL
   }
+
 
   getCachedAssetPaths(urls) {
     const paths = {};

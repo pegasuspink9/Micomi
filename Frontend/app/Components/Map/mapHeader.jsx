@@ -120,7 +120,12 @@ export default function MapHeader() {
           <Text style={styles.resourceText}>{coins}</Text>
         </View>
         <View style={styles.resourceItem}>
-          <Ionicons name="heart" size={gameScale(20)} color="#FF6B6B" />
+          <Image 
+            source={require('../icons/energy.png')} 
+            style={styles.energyImage} 
+            contentFit="contain"
+            cachePolicy="memory-disk"
+          />
           <Text style={styles.resourceText}>{lives}</Text>
         </View>
       </View>
@@ -173,6 +178,11 @@ const styles = StyleSheet.create({
   coinImage:{
     width: gameScale(20),
     height: gameScale(20),
+  },
+
+  energyImage: {
+    width: gameScale(30),
+    height: gameScale(30),
   },
 
   nameAndXpColumn: {
@@ -300,10 +310,10 @@ const styles = StyleSheet.create({
   resourceItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: gameScale(5),
+    gap: gameScale(2),
   },
   resourceText: {
-    color: '#fff',
+    color: '#ffffffff',
     fontSize: gameScale(12),
     fontFamily: 'Poppins',
   },
