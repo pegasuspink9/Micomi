@@ -12,6 +12,13 @@ export interface PlayerCreateInput {
   facebook_id?: string;
 }
 
+export interface PlayerEditProfileInput {
+  player_name?: string;
+  email?: string;
+  username?: string;
+  password?: string;
+}
+
 export interface PlayerUpdateInput {
   player_name?: string;
   email?: string;

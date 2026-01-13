@@ -19,6 +19,7 @@ import questRoutes from "./models/Quest/quest.routes";
 import dialogueRoutes from "./models/Dialogue/dialogue.routes";
 import authRoutes from "../middleware/auth.routes";
 import { getAllPlayerProgress } from "../src/models/Player/playerProgress.service";
+import avatarRoutes from "./models/Avatar/avatar.routes";
 
 import testRoutes from "../middleware/testing.toutes";
 
@@ -59,6 +60,7 @@ app.use("/lesson", lessonRoutes);
 app.use("/quest", questRoutes);
 app.use("/dialogue", dialogueRoutes);
 app.use("/game", gameRoutes);
+app.use("/avatar", avatarRoutes);
 
 //temporary
 app.get("/progress", getAllPlayerProgress);

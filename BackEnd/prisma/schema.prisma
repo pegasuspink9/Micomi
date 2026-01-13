@@ -137,6 +137,8 @@ model Player {
   exp_points         Int                 @default(0)
   level              Int                 @default(1)
 
+  player_avatar      String?             
+
   energy             Int                 @default(25)
   energy_reset_at    DateTime?
 

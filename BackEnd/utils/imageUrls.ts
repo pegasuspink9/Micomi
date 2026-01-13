@@ -125,25 +125,25 @@ export const imagesUrls = [
   "https://micomi-assets.me/Maps/Snowland/10.png",
 
   //Badges
-  "https://micomi-assets.me/Badges%20Updated/Badges_HTML%20HERO.png",
+  "https://micomi-assets.me/Badges%20Updated/Html%20Hero.png",
   "https://micomi-assets.me/Landscape%20Badges/HTML%20Hero.png",
-  "https://micomi-assets.me/Badges%20Updated/Badges_CSS%20ARTIST.png",
+  "https://micomi-assets.me/Badges%20Updated/CSS%20Artist.png",
   "https://micomi-assets.me/Landscape%20Badges/CSS%20Artist.png",
-  "https://micomi-assets.me/Badges%20Updated/Badges_JAVASCRIPT%20HUNTER.png",
+  "https://micomi-assets.me/Badges%20Updated/Javascript%20Hunter.png",
   "https://micomi-assets.me/Landscape%20Badges/Javascript%20Hunter.png",
-  "https://micomi-assets.me/Badges%20Updated/Badges_PC%20EATER.png",
+  "https://micomi-assets.me/Badges%20Updated/PC%20Eater.png",
   "https://micomi-assets.me/Landscape%20Badges/PC%20Eater.png",
-  "https://micomi-assets.me/Badges%20Updated/Badges_WEB%20WIZARD.png",
+  "https://micomi-assets.me/Badges%20Updated/Web%20Wizard.png",
   "https://micomi-assets.me/Landscape%20Badges/Web%20Wizard.png",
-  "https://micomi-assets.me/Badges%20Updated/Badges_COLLECTOR.png",
+  "https://micomi-assets.me/Badges%20Updated/Collector.png",
   "https://micomi-assets.me/Landscape%20Badges/Collector.png",
-  "https://micomi-assets.me/Badges%20Updated/Badges_TOP%201.png",
+  "https://micomi-assets.me/Badges%20Updated/Top%201.png",
   "https://micomi-assets.me/Landscape%20Badges/Top%201.png",
-  "https://micomi-assets.me/Badges%20Updated/Badges_WAKE%20AND%20BAKE.png",
+  "https://micomi-assets.me/Badges%20Updated/Wake%20and%20Bake.png",
   "https://micomi-assets.me/Landscape%20Badges/Wake%20and%20Bake.png",
-  "https://micomi-assets.me/Badges%20Updated/Badges_KNOWLEDGE%20KEEPER.png",
+  "https://micomi-assets.me/Badges%20Updated/Knowledge%20Keeper.png",
   "https://micomi-assets.me/Landscape%20Badges/Knowledge%20Keeper.png",
-  "https://micomi-assets.me/Badges%20Updated/Badges_MASTER%20BEATER.png",
+  "https://micomi-assets.me/Badges%20Updated/Master%20Beater.png",
   "https://micomi-assets.me/Landscape%20Badges/Master%20Beater.png",
   "https://micomi-assets.me/Badges/MICOMI'S%20FRIEND.png",
   "https://micomi-assets.me/Landscape%20Badges/Micomi's%20Friend%201.png",
@@ -579,9 +579,22 @@ export const imagesUrls = [
 
   //Hero SS Icons
   "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Gino_SS.png",
+  "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Shi_SS.png",
+  "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Ryron_SS.png",
+  "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Leon_SS.png",
 
-  //Boss Darko SS Icons
+  //Boss Darko SS Icon
   "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossDarko_SS.png",
+  //Boss Joshy SS Icon
+  "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossJoshy_SS.png",
+  //King Grimnir SS Icon
+  "https://micomi-assets.me/Icons/SS%20Skill%20Icons/KingGrimnir_SS.png",
+  //Boss Scorcharach SS Icon
+  "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossScorarach_SS.png",
+  //Boss Maggmaw SS Icon
+  "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossMaggmaw_SS.png",
+  //Boss Pyroformic SS Icon
+  "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossPyroformic_SS.png",
 
   //Micomi Avatar
   "https://micomi-assets.me/Hero%20Portraits/Micomi.png",
@@ -592,6 +605,15 @@ export const imagesUrls = [
   "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png",
   //Ice overlay (not used in the backend)
   "https://micomi-assets.me/Icons/Miscellaneous/Ice%20Overlay.png",
+
+  //Player avatars
+  "https://micomi-assets.me/Player%20Avatars/original-32a59694e59c7e9536e5a32d105292c7.webp",
+  "https://micomi-assets.me/Player%20Avatars/niedlich-astronaut-gamer-halten-joystick-mit-kopfhoerer-karikatur-vektor-symbol-abbildung-wissenschaft-techno_138676-6590.avif",
+  "https://micomi-assets.me/Player%20Avatars/gaming-mascot-logo-vector-59845947.avif",
+  "https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif",
+  "https://micomi-assets.me/Player%20Avatars/a-man-wearing-headphones-and-sunglasses-is-wearing-a-hoodie-free-vector.jpg",
+  "https://micomi-assets.me/Player%20Avatars/8300_8_03.jpg",
+  "https://micomi-assets.me/Player%20Avatars/2169.jpg",
 
   // Enemies Recolored HTML (not yet added in db and used)
   // "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Broodmax/idle.png",

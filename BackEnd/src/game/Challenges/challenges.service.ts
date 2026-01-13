@@ -1384,12 +1384,6 @@ const getNextChallengeEasy = async (progress: any) => {
     const existing = playerAnswer[challengeKey];
     if (existing && existing[0] === "_REVEAL_PENDING_") {
       let effectiveCorrectAnswer = nextChallenge.correct_answer as string[];
-      const rawCorrectAnswer = [...effectiveCorrectAnswer];
-      const enemy = level.enemy;
-
-      if (progress.has_reversed_curse && enemy?.enemy_name === "Boss Darco") {
-        effectiveCorrectAnswer = rawCorrectAnswer.map(reverseString);
-      }
 
       let filledQuestion = nextChallenge.question ?? "";
       const answersToFill = [...effectiveCorrectAnswer];
@@ -1474,12 +1468,6 @@ const getNextChallengeHard = async (progress: any) => {
     const existing = playerAnswer[challengeKey];
     if (existing && existing[0] === "_REVEAL_PENDING_") {
       let effectiveCorrectAnswer = nextChallenge.correct_answer as string[];
-      const rawCorrectAnswer = [...effectiveCorrectAnswer];
-      const enemy = level.enemy;
-
-      if (progress.has_reversed_curse && enemy?.enemy_name === "Boss Darco") {
-        effectiveCorrectAnswer = rawCorrectAnswer.map(reverseString);
-      }
 
       let filledQuestion = nextChallenge.question ?? "";
       const answersToFill = [...effectiveCorrectAnswer];
@@ -1557,12 +1545,6 @@ const wrapWithTimer = async (
 
   if (progress.has_ryron_reveal) {
     let effectiveCorrectAnswer = challenge.correct_answer as string[];
-    const rawCorrectAnswer = [...effectiveCorrectAnswer];
-    const enemy = level.enemy;
-
-    if (progress.has_reversed_curse && enemy?.enemy_name === "Boss Darco") {
-      effectiveCorrectAnswer = rawCorrectAnswer.map(reverseString);
-    }
 
     const revealResult = revealAllBlanks(
       challenge.question ?? "",
@@ -1619,10 +1601,7 @@ const wrapWithTimer = async (
     }
   }
 
-  if (
-    progress.has_reversed_curse &&
-    level.enemy?.enemy_name === "King Grimnir"
-  ) {
+  if (progress.has_reversed_curse && level.enemy?.enemy_name === "Boss Darco") {
     const options = challenge.options as string[];
     if (Array.isArray(options) && options.length > 0) {
       modifiedChallenge.options = options

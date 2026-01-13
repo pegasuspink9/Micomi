@@ -120,17 +120,20 @@ const SS_HERO_ICON_CONFIG: Record<
       "Unleashes a powerful lightning attack and heals 25% HP",
   },
   ShiShi: {
-    special_skill_image: "SS icon skill ni ShiShi",
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Shi_SS.png",
     special_skill_description:
       "Freezes the enemy, preventing their next attack",
   },
   Ryron: {
-    special_skill_image: "SS icon skill ni Ryron",
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Ryron_SS.png",
     special_skill_description:
       "God's Judgment: Reveals all blanks in the next challenge",
   },
   Leon: {
-    special_skill_image: "SS icon skill ni Leon",
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Leon_SS.png",
     special_skill_description: "Deals 2x damage with a devastating fire attack",
   },
 };
@@ -140,28 +143,33 @@ const SS_BOSS_ICON_CONFIG: Record<
   { special_skill_image: string; special_skill_description: string }
 > = {
   "Boss Joshy": {
-    special_skill_image: "SS icon skill ni Boss Joshy",
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossJoshy_SS.png",
     special_skill_description: "Blocks all damage for one turn",
   },
   "King Grimnir": {
-    special_skill_image: "SS icon skill ni King Grimnir",
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/KingGrimnir_SS.png",
     special_skill_description: "Forces player to use only basic attacks",
   },
   "Boss Darco": {
     special_skill_image:
       "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossDarko_SS.png",
-    special_skill_description: "Reverses all text in the challenge",
+    special_skill_description: "Reverses the text of answer options",
   },
   "Boss Scorcharach": {
-    special_skill_image: "SS icon skill ni Boss Scorcharach",
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossScorarach_SS.pngh",
     special_skill_description: "Both the hero and the boss take damage",
   },
   "Boss Maggmaw": {
-    special_skill_image: "SS icon skill ni Boss Maggmaw",
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossMaggmaw_SS.png",
     special_skill_description: "Randomly shuffles all answer options",
   },
   "Boss Pyroformic": {
-    special_skill_image: "SS icon skill ni Boss Pyroformic",
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossPyroformic_SS.png",
     special_skill_description: "Scrambles letters within each option",
   },
 };

@@ -1,7 +1,11 @@
 import { PrismaClient, QuestPeriod } from "@prisma/client";
 import { hashPassword, comparePassword } from "../../../utils/hash";
 import { generateAccessToken } from "../../../utils/token";
-import { PlayerCreateInput, PlayerLoginInput } from "./player.types";
+import {
+  PlayerCreateInput,
+  PlayerLoginInput,
+  PlayerEditProfileInput,
+} from "./player.types";
 import { checkAchievements } from "../../game/Achievements/achievements.service";
 import { updateQuestProgress } from "../../game/Quests/quests.service";
 import { getAllPlayerQuests } from "../Quest/quest.service";
@@ -248,7 +252,6 @@ export const getPlayerProfile = async (player_id: number) => {
   };
 };
 
-// This ensures Google, Facebook, and Email users all start with the exact same setup.
 const initializeNewGameState = async (playerId: number) => {
   const firstLevel = await prisma.level.findFirst({
     orderBy: { level_number: "asc" },
@@ -281,9 +284,7 @@ const initializeNewGameState = async (playerId: number) => {
   }
 };
 
-// --- MODIFIED: Create Player (Generic) ---
 export const createPlayer = async (data: PlayerCreateInput) => {
-  // Only hash password if it exists (it won't exist for OAuth)
   const finalPassword = data.password
     ? await hashPassword(data.password)
     : null;
@@ -294,7 +295,6 @@ export const createPlayer = async (data: PlayerCreateInput) => {
       email: data.email,
       username: data.username,
       password: finalPassword,
-      // For OAuth, these might be passed in data, otherwise null
       google_id: (data as any).google_id || null,
       facebook_id: (data as any).facebook_id || null,
       created_at: new Date(),
@@ -303,14 +303,12 @@ export const createPlayer = async (data: PlayerCreateInput) => {
     },
   });
 
-  // Call the helper
   await initializeNewGameState(newPlayer.player_id);
 
   console.log(`New player ${newPlayer.player_id} created.`);
   return newPlayer;
 };
 
-// --- NEW: Handle OAuth Logic (Google/Facebook) ---
 interface OAuthUserParams {
   provider: "google" | "facebook";
   providerId: string;
@@ -324,7 +322,6 @@ export const findOrCreateOAuthPlayer = async ({
   email,
   name,
 }: OAuthUserParams) => {
-  // 1. Check if player exists by the specific provider ID
   let player = await prisma.player.findUnique({
     where:
       provider === "google"
@@ -332,17 +329,13 @@ export const findOrCreateOAuthPlayer = async ({
         : { facebook_id: providerId },
   });
 
-  // 2. If found, return immediately
   if (player) return player;
 
-  // 3. If not found, check if a player exists with this email
-  // (e.g., User signed up with Email/Pass before, now using Google)
   const existingPlayerByEmail = await prisma.player.findUnique({
     where: { email },
   });
 
   if (existingPlayerByEmail) {
-    // Link the accounts
     player = await prisma.player.update({
       where: { player_id: existingPlayerByEmail.player_id },
       data: {
@@ -355,17 +348,13 @@ export const findOrCreateOAuthPlayer = async ({
     return player;
   }
 
-  // 4. If absolutely no record, create a new player
-  // Generate a unique username based on the provider ID
   const newUsername = `user_${provider}_${providerId.slice(0, 8)}`;
 
-  // Reuse the createPlayer function we modified above
   player = await createPlayer({
     player_name: name,
     email: email,
     username: newUsername,
-    password: "", // No password for OAuth
-    // Pass the specific ID to be saved
+    password: "",
     ...({
       [provider === "google" ? "google_id" : "facebook_id"]: providerId,
     } as any),
@@ -393,6 +382,57 @@ export const updatePlayer = async (
     where: { player_id },
     data: updateData,
   });
+};
+
+export const editPlayerProfile = async (
+  player_id: number,
+  data: PlayerEditProfileInput
+) => {
+  if (data.email || data.username) {
+    const existingUser = await prisma.player.findFirst({
+      where: {
+        AND: [
+          {
+            OR: [{ email: data.email }, { username: data.username }],
+          },
+          {
+            NOT: { player_id: player_id },
+          },
+        ],
+      },
+    });
+
+    if (existingUser) {
+      if (existingUser.email === data.email) {
+        throw new Error("Email is already currently in use.");
+      }
+      if (existingUser.username === data.username) {
+        throw new Error("Username is already taken.");
+      }
+    }
+  }
+
+  const updateData: any = {
+    ...data,
+    last_active: new Date(),
+  };
+
+  if (data.password) {
+    updateData.password = await hashPassword(data.password);
+  }
+
+  const updatedPlayer = await prisma.player.update({
+    where: { player_id },
+    data: updateData,
+    select: {
+      player_id: true,
+      player_name: true,
+      username: true,
+      email: true,
+    },
+  });
+
+  return updatedPlayer;
 };
 
 export const deletePlayer = (player_id: number) =>
