@@ -12,6 +12,8 @@ import { getAllPlayerQuests } from "../Quest/quest.service";
 import { QuestType } from "@prisma/client";
 import { differenceInCalendarDays } from "date-fns";
 import { io } from "../../index";
+import { sendPasswordResetEmail } from "../../../utils/email";
+import { generateResetToken, verifyResetToken } from "../../../utils/token";
 
 const prisma = new PrismaClient();
 
@@ -444,7 +446,6 @@ export const loginPlayer = async ({ email, password }: PlayerLoginInput) => {
     return null;
   }
 
-  // Just return the player data, don't generate token here
   const updatedPlayer = await updatePlayerActivity(player.player_id);
   if (updatedPlayer) {
     await updateQuestProgress(player.player_id, QuestType.login_days, 1);
@@ -452,7 +453,6 @@ export const loginPlayer = async ({ email, password }: PlayerLoginInput) => {
   }
 
   return {
-    // Return the Full Player object so the controller has IDs
     player_id: player.player_id,
     email: player.email,
     player_name: player.player_name,
@@ -498,3 +498,52 @@ export async function updatePlayerActivity(playerId: number) {
     },
   });
 }
+
+export const requestPasswordReset = async (email: string) => {
+  const player = await prisma.player.findUnique({ where: { email } });
+
+  if (!player) return true;
+
+  const resetToken = generateResetToken({
+    id: player.player_id,
+    email: player.email,
+  });
+
+  try {
+    await sendPasswordResetEmail(player.email, resetToken);
+    console.log(`Reset email sent to ${player.email}`);
+  } catch (error) {
+    console.error("Failed to send email:", error);
+    throw new Error("Failed to send reset email");
+  }
+
+  return true;
+};
+
+export const resetPassword = async (token: string, newPassword: string) => {
+  let decoded: any;
+  try {
+    decoded = verifyResetToken(token);
+  } catch (error) {
+    throw new Error("Invalid or expired reset token");
+  }
+
+  const { id, email } = decoded;
+  const player = await prisma.player.findUnique({ where: { player_id: id } });
+
+  if (!player || player.email !== email) {
+    throw new Error("User not found or email mismatch");
+  }
+
+  const hashedPassword = await hashPassword(newPassword);
+
+  await prisma.player.update({
+    where: { player_id: id },
+    data: {
+      password: hashedPassword,
+      last_active: new Date(),
+    },
+  });
+
+  return { success: true };
+};

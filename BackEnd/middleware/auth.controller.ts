@@ -14,6 +14,7 @@ import {
   updatePlayerActivity,
 } from "../src/models/Player/player.service";
 import { QuestType } from "@prisma/client";
+import * as PlayerService from "../src/models/Player/player.service";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_WEB_CLIENT_ID);
 
@@ -177,5 +178,59 @@ export const refreshToken = async (req: Request, res: Response) => {
     );
   } catch (error) {
     return errorResponse(res, error, "Invalid or expired refresh token", 403);
+  }
+};
+
+export const requestPasswordReset = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return errorResponse(res, null, "Email is required", 400);
+    }
+
+    await PlayerService.requestPasswordReset(email);
+
+    return successResponse(
+      res,
+      null,
+      "If an account exists with this email, a password reset link has been sent."
+    );
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    return errorResponse(res, error, "Failed to process request", 500);
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return errorResponse(res, null, "Token and new password required", 400);
+    }
+
+    if (newPassword.length < 6) {
+      return errorResponse(
+        res,
+        null,
+        "Password must be at least 6 characters",
+        400
+      );
+    }
+
+    await PlayerService.resetPassword(token, newPassword);
+
+    return successResponse(
+      res,
+      null,
+      "Password has been successfully reset. You can now login."
+    );
+  } catch (error: any) {
+    return errorResponse(
+      res,
+      error,
+      error.message || "Failed to reset password",
+      400
+    );
   }
 };
