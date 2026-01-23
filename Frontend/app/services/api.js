@@ -7,17 +7,22 @@ class ApiService {
   constructor() {
     this.baseURL = POSSIBLE_BACKEND_URLS[0];
     this.isBackendAvailable = false;
+    this.authToken = null;
+  }
+
+  setAuthToken(token) {
+    this.authToken = token;
   }
   
   // Test backend connectivity
-  async testConnection() {
+    async testConnection() {
     for (const url of POSSIBLE_BACKEND_URLS) {
       try {
         console.log(`Testing connection to: ${url}`);
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const timeoutId = setTimeout(() => controller.abort(), 3000); // Shorter timeout for faster detection
         
-        const response = await fetch(`${url}/map`, {
+        const response = await fetch(`${url}/`, { // Test root instead of /map
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
           signal: controller.signal,
@@ -25,10 +30,10 @@ class ApiService {
         
         clearTimeout(timeoutId);
         
-        if (response.ok) {
+        if (response.status) {
           this.baseURL = url;
           this.isBackendAvailable = true;
-          console.log(` Connected to backend at: ${url}`);
+          console.log(` ✅ Connected to backend at: ${url}`);
           return true;
         }
       } catch (error) {
@@ -36,7 +41,7 @@ class ApiService {
       }
     }
     
-    this.isBackendAvailable = false;
+  this.isBackendAvailable = false;
     console.log('❌ No backend server found');
     return false;
   }
@@ -57,6 +62,7 @@ class ApiService {
     const config = {
       headers: {
         'Content-Type': 'application/json',
+        ...(this.authToken ? { 'Authorization': `Bearer ${this.authToken}` } : {}),
         ...options.headers,
       },
       signal: controller.signal,

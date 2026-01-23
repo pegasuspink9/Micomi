@@ -8,11 +8,14 @@ import {
   KeyboardAvoidingView, 
   Platform,
   Dimensions,
-  ScrollView
+  ScrollView,
+  ActivityIndicator
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { gameScale, scaleWidth, scaleHeight, hp } from '../Components/Responsiveness/gameResponsive';
+
+import { useAuth } from '../hooks/useAuth';
 
 const { width } = Dimensions.get('window');
 
@@ -20,6 +23,16 @@ export default function Practice() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  const { login, loading, user } = useAuth();
+
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+        return;
+    }
+    await login(email, password);
+  };
 
   return (
     <LinearGradient
@@ -39,7 +52,8 @@ export default function Practice() {
           {/* Header Section */}
           <View style={styles.headerContainer}>
             <Text style={styles.appTitle}>Micomi</Text>
-            <Text style={styles.signInTitle}>Sign In</Text>
+            {/* Show different title if logged in */}
+            <Text style={styles.signInTitle}>{user ? `Hi, ${user.player_name}` : 'Sign In'}</Text>
             <Text style={styles.tagline}>Log in and Fight with Micomi Now!</Text>
           </View>
 
@@ -107,8 +121,16 @@ export default function Practice() {
             </View>
 
             {/* Login Button */}
-            <TouchableOpacity style={styles.loginButton}>
-              <Text style={styles.loginButtonText}>Log In</Text>
+             <TouchableOpacity 
+                style={[styles.loginButton, loading && { opacity: 0.7 }]} 
+                onPress={handleLogin}
+                disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.loginButtonText}>Log In</Text>
+              )}
             </TouchableOpacity>
 
             {/* Footer */}
@@ -118,6 +140,18 @@ export default function Practice() {
                 <Text style={styles.signUpText}>Sign Up</Text>
               </TouchableOpacity>
             </View>
+
+            {/* Debugging: Show Token data if successful */}
+            {user && (
+                <View style={{ marginTop: 20, padding: 10, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 10 }}>
+                    <Text style={{ color: 'white', fontFamily: 'DynaPuff' }}>
+                        Logged in as ID: {user.player_id}
+                    </Text>
+                    <Text style={{ color: '#00ff00', fontFamily: 'DynaPuff', fontSize: 10 }}>
+                         Access Token is active
+                    </Text>
+                </View>
+            )}
 
           </View>
         </ScrollView>
