@@ -27,14 +27,54 @@ export const useAuth = () => {
       const userData = await authService.login(email, password);
       setUser(userData);
       Alert.alert('Success', `Welcome back, ${userData.player_name}!`);
-      // Navigate to game play or home after success
-      // router.replace('/GamePlay'); 
     } catch (error) {
       Alert.alert('Login Failed', error.message);
     } finally {
       setLoading(false);
     }
   };
+
+  const signup = async (userData) => {
+    setLoading(true);
+    try {
+      const result = await authService.signup(userData);
+      Alert.alert('Success', 'Player created successfully! Please log in.');
+      router.back(); // Return to Login screen
+      return result;
+    } catch (error) {
+      Alert.alert('Signup Failed', error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+   const loginWithGoogle = async (idToken) => {
+    setLoading(true);
+    try {
+      const userData = await authService.googleLogin(idToken);
+      setUser(userData);
+      Alert.alert('Success', `Welcome, ${userData.player_name}!`);
+    } catch (error) {
+      Alert.alert('Google Login Failed', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loginWithFacebook = async (accessToken) => {
+    setLoading(true);
+    try {
+      const userData = await authService.facebookLogin(accessToken);
+      setUser(userData);
+      Alert.alert('Success', `Welcome, ${userData.player_name}!`);
+    } catch (error) {
+      Alert.alert('Facebook Login Failed', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   const logout = async () => {
     await authService.logout();
@@ -47,6 +87,9 @@ export const useAuth = () => {
     loading,
     login,
     logout,
-    refresh: authService.refreshAccessToken
+    refresh: authService.refreshAccessToken,
+    signup,
+    loginWithGoogle,
+    loginWithFacebook,
   };
 };

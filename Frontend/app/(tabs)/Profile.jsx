@@ -20,14 +20,13 @@ import StatsGridSection from '../Components/Profile Components/StatsGridSection'
 import InventorySection from '../Components/Profile Components/InventorySection';
 
 export default function Profile() {
-  const playerId = 11;
   const {
     playerData,
     loading,
     error,
     loadPlayerProfile,
     clearError
-  } = usePlayerProfile(playerId);
+  } = usePlayerProfile();
 
   const [inventoryTab, setInventoryTab] = useState('Badges');
 

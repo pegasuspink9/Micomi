@@ -4,7 +4,7 @@ import { AppState } from 'react-native';
 import { characterService } from '../services/characterService';
 import { universalAssetPreloader } from '../services/preloader/universalAssetPreloader';
 
-export const usePlayerProfile = (playerId = 11) => {
+export const usePlayerProfile = () => {
   const [playerData, setPlayerData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -17,7 +17,7 @@ export const usePlayerProfile = (playerId = 11) => {
       setLoading(true);
       setError(null);
       
-      console.log(`👤 Loading player profile for ID: ${playerId}...`);
+      console.log(`👤 Loading player profile...`);
       
       // ✅ Load cached assets from Map API preload into memory
       await Promise.all([
@@ -27,7 +27,7 @@ export const usePlayerProfile = (playerId = 11) => {
       ]);
       
       // Get player data from API
-      const apiData = await playerService.getPlayerProfile(playerId);
+      const apiData = await playerService.getPlayerProfile();
       
       // Transform API data to our format
       let transformedData = playerService.transformPlayerData(apiData);
@@ -66,7 +66,7 @@ export const usePlayerProfile = (playerId = 11) => {
     } finally {
       setLoading(false);
     }
-  }, [playerId]);
+  }, []);
 
   const checkForCharacterUpdates = useCallback(async () => {
     try {

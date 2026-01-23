@@ -16,7 +16,6 @@ const LevelModal = ({
   onClose = () => {},
   onPlay = () => {},
   levelId = null,
-  playerId = 11,
   levelData = null,
   navigation = null 
 }) => {
@@ -113,7 +112,6 @@ const LevelModal = ({
   
   console.log('🎮 Play button pressed:', {
     levelId,
-    playerId,
     levelData: displayData,
     levelType
   });
@@ -127,7 +125,6 @@ const LevelModal = ({
         router.push({
           pathname: '/PotionShop',
           params: {
-            playerId: playerId,
             levelId: levelId,
             levelData: JSON.stringify(displayData || {})
           }
@@ -137,7 +134,6 @@ const LevelModal = ({
         router.push({
           pathname: '/Micomic',
           params: {
-            playerId: playerId,
             levelId: levelId
           }
         });
@@ -146,7 +142,6 @@ const LevelModal = ({
         router.push({
           pathname: '/GamePlay', 
           params: {
-            playerId: playerId,
             levelId: levelId,
             levelData: JSON.stringify(displayData || {})
           }
@@ -155,13 +150,12 @@ const LevelModal = ({
     } catch (error) {
       console.error('Navigation error:', error);
       onPlay({
-        playerId,
         levelId,
         levelData: displayData
       });
     }
   }, 100);
-}, [isAnimating, playerId, levelId, displayData, handleModalClose, router, onPlay]);
+}, [isAnimating, levelId, displayData, handleModalClose, router, onPlay]);
 
   //  Much smoother entrance animation
   const startEntranceAnimation = () => {
@@ -301,7 +295,7 @@ const LevelModal = ({
     try {
       setLoading(true);
       setError(null);
-      console.log(`🎮 Fetching level preview for level ${levelId}, player ${playerId}`);
+      console.log(`🎮 Fetching level preview for level ${levelId}`);
       
       //  Load cached assets into memory first
       await universalAssetPreloader.loadCachedAssets('game_animations');

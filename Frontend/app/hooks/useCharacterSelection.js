@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { characterService } from '../services/characterService';
 import { universalAssetPreloader } from '../services/preloader/universalAssetPreloader';
 
-export const useCharacterSelection = (playerId = 11) => { 
+export const useCharacterSelection = () => { 
   const [charactersData, setCharactersData] = useState({});
   const [selectedHero, setSelectedHero] = useState('');
   const [loading, setLoading] = useState(true);
@@ -16,7 +16,7 @@ export const useCharacterSelection = (playerId = 11) => {
       setLoading(true);
       setError(null);
       
-      console.log(`🦸‍♂️ Loading player characters for player ID: ${playerId}...`);
+      console.log(`🦸‍♂️ Loading player characters...`);
       
       // ✅ Load ALL cached assets from Map API preload into memory
       console.log('📦 Loading cached assets into memory...');
@@ -29,7 +29,7 @@ export const useCharacterSelection = (playerId = 11) => {
       ]);
       
       // Get character data from API
-      const apiData = await characterService.getPlayerCharacters(playerId);
+      const apiData = await characterService.getPlayerCharacters();
       const { characters: transformedData, userCoins: fetchedUserCoins } = characterService.transformCharacterData(apiData);
       setUserCoins(fetchedUserCoins);
 
@@ -59,7 +59,7 @@ export const useCharacterSelection = (playerId = 11) => {
     } finally {
       setLoading(false);
     }
-  }, [playerId]);
+  }, []);
 
   const purchaseCharacter = useCallback(async (heroToPurchase) => {
     try {
@@ -73,9 +73,9 @@ export const useCharacterSelection = (playerId = 11) => {
         throw new Error('Character already purchased');
       }
 
-      console.log(`💰 Purchasing character: ${hero.character_name} (Player ID: ${playerId}, Character Shop ID: ${hero.characterShopId})`);
+      console.log(`💰 Purchasing character: ${hero.character_name} (Character Shop ID: ${hero.characterShopId})`);
       
-      const response = await characterService.purchaseCharacter(playerId, hero.characterShopId);
+      const response = await characterService.purchaseCharacter(hero.characterShopId);
       
       console.log(`✅ Purchase successful:`, response);
       
@@ -88,7 +88,7 @@ export const useCharacterSelection = (playerId = 11) => {
     } finally {
       setPurchasing(false);
     }
-  }, [playerId, loadCharacters]);
+  }, [loadCharacters]);
   
   const selectCharacter = useCallback(async (heroName) => {
     try {
@@ -108,9 +108,9 @@ export const useCharacterSelection = (playerId = 11) => {
         throw new Error('Character is already selected');
       }
 
-      console.log(`🎯 Selecting character: ${heroName} (Player ID: ${playerId}, Character ID: ${hero.character_id})`);
+      console.log(`🎯 Selecting character: ${heroName} (Character ID: ${hero.character_id})`);
       
-      const response = await characterService.selectCharacter(playerId, hero.character_id);
+      const response = await characterService.selectCharacter(hero.character_id);
       
       console.log(`✅ Character ${heroName} selected successfully:`, response);
       
@@ -124,7 +124,7 @@ export const useCharacterSelection = (playerId = 11) => {
     } finally {
       setSelecting(false);
     }
-  }, [charactersData, playerId, loadCharacters]);
+  }, [charactersData, loadCharacters]);
 
   const changeDisplayedCharacter = useCallback((heroName) => {
     if (charactersData[heroName]) {

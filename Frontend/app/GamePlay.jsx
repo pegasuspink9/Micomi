@@ -21,7 +21,6 @@ export default function GamePlay() {
   const params = useLocalSearchParams();
   
   // Parse parameters from Expo Router
-  const playerId = parseInt(params.playerId) || 11;
   const levelId = parseInt(params.levelId);
   const levelData = params.levelData ? JSON.parse(params.levelData) : null;
 
@@ -40,7 +39,6 @@ export default function GamePlay() {
   const dialogueData = useMemo(() => gameState?.dialogue, [gameState?.dialogue]);
 
   console.log('🎮 GamePlay component mounted with:', { 
-    playerId, 
     levelId, 
     levelData: levelData ? 'Loaded' : 'None',
     rawParams: params
@@ -101,7 +99,7 @@ export default function GamePlay() {
     usePotion,
     selectPotion,
     clearSelectedPotion,
-  } = useGameData(playerId, levelId);
+  } = useGameData(levelId);
 
    useEffect(() => {
     const bgmUrl = gameState?.gameplay_audio;

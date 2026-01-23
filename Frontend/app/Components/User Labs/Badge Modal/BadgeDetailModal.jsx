@@ -17,7 +17,7 @@ import { playerService } from '../../../services/playerService';
 
 const STATUS_BAR_HEIGHT = StatusBar.currentHeight || 0;
 
-const BadgeDetailModal = ({ visible, badge, onClose, playerId = 11, onBadgeApplied }) => {
+const BadgeDetailModal = ({ visible, badge, onClose, onBadgeApplied }) => {
   const [isApplying, setIsApplying] = useState(false);
 
   // ✅ If not visible, render nothing.
@@ -27,15 +27,15 @@ const BadgeDetailModal = ({ visible, badge, onClose, playerId = 11, onBadgeAppli
   if (!badge) return null;
 
   const handleApplyBadge = async () => {
-    if (!badge.id || !playerId) {
-      console.error('Missing badge ID or player ID');
+    if (!badge.id) {
+      console.error('Missing badge ID');
       return;
     }
 
     try {
       setIsApplying(true);
       
-      await playerService.selectBadge(playerId, badge.id);
+      await playerService.selectBadge(badge.id);
       
       console.log(`🎖️ Badge "${badge.name}" applied successfully`);
       

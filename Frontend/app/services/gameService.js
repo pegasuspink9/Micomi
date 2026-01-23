@@ -2,9 +2,9 @@ import { apiService } from './api';
 import { universalAssetPreloader } from './preloader/universalAssetPreloader';
 
 export const gameService = {
-  enterLevel: async (playerId, levelId, onAnimationProgress = null, onDownloadProgress = null) => {
+  enterLevel: async (levelId, onAnimationProgress = null, onDownloadProgress = null) => {
     try {
-      console.log(`🎮 Entering level ${levelId} for player ${playerId}...`);
+      console.log(`🎮 Entering level ${levelId}...`);
       
       //  FIX: Load cached assets from Map API preload into memory (fast - no download)
       console.log('📦 Loading Map API cached assets into memory...');
@@ -16,7 +16,7 @@ export const gameService = {
         universalAssetPreloader.loadCachedAssets('map_assets'),
       ]);
 
-      const response = await apiService.post(`/game/entryLevel/${playerId}/${levelId}`);
+      const response = await apiService.post(`/game/entryLevel/${levelId}`);
       
       if (!response.success) {
         throw new Error(response.message || 'Failed to enter level');
@@ -63,27 +63,27 @@ export const gameService = {
 
 
 
-  submitAnswer: async (playerId, levelId, challengeId, selectedAnswers) => {
+  submitAnswer: async ( levelId, challengeId, selectedAnswers) => {
     try {
       if (!Array.isArray(selectedAnswers) || selectedAnswers.length === 0) {
         throw new Error('selectedAnswers must be a non-empty array');
       }
 
-      if (!playerId || !levelId || !challengeId) {
-        throw new Error('Missing required parameters: playerId, levelId, or challengeId');
+      if (!levelId || !challengeId) {
+        throw new Error('Missing required parameters: levelId or challengeId');
       }
 
       const payload = { answer: selectedAnswers };
       
       console.log('🔍 Submitting answer:', {
-        url: `/game/submit-challenge/${playerId}/${levelId}/${challengeId}`,
+        url: `/game/submit-challenge/${levelId}/${challengeId}`,
         payload: selectedAnswers,
         payloadSize: JSON.stringify(payload).length
       });
       
       const startTime = Date.now();
       const response = await apiService.post(
-        `/game/submit-challenge/${playerId}/${levelId}/${challengeId}`, 
+        `/game/submit-challenge/${levelId}/${challengeId}`, 
         payload
       );
       
@@ -102,8 +102,8 @@ export const gameService = {
     }
   },
 
-  retryLevel: async (playerId, levelId, onAnimationProgress = null, onDownloadProgress = null) => {
-    return gameService.enterLevel(playerId, levelId, onAnimationProgress, onDownloadProgress);
+  retryLevel: async (levelId, onAnimationProgress = null, onDownloadProgress = null) => {
+    return gameService.enterLevel(levelId, onAnimationProgress, onDownloadProgress);
   },
 
   
@@ -423,11 +423,11 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
   }
 },
 
-  getShopPotions: async (playerId) => {
+  getShopPotions: async () => {
     try {
-      console.log(`🧪 Fetching shop potions for player ${playerId}...`);
+      console.log(`🧪 Fetching shop potions...`);
       
-      const response = await apiService.get(`/shop/potions/${playerId}`);
+      const response = await apiService.get(`/shop/potions`);
       
       if (!response.success) {
         throw new Error(response.message || 'Failed to fetch shop potions');
@@ -449,25 +449,25 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         remainToBuy: 10, // default
       }));
 
-      console.log(`🧪 Found ${transformedPotions.length} shop potions for player ${playerId}`);
+      console.log(`🧪 Found ${transformedPotions.length} shop potions`);
       return { success: true, data: { potionShop: transformedPotions, player_info: playerInfo } };
     } catch (error) {
-      console.error(`Failed to fetch shop potions for player ${playerId}:`, error);
+      console.error(`Failed to fetch shop potions:`, error);
       throw error;
     }
   },
 
-  buyPotion: async (playerId, potionShopId) => {
+  buyPotion: async (potionShopId) => {
     try {
-      console.log(`🛒 Buying potion ${potionShopId} for player ${playerId}...`);
+      console.log(`🛒 Buying potion ${potionShopId}...`);
 
-      const response = await apiService.post(`/shop/buy-potion/${playerId}/${potionShopId}`);
+      const response = await apiService.post(`/shop/buy-potion/${potionShopId}`);
 
       if (!response.success) {
         throw new Error(response.message || 'Failed to buy potion');
       }
 
-      console.log(`🛒 Potion ${potionShopId} purchased successfully for player ${playerId}`);
+      console.log(`🛒 Potion ${potionShopId} purchased successfully`);
       return { success: true, data: response.data };
     } catch (error) {
       console.error(`❌ Failed to buy potion ${potionShopId}:`, error);
@@ -477,11 +477,11 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
 
   
 
-   getPlayerPotions: async (playerId) => {
+   getPlayerPotions: async () => {
     try {
-      console.log(`🧪 Fetching potions for player ${playerId}...`);
+      console.log(`🧪 Fetching potions for player...`);
       
-      const response = await apiService.get(`/game/potion/${playerId}`);
+      const response = await apiService.get(`/game/potion`);
       
       if (!response.success) {
         throw new Error(response.message || 'Failed to fetch potions');
@@ -504,23 +504,23 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         potion_shop_id: potion.potion_shop_id,
       }));
 
-      console.log(`🧪 Found ${transformedPotions.length} potions for player ${playerId}`);
+      console.log(`🧪 Found ${transformedPotions.length} potions for player`);
       return { success: true, data: transformedPotions, playerInfo: playerInfo };
     } catch (error) {
-      console.error(`Failed to fetch potions for player ${playerId}:`, error);
+      console.error(`Failed to fetch potions for player:`, error);
       throw error;
     }
   },
 
 
-  usePotion: async (playerId, levelId, challengeId, playerPotionId) => {
+  usePotion: async (levelId, challengeId, playerPotionId) => {
   try {
-    console.log(`🧪 Using potion ${playerPotionId} for player ${playerId}, level ${levelId}, challenge ${challengeId}...`);
+    console.log(`🧪 Using potion ${playerPotionId} for player, level ${levelId}, challenge ${challengeId}...`);
     
     const payload = { playerPotionId };
     
     const response = await apiService.post(
-      `/game/submit-challenge/${playerId}/${levelId}/${challengeId}/use-potion`,
+      `/game/submit-challenge/${levelId}/${challengeId}/use-potion`,
       payload
     );
     

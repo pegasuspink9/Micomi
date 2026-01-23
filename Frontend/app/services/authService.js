@@ -12,9 +12,7 @@ export const authService = {
       const response = await apiService.post('/player/login/', { email, password });
       
       if (response.success) {
-        const { accessToken, player } = response.data;
-        // Attempt to get refreshToken from data if the backend sends it there. 
-        // If it's strictly a cookie, it might need extra handling, but we assume it's accessible.
+        const { accessToken, player } = response.data; 
         const refreshToken = response.data.refreshToken || response.refreshToken;
         
         await this.setSession(accessToken, refreshToken, player);
@@ -26,11 +24,9 @@ export const authService = {
     }
   },
 
-  // Stub for Signup (you can implement the endpoint later)
   async signup(userData) {
     try {
-      // Assuming endpoint is similar
-      const response = await apiService.post('/player/signup/', userData);
+      const response = await apiService.post('/player/register', userData);
       if (response.success) {
         return response.data;
       }
@@ -39,6 +35,35 @@ export const authService = {
       throw error;
     }
   },
+
+  async googleLogin(idToken) {
+    try {
+      const response = await apiService.post('/auth/google/mobile', { idToken });
+      if (response.success) {
+        const { token, refreshToken, player } = response.data;
+        await this.setSession(token, refreshToken, player);
+        return player;
+      }
+      throw new Error(response.message || 'Google Auth failed');
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  async facebookLogin(accessToken) {
+    try {
+      const response = await apiService.post('/auth/facebook/mobile', { accessToken });
+      if (response.success) {
+        const { token, refreshToken, player } = response.data;
+        await this.setSession(token, refreshToken, player);
+        return player;
+      }
+      throw new Error(response.message || 'Facebook Auth failed');
+    } catch (error) {
+      throw error;
+    }
+  },
+
 
   // Helper to save tokens and user data
   async setSession(accessToken, refreshToken, player) {
@@ -70,7 +95,6 @@ export const authService = {
       }
       throw new Error('Refresh failed');
     } catch (error) {
-      // If refresh fails, you might want to logout
       await this.logout();
       throw error;
     }

@@ -87,7 +87,6 @@ export default function MapNavigate({ onMapChange }) {
       }
 
       hasAutoPreloaded.current = true;
-      const playerId = 11;
 
       try {
         console.log('🗺️ Map screen displayed - checking asset cache...');
@@ -211,7 +210,7 @@ export default function MapNavigate({ onMapChange }) {
         }
 
         // Step 3: Fetch and download Map API assets
-        const preloadData = await mapService.getMapPreloadData(playerId);
+        const preloadData = await mapService.getMapPreloadData();
 
         if (!preloadData) {
           console.warn('⚠️ Failed to fetch map preload data');
@@ -682,7 +681,7 @@ export default function MapNavigate({ onMapChange }) {
             <Image source={require('./Assets/right arrow.png')} style={styles.arrowImage} />
           </TouchableOpacity>
         </View>
-        <MiniQuestPreview playerId={11} />
+        <MiniQuestPreview />
       </View>
       
       {/* Download Modal - Now shows automatically when needed */}

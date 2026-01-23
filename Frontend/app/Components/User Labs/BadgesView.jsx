@@ -16,9 +16,8 @@ import BadgeDetailModal from './Badge Modal/BadgeDetailModal';
 
 export default function BadgesView() {
   const router = useRouter();
-  const playerId = 11;
   // ✅ Simplified - removed assetsLoading and assetsProgress (no longer needed)
-  const { playerData, loading, loadPlayerProfile } = usePlayerProfile(playerId);
+  const { playerData, loading, loadPlayerProfile } = usePlayerProfile();
 
   const [selectedBadge, setSelectedBadge] = useState(null);
   const [selectedGradient, setSelectedGradient] = useState(['#8B4513', '#be874fff']);
@@ -220,7 +219,6 @@ export default function BadgesView() {
         badge={selectedBadge}
         gradientColors={selectedGradient}
         onClose={() => setModalVisible(false)}
-        playerId={playerId}
         onBadgeApplied={handleBadgeApplied}
       />
     </SafeAreaView>

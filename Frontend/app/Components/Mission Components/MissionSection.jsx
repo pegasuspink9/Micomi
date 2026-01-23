@@ -7,7 +7,7 @@ import MissionTabButton from './MissionTabButton';
 import QuestCard from './QuestCard'; 
 import { RewardModal } from './RewardModal';
 
-const MissionSection = ({ playerId = 11 }) => {
+const MissionSection = () => {
   const [activeTab, setActiveTab] = useState('Daily');
   
   // Add modal state management
@@ -27,7 +27,7 @@ const MissionSection = ({ playerId = 11 }) => {
     getMonthlyQuests,
     getSummary,
     clearError
-  } = useQuests(playerId);
+  } = useQuests();
 
   // Get quests based on active tab
   const getActiveQuests = () => {

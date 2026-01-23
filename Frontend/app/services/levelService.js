@@ -26,7 +26,7 @@ export const levelService = {
 
   getLevelPreview: async (levelId) => {
     try {
-      const response = await apiService.get(`/game/entryLevel/11/${levelId}/preview`);
+      const response = await apiService.get(`/game/entryLevel/${levelId}/preview`);
       return response; 
     } catch (error) {
       console.error(`Failed to fetch level preview ${levelId}:`, error);
@@ -34,11 +34,11 @@ export const levelService = {
     }
   },
 
-  buyPotion: async (playerId, levelId, potionId) => {
+  buyPotion: async (levelId, potionId) => {
     try {
-      console.log(`🛒 Attempting to buy potion ${potionId} for player ${playerId} in level ${levelId}`);
+      console.log(`🛒 Attempting to buy potion ${potionId} in level ${levelId}`);
       
-      const response = await apiService.post(`/game/entryLevel/${playerId}/${levelId}/preview/buy-potion/${potionId}`);
+      const response = await apiService.post(`/game/entryLevel/${levelId}/preview/buy-potion/${potionId}`);
       
       if (!response.success) {
         throw new Error(response.message || 'Failed to buy potion');
@@ -54,10 +54,9 @@ export const levelService = {
 
 
   // Update level progress
-  updateLevelProgress: async (playerId, levelId, progressData) => {
+  updateLevelProgress: async (levelId, progressData) => {
     try {
       const response = await apiService.post(`/api/levels/${levelId}/progress`, {
-        player_id: playerId,
         ...progressData
       });
       return response.success ? response.data : response;
@@ -68,10 +67,9 @@ export const levelService = {
   },
 
   // Unlock next level
-  unlockNextLevel: async (playerId, mapId, currentLevelNumber) => {
+  unlockNextLevel: async (mapId, currentLevelNumber) => {
     try {
       const response = await apiService.post(`/api/levels/unlock`, {
-        player_id: playerId, 
         map_id: mapId,
         current_level_number: currentLevelNumber
       });

@@ -24,9 +24,7 @@ import PotionDetailModal from './Badge Modal/PotionDetailModal';
 
 export default function PotionsView() {
   const router = useRouter();
-  const playerId = 11;
-  //  Simplified - removed assetsLoading and assetsProgress (no longer needed)
-  const { playerData, loading } = usePlayerProfile(playerId);
+  const { playerData, loading } = usePlayerProfile();
   const [selectedPotion, setSelectedPotion] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
 

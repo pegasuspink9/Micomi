@@ -21,8 +21,7 @@ import AssetDownloadProgress from '../RoadMap/LoadingState/assetDownloadProgress
 
 export default function QuestsView() {
   const router = useRouter();
-  const playerId = 11;
-  const { playerData, loading, assetsLoading, assetsProgress } = usePlayerProfile(playerId);
+  const { playerData, loading, assetsLoading, assetsProgress } = usePlayerProfile();
   const [activeTab, setActiveTab] = useState('daily');
 
   if (assetsLoading) {

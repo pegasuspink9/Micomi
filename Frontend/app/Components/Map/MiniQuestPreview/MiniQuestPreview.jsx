@@ -17,8 +17,8 @@ import MissionSection from '../../Mission Components/MissionSection';
 
 const { width } = Dimensions.get('window');
 
-const MiniQuestPreview = ({ playerId = 11 }) => {
-  const { questsData, loading, getDailyQuests, getWeeklyQuests, getMonthlyQuests } = useQuests(playerId);
+const MiniQuestPreview = () => {
+  const { questsData, loading, getDailyQuests, getWeeklyQuests, getMonthlyQuests } = useQuests();
   const [currentQuest, setCurrentQuest] = useState(null);
   const [questIndex, setQuestIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -145,7 +145,6 @@ const MiniQuestPreview = ({ playerId = 11 }) => {
         <MissionModal 
           visible={missionModalVisible} 
           onClose={() => setMissionModalVisible(false)}
-          playerId={playerId}
         />
       </>
     );
@@ -171,7 +170,6 @@ const MiniQuestPreview = ({ playerId = 11 }) => {
         <MissionModal 
           visible={missionModalVisible} 
           onClose={() => setMissionModalVisible(false)}
-          playerId={playerId}
         />
       </>
     );
@@ -236,14 +234,13 @@ const MiniQuestPreview = ({ playerId = 11 }) => {
       <MissionModal 
         visible={missionModalVisible} 
         onClose={() => setMissionModalVisible(false)}
-        playerId={playerId}
       />
     </>
   );
 };
 
 // Mission Modal Component
-const MissionModal = ({ visible, onClose, playerId }) => {
+const MissionModal = ({ visible, onClose }) => {
   return (
     <Modal
       visible={visible}
@@ -263,7 +260,7 @@ const MissionModal = ({ visible, onClose, playerId }) => {
                 </TouchableOpacity>
                 
                 {/* Mission Section Content */}
-                <MissionSection playerId={playerId} />
+                <MissionSection />
               </View>
             </View>
           </View>

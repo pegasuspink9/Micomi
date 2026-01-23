@@ -13,8 +13,7 @@ import { usePlayerProfile } from '../../hooks/usePlayerProfile';
 import { gameScale } from '../Responsiveness/gameResponsive';
 
 export default function MapHeader() {
-  const playerId = 11;
-  const { playerData, loadPlayerProfile } = usePlayerProfile(playerId);
+  const { playerData, loadPlayerProfile } = usePlayerProfile();
 
   useFocusEffect(
     useCallback(() => {

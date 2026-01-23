@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -14,8 +14,14 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { gameScale, scaleWidth, scaleHeight, hp } from '../Components/Responsiveness/gameResponsive';
-
+import { useRouter } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
+import * as WebBrowser from "expo-web-browser";
+import * as Google from "expo-auth-session/providers/google";
+import * as Facebook from "expo-auth-session/providers/facebook";
+import * as AuthSession from 'expo-auth-session'; 
+
+WebBrowser.maybeCompleteAuthSession();
 
 const { width } = Dimensions.get('window');
 
@@ -24,7 +30,46 @@ export default function Practice() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const { login, loading, user } = useAuth();
+  const { login, loginWithGoogle, loginWithFacebook, loading, user } = useAuth();
+  const router = useRouter();
+
+
+  const googleRedirectUri = AuthSession.makeRedirectUri({
+    useProxy: true, // THIS IS CRUCIAL! It tells Expo to generate a public https:// URI
+  });
+
+  console.log('Expo AuthSession Generated Redirect URI:', googleRedirectUri); // Log it to verify
+
+   const [gRequest, gResponse, gPromptAsync] = Google.useAuthRequest({
+    androidClientId: "459111764902-09uhkdrbfq1tv7gml6dbce3t05ka3jlj.apps.googleusercontent.com",
+    iosClientId: "REPLACE_WITH_YOUR_IOS_CLIENT_ID.apps.googleusercontent.com",
+    webClientId: "459111764902-09uhkdrbfq1tv7gml6dbce3t05ka3jlj.apps.googleusercontent.com",
+    redirectUri: googleRedirectUri, // PASS THE GENERATED URI HERE
+  });
+
+
+  console.log('Google Auth Request Object (after custom redirectUri):', gRequest); 
+
+  const [fbRequest, fbResponse, fbPromptAsync] = Facebook.useAuthRequest({
+    clientId: "REPLACE_WITH_YOUR_FACEBOOK_APP_ID",
+  });
+
+  // Listen for Google response
+  useEffect(() => {
+    if (gResponse?.type === "success") {
+      const { idToken } = gResponse.params;
+      console.log("✅ Google idToken acquired, sending to backend...");
+      loginWithGoogle(idToken);
+    }
+  }, [gResponse]);
+
+    useEffect(() => {
+    if (fbResponse?.type === "success") {
+      const { access_token } = fbResponse.params;
+      console.log("✅ Facebook accessToken acquired, sending to backend...");
+      loginWithFacebook(access_token);
+    }
+  }, [fbResponse]);
 
 
   const handleLogin = async () => {
@@ -33,6 +78,15 @@ export default function Practice() {
     }
     await login(email, password);
   };
+
+  const handleGoogleLogin = () => {
+    if (gRequest) gPromptAsync();
+  };
+
+  const handleFacebookLogin = () => {
+    if (fbRequest) fbPromptAsync();
+  };
+
 
   return (
     <LinearGradient
@@ -96,7 +150,7 @@ export default function Practice() {
             </View>
 
             {/* Forgot Password */}
-            <TouchableOpacity style={styles.forgotPassContainer}>
+            <TouchableOpacity style={styles.forgotPassContainer} onPress={() => router.push('/ForgotPassword')}>
               <Text style={styles.forgotPassText}>Forget Password?</Text>
             </TouchableOpacity>
 
@@ -109,12 +163,20 @@ export default function Practice() {
 
             {/* Social Login Buttons */}
             <View style={styles.socialRow}>
-              <TouchableOpacity style={styles.socialButton}>
+              <TouchableOpacity 
+                style={[styles.socialButton, !fbRequest && { opacity: 0.5 }]} 
+                onPress={handleFacebookLogin}
+                disabled={!fbRequest}
+              >
                 <FontAwesome5 name="facebook" size={gameScale(20)} color="#1877F2" />
                 <Text style={styles.socialText}>Facebook</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.socialButton}>
+              <TouchableOpacity 
+                style={[styles.socialButton, !gRequest && { opacity: 0.5 }]} 
+                onPress={handleGoogleLogin}
+                disabled={!gRequest}
+              >
                 <ImageGoogleIcon />
                 <Text style={styles.socialText}>Google</Text>
               </TouchableOpacity>
@@ -136,7 +198,7 @@ export default function Practice() {
             {/* Footer */}
             <View style={styles.footerContainer}>
               <Text style={styles.footerText}>Don't have account? </Text>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('../Components/Authentication/Signup')}>
                 <Text style={styles.signUpText}>Sign Up</Text>
               </TouchableOpacity>
             </View>

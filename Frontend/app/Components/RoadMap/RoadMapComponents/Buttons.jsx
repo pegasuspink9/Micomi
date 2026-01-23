@@ -46,7 +46,6 @@ export default function LevelButtons({
   screenHeight = defaultHeight, 
   screenWidth = defaultWidth,
   theme = DEFAULT_THEME,
-  playerId = 11,
   navigation = null
 }) {
   const floatAnim = useRef(new Animated.Value(0)).current;
@@ -157,7 +156,7 @@ export default function LevelButtons({
 
      if (level.level_type === 'micomiButton') {
       console.log('Navigating directly to Micomic for level:', level.level_id);
-      router.push(`/Micomic?playerId=${playerId}&levelId=${level.level_id}`);
+      router.push(`/Micomic?levelId=${level.level_id}`);
       return; // Exit early
     }
 
@@ -171,7 +170,7 @@ export default function LevelButtons({
       ]);
 
       // Fetch level preview data
-      const previewResponse = await getLevelPreview(level.level_id, playerId);
+      const previewResponse = await getLevelPreview(level.level_id);
       
       if (previewResponse.success) {
         //  Transform avatar URLs to use cached paths
@@ -186,7 +185,7 @@ export default function LevelButtons({
         setSelectedLevelId(level.level_id);
         setModalVisible(true);
 
-        const previewData = await getLevelPreview(level.level_id, playerId);
+        const previewData = await getLevelPreview(level.level_id);
         const transformedData = transformPreviewDataWithCache(previewData);
         setLevelPreviewData(transformedData);
       }
@@ -247,7 +246,6 @@ const transformPreviewDataWithCache = (data) => {
     
     if (navigation) {
       navigation.navigate('GamePlay', {
-        playerId: playerId,
         levelId: selectedLevelId, // API levelId
         levelData: levelData
       });
@@ -500,7 +498,6 @@ const transformPreviewDataWithCache = (data) => {
         onClose={handleModalClose}
         onPlay={handleModalPlay}
         levelId={selectedLevelId}
-        playerId={playerId}
         levelData={levelPreviewData}
         navigation={navigation}
       />

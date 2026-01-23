@@ -32,7 +32,7 @@ export const useLevelData = () => {
   };
 
   // Get level preview
-  const getLevelPreview = async (levelId, playerId = 11) => {
+  const getLevelPreview = async (levelId) => {
     try {
       setLoading(true);
       setError(null);
@@ -122,13 +122,13 @@ export const useLevelData = () => {
     }
   };
 
-  const buyPotion = async (playerId, levelId, potionId) => {
+  const buyPotion = async (levelId, potionId) => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log(`🛒 Buying potion ${potionId} for player ${playerId} in level ${levelId}`);
-      const response = await levelService.buyPotion(playerId, levelId, potionId);
+      console.log(`🛒 Buying potion ${potionId} in level ${levelId}`);
+      const response = await levelService.buyPotion(levelId, potionId);
       
       if (!response.success) {
         throw new Error(response.message || 'Failed to buy potion');

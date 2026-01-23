@@ -187,10 +187,9 @@ const PotionDropAnimation = ({ imageUri, onAnimationComplete }) => {
 
 export default function PotionShop() {
   const params = useLocalSearchParams(); 
-  const router = useRouter()
+  const router = useRouter();
   
   const levelId = parseInt(params.levelId) || 5; 
-  const playerId = parseInt(params.playerId) || 11; 
   const levelData = params.levelData ? JSON.parse(params.levelData) : null; 
 
   const [selected, setSelected] = useState(null);
@@ -210,7 +209,7 @@ export default function PotionShop() {
       if(potions.length === 0) setLoading(true);
       setError(null);
       
-      const response = await gameService.getShopPotions(playerId);
+      const response = await gameService.getShopPotions();
       
       if (!response.success) {
         throw new Error(response.message || 'Failed to fetch potion shop');
@@ -237,7 +236,7 @@ export default function PotionShop() {
 
   useEffect(() => {
     fetchPotionData();
-  }, [levelId, playerId]); 
+  }, [levelId]); 
 
   const handleBuyPotion = async (potion) => {
     if (buyingPotion) return; 
@@ -246,8 +245,7 @@ export default function PotionShop() {
     setError(null);
 
     try {
-      const response = await gameService.buyPotion(playerId, potion.potion_id); 
-
+      const response = await gameService.buyPotion(potion.potion_id); 
       if (response.success) {
         // 1. Trigger Animation BEFORE fetching new data
         const cachedImage = getCachedImagePath(potion.image);

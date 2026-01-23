@@ -2,9 +2,9 @@ import { apiService } from './api';
 
 export const questService = {
   // Get all player quests
-  getPlayerQuests: async (playerId) => {
+  getPlayerQuests: async () => {
     try {
-      const response = await apiService.get(`/quest/player/${playerId}`);
+      const response = await apiService.get(`/quest/player`);
       console.log('📋 Player quests fetched:', response);
       return response.success ? response.data : response;
     } catch (error) {
@@ -14,10 +14,10 @@ export const questService = {
   },
 
   // Claim a completed quest reward
-  claimQuestReward: async (playerId, questId) => {
+  claimQuestReward: async (questId) => {
     try {
-      console.log(`🎁 Claiming quest reward ${questId} for player ${playerId}...`);
-      const response = await apiService.post(`/quest/${playerId}/${questId}/claim`);
+      console.log(`🎁 Claiming quest reward ${questId}...`);
+      const response = await apiService.post(`/quest/${questId}/claim`);
       
       if (!response.success) {
         throw new Error(response.message || 'Failed to claim quest reward');

@@ -17,7 +17,6 @@ import MainLoading from '../Actual Game/Loading/MainLoading';
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function CharacterProfile() {
-  const playerId = 11;
   
   const {
     charactersData,
@@ -34,7 +33,7 @@ export default function CharacterProfile() {
     clearError,
     getHeroNames,
     changeDisplayedCharacter,
-  } = useCharacterSelection(playerId);
+  } = useCharacterSelection();
 
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [errorModal, setErrorModal] = useState({ visible: false, message: '', title: 'Purchase Failed' });

@@ -3,9 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const playerService = {
   // Get player profile data
-  getPlayerProfile: async (playerId) => {
+  getPlayerProfile: async () => {
     try {
-      const response = await apiService.get(`/player/profile/${playerId}`);
+      const response = await apiService.get(`/player/profile`);
       console.log('👤 Player profile fetched:', response);
       return response.success ? response.data : response;
     } catch (error) {
@@ -14,11 +14,11 @@ export const playerService = {
     }
   },
 
-  selectBadge: async (playerId, achievementId) => {
+  selectBadge: async (achievementId) => {
     try {
-      console.log(`🎖️ Selecting badge ${achievementId} for player ${playerId}...`);
+      console.log(`🎖️ Selecting badge ${achievementId} for player...`);
       
-      const response = await apiService.post(`/game/select-badge/${playerId}/${achievementId}`);
+      const response = await apiService.post(`/game/select-badge/${achievementId}`);
       
       if (!response.success) {
         throw new Error(response.message || 'Failed to select badge');

@@ -23,10 +23,9 @@ const PAPER_TEXTURE_URL = 'https://www.transparenttextures.com/patterns/aged-pap
 export default function Micomic() {
   const router = useRouter(); 
   const params = useLocalSearchParams();
-  const playerId = parseInt(params.playerId) || 11;
   const levelId = parseInt(params.levelId);
 
-  const { gameState, loading, error } = useGameData(playerId, levelId);
+  const { gameState, loading, error } = useGameData(levelId);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [nextIndex, setNextIndex] = useState(1);

@@ -3,9 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const characterService = {
   // Get player characters
-  getPlayerCharacters: async (playerId) => {
+  getPlayerCharacters: async () => {
     try {
-      const response = await apiService.get(`/shop/player-characters/${playerId}`);
+      // FIX: Changed from /shop/player-characters/undefined to /game/player-characters
+      const response = await apiService.get(`/game/player-characters`);
       console.log('🦸‍♂️ Player characters fetched:', response);
       return response.success ? response.data : response;
     } catch (error) {
@@ -14,49 +15,31 @@ export const characterService = {
     }
   },
 
-  
- purchaseCharacter: async (playerId, characterShopId) => {
+  // FIX: Updated to match "POST game/buy-character/:characterShopId"
+  purchaseCharacter: async (characterShopId) => {
     try {
-      const response = await apiService.post(`/game/buy-character/${playerId}`, {
-        characterShopId: characterShopId
-      });
-      console.log(`💰 Character purchase response for Player ID ${playerId}, Character Shop ID ${characterShopId}:`, response);
+      const response = await apiService.post(`/game/buy-character/${characterShopId}`);
+      console.log(`💰 Character purchase response for Shop ID ${characterShopId}:`, response);
 
-      if (response.data && typeof response.data.message === 'string') {
-          if (response.data.message === "Not enough coins" || 
-              response.data.message === "Character already purchased") {
-            // Treat these as application-level errors to be displayed in the modal
-            throw new Error(response.data.message);
-          }
-      }
-      
       if (!response.success) {
-        throw new Error(response.message || 'The purchase could not be completed due to an API error.');
+        throw new Error(response.message || 'Purchase failed');
       }
       return response.data;
-
     } catch (error) {
-      let errorMessage = 'An unexpected error occurred during purchase.';
-      if (error.response && error.response.data && error.response.data.message) {
-        errorMessage = error.response.data.message; 
-      } else if (error.message) {
-        errorMessage = error.message; 
-      }
-      
-      console.log(`Purchase API result: "${errorMessage}"`);
-      throw new Error(errorMessage); // Re-throw with the extracted message
+      console.error(`Purchase API failed:`, error.message);
+      throw error;
     }
   },
   
-    // Select character
-    selectCharacter: async (playerId, characterId) => {
+  // Select character
+  selectCharacter: async (characterId) => {
     try {
-      const response = await apiService.post(`/shop/select-character/${playerId}/${characterId}`);
-      console.log(`✅ Character selection response for Player ID ${playerId}, Character ID ${characterId}:`, response);
+      // FIX: Ensure endpoint matches "POST shop/select-character/:characterId"
+      const response = await apiService.post(`/shop/select-character/${characterId}`);
+      console.log(`✅ Character selection response for Character ID ${characterId}:`, response);
       
       if (response.success) {
         await AsyncStorage.setItem('character_selection_updated', Date.now().toString());
-        console.log('💾 Character selection saved to storage');
       }
       
       return response.success ? response.data : response;

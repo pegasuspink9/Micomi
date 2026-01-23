@@ -4,7 +4,7 @@ import { universalAssetPreloader } from './preloader/universalAssetPreloader';
 export const mapService = {
   getAllMapsWithLevels: async () => {
     try {
-      const response = await apiService.get('/map/11');
+      const response = await apiService.get('/map');
       console.log('🗺️ Maps with levels response:', response);
       
       if (response.success && response.data && response.data.data) {
@@ -20,7 +20,7 @@ export const mapService = {
 
   getMapWithLevels: async (mapId) => {
     try {
-      const response = await apiService.post(`/map/select-map/11/${mapId}`);
+       const response = await apiService.post(`/map/select-map/${mapId}`);
       console.log(`🗺️ Map ${mapId} with levels FULL response:`, JSON.stringify(response, null, 2));
       
       if (response.success && response.data && response.data.map) {
@@ -60,10 +60,10 @@ export const mapService = {
     return mapData.levels;
   },
 
-  getMapPreloadData: async (playerId) => {
+  getMapPreloadData: async () => {
     try {
-      console.log(`🗺️ Fetching preload data for player ${playerId}...`);
-      const response = await apiService.get(`/map/${playerId}`);
+       console.log(`🗺️ Fetching preload data...`);
+      const response = await apiService.get('/map/'); 
 
       if (response.success && response.data) {
         console.log('🗺️ Map preload data received.');

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { questService } from '../services/questService';
 import { Alert } from 'react-native';
 
-export const useQuests = (playerId = 11) => {
+export const useQuests = () => {
   const [questsData, setQuestsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -15,9 +15,9 @@ export const useQuests = (playerId = 11) => {
       setLoading(true);
       setError(null);
       
-      console.log(`📋 Loading quests for player ID: ${playerId}...`);
+      console.log(`📋 Loading quests...`);
       
-      const apiData = await questService.getPlayerQuests(playerId);
+      const apiData = await questService.getPlayerQuests();
       const transformedData = questService.transformQuestData(apiData);
       
       setQuestsData(transformedData);
@@ -31,7 +31,7 @@ export const useQuests = (playerId = 11) => {
     } finally {
       setLoading(false);
     }
-  }, [playerId]);
+  }, []);
 
   // Claim quest reward
   const claimReward = useCallback(async (questId) => {
@@ -42,7 +42,7 @@ export const useQuests = (playerId = 11) => {
       
       console.log(`🎁 Claiming reward for quest ${questId}...`);
       
-      const response = await questService.claimQuestReward(playerId, questId);
+      const response = await questService.claimQuestReward(questId);
       
       // Reload quests to get updated data
       await loadQuests();
@@ -57,7 +57,7 @@ export const useQuests = (playerId = 11) => {
       setClaiming(false);
       setClaimingQuestId(null);
     }
-  }, [playerId, loadQuests]);
+  }, [loadQuests]);
 
 
   // Get quests by period
