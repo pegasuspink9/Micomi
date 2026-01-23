@@ -153,15 +153,15 @@ export const selectMap = async (playerId: number, mapId: number) => {
   }
 
   const enhancedMap = {
-    ...fullMap,
-    levels: fullMap.levels.map((level) => ({
-      ...level,
-      level_number: SPECIAL_BUTTON_TYPES.includes(level.level_type as any)
-        ? null
-        : level.level_number,
-      is_unlocked: !!level.playerProgress.length,
-    })),
-  };
+  ...fullMap,
+  levels: fullMap.levels.map((level, index) => ({
+    ...level,
+    level_number: SPECIAL_BUTTON_TYPES.includes(level.level_type as any)
+      ? null
+      : level.level_number,
+    is_unlocked: index === 0 || !!level.playerProgress.length,
+  })),
+};
 
   return {
     map: enhancedMap,
