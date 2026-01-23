@@ -1,6 +1,10 @@
 import { Router } from "express";
 import * as QuestService from "./quest.service";
 import * as QuestsController from "../../game/Quests/quests.controller";
+import {
+  authenticate,
+  requirePlayer,
+} from "../../../middleware/auth.middleware";
 
 const router = Router();
 router.get("/", QuestService.getAllQuests);
@@ -10,10 +14,12 @@ router.put("/:id", QuestService.updateQuest);
 router.delete("/:id", QuestService.deleteQuest);
 
 // Player quest routes
-router.get("/player/:playerId", QuestService.getPlayerQuest);
+router.get("/player", authenticate, requirePlayer, QuestService.getPlayerQuest);
 
 router.get(
-  "/player/:playerId/quests",
+  "/player/quests",
+  authenticate,
+  requirePlayer,
   QuestService.getPlayerQuestsByPeriodController
 );
 

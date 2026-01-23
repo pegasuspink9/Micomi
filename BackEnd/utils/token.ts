@@ -1,20 +1,53 @@
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET;
-const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
-
-if (!JWT_SECRET || !REFRESH_SECRET) {
-  throw new Error("JWT secrets are not set in environment variables");
+interface TokenPayload {
+  id: number;
+  role: string;
 }
 
-export const generateAccessToken = (payload: object) =>
-  jwt.sign(payload, JWT_SECRET, { expiresIn: "15m" });
+interface ResetTokenPayload {
+  id: number;
+  email: string;
+}
 
-export const generateRefreshToken = (payload: object) =>
-  jwt.sign(payload, REFRESH_SECRET, { expiresIn: "7d" });
+export const generateAccessToken = (payload: TokenPayload): string => {
+  return jwt.sign(payload, process.env.JWT_SECRET!, {
+    expiresIn: "15d", //15m
+  });
+};
 
-export const verifyAccessToken = (token: string) =>
-  jwt.verify(token, JWT_SECRET);
+export const generateRefreshToken = (payload: TokenPayload): string => {
+  return jwt.sign(payload, process.env.JWT_REFRESH_SECRET!, {
+    expiresIn: "7d",
+  });
+};
 
-export const verifyRefreshToken = (token: string) =>
-  jwt.verify(token, REFRESH_SECRET);
+export const generateResetToken = (payload: ResetTokenPayload): string => {
+  return jwt.sign(payload, process.env.JWT_RESET_SECRET!, {
+    expiresIn: "1h",
+  });
+};
+
+export const verifyAccessToken = (token: string) => {
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET!);
+  } catch (error) {
+    throw new Error("Invalid access token");
+  }
+};
+
+export const verifyRefreshToken = (token: string) => {
+  try {
+    return jwt.verify(token, process.env.JWT_REFRESH_SECRET!);
+  } catch (error) {
+    throw new Error("Invalid refresh token");
+  }
+};
+
+export const verifyResetToken = (token: string) => {
+  try {
+    return jwt.verify(token, process.env.JWT_RESET_SECRET!);
+  } catch (error) {
+    throw error;
+  }
+};

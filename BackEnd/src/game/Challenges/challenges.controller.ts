@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 const reverseString = (str: string): string => str.split("").reverse().join("");
 
 export const submitChallenge = async (req: Request, res: Response) => {
-  const playerId = Number(req.params.playerId);
+  const playerId = (req as any).user.id;
   const levelId = Number(req.params.levelId);
   const challengeId = Number(req.params.challengeId);
   const { answer } = req.body;

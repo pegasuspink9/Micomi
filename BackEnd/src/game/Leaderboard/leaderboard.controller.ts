@@ -5,13 +5,24 @@ import { successResponse, errorResponse } from "../../../utils/response";
 export const getLeaderboard = async (req: Request, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string, 10) || 10;
+    const currentPlayerId = (req as any).user.id;
 
-    const currentPlayerId = Number(req.params.playerId);
+    const [topPlayers, currentUserRank] = await Promise.all([
+      LeaderboardService.getLeaderboard(limit),
+      LeaderboardService.getPlayerRank(currentPlayerId),
+    ]);
 
-    const result = await LeaderboardService.getLeaderboard(
-      limit,
-      currentPlayerId
-    );
+    const result = {
+      leaderboard: topPlayers,
+      currentUser: currentUserRank
+        ? {
+            rank: currentUserRank.rank,
+            total_points: currentUserRank.total_points,
+            username: currentUserRank.username,
+            player_avatar: currentUserRank.player_avatar,
+          }
+        : null,
+    };
 
     return res.status(200).json({
       success: true,
@@ -29,9 +40,11 @@ export const getLeaderboard = async (req: Request, res: Response) => {
 
 export const getPlayerRank = async (req: Request, res: Response) => {
   try {
-    const playerId = Number(req.params.playerId);
+    const playerId = (req as any).user.id;
     const entry = await LeaderboardService.getPlayerRank(playerId);
+
     if (!entry) return res.status(404).json({ error: "Player not found" });
+
     return successResponse(res, entry, "Player rank fetched", 200);
   } catch (error) {
     console.error(error);

@@ -4,6 +4,7 @@ import {
   generateAccessToken,
   generateRefreshToken,
 } from "../../../utils/token";
+import { PlayerEditProfileInput } from "./player.types";
 import * as PlayerService from "./player.service";
 
 /*GET all players*/
@@ -32,7 +33,8 @@ export const getPlayerById = async (req: Request, res: Response) => {
 /*GET all player profile*/
 export const getPlayerProfile = async (req: Request, res: Response) => {
   try {
-    const result = await PlayerService.getPlayerProfile(Number(req.params.id));
+    const playerId = (req as any).user.id;
+    const result = await PlayerService.getPlayerProfile(playerId);
     if (!result) {
       return errorResponse(res, null, "Player not found", 404);
     }
@@ -55,13 +57,40 @@ export const createPlayer = async (req: Request, res: Response) => {
 /*PUT a player by ID*/
 export const updatePlayer = async (req: Request, res: Response) => {
   try {
-    const result = await PlayerService.updatePlayer(
-      Number(req.params.id),
-      req.body
-    );
+    const playerId = (req as any).user.id;
+    const result = await PlayerService.updatePlayer(playerId, req.body);
     return successResponse(res, result, "Player updated successfully");
   } catch (error) {
     return errorResponse(res, error, "Failed to update player");
+  }
+};
+
+/*Player Update Profile*/
+export const updatePlayerProfile = async (req: Request, res: Response) => {
+  try {
+    const playerId = (req as any).user.id;
+
+    const { player_name, username, email, password } = req.body;
+    const payload: PlayerEditProfileInput = {
+      player_name,
+      username,
+      email,
+      password,
+    };
+
+    Object.keys(payload).forEach(
+      (key) =>
+        (payload as any)[key] === undefined && delete (payload as any)[key]
+    );
+
+    const result = await PlayerService.editPlayerProfile(playerId, payload);
+
+    return successResponse(res, result, "Profile updated successfully");
+  } catch (error: any) {
+    if (error.message.includes("already")) {
+      return errorResponse(res, error.message);
+    }
+    return errorResponse(res, error, "Failed to update profile");
   }
 };
 

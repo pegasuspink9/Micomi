@@ -19,6 +19,7 @@ import questRoutes from "./models/Quest/quest.routes";
 import dialogueRoutes from "./models/Dialogue/dialogue.routes";
 import authRoutes from "../middleware/auth.routes";
 import { getAllPlayerProgress } from "../src/models/Player/playerProgress.service";
+import avatarRoutes from "./models/Avatar/avatar.routes";
 
 import testRoutes from "../middleware/testing.toutes";
 
@@ -32,6 +33,7 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.json());
 app.use(cookieParser());
+app.use(express.urlencoded({ extended: true }));
 
 const cors = require("cors");
 app.use(
@@ -43,7 +45,7 @@ app.use(
 );
 
 app.use("/test/auth", testRoutes);
-app.use("/api/auth", authRoutes);
+app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
 app.use("/player", playerRoutes);
 app.use("/map", mapRoutes);
@@ -58,6 +60,7 @@ app.use("/lesson", lessonRoutes);
 app.use("/quest", questRoutes);
 app.use("/dialogue", dialogueRoutes);
 app.use("/game", gameRoutes);
+app.use("/avatar", avatarRoutes);
 
 //temporary
 app.get("/progress", getAllPlayerProgress);

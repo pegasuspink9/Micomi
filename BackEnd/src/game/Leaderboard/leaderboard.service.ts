@@ -1,12 +1,13 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
-export const getLeaderboard = async (limit = 10, playerId?: number) => {
+export const getLeaderboard = async (limit = 10) => {
   const topRows = await prisma.$queryRawUnsafe<any[]>(`
     SELECT 
       player_id, 
       username, 
       total_points,
+      player_avatar,
       RANK() OVER (ORDER BY total_points DESC) AS rank
     FROM "Player"
     ORDER BY total_points DESC
@@ -18,43 +19,10 @@ export const getLeaderboard = async (limit = 10, playerId?: number) => {
     username: r.username,
     total_points: Number(r.total_points),
     rank: Number(r.rank),
+    player_avatar: r.player_avatar,
   }));
 
-  if (!playerId) {
-    return { leaderboard: topPlayers };
-  }
-
-  const playerInTop = topPlayers.find((p) => p.player_id === playerId);
-
-  if (playerInTop) {
-    return { leaderboard: topPlayers };
-  }
-
-  const playerRankData = await getPlayerRank(playerId);
-
-  if (!playerRankData) {
-    return { leaderboard: topPlayers };
-  }
-
-  const separator = {
-    player_id: null,
-    username: "...",
-    total_points: null,
-    rank: null,
-  };
-
-  return {
-    leaderboard: [
-      ...topPlayers,
-      separator,
-      {
-        player_id: playerRankData.player_id,
-        username: playerRankData.username,
-        total_points: playerRankData.total_points,
-        rank: playerRankData.rank,
-      },
-    ],
-  };
+  return topPlayers;
 };
 
 export const getPlayerRank = async (playerId: number) => {
@@ -64,6 +32,7 @@ export const getPlayerRank = async (playerId: number) => {
       player_id: true,
       username: true,
       total_points: true,
+      player_avatar: true,
     },
   });
 
@@ -81,6 +50,7 @@ export const getPlayerRank = async (playerId: number) => {
     player_id: player.player_id,
     username: player.username,
     total_points: player.total_points,
+    player_avatar: player.player_avatar, // Return here
     rank: rank,
   };
 };

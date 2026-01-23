@@ -14,70 +14,93 @@ import {
 
 const router = express.Router();
 
-//Map route
-router.post("/select-map/:playerId/:mapId", MapController.selectMap);
-
 //Level routes
 router.get(
-  "/entryLevel/:playerId/:levelId/preview",
+  "/entryLevel/:levelId/preview",
+  authenticate,
+  requirePlayer,
   LevelController.previewLevelController
 );
 router.post(
-  //shop buy potion in level
-  "/entryLevel/:playerId/:levelId/preview/buy-potion/:potionId",
-  ShopController.buyPotion
-);
-router.post(
-  "/entryLevel/:playerId/:levelId",
+  "/entryLevel/:levelId",
+  authenticate,
+  requirePlayer,
   LevelController.enterLevelController
 );
 router.post(
-  "/entryLevel/:playerId/:levelId/done", //for micomi and shop level
-  LevelController.completeLevelDone
-);
-router.post(
-  "/lesson/:playerId/:levelId/:lessonId/next",
+  "/lesson/:levelId/:lessonId/next",
+  authenticate,
+  requirePlayer,
   LessonsController.getNextLesson //next page
 );
 router.post(
-  "/lesson/:playerId/:levelId/:lessonId/previous",
+  "/lesson/:levelId/:lessonId/previous",
+  authenticate,
+  requirePlayer,
   LessonsController.getPreviousLesson //previous page
 );
 
 //Challenge route
 router.post(
-  "/submit-challenge/:playerId/:levelId/:challengeId",
+  "/submit-challenge/:levelId/:challengeId",
+  authenticate,
+  requirePlayer,
   ChallengeController.submitChallenge
 );
 
 //Shop routes
 router.get(
-  "/player-characters/:playerId",
+  "/player-characters",
+  authenticate,
+  requirePlayer,
   ModelShopService.getAllPlayerCharacter
 );
 router.post(
-  "/buy-character/:playerId/:characterShopId",
+  "/buy-character/:characterShopId",
+  authenticate,
+  requirePlayer,
   ShopController.buyCharacter
 );
-router.get("/potion/:playerId", ModelShopService.getAllPlayerPotions);
+router.get(
+  "/potion",
+  authenticate,
+  requirePlayer,
+  ModelShopService.getAllPlayerPotions
+);
 router.post(
-  "/submit-challenge/:playerId/:levelId/:challengeId/use-potion",
+  "/submit-challenge/:levelId/:challengeId/use-potion",
+  authenticate,
+  requirePlayer,
   ShopController.usePotion
 );
 
 //Achievement routes
 router.post("/check-achievements", AchievementController.getPlayerAchievements);
 router.get(
-  "/player-achievement/:playerId",
+  "/player-achievement",
+  authenticate,
+  requirePlayer,
   AchievementController.getPlayerAchievements
 );
 router.post(
-  "/select-badge/:playerId/:achievementId",
+  "/select-badge/:achievementId",
+  authenticate,
+  requirePlayer,
   AchievementController.selectBadge
 ); //badge selection
 
 //Leaderboard routes
-router.get("/leaderboard/:playerId", LeaderboardController.getLeaderboard);
-router.get("/player-rank/:playerId", LeaderboardController.getPlayerRank);
+router.get(
+  "/leaderboard",
+  authenticate,
+  requirePlayer,
+  LeaderboardController.getLeaderboard
+);
+router.get(
+  "/player-rank",
+  authenticate,
+  requirePlayer,
+  LeaderboardController.getPlayerRank
+);
 
 export default router;
