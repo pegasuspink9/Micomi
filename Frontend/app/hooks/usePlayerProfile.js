@@ -10,6 +10,8 @@ export const usePlayerProfile = () => {
   const [error, setError] = useState(null);
   const [lastSelectionCheck, setLastSelectionCheck] = useState(0);
   const [lastBadgeCheck, setLastBadgeCheck] = useState(0);
+  const [availableAvatars, setAvailableAvatars] = useState([]); // New state
+  const [isSelectingAvatar, setIsSelectingAvatar] = useState(false)
 
   // ✅ Load player profile from API with Map API cache reuse
   const loadPlayerProfile = useCallback(async () => {
@@ -56,6 +58,9 @@ export const usePlayerProfile = () => {
       }
       
       setPlayerData(dataWithCachedPaths);
+
+      fetchAvailableAvatars();
+      
       
       console.log('✅ Player profile loaded successfully with cached assets');
       return dataWithCachedPaths;
@@ -67,6 +72,30 @@ export const usePlayerProfile = () => {
       setLoading(false);
     }
   }, []);
+
+  const fetchAvailableAvatars = useCallback(async () => {
+    try {
+      const avatars = await playerService.getAvailableAvatars();
+      setAvailableAvatars(avatars);
+    } catch (err) {
+      console.error('Failed to fetch avatars:', err);
+    }
+  }, []);
+
+  const updateAvatar = useCallback(async (avatarId) => {
+    try {
+      setIsSelectingAvatar(true);
+      await playerService.selectAvatar(avatarId);
+      await loadPlayerProfile(); // Refresh profile to show new avatar
+      return { success: true };
+    } catch (err) {
+      console.error('Update avatar failed:', err);
+      return { success: false, error: err.message };
+    } finally {
+      setIsSelectingAvatar(false);
+    }
+  }, [loadPlayerProfile]);
+
 
   const checkForCharacterUpdates = useCallback(async () => {
     try {
@@ -158,13 +187,15 @@ export const usePlayerProfile = () => {
   return {
     // Data
     playerData,
-    
+    availableAvatars,
     // States
     loading,
     error,
+    isSelectingAvatar,
     
     // Actions
     loadPlayerProfile,
+    updateAvatar,
     clearError,
     
     // Getters

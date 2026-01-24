@@ -14,6 +14,32 @@ export const playerService = {
     }
   },
 
+  getAvailableAvatars: async () => {
+    try {
+      const response = await apiService.get('/avatar');
+      return response.success ? response.data : [];
+    } catch (error) {
+      console.error('Failed to fetch available avatars:', error);
+      throw error;
+    }
+  },
+
+  selectAvatar: async (avatarId) => {
+    try {
+      console.log(`👤 Selecting avatar ${avatarId} for player...`);
+      const response = await apiService.post(`/avatar/select/${avatarId}`);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to select avatar');
+      }
+      
+      return response;
+    } catch (error) {
+      console.error(`Failed to select avatar ${avatarId}:`, error);
+      throw error;
+    }
+  },
+
   selectBadge: async (achievementId) => {
     try {
       console.log(`🎖️ Selecting badge ${achievementId} for player...`);

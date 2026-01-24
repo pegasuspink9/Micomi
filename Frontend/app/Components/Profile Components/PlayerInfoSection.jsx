@@ -1,9 +1,9 @@
 import React from "react";
-import { View, Text, ImageBackground, StyleSheet, Image } from "react-native"; // Import Image
+import { View, Text, ImageBackground, StyleSheet, Image, TouchableOpacity } from "react-native"; // Import Image
 import { LinearGradient } from 'expo-linear-gradient';
 import { gameScale } from "../Responsiveness/gameResponsive";
 
-const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, expPoints, playerAvatar }) => { // Add playerAvatar prop
+const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, expPoints, playerAvatar, onAvatarPress }) => { 
   const calculateLevelProgress = () => {
     const currentLevel = playerLevel || 1;
     const currentExp = expPoints || 0;
@@ -47,8 +47,11 @@ const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, e
           
           {/* Player Info Content - Positioned at Bottom */}
           <View style={styles.playerInfoContent}>
-            {/* Player Avatar Section (ADDED) */}
-            <View style={styles.playerAvatarContainer}>
+            <TouchableOpacity 
+              style={styles.playerAvatarContainer} 
+              onPress={onAvatarPress}
+              activeOpacity={0.7}
+            >
               <View style={styles.playerAvatarOuterBorder}>
                 <View style={styles.playerAvatarInnerBorder}>
                   <Image 
@@ -57,7 +60,7 @@ const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, e
                   />
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
             <Text style={styles.username}>{username}</Text>
             
             <View style={styles.lifeContainer}>

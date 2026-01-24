@@ -6,7 +6,10 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
-  ImageBackground
+  ImageBackground,
+  Modal, // Added Modal
+  FlatList, // Added FlatList
+  Image // Added Image
 } from "react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
@@ -25,17 +28,31 @@ export default function Profile() {
     loading,
     error,
     loadPlayerProfile,
-    clearError
+    clearError,
+    availableAvatars,
+    updateAvatar,
+    isSelectingAvatar
   } = usePlayerProfile();
 
   const [inventoryTab, setInventoryTab] = useState('Badges');
+  const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
+  const [selectedAvatarId, setSelectedAvatarId] = useState(null);
 
-    useFocusEffect(
+  useFocusEffect(
     useCallback(() => {
       console.log('🔄 Profile tab focused - refreshing data...');
       loadPlayerProfile();  
     }, [loadPlayerProfile])
   );
+
+  const handleAvatarSelect = async () => {
+    if (!selectedAvatarId) return;
+    const result = await updateAvatar(selectedAvatarId);
+    if (result.success) {
+      setIsAvatarModalVisible(false);
+      setSelectedAvatarId(null);
+    }
+  };
 
   // Simplified loading - assets are already cached from Map API
   if (loading || !playerData) {
@@ -88,7 +105,75 @@ export default function Profile() {
             selectedBadge={playerData.selectedBadge}
             playerLevel={playerData.playerLevel}
             expPoints={playerData.expPoints}
+            playerAvatar={playerData.playerAvatar}
+            onAvatarPress={() => setIsAvatarModalVisible(true)}
           />
+
+             <Modal
+        visible={isAvatarModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsAvatarModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <LinearGradient
+            colors={['#1a2a44', '#0d1625']}
+            style={styles.modalContent}
+          >
+            <Text style={styles.modalTitle}>Choose Your Avatar</Text>
+            
+            <FlatList
+              data={availableAvatars}
+              numColumns={3}
+              keyExtractor={(item) => item.id.toString()}
+              contentContainerStyle={styles.avatarGrid}
+              renderItem={({ item }) => (
+                <TouchableOpacity 
+                  style={[
+                    styles.avatarOption,
+                    selectedAvatarId === item.id && styles.avatarOptionSelected
+                  ]}
+                  onPress={() => setSelectedAvatarId(item.id)}
+                >
+                  <View style={styles.modalAvatarOuter}>
+                    <View style={styles.modalAvatarInner}>
+                      <Image source={{ uri: item.url }} style={styles.modalAvatarImage} />
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.cancelButton]} 
+                onPress={() => {
+                  setIsAvatarModalVisible(false);
+                  setSelectedAvatarId(null);
+                }}
+              >
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.modalButton, 
+                  styles.confirmButton,
+                  (!selectedAvatarId || isSelectingAvatar) && styles.buttonDisabled
+                ]} 
+                onPress={handleAvatarSelect}
+                disabled={!selectedAvatarId || isSelectingAvatar}
+              >
+                {isSelectingAvatar ? (
+                  <ActivityIndicator color="white" size="small" />
+                ) : (
+                  <Text style={styles.buttonText}>Use Avatar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
+        </View>
+        </Modal>
           
           <StatsGridSection 
             coins={playerData.coins}
@@ -158,5 +243,84 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1
+  },
+    modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    maxHeight: '80%',
+    borderRadius: gameScale(20),
+    padding: gameScale(20),
+    borderWidth: gameScale(2),
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  modalTitle: {
+    fontSize: gameScale(24),
+    fontFamily: 'Grobold',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: gameScale(20),
+  },
+  avatarGrid: {
+    alignItems: 'center',
+  },
+  avatarOption: {
+    margin: gameScale(8),
+    padding: gameScale(4),
+    borderRadius: gameScale(10),
+  },
+  avatarOptionSelected: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: '#4CAF50',
+    borderWidth: gameScale(2),
+  },
+  modalAvatarOuter: {
+    borderWidth: gameScale(1.5), 
+    borderColor: 'rgba(255, 255, 255, 0.4)', 
+    borderRadius: gameScale(5), 
+    padding: gameScale(2), 
+    backgroundColor: 'rgba(255, 255, 255, 0.1)', 
+  },
+  modalAvatarInner: {
+    borderWidth: gameScale(0.5), 
+    borderColor: 'rgba(255, 255, 255, 0.7)', 
+    borderRadius: gameScale(5),
+    backgroundColor: 'rgba(0, 0, 0, 0.2)', 
+  },
+  modalAvatarImage: {
+    width: gameScale(70),
+    height: gameScale(70),
+    borderRadius: gameScale(5),
+    resizeMode: 'cover', 
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: gameScale(20),
+  },
+  modalButton: {
+    flex: 1,
+    padding: gameScale(12),
+    borderRadius: gameScale(10),
+    alignItems: 'center',
+    marginHorizontal: gameScale(5),
+  },
+  cancelButton: {
+    backgroundColor: '#ff4444',
+  },
+  confirmButton: {
+    backgroundColor: '#005dc8',
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  buttonText: {
+    color: '#fff',
+    fontFamily: 'DynaPuff',
+    fontSize: gameScale(14),
   },
 });
