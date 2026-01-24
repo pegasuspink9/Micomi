@@ -9,6 +9,8 @@ import Animated, {
   runOnJS 
 } from 'react-native-reanimated';
 import { Image } from 'expo-image';
+import { soundManager } from '../Sounds/UniversalSoundManager';
+
 
 const { width } = Dimensions.get('window');
 const HALF_WIDTH = width / 2;
@@ -22,8 +24,7 @@ const MainLoading = ({ visible, onAnimationComplete }) => {
   useEffect(() => {
     if (visible) {
       setIsRendered(true);
-      // ENTRANCE (Closing): Crashing merge effect
-      // We use a fast duration and Easing.in to make it slam together
+      soundManager.playLoadingSound();
       leftTranslateX.value = withTiming(0, { 
         duration: 300, 
         easing: Easing.in(Easing.exp) 
@@ -34,6 +35,7 @@ const MainLoading = ({ visible, onAnimationComplete }) => {
       });
 
     } else {
+      soundManager.playLoadingSound();
       // EXIT (Opening): Smoothly open immediately without delay
       leftTranslateX.value = withTiming(-HALF_WIDTH, { 
         duration: 600, 

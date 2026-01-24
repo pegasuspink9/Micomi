@@ -419,6 +419,7 @@ async testR2Download(testUrl) {
   addAsset('https://micomi-assets.me/Sounds/Final/Tap2.wav', 'blank_tap', 'audio', 'static_sounds');
   addAsset('https://micomi-assets.me/Sounds/Final/Tap3.wav', 'game_button_tap', 'audio', 'static_sounds');
   addAsset('https://micomi-assets.me/Sounds/Final/Card_Flip_2.wav', 'card_flip', 'audio', 'static_sounds');
+  addAsset('https://micomi-assets.me/Sounds/Final/micomi_door.wav', 'loading_door', 'audio', 'static_sounds');
   
 
   console.log(`🔊 Static sound assets: ${assets.length}`);

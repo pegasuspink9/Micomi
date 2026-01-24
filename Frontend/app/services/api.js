@@ -2,8 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Try different possible backend URLs (local IP, Android Emulator IP, and localhost)
 const POSSIBLE_BACKEND_URLS = [
-  'http://192.168.254.120:3000', // Your actual machine IP
-  'http://10.0.2.2:3000',        // Special Android Emulator IP
+  'http://192.168.100.200:3000', 
+  'http://10.0.2.2:3000',      
   'http://localhost:3000'
 ];
 
@@ -91,18 +91,32 @@ class ApiService {
       clearTimeout(timeoutId);
       
       if (!response.ok) {
-        // Detailed error for debugging 401s
-        if (response.status === 401) {
-          console.warn('🔑 Authentication failed (401). Token might be expired.');
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        let errorData = null; // Declare errorData here
+        try {
+          // Attempt to parse the response body for a more specific error message
+          errorData = await response.json(); // Assign to errorData
+          if (errorData && errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData && errorData.error) { // Check for common 'error' field too
+            errorMessage = errorData.error;
+          }
+        } catch (jsonError) {
+          // If response is not JSON, or parsing fails, use the default HTTP error message
+          console.warn(`Could not parse error response from ${url} as JSON (status ${response.status}):`, jsonError);
         }
-        throw new Error(`HTTP error! status: ${response.status}`);
+        
+        // Log a more specific warning for 401, using the extracted message if available
+        if (response.status === 401) {
+        }
+        
+        throw new Error(errorMessage);
       }
       
       const data = await response.json();
       return data;
     } catch (error) {
       clearTimeout(timeoutId);
-      console.error(`❌ API request failed for ${endpoint}:`, error);
       throw error;
     }
   }

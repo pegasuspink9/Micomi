@@ -6,29 +6,73 @@ import {
   Image, 
   FlatList, 
   Dimensions,
-  ImageBackground // Import ImageBackground
+  ImageBackground,
+  ActivityIndicator
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { gameScale } from '../Components/Responsiveness/gameResponsive';
+import { useLeaderboard } from '../hooks/useLeaderboard'; 
 
 const { width } = Dimensions.get('window');
 
-// --- Mock Data ---
-const LEADERBOARD_DATA = [
-  { id: '1', rank: 1, name: 'Blucheez42', clan: 'Supervillains', score: 12500, avatar: 'https://scontent.fceb1-3.fna.fbcdn.net/v/t39.30808-6/455857027_1540335636836837_965310929657794007_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=a5f93a&_nc_eui2=AeGYD_C3tJS2SDWckzjErw683pCaAClZ6JPekJoAKVnok0uemnybwmyQ9E3lTOydzaQUqJMGQDFcg8voM3zzi4Ne&_nc_ohc=rQBUNQi4CNAQ7kNvwFyEylq&_nc_oc=AdmHxk2y2-sRuG4JD-LrN8VTm_9BWE0dZ3mANqjfRohG149BildKnpX-_-in978ling&_nc_zt=23&_nc_ht=scontent.fceb1-3.fna&_nc_gid=vGPx2c4o72z5u4SusNjDpQ&oh=00_AfozGZyFLNJC7nbPCIv7RGWJ0XYjxMPEhNIdW5_YRsK_6A&oe=696566EB', reward: 'gold_chest' },
-  { id: '2', rank: 2, name: 'ShellYeah', clan: '', score: 11200, avatar: 'https://scontent.fceb1-5.fna.fbcdn.net/v/t39.30808-1/520214698_3190472601120542_4599990013785983579_n.jpg?stp=dst-jpg_s200x200_tt6&_nc_cat=102&ccb=1-7&_nc_sid=1d2534&_nc_eui2=AeHJrPZm1khjlAR2IORLshnL51_MjOsVQ8rnX8yM6xVDygC_bVzGxY9QDu1oLadM2A4iZUM-LOl-kYGfohrsqAl6&_nc_ohc=VcOfvqy6WyMQ7kNvwFMNxGg&_nc_oc=AdkKcFFf2HZnfiRtDfBm3ce3s-7GGuNcfvT6xRGQH_L9nuQf905q2oAKnfPEPEG4T-Q&_nc_zt=24&_nc_ht=scontent.fceb1-5.fna&_nc_gid=fzk1ineGbOwBAoW5KNoT4w&oh=00_AfoAArQkGstEgb6BTvzpw7CImC7lJaJM-ExjgGAYLK6uwg&oe=696571B0', reward: 'silver_chest' },
-  { id: '3', rank: 3, name: 'gou', clan: '', score: 10500, avatar: 'https://scontent.fceb1-3.fna.fbcdn.net/v/t39.30808-1/571353641_24579140221781342_4390920867548760325_n.jpg?stp=dst-jpg_s200x200_tt6&_nc_cat=104&ccb=1-7&_nc_sid=1d2534&_nc_eui2=AeE7t7LP-xnpMVpyUfWvvH0EhVF43tIqPTGFUXje0io9McjvLtCm-T6rjmsjh3ZnN0VoPVHBzcBEyFFNcWT82POc&_nc_ohc=1xIb2X1SOssQ7kNvwGzN9wT&_nc_oc=AdkY6cNCMRQE4Nw8zh7EKAnBjc_KEv4hENTZNnzsc7os1CsaDtOUug_jcafYHRJ76Ho&_nc_zt=24&_nc_ht=scontent.fceb1-3.fna&_nc_gid=mHlcM1GAnRrwiWzP3CTV0w&oh=00_Afq409YkecwLvEZvijoKdoWAmBKPvVBIpQeIwKqX3ByDZg&oe=696577EF', reward: 'bronze_chest' },
-  { id: '4', rank: 4, name: 'yes', clan: '', score: 9800, avatar: 'https://scontent.fceb1-5.fna.fbcdn.net/v/t39.30808-1/569201410_2303089013526701_4644154701113805937_n.jpg?stp=c0.0.472.472a_dst-jpg_s200x200_tt6&_nc_cat=110&ccb=1-7&_nc_sid=e99d92&_nc_eui2=AeEyfbewRIABK_G1WXruflX1Y4tUhYTNqY5ji1SFhM2pjmhKoNi3xdNoP9w201W5Aof9AeJjbJKxZjO2leK5eWtU&_nc_ohc=myJhFBglip8Q7kNvwFA6vv0&_nc_oc=Adlvnm0c7itGEhXsmcy-rjLkJ8ibiMHpsPvdQIyprGksadlxnjIlGvpyCz3p9GB7Oxk&_nc_zt=24&_nc_ht=scontent.fceb1-5.fna&_nc_gid=YaSzLbbpYpejFYfY-MQmeg&oh=00_AfplrFMKwKWdGDjO-q73ULeKo3hvAT0knUPhCNxhtW0Pew&oe=696551F4', reward: 'orb' },
-  { id: '5', rank: 5, name: 'tayyib afd', clan: 'HÜMARI DÜNIYA', score: 9200, avatar: 'https://scontent.fceb1-5.fna.fbcdn.net/v/t39.30808-1/473012846_1616173266442229_2722726231397780187_n.jpg?stp=c0.11.720.720a_dst-jpg_s200x200_tt6&_nc_cat=110&ccb=1-7&_nc_sid=1d2534&_nc_eui2=AeGDlDA-rg3rgo7Dub6MJph2iwoN0g1aabOLCg3SDVpps1msVSevLeLqj2BvAqk83YBKgEpWVjVviinXAlZHSQ5x&_nc_ohc=1VWP4KA47l0Q7kNvwH6GLY8&_nc_oc=Admwkk9G2f72NNiE6ysTOsxYvVgfhQoNGuHoyJzS_acYat3p4iMfJeifg7fT4rbQTgo&_nc_zt=24&_nc_ht=scontent.fceb1-5.fna&_nc_gid=M-58a9ct99uvFo7uCGuBww&oh=00_AfoYM_hKv1r1O3tunlirHu5T_Kq_pex0Fs71Qcx2JaiwLg&oe=69656860', reward: 'orb' },
-  { id: '6', rank: 6, name: 'Nan', clan: '', score: 8750, avatar: 'https://micomi-assets.me/Icons/Potions/strong.png', reward: 'orb' },
-  { id: '7', rank: 7, name: 'Player 7', clan: 'Micomi Tribe', score: 8100, avatar: 'https://micomi-assets.me/Hero%20Selection%20Components/shi_entrance.png', reward: 'orb' },
-  { id: '8', rank: 8, name: 'Player 8', clan: 'Micomi Tribe', score: 7500, avatar: 'https://micomi-assets.me/Hero%20Selection%20Components/shi_entrance.png', reward: 'orb' },
-];
+// --- Helper function to get ordinal suffix ---
+const getOrdinalSuffix = (num) => {
+  if (typeof num !== 'number') return num; // Return as is if not a number
+  const s = ["th", "st", "nd", "rd"];
+  const v = num % 100;
+  return num + (s[(v - 20) % 10] || s[v] || s[0]);
+};
+// --- End Helper function ---
 
 export default function Leaderboards() {
+  const { leaderboardData, currentUserRank, loading, error } = useLeaderboard(); 
   
-  const topThree = LEADERBOARD_DATA.slice(0, 3);
+  // Display loading state
+  if (loading) {
+    return (
+      <LinearGradient
+        colors={['#101035', '#1B1F68', '#4248B5']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.loadingContainer}
+      >
+        <ActivityIndicator size="large" color="#ffffff" />
+        <Text style={styles.loadingText}>Loading Leaderboards...</Text>
+      </LinearGradient>
+    );
+  }
+
+  // Display error state
+  if (error) {
+    return (
+      <LinearGradient
+        colors={['#101035', '#1B1F68', '#4248B5']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.errorContainer}
+      >
+        <Text style={styles.errorText}>Failed to load leaderboard. {error.message}</Text>
+        <Text style={styles.errorText}>Please ensure your backend is running and reachable.</Text>
+      </LinearGradient>
+    );
+  }
+
+  // Ensure leaderboardData and currentUserRank are available
+  if (!leaderboardData || leaderboardData.length === 0) {
+    return (
+      <LinearGradient
+        colors={['#101035', '#1B1F68', '#4248B5']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.emptyContainer}
+      >
+        <Text style={styles.emptyText}>No leaderboard data available.</Text>
+      </LinearGradient>
+    );
+  }
+
+  const topThree = leaderboardData.slice(0, 3); 
 
   const getRankTheme = (rank) => {
     if (rank === 1) { // Gold (Darkened)
@@ -93,6 +137,11 @@ export default function Leaderboards() {
 
   const renderLeaderboardItem = ({ item }) => {
     const theme = getRankTheme(item.rank);
+
+    // Default avatar if player_avatar is null
+    const avatarSource = item.player_avatar 
+      ? { uri: item.player_avatar } 
+      : { uri: 'https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif' };
 
     return (
       <View style={[
@@ -184,16 +233,17 @@ export default function Leaderboards() {
                                 borderColor: theme.avatarInnerBorder,
                             }
                         ]}>
-                            <Image source={{ uri: item.avatar }} style={styles.cardAvatar} />
+                            <Image source={avatarSource} style={styles.cardAvatar} />
                         </View>
                     </View>
                 </View>
               </View>
 
-              {/* Name & Clan */}
+              {/* Name & Clan (Assuming 'username' from API maps to 'name' for now) */}
               <View style={styles.infoContainer}>
-                <Text style={[styles.cardName, { color: theme.text }]}>{item.name}</Text>
-                {item.clan ? <Text style={[styles.cardClan, { color: 'rgba(255,255,255,0.7)' }]}>{item.clan}</Text> : null}
+                <Text style={[styles.cardName, { color: theme.text }]}>{item.username}</Text>
+                {/* Clan data is not directly in the API response, so keep it optional or remove if not needed */}
+                {/* {item.clan ? <Text style={[styles.cardClan, { color: 'rgba(255,255,255,0.7)' }]}>{item.clan}</Text> : null} */}
               </View>
 
               {/* Score Pill */}
@@ -203,7 +253,7 @@ export default function Leaderboards() {
                   style={styles.scorePill}
                 >
                   <Image source={require('../Components/icons/points.png')} style={styles.scoreIcon}/>
-                  <Text style={[styles.scoreText, { color: '#fff' }]}>{item.score}</Text>
+                  <Text style={[styles.scoreText, { color: '#fff' }]}>{item.total_points}</Text> 
                 </LinearGradient>
               </View>
             </LinearGradient>
@@ -219,9 +269,9 @@ export default function Leaderboards() {
       {/* --- TOP SECTION (30%) --- */}
       <View style={styles.topSection}>
         <ImageBackground
-          source={require('../Components/icons/leaderboardbackground.jpeg')} // Local image background
+          source={require('../Components/icons/leaderboardbackground.jpeg')} 
           style={styles.topBackground}
-          resizeMode="contain" // Ensure the image covers the area
+          resizeMode="contain" 
         >
           {/* Header Banner */}
           <View style={styles.headerBanner}>
@@ -261,11 +311,11 @@ export default function Leaderboards() {
                                         borderColor: getRankTheme(topThree[1].rank).avatarInnerBorder,
                                     }
                                 ]}>
-                                    <Image source={{ uri: topThree[1].avatar }} style={styles.podiumAvatar} />
+                                    <Image source={topThree[1].player_avatar ? { uri: topThree[1].player_avatar } : { uri: 'https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif' }} style={styles.podiumAvatar} />
                                 </View>
                             </View>
                         </View>
-                        <Text style={styles.podiumName}>{topThree[1].name}</Text>
+                        <Text style={styles.podiumName}>{topThree[1].username}</Text>
                     </View>
                 </View>
             )}
@@ -302,11 +352,11 @@ export default function Leaderboards() {
                                         borderColor: getRankTheme(topThree[0].rank).avatarInnerBorder,
                                     }
                                 ]}>
-                                    <Image source={{ uri: topThree[0].avatar }} style={styles.podiumAvatarLarge} />
+                                    <Image source={topThree[0].player_avatar ? { uri: topThree[0].player_avatar } : { uri: 'https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif' }} style={styles.podiumAvatarLarge} />
                                 </View>
                             </View>
                         </View>
-                        <Text style={styles.podiumName}>{topThree[0].name}</Text>
+                        <Text style={styles.podiumName}>{topThree[0].username}</Text>
                     </View>
                 </View>
             )}
@@ -342,11 +392,11 @@ export default function Leaderboards() {
                                         borderColor: getRankTheme(topThree[2].rank).avatarInnerBorder,
                                     }
                                 ]}>
-                                    <Image source={{ uri: topThree[2].avatar }} style={styles.podiumAvatar} />
+                                    <Image source={topThree[2].player_avatar ? { uri: topThree[2].player_avatar } : { uri: 'https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif' }} style={styles.podiumAvatar} />
                                 </View>
                             </View>
                         </View>
-                        <Text style={styles.podiumName}>{topThree[2].name}</Text>
+                        <Text style={styles.podiumName}>{topThree[2].username}</Text>
                     </View>
                 </View>
             )}
@@ -356,17 +406,19 @@ export default function Leaderboards() {
 
   {/* Progress Bar Strip */}
       <View style={styles.progressBarStrip}>
-        <Text style={styles.currentRankText}>Your Current Rank: 10th</Text>
+        <Text style={styles.currentRankText}>
+          Your Current Rank: {currentUserRank ? getOrdinalSuffix(currentUserRank.rank) : 'N/A'}
+        </Text>
       </View>
       {/* --- BOTTOM SECTION (70%) --- */}
       <View style={styles.bottomSection}>
         <LinearGradient
-          colors={['#2e003e', '#1a0b2e']} // Deep purple list background
+          colors={['#2e003e', '#1a0b2e']} 
           style={styles.listBackground}
         >
           <FlatList
-            data={LEADERBOARD_DATA}
-            keyExtractor={(item) => item.id}
+            data={leaderboardData} 
+            keyExtractor={(item) => item.player_id.toString()} 
             renderItem={renderLeaderboardItem}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
@@ -752,5 +804,41 @@ const styles = StyleSheet.create({
     width: gameScale(12),
     height: gameScale(12),
     resizeMode: 'contain',
+  },
+   // Add these styles for loading and error states
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#ffffff',
+    marginTop: gameScale(10),
+    fontSize: gameScale(18),
+    fontFamily: 'Grobold',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: gameScale(20),
+    backgroundColor: '#ff4d4d', 
+  },
+  errorText: {
+    color: '#ffffff',
+    fontSize: gameScale(16),
+    fontFamily: 'Grobold',
+    textAlign: 'center',
+    marginBottom: gameScale(10),
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#ffffff',
+    fontSize: gameScale(18),
+    fontFamily: 'Grobold',
   },
 });

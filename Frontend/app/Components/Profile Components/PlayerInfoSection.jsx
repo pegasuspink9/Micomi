@@ -1,17 +1,15 @@
 import React from "react";
-import { View, Text, ImageBackground, StyleSheet } from "react-native";
+import { View, Text, ImageBackground, StyleSheet, Image } from "react-native"; // Import Image
 import { LinearGradient } from 'expo-linear-gradient';
 import { gameScale } from "../Responsiveness/gameResponsive";
 
-const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, expPoints }) => {
+const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, expPoints, playerAvatar }) => { // Add playerAvatar prop
   const calculateLevelProgress = () => {
     const currentLevel = playerLevel || 1;
     const currentExp = expPoints || 0;
     
-    // Formula: 100 * currentLevel^1.5 for NEXT level
     const nextLevelExp = Math.floor(100 * Math.pow(currentLevel, 1.5));
     
-    // Calculate progress percentage toward next level
     const progress = Math.min((currentExp / nextLevelExp) * 100, 100);
     
     return {
@@ -23,6 +21,10 @@ const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, e
   };
 
   const levelData = calculateLevelProgress();
+
+  // Define the default avatar source
+  const defaultAvatarSource = { uri: 'https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif' };
+  const currentAvatarSource = playerAvatar ? { uri: playerAvatar } : defaultAvatarSource;
 
   return (
     <View style={styles.container}>
@@ -45,6 +47,17 @@ const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, e
           
           {/* Player Info Content - Positioned at Bottom */}
           <View style={styles.playerInfoContent}>
+            {/* Player Avatar Section (ADDED) */}
+            <View style={styles.playerAvatarContainer}>
+              <View style={styles.playerAvatarOuterBorder}>
+                <View style={styles.playerAvatarInnerBorder}>
+                  <Image 
+                    source={currentAvatarSource} 
+                    style={styles.playerAvatarImage} 
+                  />
+                </View>
+              </View>
+            </View>
             <Text style={styles.username}>{username}</Text>
             
             <View style={styles.lifeContainer}>
@@ -100,7 +113,19 @@ const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, e
           </View>
           
           <View style={styles.playerInfoContent}>
-            <Text style={styles.playerName}>{playerName}</Text>
+            {/* Player Avatar Section (ADDED for fallback) */}
+            <View style={styles.playerAvatarContainer}>
+              <View style={styles.playerAvatarOuterBorder}>
+                <View style={styles.playerAvatarInnerBorder}>
+                  <Image 
+                    source={currentAvatarSource} 
+                    style={styles.playerAvatarImage} 
+                  />
+                </View>
+              </View>
+            </View>
+            {/* Note: playerName is currently displayed in fallback, but avatar is placed relative to username */}
+            {/* <Text style={styles.playerName}>{playerName}</Text> */}
             <Text style={styles.username}>{username}</Text>
             
             <View style={styles.lifeContainer}>
@@ -344,6 +369,33 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: gameScale(1), height: gameScale(1) },
     textShadowRadius: gameScale(2),
+  },
+
+  // NEW AVATAR STYLES
+  playerAvatarContainer: {
+    alignSelf: 'flex-start',
+    marginBottom: gameScale(10),
+    marginTop: gameScale(10),
+  },
+  playerAvatarOuterBorder: {
+    borderWidth: gameScale(1.5), 
+    borderColor: 'rgba(255, 255, 255, 0.4)', 
+    borderRadius: gameScale(5), 
+    padding: gameScale(2), 
+    backgroundColor: 'rgba(255, 255, 255, 0.1)', 
+  },
+  playerAvatarInnerBorder: {
+    borderWidth: gameScale(0.5), 
+    borderColor: 'rgba(255, 255, 255, 0.7)', 
+    borderRadius: gameScale(5), // Maintain radius
+    padding: gameScale(0), 
+    backgroundColor: 'rgba(0, 0, 0, 0.2)', 
+  },
+  playerAvatarImage: {
+    width: gameScale(50),
+    height: gameScale(50),
+    borderRadius: gameScale(5), // Radius for the image itself
+    resizeMode: 'cover', 
   },
 });
 

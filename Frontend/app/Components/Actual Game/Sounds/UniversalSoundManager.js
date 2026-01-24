@@ -115,6 +115,12 @@ class UniversalSoundManager {
     this._playSimpleSound('button', tapSoundUrl, null);
   }
 
+  playLoadingSound() {
+    const doorSoundUrl = this._getCachedUrl('https://micomi-assets.me/Sounds/Final/micomi_door.wav');
+    this._playSimpleSound('ui', doorSoundUrl, null);
+  }
+
+
   playCardFlipSound(volume = 1.0) {
     const flipSoundUrl = this._getCachedUrl('https://micomi-assets.me/Sounds/Final/Card_Flip_2.wav');
     const v = Math.max(0, Math.min(1, volume));
