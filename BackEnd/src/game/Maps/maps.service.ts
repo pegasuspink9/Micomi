@@ -159,7 +159,7 @@ export const selectMap = async (playerId: number, mapId: number) => {
     level_number: SPECIAL_BUTTON_TYPES.includes(level.level_type as any)
       ? null
       : level.level_number,
-    is_unlocked: index === 0 || !!level.playerProgress.length,
+    is_unlocked: index < 2 || !!level.playerProgress.length,
   })),
 };
 

@@ -1,5 +1,45 @@
 import { prisma } from "../../../prisma/client";
 
+const DEFAULT_CHARACTER_ID = 4;
+
+export const ensureDefaultCharacter = async (playerId: number) => {
+  const selectedCharacter = await prisma.playerCharacter.findFirst({
+    where: {
+      player_id: playerId,
+      is_selected: true,
+    },
+  });
+
+  if (!selectedCharacter) {
+    const defaultChar = await prisma.playerCharacter.findUnique({
+      where: {
+        player_id_character_id: {
+          player_id: playerId,
+          character_id: DEFAULT_CHARACTER_ID,
+        },
+      },
+    });
+
+    if (defaultChar) {
+      await prisma.playerCharacter.update({
+        where: { player_character_id: defaultChar.player_character_id },
+        data: { is_selected: true },
+      });
+    } else {
+      await prisma.playerCharacter.create({
+        data: {
+          player_id: playerId,
+          character_id: DEFAULT_CHARACTER_ID,
+          is_purchased: true,
+          is_selected: true,
+        },
+      });
+    }
+
+    console.log(`Assigned default character to player ${playerId}`);
+  }
+};
+
 export const selectCharacter = async (
   playerId: number,
   characterId: number

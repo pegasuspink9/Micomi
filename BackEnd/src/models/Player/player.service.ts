@@ -14,8 +14,11 @@ import { differenceInCalendarDays } from "date-fns";
 import { io } from "../../index";
 import { sendPasswordResetEmail } from "../../../utils/email";
 import { generateResetToken, verifyResetToken } from "../../../utils/token";
+import { ensureDefaultCharacter } from "../../game/Characters/characters.service";
 
 const prisma = new PrismaClient();
+
+const DEFAULT_AVATAR_URL = "https://micomi-assets.me/Player%20Avatars/original-32a59694e59c7e9536e5a32d105292c7.webp";
 
 const BASE_EXP_REQUIREMENT = 100;
 const EXP_EXPONENT = 1.5;
@@ -122,6 +125,9 @@ export const getPlayerById = (player_id: number) =>
   });
 
 export const getPlayerProfile = async (player_id: number) => {
+
+  await ensureDefaultCharacter(player_id);
+
   const player = await prisma.player.findUnique({
     where: { player_id },
     select: {
@@ -131,6 +137,7 @@ export const getPlayerProfile = async (player_id: number) => {
       current_streak: true,
       exp_points: true,
       level: true,
+      player_avatar: true,
       ownedCharacters: {
         where: { is_selected: true },
         include: {
@@ -235,6 +242,7 @@ export const getPlayerProfile = async (player_id: number) => {
 
   return {
     player_name: player.player_name,
+    player_avatar: player.player_avatar || DEFAULT_AVATAR_URL,
     username: player.username,
     coins: player.coins,
     current_streak: player.current_streak,
@@ -283,6 +291,17 @@ const initializeNewGameState = async (playerId: number) => {
         earned_at: new Date(),
       },
     });
+
+    await prisma.playerCharacter.create({
+      data: {
+        player_id: playerId,
+        character_id: 4,
+        is_purchased: true,
+        is_selected: true,
+      },
+    });
+
+    console.log(`Assigned default character (id 4) to player ${playerId}`);
   }
 };
 
