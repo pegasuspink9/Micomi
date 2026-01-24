@@ -3,6 +3,7 @@
     "name": "Micomi",
     "slug": "Micomi",
     "version": "1.0.0",
+    "owner": "micomi-team",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "micomi",

@@ -40,15 +40,13 @@ export default function Practice() {
 
   console.log('Expo AuthSession Generated Redirect URI:', googleRedirectUri); // Log it to verify
 
-   const [gRequest, gResponse, gPromptAsync] = Google.useAuthRequest({
+  const [gRequest, gResponse, gPromptAsync] = Google.useAuthRequest({
     androidClientId: "459111764902-09uhkdrbfq1tv7gml6dbce3t05ka3jlj.apps.googleusercontent.com",
     iosClientId: "REPLACE_WITH_YOUR_IOS_CLIENT_ID.apps.googleusercontent.com",
     webClientId: "459111764902-09uhkdrbfq1tv7gml6dbce3t05ka3jlj.apps.googleusercontent.com",
-    redirectUri: googleRedirectUri, // PASS THE GENERATED URI HERE
   });
 
-
-  console.log('Google Auth Request Object (after custom redirectUri):', gRequest); 
+  console.log('Google Auth Request Object:', gRequest); 
 
   const [fbRequest, fbResponse, fbPromptAsync] = Facebook.useAuthRequest({
     clientId: "REPLACE_WITH_YOUR_FACEBOOK_APP_ID",
