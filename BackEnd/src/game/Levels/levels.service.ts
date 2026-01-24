@@ -867,6 +867,85 @@ export const enterLevel = async (playerId: number, levelId: number) => {
   };
 };
 
+const unlockNextMapFirstLevel = async (
+  playerId: number,
+  currentMapId: number
+) => {
+  const currentMap = await prisma.map.findUnique({
+    where: { map_id: currentMapId },
+  });
+  if (!currentMap) return null;
+
+  const nextMapName =
+    MAP_PROGRESSION[currentMap.map_name as (typeof MAP_ORDER)[number]];
+  if (!nextMapName) return null;
+
+  const nextMap = await prisma.map.findUnique({
+    where: { map_name: nextMapName },
+  });
+  if (!nextMap) return null;
+
+  const firstLevel = await prisma.level.findFirst({
+    where: { map_id: nextMap.map_id },
+    orderBy: { level_number: "asc" },
+  });
+
+  if (firstLevel) {
+    const isMicomiNext =
+      firstLevel.level_type === "micomiButton" ||
+      firstLevel.level_type === "final";
+
+    await prisma.playerProgress.upsert({
+      where: {
+        player_id_level_id: {
+          player_id: playerId,
+          level_id: firstLevel.level_id,
+        },
+      },
+      update: {},
+      create: {
+        player_id: playerId,
+        level_id: firstLevel.level_id,
+        current_level: firstLevel.level_number,
+        attempts: 0,
+        player_answer: {},
+        completed_at: null, 
+        challenge_start_time: new Date(),
+        player_hp: 0,
+        enemy_hp: 0,
+        battle_status: BattleStatus.in_progress,
+        is_completed: false,
+        wrong_challenges: [],
+        coins_earned: 0,
+        total_points_earned: 0,
+        total_exp_points_earned: 0,
+        consecutive_corrects: 0,
+        consecutive_wrongs: 0,
+        wrong_challenges_count: 0,
+        has_reversed_curse: false,
+        has_boss_shield: false,
+        has_force_character_attack_type: false,
+        has_both_hp_decrease: false,
+        has_permuted_ss: false,
+        boss_skill_activated: false,
+        has_shuffle_ss: false,
+        took_damage: false,
+        has_strong_effect: false,
+        has_freeze_effect: false,
+        ...(isMicomiNext ? { done_micomi_level: false } : {}),
+      },
+    });
+
+    console.log(
+      `Player ${playerId} progressed from ${currentMap.map_name} → ${nextMapName} (Map Transition)`
+    );
+
+    return firstLevel;
+  }
+
+  return null;
+};
+
 export const unlockNextLevel = async (
   playerId: number,
   mapId: number,
@@ -889,7 +968,9 @@ export const unlockNextLevel = async (
   });
 
   if (nextLevel) {
-    const isMicomiLevel = nextLevel.level_type === "micomiButton";
+    const isMicomiOrFinal =
+      nextLevel.level_type === "micomiButton" ||
+      nextLevel.level_type === "final";
 
     await prisma.playerProgress.upsert({
       where: {
@@ -905,12 +986,12 @@ export const unlockNextLevel = async (
         current_level: nextLevel.level_number,
         attempts: 0,
         player_answer: {},
-        completed_at: isMicomiLevel ? new Date() : null,
+        completed_at: isMicomiOrFinal ? new Date() : null,
         challenge_start_time: new Date(),
         player_hp: 0,
         enemy_hp: 0,
         battle_status: BattleStatus.in_progress,
-        is_completed: isMicomiLevel,
+        is_completed: isMicomiOrFinal, 
         wrong_challenges: [],
         coins_earned: 0,
         total_points_earned: 0,
@@ -928,15 +1009,13 @@ export const unlockNextLevel = async (
         took_damage: false,
         has_strong_effect: false,
         has_freeze_effect: false,
-        ...(nextLevel.level_type === "micomiButton"
-          ? { done_micomi_level: true }
-          : {}),
+        ...(isMicomiOrFinal ? { done_micomi_level: true } : {}),
       },
     });
 
-    if (isMicomiLevel) {
+    if (isMicomiOrFinal) {
       console.log(
-        `Auto-completed micomi level ${nextLevel.level_id}, unlocking next level...`
+        `Auto-completed level ${nextLevel.level_id} (${nextLevel.level_type}). Checking for next step...`
       );
 
       const levelAfterMicomi = await prisma.level.findFirst({
@@ -990,85 +1069,17 @@ export const unlockNextLevel = async (
               : {}),
           },
         });
-
-        console.log(
-          `Unlocked level ${levelAfterMicomi.level_id} after auto-completed micomi level`
-        );
+        return levelAfterMicomi;
+      } else {
+        console.log("Micomi/Final was the last level. Unlocking next map.");
+        return await unlockNextMapFirstLevel(playerId, mapId);
       }
     }
 
     return nextLevel;
   }
 
-  const currentMap = await prisma.map.findUnique({ where: { map_id: mapId } });
-  if (!currentMap) return null;
-
-  const nextMapName =
-    MAP_PROGRESSION[currentMap.map_name as (typeof MAP_ORDER)[number]];
-  if (!nextMapName) return null;
-
-  const nextMap = await prisma.map.findUnique({
-    where: { map_name: nextMapName },
-  });
-  if (!nextMap) return null;
-
-  const firstLevel = await prisma.level.findFirst({
-    where: { map_id: nextMap.map_id },
-    orderBy: { level_number: "asc" },
-  });
-
-  if (firstLevel) {
-    await prisma.playerProgress.upsert({
-      where: {
-        player_id_level_id: {
-          player_id: playerId,
-          level_id: firstLevel.level_id,
-        },
-      },
-      update: {},
-      create: {
-        player_id: playerId,
-        level_id: firstLevel.level_id,
-        current_level: firstLevel.level_number,
-        attempts: 0,
-        player_answer: {},
-        completed_at: null,
-        challenge_start_time: new Date(),
-        player_hp: 0,
-        enemy_hp: 0,
-        battle_status: BattleStatus.in_progress,
-        is_completed: false,
-        wrong_challenges: [],
-        coins_earned: 0,
-        total_points_earned: 0,
-        total_exp_points_earned: 0,
-        consecutive_corrects: 0,
-        consecutive_wrongs: 0,
-        wrong_challenges_count: 0,
-        has_reversed_curse: false,
-        has_boss_shield: false,
-        has_force_character_attack_type: false,
-        has_both_hp_decrease: false,
-        has_permuted_ss: false,
-        boss_skill_activated: false,
-        has_shuffle_ss: false,
-        took_damage: false,
-        has_strong_effect: false,
-        has_freeze_effect: false,
-        ...(firstLevel.level_type === "micomiButton"
-          ? { done_micomi_level: false }
-          : {}),
-      },
-    });
-
-    console.log(
-      `Player ${playerId} progressed from ${currentMap.map_name} → ${nextMapName} (unlocked first level player-specifically)`
-    );
-
-    return firstLevel;
-  }
-
-  return null;
+  return await unlockNextMapFirstLevel(playerId, mapId);
 };
 
 export const completeLevelDone = async (playerId: number, levelId: number) => {

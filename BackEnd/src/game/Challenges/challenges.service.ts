@@ -696,20 +696,20 @@ export const submitChallengeService = async (
       switch (type) {
         case "special_attack":
           character_attack_audio =
-            "https://micomi-assets.me/Sounds/In%20Game/Shi%20Attacks/Ult.wav";
+            "https://micomi-assets.me/Sounds/In%20Game/Shi%20Attacks/Ult.wav.wav";
           break;
         case "third_attack":
           character_attack_audio =
-            "https://micomi-assets.me/Sounds/In%20Game/Shi%20Attacks/Special.wav";
+            "https://micomi-assets.me/Sounds/In%20Game/Shi%20Attacks/Special.wav.wav";
           break;
         case "second_attack":
           character_attack_audio =
-            "https://micomi-assets.me/Sounds/In%20Game/Shi%20Attacks/2nd.wav";
+            "https://micomi-assets.me/Sounds/In%20Game/Shi%20Attacks/2nd.wav.wav";
           break;
         case "basic_attack":
         default:
           character_attack_audio =
-            "https://micomi-assets.me/Sounds/In%20Game/Shi%20Attacks/Basic.mp3";
+            "https://micomi-assets.me/Sounds/In%20Game/Shi%20Attacks/Basic.mp3.wav";
           break;
       }
     } else if (character.character_name === "Ryron") {
@@ -718,20 +718,20 @@ export const submitChallengeService = async (
       switch (type) {
         case "special_attack":
           character_attack_audio =
-            "https://micomi-assets.me/Sounds/In%20Game/Ryron%20Attacks/Ult.wav";
+            "https://micomi-assets.me/Sounds/In%20Game/Ryron%20Attacks/Sounds_In%20Game_Ryron%20Attacks_Ult.wav.wav";
           break;
         case "third_attack":
           character_attack_audio =
-            "https://micomi-assets.me/Sounds/In%20Game/Ryron%20Attacks/Special.wav";
+            "https://micomi-assets.me/Sounds/In%20Game/Ryron%20Attacks/Ryron_Special.wav";
           break;
         case "second_attack":
           character_attack_audio =
-            "https://micomi-assets.me/Sounds/In%20Game/Ryron%20Attacks/2nd.wav";
+            "https://micomi-assets.me/Sounds/In%20Game/Ryron%20Attacks/2nd%20Attack.wav";
           break;
         case "basic_attack":
         default:
           character_attack_audio =
-            "https://micomi-assets.me/Sounds/In%20Game/Ryron%20Attacks/Basic.wav";
+            "https://micomi-assets.me/Sounds/In%20Game/Ryron%20Attacks/Sounds_In%20Game_Ryron%20Attacks_Basic.wav.wav";
           break;
       }
     } else if (character.character_name === "Leon") {
@@ -740,11 +740,11 @@ export const submitChallengeService = async (
       switch (type) {
         case "special_attack":
           character_attack_audio =
-            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Ult.mp3";
+            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Sounds_In%20Game_Leon%20Attacks_Ult.mp3.wav";
           break;
         case "third_attack":
           character_attack_audio =
-            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Special.mp3";
+            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Leon_Special.wav";
           break;
         case "second_attack":
           character_attack_audio =
@@ -753,7 +753,7 @@ export const submitChallengeService = async (
         case "basic_attack":
         default:
           character_attack_audio =
-            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Basic.wav";
+            "https://micomi-assets.me/Sounds/In%20Game/Leon%20Attacks/Sounds_In%20Game_Leon%20Attacks_Basic.wav.wav";
           break;
       }
     }
