@@ -7,11 +7,6 @@ import {
 } from "../../../middleware/auth.middleware";
 
 const router = Router();
-router.get("/", QuestService.getAllQuests);
-router.get("/:id", QuestService.getQuestById);
-router.post("/", QuestService.createQuest);
-router.put("/:id", QuestService.updateQuest);
-router.delete("/:id", QuestService.deleteQuest);
 
 // Player quest routes
 router.get("/player", authenticate, requirePlayer, QuestService.getPlayerQuest);
@@ -24,13 +19,17 @@ router.get(
 );
 
 router.get(
-  "/player/:playerId/daily",
+  "/player/daily",
+  authenticate,
+  requirePlayer,
   QuestService.getPlayerDailyQuestsController
 );
 
 // Player claim quest
 router.post(
-  "/:playerId/:questId/claim",
+  "/:questId/claim",
+  authenticate,
+  requirePlayer,
   QuestsController.claimQuestRewardController
 );
 
@@ -50,5 +49,11 @@ router.get("/admin/stats", QuestService.adminGetQuestStats);
 router.get("/admin/stats/daily", QuestService.adminGetDailyQuestStats);
 
 router.post("/admin/fill-missing", QuestService.adminFillMissingQuests); //temporary only
+
+router.get("/", QuestService.getAllQuests);
+router.get("/:id", QuestService.getQuestById);
+router.post("/", QuestService.createQuest);
+router.put("/:id", QuestService.updateQuest);
+router.delete("/:id", QuestService.deleteQuest);
 
 export default router;
