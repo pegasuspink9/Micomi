@@ -70,13 +70,20 @@ export const getAllPlayerCharacter = async (req: Request, res: Response) => {
 
     const combinedData = allCharacters.map((character) => {
       const owned = ownedCharacters.find(
-        (pc) => pc.character_id === character.character_id
+        (pc) => pc.character_id === character.character_id,
       );
 
       const shopInfo =
         character.characterShop || owned?.character.characterShop;
 
-      const characterCards = getCharacterCards(character.character_name);
+      const damageArray = Array.isArray(character.character_damage)
+        ? (character.character_damage as number[])
+        : [10, 15, 25];
+
+      const characterCards = getCharacterCards(
+        character.character_name,
+        damageArray,
+      );
 
       const baseItem = {
         character_shop_id: shopInfo?.character_shop_id ?? null,
@@ -102,7 +109,7 @@ export const getAllPlayerCharacter = async (req: Request, res: Response) => {
     });
 
     const sortedData = combinedData.sort(
-      (a, b) => a.character_id - b.character_id
+      (a, b) => a.character_id - b.character_id,
     );
 
     return successResponse(res, sortedData, "Player characters fetched");
@@ -112,51 +119,68 @@ export const getAllPlayerCharacter = async (req: Request, res: Response) => {
   }
 };
 
-const getCharacterCards = (characterName: string) => {
+const getCharacterCards = (characterName: string, damage: number[]) => {
+  const basicDmg = damage[0] ?? 10;
+  const secondDmg = damage[1] ?? 15;
+  const thirdDmg = damage[2] ?? 25;
+  const specialDmg = "Passive Damage";
+
   const characterCardsData: Record<string, any[]> = {
     Gino: [
       {
         attack_type: "Special Attack",
+        damage_attack: specialDmg,
         card_type: "Stormfang Surge",
-        character_attack_card: "micomi-asstes.me/Icons/Skill%20Icons/4th.png",
+        character_attack_card:
+          "https://micomi-assets.me/Icons/Skill%20Icons/4th.png",
       },
       {
         attack_type: "Third Attack",
+        damage_attack: thirdDmg,
         card_type: "Feral Slash",
-        character_attack_card: "micomi-asstes.me/Icons/Skill%20Icons/3rd.png",
+        character_attack_card:
+          "https://micomi-assets.me/Icons/Skill%20Icons/3rd.png",
       },
       {
         attack_type: "Second Attack",
+        damage_attack: secondDmg,
         card_type: "Ruthless Fang",
-        character_attack_card: "micomi-asstes.me/Icons/Skill%20Icons/2nd.png",
+        character_attack_card:
+          "https://micomi-assets.me/Icons/Skill%20Icons/2nd.png",
       },
       {
         attack_type: "Basic Attack",
+        damage_attack: basicDmg,
         card_type: "Wild Claw",
-        character_attack_card: "micomi-asstes.me/Icons/Skill%20Icons/1st.png",
+        character_attack_card:
+          "https://micomi-assets.me/Icons/Skill%20Icons/1st.png",
       },
     ],
     ShiShi: [
       {
         attack_type: "Special Attack",
+        damage_attack: specialDmg,
         card_type: "Icebound Meteoclaw",
         character_attack_card:
           "https://micomi-assets.me/Icons/Skill%20Icons/Special%20Attack%20Card.png",
       },
       {
         attack_type: "Third Attack",
+        damage_attack: thirdDmg,
         card_type: "Sparkclaw Cascade",
         character_attack_card:
           "https://micomi-assets.me/Icons/Skill%20Icons/Third%20Attack%20Card.png",
       },
       {
         attack_type: "Second Attack",
+        damage_attack: secondDmg,
         card_type: "Flamewhisker Crash",
         character_attack_card:
           "https://micomi-assets.me/Icons/Skill%20Icons/Second%20Attack%20Card.png",
       },
       {
         attack_type: "Basic Attack",
+        damage_attack: basicDmg,
         card_type: "Voidflare Drop",
         character_attack_card:
           "https://micomi-assets.me/Icons/Skill%20Icons/Basic%20Attack%20Card.png",
@@ -165,24 +189,28 @@ const getCharacterCards = (characterName: string) => {
     Ryron: [
       {
         attack_type: "Special Attack",
+        damage_attack: specialDmg,
         card_type: "God’s Judgment",
         character_attack_card:
           "https://micomi-assets.me/Icons/Skill%20Icons/Ryron%20Ult.png",
       },
       {
         attack_type: "Third Attack",
+        damage_attack: thirdDmg,
         card_type: "Ether Lance",
         character_attack_card:
           "https://micomi-assets.me/Icons/Skill%20Icons/Ryron%20Special.png",
       },
       {
         attack_type: "Second Attack",
+        damage_attack: secondDmg,
         card_type: "Void Piercer",
         character_attack_card:
           "https://micomi-assets.me/Icons/Skill%20Icons/Ryron%202nd.png",
       },
       {
         attack_type: "Basic Attack",
+        damage_attack: basicDmg,
         card_type: "Velocity Shot",
         character_attack_card:
           "https://micomi-assets.me/Icons/Skill%20Icons/Ryron%20Basic.png",
@@ -191,24 +219,28 @@ const getCharacterCards = (characterName: string) => {
     Leon: [
       {
         attack_type: "Special Attack",
+        damage_attack: specialDmg,
         card_type: "Inferno Bulwark",
         character_attack_card:
           "https://micomi-assets.me/Icons/Skill%20Icons/Leon%20Ult.png",
       },
       {
         attack_type: "Third Attack",
+        damage_attack: thirdDmg,
         card_type: "Cataclysm Break",
         character_attack_card:
           "https://micomi-assets.me/Icons/Skill%20Icons/Leon%20Special.png",
       },
       {
         attack_type: "Second Attack",
+        damage_attack: secondDmg,
         card_type: "Molten Strike",
         character_attack_card:
           "https://micomi-assets.me/Icons/Skill%20Icons/Leon%202nd%20Final.png",
       },
       {
         attack_type: "Basic Attack",
+        damage_attack: basicDmg,
         card_type: "Thunderbound Cleaver",
         character_attack_card:
           "https://micomi-assets.me/Icons/Skill%20Icons/Leon%20Basic%20Final.png",
@@ -228,14 +260,14 @@ export const createShopCharacter = async (req: Request, res: Response) => {
       res,
       newCharacter,
       "Character in the shop created",
-      201
+      201,
     );
   } catch (error) {
     return errorResponse(
       res,
       error,
       "Failed to create character in the shop",
-      400
+      400,
     );
   }
 };
@@ -254,7 +286,7 @@ export const updateShopCharacter = async (req: Request, res: Response) => {
       res,
       error,
       "Failed to update the character in the shop",
-      400
+      400,
     );
   }
 };
@@ -270,7 +302,7 @@ export const deleteShopCharacter = async (req: Request, res: Response) => {
       res,
       null,
       "Failed to delete character in the shop",
-      400
+      400,
     );
   }
 };
@@ -331,7 +363,7 @@ export const getAllPlayerPotions = async (req: Request, res: Response) => {
         },
         potions: formatted,
       },
-      "Player potions fetched"
+      "Player potions fetched",
     );
   } catch (error) {
     console.error(error);
@@ -364,7 +396,7 @@ export const updatePotion = async (req: Request, res: Response) => {
       res,
       error,
       "Failed to update the potion in the shop",
-      400
+      400,
     );
   }
 };
