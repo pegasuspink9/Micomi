@@ -81,6 +81,10 @@ export async function updateProgressForChallenge(
     consecutiveCorrects += 1;
     consecutiveWrongs = 0;
 
+    if (consecutiveCorrects > 3) {
+      consecutiveCorrects = 1; 
+    }
+
     const coinsToAdd =
       isBonusRound && characterDamage
         ? characterDamage
@@ -102,6 +106,10 @@ export async function updateProgressForChallenge(
     }
     consecutiveCorrects = 0;
     consecutiveWrongs += 1;
+
+    if (consecutiveWrongs > 3) {
+      consecutiveWrongs = 1; 
+    }
 
     const level = await prisma.level.findUnique({
       where: { level_id: progress.level_id },

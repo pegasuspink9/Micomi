@@ -978,6 +978,40 @@ export async function fightEnemy(
         );
       } else if (
         !alreadyAnsweredCorrectly &&
+        character.character_name === "Ryron" &&
+        progress.consecutive_corrects === 3
+      ) {
+      character_attack_type = "special_attack";
+
+      let damageIndex = 0;
+      if (correctAnswerLength >= 8) {
+        damageIndex = 2;
+      } else if (correctAnswerLength >= 5) {
+        damageIndex = 1;
+      } else {
+        damageIndex = 0;
+      }
+
+      damage = damageArray[damageIndex] ?? 10;
+
+      character_attack = attacksArray[3] || null;
+      character_range_attack = rangeAttacksArray[3] || null;
+
+      const cardInfo = getCardForAttackType(
+        character.character_name,
+        "special_attack"
+      );
+      card_type = cardInfo.card_type;
+      character_attack_card = cardInfo.character_attack_card;
+
+      character_idle = character.avatar_image || null;
+      character_run = null;
+
+      console.log(
+        `- Ryron's SS triggered! Animation: special_attack, Damage: ${damage}`
+      );
+      } else if (
+        !alreadyAnsweredCorrectly &&
         !wasEverWrong &&
         correctAnswerLength >= 8
       ) {
@@ -1899,6 +1933,40 @@ export async function fightBossEnemy(
 
         console.log(
           `- ShiShi's SS triggered! Animation: special_attack, Enemy Frozen set to TRUE`
+        );
+      } else if (
+        !alreadyAnsweredCorrectly &&
+        character.character_name === "Ryron" &&
+          progress.consecutive_corrects === 3
+      ) {
+        character_attack_type = "special_attack";
+
+        let damageIndex = 0;
+        if (correctAnswerLength >= 8) {
+          damageIndex = 2;
+        } else if (correctAnswerLength >= 5) {
+          damageIndex = 1;
+        } else {
+          damageIndex = 0;
+        }
+
+        damage = damageArray[damageIndex] ?? 10;
+
+        character_attack = attacksArray[3] || null;
+        character_range_attack = rangeAttacksArray[3] || null;
+
+        const cardInfo = getCardForAttackType(
+          character.character_name,
+          "special_attack"
+        );
+        card_type = cardInfo.card_type;
+        character_attack_card = cardInfo.character_attack_card;
+
+        character_idle = character.avatar_image || null;
+        character_run = null;
+
+        console.log(
+        `- Ryron's SS triggered! Animation: special_attack, Damage: ${damage}`
         );
       } else if (
         !alreadyAnsweredCorrectly &&

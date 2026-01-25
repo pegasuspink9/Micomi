@@ -36,7 +36,7 @@ export const claimQuestRewardController = async (
   res: Response
 ) => {
   try {
-    const playerId = Number(req.params.playerId);
+    const playerId = (req as any).user.id;
     const questId = Number(req.params.questId);
 
     const result = await QuestService.claimQuestReward(playerId, questId);

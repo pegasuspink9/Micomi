@@ -243,7 +243,7 @@ export const getPlayerDailyQuestsController = async (
   req: Request,
   res: Response
 ) => {
-  const playerId = Number(req.params.playerId);
+  const playerId = (req as any).user.id;
   try {
     const quests = await getPlayerQuestsByPeriod(playerId, "daily");
 
