@@ -105,6 +105,7 @@ export const characterService = {
         avatar_image: character.avatar_image,
         characterShopId: item.character_shop_id,
         character_image_select: character.character_image_select,
+        cards: character.cards || [],
       };
     });
     

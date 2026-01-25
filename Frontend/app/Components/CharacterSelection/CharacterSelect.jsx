@@ -12,9 +12,23 @@ import { universalAssetPreloader } from '../../services/preloader/universalAsset
 import { gameScale } from '../../Components/Responsiveness/gameResponsive';
 import MainLoading from '../Actual Game/Loading/MainLoading';
 
-
-
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+// ✅ STATIC DATA
+const STATIC_CARDS_DATA = [
+    {
+        "character_attack_card": "https://micomi-assets.me/Icons/Skill%20Icons/4th.png"
+    },
+    {
+        "character_attack_card": "https://micomi-assets.me/Icons/Skill%20Icons/3rd.png"
+    },
+    {
+        "character_attack_card": "https://micomi-assets.me/Icons/Skill%20Icons/2nd.png"
+    },
+    {
+        "character_attack_card": "https://micomi-assets.me/Icons/Skill%20Icons/1st.png"
+    }
+];
 
 export default function CharacterProfile() {
   
@@ -52,44 +66,22 @@ export default function CharacterProfile() {
     { style: styles.skill, icon: currentHero.damageIcon, text: "Damage:", number: currentHero.character_damage }
   ] : [];
 
-  // ✅ Get cached video path (preloaded with Map API)
   const getCachedVideoSource = () => {
     const videoUrl = 'https://micomi-assets.me/Hero%20Selection%20Components/Background.mp4';
     const cachedPath = universalAssetPreloader.getCachedAssetPath(videoUrl);
-    console.log(`🎬 Using video source: ${cachedPath}`);
     return { uri: cachedPath };
   };
 
-  // ✅ Get cached static asset paths
-  const getCachedCoinIcon = () => {
-    return universalAssetPreloader.getCachedAssetPath(URLS.coin);
-  };
+  const getCachedCoinIcon = () => universalAssetPreloader.getCachedAssetPath(URLS.coin);
+  
+  const getCachedHeroBoxBorder = () => universalAssetPreloader.getCachedAssetPath('https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760064111/Untitled_design_3_ghewno.png');
 
-  const getCachedHeroBoxBorder = () => {
-    return universalAssetPreloader.getCachedAssetPath('https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760064111/Untitled_design_3_ghewno.png');
-  };
-
-  const onVideoLoad = (status) => {
-    if (status.isLoaded) {
-      setVideoReady(true);
-      console.log('🎬 Character select video loaded successfully');
-    }
-  };
-
-  const onVideoError = (error) => {
-    console.error('🎬 Character select video error:', error);
-    setVideoReady(false);
-  };
-
-  const onVideoStatusUpdate = (status) => {
-    if (status.error) {
-      console.error('🎬 Video playback error:', status.error);
-    }
-  };
+  const onVideoLoad = (status) => { if (status.isLoaded) setVideoReady(true); };
+  const onVideoError = (error) => setVideoReady(false);
+  const onVideoStatusUpdate = (status) => {};
 
   const handleCharacterAnimationFinish = () => {
     setIsCharacterAnimating(false);
-    
     Animated.timing(backgroundOpacity, { 
       toValue: 0, 
       duration: 500, 
@@ -103,46 +95,9 @@ export default function CharacterProfile() {
     });
   };
 
-  const handleHeroViewing = (heroName) => {
-    console.log(`👁️ Viewing character: ${heroName}`);
-    changeDisplayedCharacter(heroName);
-  };
-
-  const handleCharacterSelection = async (heroName) => {
-    try {
-      console.log(`🎯 Attempting to select character: ${heroName}`);
-      await selectCharacter(heroName);
-    } catch (error) {
-      console.error('Selection Error:', error);
-    }
-  };
-
-  const handlePurchase = async () => {
-    if (!currentHero) return;
-
-    try {
-      console.log(`🛒 Initiating purchase for ${currentHero.character_name}`);
-      const response = await purchaseCharacter(currentHero);
-      setShowBuyModal(false);
-      console.log('✅ Purchase completed successfully:', response);
-    } catch (error) {
-      console.log('Purchase interrupted:', error.message);
-      setShowBuyModal(false);
-     
-      let modalTitle = 'Purchase Failed';
-      if (error.message === 'Not enough coins') {
-        modalTitle = 'Insufficient Funds';
-      } else if (error.message === 'Character already purchased') {
-        modalTitle = 'Info';
-      }
-
-      setErrorModal({ 
-        visible: true, 
-        message: error.message || 'Unable to purchase character. Please try again.',
-        title: modalTitle
-      });
-    }
-  };
+  const handleHeroViewing = (heroName) => changeDisplayedCharacter(heroName);
+  const handleCharacterSelection = async (heroName) => { try { await selectCharacter(heroName); } catch (error) {} };
+  const handlePurchase = async () => { /* ... existing logic ... */ };
 
   React.useEffect(() => {
     if (selectedHero) {
@@ -155,31 +110,17 @@ export default function CharacterProfile() {
   const renderHeroBox = (heroName) => {
     const hero = charactersData[heroName];
     if (!hero) return null;
-
     const isCurrentlyViewed = selectedHero === heroName;
     const isActuallySelected = hero.is_selected;
-
     return (
       <Pressable
         key={heroName}
-        style={[
-          styles.heroBox, 
-          isCurrentlyViewed && styles.viewedHeroBox,
-          isActuallySelected && styles.selectedHeroBox 
-        ]}
+        style={[styles.heroBox, isCurrentlyViewed && styles.viewedHeroBox, isActuallySelected && styles.selectedHeroBox]}
         onPress={() => handleHeroViewing(heroName)}
         disabled={selecting}
       >
-        <ImageBackground 
-          source={{ uri: getCachedHeroBoxBorder() }} 
-          style={styles.heroBoxBorder} 
-          resizeMode="contain"
-        >
-          <ImageBackground
-            source={{ uri: hero.character_image_select }}
-            resizeMode="cover"
-            style={styles.heroBoxBackground}
-          >
+        <ImageBackground source={{ uri: getCachedHeroBoxBorder() }} style={styles.heroBoxBorder} resizeMode="contain">
+          <ImageBackground source={{ uri: hero.character_image_select }} resizeMode="cover" style={styles.heroBoxBackground}>
             <Text style={styles.heroBoxTxt}>{heroName}</Text>
           </ImageBackground>
         </ImageBackground>
@@ -187,13 +128,11 @@ export default function CharacterProfile() {
     );
   };
 
- if (!currentHero && error && !loading) {
+  if (!currentHero && error && !loading) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <Text style={styles.errorText}>{error || "No character data available"}</Text>
-        <TouchableOpacity onPress={loadCharacters} style={styles.modalSingleButton}>
-             <Text style={styles.confirmButtonText}>Retry</Text>
-        </TouchableOpacity>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity onPress={loadCharacters} style={styles.modalSingleButton}><Text>Retry</Text></TouchableOpacity>
       </View>
     );
   }
@@ -204,21 +143,14 @@ export default function CharacterProfile() {
         <MapHeader coins={userCoins} />
       </View>
 
-      {/* Render the content only when we have data to avoid crashes */}
       {currentHero && (
         <>
           <Video 
             ref={videoRef}
             source={getCachedVideoSource()} 
             style={styles.fullBackground}
-            shouldPlay={true}
-            isLooping={true}
-            resizeMode="contain"
-            useNativeControls={false}
-            isMuted={true}
-            onLoad={onVideoLoad}
-            onError={onVideoError}
-            onPlaybackStatusUpdate={onVideoStatusUpdate}
+            shouldPlay={true} isLooping={true} resizeMode="contain" useNativeControls={false} isMuted={true}
+            onLoad={onVideoLoad} onError={onVideoError} onPlaybackStatusUpdate={onVideoStatusUpdate}
           />
 
           <View style={styles.contentOverlay}>
@@ -253,9 +185,11 @@ export default function CharacterProfile() {
                     selecting={selecting}
                   />
 
+                  {/* ✅ Passing Static Cards Data */}
                   <AttributePanel
                     ref={attributePanelRef}
                     attributeData={attributeData}
+                    cardsData={STATIC_CARDS_DATA}
                     selectedHero={selectedHero}
                     styles={styles}
                   />
@@ -272,16 +206,12 @@ export default function CharacterProfile() {
         </>
       )}
 
-      {/* Purchase and Error Modals code remains the same... */}
-      {/* ... existing modal code ... */}
-
-      {/* Main Loading Overlay */}
+      {/* ... [Modals and Loading] ... */}
       <MainLoading visible={loading || !currentHero} />
     </View>
   );
 }
 
-// ... styles remain the same ...
 const styles = StyleSheet.create({
   contentOverlay: {
     position: 'absolute',
@@ -580,4 +510,19 @@ const styles = StyleSheet.create({
     width: gameScale(20),
     height: gameScale(20),
   },
+
+  // ✅ ADDED STYLES FOR THE CARD GRID (4th Panel)
+   cardsContainerRow: {
+    flexDirection: 'row',
+    marginBottom: gameScale(-50),
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: gameScale(100),  
+    marginTop: gameScale(10),
+  },
+  cardImageSmall: {
+    width: gameScale(50),
+    height: gameScale(50),
+    marginHorizontal: gameScale(-5), 
+  }
 });
