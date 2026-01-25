@@ -17,7 +17,7 @@ router.post(
   "/select-character/:characterId",
   authenticate,
   requirePlayer,
-  CharacterService.selectCharacter
+  CharacterService.selectCharacter,
 );
 
 //CRUD for shop characters
@@ -26,14 +26,19 @@ router.put("/update-character/:id", ShopService.updateShopCharacter);
 router.delete("/delete-character/:id", ShopService.deleteShopCharacter);
 
 //Get all potions in the shop
-router.get("/potions", ShopService.getAllPotionsInShop);
+router.get("/potion", ShopService.getAllPotionsInShop);
 //Get all player potions (Potion Shop)
-router.get("/potions", ShopService.getAllPlayerPotions);
+router.get(
+  "/potions",
+  authenticate,
+  requirePlayer,
+  ShopService.getAllPlayerPotions,
+);
 router.post(
   "/buy-potion/:potionShopId",
   authenticate,
   requirePlayer,
-  buyPotionInShop
+  buyPotionInShop,
 );
 
 // CRUD potions in the shop
