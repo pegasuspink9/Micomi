@@ -13,14 +13,20 @@ import { usePlayerProfile } from '../../hooks/usePlayerProfile';
 import { gameScale } from '../Responsiveness/gameResponsive';
 
 export default function MapHeader() {
-  const { playerData, loadPlayerProfile } = usePlayerProfile();
+  const { playerData, loadPlayerProfile, refreshPlayerData } = usePlayerProfile();
 
+  
   useFocusEffect(
     useCallback(() => {
       loadPlayerProfile();
-    }, [loadPlayerProfile])
-  );
 
+      const syncInterval = setInterval(() => {
+        refreshPlayerData();
+      }, 5000); 
+
+      return () => clearInterval(syncInterval);
+    }, [loadPlayerProfile, refreshPlayerData])
+  );
   const calculateLevelProgress = () => {
     const currentLevel = playerData?.playerLevel || 1;
     const currentExp = playerData?.expPoints || 0;

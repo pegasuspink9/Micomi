@@ -73,6 +73,25 @@ export const usePlayerProfile = () => {
     }
   }, []);
 
+   const refreshPlayerData = useCallback(async () => {
+    try {
+      const apiData = await playerService.getPlayerProfile();
+      let transformedData = playerService.transformPlayerData(apiData);
+      
+      let dataWithCachedPaths = transformedData;
+      if (typeof universalAssetPreloader.transformProfileDataWithMapCache === 'function') {
+        dataWithCachedPaths = universalAssetPreloader.transformProfileDataWithMapCache(transformedData);
+      } else {
+        dataWithCachedPaths = universalAssetPreloader.transformPlayerDataWithCache(transformedData);
+      }
+      
+      setPlayerData(dataWithCachedPaths);
+      return dataWithCachedPaths;
+    } catch (err) {
+      console.error('Silent refresh failed:', err);
+    }
+  }, []);
+
   const fetchAvailableAvatars = useCallback(async () => {
     try {
       const avatars = await playerService.getAvailableAvatars();
@@ -197,6 +216,7 @@ export const usePlayerProfile = () => {
     loadPlayerProfile,
     updateAvatar,
     clearError,
+    refreshPlayerData,
     
     // Getters
     getBadges,
