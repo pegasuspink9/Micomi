@@ -172,11 +172,11 @@ export const imagesUrls = [
   "https://micomi-assets.me/Comics/Greenland%201/G1_page5.png",
 
   // Potion Comic
-  "https://micomi-assets.me/Comics/Potion/P_page1.png",
-  "https://micomi-assets.me/Comics/Potion/P_page2.png",
-  "https://micomi-assets.me/Comics/Potion/P_page3.png",
-  "https://micomi-assets.me/Comics/Potion/P_page4.png",
-  "https://micomi-assets.me/Comics/Potion/P_page5.png",
+  "https://micomi-assets.me/Comics/Potion/p_page4.jpg",
+  "https://micomi-assets.me/Comics/Potion/p_page3.jpg",
+  "https://micomi-assets.me/Comics/Potion/p_page2.jpg",
+  "https://micomi-assets.me/Comics/Potion/p_page1.jpg",
+  "https://micomi-assets.me/Comics/Potion/pintro.jpg",
 
   //Greenland Comic (Ending)
   "https://micomi-assets.me/Comics/Greenland%20Ending/G_page1.png",
