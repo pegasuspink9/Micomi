@@ -14,22 +14,7 @@ import MainLoading from '../Actual Game/Loading/MainLoading';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-// ✅ STATIC DATA
-const STATIC_CARDS_DATA = [
-    {
-        "character_attack_card": "https://micomi-assets.me/Icons/Skill%20Icons/4th.png"
-    },
-    {
-        "character_attack_card": "https://micomi-assets.me/Icons/Skill%20Icons/3rd.png"
-    },
-    {
-        "character_attack_card": "https://micomi-assets.me/Icons/Skill%20Icons/2nd.png"
-    },
-    {
-        "character_attack_card": "https://micomi-assets.me/Icons/Skill%20Icons/1st.png"
-    }
-];
-
+// Keep your existing imports and logic, I am just updating the styles to ensure the layers work
 export default function CharacterProfile() {
   
   const {
@@ -97,7 +82,33 @@ export default function CharacterProfile() {
 
   const handleHeroViewing = (heroName) => changeDisplayedCharacter(heroName);
   const handleCharacterSelection = async (heroName) => { try { await selectCharacter(heroName); } catch (error) {} };
-  const handlePurchase = async () => { /* ... existing logic ... */ };
+
+  const handlePurchase = async () => {
+    if (!currentHero) return;
+
+    try {
+      console.log(`🛒 Initiating purchase for ${currentHero.character_name}`);
+      const response = await purchaseCharacter(currentHero);
+      setShowBuyModal(false);
+      console.log('✅ Purchase completed successfully:', response);
+    } catch (error) {
+      console.log('Purchase interrupted:', error.message);
+      setShowBuyModal(false);
+     
+      let modalTitle = 'Purchase Failed';
+      if (error.message === 'Not enough coins') {
+        modalTitle = 'Insufficient Funds';
+      } else if (error.message === 'Character already purchased') {
+        modalTitle = 'Info';
+      }
+
+      setErrorModal({ 
+        visible: true, 
+        message: error.message || 'Unable to purchase character. Please try again.',
+        title: modalTitle
+      });
+    }
+  };
 
   React.useEffect(() => {
     if (selectedHero) {
@@ -189,7 +200,7 @@ export default function CharacterProfile() {
                   <AttributePanel
                     ref={attributePanelRef}
                     attributeData={attributeData}
-                    cardsData={STATIC_CARDS_DATA}
+                    cardsData={currentHero?.cards || []} 
                     selectedHero={selectedHero}
                     styles={styles}
                   />
@@ -511,18 +522,92 @@ const styles = StyleSheet.create({
     height: gameScale(20),
   },
 
-  // ✅ ADDED STYLES FOR THE CARD GRID (4th Panel)
+  // ✅ CARD CONTAINER
    cardsContainerRow: {
     flexDirection: 'row',
     marginBottom: gameScale(-50),
     justifyContent: 'center',
     alignItems: 'center',
-    width: gameScale(100),  
+    width: gameScale(80), // Reverted to a more appropriate width
     marginTop: gameScale(10),
   },
-  cardImageSmall: {
-    width: gameScale(50),
-    height: gameScale(50),
-    marginHorizontal: gameScale(-5), 
-  }
+  
+  skillCardWrapper: {
+    width: gameScale(45),
+    height: gameScale(45),
+    marginHorizontal: gameScale(-7), 
+  },
+
+  // ✅ BASE CARD FACE
+  cardFace: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    borderRadius: gameScale(8),
+    backfaceVisibility: 'hidden', 
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // ✅ FRONT FACE (Transparent)
+  cardFaceFront: {
+    zIndex: 2,
+    backgroundColor: 'transparent',
+    // ✅ CHANGED: Removed overflow hidden so name can hang below
+  },
+
+  // ✅ BACK FACE (With Background)
+  cardFaceBack: {
+    zIndex: 1,
+    transform: [{ rotateY: '180deg' }], 
+    backgroundColor: 'rgba(3, 63, 116, 0.95)', 
+    borderWidth: 1.5,
+    borderColor: 'rgba(106, 191, 244, 0.9)',
+  },
+
+  skillCardImage: {
+    width: '100%',
+    height: '100%',
+  },
+
+  cardDamageContainer: {
+    position: 'absolute',
+    top: gameScale(8),
+    right: gameScale(13),
+    alignItems: 'flex-end',
+    zIndex: 10,
+    
+  },
+  
+  cardNameContainer: {
+    position: 'absolute',
+    bottom: gameScale(-.8),
+    width: '90%', 
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10, 
+    borderRadius: gameScale(5),
+  },
+
+  cardTitle: {
+    fontFamily: 'GoldenAgeDark',
+    fontSize: gameScale(3),
+    color: 'rgb(255, 255, 255)',
+    textAlign: 'center',
+    textShadowColor: 'black',
+    textShadowRadius: 2,
+  },
+
+  cardDamageLabel: {
+    fontFamily: 'GoldenAgeDark',
+    fontSize: gameScale(2.5), 
+    color: '#aaa',
+  },
+  
+  cardDamageValue: {
+    fontFamily: 'GoldenAgeDark',
+    fontSize: gameScale(5), 
+    color: '#dcdcdc',
+    marginTop: gameScale(-1),
+  },
 });
