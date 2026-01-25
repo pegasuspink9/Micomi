@@ -24,7 +24,6 @@ const MiniQuestPreview = () => {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const [missionModalVisible, setMissionModalVisible] = useState(false);
 
-  // Border colors matching QuestCard daily theme (blue)
   const borderColors = {
     outerBg: '#1e3a5f',
     outerBorderTop: '#0d1f33',

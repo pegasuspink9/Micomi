@@ -95,7 +95,6 @@ const styles = StyleSheet.create({
   },
   headerOverlay: {
     position: 'absolute',
-    top: 30,
     left: 0,
     right: 0,
     zIndex: 100,

@@ -4,7 +4,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
@@ -42,8 +42,7 @@ export default function MapHeader() {
   const coins = playerData?.coins || 0;
   const lives = 300;
   
-  // Use hero image or a fallback
-  const avatarUrl = playerData?.heroSelected?.character_image_display || "https://github.com/user-attachments/assets/eced9b8f-eae0-48f5-bc05-d8d5ce018529";
+  const avatarUrl = playerData?.playerAvatar || "https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif";;
 
   return (
     <View style={styles.header}>
@@ -62,13 +61,10 @@ export default function MapHeader() {
         
         {/* Column: Name Top, Level+Bar Bottom */}
         <View style={styles.nameAndXpColumn}>
-
             <Text style={styles.usernameText} numberOfLines={1}>{username}</Text>
             
-            {/* Row: Level Badge + XP Bar */}
             <View style={styles.levelAndBarRow}>
-                
-                {/* Mini Level Badge - zIndex ensures it sits on top */}
+                {/* Mini Level Badge */}
                 <View style={styles.miniBadgeLayer1}>
                     <View style={styles.miniBadgeLayer2}>
                       <View style={styles.miniBadgeLayer3}>
@@ -82,7 +78,7 @@ export default function MapHeader() {
                     </View>
                 </View>
 
-                {/* XP Bar - Negative margin pulls it behind badge */}
+                {/* XP Bar */}
                 <View style={styles.xpBarLayer1}>
                     <View style={styles.xpBarLayer2}>
                         <View style={styles.xpBarLayer3}>
@@ -107,26 +103,35 @@ export default function MapHeader() {
         </View>
       </View>
       
-      {/* Resources Section */}
+      {/* Resources Section (UPDATED) */}
       <View style={styles.resources}>
-        <View style={styles.resourceItem}>
+        
+        {/* Coins Capsule */}
+        <View style={styles.resourceWrapper}>
+          <View style={styles.resourceCapsule}>
+            <Text style={styles.resourceText}>{coins}</Text>
+          </View>
           <Image 
             source={require('../icons/coins.png')} 
-            style={styles.coinImage} 
+            style={styles.coinIconAbsolute} 
             contentFit="contain"
             cachePolicy="memory-disk"
           />
-          <Text style={styles.resourceText}>{coins}</Text>
         </View>
-        <View style={styles.resourceItem}>
+
+        {/* Energy Capsule */}
+        <View style={styles.resourceWrapper}>
+           <View style={styles.resourceCapsule}>
+            <Text style={styles.resourceText}>{lives}</Text>
+          </View>
           <Image 
             source={require('../icons/energy.png')} 
-            style={styles.energyImage} 
+            style={styles.energyIconAbsolute} 
             contentFit="contain"
             cachePolicy="memory-disk"
           />
-          <Text style={styles.resourceText}>{lives}</Text>
         </View>
+
       </View>
 
       {/* Settings Icon */}
@@ -151,7 +156,7 @@ const styles = StyleSheet.create({
   playerInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '55%',
+    width: '50%', // Adjusted width slightly to give resources more room
     gap: gameScale(10),
   },
   
@@ -174,21 +179,11 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 
-  coinImage:{
-    width: gameScale(20),
-    height: gameScale(20),
-  },
-
-  energyImage: {
-    width: gameScale(30),
-    height: gameScale(30),
-  },
-
   nameAndXpColumn: {
     flex: 1,
     flexDirection: 'column',
     justifyContent: 'center',
-    marginLeft: gameScale(-9), // Align with username text
+    marginLeft: gameScale(-9), 
   },
   usernameText: {
     color: '#fff',
@@ -197,7 +192,7 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
-    marginLeft: gameScale(4), // Slightly more margin since bar moves left
+    marginLeft: gameScale(4),
   },
   
   levelAndBarRow: {
@@ -218,8 +213,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.5,
     shadowRadius: 3,
-    elevation: 10, // Higher elevation to sit on top
-    zIndex: 10,    // Ensure it renders on top
+    elevation: 10, 
+    zIndex: 10,    
   },
   miniBadgeLayer2: {
     flex: 1,
@@ -287,7 +282,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 5,
-    // Add padding to prevent text from being covered by the overlapping badge
     paddingLeft: gameScale(10), 
   },
   xpText: {
@@ -298,30 +292,67 @@ const styles = StyleSheet.create({
     textShadowRadius: 2
   },
 
-  // Resources
+  // --- NEW RESOURCE STYLES ---
   resources: {
     flexDirection: 'row',
-    gap: gameScale(10),
-    width: '35%',
+    gap: gameScale(12), // Space between Coin Capsule and Energy Capsule
+    width: '40%',
     justifyContent: 'flex-end',
     paddingRight: gameScale(5),
   },
-  resourceItem: {
+  resourceWrapper: {
+    position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: gameScale(2),
+    height: gameScale(30), // Define height to center elements
+  },
+  resourceCapsule: {
+    backgroundColor: 'rgb(24, 212, 212)', // Semi-transparent dark background
+    borderRadius: gameScale(15),
+    paddingRight: gameScale(5),
+    paddingLeft: gameScale(28), 
+    minWidth: gameScale(60), // Ensure minimum width for consistency
+    borderWidth: gameScale(1),
+    borderColor: 'rgba(255, 255, 255, 0.2)', // Subtle border
+    justifyContent: 'center',
   },
   resourceText: {
-    color: '#ffffffff',
-    fontSize: gameScale(12),
+    color: '#ffffff',
+    fontSize: gameScale(10),
     fontFamily: 'Poppins',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
+  coinIconAbsolute: {
+    position: 'absolute',
+    left: gameScale(-5), // Hangs off the left edge
+    width: gameScale(30),
+    height: gameScale(30),
+    zIndex: 10, // Sits on top of the capsule
+    // Optional: Add a shadow to the icon to pop it from background
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+  },
+  energyIconAbsolute: {
+    position: 'absolute',
+    left: gameScale(-5),
+    width: gameScale(30), // Made slightly wider for visual balance if needed
+    height: gameScale(30),
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+  },
+
   headerIcons: {
-  flexDirection: 'row',
-  width: '10%',
-  justifyContent: 'flex-end',
+    flexDirection: 'row',
+    width: '10%',
+    justifyContent: 'flex-end',
   },
   iconButton: {
-  padding: gameScale(5),
+    padding: gameScale(5),
   },
-})
+});

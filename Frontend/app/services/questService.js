@@ -4,7 +4,7 @@ export const questService = {
   // Get all player quests
   getPlayerQuests: async () => {
     try {
-      const response = await apiService.get(`/quest/player`);
+      const response = await apiService.get(`/quest`);
       console.log('📋 Player quests fetched:', response);
       return response.success ? response.data : response;
     } catch (error) {

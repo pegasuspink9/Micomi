@@ -119,6 +119,7 @@ export const playerService = {
       username: apiData.username, 
       selectedBadge: selectedBadge,
       playerLevel: apiData.player_level,
+      playerAvatar: apiData.player_avatar,
       coins: apiData.coins,
       daysLogin: apiData.totalActiveMaps || 0,
       currentStreak: apiData.current_streak,

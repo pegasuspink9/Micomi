@@ -7,9 +7,9 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   ImageBackground,
-  Modal, // Added Modal
-  FlatList, // Added FlatList
-  Image // Added Image
+  // Modal, // Removed Modal
+  FlatList, 
+  Image 
 } from "react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
@@ -62,7 +62,6 @@ export default function Profile() {
           colors={['#0a192f', '#172b4aff', '#0a192f']}
           style={styles.gradientBackground}
         >
-        
         </LinearGradient>
       </View>
     );
@@ -95,9 +94,11 @@ export default function Profile() {
       >
         <View style={styles.backgroundOverlay} />
         
+        {/* Main Content ScrollView */}
         <ScrollView 
           style={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
+          scrollEnabled={!isAvatarModalVisible} // Disable scrolling when overlay is active
         >
           <PlayerInfoSection 
             playerName={playerData.playerName}
@@ -109,72 +110,6 @@ export default function Profile() {
             onAvatarPress={() => setIsAvatarModalVisible(true)}
           />
 
-             <Modal
-        visible={isAvatarModalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setIsAvatarModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <LinearGradient
-            colors={['#1a2a44', '#0d1625']}
-            style={styles.modalContent}
-          >
-            <Text style={styles.modalTitle}>Choose Your Avatar</Text>
-            
-            <FlatList
-              data={availableAvatars}
-              numColumns={3}
-              keyExtractor={(item) => item.id.toString()}
-              contentContainerStyle={styles.avatarGrid}
-              renderItem={({ item }) => (
-                <TouchableOpacity 
-                  style={[
-                    styles.avatarOption,
-                    selectedAvatarId === item.id && styles.avatarOptionSelected
-                  ]}
-                  onPress={() => setSelectedAvatarId(item.id)}
-                >
-                  <View style={styles.modalAvatarOuter}>
-                    <View style={styles.modalAvatarInner}>
-                      <Image source={{ uri: item.url }} style={styles.modalAvatarImage} />
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              )}
-            />
-
-            <View style={styles.modalButtonContainer}>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.cancelButton]} 
-                onPress={() => {
-                  setIsAvatarModalVisible(false);
-                  setSelectedAvatarId(null);
-                }}
-              >
-                <Text style={styles.buttonText}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[
-                  styles.modalButton, 
-                  styles.confirmButton,
-                  (!selectedAvatarId || isSelectingAvatar) && styles.buttonDisabled
-                ]} 
-                onPress={handleAvatarSelect}
-                disabled={!selectedAvatarId || isSelectingAvatar}
-              >
-                {isSelectingAvatar ? (
-                  <ActivityIndicator color="white" size="small" />
-                ) : (
-                  <Text style={styles.buttonText}>Use Avatar</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </LinearGradient>
-        </View>
-        </Modal>
-          
           <StatsGridSection 
             coins={playerData.coins}
             currentStreak={playerData.currentStreak}
@@ -194,6 +129,69 @@ export default function Profile() {
           
           <View style={{ height: gameScale(16) }} />
         </ScrollView>
+
+        {/* CUSTOM ABSOLUTE VIEW (Replaces Modal) */}
+        {isAvatarModalVisible && (
+          <View style={styles.modalOverlay}>
+            <LinearGradient
+              colors={['#1a2a44', '#0d1625']}
+              style={styles.modalContent}
+            >
+              <Text style={styles.modalTitle}>Choose Your Avatar</Text>
+              
+              <FlatList
+                data={availableAvatars}
+                numColumns={3}
+                keyExtractor={(item) => item.id.toString()}
+                contentContainerStyle={styles.avatarGrid}
+                renderItem={({ item }) => (
+                  <TouchableOpacity 
+                    style={[
+                      styles.avatarOption,
+                      selectedAvatarId === item.id && styles.avatarOptionSelected
+                    ]}
+                    onPress={() => setSelectedAvatarId(item.id)}
+                  >
+                    <View style={styles.modalAvatarOuter}>
+                      <View style={styles.modalAvatarInner}>
+                        <Image source={{ uri: item.url }} style={styles.modalAvatarImage} />
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                )}
+              />
+
+              <View style={styles.modalButtonContainer}>
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.cancelButton]} 
+                  onPress={() => {
+                    setIsAvatarModalVisible(false);
+                    setSelectedAvatarId(null);
+                  }}
+                >
+                  <Text style={styles.buttonText}>Cancel</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[
+                    styles.modalButton, 
+                    styles.confirmButton,
+                    (!selectedAvatarId || isSelectingAvatar) && styles.buttonDisabled
+                  ]} 
+                  onPress={handleAvatarSelect}
+                  disabled={!selectedAvatarId || isSelectingAvatar}
+                >
+                  {isSelectingAvatar ? (
+                    <ActivityIndicator color="white" size="small" />
+                  ) : (
+                    <Text style={styles.buttonText}>Use Avatar</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
+          </View>
+        )}
+
       </LinearGradient>
     </View>
   );
@@ -244,9 +242,15 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1
   },
-    modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+  // UPDATED MODAL STYLES FOR ABSOLUTE POSITIONING
+  modalOverlay: {
+    position: 'absolute', // Make it float
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000, // Ensure it's on top of everything
+    backgroundColor: 'rgba(0, 0, 0, 0.85)', // Slightly darker for better contrast
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -257,6 +261,15 @@ const styles = StyleSheet.create({
     padding: gameScale(20),
     borderWidth: gameScale(2),
     borderColor: 'rgba(255, 255, 255, 0.2)',
+    // Add shadow/elevation to make it pop over the absolute view
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   modalTitle: {
     fontSize: gameScale(24),
