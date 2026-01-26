@@ -22,9 +22,6 @@ const SkillCard = ({ card, index, isFlipped, onPress, styles }) => {
     outputRange: [1, 6.5], 
   });
 
-  // ✅ CHANGED: Set to '1080deg' (3 full spins). 
-  // This creates the "Turnado" effect while animating, 
-  // but since 1080 is a full circle, it lands back on the FRONT face.
   const rotateYAnim = animValue.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '1080deg'], 
