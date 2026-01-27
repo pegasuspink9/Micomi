@@ -9,6 +9,9 @@ export const getAllChallenges = async (req: Request, res: Response) => {
       include: {
         level: true,
       },
+      orderBy: {
+        level_id: "asc",
+      },
     });
 
     if (!challenges) {
