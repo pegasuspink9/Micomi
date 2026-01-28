@@ -32,7 +32,7 @@ const MAP_PROGRESSION: Record<
 
 export const isMapUnlockedForPlayer = async (
   playerId: number,
-  mapName: string
+  mapName: string,
 ) => {
   if (mapName === "HTML" || mapName === "Computer") return true;
 
@@ -82,11 +82,11 @@ export const previewLevel = async (playerId: number, levelId: number) => {
 
   const totalPoints = level.challenges.reduce(
     (sum, ch) => sum + Number(ch.points_reward ?? 0),
-    0
+    0,
   );
   const totalCoins = level.challenges.reduce(
     (sum, ch) => sum + Number(ch.coins_reward ?? 0),
-    0
+    0,
   );
 
   const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
@@ -259,7 +259,7 @@ const SS_BOSS_ICON_CONFIG: Record<
 
 function getHeroSpecialSkillInfo(
   characterName: string,
-  streak?: number
+  streak?: number,
 ): {
   special_skill_image: string | null;
   special_skill_description: string | null;
@@ -285,7 +285,7 @@ function getHeroSpecialSkillInfo(
 function getBossSpecialSkillInfo(
   enemyName: string,
   ssType: string | null,
-  streak?: number
+  streak?: number,
 ): {
   special_skill_image: string | null;
   special_skill_description: string | null;
@@ -343,11 +343,11 @@ export const enterLevel = async (playerId: number, levelId: number) => {
 
   const totalPoints = level.challenges.reduce(
     (sum, ch) => sum + Number(ch.points_reward ?? 0),
-    0
+    0,
   );
   const totalCoins = level.challenges.reduce(
     (sum, ch) => sum + Number(ch.coins_reward ?? 0),
-    0
+    0,
   );
 
   const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
@@ -416,11 +416,11 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     const invalid = level.challenges.some(
       (c: Challenge) =>
         c.challenge_type !== "multiple choice" &&
-        c.challenge_type !== "fill in the blank"
+        c.challenge_type !== "fill in the blank",
     );
     if (invalid)
       throw new Error(
-        "Easy levels can only have 'multiple choice' or 'fill in the blank' challenges"
+        "Easy levels can only have 'multiple choice' or 'fill in the blank' challenges",
       );
     level.challenges = level.challenges;
   } else if (
@@ -428,7 +428,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     level.level_difficulty === "final"
   ) {
     const invalid = level.challenges.some(
-      (c: Challenge) => c.challenge_type !== "code with guide"
+      (c: Challenge) => c.challenge_type !== "code with guide",
     );
     if (invalid)
       throw new Error("Hard levels can only have 'code with guide' challenges");
@@ -448,7 +448,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
   }
   if (!enemy)
     throw new Error(
-      `No enemy found for map ${level.map.map_name} and difficulty ${level.level_difficulty}`
+      `No enemy found for map ${level.map.map_name} and difficulty ${level.level_difficulty}`,
     );
 
   const firstLevel = await prisma.level.findFirst({
@@ -502,6 +502,9 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         has_both_hp_decrease: false,
         has_shuffle_ss: false,
         has_permuted_ss: false,
+        has_dollar_sign_ss: false,
+        has_only_blanks_ss: false,
+        has_reverse_words_ss: false,
         boss_skill_activated: false,
         took_damage: false,
         has_strong_effect: false,
@@ -513,7 +516,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     if (level.level_id === firstLevel?.level_id) {
       const mapUnlocked = await isMapUnlockedForPlayer(
         playerId,
-        level.map.map_name
+        level.map.map_name,
       );
       if (!mapUnlocked) {
         throw new Error("Map not unlocked yet for this player");
@@ -543,7 +546,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         }
       } else {
         console.warn(
-          `No previous level found for level ${level.level_number} in map ${level.map_id}`
+          `No previous level found for level ${level.level_number} in map ${level.map_id}`,
         );
       }
     }
@@ -574,6 +577,9 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         has_both_hp_decrease: false,
         has_shuffle_ss: false,
         has_permuted_ss: false,
+        has_dollar_sign_ss: false,
+        has_only_blanks_ss: false,
+        has_reverse_words_ss: false,
         boss_skill_activated: false,
         took_damage: false,
         has_strong_effect: false,
@@ -584,7 +590,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       },
     });
     console.log(
-      `Created new player-specific progress (unlocked) for level ${levelId}`
+      `Created new player-specific progress (unlocked) for level ${levelId}`,
     );
   }
 
@@ -616,6 +622,9 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         has_both_hp_decrease: false,
         has_shuffle_ss: false,
         has_permuted_ss: false,
+        has_dollar_sign_ss: false,
+        has_only_blanks_ss: false,
+        has_reverse_words_ss: false,
         boss_skill_activated: false,
         took_damage: false,
         has_strong_effect: false,
@@ -642,6 +651,9 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         has_force_character_attack_type: false,
         has_both_hp_decrease: false,
         has_permuted_ss: false,
+        has_dollar_sign_ss: false,
+        has_only_blanks_ss: false,
+        has_reverse_words_ss: false,
         boss_skill_activated: false,
         has_shuffle_ss: false,
         took_damage: false,
@@ -677,7 +689,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         ...ch,
         timer: formatTimer(timeLimit),
       };
-    }
+    },
   );
 
   const firstChallenge = challengesWithTimer[0] ?? null;
@@ -759,12 +771,12 @@ export const enterLevel = async (playerId: number, levelId: number) => {
 
   const heroSS = getHeroSpecialSkillInfo(
     character.character_name,
-    progress.consecutive_corrects
+    progress.consecutive_corrects,
   );
   const bossSS = getBossSpecialSkillInfo(
     enemy.enemy_name,
     null,
-    progress.consecutive_wrongs
+    progress.consecutive_wrongs,
   );
 
   let dialogue: any = [];
@@ -869,7 +881,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
 
 const unlockNextMapFirstLevel = async (
   playerId: number,
-  currentMapId: number
+  currentMapId: number,
 ) => {
   const currentMap = await prisma.map.findUnique({
     where: { map_id: currentMapId },
@@ -909,7 +921,7 @@ const unlockNextMapFirstLevel = async (
         current_level: firstLevel.level_number,
         attempts: 0,
         player_answer: {},
-        completed_at: null, 
+        completed_at: null,
         challenge_start_time: new Date(),
         player_hp: 0,
         enemy_hp: 0,
@@ -927,6 +939,9 @@ const unlockNextMapFirstLevel = async (
         has_force_character_attack_type: false,
         has_both_hp_decrease: false,
         has_permuted_ss: false,
+        has_dollar_sign_ss: false,
+        has_only_blanks_ss: false,
+        has_reverse_words_ss: false,
         boss_skill_activated: false,
         has_shuffle_ss: false,
         took_damage: false,
@@ -937,7 +952,7 @@ const unlockNextMapFirstLevel = async (
     });
 
     console.log(
-      `Player ${playerId} progressed from ${currentMap.map_name} → ${nextMapName} (Map Transition)`
+      `Player ${playerId} progressed from ${currentMap.map_name} → ${nextMapName} (Map Transition)`,
     );
 
     return firstLevel;
@@ -949,7 +964,7 @@ const unlockNextMapFirstLevel = async (
 export const unlockNextLevel = async (
   playerId: number,
   mapId: number,
-  currentLevelId: number
+  currentLevelId: number,
 ) => {
   const currentLevel = await prisma.level.findFirst({
     where: { map_id: mapId, level_id: currentLevelId },
@@ -991,7 +1006,7 @@ export const unlockNextLevel = async (
         player_hp: 0,
         enemy_hp: 0,
         battle_status: BattleStatus.in_progress,
-        is_completed: isMicomiOrFinal, 
+        is_completed: isMicomiOrFinal,
         wrong_challenges: [],
         coins_earned: 0,
         total_points_earned: 0,
@@ -1004,6 +1019,9 @@ export const unlockNextLevel = async (
         has_force_character_attack_type: false,
         has_both_hp_decrease: false,
         has_permuted_ss: false,
+        has_dollar_sign_ss: false,
+        has_only_blanks_ss: false,
+        has_reverse_words_ss: false,
         boss_skill_activated: false,
         has_shuffle_ss: false,
         took_damage: false,
@@ -1015,7 +1033,7 @@ export const unlockNextLevel = async (
 
     if (isMicomiOrFinal) {
       console.log(
-        `Auto-completed level ${nextLevel.level_id} (${nextLevel.level_type}). Checking for next step...`
+        `Auto-completed level ${nextLevel.level_id} (${nextLevel.level_type}). Checking for next step...`,
       );
 
       const levelAfterMicomi = await prisma.level.findFirst({
@@ -1059,6 +1077,9 @@ export const unlockNextLevel = async (
             has_force_character_attack_type: false,
             has_both_hp_decrease: false,
             has_permuted_ss: false,
+            has_dollar_sign_ss: false,
+            has_only_blanks_ss: false,
+            has_reverse_words_ss: false,
             boss_skill_activated: false,
             has_shuffle_ss: false,
             took_damage: false,
@@ -1133,6 +1154,9 @@ export const completeLevelDone = async (playerId: number, levelId: number) => {
       has_force_character_attack_type: false,
       has_both_hp_decrease: false,
       has_permuted_ss: false,
+      has_dollar_sign_ss: false,
+      has_only_blanks_ss: false,
+      has_reverse_words_ss: false,
       boss_skill_activated: false,
       has_shuffle_ss: false,
       took_damage: false,
@@ -1145,7 +1169,7 @@ export const completeLevelDone = async (playerId: number, levelId: number) => {
   const nextLevel = await unlockNextLevel(
     playerId,
     level.map_id,
-    level.level_number
+    level.level_number,
   );
 
   if (!wasAlreadyCompleted && isMicomiLevel) {

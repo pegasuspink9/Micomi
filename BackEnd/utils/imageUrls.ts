@@ -126,27 +126,27 @@ export const imagesUrls = [
 
   //Badges
   "https://micomi-assets.me/Badges%20Updated/Html%20Hero.png",
-  "https://micomi-assets.me/Landscape%20Badges/HTML%20Hero.png",
+  "https://micomi-assets.me/Recolored%20Landscape%20Badges/HTML%20Hero.png",
   "https://micomi-assets.me/Badges%20Updated/CSS%20Artist.png",
-  "https://micomi-assets.me/Landscape%20Badges/CSS%20Artist.png",
+  "https://micomi-assets.me/Recolored%20Landscape%20Badges/CSS%20Artist.png",
   "https://micomi-assets.me/Badges%20Updated/Javascript%20Hunter.png",
-  "https://micomi-assets.me/Landscape%20Badges/Javascript%20Hunter.png",
+  "https://micomi-assets.me/Recolored%20Landscape%20Badges/Javascript%20Hunter.png",
   "https://micomi-assets.me/Badges%20Updated/PC%20Eater.png",
-  "https://micomi-assets.me/Landscape%20Badges/PC%20Eater.png",
+  "https://micomi-assets.me/Recolored%20Landscape%20Badges/PC%20Eater.png",
   "https://micomi-assets.me/Badges%20Updated/Web%20Wizard.png",
-  "https://micomi-assets.me/Landscape%20Badges/Web%20Wizard.png",
+  "https://micomi-assets.me/Recolored%20Landscape%20Badges/Web%20Wizard.png",
   "https://micomi-assets.me/Badges%20Updated/Collector.png",
-  "https://micomi-assets.me/Landscape%20Badges/Collector.png",
+  "https://micomi-assets.me/Recolored%20Landscape%20Badges/Badge%20Collector.png",
   "https://micomi-assets.me/Badges%20Updated/Top%201.png",
-  "https://micomi-assets.me/Landscape%20Badges/Top%201.png",
+  "https://micomi-assets.me/Recolored%20Landscape%20Badges/Top%201.png",
   "https://micomi-assets.me/Badges%20Updated/Wake%20and%20Bake.png",
-  "https://micomi-assets.me/Landscape%20Badges/Wake%20and%20Bake.png",
+  "https://micomi-assets.me/Recolored%20Landscape%20Badges/Wake%20and%20Bake.png",
   "https://micomi-assets.me/Badges%20Updated/Knowledge%20Keeper.png",
-  "https://micomi-assets.me/Landscape%20Badges/Knowledge%20Keeper.png",
+  "https://micomi-assets.me/Recolored%20Landscape%20Badges/Knowledge%20Keeper.png",
   "https://micomi-assets.me/Badges%20Updated/Master%20Beater.png",
-  "https://micomi-assets.me/Landscape%20Badges/Master%20Beater.png",
+  "https://micomi-assets.me/Recolored%20Landscape%20Badges/Master%20Beater.png",
   "https://micomi-assets.me/Badges/MICOMI'S%20FRIEND.png",
-  "https://micomi-assets.me/Landscape%20Badges/Micomi's%20Friend%201.png",
+  "https://micomi-assets.me/Recolored%20Landscape%20Badges/Micomi's%20Friend%201.png",
 
   //Intro comics
   "https://micomi-assets.me/Comics/Intro%20Micomi/Cpage1.png",
@@ -157,12 +157,15 @@ export const imagesUrls = [
   "https://micomi-assets.me/Comics/Intro%20Micomi/Cpage6.png",
 
   //HTML Intro Comics
-  "https://micomi-assets.me/Comics/HTML%20intro/H_page1.png",
-  "https://micomi-assets.me/Comics/HTML%20intro/H_page2.png",
-  "https://micomi-assets.me/Comics/HTML%20intro/H_page3.png",
-  "https://micomi-assets.me/Comics/HTML%20intro/H_page4.png",
-  "https://micomi-assets.me/Comics/HTML%20intro/H_page5.png",
-  "https://micomi-assets.me/Comics/HTML%20intro/H_page6.png",
+  "https://micomi-assets.me/Comics/HTML%20intro/H_page-1.png",
+  "https://micomi-assets.me/Comics/HTML%20intro/H_page-2.png",
+  "https://micomi-assets.me/Comics/HTML%20intro/H_page-3.png",
+  "https://micomi-assets.me/Comics/HTML%20intro/H_page-4.png",
+  "https://micomi-assets.me/Comics/HTML%20intro/H_page-5.png",
+  "https://micomi-assets.me/Comics/HTML%20intro/H_page-6.png",
+  "https://micomi-assets.me/Comics/HTML%20intro/H_page-7.png",
+  "https://micomi-assets.me/Comics/HTML%20intro/H_page-8.png",
+  "https://micomi-assets.me/Comics/HTML%20intro/H_page-9.png",
 
   //HTML Greenland 1 [Apple Story]
   "https://micomi-assets.me/Comics/Greenland%201/G1_page1.png",
@@ -607,6 +610,12 @@ export const imagesUrls = [
   "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossMaggmaw_SS.png",
   //Boss Pyroformic SS Icon
   "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossPyroformic_SS.png",
+  //King Feanaly SS Icon
+  "https://micomi-assets.me/Icons/SS%20Skill%20Icons/KingFeanaly_SS.png",
+  //Boss Icycreamero SS Icon
+  "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossIcreamero_SS.png",
+  //Boss Scythe SS Icon
+  "https://micomi-assets.me/Icons/SS%20Skill%20Icons/LordCyroScythe_SS.png",
 
   //Micomi Avatar
   "https://micomi-assets.me/Hero%20Portraits/Micomi.png",

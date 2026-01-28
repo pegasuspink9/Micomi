@@ -211,7 +211,14 @@ model PlayerProgress {
 
   //Boss Pyroformic ss
   has_permuted_ss       Boolean?      @default(false)   
-  permutation_mapping   Json?    
+  permutation_mapping   Json?   
+
+  // King Feanaly ss
+  has_only_blanks_ss Boolean @default(false)   
+  // Boss Icycreamero ss
+  has_dollar_sign_ss Boolean @default(false)   
+  // Boss Scythe ss
+  has_reverse_words_ss Boolean @default(false)  
 
   // Boss ss activation tracker
   boss_skill_activated  Boolean?      @default(false)

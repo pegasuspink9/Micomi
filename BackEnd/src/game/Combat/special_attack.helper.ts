@@ -9,7 +9,7 @@ export async function updateProgressForChallenge(
   finalAnswer: string[],
   isBonusRound: boolean = false,
   characterDamage?: number,
-  isReveal: boolean = false
+  isReveal: boolean = false,
 ) {
   const progress = await prisma.playerProgress.findUnique({
     where: { progress_id: progressId },
@@ -26,6 +26,9 @@ export async function updateProgressForChallenge(
   let hasBothHpDecrease = progress.has_both_hp_decrease ?? false;
   let hasShuffle = progress.has_shuffle_ss ?? false;
   let hasPermuted = progress.has_permuted_ss ?? false;
+  let hasOnlyBlanks = progress.has_only_blanks_ss ?? false;
+  let hasDollarSign = progress.has_dollar_sign_ss ?? false;
+  let hasReverseWords = progress.has_reverse_words_ss ?? false;
 
   // Check if ANY SS was active before this answer
   const wasAnySsActive =
@@ -34,7 +37,10 @@ export async function updateProgressForChallenge(
     hasForceCharacterAttackType ||
     hasBothHpDecrease ||
     hasShuffle ||
-    hasPermuted;
+    hasPermuted ||
+    hasOnlyBlanks ||
+    hasDollarSign ||
+    hasReverseWords;
 
   const challenge = await prisma.challenge.findUnique({
     where: { challenge_id: challengeId },
@@ -82,7 +88,7 @@ export async function updateProgressForChallenge(
     consecutiveWrongs = 0;
 
     if (consecutiveCorrects > 3) {
-      consecutiveCorrects = 1; 
+      consecutiveCorrects = 1;
     }
 
     const coinsToAdd =
@@ -108,7 +114,7 @@ export async function updateProgressForChallenge(
     consecutiveWrongs += 1;
 
     if (consecutiveWrongs > 3) {
-      consecutiveWrongs = 1; 
+      consecutiveWrongs = 1;
     }
 
     const level = await prisma.level.findUnique({
@@ -128,38 +134,50 @@ export async function updateProgressForChallenge(
           case "Boss Darco":
             hasReversedCurse = true;
             console.log(
-              "- Reversal curse activated for Boss Darco after multiples of 3 consecutive wrongs"
+              "- Reversal curse activated for Boss Darco after multiples of 3 consecutive wrongs",
             );
             break;
           case "Boss Joshy":
             hasBossShield = true;
             console.log(
-              "- Shield activated for Boss Joshy after multiples of 3 consecutive wrongs"
+              "- Shield activated for Boss Joshy after multiples of 3 consecutive wrongs",
             );
             break;
           case "King Grimnir":
             hasForceCharacterAttackType = true;
             console.log(
-              "- Force character attack type into basic activated for King Grimnir after multiples of 3 consecutive wrongs"
+              "- Force character attack type into basic activated for King Grimnir after multiples of 3 consecutive wrongs",
             );
             break;
           case "Boss Scorcharach":
             hasBothHpDecrease = true;
             console.log(
-              "- Both hp decreases for Boss Scorcharach after multiples of 3 consecutive wrongs"
+              "- Both hp decreases for Boss Scorcharach after multiples of 3 consecutive wrongs",
             );
             break;
           case "Boss Maggmaw":
             hasShuffle = true;
             console.log(
-              "- Options shuffle after for Boss Maggmaw after multiples of 3 consecutive wrongs"
+              "- Options shuffle after for Boss Maggmaw after multiples of 3 consecutive wrongs",
             );
             break;
           case "Boss Pyroformic":
             hasPermuted = true;
             console.log(
-              "- Options words unordered after for Boss Pyroformic after multiples of 3 consecutive wrongs"
+              "- Options words unordered after for Boss Pyroformic after multiples of 3 consecutive wrongs",
             );
+            break;
+          case "King Feanaly":
+            hasOnlyBlanks = true;
+            console.log("- Only Blanks curse activated for King Feanaly");
+            break;
+          case "Boss Icycreamero":
+            hasDollarSign = true;
+            console.log("- Dollar Sign curse activated for Boss Icycreamero");
+            break;
+          case "Boss Scythe":
+            hasReverseWords = true;
+            console.log("- Reverse Words curse activated for Boss Scythe");
             break;
         }
       } else {
@@ -182,6 +200,9 @@ export async function updateProgressForChallenge(
     hasBothHpDecrease = false;
     hasShuffle = false;
     hasPermuted = false;
+    hasOnlyBlanks = false;
+    hasDollarSign = false;
+    hasReverseWords = false;
     console.log("- SS deactivated after being used for this challenge");
   }
 
@@ -193,6 +214,9 @@ export async function updateProgressForChallenge(
     has_both_hp_decrease: hasBothHpDecrease,
     has_shuffle_ss: hasShuffle,
     has_permuted_ss: hasPermuted,
+    has_only_blanks_ss: hasOnlyBlanks,
+    has_dollar_sign_ss: hasDollarSign,
+    has_reverse_words_ss: hasReverseWords,
   };
 
   const updatedProgress = await prisma.playerProgress.update({

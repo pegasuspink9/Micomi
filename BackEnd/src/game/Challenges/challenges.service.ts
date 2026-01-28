@@ -41,6 +41,90 @@ const permuteLetters = (str: string): string => {
   return chars.join("");
 };
 
+const replaceCharWithDollar = (str: string): string => {
+  if (str.length === 0) return str;
+  const index = Math.floor(Math.random() * str.length);
+  return str.substring(0, index) + "$" + str.substring(index + 1);
+};
+
+const reverseThreeRandomWords = (text: string): string => {
+  if (!text) return "";
+  const words = text.split(" ");
+  if (words.length <= 3) {
+    return words.map(reverseString).join(" ");
+  }
+
+  const indices = Array.from({ length: words.length }, (_, i) => i);
+
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  const targetIndices = indices.slice(0, 3);
+
+  return words
+    .map((word, index) =>
+      targetIndices.includes(index) ? reverseString(word) : word,
+    )
+    .join(" ");
+};
+
+const keepOnlyBlanks = (text: string): string => {
+  if (!text) return "";
+
+  const patterns = [
+    /<\/_>/g,
+    /<_>/g,
+
+    /"(_+)"/g,
+    /'(_+)'/g,
+    /`(_+)`/g,
+    /\{blank\}/g,
+    /\[_+\]/g,
+    /_+/g,
+  ];
+
+  const occupiedRanges: { start: number; end: number }[] = [];
+  const matches: { start: number; end: number; text: string }[] = [];
+
+  for (const regex of patterns) {
+    regex.lastIndex = 0;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      const start = match.index;
+      const end = start + match[0].length;
+
+      const isOccupied = occupiedRanges.some(
+        (range) => start < range.end && end > range.start,
+      );
+
+      if (!isOccupied) {
+        matches.push({ start, end, text: match[0] });
+        occupiedRanges.push({ start, end });
+      }
+    }
+  }
+
+  matches.sort((a, b) => a.start - b.start);
+
+  let result = "";
+  let lastIndex = 0;
+
+  for (const match of matches) {
+    const textBefore = text.substring(lastIndex, match.start);
+    result += textBefore.replace(/[^\n]/g, "");
+
+    result += match.text;
+
+    lastIndex = match.end;
+  }
+
+  const textAfter = text.substring(lastIndex);
+  result += textAfter.replace(/[^\n]/g, "");
+
+  return result;
+};
+
 const isTimedChallengeType = (type: string) =>
   ["multiple choice", "fill in the blank"].includes(type);
 
@@ -54,7 +138,7 @@ function shuffleArray<T>(array: T[]): T[] {
 
 const buildChallengeWithTimer = (
   challenge: Challenge,
-  timeRemaining: number
+  timeRemaining: number,
 ) => ({
   ...challenge,
   timeLimit: isTimedChallengeType(challenge.challenge_type)
@@ -74,7 +158,7 @@ const generateMotivationalMessage = (
   totalChallenges: number,
   isBonusRound: boolean,
   playerWon: boolean,
-  levelNumber: number
+  levelNumber: number,
 ): string => {
   const random = (messages: string[]) =>
     messages[Math.floor(Math.random() * messages.length)];
@@ -261,7 +345,7 @@ const getRandomMicomiImage = (playerId: number, isVictory: boolean): string => {
 
 const calculateStars = (
   wrongChallengesCount: number,
-  totalChallenges: number
+  totalChallenges: number,
 ): number => {
   if (wrongChallengesCount === 0) {
     return 3;
@@ -281,7 +365,7 @@ export const submitChallengeService = async (
   levelId: number,
   challengeId: number,
   answer: string[],
-  useHint: boolean = false
+  useHint: boolean = false,
 ): Promise<
   SubmitChallengeControllerResult & {
     energy?: number;
@@ -382,7 +466,7 @@ export const submitChallengeService = async (
   if (currentProgress.has_reversed_curse && enemy.enemy_name === "Boss Darco") {
     effectiveCorrectAnswer = rawCorrectAnswer.map(reverseString);
     console.log(
-      `- Reversal curse active for Boss Darco: correct answers reversed for comparison`
+      `- Reversal curse active for Boss Darco: correct answers reversed for comparison`,
     );
   }
 
@@ -405,11 +489,11 @@ export const submitChallengeService = async (
       });
 
       console.log(
-        `- Permutation SS active: mapped player answer from permuted back to original using stored mapping`
+        `- Permutation SS active: mapped player answer from permuted back to original using stored mapping`,
       );
     } else {
       console.log(
-        `- Warning: Permutation mapping not found for challenge ${challengeId}, answer may be incorrect`
+        `- Warning: Permutation mapping not found for challenge ${challengeId}, answer may be incorrect`,
       );
     }
   }
@@ -439,12 +523,12 @@ export const submitChallengeService = async (
 
         hintUsed = true;
         console.log(
-          `- Hint potion activated: revealing only part of the effective correct answer (${effectiveCorrectAnswer[0]})`
+          `- Hint potion activated: revealing only part of the effective correct answer (${effectiveCorrectAnswer[0]})`,
         );
       }
     } else {
       console.log(
-        "- Hint requested but no hint potion available; using original answer"
+        "- Hint requested but no hint potion available; using original answer",
       );
     }
   }
@@ -461,7 +545,7 @@ export const submitChallengeService = async (
     !!existingAnswer &&
     existingAnswer[0] !== "_REVEAL_PENDING_" &&
     !((currentProgress.wrong_challenges ?? []) as number[]).includes(
-      challengeId
+      challengeId,
     );
 
   const isRevealConfirmed =
@@ -496,11 +580,11 @@ export const submitChallengeService = async (
     currentProgress.enemy_hp <= 0 && currentProgress.player_hp > 0;
 
   const answeredIdsBefore = Object.keys(
-    currentProgress.player_answer ?? {}
+    currentProgress.player_answer ?? {},
   ).map(Number);
   const allChallengeIds = level.challenges.map((c) => c.challenge_id);
   const bonusChallengeIds = allChallengeIds.filter(
-    (id) => !answeredIdsBefore.includes(id)
+    (id) => !answeredIdsBefore.includes(id),
   );
 
   let characterDamageForCoins: number | undefined = undefined;
@@ -542,7 +626,7 @@ export const submitChallengeService = async (
     }
 
     console.log(
-      `- Bonus round coins calculation: damage tier ${damageIndex}, base damage ${damageArray[damageIndex]}, final damage for coins: ${characterDamageForCoins}`
+      `- Bonus round coins calculation: damage tier ${damageIndex}, base damage ${damageArray[damageIndex]}, final damage for coins: ${characterDamageForCoins}`,
     );
   }
 
@@ -554,7 +638,7 @@ export const submitChallengeService = async (
       finalAnswer,
       isBonusRound,
       characterDamageForCoins,
-      isRevealConfirmed
+      isRevealConfirmed,
     );
 
   if (isCorrect && updatedProgress?.consecutive_corrects === 3) {
@@ -581,7 +665,7 @@ export const submitChallengeService = async (
       currentProgress.has_freeze_effect = true;
 
       console.log(
-        `- ShiShi's Passive Triggered: Enemy Frozen! (Safe for next turn)`
+        `- ShiShi's Passive Triggered: Enemy Frozen! (Safe for next turn)`,
       );
     }
 
@@ -594,7 +678,7 @@ export const submitChallengeService = async (
       currentProgress.has_ryron_reveal = true;
 
       console.log(
-        `- Ryron's Passive Triggered: Next challenge will be auto-revealed!`
+        `- Ryron's Passive Triggered: Next challenge will be auto-revealed!`,
       );
     }
 
@@ -608,7 +692,7 @@ export const submitChallengeService = async (
 
       updatedProgress.has_strong_effect = true;
       console.log(
-        `- Leon's Passive Triggered: Next attack will deal double damage`
+        `- Leon's Passive Triggered: Next attack will deal double damage`,
       );
     }
   }
@@ -644,7 +728,7 @@ export const submitChallengeService = async (
     const baselineState = await CombatService.getCurrentFightState(
       playerId,
       levelId,
-      enemy.enemy_id
+      enemy.enemy_id,
     );
 
     fightResult = await CombatService.handleFight(
@@ -659,7 +743,7 @@ export const submitChallengeService = async (
       isBonusRound,
       isCompletingBonus,
       bonusChallengeIds.length,
-      bonusAllCorrect
+      bonusAllCorrect,
     );
 
     appliedDamage =
@@ -667,7 +751,7 @@ export const submitChallengeService = async (
       baselineState.character.character_damage[1] ||
       50;
     console.log(
-      `- Character damage displayed on correct answer (doubled if active): ${fightResult.character.character_damage}, applied: ${appliedDamage}`
+      `- Character damage displayed on correct answer (doubled if active): ${fightResult.character.character_damage}, applied: ${appliedDamage}`,
     );
 
     //character attack audio
@@ -769,7 +853,7 @@ export const submitChallengeService = async (
       fightResult.enemyHealth ??
         fightResult.enemy?.enemy_health ??
         currentProgress.enemy_hp,
-      false
+      false,
     );
     message = text;
     audioResponse = audio;
@@ -784,7 +868,7 @@ export const submitChallengeService = async (
     const baselineState = await CombatService.getCurrentFightState(
       playerId,
       levelId,
-      enemy.enemy_id
+      enemy.enemy_id,
     );
 
     fightResult = await CombatService.handleFight(
@@ -793,7 +877,7 @@ export const submitChallengeService = async (
       enemy.enemy_id,
       false,
       elapsed,
-      challengeId
+      challengeId,
     );
 
     if (currentProgress.has_freeze_effect) {
@@ -804,7 +888,7 @@ export const submitChallengeService = async (
       fightResult.enemy.enemy_attack = null;
       fightResult.enemy.enemy_run = null;
       console.log(
-        "Freeze effect applied on wrong answer: No enemy attack, no damage taken."
+        "Freeze effect applied on wrong answer: No enemy attack, no damage taken.",
       );
       message = "Frozen enemy can't strike back!";
     } else {
@@ -824,7 +908,7 @@ export const submitChallengeService = async (
       fightResult.enemyHealth ??
         fightResult.enemy?.enemy_health ??
         currentProgress.enemy_hp,
-      false
+      false,
     );
 
     message = text;
@@ -848,7 +932,7 @@ export const submitChallengeService = async (
   let character_damage_card: number | null = null;
 
   const currentAnsweredCount = Object.keys(
-    updatedProgress.player_answer ?? {}
+    updatedProgress.player_answer ?? {},
   ).length;
   const totalChallenges = level.challenges.length;
   const isLastRemaining =
@@ -911,7 +995,7 @@ export const submitChallengeService = async (
         totalChallenges,
         wasInBonusRound,
         false,
-        level.level_number
+        level.level_number,
       );
 
       stars = 0;
@@ -961,7 +1045,7 @@ export const submitChallengeService = async (
         totalChallenges,
         wasInBonusRound,
         true,
-        level.level_number
+        level.level_number,
       );
 
       is_victory_audio =
@@ -993,7 +1077,7 @@ export const submitChallengeService = async (
         nextLevel = await LevelService.unlockNextLevel(
           playerId,
           level.map_id,
-          level.level_id
+          level.level_id,
         );
       } else {
         const currentStars = freshProgress?.stars_earned ?? 0;
@@ -1038,7 +1122,7 @@ export const submitChallengeService = async (
       totalChallenges,
       true,
       true,
-      level.level_number
+      level.level_number,
     );
 
     is_victory_audio =
@@ -1069,7 +1153,7 @@ export const submitChallengeService = async (
       nextLevel = await LevelService.unlockNextLevel(
         playerId,
         level.map_id,
-        level.level_id
+        level.level_id,
       );
     } else {
       const currentStars = freshProgress?.stars_earned ?? 0;
@@ -1137,7 +1221,7 @@ export const submitChallengeService = async (
 
   if (nextChallenge) {
     const isRetryOfWrong = updatedWrongChallenges.includes(
-      nextChallenge.challenge_id
+      nextChallenge.challenge_id,
     );
 
     if (isRetryOfWrong) {
@@ -1172,7 +1256,7 @@ export const submitChallengeService = async (
 
       const cardInfo = getCardForAttackType(
         character.character_name,
-        attackType
+        attackType,
       );
       card_type = cardInfo.card_type;
       character_attack_card = cardInfo.character_attack_card;
@@ -1219,7 +1303,7 @@ export const submitChallengeService = async (
 
       const cardInfo = getCardForAttackType(
         character.character_name,
-        attackType
+        attackType,
       );
       card_type = cardInfo.card_type;
       character_attack_card = cardInfo.character_attack_card;
@@ -1243,7 +1327,7 @@ export const submitChallengeService = async (
       fightResult.enemyHealth ??
         fightResult.enemy?.enemy_health ??
         currentProgress.enemy_hp,
-      true
+      true,
     );
     message = text;
     audioResponse = audio;
@@ -1309,7 +1393,7 @@ export const submitChallengeService = async (
 
 export const getNextChallengeService = async (
   playerId: number,
-  levelId: number
+  levelId: number,
 ) => {
   const progress = await prisma.playerProgress.findUnique({
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
@@ -1341,7 +1425,7 @@ const getNextChallengeEasy = async (progress: any) => {
   const { level } = progress;
 
   const sortedChallenges = [...level.challenges].sort(
-    (a: Challenge, b: Challenge) => a.challenge_id - b.challenge_id
+    (a: Challenge, b: Challenge) => a.challenge_id - b.challenge_id,
   );
 
   const wrongChallenges = (progress.wrong_challenges as number[] | null) ?? [];
@@ -1360,7 +1444,7 @@ const getNextChallengeEasy = async (progress: any) => {
   if (!enemyDefeated) {
     nextChallenge =
       sortedChallenges.find(
-        (c: Challenge) => !effectiveAnsweredIds.includes(c.challenge_id)
+        (c: Challenge) => !effectiveAnsweredIds.includes(c.challenge_id),
       ) || null;
 
     if (!nextChallenge && wrongChallenges.length > 0) {
@@ -1374,7 +1458,7 @@ const getNextChallengeEasy = async (progress: any) => {
         sortedChallenges.find(
           (c: Challenge) =>
             !effectiveAnsweredIds.includes(c.challenge_id) &&
-            !wrongChallenges.includes(c.challenge_id)
+            !wrongChallenges.includes(c.challenge_id),
         ) || null;
     }
   }
@@ -1407,7 +1491,7 @@ const getNextChallengeEasy = async (progress: any) => {
           } else {
             return nextAnswer;
           }
-        }
+        },
       );
 
       nextChallenge = {
@@ -1442,7 +1526,7 @@ const getNextChallengeHard = async (progress: any) => {
   });
 
   const sortedChallenges = [...level.challenges].sort(
-    (a, b) => a.challenge_id - b.challenge_id
+    (a, b) => a.challenge_id - b.challenge_id,
   );
 
   const playerAlive = progress.player_hp > 0;
@@ -1453,12 +1537,12 @@ const getNextChallengeHard = async (progress: any) => {
     if (enemyDefeated) {
       nextChallenge =
         sortedChallenges.find(
-          (c: Challenge) => !effectiveAnsweredIds.includes(c.challenge_id)
+          (c: Challenge) => !effectiveAnsweredIds.includes(c.challenge_id),
         ) || null;
     } else {
       nextChallenge =
         sortedChallenges.find(
-          (c: Challenge) => !correctlyAnsweredIds.includes(c.challenge_id)
+          (c: Challenge) => !correctlyAnsweredIds.includes(c.challenge_id),
         ) || null;
     }
   }
@@ -1491,7 +1575,7 @@ const getNextChallengeHard = async (progress: any) => {
           } else {
             return nextAnswer;
           }
-        }
+        },
       );
 
       nextChallenge = {
@@ -1509,12 +1593,12 @@ const getNextChallengeHard = async (progress: any) => {
 function getNextWrongChallenge(
   progress: any,
   level: any,
-  wrongChallenges: number[]
+  wrongChallenges: number[],
 ) {
   const filteredWrongs = wrongChallenges.filter((id: number) => {
     const ans = progress.player_answer?.[id.toString()] ?? [];
     const challenge = level.challenges.find(
-      (c: Challenge) => c.challenge_id === id
+      (c: Challenge) => c.challenge_id === id,
     );
     return !multisetEqual(ans, challenge?.correct_answer ?? []);
   });
@@ -1528,7 +1612,7 @@ function getNextWrongChallenge(
 
   const id = currentWrongs[idx];
   const challenge = level.challenges.find(
-    (c: Challenge) => c.challenge_id === id
+    (c: Challenge) => c.challenge_id === id,
   );
 
   return challenge || null;
@@ -1537,7 +1621,7 @@ function getNextWrongChallenge(
 const wrapWithTimer = async (
   progress: any,
   challenge: Challenge | null,
-  level: any
+  level: any,
 ) => {
   if (!challenge) return { nextChallenge: null };
 
@@ -1548,12 +1632,12 @@ const wrapWithTimer = async (
 
     const revealResult = revealAllBlanks(
       challenge.question ?? "",
-      effectiveCorrectAnswer
+      effectiveCorrectAnswer,
     );
 
     if (!revealResult.success) {
       console.error(
-        `Ryron's Passive - Cannot reveal challenge ${challenge.challenge_id}: ${revealResult.error}`
+        `Ryron's Passive - Cannot reveal challenge ${challenge.challenge_id}: ${revealResult.error}`,
       );
     } else {
       const filledQuestion = revealResult.filledQuestion;
@@ -1589,13 +1673,13 @@ const wrapWithTimer = async (
       } as ChallengeDTO;
 
       console.log(
-        `- Ryron's Passive Applied: All blanks revealed for challenge ${challenge.challenge_id}`
+        `- Ryron's Passive Applied: All blanks revealed for challenge ${challenge.challenge_id}`,
       );
 
       const timeRemaining = CHALLENGE_TIME_LIMIT;
       const builtChallenge = buildChallengeWithTimer(
         modifiedChallenge,
-        timeRemaining
+        timeRemaining,
       );
       return { nextChallenge: builtChallenge };
     }
@@ -1608,7 +1692,7 @@ const wrapWithTimer = async (
         .map(reverseString)
         .sort(() => Math.random() - 0.5);
       console.log(
-        "- Reversal curse applied: options strings reversed and jumbled for display"
+        "- Reversal curse applied: options strings reversed and jumbled for display",
       );
     }
   } else if (
@@ -1649,16 +1733,45 @@ const wrapWithTimer = async (
       });
 
       console.log(
-        "- Permutation SS applied: letters within options shuffled for display and mapping stored"
+        "- Permutation SS applied: letters within options shuffled for display and mapping stored",
       );
 
       const challengeStart = new Date();
       const timeRemaining = CHALLENGE_TIME_LIMIT;
       const builtChallenge = buildChallengeWithTimer(
         modifiedChallenge,
-        timeRemaining
+        timeRemaining,
       );
       return { nextChallenge: builtChallenge };
+    }
+  } else if (
+    progress.has_only_blanks_ss &&
+    level.enemy?.enemy_name === "King Feanaly"
+  ) {
+    if (modifiedChallenge.question) {
+      modifiedChallenge.question = keepOnlyBlanks(modifiedChallenge.question);
+      console.log(
+        "- King Feanaly SS applied: Question text removed, leaving only blanks.",
+      );
+    }
+  } else if (
+    progress.has_dollar_sign_ss &&
+    level.enemy?.enemy_name === "Boss Icycreamero"
+  ) {
+    const options = challenge.options as string[];
+    if (Array.isArray(options) && options.length > 0) {
+      modifiedChallenge.options = options.map(replaceCharWithDollar);
+      console.log("- Boss Icycreamero SS applied: Added '$' to options.");
+    }
+  } else if (
+    progress.has_reverse_words_ss &&
+    level.enemy?.enemy_name === "Boss Scythe"
+  ) {
+    if (modifiedChallenge.question) {
+      modifiedChallenge.question = reverseThreeRandomWords(
+        modifiedChallenge.question,
+      );
+      console.log("- Boss Scythe SS applied: 3 words reversed in question.");
     }
   }
 
@@ -1678,7 +1791,7 @@ const wrapWithTimer = async (
 
   const builtChallenge = buildChallengeWithTimer(
     modifiedChallenge,
-    timeRemaining
+    timeRemaining,
   );
 
   return {
