@@ -16,7 +16,7 @@ export default function TabLayout() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
     <Tabs
-      initialRouteName="Map" 
+      initialRouteName="index" 
       screenOptions={{
         tabBarStyle: styles.tabBar,
         headerShown: false,
@@ -24,7 +24,7 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="Practice"
+        name="practice"
         options={{
           title: '',
           tabBarItemStyle: [styles.tabBarItem, { borderLeftWidth: 0 }],
@@ -41,7 +41,7 @@ export default function TabLayout() {
       />
 
        <Tabs.Screen
-        name="Map"
+        name="index"
         options={{
           title: '',
           tabBarButton: (props) => <CustomTabBarButton {...props} />, 
@@ -56,7 +56,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="Leaderboards"
+        name="leaderboards"
         options={{
           title: '',
           tabBarButton: (props) => <CustomTabBarButton {...props} />, 
@@ -71,7 +71,7 @@ export default function TabLayout() {
         }}
       />
        <Tabs.Screen
-        name="Profile"
+        name="profile"
         options={{
           title: '',
           tabBarButton: (props) => <CustomTabBarButton {...props} />, 
