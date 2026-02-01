@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    fontSize: SCREEN_WIDTH * 0.031,
+    fontSize: SCREEN_WIDTH * 0.030,
     color: '#ffffff',
     textAlign: 'center',
     fontFamily: 'DynaPuff',

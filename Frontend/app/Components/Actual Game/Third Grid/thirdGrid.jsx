@@ -201,6 +201,7 @@ const ThirdGrid = ({
   
   return (
     <GridContainer
+      key={`grid-v2-${currentQuestion?.id}-${canProceed}`}
       mainHeight={dynamicHeight}
       cardImageUrl={cardImageUrl}
       showCardInGrid={cardDisplaySequence === 'grid'}
@@ -273,6 +274,7 @@ const ThirdGrid = ({
             {/* ANSWERS VIEW */}
             <View style={{ display: !showPotions ? 'flex' : 'none', width: '100%' }}>
               <AnswerGrid
+                key={`answer-grid-${currentQuestion.id}`}
                 options={options}
                 selectedAnswers={selectedAnswers}
                 maxAnswers={maxAnswers}

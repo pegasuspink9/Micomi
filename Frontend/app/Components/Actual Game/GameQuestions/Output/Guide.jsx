@@ -13,7 +13,7 @@ const Guide = ({ currentQuestion }) => {
   const [exampleOutputs, setExampleOutputs] = useState({});
 
   const generateExampleOutput = useCallback((exampleCode) => {
-    if (!exampleCode) return ''; //  CHANGED: Return empty string instead of default message
+    if (!exampleCode) return '';
 
     let htmlCode = exampleCode.trim();
 
@@ -30,8 +30,10 @@ const Guide = ({ currentQuestion }) => {
             font-family: Arial, sans-serif; 
             font-size: 18px; 
             line-height: 1.6; 
-            margin: 20px; 
+            margin: 0; 
+            padding: 20px; 
             color: #333;
+            overflow: hidden;
           }
           h1, h2, h3 { color: #2c3e50; margin-bottom: 15px; }
           p { margin-bottom: 15px; }
@@ -45,13 +47,25 @@ const Guide = ({ currentQuestion }) => {
 
 const ExampleOutput = useCallback(({ exampleCode, exampleKey }) => {
   const [htmlOutput, setHtmlOutput] = useState('');
+  const [webViewHeight, setWebViewHeight] = useState(scale(150)); 
 
   useEffect(() => {
     const output = generateExampleOutput(exampleCode);
     setHtmlOutput(output);
   }, [exampleCode, generateExampleOutput]);
 
-  //  FIXED: Check if body has actual visible content (not empty tags)
+  const onWebViewMessage = (event) => {
+    try {
+      const height = Number(event.nativeEvent.data);
+      if (!isNaN(height) && height > 0) {
+        // Use a much smaller buffer since we use padding now
+        setWebViewHeight(height + scale(10));
+      }
+    } catch (e) {
+      console.warn("Failed to parse WebView height", e);
+    }
+  };
+
   const hasVisibleContent = exampleCode && 
     exampleCode.trim().length > 0 && 
     !/^[\s<>/]*$/.test(exampleCode) && 
@@ -60,19 +74,40 @@ const ExampleOutput = useCallback(({ exampleCode, exampleKey }) => {
     /<body[^>]*>[\s\S]*?<\/body>/.test(htmlOutput) && 
     /<body[^>]*>[\s\S]*?<\/body>/.exec(htmlOutput)[0].replace(/<[^>]*>/g, '').trim().length > 0;
 
+
+  const injectedJS = `
+    (function() {
+      function sendHeight() {
+        var height = document.body.offsetHeight || document.documentElement.offsetHeight;
+        window.ReactNativeWebView.postMessage(height.toString());
+      }
+      // Initial trigger
+      sendHeight();
+      // Trigger again when assets/fonts are likely loaded
+      window.onload = sendHeight;
+      setTimeout(sendHeight, 500);
+      setTimeout(sendHeight, 1500);
+    })();
+    true;
+  `;
+
   if (!hasVisibleContent) return null;
 
   return (
     <View style={styles.exampleOutputContainer}>
       <Text style={styles.exampleOutputLabel}>Output:</Text>
-      <View style={styles.exampleWebviewContainer}>
+      <View style={[styles.exampleWebviewContainer, { height: webViewHeight }]}>
         <WebView
+          key={exampleKey} // Forces recreation when switching questions
           source={{ html: htmlOutput }}
           style={styles.exampleWebview}
-          scalesPageToFit={true}
-          startInLoadingState={false}
+          onMessage={onWebViewMessage}
+          injectedJavaScript={injectedJS}
+          scrollEnabled={false} 
+          scalesPageToFit={false} // Disable auto-scaling to get accurate pixel measurements
           javaScriptEnabled={true}
           domStorageEnabled={true}
+          originWhitelist={['*']}
         />
       </View>
     </View>
@@ -341,21 +376,18 @@ const styles = StyleSheet.create({
     marginBottom: scale(6),
   },
 
-  exampleWebviewContainer: {
+    exampleWebviewContainer: {
     backgroundColor: '#fff',
     borderRadius: scale(6),
     borderWidth: scale(1),
     borderColor: '#e9ecef',
     overflow: 'hidden',
-    minHeight: scale(150),
-    maxHeight: scale(300),
+    minHeight: scale(80), // Lowered minHeight so it can fit small content
   },
 
   exampleWebview: {
-    flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent', // Ensure it doesn't hide the container background
     width: '100%',
-    height: '100%',
   },
 });
 
