@@ -559,6 +559,7 @@ export async function getCurrentFightState(
     combat_background: combatBackground,
     boss_skill_activated: progress?.boss_skill_activated || false,
     isEnemyFrozen: progress?.has_freeze_effect || false,
+    attack_overlay: null,
   };
 }
 
@@ -659,6 +660,7 @@ export async function fightEnemy(
   let card_type: string | null = null;
   let character_attack_pose: string | null = null;
   let wasEnemyFrozenThisTurn = progress.has_freeze_effect || false;
+  let wasCharacterStrongThisTurn = progress.has_strong_effect || false;
 
   character_run = character.character_run || null;
   character_idle = character.avatar_image || null;
@@ -1448,6 +1450,18 @@ export async function fightEnemy(
     },
   });
 
+  let attack_overlay: string | null = null;
+
+  if (isCorrect && progress?.consecutive_corrects === 3) {
+    if (character.character_name === "Leon") {
+      attack_overlay =
+        "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+    } else if (character.character_name === "ShiShi") {
+      attack_overlay =
+        "https://micomi-assets.me/Icons/Miscellaneous/Ice%20Overlay.png";
+    }
+  }
+
   console.log("Final result:");
   console.log("- Enemy health:", enemyHealth);
   console.log("- Enemy max health:", scaledEnemyMaxHealth);
@@ -1498,6 +1512,8 @@ export async function fightEnemy(
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,
     boss_skill_activated: progress?.boss_skill_activated || false,
     isEnemyFrozen: wasEnemyFrozenThisTurn,
+    isCharacterStrong: wasCharacterStrongThisTurn,
+    attack_overlay,
   };
 }
 
@@ -1600,6 +1616,7 @@ export async function fightBossEnemy(
   let character_attack_pose: string | null = null;
   let enemy_ss_type: string | null = null;
   let wasEnemyFrozenThisTurn = progress.has_freeze_effect || false;
+  let wasCharacterStrongThisTurn = progress.has_strong_effect || false;
 
   character_run = character.character_run || null;
   character_idle = character.avatar_image || null;
@@ -2512,6 +2529,18 @@ export async function fightBossEnemy(
     },
   });
 
+  let attack_overlay: string | null = null;
+
+  if (isCorrect && progress.consecutive_corrects === 3) {
+    if (character.character_name === "Leon") {
+      attack_overlay =
+        "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+    } else if (character.character_name === "ShiShi") {
+      attack_overlay =
+        "https://micomi-assets.me/Icons/Miscellaneous/Ice%20Overlay.png";
+    }
+  }
+
   const updatedEnergyStatus =
     await EnergyService.getPlayerEnergyStatus(playerId);
 
@@ -2572,5 +2601,7 @@ export async function fightBossEnemy(
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,
     boss_skill_activated: progress?.boss_skill_activated || false,
     isEnemyFrozen: wasEnemyFrozenThisTurn,
+    isCharacterStrong: wasCharacterStrongThisTurn,
+    attack_overlay,
   };
 }

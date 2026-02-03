@@ -20,6 +20,7 @@ import dialogueRoutes from "./models/Dialogue/dialogue.routes";
 import authRoutes from "../middleware/auth.routes";
 import { getAllPlayerProgress } from "../src/models/Player/playerProgress.service";
 import avatarRoutes from "./models/Avatar/avatar.routes";
+import moduleRoutes from "./models/Module/module.routes";
 
 import testRoutes from "../middleware/testing.toutes";
 
@@ -41,7 +42,7 @@ app.use(
     origin: ["http://localhost:3000"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
-  })
+  }),
 );
 
 app.use("/test/auth", testRoutes);
@@ -61,6 +62,7 @@ app.use("/quest", questRoutes);
 app.use("/dialogue", dialogueRoutes);
 app.use("/game", gameRoutes);
 app.use("/avatar", avatarRoutes);
+app.use("/module", moduleRoutes);
 
 //temporary
 app.get("/progress", getAllPlayerProgress);

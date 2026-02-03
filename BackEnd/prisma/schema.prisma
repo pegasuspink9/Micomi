@@ -368,6 +368,19 @@ model BackgroundMapping {
   @@unique([mapName, levelNumber]) 
 }
 
+model Module {
+  module_id            Int      @id @default(autoincrement())
+  module_title         String   
+  content              ModuleContent[]
+}
+
+model ModuleContent {
+  module_content_id    Int      @id @default(autoincrement())
+  module_id            Int
+  module_content       String   @db.Text
+  module               Module   @relation(fields: [module_id], references: [module_id], onDelete: Cascade)
+}
+
 model GameplayMessage {
   id           Int              @id @default(autoincrement())
   key          String           @unique             
