@@ -709,7 +709,6 @@ async testR2Download(testUrl) {
 
     if (!mapLevelData) return assets;
 
-    // ADDED: Helper function to extract assets from a single level
     const extractLevelAssets = (level, levelIndex = 0) => {
       if (!level) return;
 
@@ -803,6 +802,9 @@ async testR2Download(testUrl) {
       // Fallback: treat mapLevelData as a single level (for enterLevel response)
       extractLevelAssets(mapLevelData, 0);
     }
+
+    
+
 
     console.log(`📦 Extracted ${assets.length} total assets from map data.`);
     return assets;
@@ -1816,9 +1818,24 @@ async testR2Download(testUrl) {
 
   extractPotionShopAssets(levelPreviewData) {
   const assets = [];
+
+    addAsset(
+      'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg',
+      'shop_background',
+      'image',
+      'potion_shop_ui'
+    );
+    addAsset(
+      'https://micomi-assets.me/Hero%20Selection%20Components/Shi-Shi%20Shop.mp4',
+      'shishi_shopkeeper_video',
+      'video',
+      'potion_shop_ui'
+    );
+
   
   if (!levelPreviewData || !levelPreviewData.potionShop) return assets;
 
+  
   levelPreviewData.potionShop.forEach((potion, index) => {
     if (potion.potion_url && typeof potion.potion_url === 'string') {
       assets.push({

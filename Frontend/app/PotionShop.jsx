@@ -36,7 +36,13 @@ import Reanimated, {
 } from 'react-native-reanimated';
 
 
+
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+  const SHOP_BG = 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760334965/shop_holder_deydxu.png';
+  const SHOP_VIDEO = 'https://micomi-assets.me/Hero%20Selection%20Components/Shi-Shi%20Shop.mp4';
+  const SHOP_HOLDER = 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760334965/shop_holder_deydxu.png';
+
 
 const transformPotionData = (potionShop = []) => {
   return potionShop.map(potion => ({
@@ -311,7 +317,7 @@ export default function PotionShop() {
     return (
       <View style={styles.container}>
         <ImageBackground 
-          source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' }} 
+          source={{ uri: getCachedImagePath(SHOP_BG) }} 
           style={styles.ImageBackgroundContainer} 
           resizeMode="cover"
         >
@@ -331,7 +337,7 @@ export default function PotionShop() {
     return (
       <View style={styles.container}>
         <ImageBackground 
-          source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' }} 
+          source={{ uri: getCachedImagePath(SHOP_BG) }} 
           style={styles.ImageBackgroundContainer} 
           resizeMode="cover"
         >
@@ -350,7 +356,7 @@ export default function PotionShop() {
   return (
     <View style={styles.container}>
       <ImageBackground 
-        source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' }} 
+         source={{ uri: getCachedImagePath(SHOP_BG) }} 
         style={styles.ImageBackgroundContainer} 
         resizeMode="cover"
       >
@@ -371,7 +377,7 @@ export default function PotionShop() {
         
         <View style={styles.topFrame}>
           <Video
-            source={{ uri: 'https://micomi-assets.me/Hero%20Selection%20Components/Shi-Shi%20Shop.mp4' }}
+            source={{ uri: getCachedImagePath(SHOP_VIDEO) }}
             style={styles.ImageBackgroundTop}
             shouldPlay
             isLooping
@@ -383,7 +389,7 @@ export default function PotionShop() {
         
         <View style={styles.bottomFrame}>
           <ImageBackground 
-            source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760334965/shop_holder_deydxu.png' }} 
+             source={{ uri: getCachedImagePath(SHOP_HOLDER) }} 
             style={styles.ImageBackgroundBottom}
             resizeMode="contain"
           >

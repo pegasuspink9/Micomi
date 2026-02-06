@@ -56,7 +56,7 @@ export default function RoadMapLandPage() {
             router.push('/PotionShop');
           }}
         >
-          <View style={{ alignItems: 'center' }}>
+          <View style={{ alignItems: 'center', marginTop: -100 * responsive.heightRatio }}>
             <Image
               source={require('./ShopButton.png')}
               style={{
@@ -68,9 +68,9 @@ export default function RoadMapLandPage() {
             <Text style={{
               fontSize: 14 * responsive.widthRatio,
               color: '#a2e3ceff',
-              fontFamily: 'MusicVibes',  // Assuming this matches your app's font
+              fontFamily: 'MusicVibes',
               textAlign: 'center',
-              marginTop: -5 * responsive.heightRatio, 
+              marginTop: -10 * responsive.heightRatio, 
             }}>
               ShiShi's Shop
             </Text>
