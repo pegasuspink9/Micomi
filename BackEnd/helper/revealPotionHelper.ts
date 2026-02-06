@@ -9,7 +9,9 @@ interface BlankMatch {
     | "quote_smart_single"
     | "backtick"
     | "curly"
-    | "bracket";
+    | "bracket"
+    | "html_open"
+    | "html_close";
   preserveQuotes?: boolean;
 }
 
@@ -18,6 +20,9 @@ function parseAndValidateBlanks(question: string): BlankMatch[] {
   const occupiedRanges: Array<{ start: number; end: number }> = [];
 
   const patterns = [
+    { regex: /<\/_>/g, type: "html_close" as const },
+    { regex: /<_[^>]*>/g, type: "html_open" as const },
+
     { regex: /"(_+)"/g, type: "quote_double" as const, preserveQuotes: true },
     { regex: /'(_+)'/g, type: "quote_single" as const, preserveQuotes: true },
     {
@@ -31,8 +36,10 @@ function parseAndValidateBlanks(question: string): BlankMatch[] {
       preserveQuotes: true,
     },
     { regex: /`(_+)`/g, type: "backtick" as const, preserveQuotes: true },
+
     { regex: /\{blank\}/g, type: "curly" as const },
     { regex: /\[_+\]/g, type: "bracket" as const },
+
     { regex: /_+/g, type: "underscore" as const },
   ];
 
@@ -45,7 +52,7 @@ function parseAndValidateBlanks(question: string): BlankMatch[] {
       const end = start + match[0].length;
 
       const isOccupied = occupiedRanges.some(
-        (range) => start < range.end && end > range.start
+        (range) => start < range.end && end > range.start,
       );
 
       if (!isOccupied) {
@@ -65,6 +72,12 @@ function parseAndValidateBlanks(question: string): BlankMatch[] {
 
 function fillBlank(match: BlankMatch, answer: string): string {
   switch (match.type) {
+    case "html_open":
+      return `<${answer}>`;
+
+    case "html_close":
+      return `</${answer}>`;
+
     case "quote_double":
       return `"${answer}"`;
     case "quote_single":
@@ -88,7 +101,7 @@ function fillBlank(match: BlankMatch, answer: string): string {
 
 export function revealAllBlanks(
   question: string,
-  answers: string[]
+  answers: string[],
 ): {
   success: boolean;
   filledQuestion?: string;
@@ -151,18 +164,18 @@ export function revealAllBlanks(
 
 export async function applyRevealPotion(
   currentChallenge: any,
-  effectiveCorrectAnswer: string[]
+  effectiveCorrectAnswer: string[],
 ): Promise<{ success: boolean; revealedChallenge?: any; error?: string }> {
   const result = revealAllBlanks(
     currentChallenge.question ?? "",
-    effectiveCorrectAnswer
+    effectiveCorrectAnswer,
   );
 
   if (!result.success) {
     console.error("Reveal potion failed:", result.error);
     console.error(
       "Blanks found:",
-      result.blanks?.map((b) => `"${b.match}" at position ${b.index}`)
+      result.blanks?.map((b) => `"${b.match}" at position ${b.index}`),
     );
     return {
       success: false,
