@@ -1,5 +1,5 @@
 export interface PlayerLoginInput {
-  email: string;
+  identifier: string;
   password: string;
 }
 

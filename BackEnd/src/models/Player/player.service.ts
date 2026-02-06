@@ -18,7 +18,8 @@ import { ensureDefaultCharacter } from "../../game/Characters/characters.service
 
 const prisma = new PrismaClient();
 
-const DEFAULT_AVATAR_URL = "https://micomi-assets.me/Player%20Avatars/original-32a59694e59c7e9536e5a32d105292c7.webp";
+const DEFAULT_AVATAR_URL =
+  "https://micomi-assets.me/Player%20Avatars/original-32a59694e59c7e9536e5a32d105292c7.webp";
 
 const BASE_EXP_REQUIREMENT = 100;
 const EXP_EXPONENT = 1.5;
@@ -28,7 +29,7 @@ export const calculatePlayerLevel = (expPoints: number): number => {
     let totalExp = 0;
     for (let i = 2; i <= level; i++) {
       totalExp += Math.floor(
-        BASE_EXP_REQUIREMENT * Math.pow(i - 1, EXP_EXPONENT)
+        BASE_EXP_REQUIREMENT * Math.pow(i - 1, EXP_EXPONENT),
       );
     }
     if (expPoints < totalExp) {
@@ -40,7 +41,7 @@ export const calculatePlayerLevel = (expPoints: number): number => {
 
 export const addExpAndUpdateLevel = async (
   playerId: number,
-  expGained: number
+  expGained: number,
 ) => {
   if (expGained <= 0) return;
 
@@ -81,14 +82,14 @@ export const getLevelProgress = (expPoints: number) => {
   let currentLevelExp = 0;
   for (let i = 2; i <= currentLevel; i++) {
     currentLevelExp += Math.floor(
-      BASE_EXP_REQUIREMENT * Math.pow(i - 1, EXP_EXPONENT)
+      BASE_EXP_REQUIREMENT * Math.pow(i - 1, EXP_EXPONENT),
     );
   }
 
   let nextLevelExp = 0;
   for (let i = 2; i <= currentLevel + 1; i++) {
     nextLevelExp += Math.floor(
-      BASE_EXP_REQUIREMENT * Math.pow(i - 1, EXP_EXPONENT)
+      BASE_EXP_REQUIREMENT * Math.pow(i - 1, EXP_EXPONENT),
     );
   }
 
@@ -125,7 +126,6 @@ export const getPlayerById = (player_id: number) =>
   });
 
 export const getPlayerProfile = async (player_id: number) => {
-
   await ensureDefaultCharacter(player_id);
 
   const player = await prisma.player.findUnique({
@@ -161,7 +161,7 @@ export const getPlayerProfile = async (player_id: number) => {
 
   const achievements = await prisma.achievement.findMany();
   const playerAchievementMap = new Map(
-    player.playerAchievements.map((pa) => [pa.achievement_id, pa])
+    player.playerAchievements.map((pa) => [pa.achievement_id, pa]),
   );
 
   const mergedAchievements = achievements.map((achievement) => {
@@ -178,7 +178,7 @@ export const getPlayerProfile = async (player_id: number) => {
       .filter((pa) => pa.is_owned && pa.earned_at)
       .sort(
         (a, b) =>
-          new Date(b.earned_at!).getTime() - new Date(a.earned_at!).getTime()
+          new Date(b.earned_at!).getTime() - new Date(a.earned_at!).getTime(),
       )[0] ?? null;
 
   const latestAchievementFormatted = latestAchievement
@@ -222,11 +222,11 @@ export const getPlayerProfile = async (player_id: number) => {
   }
 
   const selectedBadge = player.playerAchievements.find(
-    (pa) => pa.is_selected && pa.is_owned
+    (pa) => pa.is_selected && pa.is_owned,
   )
     ? (() => {
         const selected = player.playerAchievements.find(
-          (pa) => pa.is_selected && pa.is_owned
+          (pa) => pa.is_selected && pa.is_owned,
         )!;
         return {
           achievement_id: selected.achievement_id,
@@ -364,7 +364,7 @@ export const findOrCreateOAuthPlayer = async ({
       },
     });
     console.log(
-      `Linked ${provider} account to existing player ${player.player_id}`
+      `Linked ${provider} account to existing player ${player.player_id}`,
     );
     return player;
   }
@@ -387,7 +387,7 @@ export const findOrCreateOAuthPlayer = async ({
 
 export const updatePlayer = async (
   player_id: number,
-  data: Partial<PlayerCreateInput>
+  data: Partial<PlayerCreateInput>,
 ) => {
   const { password, ...safeData } = data;
   const updateData: any = {
@@ -407,7 +407,7 @@ export const updatePlayer = async (
 
 export const editPlayerProfile = async (
   player_id: number,
-  data: PlayerEditProfileInput
+  data: PlayerEditProfileInput,
 ) => {
   if (data.email || data.username) {
     const existingUser = await prisma.player.findFirst({
@@ -459,9 +459,21 @@ export const editPlayerProfile = async (
 export const deletePlayer = (player_id: number) =>
   prisma.player.delete({ where: { player_id } });
 
-export const loginPlayer = async ({ email, password }: PlayerLoginInput) => {
-  const player = await prisma.player.findUnique({ where: { email } });
-  if (!player || !(await comparePassword(password, player.password))) {
+export const loginPlayer = async ({
+  identifier,
+  password,
+}: PlayerLoginInput) => {
+  const player = await prisma.player.findFirst({
+    where: {
+      OR: [{ email: identifier }, { username: identifier }],
+    },
+  });
+
+  if (
+    !player ||
+    !player.password ||
+    !(await comparePassword(password, player.password))
+  ) {
     return null;
   }
 

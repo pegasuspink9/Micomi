@@ -80,7 +80,7 @@ export const updatePlayerProfile = async (req: Request, res: Response) => {
 
     Object.keys(payload).forEach(
       (key) =>
-        (payload as any)[key] === undefined && delete (payload as any)[key]
+        (payload as any)[key] === undefined && delete (payload as any)[key],
     );
 
     const result = await PlayerService.editPlayerProfile(playerId, payload);
@@ -107,7 +107,23 @@ export const deletePlayer = async (req: Request, res: Response) => {
 /*LOGIN a player*/
 export const loginPlayer = async (req: Request, res: Response) => {
   try {
-    const result = await PlayerService.loginPlayer(req.body);
+    const { identifier, email, username, password } = req.body;
+
+    const loginIdentifier = identifier || email || username;
+
+    if (!loginIdentifier || !password) {
+      return errorResponse(
+        res,
+        null,
+        "Username/Email and Password are required",
+        400,
+      );
+    }
+
+    const result = await PlayerService.loginPlayer({
+      identifier: loginIdentifier,
+      password,
+    });
 
     if (!result) {
       return errorResponse(res, null, "Invalid email or password", 401);
@@ -132,7 +148,7 @@ export const loginPlayer = async (req: Request, res: Response) => {
     return successResponse(
       res,
       { accessToken, player: result },
-      "Login successful"
+      "Login successful",
     );
   } catch (error) {
     return errorResponse(res, error, "Failed to login", 500);
