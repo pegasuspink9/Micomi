@@ -601,7 +601,7 @@ export const imagesUrls = [
 
   //Hero SS Icons
   "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Gino_SS.png",
-  "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Shi_SS.png",
+  "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Shi_SS_FINAL.png",
   "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Ryron_SS.png",
   "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Leon_SS.png",
 

@@ -121,7 +121,7 @@ const SS_HERO_ICON_CONFIG: Record<
   },
   ShiShi: {
     special_skill_image:
-      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Shi_SS.png",
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Shi_SS_FINAL.png",
     special_skill_description:
       "Freezes the enemy, preventing their next attack",
   },

@@ -268,6 +268,8 @@ const initializeNewGameState = async (playerId: number) => {
   });
 
   if (firstLevel) {
+    const isMicomi = firstLevel.level_type === "micomiButton";
+
     await prisma.playerProgress.create({
       data: {
         player_id: playerId,
@@ -276,11 +278,43 @@ const initializeNewGameState = async (playerId: number) => {
         attempts: 0,
         player_answer: {},
         wrong_challenges: [],
-        is_completed: false,
-        completed_at: null,
+        is_completed: isMicomi,
+        completed_at: isMicomi ? new Date() : null,
         challenge_start_time: new Date(),
+        ...(isMicomi
+          ? { done_micomi_level: true }
+          : { done_micomi_level: false }),
       },
     });
+
+    if (isMicomi) {
+      const secondLevel = await prisma.level.findFirst({
+        where: {
+          map_id: firstLevel.map_id,
+          level_id: { gt: firstLevel.level_id },
+        },
+        orderBy: { level_id: "asc" },
+      });
+
+      if (secondLevel) {
+        await prisma.playerProgress.create({
+          data: {
+            player_id: playerId,
+            level_id: secondLevel.level_id,
+            current_level: secondLevel.level_number,
+            attempts: 0,
+            player_answer: {},
+            wrong_challenges: [],
+            is_completed: false,
+            completed_at: null,
+            challenge_start_time: new Date(),
+          },
+        });
+        console.log(
+          `Auto-unlocked Level ${secondLevel.level_number} because Level 1 was Micomi.`,
+        );
+      }
+    }
 
     await prisma.playerAchievement.create({
       data: {
