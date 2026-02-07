@@ -379,8 +379,8 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         lessons: {
           orderBy: { lesson_id: "asc" },
           select: {
-            lesson_id: true,
-            page_number: true,
+            // lesson_id: true,
+            // page_number: true,
             page_url: true,
           },
         },
@@ -405,21 +405,21 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         total_points: totalPoints,
         total_coins: totalCoins,
       },
-      currentLesson: currentLesson
-        ? {
-            lesson_id: currentLesson.lesson_id,
-            page_number: currentLesson.page_number,
-            page_url: currentLesson.page_url,
-          }
-        : null,
+      // currentLesson: currentLesson
+      //   ? {
+      //       lesson_id: currentLesson.lesson_id,
+      //       page_number: currentLesson.page_number,
+      //       page_url: currentLesson.page_url,
+      //     }
+      //   : null,
 
-      lastPage: lastLesson
-        ? {
-            lesson_id: lastLesson.lesson_id,
-            page_number: lastLesson.page_number,
-            page_url: lastLesson.page_url,
-          }
-        : null,
+      // lastPage: lastLesson
+      //   ? {
+      //       lesson_id: lastLesson.lesson_id,
+      //       page_number: lastLesson.page_number,
+      //       page_url: lastLesson.page_url,
+      //     }
+      //   : null,
 
       energy: energyStatus.energy,
       timeToNextEnergyRestore: energyStatus.timeToNextRestore,
