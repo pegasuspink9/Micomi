@@ -1,5 +1,5 @@
 import { prisma } from "../../../prisma/client";
-import { BattleStatus, QuestType } from "@prisma/client";
+import { BattleStatus, PotionType, QuestType } from "@prisma/client";
 import * as EnergyService from "../Energy/energy.service";
 import * as LevelService from "../Levels/levels.service";
 import { updateQuestProgress } from "../Quests/quests.service";
@@ -435,6 +435,7 @@ export async function getCurrentFightState(
   playerId: number,
   levelId: number,
   enemyId: number,
+  potionType?: string,
 ) {
   const setup = await getFightSetup(playerId, levelId);
   const enemy = await prisma.enemy.findUnique({ where: { enemy_id: enemyId } });
@@ -487,6 +488,44 @@ export async function getCurrentFightState(
       "https://micomi-assets.me/Enemies/Greenland/Boss%20Joshy/idle2.png";
   }
 
+  let enemy_current_state: string | null = null;
+  let character_current_state: string | null = null;
+  let character_attack_overlay: string | null = null;
+  let enemy_attack_overlay: string | null = null;
+
+  if (potionType === "Power") {
+    character_current_state = "Strong";
+    character_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+  } else if (potionType === "Immunity") {
+    enemy_current_state = "Frozen";
+    enemy_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Ice%20Overlay.png";
+  } else if (potionType === "Reveal") {
+    character_current_state = "Reveal";
+    character_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+  } else if (potionType === "Life") {
+    character_current_state = "Revitalize";
+    character_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+  } else if (progress.has_freeze_effect && !potionType) {
+    enemy_current_state = "Frozen";
+    enemy_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Ice%20Overlay.png";
+    console.log("- Freeze effect persisting from progress");
+  } else if (progress.has_strong_effect && !potionType) {
+    character_current_state = "Strong";
+    character_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+    console.log("- Strong effect persisting from progress");
+  } else if (progress.has_ryron_reveal && !potionType) {
+    character_current_state = "Reveal";
+    character_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+    console.log("- Ryron reveal persisting from progress");
+  }
+
   return {
     status,
     enemy: {
@@ -532,8 +571,8 @@ export async function getCurrentFightState(
           progress?.consecutive_wrongs,
         );
       })(),
-      enemy_current_state: null,
-      enemy_attack_overlay: null,
+      enemy_current_state,
+      enemy_attack_overlay,
     },
     character: {
       character_id: character.character_id,
@@ -554,8 +593,8 @@ export async function getCurrentFightState(
         character.character_name,
         progress?.consecutive_corrects,
       ),
-      character_current_state: null,
-      character_attack_overlay: null,
+      character_current_state,
+      character_attack_overlay,
     },
     timer: "00:00",
     energy: energyStatus.energy,
