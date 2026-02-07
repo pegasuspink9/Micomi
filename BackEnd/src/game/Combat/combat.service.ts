@@ -532,6 +532,8 @@ export async function getCurrentFightState(
           progress?.consecutive_wrongs,
         );
       })(),
+      enemy_current_state: null,
+      enemy_attack_overlay: null,
     },
     character: {
       character_id: character.character_id,
@@ -552,6 +554,8 @@ export async function getCurrentFightState(
         character.character_name,
         progress?.consecutive_corrects,
       ),
+      character_current_state: null,
+      character_attack_overlay: null,
     },
     timer: "00:00",
     energy: energyStatus.energy,
@@ -559,7 +563,6 @@ export async function getCurrentFightState(
     combat_background: combatBackground,
     boss_skill_activated: progress?.boss_skill_activated || false,
     isEnemyFrozen: progress?.has_freeze_effect || false,
-    attack_overlay: null,
   };
 }
 
@@ -1506,6 +1509,8 @@ export async function fightEnemy(
         special_skill_description: null,
         streak: progress?.consecutive_wrongs ?? 0,
       },
+      enemy_current_state,
+      enemy_attack_overlay,
     },
     character: {
       character_id: character.character_id,
@@ -1526,15 +1531,13 @@ export async function fightEnemy(
         character.character_name,
         progress?.consecutive_corrects,
       ),
+      character_current_state,
+      character_attack_overlay,
     },
     timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,
     boss_skill_activated: progress?.boss_skill_activated || false,
-    enemy_current_state,
-    enemy_attack_overlay,
-    character_current_state,
-    character_attack_overlay,
   };
 }
 
@@ -2616,6 +2619,8 @@ export async function fightBossEnemy(
         enemy_ss_type,
         progress?.consecutive_wrongs,
       ),
+      enemy_current_state,
+      enemy_attack_overlay,
     },
     character: {
       character_id: character.character_id,
@@ -2636,14 +2641,12 @@ export async function fightBossEnemy(
         character.character_name,
         progress?.consecutive_corrects,
       ),
+      character_current_state,
+      character_attack_overlay,
     },
     timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,
     boss_skill_activated: progress?.boss_skill_activated || false,
-    enemy_current_state,
-    enemy_attack_overlay,
-    character_current_state,
-    character_attack_overlay,
   };
 }

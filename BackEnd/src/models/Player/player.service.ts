@@ -15,6 +15,10 @@ import { io } from "../../index";
 import { sendPasswordResetEmail } from "../../../utils/email";
 import { generateResetToken, verifyResetToken } from "../../../utils/token";
 import { ensureDefaultCharacter } from "../../game/Characters/characters.service";
+import {
+  generatePeriodicQuests,
+  forceGenerateQuestsForPlayer,
+} from "../Quest/periodicQuests.service";
 
 const prisma = new PrismaClient();
 
@@ -359,6 +363,21 @@ export const createPlayer = async (data: PlayerCreateInput) => {
   });
 
   await initializeNewGameState(newPlayer.player_id);
+
+  try {
+    console.log(
+      `Generating initial quests for new player ${newPlayer.player_id}`,
+    );
+    await forceGenerateQuestsForPlayer(newPlayer.player_id, "daily");
+    await forceGenerateQuestsForPlayer(newPlayer.player_id, "weekly");
+    await forceGenerateQuestsForPlayer(newPlayer.player_id, "monthly");
+    console.log(`Initial quests generated for player ${newPlayer.player_id}`);
+  } catch (error) {
+    console.error(
+      `Failed to generate initial quests for player ${newPlayer.player_id}:`,
+      error,
+    );
+  }
 
   console.log(`New player ${newPlayer.player_id} created.`);
   return newPlayer;

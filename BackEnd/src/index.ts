@@ -2,7 +2,10 @@ import dotenv from "dotenv";
 import express from "express";
 import cookieParser from "cookie-parser";
 import { setupCronJobs } from "../helper/cronJobs";
-import { checkAndGenerateMissingQuests } from "./models/Quest/periodicQuests.service";
+import {
+  checkAndGenerateMissingQuestsForAllPlayers,
+  cleanupExpiredQuestsForAllPlayers,
+} from "./models/Quest/periodicQuests.service";
 import adminRoutes from "./models/Admin/admin.routes";
 import playerRoutes from "./models/Player/player.routes";
 import mapRoutes from "./models/Map/map.routes";
@@ -80,21 +83,57 @@ io.on("connection", (socket) => {
   });
 });
 
-export { io, server };
-
 const PORT = process.env.PORT || 3000;
 
-async function startServer() {
-  try {
-    server.listen(PORT, async () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-      await checkAndGenerateMissingQuests();
-      setupCronJobs();
-    });
-  } catch (error) {
-    console.error("Failed to start server:", error);
-    process.exit(1);
-  }
-}
+server.listen(PORT, async () => {
+  console.log(`\n✅ Server running on port ${PORT}\n`);
 
-startServer();
+  setTimeout(async () => {
+    try {
+      console.log(
+        "[⏳ Quest Service] Initializing quests for existing players...",
+      );
+      await checkAndGenerateMissingQuestsForAllPlayers();
+      console.log("[✅ Quest Service] Quest initialization complete\n");
+
+      console.log(
+        "[⏳ Quest Service] Running initial cleanup of expired quests...",
+      );
+      await cleanupExpiredQuestsForAllPlayers();
+      console.log("[✅ Quest Service] Initial cleanup complete\n");
+
+      setInterval(
+        async () => {
+          try {
+            console.log("[⏳ Quest Service] Running scheduled cleanup...");
+            await cleanupExpiredQuestsForAllPlayers();
+          } catch (error) {
+            console.error(
+              "[❌ Quest Service] Error in cleanup interval:",
+              error,
+            );
+          }
+        },
+        6 * 60 * 60 * 1000,
+      );
+
+      console.log(
+        "[✅ Quest Service] Scheduled cleanup registered (every 6 hours)\n",
+      );
+
+      try {
+        setupCronJobs();
+        console.log("[✅ Cron Jobs] Cron jobs initialized\n");
+      } catch (error) {
+        console.error("[⚠️ Cron Jobs] Error setting up cron jobs:", error);
+      }
+    } catch (error) {
+      console.error(
+        "[❌ Quest Service] Critical error during initialization:",
+        error,
+      );
+    }
+  }, 2000);
+});
+
+export { io, server };
