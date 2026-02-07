@@ -99,12 +99,12 @@ const CARD_CONFIG: Record<
     second_attack: {
       card_type: "Molten Strike",
       character_attack_card:
-        "https://micomi-assets.me/Icons/Skill%20Icons/Leon%202nd%20Final.png",
+        "https://micomi-assets.me/Icons/Skill%20Icons/Leon%20Basic%20Final.png",
     },
     basic_attack: {
       card_type: "Thunderbound Cleaver",
       character_attack_card:
-        "https://micomi-assets.me/Icons/Skill%20Icons/Leon%20Basic%20Final.png",
+        "https://micomi-assets.me/Icons/Skill%20Icons/Leon%202nd%20Final.png",
     },
   },
 };
@@ -1453,20 +1453,21 @@ export async function fightEnemy(
     },
   });
 
-  let attack_overlay: string | null = null;
+  let character_attack_overlay: string | null = null;
+  let enemy_attack_overlay: string | null = null;
 
   if (isCorrect && progress?.consecutive_corrects === 3) {
     if (character.character_name === "Leon") {
-      attack_overlay =
+      character_attack_overlay =
         "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
     } else if (character.character_name === "ShiShi") {
-      attack_overlay =
+      enemy_attack_overlay =
         "https://micomi-assets.me/Icons/Miscellaneous/Ice%20Overlay.png";
     } else if (character.character_name === "Ryron") {
-      attack_overlay =
+      character_attack_overlay =
         "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
     } else if (character.character_name === "Gino") {
-      attack_overlay =
+      character_attack_overlay =
         "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
       character_current_state = "Revitalize";
     }
@@ -1531,8 +1532,9 @@ export async function fightEnemy(
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,
     boss_skill_activated: progress?.boss_skill_activated || false,
     enemy_current_state,
+    enemy_attack_overlay,
     character_current_state,
-    attack_overlay,
+    character_attack_overlay,
   };
 }
 
@@ -2551,20 +2553,21 @@ export async function fightBossEnemy(
     },
   });
 
-  let attack_overlay: string | null = null;
+  let character_attack_overlay: string | null = null;
+  let enemy_attack_overlay: string | null = null;
 
   if (isCorrect && progress.consecutive_corrects === 3) {
     if (character.character_name === "Leon") {
-      attack_overlay =
+      character_attack_overlay =
         "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
     } else if (character.character_name === "ShiShi") {
-      attack_overlay =
+      enemy_attack_overlay =
         "https://micomi-assets.me/Icons/Miscellaneous/Ice%20Overlay.png";
     } else if (character.character_name === "Ryron") {
-      attack_overlay =
+      character_attack_overlay =
         "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
     } else if (character.character_name === "Gino") {
-      attack_overlay =
+      character_attack_overlay =
         "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
       character_current_state = "Revitalize";
     }
@@ -2639,7 +2642,8 @@ export async function fightBossEnemy(
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,
     boss_skill_activated: progress?.boss_skill_activated || false,
     enemy_current_state,
+    enemy_attack_overlay,
     character_current_state,
-    attack_overlay,
+    character_attack_overlay,
   };
 }
