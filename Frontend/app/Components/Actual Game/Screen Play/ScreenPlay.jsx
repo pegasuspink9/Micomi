@@ -53,6 +53,18 @@ const ScreenPlay = ({
   const animationCompleteNotifiedRef = useRef(false); 
   const lastProcessedSubmissionIdRef = useRef(null); 
 
+  const characterAttackOverlay = useMemo(() => 
+    gameState.submissionResult?.fightResult?.character?.character_attack_overlay || 
+    gameState.selectedCharacter?.character_attack_overlay, 
+    [gameState.submissionResult, gameState.selectedCharacter]
+  );
+
+  const enemyAttackOverlay = useMemo(() => 
+    gameState.submissionResult?.fightResult?.enemy?.enemy_attack_overlay || 
+    gameState.enemy?.enemy_attack_overlay,
+    [gameState.submissionResult, gameState.enemy]
+  );
+
   const enemies = useMemo(() => {
     return [{
       duration: 10000,
@@ -683,6 +695,7 @@ useEffect(() => {
           attackAudioUrl={gameState.submissionResult?.characterAttackAudio}
           characterName={characterName}
           potionEffectUrl={gameState.submissionResult?.use_potion_effect}
+          attackOverlayUrl={characterAttackOverlay} 
         />
 
         {enemies.map((enemy, index) => {
@@ -706,6 +719,7 @@ useEffect(() => {
               fightStatus={gameState.submissionResult?.fightResult?.status}
               attackAudioUrl={gameState.submissionResult?.enemyAttackAudio}
               onAnimationComplete={handleEnemyAnimationComplete(index)}
+               attackOverlayUrl={enemyAttackOverlay}
             />
           );
         })}

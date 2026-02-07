@@ -31,6 +31,7 @@ const EnemyCharacter = ({
   fightStatus = null,
   attackAudioUrl = null,
   enemyName = '',
+  attackOverlayUrl = null, 
 }) => {
   // ========== Shared Animation Values ==========
   const frameIndex = useSharedValue(0);
@@ -39,6 +40,19 @@ const EnemyCharacter = ({
   const blinkOpacity = useSharedValue(0);
   const attackInitiated = useSharedValue(false);
   const detectedNameRef = useRef(null);
+
+  const overlayOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    overlayOpacity.value = withTiming(attackOverlayUrl ? 1 : 0, { duration: 500 });
+  }, [attackOverlayUrl]);
+
+  const overlayAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: overlayOpacity.value,
+    transform: [
+      { translateY: withRepeat(withTiming(-5, { duration: 1000 }), -1, true) }
+    ]
+  }));
 
 
   const effectiveEnemyName = useMemo(() => {
@@ -488,8 +502,20 @@ const EnemyCharacter = ({
   const isFront = useMemo(() => currentState === 'attack' || isAttacking, [currentState, isAttacking]);
 
   // ========== Render ==========
-    return (
-     <Animated.View style={[ styles.enemyContainer, bossLayout, containerStyle, isFront && styles.front ]} >
+  return (
+    <Animated.View style={[ styles.enemyContainer, bossLayout, containerStyle, isFront && styles.front ]} >
+      
+      {/* Attack Overlay (Buff/Status Icon) */}
+      {attackOverlayUrl && (
+        <Animated.View style={[styles.attackOverlay, overlayAnimatedStyle]}>
+          <Image 
+            source={{ uri: attackOverlayUrl }} 
+            style={styles.overlayImage} 
+            contentFit="contain"
+          />
+        </Animated.View>
+      )}
+
       <View style={[styles.spriteContainer, { width: SPRITE_SIZE, height: SPRITE_SIZE }]}>
         <Animated.View style={[ styles.spriteSheet, animatedStyle, { width: SPRITE_SIZE * SPRITE_COLUMNS, height: SPRITE_SIZE * SPRITE_ROWS }]} >
           {currentAnimationUrl ? (
@@ -540,6 +566,17 @@ const styles = StyleSheet.create({
   front: {
     zIndex: 9999,
   },
+   attackOverlay: {
+    position: 'absolute',
+    top: gameScale(-50), // Positioned above boss/enemy head
+    width: gameScale(60),
+    height: gameScale(60),
+    zIndex: 1001,
+  },
+  overlayImage: {
+    width: '100%',
+    height: '100%',
+  },
 });
 
 
@@ -552,6 +589,7 @@ export default React.memo(EnemyCharacter, (prev, next) => {
     prev.fightStatus === next.fightStatus &&
     prev.enemyName === next.enemyName && 
     prev.index === next.index &&      
+    prev.attackOverlayUrl === next.attackOverlayUrl && 
     JSON.stringify(prev.characterAnimations) === JSON.stringify(next.characterAnimations)
   );
 });

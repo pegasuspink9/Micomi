@@ -29,6 +29,7 @@ const Character = ({
   attackAudioUrl = null,
   containerStyle: propContainerStyle,
   potionEffectUrl = null,
+  attackOverlayUrl = null, 
 }) => {
   // ========== Shared Animation Values ==========
   const frameIndex = useSharedValue(0);
@@ -36,11 +37,23 @@ const Character = ({
   const opacity = useSharedValue(1);
   const blinkOpacity = useSharedValue(0);
   const attackInitiated = useSharedValue(false);
-  
+  const overlayOpacity = useSharedValue(0);
+
   const rangeProjectileX = useSharedValue(0);
 
   const potionFrameIndex = useSharedValue(0);
   const potionOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    overlayOpacity.value = withTiming(attackOverlayUrl ? 1 : 0, { duration: 500 });
+  }, [attackOverlayUrl]);
+
+  const overlayAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: overlayOpacity.value,
+    transform: [
+      { translateY: withRepeat(withTiming(-5, { duration: 1000 }), -1, true) } // Subtle hover animation
+    ]
+  }));
 
   // ========== State Management (Lifted up for use in effectiveName) ==========
   const initialUrl = useMemo(() => {
@@ -434,6 +447,16 @@ const Character = ({
   return (
     <Animated.View style={[ styles.characterContainer, containerStyle, propContainerStyle]}>
       
+      {attackOverlayUrl && (
+        <Animated.View style={[styles.attackOverlay, overlayAnimatedStyle]}>
+          <Image 
+            source={{ uri: attackOverlayUrl }} 
+            style={styles.overlayImage} 
+            contentFit="contain"
+          />
+        </Animated.View>
+      )}
+
       {/* 1. Main Character Sprite Container */}
           <View style={[
           styles.spriteContainer,
@@ -532,6 +555,23 @@ const styles = StyleSheet.create({
   spriteContainer: { overflow: 'hidden' },
   spriteSheet: {},
   spriteImage: { width: '100%', height: '100%' },
+  attackOverlay: {
+    position: 'absolute',
+    top: gameScale(-40), // Float above the character
+    width: gameScale(50),
+    height: gameScale(50),
+    zIndex: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  overlayImage: {
+    width: '100%',
+    height: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 3,
+  }
 });
 
 export default React.memo(Character, (prev, next) => {
@@ -540,6 +580,7 @@ export default React.memo(Character, (prev, next) => {
     prev.isPaused === next.isPaused &&
     prev.characterName === next.characterName &&
     prev.potionEffectUrl === next.potionEffectUrl &&
+    prev.attackOverlayUrl === next.attackOverlayUrl &&
     JSON.stringify(prev.characterAnimations) === JSON.stringify(next.characterAnimations)
   );
 });
