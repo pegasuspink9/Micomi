@@ -9,7 +9,8 @@ import {
   Platform,
   Dimensions,
   ScrollView,
-  ActivityIndicator
+  ActivityIndicator, 
+  ImageBackground
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
@@ -87,12 +88,12 @@ export default function Practice() {
 
 
   return (
-    <LinearGradient
-      colors={['#101035', '#1B1F68', '#4248B5']}
-      start={{ x: 0.5, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
+    <ImageBackground
+      source={require('../loginBackground.jpg')}
       style={styles.container}
+      resizeMode="cover"
     >
+      <View style={styles.overlay}>
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -216,7 +217,8 @@ export default function Practice() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </View>
+    </ImageBackground>
   );
 }
 
@@ -229,6 +231,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+    overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(16, 16, 53, 0.44)', // Semi-transparent dark blue to complement the theme
+    paddingTop: Platform.OS === 'ios' ? hp(5) : 0,
+  },
+
   keyboardView: {
     flex: 1,
   },
@@ -374,8 +382,6 @@ const styles = StyleSheet.create({
     fontSize: gameScale(18),
     fontFamily: 'Grobold',
   },
-
-  // Footer
   footerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
