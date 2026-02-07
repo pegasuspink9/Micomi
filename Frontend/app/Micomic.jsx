@@ -1,20 +1,20 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
-  Image, 
   Dimensions, 
   Animated, 
-  StatusBar,
-  ImageBackground,
-  Easing,
-  ActivityIndicator,
-  PanResponder
+  PanResponder, 
+  Easing, 
+  ActivityIndicator, 
+  StatusBar 
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router'; 
-import { useGameData } from './hooks/useGameData';
-import { NavigationBar } from 'expo-navigation-bar';
+import { Image } from 'expo-image';
+import { ImageBackground } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import * as NavigationBar from 'expo-navigation-bar';
+import { useGameData } from './hooks/useGameData'; 
 
 const { width, height } = Dimensions.get('screen');
 
@@ -27,228 +27,135 @@ export default function Micomic() {
 
   const { gameState, loading, error } = useGameData(levelId);
 
+  // --- STATE ---
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [nextIndex, setNextIndex] = useState(1);
   const [imagesLoaded, setImagesLoaded] = useState(false);
-  const [entranceFinished, setEntranceFinished] = useState(false); 
   
-  const flipAnim = useRef(new Animated.Value(0)).current;
-  const blinkOpacity = useRef(new Animated.Value(1)).current;
-  const indicatorOpacity = useRef(new Animated.Value(1)).current;
+  // --- ANIMATIONS ---
+  const flipAnim = useRef(new Animated.Value(0)).current; 
   const isAnimating = useRef(false);
-  const hasInteracted = useRef(false);
 
-  const lessons = gameState?.lessons?.lessons || [];
-  const currentLesson = gameState?.currentLesson;
-  
-  const pages = useMemo(() => lessons.map(lesson => lesson.page_url), [lessons]);
+  // --- 1. SORT PAGES ---
+  const pages = useMemo(() => {
+    const rawLessons = gameState?.lessons?.lessons;
+    if (!Array.isArray(rawLessons)) return [];
 
+    return [...rawLessons]
+      .sort((a, b) => {
+        const getNum = (str) => {
+          const match = str.match(/Cpage(\d+)\./i);
+          return match ? parseInt(match[1], 10) : 0;
+        };
+        return getNum(a.page_url) - getNum(b.page_url);
+      })
+      .map(lesson => lesson.page_url);
+  }, [gameState]);
 
-    useEffect(() => {
+  // --- 2. HIDE NAVIGATION BAR ---
+  useEffect(() => {
+    const hideNavigationBar = async () => {
+      try {
+        await NavigationBar.setVisibilityAsync('hidden');
+        await NavigationBar.setBackgroundColorAsync('#00000000');
+      } catch (error) {
+        // console.warn('Failed to hide navigation bar:', error); // Removed console.warn
+      }
+    };
+    hideNavigationBar();
+  }, []);
+
+  // --- 3. PRELOAD IMAGES ---
+  useEffect(() => {
     if (pages.length > 0) {
-      const preloadImages = async () => {
-        try {
-          // Filter out null/undefined and skip already cached file:// paths
-          const promises = pages
-            .filter(url => url && typeof url === 'string' && !url.startsWith('file://'))
-            .map((url) => Image.prefetch(url));
-
-          // Always try to prefetch texture if it's remote
-          if (PAPER_TEXTURE_URL && !PAPER_TEXTURE_URL.startsWith('file://')) {
-             promises.push(Image.prefetch(PAPER_TEXTURE_URL).catch(() => null));
+      let loadedCount = 0;
+      pages.forEach(url => {
+        Image.prefetch(url).then(() => {
+          loadedCount++;
+          if (loadedCount === pages.length) {
+            setImagesLoaded(true);
           }
-
-          if (promises.length > 0) {
-             await Promise.all(promises);
-          }
-          
-          setImagesLoaded(true);
-        } catch (e) {
-          console.warn("Preload notice:", e);
-          setImagesLoaded(true);
-        }
-      };
-      preloadImages();
+        }).catch(err => {
+            // console.warn("Failed to prefetch", url, err); // Removed console.warn
+            loadedCount++;
+            if (loadedCount === pages.length) setImagesLoaded(true);
+        });
+      });
     }
   }, [pages]);
 
-
-  // --- ENTRANCE ANIMATION LOGIC ---
-  useEffect(() => {
-    if (imagesLoaded && pages.length > 0 && !entranceFinished) {
-      setCurrentIndex(pages.length - 1);
-      setNextIndex(pages.length - 1);
-      
-      const runEntranceFlip = (index) => {
-        if (index < 0) {
-          setEntranceFinished(true);
-          setCurrentIndex(0);
-          setNextIndex(1); 
-          return;
-        }
-        setCurrentIndex(index);
-        setNextIndex(index);
-        flipAnim.setValue(1); 
-        Animated.timing(flipAnim, {
-          toValue: 0, 
-          duration: 100, 
-          useNativeDriver: true,
-          easing: Easing.out(Easing.quad),
-        }).start(({ finished }) => {
-          if (finished) {
-            runEntranceFlip(index - 1);
-          }
-        });
-      };
-
-      setTimeout(() => {
-        runEntranceFlip(pages.length - 1);
-      }, 500);
-    }
-  }, [imagesLoaded, pages, entranceFinished, flipAnim]);
-
-
-  useEffect(() => {
-  const hideNavigationBar = async () => {
-    try {
-      await NavigationBar.setVisibilityAsync('hidden');
-      await NavigationBar.setBackgroundColorAsync('#00000000');
-    } catch (error) {
-      console.warn('Failed to hide navigation bar:', error);
-    }
-  };
-  
-  hideNavigationBar();
-  
-  return () => {};
-}, []);
-
-  // --- BLINK ANIMATION ---
-  useEffect(() => {
-    const blinkAnimation = () => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(blinkOpacity, {
-            toValue: 0,
-            duration: 800, 
-            useNativeDriver: true,
-          }),
-          Animated.timing(blinkOpacity, {
-            toValue: 1,
-            duration: 800, 
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    };
-    if (entranceFinished) { 
-       blinkAnimation();
-    }
-  }, [blinkOpacity, entranceFinished]);
-
-  const hideIndicator = useCallback(() => {
-    if (!hasInteracted.current) {
-      hasInteracted.current = true;
-      Animated.timing(indicatorOpacity, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [indicatorOpacity]);
-
-  const runAnimation = useCallback((toValue, callback) => {
-    if (!entranceFinished) return;
-
+  // --- ANIMATION CONTROLLER ---
+  const animateTurnPage = useCallback((toValue, callback) => {
     isAnimating.current = true;
     Animated.timing(flipAnim, {
       toValue: toValue,
-      duration: 800,
+      duration: 500, // Slightly faster duration for snappier feel
       useNativeDriver: true,
-      easing: Easing.out(Easing.cubic), 
+      easing: Easing.out(Easing.poly(4)), // Smoother easing function
     }).start(({ finished }) => {
       if (finished) {
         callback && callback();
         isAnimating.current = false;
       }
     });
-  }, [flipAnim, entranceFinished]);
+  }, [flipAnim]);
 
-  // --- HANDLE NEXT / FINISH LOGIC ---
+  // --- NAVIGATION HANDLERS ---
   const handleNext = useCallback(() => {
-    if (currentIndex >= pages.length - 1) {
-      if (isAnimating.current) return;
-      
-      runAnimation(1, () => {
-         console.log("Book finished! Navigating back...");
-         router.back(); 
-      });
-      return;
-    }
-
     if (isAnimating.current) return;
-    
-    runAnimation(1, () => {
-      // After animation completes, move to the next page
-      const newIndex = currentIndex + 1;
-      setCurrentIndex(newIndex);
-      setNextIndex(newIndex + 1);
-      flipAnim.setValue(0);
-    });
-  }, [isAnimating, currentIndex, pages.length, runAnimation, flipAnim, router]);
+
+    if (currentIndex >= pages.length - 1) {
+      animateTurnPage(1, () => {
+        router.back(); 
+      });
+    } else {
+      animateTurnPage(1, () => {
+        setCurrentIndex(prev => prev + 1);
+        // Ensure flipAnim is reset in the next frame to prevent flicker
+        requestAnimationFrame(() => {
+           flipAnim.setValue(0);
+        });
+      });
+    }
+  }, [currentIndex, pages.length, animateTurnPage, router, flipAnim]);
 
   const handlePrev = useCallback(() => {
     if (isAnimating.current || currentIndex <= 0) return;
     
-    // Move to previous page first
-    const newIndex = currentIndex - 1;
-    setCurrentIndex(newIndex);
-    setNextIndex(newIndex);
-    
-    // Set flip to "flipped" state, then animate back to normal
+    // Immediately set to flipped out position so the incoming page
+    // starts off-screen and flies in.
     flipAnim.setValue(1); 
+    setCurrentIndex(prev => prev - 1);
+    
+    // Animate [1 -> 0] (flip into view)
     requestAnimationFrame(() => {
-      runAnimation(0, () => {
-        // After animation, set next page for underlay
-        setNextIndex(newIndex + 1);
-      });
+      animateTurnPage(0, null); // No callback needed, just animate in
     });
-  }, [isAnimating, currentIndex, runAnimation, flipAnim]);
+  }, [currentIndex, animateTurnPage, flipAnim]);
 
-  
 
+  // --- GESTURE HANDLING ---
   const panResponder = useMemo(() => 
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        // Only hide indicator if NOT on the last page (keep hint for finish)
-        if(currentIndex < pages.length - 1) {
-             hideIndicator();
-        }
-      },
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        return Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 10;
+        return Math.abs(gestureState.dx) > 20;
       },
       onPanResponderRelease: (_, gestureState) => {
-        if (!entranceFinished) return; 
-
         const { dx } = gestureState;
         const SWIPE_THRESHOLD = 50;
 
         if (dx < -SWIPE_THRESHOLD) {
-          // Swipe Left -> Next
           handleNext();
         } else if (dx > SWIPE_THRESHOLD) {
-          // Swipe Right -> Prev
           handlePrev();
         }
       },
     }), 
-    [handleNext, handlePrev, hideIndicator, entranceFinished, currentIndex, pages.length] 
+    [handleNext, handlePrev] 
   );
 
-  // --- TRANSFORMATION LOGIC ---
-  const animatedPageStyle = useMemo(() => {
+  // --- INTERPOLATIONS ---
+  const animatedCurrentStyle = useMemo(() => {
     const rotateY = flipAnim.interpolate({
       inputRange: [0, 1],
       outputRange: ['0deg', '-20deg'], 
@@ -256,12 +163,19 @@ export default function Micomic() {
 
     const translateX = flipAnim.interpolate({
       inputRange: [0, 1],
-      outputRange: [0, -width * 1.3], 
+      outputRange: [0, -width * 1.5], // Ensure it moves well off-screen
     });
 
     const translateY = flipAnim.interpolate({
       inputRange: [0, 1],
       outputRange: [0, -height * 0.1], 
+    });
+
+    // Added opacity to cleanly fade out the outgoing page
+    const opacity = flipAnim.interpolate({
+      inputRange: [0, 0.7, 1], // Start fading out later in the animation
+      outputRange: [1, 1, 0],
+      extrapolate: 'clamp',
     });
 
     return {
@@ -275,14 +189,19 @@ export default function Micomic() {
         { translateX: -width / 2 },
         { translateY: -height / 2 },
       ],
-      zIndex: 2,
+      opacity: opacity, // Apply the opacity animation here
+      zIndex: 10, // Ensure this page is always on top when animating
     };
   }, [flipAnim]);
 
-  const renderPage = useCallback((index, style = {}, key) => {
+  const renderPage = (index, animatedStyle = {}, zIndexVal) => {
     if (index < 0 || index >= pages.length) return null;
+    
     return (
-      <Animated.View key={key} style={[styles.pageWrapper, style]}>
+      <Animated.View 
+        key={`page-${index}`} // Stable keys are crucial for React performance
+        style={[styles.pageWrapper, animatedStyle, { zIndex: zIndexVal }]}
+      >
         <ImageBackground 
           source={{ uri: PAPER_TEXTURE_URL }} 
           style={styles.paperBackground}
@@ -291,177 +210,128 @@ export default function Micomic() {
           <Image 
             source={{ uri: pages[index] }} 
             style={styles.pageImage} 
-            resizeMode="contain" 
+            contentFit="contain"
+            cachePolicy="memory-disk" 
+            // Removed transition prop to prevent any image-specific fading
           />
         </ImageBackground>
       </Animated.View>
     );
-  }, [pages]);
-
-  if (loading || !imagesLoaded) {
+  };
+  
+  if (loading || pages.length === 0) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#fff" />
-        <Text style={styles.loadingText}>Loading Assets...</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
-
-  if (error) {
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error}</Text>
-      </View>
-    );
-  }
-
-  // Determine text for the last page
-  const isLastPage = currentIndex === pages.length - 1;
-  const indicatorText = isLastPage ? "Swipe Left to Finish" : "Swipe Right or Left to Turn";
 
   return (
     <View style={styles.container} {...panResponder.panHandlers}>
       <StatusBar hidden translucent backgroundColor="transparent" />
 
       <View style={styles.bookContainer}>
-        {/* Underlay Page - Shows the NEXT page that will be revealed */}
-        <View style={[styles.pageWrapper, { position: 'absolute', zIndex: 1 }]}>
-           {renderPage(nextIndex, {}, 'static-next')}
-        </View>
+        
+        {currentIndex < pages.length - 1 && 
+          renderPage(currentIndex + 1, {}, 1)
+        }
+        {renderPage(currentIndex, animatedCurrentStyle, 10)}
 
-        {/* Animated Overlay Page - The CURRENT page being flipped */}
-        {renderPage(currentIndex, animatedPageStyle, 'animated-current')}
       </View>
 
       <View style={styles.floatingHeader}>
         <Text style={styles.pageCounter}>
-          {currentIndex + 1} / {pages.length}
+          Page {currentIndex + 1} / {pages.length}
         </Text>
       </View>
 
-      {entranceFinished && (
-        <Animated.View 
-        style={[
-          styles.swipeIndicatorContainer, 
-          { opacity: isLastPage ? 1 : indicatorOpacity }
-        ]}
-        pointerEvents="none"
-        >
-        <View style={[styles.swipeIndicatorBox, isLastPage && styles.finishBox]}>
+       <View style={styles.swipeIndicatorContainer}>
           <Text style={styles.swipeText}>
-            <Animated.Text style={[styles.middleText, { opacity: blinkOpacity }]}>
-               {indicatorText}
-            </Animated.Text>
+            {currentIndex === 0 && pages.length > 1 ? "Swipe Left for Next" :
+             currentIndex === pages.length - 1 && pages.length > 0 ? "Swipe Left to Finish" :
+             ""
+            }
           </Text>
-        </View>
-      </Animated.View>
-      )}
-      
+      </View>
     </View>
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: width,
-    height: height,
-    zIndex: 999, 
-    backgroundColor: '#000',
+    flex: 1,
+    backgroundColor: '#000'
   },
   bookContainer: {
     flex: 1,
     width: width,
     height: height,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   pageWrapper: {
+    position: 'absolute',
     width: width,
     height: height,
-    position: 'absolute',
     backgroundColor: '#fdecb7', 
     overflow: 'hidden',
-    borderRightWidth: 1,
-    borderRightColor: '#a3583bff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#a3583bff',
+    backfaceVisibility: 'hidden', 
   },
   paperBackground: {
     flex: 1,
-    width: '100%',
-    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 10, 
   },
   pageImage: {
     width: '100%',
     height: '100%', 
-    resizeMode: 'contain',
   },
   floatingHeader: {
     position: 'absolute',
     top: 40,
     alignSelf: 'center',
     paddingHorizontal: 15,
-    paddingVertical: 5,
+    paddingVertical: 8,
     borderRadius: 20,
     zIndex: 10
   },
   pageCounter: {
-    color: '#000000ff',
-    fontFamily: 'Grobold',
+    color: '#000000',
+    fontFamily: 'Grobold', 
     fontSize: 14,
   },
   swipeIndicatorContainer: {
     position: 'absolute',
-    bottom: 50, 
-    left: 0,
-    right: 0,
-    alignItems: 'center',
+    bottom: 40, 
+    alignSelf: 'center',
     zIndex: 20,
   },
-  swipeIndicatorBox: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   swipeText: {
-    textAlign: 'center', 
-  },
-  middleText: {
-    fontSize: 20, 
-    color: '#000000ff', // Default black text
+    color: '#000000',
     fontFamily: 'Grobold',
+    fontSize: 16
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#000',
-    width: width,
-    height: height,
-    position: 'absolute',
   },
   loadingText: {
     color: '#fff',
-    fontSize: 18,
     marginTop: 10,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000',
-    width: width,
-    height: height,
-    position: 'absolute',
+    backgroundColor: '#111',
   },
   errorText: {
     color: '#ff6b6b',
-    fontSize: 18,
-    textAlign: 'center',
-  },
+    fontSize: 16,
+  }
 });
