@@ -317,10 +317,21 @@ export const getAllPotionsInShop = async (req: Request, res: Response) => {
   }
 };
 
-/* GET all player potions */
+/* GET all player potions in Potion Shop*/
 export const getAllPlayerPotions = async (req: Request, res: Response) => {
   try {
     const playerId = (req as any).user.id;
+
+    const playerProgress = await prisma.playerProgress.findMany({
+      where: { player_id: playerId },
+      select: { level_id: true },
+    });
+
+    const unlockedLevelIds = playerProgress.map((p) => p.level_id);
+    const maxUnlockedLevel =
+      unlockedLevelIds.length > 0 ? Math.max(...unlockedLevelIds) : 0;
+
+    console.log(`Player ${playerId} max unlocked level: ${maxUnlockedLevel}`);
 
     const allPotions = await prisma.potionShop.findMany({
       include: {
@@ -341,6 +352,7 @@ export const getAllPlayerPotions = async (req: Request, res: Response) => {
 
     const formatted = allPotions.map((potion) => {
       const playerPotion = potion.buyers[0];
+      const isUnlocked = maxUnlockedLevel >= 14;
       return {
         player_potion_id: playerPotion?.player_potion_id ?? null,
         potion_shop_id: potion.potion_shop_id,
@@ -350,6 +362,7 @@ export const getAllPlayerPotions = async (req: Request, res: Response) => {
         potion_price: potion.potion_price,
         potion_url: potion.potion_url,
         quantity: playerPotion?.quantity ?? 0,
+        isUnlocked,
       };
     });
 
