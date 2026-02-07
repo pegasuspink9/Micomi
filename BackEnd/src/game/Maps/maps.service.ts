@@ -75,7 +75,7 @@ export const selectMap = async (playerId: number, mapId: number) => {
         console.log(
           `Created progress for first level ${firstLevel.level_id}${
             isMicomiButton ? " (auto-completed micomi)" : ""
-          }`
+          }`,
         );
 
         const secondLevel = await prisma.level.findFirst({
@@ -152,16 +152,49 @@ export const selectMap = async (playerId: number, mapId: number) => {
     return { message: "Map not available", success: false };
   }
 
+  const allPlayerProgress = await prisma.playerProgress.findMany({
+    where: {
+      player_id: playerId,
+      level: {
+        map_id: mapId,
+      },
+    },
+    include: {
+      level: true,
+    },
+    orderBy: {
+      level: {
+        level_id: "asc",
+      },
+    },
+  });
+
+  const latestUnlockedProgress =
+    allPlayerProgress.length > 0
+      ? allPlayerProgress[allPlayerProgress.length - 1]
+      : null;
+
   const enhancedMap = {
-  ...fullMap,
-  levels: fullMap.levels.map((level, index) => ({
-    ...level,
-    level_number: SPECIAL_BUTTON_TYPES.includes(level.level_type as any)
-      ? null
-      : level.level_number,
-    is_unlocked: index < 2 || !!level.playerProgress.length,
-  })),
-};
+    ...fullMap,
+    levels: fullMap.levels.map((level, index) => {
+      let isUnlocked = index < 2;
+
+      if (!isUnlocked) {
+        isUnlocked = !!level.playerProgress.length;
+      }
+
+      return {
+        ...level,
+        level_number: SPECIAL_BUTTON_TYPES.includes(level.level_type as any)
+          ? null
+          : level.level_number,
+        is_unlocked: isUnlocked,
+        isCurrentUnlocked: latestUnlockedProgress
+          ? level.level_id === latestUnlockedProgress.level_id
+          : index === 1,
+      };
+    }),
+  };
 
   return {
     map: enhancedMap,
