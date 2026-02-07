@@ -53,7 +53,13 @@ const ScreenPlay = ({
   const animationCompleteNotifiedRef = useRef(false); 
   const lastProcessedSubmissionIdRef = useRef(null); 
 
-  const enemies = useMemo(() => processEnemyData(enemiesData), []);
+  const enemies = useMemo(() => {
+    return [{
+      duration: 10000,
+      image: gameState.enemy?.enemy_idle || '',
+      attackImage: gameState.enemy?.enemy_attack || '',
+    }];
+  }, []);
 
   const [enemyAnimationStates, setEnemyAnimationStates] = useState(() =>
     enemies.map(() => 'idle')

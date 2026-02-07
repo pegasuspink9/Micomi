@@ -261,9 +261,14 @@ const Character = ({
   }, [onAnimationComplete, currentState]);
 
   // ========== Main Animation Effect ==========
-  useEffect(() => {
+    useEffect(() => {
+  if (currentState !== 'attack' && currentState !== 'run') {
+    attackInitiated.value = false;
+  }
+
   if (currentState === 'run' && attackInitiated.value) return;
   if (currentState === 'attack' && attackInitiated.value) return;
+
 
   const config = animationConfig;
   const targetUrl = config.isCompound ? config.runUrl : config.url;
@@ -292,8 +297,6 @@ const Character = ({
     return;
   }
   
-  if (currentState !== 'attack' && currentState !== 'run') attackInitiated.value = false;
-
   cancelAnimation(frameIndex);
   cancelAnimation(positionX);
   cancelAnimation(opacity);
@@ -442,14 +445,15 @@ const Character = ({
               ? { marginTop: gameScale(1) } // Adjust this value as needed for Ryron
               : null 
         ]}>
-        <Animated.View style={[ styles.spriteSheet, animatedStyle, { width: SPRITE_SIZE * SPRITE_COLUMNS, height: SPRITE_SIZE * SPRITE_ROWS } ]}>
+          <Animated.View style={[ styles.spriteSheet, animatedStyle, { width: SPRITE_SIZE * SPRITE_COLUMNS, height: SPRITE_SIZE * SPRITE_ROWS } ]}>
           {currentAnimationUrl ? (
             <Image source={{ uri: currentAnimationUrl }} style={styles.spriteImage} contentFit="cover" cachePolicy="disk" />
           ) : (
             <View style={[styles.spriteImage, { backgroundColor: 'transparent' }]} />
           )}
-          {currentAnimationUrl && (
-            <Animated.View style={[StyleSheet.absoluteFill, redFlashStyle]}>
+          
+          {currentAnimationUrl && currentState === 'hurt' && (
+            <Animated.View style={[StyleSheet.absoluteFill, redFlashStyle, { pointerEvents: 'none' }]}>
               <Image source={{ uri: currentAnimationUrl }} style={[ styles.spriteImage, { tintColor: '#760404a2' }]} contentFit="cover" cachePolicy="disk" />
             </Animated.View>
           )}
@@ -530,4 +534,12 @@ const styles = StyleSheet.create({
   spriteImage: { width: '100%', height: '100%' },
 });
 
-export default Character;
+export default React.memo(Character, (prev, next) => {
+  return (
+    prev.currentState === next.currentState &&
+    prev.isPaused === next.isPaused &&
+    prev.characterName === next.characterName &&
+    prev.potionEffectUrl === next.potionEffectUrl &&
+    JSON.stringify(prev.characterAnimations) === JSON.stringify(next.characterAnimations)
+  );
+});

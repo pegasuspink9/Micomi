@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Try different possible backend URLs (local IP, Android Emulator IP, and localhost)
 const POSSIBLE_BACKEND_URLS = [
-  'http://10.122.109.202:3000', 
+  'http://192.168.100.200:3000', 
   'http://10.0.2.2:3000',      
   'http://localhost:3000'
 ];

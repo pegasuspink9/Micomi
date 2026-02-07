@@ -488,7 +488,7 @@ const EnemyCharacter = ({
   const isFront = useMemo(() => currentState === 'attack' || isAttacking, [currentState, isAttacking]);
 
   // ========== Render ==========
-  return (
+    return (
      <Animated.View style={[ styles.enemyContainer, bossLayout, containerStyle, isFront && styles.front ]} >
       <View style={[styles.spriteContainer, { width: SPRITE_SIZE, height: SPRITE_SIZE }]}>
         <Animated.View style={[ styles.spriteSheet, animatedStyle, { width: SPRITE_SIZE * SPRITE_COLUMNS, height: SPRITE_SIZE * SPRITE_ROWS }]} >
@@ -503,8 +503,9 @@ const EnemyCharacter = ({
           ) : (
             <View style={[styles.spriteImage, { backgroundColor: 'transparent' }]} />
           )}
+          {/* Only render the tinted overlay if currentState is TRULY hurt and we have a valid URL */}
           {currentAnimationUrl && currentState === 'hurt' && (
-            <Animated.View style={[StyleSheet.absoluteFill, redFlashStyle]}>
+            <Animated.View style={[StyleSheet.absoluteFill, redFlashStyle, { pointerEvents: 'none' }]}>
               <Image
                 source={{ uri: currentAnimationUrl }}
                 style={[ styles.spriteImage, { tintColor: wasBonusRound.current ? 'rgba(218, 200, 0, 0.88)' : '#760404a2' } ]}
@@ -549,6 +550,8 @@ export default React.memo(EnemyCharacter, (prev, next) => {
     prev.isAttacking === next.isAttacking &&
     prev.isBonusRound === next.isBonusRound &&
     prev.fightStatus === next.fightStatus &&
+    prev.enemyName === next.enemyName && 
+    prev.index === next.index &&      
     JSON.stringify(prev.characterAnimations) === JSON.stringify(next.characterAnimations)
   );
 });
