@@ -236,14 +236,14 @@ const getCharacterCards = (characterName: string, damage: number[]) => {
         damage_attack: secondDmg,
         card_type: "Molten Strike",
         character_attack_card:
-          "https://micomi-assets.me/Icons/Skill%20Icons/Leon%202nd%20Final.png",
+          "https://micomi-assets.me/Icons/Skill%20Icons/Leon%20Basic%20Final.png",
       },
       {
         attack_type: "Basic Attack",
         damage_attack: basicDmg,
         card_type: "Thunderbound Cleaver",
         character_attack_card:
-          "https://micomi-assets.me/Icons/Skill%20Icons/Leon%20Basic%20Final.png",
+          "https://micomi-assets.me/Icons/Skill%20Icons/Leon%202nd%20Final.png",
       },
     ],
   };
