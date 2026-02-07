@@ -220,10 +220,10 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
 
 export function generateQuestsByPeriod(
   period: QuestPeriod,
-  count: number
+  count: number,
 ): any[] {
   const availableTemplates = QUEST_TEMPLATES.filter((t) =>
-    t.availableFor.includes(period)
+    t.availableFor.includes(period),
   );
 
   const selected: QuestTemplate[] = [];
@@ -236,7 +236,7 @@ export function generateQuestsByPeriod(
   return selected.map((template) => {
     const targetValue =
       Math.floor(
-        Math.random() * (template.maxTarget - template.minTarget + 1)
+        Math.random() * (template.maxTarget - template.minTarget + 1),
       ) + template.minTarget;
 
     let periodMultiplier = 1;
@@ -245,17 +245,17 @@ export function generateQuestsByPeriod(
 
     const difficultyMultiplier = targetValue / template.minTarget;
     const rewardExp = Math.round(
-      template.baseExpReward * difficultyMultiplier * periodMultiplier
+      template.baseExpReward * difficultyMultiplier * periodMultiplier,
     );
     const rewardCoins = Math.round(
-      template.baseCoinReward * difficultyMultiplier * periodMultiplier
+      template.baseCoinReward * difficultyMultiplier * periodMultiplier,
     );
 
     return {
       title: template.titleTemplate.replace("{count}", targetValue.toString()),
       description: template.descriptionTemplate.replace(
         "{count}",
-        targetValue.toString()
+        targetValue.toString(),
       ),
       objective_type: template.objective_type,
       target_value: targetValue,
@@ -347,7 +347,7 @@ export async function generatePeriodicQuests(period: QuestPeriod) {
 
             if (existingQuests.length > 0) {
               console.log(
-                `Player ${player.player_name} already has ${period} quests`
+                `Player ${player.player_name} already has ${period} quests`,
               );
               return;
             }
@@ -380,7 +380,7 @@ export async function generatePeriodicQuests(period: QuestPeriod) {
             errorCount++;
             console.error(`Failed for player ${player.player_id}:`, error);
           }
-        })
+        }),
       );
     }
 
@@ -453,7 +453,7 @@ export async function cleanupExpiredQuests(period?: QuestPeriod) {
 
 export async function getPlayerQuestsByPeriod(
   playerId: number,
-  period: QuestPeriod
+  period: QuestPeriod,
 ) {
   const startDate = getStartDate(period);
   const endDate = getExpirationDate(period);
@@ -473,7 +473,7 @@ export async function getPlayerQuestsByPeriod(
 
 export async function forceGenerateQuestsForPlayer(
   playerId: number,
-  period: QuestPeriod
+  period: QuestPeriod,
 ) {
   const expirationDate = getExpirationDate(period);
   const startDate = getStartDate(period);
@@ -538,16 +538,16 @@ export async function checkAndGenerateMissingQuests() {
       });
 
       const playersWithQuestsIds = new Set(
-        playersWithQuests.map((p) => p.player_id)
+        playersWithQuests.map((p) => p.player_id),
       );
 
       const playersMissingQuests = allPlayers.filter(
-        (p) => !playersWithQuestsIds.has(p.player_id)
+        (p) => !playersWithQuestsIds.has(p.player_id),
       );
 
       if (playersMissingQuests.length > 0) {
         console.log(
-          `Found ${playersMissingQuests.length} players missing ${period} quests`
+          `Found ${playersMissingQuests.length} players missing ${period} quests`,
         );
         console.log(`Generating ${period} quests for missing players...`);
 
@@ -565,10 +565,10 @@ export async function checkAndGenerateMissingQuests() {
               } catch (error) {
                 console.error(
                   `Failed to generate ${period} quests for player ${player.player_id}:`,
-                  error
+                  error,
                 );
               }
-            })
+            }),
           );
         }
 
@@ -579,5 +579,269 @@ export async function checkAndGenerateMissingQuests() {
     } catch (error) {
       console.error(`Error checking ${period} quests:`, error);
     }
+  }
+}
+
+export async function checkAndGenerateMissingQuestsForAllPlayers() {
+  try {
+    console.log("[Quest Service] Checking missing quests for all players...\n");
+
+    const allPlayers = await prisma.player.findMany({
+      select: { player_id: true, player_name: true },
+    });
+
+    console.log(`[Quest Service] Found ${allPlayers.length} total players\n`);
+
+    const results = {
+      totalPlayers: allPlayers.length,
+      playersProcessed: 0,
+      playersWithMissingQuests: 0,
+      questsGenerated: 0,
+      errors: [] as Array<{ playerId: number; error: string }>,
+    };
+
+    let processedCount = 0;
+
+    for (const player of allPlayers) {
+      processedCount++;
+      try {
+        console.log(
+          `[${processedCount}/${allPlayers.length}] Processing player ${player.player_id} (${player.player_name})...`,
+        );
+
+        let generatedForThisPlayer = 0;
+
+        const hasDailyQuests = await prisma.playerQuest.findFirst({
+          where: {
+            player_id: player.player_id,
+            quest: { quest_period: "daily" },
+          },
+        });
+
+        if (!hasDailyQuests) {
+          console.log(`  └─ Missing daily quests. Generating...`);
+          await forceGenerateQuestsForPlayer(player.player_id, "daily");
+          generatedForThisPlayer++;
+          results.playersWithMissingQuests++;
+        } else {
+          console.log(`  └─ ✅ Has daily quests`);
+        }
+
+        const hasWeeklyQuests = await prisma.playerQuest.findFirst({
+          where: {
+            player_id: player.player_id,
+            quest: { quest_period: "weekly" },
+          },
+        });
+
+        if (!hasWeeklyQuests) {
+          console.log(`  └─ Missing weekly quests. Generating...`);
+          await forceGenerateQuestsForPlayer(player.player_id, "weekly");
+          generatedForThisPlayer++;
+          results.playersWithMissingQuests++;
+        } else {
+          console.log(`  └─ ✅ Has weekly quests`);
+        }
+
+        const hasMonthlyQuests = await prisma.playerQuest.findFirst({
+          where: {
+            player_id: player.player_id,
+            quest: { quest_period: "monthly" },
+          },
+        });
+
+        if (!hasMonthlyQuests) {
+          console.log(`  └─ Missing monthly quests. Generating...`);
+          await forceGenerateQuestsForPlayer(player.player_id, "monthly");
+          generatedForThisPlayer++;
+          results.playersWithMissingQuests++;
+        } else {
+          console.log(`  └─ ✅ Has monthly quests`);
+        }
+
+        results.questsGenerated += generatedForThisPlayer;
+        results.playersProcessed++;
+
+        if (generatedForThisPlayer > 0) {
+          console.log(
+            `  └─ ✅ Generated ${generatedForThisPlayer} quest types\n`,
+          );
+        } else {
+          console.log(`  └─ ✅ No generation needed\n`);
+        }
+      } catch (error: any) {
+        console.error(
+          `  └─ ❌ Error generating quests for player ${player.player_id}: ${error.message}\n`,
+        );
+        results.errors.push({
+          playerId: player.player_id,
+          error: error.message,
+        });
+      }
+    }
+
+    console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("[Quest Service] Missing quests check COMPLETED");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log(`Total Players: ${results.totalPlayers}`);
+    console.log(`Players Processed: ${results.playersProcessed}`);
+    console.log(
+      `Players with Missing Quests: ${results.playersWithMissingQuests}`,
+    );
+    console.log(`Total Quests Generated: ${results.questsGenerated}`);
+    console.log(`Errors: ${results.errors.length}`);
+    if (results.errors.length > 0) {
+      console.log("Error Details:");
+      results.errors.forEach((err) => {
+        console.log(`  - Player ${err.playerId}: ${err.error}`);
+      });
+    }
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+
+    return results;
+  } catch (error) {
+    console.error(
+      "[Quest Service] CRITICAL ERROR in checkAndGenerateMissingQuestsForAllPlayers:",
+      error,
+    );
+    throw error;
+  }
+}
+
+export async function cleanupExpiredQuestsForAllPlayers() {
+  try {
+    console.log("[Quest Service] Starting cleanup of expired quests...\n");
+
+    const now = new Date();
+
+    const expiredQuests = await prisma.playerQuest.findMany({
+      where: {
+        AND: [
+          { expires_at: { lt: now } },
+          {
+            OR: [
+              { is_completed: false },
+              {
+                AND: [{ is_completed: true }, { is_claimed: false }],
+              },
+            ],
+          },
+        ],
+      },
+      select: { player_quest_id: true, player_id: true, quest_id: true },
+    });
+
+    console.log(
+      `[Quest Service] Found ${expiredQuests.length} expired quests to delete`,
+    );
+
+    const results = {
+      totalDeletedQuests: 0,
+      totalRegenerated: 0,
+      affectedPlayers: new Set<number>(),
+      errors: [] as Array<{ playerId: number; error: string }>,
+    };
+
+    if (expiredQuests.length > 0) {
+      await prisma.playerQuest.deleteMany({
+        where: {
+          player_quest_id: {
+            in: expiredQuests.map((q) => q.player_quest_id),
+          },
+        },
+      });
+
+      results.totalDeletedQuests = expiredQuests.length;
+      expiredQuests.forEach((q) => {
+        results.affectedPlayers.add(q.player_id);
+      });
+
+      console.log(
+        `[Quest Service] ✅ Deleted ${expiredQuests.length} expired quests\n`,
+      );
+    }
+
+    console.log(`[Quest Service] Checking for missing active quests...\n`);
+
+    const allPlayers = await prisma.player.findMany({
+      select: { player_id: true },
+    });
+
+    let playerWithMissingCount = 0;
+
+    for (const player of allPlayers) {
+      try {
+        const activeDaily = await prisma.playerQuest.count({
+          where: {
+            player_id: player.player_id,
+            expires_at: { gt: now },
+            quest: { quest_period: "daily" },
+          },
+        });
+
+        const activeWeekly = await prisma.playerQuest.count({
+          where: {
+            player_id: player.player_id,
+            expires_at: { gt: now },
+            quest: { quest_period: "weekly" },
+          },
+        });
+
+        const activeMonthly = await prisma.playerQuest.count({
+          where: {
+            player_id: player.player_id,
+            expires_at: { gt: now },
+            quest: { quest_period: "monthly" },
+          },
+        });
+
+        let regeneratedForPlayer = 0;
+
+        if (activeDaily === 0) {
+          await forceGenerateQuestsForPlayer(player.player_id, "daily");
+          regeneratedForPlayer++;
+        }
+
+        if (activeWeekly === 0) {
+          await forceGenerateQuestsForPlayer(player.player_id, "weekly");
+          regeneratedForPlayer++;
+        }
+
+        if (activeMonthly === 0) {
+          await forceGenerateQuestsForPlayer(player.player_id, "monthly");
+          regeneratedForPlayer++;
+        }
+
+        if (regeneratedForPlayer > 0) {
+          results.totalRegenerated += regeneratedForPlayer;
+          results.affectedPlayers.add(player.player_id);
+          playerWithMissingCount++;
+        }
+      } catch (error: any) {
+        results.errors.push({
+          playerId: player.player_id,
+          error: error.message,
+        });
+      }
+    }
+
+    console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("[Quest Service] Cleanup COMPLETED");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log(`Deleted Expired Quests: ${results.totalDeletedQuests}`);
+    console.log(`Players with Missing Quests: ${playerWithMissingCount}`);
+    console.log(`Quests Regenerated: ${results.totalRegenerated}`);
+    console.log(`Total Affected Players: ${results.affectedPlayers.size}`);
+    console.log(`Errors: ${results.errors.length}`);
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+
+    return {
+      deletedExpiredQuests: results.totalDeletedQuests,
+      regeneratedQuests: results.totalRegenerated,
+      affectedPlayers: results.affectedPlayers.size,
+    };
+  } catch (error) {
+    console.error("[Quest Service] CRITICAL ERROR in cleanup:", error);
+    throw error;
   }
 }

@@ -10,7 +10,7 @@ import {
 
 const router = express.Router();
 
-// router.get("/", MapService.getAllMaps);
+router.get("/maps", MapService.getAllMaps);
 router.post("/", MapService.createMap);
 router.put("/:id", MapService.updateMap);
 router.delete("/:id", MapService.deleteMap);
@@ -20,7 +20,7 @@ router.post(
   "/select-map/:mapId",
   authenticate,
   requirePlayer,
-  GameMapController.selectMap
+  GameMapController.selectMap,
 ); //player map selection
 
 export default router;
