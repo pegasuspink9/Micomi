@@ -201,59 +201,75 @@ const SS_HERO_ICON_CONFIG: Record<
       "Unleashes a powerful lightning attack and heals 25% HP",
   },
   ShiShi: {
-    special_skill_image: "SS icon skill ni ShiShi",
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Shi_SS_FINAL.png",
     special_skill_description:
       "Freezes the enemy, preventing their next attack",
   },
   Ryron: {
-    special_skill_image: "SS icon skill ni Ryron",
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Ryron_SS.png",
     special_skill_description:
       "God's Judgment: Reveals all blanks in the next challenge",
   },
   Leon: {
-    special_skill_image: "SS icon skill ni Leon",
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Leon_SS.png",
     special_skill_description: "Deals 2x damage with a devastating fire attack",
   },
 };
 
 const SS_BOSS_ICON_CONFIG: Record<
   string,
-  {
-    special_skill_image: string;
-    special_skill_description: string;
-    ss_type: string;
-  }
+  { special_skill_image: string; special_skill_description: string }
 > = {
   "Boss Joshy": {
-    special_skill_image: "SS icon skill ni Boss Joshy",
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossJoshy_SS.png",
     special_skill_description: "Blocks all damage for one turn",
-    ss_type: "shield",
   },
   "King Grimnir": {
-    special_skill_image: "SS icon skill ni King Grimnir",
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/KingGrimnir_SS.png",
     special_skill_description: "Forces player to use only basic attacks",
-    ss_type: "force_basic_attack",
   },
   "Boss Darco": {
     special_skill_image:
       "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossDarko_SS.png",
-    special_skill_description: "Reverses all text in the challenge",
-    ss_type: "reverse",
+    special_skill_description: "Reverses the text of answer options",
   },
   "Boss Scorcharach": {
-    special_skill_image: "SS icon skill ni Boss Scorcharach",
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossScorarach_SS.pngh",
     special_skill_description: "Both the hero and the boss take damage",
-    ss_type: "mutual_damage",
   },
   "Boss Maggmaw": {
-    special_skill_image: "SS icon skill ni Boss Maggmaw",
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossMaggmaw_SS.png",
     special_skill_description: "Randomly shuffles all answer options",
-    ss_type: "shuffle",
   },
   "Boss Pyroformic": {
-    special_skill_image: "SS icon skill ni Boss Pyroformic",
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossPyroformic_SS.png",
     special_skill_description: "Scrambles letters within each option",
-    ss_type: "permuted",
+  },
+  "King Feanaly": {
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/KingFeanaly_SS.png",
+    special_skill_description:
+      "Visually hides all text in the question except for the blanks.",
+  },
+  "Boss Icycreamero": {
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossIcreamero_SS.png",
+    special_skill_description:
+      "Replaces one random letter in every answer option with a '$' symbol.",
+  },
+  "Boss Scythe": {
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/LordCyroScythe_SS.png",
+    special_skill_description:
+      "Reverses 3 random words within the challenge question.",
   },
 };
 
@@ -363,8 +379,8 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         lessons: {
           orderBy: { lesson_id: "asc" },
           select: {
-            lesson_id: true,
-            page_number: true,
+            // lesson_id: true,
+            // page_number: true,
             page_url: true,
           },
         },
@@ -389,21 +405,21 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         total_points: totalPoints,
         total_coins: totalCoins,
       },
-      currentLesson: currentLesson
-        ? {
-            lesson_id: currentLesson.lesson_id,
-            page_number: currentLesson.page_number,
-            page_url: currentLesson.page_url,
-          }
-        : null,
+      // currentLesson: currentLesson
+      //   ? {
+      //       lesson_id: currentLesson.lesson_id,
+      //       page_number: currentLesson.page_number,
+      //       page_url: currentLesson.page_url,
+      //     }
+      //   : null,
 
-      lastPage: lastLesson
-        ? {
-            lesson_id: lastLesson.lesson_id,
-            page_number: lastLesson.page_number,
-            page_url: lastLesson.page_url,
-          }
-        : null,
+      // lastPage: lastLesson
+      //   ? {
+      //       lesson_id: lastLesson.lesson_id,
+      //       page_number: lastLesson.page_number,
+      //       page_url: lastLesson.page_url,
+      //     }
+      //   : null,
 
       energy: energyStatus.energy,
       timeToNextEnergyRestore: energyStatus.timeToNextRestore,
@@ -584,6 +600,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         took_damage: false,
         has_strong_effect: false,
         has_freeze_effect: false,
+        has_ryron_reveal: false,
         ...(level.level_type === "micomiButton"
           ? { done_micomi_level: false }
           : {}),
@@ -629,6 +646,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         took_damage: false,
         has_strong_effect: false,
         has_freeze_effect: false,
+        has_ryron_reveal: false,
       },
     });
     console.log(`Reset progress for lost state in level ${levelId}`);
@@ -659,6 +677,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         took_damage: false,
         has_strong_effect: false,
         has_freeze_effect: false,
+        has_ryron_reveal: false,
         coins_earned: 0,
         total_points_earned: 0,
         total_exp_points_earned: 0,
@@ -903,7 +922,7 @@ const unlockNextMapFirstLevel = async (
   });
 
   if (firstLevel) {
-    const isMicomiNext =
+    const isMicomi =
       firstLevel.level_type === "micomiButton" ||
       firstLevel.level_type === "final";
 
@@ -914,19 +933,21 @@ const unlockNextMapFirstLevel = async (
           level_id: firstLevel.level_id,
         },
       },
-      update: {},
+      update: {
+        ...(isMicomi ? { is_completed: true, completed_at: new Date() } : {}),
+      },
       create: {
         player_id: playerId,
         level_id: firstLevel.level_id,
         current_level: firstLevel.level_number,
         attempts: 0,
         player_answer: {},
-        completed_at: null,
+        completed_at: isMicomi ? new Date() : null,
+        is_completed: isMicomi,
         challenge_start_time: new Date(),
         player_hp: 0,
         enemy_hp: 0,
         battle_status: BattleStatus.in_progress,
-        is_completed: false,
         wrong_challenges: [],
         coins_earned: 0,
         total_points_earned: 0,
@@ -947,13 +968,74 @@ const unlockNextMapFirstLevel = async (
         took_damage: false,
         has_strong_effect: false,
         has_freeze_effect: false,
-        ...(isMicomiNext ? { done_micomi_level: false } : {}),
+        has_ryron_reveal: false,
+        ...(isMicomi ? { done_micomi_level: false } : {}),
       },
     });
 
     console.log(
       `Player ${playerId} progressed from ${currentMap.map_name} → ${nextMapName} (Map Transition)`,
     );
+
+    if (isMicomi) {
+      const secondLevel = await prisma.level.findFirst({
+        where: {
+          map_id: nextMap.map_id,
+          level_id: { gt: firstLevel.level_id },
+        },
+        orderBy: { level_id: "asc" },
+      });
+
+      if (secondLevel) {
+        await prisma.playerProgress.upsert({
+          where: {
+            player_id_level_id: {
+              player_id: playerId,
+              level_id: secondLevel.level_id,
+            },
+          },
+          update: {},
+          create: {
+            player_id: playerId,
+            level_id: secondLevel.level_id,
+            current_level: secondLevel.level_number,
+            attempts: 0,
+            player_answer: {},
+            completed_at: null,
+            challenge_start_time: new Date(),
+            player_hp: 0,
+            enemy_hp: 0,
+            battle_status: BattleStatus.in_progress,
+            is_completed: false,
+            wrong_challenges: [],
+            coins_earned: 0,
+            total_points_earned: 0,
+            total_exp_points_earned: 0,
+            consecutive_corrects: 0,
+            consecutive_wrongs: 0,
+            wrong_challenges_count: 0,
+            has_reversed_curse: false,
+            has_boss_shield: false,
+            has_force_character_attack_type: false,
+            has_both_hp_decrease: false,
+            has_permuted_ss: false,
+            has_dollar_sign_ss: false,
+            has_only_blanks_ss: false,
+            has_reverse_words_ss: false,
+            boss_skill_activated: false,
+            has_shuffle_ss: false,
+            took_damage: false,
+            has_strong_effect: false,
+            has_freeze_effect: false,
+            ...(secondLevel.level_type === "micomiButton"
+              ? { done_micomi_level: false }
+              : {}),
+          },
+        });
+
+        return secondLevel;
+      }
+    }
 
     return firstLevel;
   }
@@ -994,7 +1076,15 @@ export const unlockNextLevel = async (
           level_id: nextLevel.level_id,
         },
       },
-      update: {},
+      update: {
+        ...(isMicomiOrFinal
+          ? {
+              is_completed: true,
+              completed_at: new Date(),
+              done_micomi_level: true,
+            }
+          : {}),
+      },
       create: {
         player_id: playerId,
         level_id: nextLevel.level_id,
@@ -1027,6 +1117,7 @@ export const unlockNextLevel = async (
         took_damage: false,
         has_strong_effect: false,
         has_freeze_effect: false,
+        has_ryron_reveal: false,
         ...(isMicomiOrFinal ? { done_micomi_level: true } : {}),
       },
     });
@@ -1085,6 +1176,7 @@ export const unlockNextLevel = async (
             took_damage: false,
             has_strong_effect: false,
             has_freeze_effect: false,
+            has_ryron_reveal: false,
             ...(levelAfterMicomi.level_type === "micomiButton"
               ? { done_micomi_level: false }
               : {}),
@@ -1162,6 +1254,7 @@ export const completeLevelDone = async (playerId: number, levelId: number) => {
       took_damage: false,
       has_strong_effect: false,
       has_freeze_effect: false,
+      has_ryron_reveal: false,
       ...(isMicomiLevel ? { done_micomi_level: true } : {}),
     },
   });

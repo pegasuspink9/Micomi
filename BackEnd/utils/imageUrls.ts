@@ -193,6 +193,13 @@ export const imagesUrls = [
   "https://micomi-assets.me/Comics/Lavaland/L_page3.png",
   "https://micomi-assets.me/Comics/Lavaland/L_page4.png",
 
+  //Lavaland 2
+  "https://micomi-assets.me/Comics/Lavaland%202/L2_page1.png",
+  "https://micomi-assets.me/Comics/Lavaland%202/L2_page2.png",
+  "https://micomi-assets.me/Comics/Lavaland%202/L2_page3.png",
+  "https://micomi-assets.me/Comics/Lavaland%202/L2_page4.png",
+  "https://micomi-assets.me/Comics/Lavaland%202/L2_page5.png",
+
   /*Greenland Enemies*/
   //Draco
   "https://micomi-assets.me/Enemies/Greenland/Draco/idle1.png",
@@ -594,7 +601,7 @@ export const imagesUrls = [
 
   //Hero SS Icons
   "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Gino_SS.png",
-  "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Shi_SS.png",
+  "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Shi_SS_FINAL.png",
   "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Ryron_SS.png",
   "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Leon_SS.png",
 

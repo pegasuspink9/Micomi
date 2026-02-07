@@ -121,7 +121,7 @@ const SS_HERO_ICON_CONFIG: Record<
   },
   ShiShi: {
     special_skill_image:
-      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Shi_SS.png",
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/Shi_SS_FINAL.png",
     special_skill_description:
       "Freezes the enemy, preventing their next attack",
   },
@@ -659,8 +659,11 @@ export async function fightEnemy(
   let character_attack_card: string | null = null;
   let card_type: string | null = null;
   let character_attack_pose: string | null = null;
+  let character_current_state: string | null = null;
+  let enemy_current_state: string | null = null;
   let wasEnemyFrozenThisTurn = progress.has_freeze_effect || false;
   let wasCharacterStrongThisTurn = progress.has_strong_effect || false;
+  let wasCharacterHaveHintThisTurn = progress.has_ryron_reveal || false;
 
   character_run = character.character_run || null;
   character_idle = character.avatar_image || null;
@@ -1459,7 +1462,23 @@ export async function fightEnemy(
     } else if (character.character_name === "ShiShi") {
       attack_overlay =
         "https://micomi-assets.me/Icons/Miscellaneous/Ice%20Overlay.png";
+    } else if (character.character_name === "Ryron") {
+      attack_overlay =
+        "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+    } else if (character.character_name === "Gino") {
+      attack_overlay =
+        "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+      character_current_state = "Revitalize";
     }
+  }
+
+  //Passive effects overlay logic
+  if (wasEnemyFrozenThisTurn) {
+    enemy_current_state = "Frozen";
+  } else if (wasCharacterStrongThisTurn) {
+    character_current_state = "Strong";
+  } else if (wasCharacterHaveHintThisTurn) {
+    character_current_state = "Reveal";
   }
 
   console.log("Final result:");
@@ -1511,8 +1530,8 @@ export async function fightEnemy(
     energy: updatedEnergyStatus.energy,
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,
     boss_skill_activated: progress?.boss_skill_activated || false,
-    isEnemyFrozen: wasEnemyFrozenThisTurn,
-    isCharacterStrong: wasCharacterStrongThisTurn,
+    enemy_current_state,
+    character_current_state,
     attack_overlay,
   };
 }
@@ -1615,8 +1634,11 @@ export async function fightBossEnemy(
   let card_type: string | null = null;
   let character_attack_pose: string | null = null;
   let enemy_ss_type: string | null = null;
+  let enemy_current_state: string | null = null;
+  let character_current_state: string | null = null;
   let wasEnemyFrozenThisTurn = progress.has_freeze_effect || false;
   let wasCharacterStrongThisTurn = progress.has_strong_effect || false;
+  let wasCharacterHaveHintThisTurn = progress.has_ryron_reveal || false;
 
   character_run = character.character_run || null;
   character_idle = character.avatar_image || null;
@@ -2538,7 +2560,23 @@ export async function fightBossEnemy(
     } else if (character.character_name === "ShiShi") {
       attack_overlay =
         "https://micomi-assets.me/Icons/Miscellaneous/Ice%20Overlay.png";
+    } else if (character.character_name === "Ryron") {
+      attack_overlay =
+        "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+    } else if (character.character_name === "Gino") {
+      attack_overlay =
+        "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+      character_current_state = "Revitalize";
     }
+  }
+
+  //Passive effects overlay logic
+  if (wasEnemyFrozenThisTurn) {
+    enemy_current_state = "Frozen";
+  } else if (wasCharacterStrongThisTurn) {
+    character_current_state = "Strong";
+  } else if (wasCharacterHaveHintThisTurn) {
+    character_current_state = "Reveal";
   }
 
   const updatedEnergyStatus =
@@ -2600,8 +2638,8 @@ export async function fightBossEnemy(
     energy: updatedEnergyStatus.energy,
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,
     boss_skill_activated: progress?.boss_skill_activated || false,
-    isEnemyFrozen: wasEnemyFrozenThisTurn,
-    isCharacterStrong: wasCharacterStrongThisTurn,
+    enemy_current_state,
+    character_current_state,
     attack_overlay,
   };
 }

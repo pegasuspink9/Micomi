@@ -26,7 +26,7 @@ type BuyCharacterResult =
 
 export const buyCharacter = async (
   playerId: number,
-  characterShopId: number
+  characterShopId: number,
 ): Promise<BuyCharacterResult> => {
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -111,7 +111,7 @@ export const usePotion = async (
   playerId: number,
   levelId: number,
   challengeId: number,
-  playerPotionId: number
+  playerPotionId: number,
 ): Promise<SubmitChallengeControllerResult | UsePotionErrorResponse> => {
   const playerPotion = await prisma.playerPotion.findUnique({
     where: { player_potion_id: playerPotionId },
@@ -147,6 +147,8 @@ export const usePotion = async (
   let audioResponse: string[] = [];
   let usePotionAudio: string = "";
   let use_potion_effect: string = "";
+  let character_current_state: string = "";
+  let enemy_current_state: string = "";
 
   let nextChallengeForHint: any = null;
 
@@ -166,6 +168,7 @@ export const usePotion = async (
           "https://micomi-assets.me/Sounds/Final/All%20Potions.wav";
         use_potion_effect =
           "https://micomi-assets.me/Icons/Potions/Strongeffect.png";
+        character_current_state = "Strong";
       } else {
         dynamicMessage = `${character.character_name} already empowered—no extra surge!`;
       }
@@ -181,8 +184,9 @@ export const usePotion = async (
           "https://micomi-assets.me/Sounds/Final/All%20Potions.wav";
         use_potion_effect =
           "https://micomi-assets.me/Icons/Potions/Iceeffect.png";
+        enemy_current_state = "Frozen";
         console.log(
-          `Freeze effect activated (only once): Next enemy attack nullified.`
+          `Freeze effect activated (only once): Next enemy attack nullified.`,
         );
       } else {
         dynamicMessage = `Already frozen—no extra chill!`;
@@ -198,13 +202,14 @@ export const usePotion = async (
         "https://micomi-assets.me/Sounds/Final/All%20Potions.wav";
       use_potion_effect =
         "https://micomi-assets.me/Icons/Potions/Healeffect.png";
+      character_current_state = "Revitalize";
       break;
     case "Reveal":
       console.log(`Hint potion consumed for challenge ${challengeId}`);
 
       const currentNext = await ChallengeService.getNextChallengeService(
         playerId,
-        levelId
+        levelId,
       );
       let currentChallenge = currentNext.nextChallenge;
       if (!currentChallenge) throw new Error("No current challenge found");
@@ -242,12 +247,12 @@ export const usePotion = async (
       } else {
         const revealResult = revealAllBlanks(
           currentChallenge.question ?? "",
-          effectiveCorrectAnswer
+          effectiveCorrectAnswer,
         );
 
         if (!revealResult.success) {
           throw new Error(
-            `Cannot reveal challenge ${challengeId}: ${revealResult.error}`
+            `Cannot reveal challenge ${challengeId}: ${revealResult.error}`,
           );
         }
 
@@ -271,7 +276,7 @@ export const usePotion = async (
         dynamicMessage = `All blanks revealed: Select "Attack" to confirm and proceed!`;
 
         console.log(
-          `Successfully revealed ${effectiveCorrectAnswer.length} blanks for challenge ${challengeId}`
+          `Successfully revealed ${effectiveCorrectAnswer.length} blanks for challenge ${challengeId}`,
         );
       }
 
@@ -282,6 +287,7 @@ export const usePotion = async (
         "https://micomi-assets.me/Sounds/Final/All%20Potions.wav";
       use_potion_effect =
         "https://micomi-assets.me/Icons/Potions/Hinteffect.png";
+      character_current_state = "Reveal";
       break;
     default:
       throw new Error(`Unknown potion type: ${potionType}`);
@@ -298,7 +304,7 @@ export const usePotion = async (
     where: { progress_id: progress.progress_id },
   });
   console.log(
-    `Post-tx player_hp: ${freshProgressPostTx?.player_hp} (expected: ${maxHealth})`
+    `Post-tx player_hp: ${freshProgressPostTx?.player_hp} (expected: ${maxHealth})`,
   );
 
   const level = await prisma.level.findUnique({
@@ -317,7 +323,7 @@ export const usePotion = async (
   let fightResult = await CombatService.getCurrentFightState(
     playerId,
     levelId,
-    enemy?.enemy_id ?? 0
+    enemy?.enemy_id ?? 0,
   );
 
   if (potionType === "Power" && freshProgressPostTx?.has_strong_effect) {
@@ -327,7 +333,7 @@ export const usePotion = async (
     const doubledDamages = originalDamages.map((d) => d * 2);
     fightResult.character.character_damage = doubledDamages;
     console.log(
-      `Backend doubling applied in response: ${originalDamages} → ${doubledDamages}`
+      `Backend doubling applied in response: ${originalDamages} → ${doubledDamages}`,
     );
   }
 
@@ -335,7 +341,7 @@ export const usePotion = async (
     fightResult.enemy.enemy_damage = 0;
     fightResult.enemy.enemy_attack = null;
     console.log(
-      "Backend freeze applied in response: enemy_damage=0, enemy_attack=null"
+      "Backend freeze applied in response: enemy_damage=0, enemy_attack=null",
     );
   }
 
@@ -349,7 +355,7 @@ export const usePotion = async (
 
   const next = await ChallengeService.getNextChallengeService(
     playerId,
-    levelId
+    levelId,
   );
   let nextChallenge = next.nextChallenge ?? null;
 
@@ -414,7 +420,7 @@ export const usePotion = async (
     nextLevel = await LevelService.unlockNextLevel(
       playerId,
       level?.map_id ?? 0,
-      level?.level_number ?? 0
+      level?.level_number ?? 0,
     );
   }
 
@@ -447,6 +453,8 @@ export const usePotion = async (
     potionType,
     remainingQuantity: playerPotion.quantity - 1,
     appliedImmediately: true,
+    character_current_state,
+    enemy_current_state,
   } as unknown as SubmitChallengeControllerResult;
 };
 
@@ -506,7 +514,7 @@ export const buyPotionInShop = async (req: Request, res: Response) => {
     await updateQuestProgress(
       playerId,
       QuestType.spend_coins,
-      potion.potion_price
+      potion.potion_price,
     );
 
     const updatedPlayerPotion = await prisma.playerPotion.findUnique({
@@ -527,7 +535,7 @@ export const buyPotionInShop = async (req: Request, res: Response) => {
         coins_spent: potion.potion_price,
         remaining_coins: player.coins - potion.potion_price,
       },
-      `${potion.potion_name} purchased successfully`
+      `${potion.potion_name} purchased successfully`,
     );
   } catch (error) {
     console.error(error);
