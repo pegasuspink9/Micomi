@@ -298,114 +298,7 @@ async testR2Download(testUrl) {
   return false;
   }
 
-  extractAllCharacterSelectAssets(charactersData) {
-    const assets = [];
-    const addedUrls = new Set();
 
-    const addAsset = (url, name, type, category) => {
-      if (url && 
-          typeof url === 'string' && 
-          !addedUrls.has(url) &&
-          !url.startsWith('file://') &&
-          !url.startsWith('/data/') &&
-          (url.startsWith('http://') || url.startsWith('https://'))) {
-        addedUrls.add(url);
-        assets.push({ url, name, type, category });
-      }
-    };
-
-    // --- Static UI Assets from CharacterData.js ---
-    const staticUIAssets = [
-      { url: 'https://github.com/user-attachments/assets/a913b8b6-2df5-4f08-b746-eb5a277f955a', name: 'bottom_bar', type: 'image' },
-      { url: 'https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd', name: 'coin_icon', type: 'image' },
-      { url: 'https://github.com/user-attachments/assets/82a87b3d-bc5c-4bb8-8d3e-46017ffcf1f4', name: 'health_icon', type: 'image' },
-      { url: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760064111/Untitled_design_3_ghewno.png', name: 'hero_box_border', type: 'image' },
-    ];
-
-    staticUIAssets.forEach(asset => {
-      addAsset(asset.url, asset.name, asset.type, 'character_select_ui');
-    });
-
-    // --- Static Role Icons from characterService.js ---
-    const roleIcons = [
-      { url: 'https://micomi-assets.me/Icons%20Shop/473984818-d95f6009-ac83-4c34-a486-96b332bf39e4.png', name: 'assassin_role_icon' },
-      { url: 'https://micomi-assets.me/Icons%20Shop/473993721-36859900-5dc8-45b3-91e6-fb3820f215e1.png', name: 'tank_role_icon' },
-      { url: 'https://micomi-assets.me/Icons%20Shop/473975865-927e2303-ecb2-4009-b64e-1160758f3c1b.png', name: 'mage_role_icon' },
-      { url: 'https://micomi-assets.me/Icons%20Shop/473999709-38e408df-acdc-4d46-abcc-29bb6f28ab59.png', name: 'marksman_role_icon' },
-    ];
-
-    roleIcons.forEach(icon => {
-      addAsset(icon.url, icon.name, 'image', 'character_select_ui');
-    });
-
-    // --- Static Damage Icons from characterService.js ---
-    const damageIcons = [
-      { url: 'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons%20Shop/fighterIcon.png', name: 'fighter_damage_icon' },
-      { url: 'https://micomi-assets.me/Icons%20Shop/tankIcon.png', name: 'tank_damage_icon' },
-      { url: 'https://micomi-assets.me/Icons%20Shop/mageIcon.png', name: 'mage_damage_icon' },
-      { url: 'https://micomi-assets.me/Icons%20Shop/marksmanIcon.png', name: 'marksman_damage_icon' },
-    ];
-
-    damageIcons.forEach(icon => {
-      addAsset(icon.url, icon.name, 'image', 'character_select_ui');
-    });
-
-    // --- Video Asset ---
-    addAsset(
-      'https://micomi-assets.me/Hero%20Selection%20Components/Background.mp4',
-      'character_select_background_video',
-      'video',
-      'ui_videos'
-    );
-
-    // --- Lottie Asset ---
-    addAsset(
-      'https://lottie.host/b3ebb5e0-3eda-4aad-82a3-a7428cbe0aa5/mvEeQ5rDi1.lottie',
-      'character_background_lottie',
-      'animation',
-      'character_select_ui'
-    );
-
-    // --- Character-specific assets from API data ---
-    if (charactersData) {
-      Object.values(charactersData).forEach(character => {
-        const charName = character.character_name || 'unknown';
-        
-        // Character display images
-        addAsset(character.character_image_display, `${charName}_display`, 'image', 'characters');
-        addAsset(character.character_image_select, `${charName}_select`, 'image', 'characters');
-        addAsset(character.character_avatar, `${charName}_avatar`, 'image', 'game_images');
-        addAsset(character.avatar_image, `${charName}_avatar_image`, 'image', 'game_images');
-        
-        // Character lottie
-        addAsset(character.character_hero_lottie || character.hero_lottie, `${charName}_lottie`, 'animation', 'characters');
-        
-        // Animation assets (these are shared with gameplay, should already be cached from Map API)
-        addAsset(character.character_idle || character.avatar_image, `${charName}_idle`, 'animation', 'game_animations');
-        addAsset(character.character_run, `${charName}_run`, 'animation', 'game_animations');
-        addAsset(character.character_hurt, `${charName}_hurt`, 'animation', 'game_animations');
-        addAsset(character.character_dies, `${charName}_dies`, 'animation', 'game_animations');
-        
-        // Character attacks array
-        if (Array.isArray(character.character_attacks)) {
-          character.character_attacks.forEach((attackUrl, i) => {
-            addAsset(attackUrl, `${charName}_attack_${i}`, 'animation', 'game_animations');
-          });
-        }
-
-        // Role and damage icons (already added above as static, but character-specific ones)
-        addAsset(character.roleIcon, `${charName}_role_icon`, 'image', 'character_select_ui');
-        addAsset(character.damageIcon, `${charName}_damage_icon`, 'image', 'character_select_ui');
-
-        if (character.special_skill?.special_skill_image) {
-          addAsset(character.special_skill.special_skill_image, `${charName}_special_skill`, 'image', 'game_images');
-        }
-      });
-    }
-
-    console.log(`📦 Extracted ${assets.length} total character select assets (static + API)`);
-    return assets;
-  }
 
   getStaticSoundAssets() {
   const assets = [];
@@ -577,32 +470,6 @@ async testR2Download(testUrl) {
     return assets;
   }
 
-  getStaticPotionShopAssets() {
-    const assets = [];
-    const addedUrls = new Set();
-    const addAsset = (url, name, type, category) => {
-      if (url && typeof url === "string" && !addedUrls.has(url)) {
-        addedUrls.add(url);
-        assets.push({ url, name, type, category });
-      }
-    };
-
-    addAsset(
-      'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760334965/shop_holder_deydxu.png',
-      'shop_background_holder',
-      'image',
-      'potion_shop_ui'
-    );
-    addAsset(
-      'https://micomi-assets.me/Hero%20Selection%20Components/Shi-Shi%20Shop.mp4',
-      'shishi_shopkeeper_video',
-      'video',
-      'ui_videos'
-    );
-    
-    return assets;
-  }
-
   async downloadStaticCharacterSelectAssets(onProgress = null, onAssetComplete = null) {
     const wasDownloading = this.isDownloading;
     this.isDownloading = true;
@@ -742,8 +609,6 @@ async testR2Download(testUrl) {
     const extractLevelAssets = (level, levelIndex = 0) => {
       if (!level) return;
 
-      
-
       // Enemy Assets
       if (level.enemy) {
         const enemy = level.enemy;
@@ -753,10 +618,6 @@ async testR2Download(testUrl) {
         addAsset(enemy.enemy_hurt, `${enemy.enemy_name}_hurt`, 'animation', 'game_animations');
         addAsset(enemy.enemy_dies, `${enemy.enemy_name}_dies`, 'animation', 'game_animations');
         addAsset(enemy.enemy_avatar, `${enemy.enemy_name}_avatar`, 'image', 'game_images');
-
-         if (enemy.special_skill?.special_skill_image) {
-          addAsset(enemy.special_skill.special_skill_image, `${enemy.enemy_name}_special_skill`, 'image', 'game_images');
-        }
       }
 
       // Character Assets
@@ -769,10 +630,6 @@ async testR2Download(testUrl) {
         addAsset(char.character_avatar, `${char.character_name}_avatar`, 'image', 'game_images');
         if (Array.isArray(char.character_attack)) {
           char.character_attack.forEach((url, i) => addAsset(url, `${char.character_name}_attack_${i}`, 'animation', 'game_animations'));
-        }
-
-        if (char.special_skill?.special_skill_image) {
-          addAsset(char.special_skill.special_skill_image, `${char.character_name}_special_skill`, 'image', 'game_images');
         }
       }
 
@@ -842,10 +699,6 @@ async testR2Download(testUrl) {
       // Fallback: treat mapLevelData as a single level (for enterLevel response)
       extractLevelAssets(mapLevelData, 0);
     }
-
-    const staticShopAssets = this.getStaticPotionShopAssets();
-    staticShopAssets.forEach(asset => addAsset(asset.url, asset.name, asset.type, asset.category));
-
 
     
 
@@ -1138,28 +991,11 @@ async testR2Download(testUrl) {
         assets.push({ url: source.versus_background, name: 'versus_background', type: 'image', category: 'game_visuals' });
       }
 
-     
       // Card Image (single URL)
       if (source.card?.character_attack_card && this.isImageFile(source.card.character_attack_card)) {
         assets.push({ url: source.card.character_attack_card, name: 'character_attack_card', type: 'image', category: 'game_visuals' });
       }
-
-       if (source.selectedCharacter?.special_skill?.special_skill_image) {
-        assets.push({ url: source.selectedCharacter.special_skill.special_skill_image, name: 'character_special_skill', type: 'image', category: 'game_images' });
-      }
-
-      if (source.enemy?.special_skill?.special_skill_image) {
-        assets.push({ url: source.enemy.special_skill.special_skill_image, name: 'enemy_special_skill', type: 'image', category: 'game_images' });
-      }
-
-
-      if (source.use_potion_effect && this.isImageFile(source.use_potion_effect)) {
-        assets.push({ url: source.use_potion_effect, name: 'use_potion_effect', type: 'image', category: 'game_visuals' });
-      }
-
     });
-
-    
 
     // Remove duplicates to avoid unnecessary downloads
     const uniqueAssets = assets.filter((asset, index, self) =>
@@ -1210,15 +1046,6 @@ async testR2Download(testUrl) {
       });
     }
 
-    if (levelData && levelData.use_potion_audio && typeof levelData.use_potion_audio === 'string' && this.isAudioFile(levelData.use_potion_audio)) {
-      assets.push({
-        url: levelData.use_potion_audio,
-        name: 'use_potion_audio',
-        type: 'audio',
-        category: 'game_audio'
-      });
-    }
-
      if (levelData && levelData.is_victory_audio && typeof levelData.is_victory_audio === 'string' && this.isAudioFile(levelData.is_victory_audio)) {
       assets.push({
         url: levelData.is_victory_audio,
@@ -1259,8 +1086,7 @@ async testR2Download(testUrl) {
         { url: character.character_run, name: 'run_animation', type: 'animation' },
         { url: character.character_dies, name: 'death_animation', type: 'animation' },
         { url: character.character_hurt, name: 'hurt_animation', type: 'animation' },
-        { url: character.avatar_image, name: 'avatar_image', type: 'image' },
-        { url: character.special_skill?.special_skill_image, name: 'special_skill_icon', type: 'image' }
+        { url: character.avatar_image, name: 'avatar_image', type: 'image' }
       ];
 
       // Handle character attacks array
@@ -1887,36 +1713,7 @@ async testR2Download(testUrl) {
     return uniqueAssets;
   }
 
-  extractPotionShopAssets(levelPreviewData) {
-    const assets = [];
-    const addedUrls = new Set();
-    const addAsset = (url, name, type, category) => {
-      if (url && typeof url === "string" && !addedUrls.has(url)) {
-        addedUrls.add(url);
-        assets.push({ url, name, type, category });
-      }
-    };
 
-    // Include static shop assets
-    const staticAssets = this.getStaticPotionShopAssets();
-    assets.push(...staticAssets);
-
-    if (!levelPreviewData || !levelPreviewData.potionShop) return assets;
-
-    levelPreviewData.potionShop.forEach((potion) => {
-      if (potion.potion_url && typeof potion.potion_url === "string") {
-        addAsset(
-          potion.potion_url,
-          `potion_${potion.potion_type}`,
-          "image",
-          "potion_shop"
-        );
-      }
-    });
-
-    console.log(`📦 Extracted ${assets.length} potion shop assets`);
-    return assets;
-  }
 
   extractProfileAssetsForMapReuse(profileData) {
     const assets = [];
@@ -2750,105 +2547,6 @@ async arePotionShopAssetsCached(levelPreviewData) {
     return transformedData;
   }
 
-transformPotionShopDataWithCache(levelPreviewData) {
-  if (!levelPreviewData || !levelPreviewData.potionShop) return levelPreviewData;
-
-  const transformedData = { ...levelPreviewData };
-  
-  // Transform potion URLs with cached paths
-  transformedData.potionShop = levelPreviewData.potionShop.map(potion => ({
-    ...potion,
-    potion_url: potion.potion_url ? this.getCachedAssetPath(potion.potion_url) : potion.potion_url
-  }));
-
-  return transformedData;
-}
-
-
-  transformLevelPreviewWithCache(previewData) {
-    if (!previewData) return previewData;
-
-    const transformed = { ...previewData };
-
-    // Transform enemy avatar
-    if (transformed.enemy?.enemy_avatar) {
-      const cachedPath = this.getCachedAssetPath(transformed.enemy.enemy_avatar);
-      if (cachedPath !== transformed.enemy.enemy_avatar) {
-        console.log(`📦 Using cached enemy avatar for preview`);
-        transformed.enemy = {
-          ...transformed.enemy,
-          enemy_avatar: cachedPath
-        };
-      }
-    }
-
-    // Transform character avatar
-    if (transformed.character?.character_avatar) {
-      const cachedPath = this.getCachedAssetPath(transformed.character.character_avatar);
-      if (cachedPath !== transformed.character.character_avatar) {
-        console.log(`📦 Using cached character avatar for preview`);
-        transformed.character = {
-          ...transformed.character,
-          character_avatar: cachedPath
-        };
-      }
-    }
-
-    return transformed;
-  }
-
-  
-  async areLevelPreviewAssetsCached(previewData) {
-    if (!previewData) return { cached: true, total: 0, available: 0 };
-
-    const avatarUrls = [];
-    
-    if (previewData.enemy?.enemy_avatar) {
-      avatarUrls.push(previewData.enemy.enemy_avatar);
-    }
-    if (previewData.character?.character_avatar) {
-      avatarUrls.push(previewData.character.character_avatar);
-    }
-
-    if (avatarUrls.length === 0) {
-      return { cached: true, total: 0, available: 0 };
-    }
-
-    let availableCount = 0;
-    for (const url of avatarUrls) {
-      const assetInfo = this.downloadedAssets.get(url);
-      if (assetInfo && assetInfo.localPath) {
-        const fileInfo = await FileSystem.getInfoAsync(assetInfo.localPath);
-        if (fileInfo.exists && fileInfo.size > 0) {
-          availableCount++;
-        }
-      } else {
-        // Check disk directly
-        const localPath = this.getLocalFilePath(url, 'game_images');
-        const fileInfo = await FileSystem.getInfoAsync(localPath);
-        if (fileInfo.exists && fileInfo.size > 0) {
-          // Add to memory cache
-          this.downloadedAssets.set(url, {
-            localPath,
-            category: 'game_images',
-            url,
-            downloadedAt: Date.now()
-          });
-          availableCount++;
-        }
-      }
-    }
-
-    const cached = availableCount === avatarUrls.length;
-    console.log(`🔍 Level preview avatars cache check: ${availableCount}/${avatarUrls.length} available`);
-
-    return {
-      cached,
-      total: avatarUrls.length,
-      available: availableCount,
-      missing: avatarUrls.length - availableCount
-    };
-  }
 
 
 
@@ -2856,173 +2554,6 @@ transformPotionShopDataWithCache(levelPreviewData) {
 
 
 
-  async downloadGameAnimationAssets(gameState, onProgress = null, onAssetComplete = null) {
-    if (this.isDownloading) {
-      console.warn('⚠️ Asset downloading already in progress');
-      return { success: false, reason: 'already_downloading' };
-    }
-
-    this.isDownloading = true;
-    
-    try {
-      console.log('📦 Starting game animation asset download...');
-      
-      const assets = this.extractGameAnimationAssets(gameState);
-      console.log(`📦 Found ${assets.length} game animation assets to download`);
-
-      if (assets.length === 0) {
-        console.log('📦 No game animation assets to download');
-        this.isDownloading = false;
-        return { success: true, downloaded: 0, total: 0 };
-      }
-
-      const startTime = Date.now();
-      let successCount = 0;
-      const results = [];
-
-      // Download assets with controlled concurrency
-      for (let i = 0; i < assets.length; i += this.maxConcurrentDownloads) {
-        const batch = assets.slice(i, i + this.maxConcurrentDownloads);
-        
-        const batchPromises = batch.map(async (asset, batchIndex) => {
-          const globalIndex = i + batchIndex;
-          
-          // Individual asset progress callback
-          if (onAssetComplete) {
-            onAssetComplete({
-              url: asset.url,
-              name: asset.name,
-              type: asset.type,
-              category: asset.category,
-              characterName: asset.characterName,
-              enemyName: asset.enemyName,
-              progress: 0,
-              currentIndex: globalIndex,
-              totalAssets: assets.length
-            });
-          }
-
-          const result = await this.downloadSingleAsset(
-            asset.url, 
-            asset.category, 
-            (downloadProgress) => {
-              // Individual asset download progress
-              if (onAssetComplete) {
-                onAssetComplete({
-                  url: asset.url,
-                  name: asset.name,
-                  type: asset.type,
-                  category: asset.category,
-                  characterName: asset.characterName,
-                  enemyName: asset.enemyName,
-                  progress: downloadProgress.progress,
-                  currentIndex: globalIndex,
-                  totalAssets: assets.length,
-                  bytesWritten: downloadProgress.bytesWritten,
-                  totalBytes: downloadProgress.totalBytes
-                });
-              }
-            }
-          );
-          
-          if (result.success) {
-            successCount++;
-          }
-          
-          const assetResult = { asset, result };
-          results.push(assetResult);
-          
-          // Overall progress callback
-          if (onProgress) {
-            onProgress({
-              loaded: results.length,
-              total: assets.length,
-              progress: results.length / assets.length,
-              successCount,
-              currentAsset: asset,
-              category: 'game_animations'
-            });
-          }
-
-          return assetResult;
-        });
-
-        // Wait for current batch to complete before starting next batch
-        await Promise.all(batchPromises);
-      }
-
-      const totalTime = Date.now() - startTime;
-      this.isDownloading = false;
-
-      // Save cache info to AsyncStorage
-      try {
-        const cacheKey = 'gameAnimationAssets';
-        const cacheInfo = {
-          downloadedAt: Date.now(),
-          category: 'game_animations',
-          assets: Array.from(this.downloadedAssets.entries()).filter(([url, info]) => 
-            info.category === 'game_animations'
-          ),
-          totalAssets: successCount
-        };
-        await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheInfo));
-        console.log(`💾 Saved game animation asset cache info to storage`);
-      } catch (error) {
-        console.warn('⚠️ Failed to save cache info to AsyncStorage:', error);
-      }
-
-      console.log(`📦 Game animation asset download completed: ${successCount}/${assets.length} in ${totalTime}ms`);
-      
-      return {
-        success: true,
-        downloaded: successCount,
-        total: assets.length,
-        totalTime,
-        results,
-        category: 'game_animations',
-        failedAssets: results
-          .filter(r => !r.result.success)
-          .map(r => r.asset)
-      };
-
-    } catch (error) {
-      console.error('❌ Error downloading game animation assets:', error);
-      this.isDownloading = false;
-      throw error;
-    }
-  }
-
-    async areGameAnimationAssetsCached(gameState) {
-    const assets = this.extractGameAnimationAssets(gameState);
-    
-    if (assets.length === 0) {
-      return { cached: true, total: 0, available: 0 };
-    }
-
-    let availableCount = 0;
-    for (const asset of assets) {
-      const assetInfo = this.downloadedAssets.get(asset.url);
-      if (assetInfo && assetInfo.localPath) {
-        const fileInfo = await FileSystem.getInfoAsync(assetInfo.localPath);
-        if (fileInfo.exists && fileInfo.size > 0) {
-          availableCount++;
-        }
-      }
-    }
-
-    const cached = availableCount === assets.length;
-    console.log(`🔍 Game animation assets cache check: ${availableCount}/${assets.length} available`);
-    
-    return {
-      cached,
-      total: assets.length,
-      available: availableCount,
-      missing: assets.length - availableCount,
-      missingAssets: assets
-        .filter(asset => !this.downloadedAssets.has(asset.url))
-        .map(asset => ({ url: asset.url, name: asset.name, type: asset.type }))
-    };
-  }
 
   transformGameStateWithCache(gameState) {
     if (!gameState) return gameState;
@@ -3056,12 +2587,7 @@ transformPotionShopDataWithCache(levelPreviewData) {
       } else if (character.character_attack) {
         character.character_attack = this.getCachedAssetPath(character.character_attack);
       }
-
-      if (character.special_skill?.special_skill_image) {
-        character.special_skill.special_skill_image = this.getCachedAssetPath(character.special_skill.special_skill_image);
-      }
     }
-
 
     // Transform enemy animations
     if (transformedGameState.enemy) {
@@ -3080,10 +2606,6 @@ transformPotionShopDataWithCache(levelPreviewData) {
           enemy[field] = this.getCachedAssetPath(enemy[field]);
         }
       });
-
-      if (enemy.special_skill?.special_skill_image) {
-        enemy.special_skill.special_skill_image = this.getCachedAssetPath(enemy.special_skill.special_skill_image);
-      }
     }
 
 
@@ -3121,14 +2643,6 @@ transformPotionShopDataWithCache(levelPreviewData) {
       transformedGameState.gameplay_audio = this.getCachedAssetPath(transformedGameState.gameplay_audio);
     }
 
-    if (transformedGameState.use_potion_effect) {
-      transformedGameState.use_potion_effect = this.getCachedAssetPath(transformedGameState.use_potion_effect);
-    }
-    
-    if (transformedGameState.use_potion_audio) {
-      transformedGameState.use_potion_audio = this.getCachedAssetPath(transformedGameState.use_potion_audio);
-    }
-
      if (transformedGameState.dialogue) {
       const dialogue = transformedGameState.dialogue;
       if (dialogue.micomi_image) {
@@ -3147,14 +2661,6 @@ transformPotionShopDataWithCache(levelPreviewData) {
 
       if (sub.is_victory_image) {
         sub.is_victory_image = this.getCachedAssetPath(sub.is_victory_image);
-      }
-
-
-      if (sub.use_potion_effect) {
-        sub.use_potion_effect = this.getCachedAssetPath(sub.use_potion_effect);
-      }
-      if (sub.use_potion_audio) {
-        sub.use_potion_audio = this.getCachedAssetPath(sub.use_potion_audio);
       }
 
 
@@ -3217,11 +2723,6 @@ transformPotionShopDataWithCache(levelPreviewData) {
           } else if (fightChar.character_attack) {
             fightChar.character_attack = this.getCachedAssetPath(fightChar.character_attack);
           }
-
-          if (fightChar.special_skill?.special_skill_image) {
-            fightChar.special_skill.special_skill_image = this.getCachedAssetPath(fightChar.special_skill.special_skill_image);
-          }
-        
         }
         
         if (fightResult.enemy) {
@@ -3240,10 +2741,6 @@ transformPotionShopDataWithCache(levelPreviewData) {
               fightEnemy[field] = this.getCachedAssetPath(fightEnemy[field]);
             }
           });
-
-          if (fightEnemy.special_skill?.special_skill_image) {
-            fightEnemy.special_skill.special_skill_image = this.getCachedAssetPath(fightEnemy.special_skill.special_skill_image);
-          }
         }
       }
     }
@@ -3847,339 +3344,7 @@ transformPotionShopDataWithCache(levelPreviewData) {
   return false;
   }
   
-  extractCharacterVideoAssets(charactersData) {
-  const assets = [];
-  
-  // Add background video from URLS
-  if (charactersData.backgroundVideo) {
-    assets.push({
-      url: charactersData.backgroundVideo,
-      name: 'character_select_background',
-      type: 'video',
-      category: 'character_videos',
-      priority: 'high' // High priority for background video
-    });
-  }
-  
-  // Add character-specific video assets if any
-  Object.values(charactersData).forEach(character => {
-    // Check for any video fields in character data
-    const videoFields = [
-      'character_intro_video',
-      'character_showcase_video',
-      'character_background_video'
-    ];
-    
-    videoFields.forEach(field => {
-      if (character[field] && this.isVideoFile(character[field])) {
-        assets.push({
-          url: character[field],
-          name: `${character.character_name.toLowerCase()}_${field}`,
-          type: 'video',
-          category: 'character_videos',
-          characterName: character.character_name,
-          characterId: character.character_id
-        });
-      }
-    });
-  });
 
-  console.log(`📹 Extracted ${assets.length} character video assets`);
-  return assets;
-}
-
-extractUIVideoAssets(uiData) {
-  const assets = [];
-  
-  if (!uiData) return assets;
-
-  // Common UI video assets
-  const uiVideoFields = [
-    'backgroundVideo',
-    'loginBackgroundVideo', 
-    'menuBackgroundVideo',
-    'characterSelectBackgroundVideo',
-    'shopBackgroundVideo',
-    'gameplayBackgroundVideo'
-  ];
-
-  uiVideoFields.forEach(field => {
-    if (uiData[field] && this.isVideoFile(uiData[field])) {
-      assets.push({
-        url: uiData[field],
-        name: field,
-        type: 'video',
-        category: 'ui_videos',
-        priority: field.includes('background') ? 'high' : 'normal'
-      });
-    }
-  });
-
-  console.log(`📹 Extracted ${assets.length} UI video assets`);
-  return assets;
-}
-
-async downloadVideoAssets(videoAssets, onProgress = null, onAssetComplete = null) {
-  if (this.isDownloading) {
-    console.warn('⚠️ Asset downloading already in progress');
-    return { success: false, reason: 'already_downloading' };
-  }
-
-  this.isDownloading = true;
-  
-  try {
-    console.log('📹 Starting video asset download...');
-    
-    if (!Array.isArray(videoAssets)) {
-      videoAssets = [videoAssets];
-    }
-    
-    console.log(`📹 Found ${videoAssets.length} video assets to download`);
-
-    if (videoAssets.length === 0) {
-      console.log('📹 No video assets to download');
-      this.isDownloading = false;
-      return { success: true, downloaded: 0, total: 0 };
-    }
-
-    const startTime = Date.now();
-    let successCount = 0;
-    const results = [];
-
-    // Sort by priority (high priority first)
-    const sortedAssets = videoAssets.sort((a, b) => {
-      const priorityOrder = { 'high': 0, 'normal': 1, 'low': 2 };
-      return (priorityOrder[a.priority] || 1) - (priorityOrder[b.priority] || 1);
-    });
-
-    // Download videos with controlled concurrency (videos are larger, so fewer concurrent downloads)
-    const videoConcurrency = Math.min(this.maxConcurrentDownloads, 2); // Limit to 2 concurrent video downloads
-    
-    for (let i = 0; i < sortedAssets.length; i += videoConcurrency) {
-      const batch = sortedAssets.slice(i, i + videoConcurrency);
-      
-      const batchPromises = batch.map(async (asset, batchIndex) => {
-        const globalIndex = i + batchIndex;
-        
-        // Individual asset progress callback
-        if (onAssetComplete) {
-          onAssetComplete({
-            url: asset.url,
-            name: asset.name,
-            type: asset.type,
-            category: asset.category,
-            characterName: asset.characterName,
-            priority: asset.priority,
-            progress: 0,
-            currentIndex: globalIndex,
-            totalAssets: sortedAssets.length
-          });
-        }
-
-        const result = await this.downloadSingleAsset(
-          asset.url, 
-          asset.category, 
-          (downloadProgress) => {
-            // Individual asset download progress
-            if (onAssetComplete) {
-              onAssetComplete({
-                url: asset.url,
-                name: asset.name,
-                type: asset.type,
-                category: asset.category,
-                characterName: asset.characterName,
-                priority: asset.priority,
-                progress: downloadProgress.progress,
-                currentIndex: globalIndex,
-                totalAssets: sortedAssets.length,
-                bytesWritten: downloadProgress.bytesWritten,
-                totalBytes: downloadProgress.totalBytes
-              });
-            }
-          }
-        );
-        
-        if (result.success) {
-          successCount++;
-        }
-        
-        const assetResult = { asset, result };
-        results.push(assetResult);
-        
-        // Overall progress callback
-        if (onProgress) {
-          onProgress({
-            loaded: results.length,
-            total: sortedAssets.length,
-            progress: results.length / sortedAssets.length,
-            successCount,
-            currentAsset: asset,
-            category: 'videos'
-          });
-        }
-
-        return assetResult;
-      });
-
-      // Wait for current batch to complete before starting next batch
-      await Promise.all(batchPromises);
-    }
-
-    const totalTime = Date.now() - startTime;
-    this.isDownloading = false;
-
-    // Save cache info to AsyncStorage
-    try {
-      const cacheKey = 'videoAssets';
-      const cacheInfo = {
-        downloadedAt: Date.now(),
-        category: 'videos',
-        assets: Array.from(this.downloadedAssets.entries()).filter(([url, info]) => 
-          this.isVideoFile(url)
-        ),
-        totalAssets: successCount
-      };
-      await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheInfo));
-      console.log(`💾 Saved video asset cache info to storage`);
-    } catch (error) {
-      console.warn('⚠️ Failed to save video cache info to AsyncStorage:', error);
-    }
-
-    console.log(`📹 Video asset download completed: ${successCount}/${sortedAssets.length} in ${totalTime}ms`);
-    
-    return {
-      success: true,
-      downloaded: successCount,
-      total: sortedAssets.length,
-      totalTime,
-      results,
-      category: 'videos',
-      failedAssets: results
-        .filter(r => !r.result.success)
-        .map(r => r.asset)
-    };
-
-  } catch (error) {
-    console.error('❌ Error downloading video assets:', error);
-    this.isDownloading = false;
-    throw error;
-  }
-}
-
-//  Download character select background video specifically
-async downloadCharacterSelectVideo(backgroundVideoUrl, onProgress = null, onAssetComplete = null) {
-  const videoAsset = {
-    url: backgroundVideoUrl,
-    name: 'character_select_background',
-    type: 'video',
-    category: 'ui_videos',
-    priority: 'high'
-  };
-
-  return await this.downloadVideoAssets([videoAsset], onProgress, onAssetComplete);
-}
-
-async areVideoAssetsCached(videoAssets) {
-  if (!Array.isArray(videoAssets)) {
-    videoAssets = [videoAssets];
-  }
-  
-  if (videoAssets.length === 0) {
-    return { cached: true, total: 0, available: 0 };
-  }
-
-  let availableCount = 0;
-  for (const asset of videoAssets) {
-    const assetInfo = this.downloadedAssets.get(asset.url);
-    if (assetInfo && assetInfo.localPath) {
-      const fileInfo = await FileSystem.getInfoAsync(assetInfo.localPath);
-      if (fileInfo.exists && fileInfo.size > 0) {
-        availableCount++;
-      }
-    }
-  }
-
-  const cached = availableCount === videoAssets.length;
-  console.log(`🔍 Video assets cache check: ${availableCount}/${videoAssets.length} available`);
-  
-  return {
-    cached,
-    total: videoAssets.length,
-    available: availableCount,
-    missing: videoAssets.length - availableCount,
-    missingAssets: videoAssets
-      .filter(asset => !this.downloadedAssets.has(asset.url))
-      .map(asset => ({ url: asset.url, name: asset.name, type: asset.type }))
-  };
-}
-
-transformVideoDataWithCache(data) {
-  if (!data) return data;
-
-  const transformedData = { ...data };
-  
-  // Handle different data structures
-  if (typeof data === 'string' && this.isVideoFile(data)) {
-    // Single video URL
-    return this.getCachedAssetPath(data);
-  }
-  
-  if (Array.isArray(data)) {
-    // Array of video URLs
-    return data.map(item => 
-      typeof item === 'string' && this.isVideoFile(item) 
-        ? this.getCachedAssetPath(item) 
-        : item
-    );
-  }
-  
-  if (typeof data === 'object') {
-    // Object with video URL properties
-    Object.keys(transformedData).forEach(key => {
-      const value = transformedData[key];
-      if (typeof value === 'string' && this.isVideoFile(value)) {
-        transformedData[key] = this.getCachedAssetPath(value);
-      } else if (typeof value === 'object') {
-        transformedData[key] = this.transformVideoDataWithCache(value);
-      }
-    });
-  }
-
-  return transformedData;
-}
-
-
-
-
-
-
-  //  Clear all caches
-  async clearAllCaches() {
-    try {
-      // Clear memory caches
-      this.downloadedAssets.clear();
-      this.preloadedAssets.clear();
-      this.downloadQueue.clear();
-      this.isDownloading = false;
-      
-      // Clear all AsyncStorage entries
-      const keys = await AsyncStorage.getAllKeys();
-      const assetKeys = keys.filter(key => key.endsWith('Assets'));
-      if (assetKeys.length > 0) {
-        await AsyncStorage.multiRemove(assetKeys);
-      }
-      
-      // Delete cache directory
-      const dirInfo = await FileSystem.getInfoAsync(this.cacheDirectory);
-      if (dirInfo.exists) {
-        await FileSystem.deleteAsync(this.cacheDirectory, { idempotent: true });
-      }
-      
-      console.log('🗑️ All asset caches cleared');
-    } catch (error) {
-      console.error('❌ Failed to clear all caches:', error);
-    }
-  }
 }
 
 // Export singleton instance

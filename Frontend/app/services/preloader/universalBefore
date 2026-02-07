@@ -396,10 +396,6 @@ async testR2Download(testUrl) {
         // Role and damage icons (already added above as static, but character-specific ones)
         addAsset(character.roleIcon, `${charName}_role_icon`, 'image', 'character_select_ui');
         addAsset(character.damageIcon, `${charName}_damage_icon`, 'image', 'character_select_ui');
-
-        if (character.special_skill?.special_skill_image) {
-          addAsset(character.special_skill.special_skill_image, `${charName}_special_skill`, 'image', 'game_images');
-        }
       });
     }
 
@@ -577,32 +573,6 @@ async testR2Download(testUrl) {
     return assets;
   }
 
-  getStaticPotionShopAssets() {
-    const assets = [];
-    const addedUrls = new Set();
-    const addAsset = (url, name, type, category) => {
-      if (url && typeof url === "string" && !addedUrls.has(url)) {
-        addedUrls.add(url);
-        assets.push({ url, name, type, category });
-      }
-    };
-
-    addAsset(
-      'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760334965/shop_holder_deydxu.png',
-      'shop_background_holder',
-      'image',
-      'potion_shop_ui'
-    );
-    addAsset(
-      'https://micomi-assets.me/Hero%20Selection%20Components/Shi-Shi%20Shop.mp4',
-      'shishi_shopkeeper_video',
-      'video',
-      'ui_videos'
-    );
-    
-    return assets;
-  }
-
   async downloadStaticCharacterSelectAssets(onProgress = null, onAssetComplete = null) {
     const wasDownloading = this.isDownloading;
     this.isDownloading = true;
@@ -742,8 +712,6 @@ async testR2Download(testUrl) {
     const extractLevelAssets = (level, levelIndex = 0) => {
       if (!level) return;
 
-      
-
       // Enemy Assets
       if (level.enemy) {
         const enemy = level.enemy;
@@ -753,10 +721,6 @@ async testR2Download(testUrl) {
         addAsset(enemy.enemy_hurt, `${enemy.enemy_name}_hurt`, 'animation', 'game_animations');
         addAsset(enemy.enemy_dies, `${enemy.enemy_name}_dies`, 'animation', 'game_animations');
         addAsset(enemy.enemy_avatar, `${enemy.enemy_name}_avatar`, 'image', 'game_images');
-
-         if (enemy.special_skill?.special_skill_image) {
-          addAsset(enemy.special_skill.special_skill_image, `${enemy.enemy_name}_special_skill`, 'image', 'game_images');
-        }
       }
 
       // Character Assets
@@ -769,10 +733,6 @@ async testR2Download(testUrl) {
         addAsset(char.character_avatar, `${char.character_name}_avatar`, 'image', 'game_images');
         if (Array.isArray(char.character_attack)) {
           char.character_attack.forEach((url, i) => addAsset(url, `${char.character_name}_attack_${i}`, 'animation', 'game_animations'));
-        }
-
-        if (char.special_skill?.special_skill_image) {
-          addAsset(char.special_skill.special_skill_image, `${char.character_name}_special_skill`, 'image', 'game_images');
         }
       }
 
@@ -842,10 +802,6 @@ async testR2Download(testUrl) {
       // Fallback: treat mapLevelData as a single level (for enterLevel response)
       extractLevelAssets(mapLevelData, 0);
     }
-
-    const staticShopAssets = this.getStaticPotionShopAssets();
-    staticShopAssets.forEach(asset => addAsset(asset.url, asset.name, asset.type, asset.category));
-
 
     
 
@@ -1138,28 +1094,11 @@ async testR2Download(testUrl) {
         assets.push({ url: source.versus_background, name: 'versus_background', type: 'image', category: 'game_visuals' });
       }
 
-     
       // Card Image (single URL)
       if (source.card?.character_attack_card && this.isImageFile(source.card.character_attack_card)) {
         assets.push({ url: source.card.character_attack_card, name: 'character_attack_card', type: 'image', category: 'game_visuals' });
       }
-
-       if (source.selectedCharacter?.special_skill?.special_skill_image) {
-        assets.push({ url: source.selectedCharacter.special_skill.special_skill_image, name: 'character_special_skill', type: 'image', category: 'game_images' });
-      }
-
-      if (source.enemy?.special_skill?.special_skill_image) {
-        assets.push({ url: source.enemy.special_skill.special_skill_image, name: 'enemy_special_skill', type: 'image', category: 'game_images' });
-      }
-
-
-      if (source.use_potion_effect && this.isImageFile(source.use_potion_effect)) {
-        assets.push({ url: source.use_potion_effect, name: 'use_potion_effect', type: 'image', category: 'game_visuals' });
-      }
-
     });
-
-    
 
     // Remove duplicates to avoid unnecessary downloads
     const uniqueAssets = assets.filter((asset, index, self) =>
@@ -1210,15 +1149,6 @@ async testR2Download(testUrl) {
       });
     }
 
-    if (levelData && levelData.use_potion_audio && typeof levelData.use_potion_audio === 'string' && this.isAudioFile(levelData.use_potion_audio)) {
-      assets.push({
-        url: levelData.use_potion_audio,
-        name: 'use_potion_audio',
-        type: 'audio',
-        category: 'game_audio'
-      });
-    }
-
      if (levelData && levelData.is_victory_audio && typeof levelData.is_victory_audio === 'string' && this.isAudioFile(levelData.is_victory_audio)) {
       assets.push({
         url: levelData.is_victory_audio,
@@ -1259,8 +1189,7 @@ async testR2Download(testUrl) {
         { url: character.character_run, name: 'run_animation', type: 'animation' },
         { url: character.character_dies, name: 'death_animation', type: 'animation' },
         { url: character.character_hurt, name: 'hurt_animation', type: 'animation' },
-        { url: character.avatar_image, name: 'avatar_image', type: 'image' },
-        { url: character.special_skill?.special_skill_image, name: 'special_skill_icon', type: 'image' }
+        { url: character.avatar_image, name: 'avatar_image', type: 'image' }
       ];
 
       // Handle character attacks array
@@ -1888,34 +1817,42 @@ async testR2Download(testUrl) {
   }
 
   extractPotionShopAssets(levelPreviewData) {
-    const assets = [];
-    const addedUrls = new Set();
-    const addAsset = (url, name, type, category) => {
-      if (url && typeof url === "string" && !addedUrls.has(url)) {
-        addedUrls.add(url);
-        assets.push({ url, name, type, category });
-      }
-    };
+  const assets = [];
 
-    // Include static shop assets
-    const staticAssets = this.getStaticPotionShopAssets();
-    assets.push(...staticAssets);
+    addAsset(
+      'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg',
+      'shop_background',
+      'image',
+      'potion_shop_ui'
+    );
+    addAsset(
+      'https://micomi-assets.me/Hero%20Selection%20Components/Shi-Shi%20Shop.mp4',
+      'shishi_shopkeeper_video',
+      'video',
+      'potion_shop_ui'
+    );
 
-    if (!levelPreviewData || !levelPreviewData.potionShop) return assets;
+  
+  if (!levelPreviewData || !levelPreviewData.potionShop) return assets;
 
-    levelPreviewData.potionShop.forEach((potion) => {
-      if (potion.potion_url && typeof potion.potion_url === "string") {
-        addAsset(
-          potion.potion_url,
-          `potion_${potion.potion_type}`,
-          "image",
-          "potion_shop"
-        );
-      }
-    });
+  
+  levelPreviewData.potionShop.forEach((potion, index) => {
+    if (potion.potion_url && typeof potion.potion_url === 'string') {
+      assets.push({
+        url: potion.potion_url,
+        name: `potion_${potion.potion_type}`,
+        type: 'image',
+        category: 'potion_shop',
+        potionId: potion.potion_id,
+        potionType: potion.potion_type,
+        potionPrice: potion.potion_price,
+        description: potion.description
+      });
+    }
+  });
 
-    console.log(`📦 Extracted ${assets.length} potion shop assets`);
-    return assets;
+  console.log(`📦 Extracted ${assets.length} potion shop assets`);
+  return assets;
   }
 
   extractProfileAssetsForMapReuse(profileData) {
@@ -3056,12 +2993,7 @@ transformPotionShopDataWithCache(levelPreviewData) {
       } else if (character.character_attack) {
         character.character_attack = this.getCachedAssetPath(character.character_attack);
       }
-
-      if (character.special_skill?.special_skill_image) {
-        character.special_skill.special_skill_image = this.getCachedAssetPath(character.special_skill.special_skill_image);
-      }
     }
-
 
     // Transform enemy animations
     if (transformedGameState.enemy) {
@@ -3080,10 +3012,6 @@ transformPotionShopDataWithCache(levelPreviewData) {
           enemy[field] = this.getCachedAssetPath(enemy[field]);
         }
       });
-
-      if (enemy.special_skill?.special_skill_image) {
-        enemy.special_skill.special_skill_image = this.getCachedAssetPath(enemy.special_skill.special_skill_image);
-      }
     }
 
 
@@ -3121,14 +3049,6 @@ transformPotionShopDataWithCache(levelPreviewData) {
       transformedGameState.gameplay_audio = this.getCachedAssetPath(transformedGameState.gameplay_audio);
     }
 
-    if (transformedGameState.use_potion_effect) {
-      transformedGameState.use_potion_effect = this.getCachedAssetPath(transformedGameState.use_potion_effect);
-    }
-    
-    if (transformedGameState.use_potion_audio) {
-      transformedGameState.use_potion_audio = this.getCachedAssetPath(transformedGameState.use_potion_audio);
-    }
-
      if (transformedGameState.dialogue) {
       const dialogue = transformedGameState.dialogue;
       if (dialogue.micomi_image) {
@@ -3147,14 +3067,6 @@ transformPotionShopDataWithCache(levelPreviewData) {
 
       if (sub.is_victory_image) {
         sub.is_victory_image = this.getCachedAssetPath(sub.is_victory_image);
-      }
-
-
-      if (sub.use_potion_effect) {
-        sub.use_potion_effect = this.getCachedAssetPath(sub.use_potion_effect);
-      }
-      if (sub.use_potion_audio) {
-        sub.use_potion_audio = this.getCachedAssetPath(sub.use_potion_audio);
       }
 
 
@@ -3217,11 +3129,6 @@ transformPotionShopDataWithCache(levelPreviewData) {
           } else if (fightChar.character_attack) {
             fightChar.character_attack = this.getCachedAssetPath(fightChar.character_attack);
           }
-
-          if (fightChar.special_skill?.special_skill_image) {
-            fightChar.special_skill.special_skill_image = this.getCachedAssetPath(fightChar.special_skill.special_skill_image);
-          }
-        
         }
         
         if (fightResult.enemy) {
@@ -3240,10 +3147,6 @@ transformPotionShopDataWithCache(levelPreviewData) {
               fightEnemy[field] = this.getCachedAssetPath(fightEnemy[field]);
             }
           });
-
-          if (fightEnemy.special_skill?.special_skill_image) {
-            fightEnemy.special_skill.special_skill_image = this.getCachedAssetPath(fightEnemy.special_skill.special_skill_image);
-          }
         }
       }
     }

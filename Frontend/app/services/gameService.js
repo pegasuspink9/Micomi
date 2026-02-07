@@ -293,7 +293,8 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
             character_damage: fightResult.character.character_damage,
             character_health: fightResult.character.character_health,
             character_max_health: fightResult.character.character_max_health,
-            character_avatar: fightResult.character.character_avatar
+            character_avatar: fightResult.character.character_avatar,
+            special_skill: fightResult.character.special_skill || null
           } : null,
           
           enemy: fightResult.enemy ? {
@@ -309,6 +310,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
             enemy_health: fightResult.enemy.enemy_health,
             enemy_max_health: fightResult.enemy.enemy_max_health,
             enemy_avatar: fightResult.enemy.enemy_avatar || null,
+            special_skill: fightResult.enemy.special_skill || null,
           } : null,
         } : null,
       
@@ -514,8 +516,12 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
 
 
   usePotion: async (levelId, challengeId, playerPotionId) => {
-  try {
-    console.log(`🧪 Using potion ${playerPotionId} for player, level ${levelId}, challenge ${challengeId}...`);
+    try {
+      if (!levelId || !challengeId || !playerPotionId) {
+        throw new Error(`Missing required parameters: Level=${levelId}, Challenge=${challengeId}, Potion=${playerPotionId}`);
+      }
+
+      console.log(`🧪 Using potion ${playerPotionId} for player, level ${levelId}, challenge ${challengeId}...`);
     
     const payload = { playerPotionId };
     

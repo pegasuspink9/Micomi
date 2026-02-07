@@ -313,11 +313,21 @@ export default function PotionShop() {
     fetchPotionData();
   };
 
+
+  const getCachedVideoSource = () => {
+    const cachedPath = universalAssetPreloader.getCachedAssetPath(SHOP_VIDEO);
+    return { uri: cachedPath };
+  };
+
+  const getCachedShopBG = () => universalAssetPreloader.getCachedAssetPath(SHOP_BG);
+  const getCachedShopHolder = () => universalAssetPreloader.getCachedAssetPath(SHOP_HOLDER);
+
+
   if (loading) {
     return (
       <View style={styles.container}>
         <ImageBackground 
-          source={{ uri: getCachedImagePath(SHOP_BG) }} 
+          source={{ uri: getCachedShopBG() }} 
           style={styles.ImageBackgroundContainer} 
           resizeMode="cover"
         >
@@ -337,7 +347,7 @@ export default function PotionShop() {
     return (
       <View style={styles.container}>
         <ImageBackground 
-          source={{ uri: getCachedImagePath(SHOP_BG) }} 
+          source={{ uri: getCachedShopBG() }} 
           style={styles.ImageBackgroundContainer} 
           resizeMode="cover"
         >
@@ -356,7 +366,7 @@ export default function PotionShop() {
   return (
     <View style={styles.container}>
       <ImageBackground 
-         source={{ uri: getCachedImagePath(SHOP_BG) }} 
+        source={{ uri: getCachedShopBG() }} 
         style={styles.ImageBackgroundContainer} 
         resizeMode="cover"
       >
@@ -376,8 +386,8 @@ export default function PotionShop() {
         </View>
         
         <View style={styles.topFrame}>
-          <Video
-            source={{ uri: getCachedImagePath(SHOP_VIDEO) }}
+        <Video
+          source={getCachedVideoSource()}
             style={styles.ImageBackgroundTop}
             shouldPlay
             isLooping
@@ -388,8 +398,8 @@ export default function PotionShop() {
         </View>
         
         <View style={styles.bottomFrame}>
-          <ImageBackground 
-             source={{ uri: getCachedImagePath(SHOP_HOLDER) }} 
+        <ImageBackground 
+          source={{ uri: getCachedShopHolder() }} 
             style={styles.ImageBackgroundBottom}
             resizeMode="contain"
           >
