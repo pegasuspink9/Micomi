@@ -92,14 +92,16 @@ class ApiService {
       
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
-        let errorData = null; // Declare errorData here
+        let errorData = null;
         try {
-          // Attempt to parse the response body for a more specific error message
-          errorData = await response.json(); // Assign to errorData
-          if (errorData && errorData.message) {
-            errorMessage = errorData.message;
-          } else if (errorData && errorData.error) { // Check for common 'error' field too
-            errorMessage = errorData.error;
+          errorData = await response.json();
+          // Prioritize the detailed 'error' field if the 'message' is generic
+          if (errorData) {
+            if (errorData.error && typeof errorData.error === 'string') {
+              errorMessage = errorData.error;
+            } else if (errorData.message) {
+              errorMessage = errorData.message;
+            }
           }
         } catch (jsonError) {
           // If response is not JSON, or parsing fails, use the default HTTP error message

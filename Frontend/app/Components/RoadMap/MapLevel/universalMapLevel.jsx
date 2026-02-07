@@ -83,15 +83,17 @@ export default function UniversalMapLevel() {
         // Optional: Perform cleanup if needed when the screen loses focus
         console.log('🗺️ UniversalMapLevel unfocused.');
       };
-    }, [refetch]) // Dependency array includes refetch to ensure it's up-to-date
+    }, [refetch]) 
   );
 
-  useFocusEffect(
+    useFocusEffect(
   React.useCallback(() => {
     if (Platform.OS === 'android') {
-      NavigationBar.setVisibilityAsync('hidden').catch((error) => {
-        console.log('Failed to hide navigation bar:', error);
-      });
+      const hideUI = async () => {
+        await NavigationBar.setVisibilityAsync('hidden');
+        await NavigationBar.setBehaviorAsync('hidden-sticky');
+      };
+      hideUI().catch(console.error);
     }
   }, [])
   );

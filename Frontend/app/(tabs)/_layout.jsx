@@ -16,15 +16,15 @@ export default function TabLayout() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
     <Tabs
-      initialRouteName="index" 
+      initialRouteName="map" 
       screenOptions={{
         tabBarStyle: styles.tabBar,
         headerShown: false,
         tabBarItemStyle: styles.tabBarItem
       }}
     >
-      <Tabs.Screen
-        name="practice"
+     <Tabs.Screen
+        name="Practice" // This ensures the tab is visible and uses Practice.jsx
         options={{
           title: '',
           tabBarItemStyle: [styles.tabBarItem, { borderLeftWidth: 0 }],
@@ -41,7 +41,7 @@ export default function TabLayout() {
       />
 
        <Tabs.Screen
-        name="index"
+        name="map"
         options={{
           title: '',
           tabBarButton: (props) => <CustomTabBarButton {...props} />, 

@@ -17,6 +17,16 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "softwareKeyboardLayoutMode": "pan",
+      "userInterfaceStyle": "dark",
+      "statusBar": {
+        "hidden": true,
+        "translucent": true,
+        "backgroundColor": "#00000000"
+      },
+      "navigationBar": {
+        "visible": "never"
+      },
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.VIBRATE"

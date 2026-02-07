@@ -1,9 +1,14 @@
+
 import React from "react";
-import { View, Text, ImageBackground, StyleSheet, Image, TouchableOpacity } from "react-native"; // Import Image
+import { View, Text, ImageBackground, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { gameScale } from "../Responsiveness/gameResponsive";
+import { useAuth } from "../../hooks/useAuth";
 
 const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, expPoints, playerAvatar, onAvatarPress }) => { 
+  const { logout } = useAuth();
+
   const calculateLevelProgress = () => {
     const currentLevel = playerLevel || 1;
     const currentExp = expPoints || 0;
@@ -22,7 +27,6 @@ const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, e
 
   const levelData = calculateLevelProgress();
 
-  // Define the default avatar source
   const defaultAvatarSource = { uri: 'https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif' };
   const currentAvatarSource = playerAvatar ? { uri: playerAvatar } : defaultAvatarSource;
 
@@ -39,13 +43,22 @@ const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, e
             style={styles.coverOverlay}
           />
           
+          {/* Logout Button */}
+          <TouchableOpacity 
+            style={styles.logoutButton}
+            onPress={logout}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="log-out-outline" size={gameScale(20)} color="#FFFFFF" />
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+
           <View style={styles.badgeNameTop}>
             <Text style={styles.badgeNameText}>
               {selectedBadge.achievement_name}
             </Text>
           </View>
           
-          {/* Player Info Content - Positioned at Bottom */}
           <View style={styles.playerInfoContent}>
             <TouchableOpacity 
               style={styles.playerAvatarContainer} 
@@ -79,7 +92,6 @@ const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, e
                 </View>
               </View>
               
-              {/* XP Progress Bar */}
               <View style={styles.xpBarLayer1}>
                 <View style={styles.xpBarLayer2}>
                   <View style={styles.xpBarLayer3}>
@@ -109,6 +121,16 @@ const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, e
           colors={['#0a192f', '#1c2e4a', '#0a192f']}
           style={styles.fallbackBackground}
         >
+          {/* Logout Button */}
+          <TouchableOpacity 
+            style={styles.logoutButton}
+            onPress={logout}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="log-out-outline" size={gameScale(20)} color="#FFFFFF" />
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+
           <View style={styles.badgeNameTop}>
             <Text style={[styles.badgeNameText, styles.noBadgeText]}>
               No Badge Selected
@@ -116,7 +138,6 @@ const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, e
           </View>
           
           <View style={styles.playerInfoContent}>
-            {/* Player Avatar Section (ADDED for fallback) */}
             <View style={styles.playerAvatarContainer}>
               <View style={styles.playerAvatarOuterBorder}>
                 <View style={styles.playerAvatarInnerBorder}>
@@ -127,8 +148,6 @@ const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, e
                 </View>
               </View>
             </View>
-            {/* Note: playerName is currently displayed in fallback, but avatar is placed relative to username */}
-            {/* <Text style={styles.playerName}>{playerName}</Text> */}
             <Text style={styles.username}>{username}</Text>
             
             <View style={styles.lifeContainer}>
@@ -198,6 +217,28 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   
+  // Logout Button
+  logoutButton: {
+    position: 'absolute',
+    top: gameScale(15),
+    right: gameScale(15),
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingHorizontal: gameScale(12),
+    paddingVertical: gameScale(6),
+    borderRadius: gameScale(20),
+    zIndex: 100,
+    borderWidth: gameScale(1),
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  logoutText: {
+    color: '#FFFFFF',
+    fontSize: gameScale(12),
+    fontFamily: 'DynaPuff',
+    marginLeft: gameScale(5),
+  },
+
   badgeNameTop: {
     position: 'absolute',
     top: 0,
@@ -206,7 +247,7 @@ const styles = StyleSheet.create({
     paddingTop: gameScale(15),
     maxWidth: gameScale(300),
   },
-   badgeNameText: {
+  badgeNameText: {
     marginLeft: gameScale(10),
     fontSize: gameScale(50),
     fontFamily: 'Grobold',
@@ -307,7 +348,6 @@ const styles = StyleSheet.create({
     textShadowRadius: gameScale(3),
   },
 
-  // XP Progress Bar Styles
   xpBarLayer1: {
     height: gameScale(22),
     width: '40%',
@@ -374,7 +414,6 @@ const styles = StyleSheet.create({
     textShadowRadius: gameScale(2),
   },
 
-  // NEW AVATAR STYLES
   playerAvatarContainer: {
     alignSelf: 'flex-start',
     marginBottom: gameScale(10),
@@ -390,14 +429,14 @@ const styles = StyleSheet.create({
   playerAvatarInnerBorder: {
     borderWidth: gameScale(0.5), 
     borderColor: 'rgba(255, 255, 255, 0.7)', 
-    borderRadius: gameScale(5), // Maintain radius
+    borderRadius: gameScale(5),
     padding: gameScale(0), 
     backgroundColor: 'rgba(0, 0, 0, 0.2)', 
   },
   playerAvatarImage: {
     width: gameScale(50),
     height: gameScale(50),
-    borderRadius: gameScale(5), // Radius for the image itself
+    borderRadius: gameScale(5),
     resizeMode: 'cover', 
   },
 });
