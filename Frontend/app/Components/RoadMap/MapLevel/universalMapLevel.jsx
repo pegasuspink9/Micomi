@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useEffect, useState } from "react";
+import React, { useMemo, useCallback, useEffect, useState, useRef } from "react";
 import { View, StyleSheet, ImageBackground, ScrollView, Dimensions, Text } from "react-native";
 import LevelButtons from "../RoadMapComponents/Buttons";
 import LottieView from "lottie-react-native";
@@ -19,6 +19,7 @@ const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 export default function UniversalMapLevel() {
 
    const navigation = useNavigation();
+   const scrollViewRef = useRef(null);
 
   const [backgroundCount, setBackgroundCount] = useState(5);
   
@@ -168,13 +169,50 @@ export default function UniversalMapLevel() {
       const patternIndex = (lastIndex - 1) % 4; 
       const loopNumber = Math.floor((lastIndex - 1) / 4); 
 
-      const verticalOffset = loopNumber * 680 * responsive.heightRatio;
+      const verticalOffset = loopNumber * 700 * responsive.heightRatio;
       lastButtonTop = fourButtonPositions[patternIndex].top + verticalOffset;
     }
+
     
     return lastButtonTop + (500 * responsive.heightRatio);
   }, [levels, getResponsiveValues]); // Changed from lessons to levels
   
+
+  useEffect(() => {
+  if (!loading && levels.length > 0) {
+  const currentIndex = levels.findIndex(level => level.isCurrentUnlocked === true);
+
+    if (currentIndex !== -1) {
+    console.log(`🎯 Found current unlocked level at index ${currentIndex}. Scrolling...`);
+    const responsive = getResponsiveValues();
+    let targetTop;
+
+    if (currentIndex === 0) {
+      targetTop = 200 * responsive.heightRatio;
+    } else {
+      const fourButtonPositions = [350, 540, 735, 900];
+      const patternIndex = (currentIndex - 1) % 4;
+      const loopNumber = Math.floor((currentIndex - 1) / 4);
+      const verticalOffset = loopNumber * 700 * responsive.heightRatio;
+      targetTop = (fourButtonPositions[patternIndex] * responsive.heightRatio) + verticalOffset;
+    }
+
+    // Center the button in the screen (approximate)
+    const scrollY = Math.max(0, targetTop - (screenHeight / 2) + 150);
+    
+    // Slight delay to ensure layout is ready
+    const timer = setTimeout(() => {
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({ y: scrollY, animated: true });
+      }
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }
+  }
+  }, [loading, levels, getResponsiveValues]);
+
+
   const handleScroll = useCallback(({ nativeEvent }) => {
     const { contentOffset } = nativeEvent;
     const currentScreen = Math.floor(contentOffset.y / screenHeight);
@@ -268,6 +306,7 @@ export default function UniversalMapLevel() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.container }]}>
       <ScrollView 
+        ref={scrollViewRef}
         style={styles.scrollView}
         contentContainerStyle={[
           { minHeight: calculateContentHeight() }

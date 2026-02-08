@@ -119,9 +119,9 @@ const EnemyCharacter = ({
       return gameScale(190); 
     }
     if (effectiveEnemyName === 'King Grimnir') {
-      return gameScale(200); // Example: King Grimnir is even bigger
+      return gameScale(200);
     }
-    return gameScale(150); // Default size
+    return gameScale(150);
 
     
   }, [effectiveEnemyName]);

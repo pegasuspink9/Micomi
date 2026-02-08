@@ -20,6 +20,8 @@ const LevelModal = ({
   navigation = null 
 }) => {
   const router = useRouter();
+  const [isNavigating, setIsNavigating] = useState(false); // ✅ New state
+  const hasTriggeredNav = useRef(false); 
   const [previewData, setPreviewData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -105,60 +107,52 @@ const LevelModal = ({
   ]).start();
   };
 
-  const handlePlayPress = useCallback(() => {
-  if (isAnimating) return;
-  
-  const levelType = displayData?.level?.level_type;
-  
-  console.log('🎮 Play button pressed:', {
-    levelId,
-    levelData: displayData,
-    levelType
-  });
-
-  handleModalClose();
-
-  setTimeout(() => {
-    try {
-      if (levelType === "shopButton") {
-        // Navigate to PotionShop for shop levels
-        router.push({
-          pathname: '/PotionShop',
-          params: {
-            levelId: levelId,
-            levelData: JSON.stringify(displayData || {})
-          }
-        });
-      } else if (levelType === "micomiButton") {
-        // Navigate to Micomic for comic levels
-        router.push({
-          pathname: '/Micomic',
-          params: {
-            levelId: levelId
-          }
-        });
-      } else {
-        // Existing GamePlay navigation for other levels
-        router.push({
-          pathname: '/GamePlay', 
-          params: {
-            levelId: levelId,
-            levelData: JSON.stringify(displayData || {})
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Navigation error:', error);
-      onPlay({
-        levelId,
-        levelData: displayData
-      });
+  useEffect(() => {
+    if (!visible) {
+      hasTriggeredNav.current = false;
+      setIsNavigating(false);
     }
-  }, 100);
-}, [isAnimating, levelId, displayData, handleModalClose, router, onPlay]);
+  }, [visible]);
 
+
+    const handlePlayPress = useCallback(() => {
+    if (isAnimating || isNavigating || hasTriggeredNav.current) return;
+    
+    const levelType = displayData?.level?.level_type;
+    
+    console.log('🎮 Play button pressed:', { levelId });
+
+    hasTriggeredNav.current = true; // ✅ Lock immediately
+    setIsNavigating(true);
+    
+    handleModalClose();
+
+    setTimeout(() => {
+      try {
+        if (levelType === "shopButton") {
+          router.push({
+            pathname: '/PotionShop',
+            params: { levelId, levelData: JSON.stringify(displayData || {}) }
+          });
+        } else if (levelType === "micomiButton") {
+          router.push({ pathname: '/Micomic', params: { levelId } });
+        } else {
+          router.push({
+            pathname: '/GamePlay', 
+            params: { levelId, levelData: JSON.stringify(displayData || {}) }
+          });
+        }
+      } catch (error) {
+        console.error('Navigation error:', error);
+        onPlay({ levelId, levelData: displayData });
+        // Fail-safe: if something crashes, allow re-trigger on next mount
+        hasTriggeredNav.current = false;
+      }
+    }, 100);
+  }, [isAnimating, isNavigating, levelId, displayData, handleModalClose, router, onPlay]);
   //  Much smoother entrance animation
   const startEntranceAnimation = () => {
+    if (isAnimating) return;
     setIsAnimating(true);
     
     // Reset all values for smooth entrance
@@ -239,8 +233,6 @@ const LevelModal = ({
 
   //  Smooth exit animation
   const handleModalClose = () => {
-    setIsAnimating(true);
-    
     Animated.parallel([
       Animated.timing(scaleAnim, {
         toValue: 0.8,

@@ -60,7 +60,7 @@ const CodeEditor = ({
       setTabsDisabled(false);
     }, 3000); 
     return () => clearTimeout(timer); 
-  }, []); // Run on mount (which happens every new question now due to key)
+  }, []);
 
 
   useEffect(() => {
@@ -172,36 +172,61 @@ const CodeEditor = ({
     }
   }, [activeTab, lines, renderSyntaxHighlightedLine, currentQuestion, selectedAnswers, userOutput, isCorrect, scrollViewRef]);
 
- // Animation logic remains the same, but now guarantees running from 0 opacity because component is fresh
  useEffect(() => {
     if (!hasAnimated && activeTab === 'code' && lines && lines.length > 0) {
       
-      // Safety reset (though strictly not needed if unmounted, good for tab switching)
       lineAnimations.current.forEach(anim => {
         if (anim) {
           anim.opacity.setValue(0);
-          anim.translateY.setValue(-20);
+          anim.translateY.setValue(gameScale(-20)); // Use gameScale for consistency
         }
       });
 
+      const MAX_ANIMATION_TOTAL_DURATION = 2000; // Cap total animation at 3 seconds
+      const BASE_LINE_OPACITY_DELAY = 90;
+      const BASE_LINE_TRANSLATE_Y_DELAY = 50;
+      const BASE_STAGGER_DELAY = 25;
+      const INDIVIDUAL_ANIMATION_DURATION = 200;
+
+      // Calculate the approximate total duration with original settings
+      // This considers the last line's opacity animation to be the latest finishing point
+      const originalTotalDuration = 
+        (lines.length > 0 ? (lines.length - 1) * (BASE_STAGGER_DELAY + BASE_LINE_OPACITY_DELAY) : 0) 
+        + INDIVIDUAL_ANIMATION_DURATION;
+
+      let actualLineOpacityDelay = BASE_LINE_OPACITY_DELAY;
+      let actualLineTranslateYDelay = BASE_LINE_TRANSLATE_Y_DELAY;
+      let actualStaggerDelay = BASE_STAGGER_DELAY;
+
+      if (originalTotalDuration > MAX_ANIMATION_TOTAL_DURATION && lines.length > 1) {
+        const scaleFactor = MAX_ANIMATION_TOTAL_DURATION / originalTotalDuration;
+        actualLineOpacityDelay = Math.max(1, Math.floor(BASE_LINE_OPACITY_DELAY * scaleFactor));
+        actualLineTranslateYDelay = Math.max(1, Math.floor(BASE_LINE_TRANSLATE_Y_DELAY * scaleFactor));
+        actualStaggerDelay = Math.max(1, Math.floor(BASE_STAGGER_DELAY * scaleFactor));
+      } else if (lines.length === 1) {
+        actualLineOpacityDelay = 0;
+        actualLineTranslateYDelay = 0;
+        actualStaggerDelay = 0;
+      }
+      
       const anims = lineAnimations.current.slice(0, lines.length).map((anim, index) =>
         Animated.parallel([
           Animated.timing(anim.opacity, {
             toValue: 1,
-            duration: 200,
-            delay: index * 90,
+            duration: INDIVIDUAL_ANIMATION_DURATION,
+            delay: index * actualLineOpacityDelay, 
             useNativeDriver: true,
           }),
           Animated.timing(anim.translateY, {
             toValue: 0,
-            duration: 200,
-            delay: index * 50,
+            duration: INDIVIDUAL_ANIMATION_DURATION,
+            delay: index * actualLineTranslateYDelay, 
             useNativeDriver: true,
           }),
         ])
       );
 
-      Animated.stagger(25, anims).start(() => {
+      Animated.stagger(actualStaggerDelay, anims).start(() => { 
         setHasAnimated(true); 
       });
     }
@@ -555,14 +580,21 @@ const styles = StyleSheet.create({
 });
 
 export default React.memo(CodeEditor, (prevProps, nextProps) => {
+  // Minimize deep comparisons to prevent frame drops on long questions
+  if (prevProps.currentQuestion?.id !== nextProps.currentQuestion?.id) return false;
+  if (prevProps.activeTab !== nextProps.activeTab) return false;
+  if (prevProps.isCorrect !== nextProps.isCorrect) return false;
+  
+  const prevAns = prevProps.selectedAnswers;
+  const nextAns = nextProps.selectedAnswers;
+  if (prevAns !== nextAns) {
+      if (prevAns?.length !== nextAns?.length) return false;
+      if (JSON.stringify(prevAns) !== JSON.stringify(nextAns)) return false;
+  }
+
   return (
-    prevProps.currentQuestion?.question === nextProps.currentQuestion?.question &&
-    JSON.stringify(prevProps.selectedAnswers) === JSON.stringify(nextProps.selectedAnswers) &&
-    prevProps.activeTab === nextProps.activeTab &&
+    prevProps.renderSyntaxHighlightedLine === nextProps.renderSyntaxHighlightedLine &&
     prevProps.userOutput === nextProps.userOutput &&
-    prevProps.expectedOutput === nextProps.expectedOutput &&
-    prevProps.isCorrect === nextProps.isCorrect &&
-    prevProps.onTabChange === nextProps.onTabChange &&
-    prevProps.renderSyntaxHighlightedLine === nextProps.renderSyntaxHighlightedLine
+    prevProps.expectedOutput === nextProps.expectedOutput
   );
 });

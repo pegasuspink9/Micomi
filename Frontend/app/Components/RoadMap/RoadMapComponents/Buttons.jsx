@@ -49,6 +49,7 @@ export default function LevelButtons({
   navigation = null
 }) {
   const floatAnim = useRef(new Animated.Value(0)).current;
+  const processingPress = useRef(false); 
   const { getLevelPreview } = useLevelData();
   const router = useRouter();
   
@@ -141,11 +142,12 @@ export default function LevelButtons({
   });
 
   // Handle level button press - show modal instead of direct navigation
-  const handleLevelButtonPress = async (level) => {
-    if (level.is_unlocked === false) {
-      console.log('Level is locked:', level.level_number);
+   const handleLevelButtonPress = async (level) => {
+    if (processingPress.current || modalVisible || level.is_unlocked === false) {
       return;
     }
+
+    processingPress.current = true; 
 
      console.log('🎮 Level button pressed:', {
       levelId: level.level_id,
@@ -235,6 +237,7 @@ const transformPreviewDataWithCache = (data) => {
     setModalVisible(false);
     setSelectedLevelId(null);
     setLevelPreviewData(null);
+    processingPress.current = false;
   };
 
   // Handle play button from modal
@@ -391,25 +394,38 @@ const transformPreviewDataWithCache = (data) => {
           
           const isUnlocked = level.is_unlocked === true;
           const isLocked = level.is_unlocked === false;
+          const isCurrentFocus = level.isCurrentUnlocked === true;
 
           const starCount = level.playerProgress?.[0]?.stars_earned || 0;
           const hasStars = starCount > 0;
 
-          return (
-            <Pressable
-              key={level.level_id || index}
-              style={[
-                styles.levelButton,
-                {
-                  top: position.top,
-                  left: position.left,
-                  width: responsive.buttonSize,
-                  height: responsive.buttonSize,
-                }
-              ]}
-              onPress={() => handleLevelButtonPress(level)}
-              disabled={isLocked}
-            >
+          
+      return (
+        <Pressable
+          key={level.level_id || index}
+          style={[
+            styles.levelButton,
+            {
+              top: position.top,
+              left: position.left,
+              width: responsive.buttonSize,
+              height: responsive.buttonSize,
+            },
+            isCurrentFocus && styles.currentLevelFocus
+          ]}
+          onPress={() => handleLevelButtonPress(level)}
+          disabled={isLocked}
+        >
+          {/* ✅ CURRENT FOCUS INDICATOR (Visual Glow) */}
+          {isCurrentFocus && (
+            <View style={[
+              styles.focusIndicator,
+              {
+                width: responsive.buttonSize * 1.3,
+                height: responsive.buttonSize * 1.3,
+              }
+            ]} />
+          )}
               {/*  Button background using cached image */}
               <ImageBackground 
                 source={{ uri: cachedButtonBackground }}
@@ -583,7 +599,21 @@ const styles = StyleSheet.create({
     position: 'absolute',
     zIndex: 2,
   },
-  // ✅ New Star Styles
+  currentLevelFocus: {
+    zIndex: 30, // Bring to front
+    },
+  focusIndicator: {
+    position: 'absolute',
+    backgroundColor: 'rgba(255, 68, 0, 0.2)',
+    borderRadius: 100,
+    zIndex: -1,
+    marginTop: -20,
+    shadowColor: "#bd0000",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 20,
+    elevation: 2,
+    },
   starWrapper: {
     flexDirection: 'row',
     alignItems: 'flex-end',
