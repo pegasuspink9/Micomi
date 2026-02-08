@@ -32,6 +32,7 @@ const EnemyCharacter = ({
   attackAudioUrl = null,
   enemyName = '',
   attackOverlayUrl = null, 
+  enemyCurrentState = null,
 }) => {
   // ========== Shared Animation Values ==========
   const frameIndex = useSharedValue(0);
@@ -343,6 +344,9 @@ const EnemyCharacter = ({
     }
   }, [currentState]);
 
+  const isFrozen = enemyCurrentState === 'Frozen';
+
+
   // ========== Main Animation Effect ==========
   useEffect(() => {
   if (currentState === 'attack' && attackInitiated.value) {
@@ -360,7 +364,7 @@ const EnemyCharacter = ({
   const isCurrentUrlCached = isUrlCached(currentAnimationUrl) || preloadedImages.has(currentAnimationUrl);
   const isTargetUrlCached = targetUrl ? (isUrlCached(targetUrl) || preloadedImages.has(targetUrl)) : true;
   
-  if (isPaused) {
+  if (isPaused || isFrozen) {
     cancelAnimation(frameIndex);
     cancelAnimation(positionX);
     cancelAnimation(opacity);
@@ -505,7 +509,6 @@ const EnemyCharacter = ({
   return (
     <Animated.View style={[ styles.enemyContainer, bossLayout, containerStyle, isFront && styles.front ]} >
       
-      {/* Attack Overlay (Buff/Status Icon) */}
       {attackOverlayUrl && (
         <Animated.View style={[styles.attackOverlay, overlayAnimatedStyle]}>
           <Image 
@@ -529,7 +532,18 @@ const EnemyCharacter = ({
           ) : (
             <View style={[styles.spriteImage, { backgroundColor: 'transparent' }]} />
           )}
-          {/* Only render the tinted overlay if currentState is TRULY hurt and we have a valid URL */}
+
+          {currentAnimationUrl && isFrozen && (
+            <Animated.View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
+              <Image
+                source={{ uri: currentAnimationUrl }}
+                style={[ styles.spriteImage, { tintColor: '#00ccff80' } ]}
+                contentFit="cover"
+                cachePolicy="disk"
+              />
+            </Animated.View>
+          )}
+
           {currentAnimationUrl && currentState === 'hurt' && (
             <Animated.View style={[StyleSheet.absoluteFill, redFlashStyle, { pointerEvents: 'none' }]}>
               <Image
@@ -568,13 +582,15 @@ const styles = StyleSheet.create({
   },
    attackOverlay: {
     position: 'absolute',
-    top: gameScale(-50), // Positioned above boss/enemy head
-    width: gameScale(60),
-    height: gameScale(60),
+    top: gameScale(10),
+    width: gameScale(120),
+    height: gameScale(120),
     zIndex: 1001,
   },
   overlayImage: {
     width: '100%',
+    
+    opacity: 0.7, 
     height: '100%',
   },
 });
@@ -590,6 +606,7 @@ export default React.memo(EnemyCharacter, (prev, next) => {
     prev.enemyName === next.enemyName && 
     prev.index === next.index &&      
     prev.attackOverlayUrl === next.attackOverlayUrl && 
+     prev.enemyCurrentState === next.enemyCurrentState &&
     JSON.stringify(prev.characterAnimations) === JSON.stringify(next.characterAnimations)
   );
 });

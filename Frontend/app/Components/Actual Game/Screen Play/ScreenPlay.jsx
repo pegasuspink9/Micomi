@@ -65,6 +65,12 @@ const ScreenPlay = ({
     [gameState.submissionResult, gameState.enemy]
   );
 
+  const enemyCurrentState = useMemo(() => 
+    gameState.submissionResult?.fightResult?.enemy?.enemy_current_state || 
+    gameState.enemy?.enemy_current_state,
+    [gameState.submissionResult, gameState.enemy]
+  );
+
   const enemies = useMemo(() => {
     return [{
       duration: 10000,
@@ -698,7 +704,7 @@ useEffect(() => {
           attackOverlayUrl={characterAttackOverlay} 
         />
 
-        {enemies.map((enemy, index) => {
+         {enemies.map((enemy, index) => {
           if (!enemyPositions[index] || isCharacterRunning) return null;
           
           const currentEnemyState = isCharacterRunning || hasRunCompleted 
@@ -720,6 +726,7 @@ useEffect(() => {
               attackAudioUrl={gameState.submissionResult?.enemyAttackAudio}
               onAnimationComplete={handleEnemyAnimationComplete(index)}
                attackOverlayUrl={enemyAttackOverlay}
+              enemyCurrentState={enemyCurrentState}
             />
           );
         })}

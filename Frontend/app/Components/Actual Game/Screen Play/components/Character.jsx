@@ -557,9 +557,9 @@ const styles = StyleSheet.create({
   spriteImage: { width: '100%', height: '100%' },
   attackOverlay: {
     position: 'absolute',
-    top: gameScale(-40), // Float above the character
-    width: gameScale(50),
-    height: gameScale(50),
+    top: gameScale(5), // Float above the character
+    width: gameScale(100),
+    height: gameScale(100),
     zIndex: 30,
     justifyContent: 'center',
     alignItems: 'center',

@@ -153,6 +153,8 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         enemy_avatar: data.enemy?.enemy_avatar || responseData.enemy?.enemy_avatar || null, 
         enemy_attack_type: data.enemy?.enemy_attack_type || responseData.enemy?.enemy_attack_type || null,
         special_skill: data.enemy?.special_skill || responseData.enemy?.special_skill || null,
+        enemy_attack_overlay: data.enemy?.enemy_attack_overlay || responseData.enemy?.enemy_attack_overlay || null,
+        enemy_current_state: data.enemy?.enemy_current_state || responseData.enemy?.enemy_current_state || null,
       },
 
       avatar: {
@@ -174,6 +176,8 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         character_dies: data.character?.character_dies || responseData.character?.character_dies || null,
         character_avatar: data.character?.character_avatar || responseData.character?.character_avatar || null,
         special_skill: data.character?.special_skill || responseData.character?.special_skill || null,
+        character_attack_overlay: data.character?.character_attack_overlay || responseData.character?.character_attack_overlay || null,
+        character_current_state: data.character?.character_current_state || responseData.character?.character_current_state || null,
       },
       
       energy: data.energy || responseData.energy || 0,
@@ -294,7 +298,9 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
             character_health: fightResult.character.character_health,
             character_max_health: fightResult.character.character_max_health,
             character_avatar: fightResult.character.character_avatar,
-            special_skill: fightResult.character.special_skill || null
+            special_skill: fightResult.character.special_skill || null,
+            character_attack_overlay: fightResult.character.character_attack_overlay || null,
+            character_current_state: fightResult.character.character_current_state || null,
           } : null,
           
           enemy: fightResult.enemy ? {
@@ -311,6 +317,8 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
             enemy_max_health: fightResult.enemy.enemy_max_health,
             enemy_avatar: fightResult.enemy.enemy_avatar || null,
             special_skill: fightResult.enemy.special_skill || null,
+            enemy_attack_overlay: fightResult.enemy.enemy_attack_overlay || null,
+            enemy_current_state: fightResult.enemy.enemy_current_state || null,
           } : null,
         } : null,
       
@@ -362,6 +370,22 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
 
       if (responseData.fightResult?.character?.character_max_health) {
         gameState.selectedCharacter.max_health = responseData.fightResult.character.character_max_health;
+      }
+
+      if (responseData.fightResult?.character?.character_attack_overlay !== undefined) {
+        gameState.selectedCharacter.character_attack_overlay = responseData.fightResult.character.character_attack_overlay;
+      }
+
+      if (responseData.fightResult?.enemy?.enemy_attack_overlay !== undefined) {
+        gameState.enemy.enemy_attack_overlay = responseData.fightResult.enemy.enemy_attack_overlay;
+      }
+
+      if (responseData.fightResult?.character?.character_current_state !== undefined) {
+        gameState.selectedCharacter.character_current_state = responseData.fightResult.character.character_current_state;
+      }
+
+      if (responseData.fightResult?.enemy?.enemy_current_state !== undefined) {
+        gameState.enemy.enemy_current_state = responseData.fightResult.enemy.enemy_current_state;
       }
 
        if (responseData.fightResult?.enemy?.enemy_attack_type !== undefined) {
