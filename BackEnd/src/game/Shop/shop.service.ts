@@ -113,6 +113,22 @@ export const usePotion = async (
   challengeId: number,
   playerPotionId: number,
 ): Promise<SubmitChallengeControllerResult | UsePotionErrorResponse> => {
+  const playerProgress = await prisma.playerProgress.findMany({
+    where: { player_id: playerId },
+    select: { level_id: true },
+  });
+
+  const unlockedLevelIds = playerProgress.map((p) => p.level_id);
+  const maxUnlockedLevel =
+    unlockedLevelIds.length > 0 ? Math.max(...unlockedLevelIds) : 0;
+
+  if (maxUnlockedLevel < 14) {
+    return {
+      message: `Potions unlock at Level 14. You are currently at Level ${maxUnlockedLevel}.`,
+      success: false,
+    };
+  }
+
   const playerPotion = await prisma.playerPotion.findUnique({
     where: { player_potion_id: playerPotionId },
     include: { potion: true },
@@ -168,7 +184,6 @@ export const usePotion = async (
           "https://micomi-assets.me/Sounds/Final/All%20Potions.wav";
         use_potion_effect =
           "https://micomi-assets.me/Icons/Potions/Strongeffect.png";
-        character_current_state = "Strong";
       } else {
         dynamicMessage = `${character.character_name} already empowered—no extra surge!`;
       }
@@ -184,7 +199,6 @@ export const usePotion = async (
           "https://micomi-assets.me/Sounds/Final/All%20Potions.wav";
         use_potion_effect =
           "https://micomi-assets.me/Icons/Potions/Iceeffect.png";
-        enemy_current_state = "Frozen";
         console.log(
           `Freeze effect activated (only once): Next enemy attack nullified.`,
         );
@@ -202,7 +216,6 @@ export const usePotion = async (
         "https://micomi-assets.me/Sounds/Final/All%20Potions.wav";
       use_potion_effect =
         "https://micomi-assets.me/Icons/Potions/Healeffect.png";
-      character_current_state = "Revitalize";
       break;
     case "Reveal":
       console.log(`Hint potion consumed for challenge ${challengeId}`);
@@ -287,7 +300,6 @@ export const usePotion = async (
         "https://micomi-assets.me/Sounds/Final/All%20Potions.wav";
       use_potion_effect =
         "https://micomi-assets.me/Icons/Potions/Hinteffect.png";
-      character_current_state = "Reveal";
       break;
     default:
       throw new Error(`Unknown potion type: ${potionType}`);
@@ -324,6 +336,7 @@ export const usePotion = async (
     playerId,
     levelId,
     enemy?.enemy_id ?? 0,
+    potionType,
   );
 
   if (potionType === "Power" && freshProgressPostTx?.has_strong_effect) {
@@ -335,6 +348,9 @@ export const usePotion = async (
     console.log(
       `Backend doubling applied in response: ${originalDamages} → ${doubledDamages}`,
     );
+    fightResult.character.character_current_state = "Strong";
+    fightResult.character.character_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
   }
 
   if (potionType === "Immunity" && freshProgressPostTx?.has_freeze_effect) {
@@ -343,6 +359,23 @@ export const usePotion = async (
     console.log(
       "Backend freeze applied in response: enemy_damage=0, enemy_attack=null",
     );
+    fightResult.enemy.enemy_current_state = "Frozen";
+    fightResult.enemy.enemy_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Ice%20Overlay.png";
+  }
+
+  if (potionType === "Reveal") {
+    fightResult.character.character_current_state = "Reveal";
+    fightResult.character.character_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+    console.log("Reveal potion overlay set");
+  }
+
+  if (potionType === "Life") {
+    fightResult.character.character_current_state = "Revitalize";
+    fightResult.character.character_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+    console.log("Life potion overlay set");
   }
 
   const adjustedFightResult: any = {
@@ -453,8 +486,6 @@ export const usePotion = async (
     potionType,
     remainingQuantity: playerPotion.quantity - 1,
     appliedImmediately: true,
-    character_current_state,
-    enemy_current_state,
   } as unknown as SubmitChallengeControllerResult;
 };
 
@@ -466,6 +497,26 @@ export const buyPotionInShop = async (req: Request, res: Response) => {
 
     if (!potionShopId) {
       return errorShopResponse(res, null, "Potion ID is required", 400);
+    }
+
+    const playerProgress = await prisma.playerProgress.findMany({
+      where: { player_id: playerId },
+      select: { level_id: true },
+    });
+
+    const unlockedLevelIds = playerProgress.map((p) => p.level_id);
+    const maxUnlockedLevel =
+      unlockedLevelIds.length > 0 ? Math.max(...unlockedLevelIds) : 0;
+
+    console.log(`Player ${playerId} max unlocked level: ${maxUnlockedLevel}`);
+
+    if (maxUnlockedLevel < 14) {
+      return errorShopResponse(
+        res,
+        null,
+        `Potions unlock at Level 14. You are currently at Level ${maxUnlockedLevel}.`,
+        403,
+      );
     }
 
     const potion = await prisma.potionShop.findUnique({
