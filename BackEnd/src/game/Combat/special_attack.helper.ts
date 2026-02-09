@@ -16,6 +16,8 @@ export async function updateProgressForChallenge(
   });
   if (!progress) return { message: "Progress not found", success: false };
 
+  const rewardsAlreadyClaimed = progress.has_received_rewards ?? false;
+
   let consecutiveCorrects = progress.consecutive_corrects ?? 0;
   let consecutiveWrongs = progress.consecutive_wrongs ?? 0;
 
@@ -91,10 +93,17 @@ export async function updateProgressForChallenge(
       consecutiveCorrects = 1;
     }
 
-    const coinsToAdd =
-      isBonusRound && characterDamage
-        ? characterDamage
-        : challenge.coins_reward;
+    let coinsToAdd = 0;
+    let pointsToAdd = 0;
+
+    if (!rewardsAlreadyClaimed) {
+      coinsToAdd =
+        isBonusRound && characterDamage
+          ? characterDamage
+          : challenge.coins_reward;
+
+      pointsToAdd = challenge.points_reward;
+    }
 
     updateData = {
       ...updateData,
