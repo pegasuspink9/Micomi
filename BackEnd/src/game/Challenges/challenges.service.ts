@@ -447,6 +447,7 @@ export const submitChallengeService = async (
         has_reversed_curse: false,
         has_boss_shield: false,
         has_force_character_attack_type: false,
+        has_received_rewards: false,
       },
     });
   }
@@ -972,7 +973,19 @@ export const submitChallengeService = async (
 
   let completionRewards: CompletionRewards | undefined = undefined;
   let nextLevel: SubmitChallengeControllerResult["nextLevel"] = null;
-  const wasFirstCompletion = allCompleted && !freshProgress?.is_completed;
+
+  const freshCurrentProgress = await prisma.playerProgress.findUnique({
+    where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
+  });
+
+  const wasFirstCompletion =
+    allCompleted &&
+    !isReplayingCompletedLevel &&
+    !freshCurrentProgress?.has_received_rewards;
+
+  console.log(
+    `✅ FIRST COMPLETION CHECK: allCompleted=${allCompleted}, isReplayingCompletedLevel=${isReplayingCompletedLevel}, has_received_rewards=${freshCurrentProgress?.has_received_rewards}, wasFirstCompletion=${wasFirstCompletion}`,
+  );
 
   const playerLost = freshProgress!.player_hp <= 0;
 
@@ -999,10 +1012,8 @@ export const submitChallengeService = async (
       );
 
       stars = 0;
-
       is_victory_audio =
         "https://micomi-assets.me/Sounds/Final/Defeat_Sound.wav";
-
       is_victory_image = getRandomMicomiImage(playerId, false);
 
       completionRewards = {
@@ -1050,10 +1061,11 @@ export const submitChallengeService = async (
 
       is_victory_audio =
         "https://micomi-assets.me/Sounds/Final/Victory_Sound.wav";
-
       is_victory_image = getRandomMicomiImage(playerId, true);
 
       if (wasFirstCompletion) {
+        console.log(`✅ FIRST COMPLETION - Awarding rewards`);
+
         await prisma.playerProgress.update({
           where: { progress_id: currentProgress.progress_id },
           data: {
@@ -1062,6 +1074,7 @@ export const submitChallengeService = async (
             has_strong_effect: false,
             has_freeze_effect: false,
             stars_earned: stars,
+            has_received_rewards: true,
           },
         });
 
@@ -1080,6 +1093,8 @@ export const submitChallengeService = async (
           level.level_id,
         );
       } else {
+        console.log(`🔄 REPLAYING LEVEL - No rewards given`);
+
         const currentStars = freshProgress?.stars_earned ?? 0;
         const improved = stars > currentStars;
 
@@ -1094,7 +1109,6 @@ export const submitChallengeService = async (
 
         is_victory_audio =
           "https://micomi-assets.me/Sounds/Final/Victory_Sound.wav";
-
         is_victory_image = getRandomMicomiImage(playerId, true);
 
         completionRewards = {
@@ -1138,6 +1152,7 @@ export const submitChallengeService = async (
           has_strong_effect: false,
           has_freeze_effect: false,
           stars_earned: stars,
+          has_received_rewards: true,
         },
       });
 

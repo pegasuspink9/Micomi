@@ -1232,7 +1232,7 @@ export async function fightEnemy(
           character_idle = character.avatar_image || null;
           character_run = character.character_run || null;
 
-          if (!progress.is_completed) {
+          if (!progress.has_received_rewards) {
             const totalExp = progress.total_exp_points_earned ?? 0;
             const totalPoints = progress.total_points_earned ?? 0;
             const totalCoins = progress.coins_earned ?? 0;
@@ -1371,7 +1371,7 @@ export async function fightEnemy(
         character_idle = character.avatar_image || null;
         character_run = character.character_run || null;
 
-        if (!progress.is_completed) {
+        if (!progress.has_received_rewards) {
           const totalExp = progress.total_exp_points_earned ?? 0;
           const totalPoints = progress.total_points_earned ?? 0;
           const totalCoins = progress.coins_earned ?? 0;
@@ -1434,7 +1434,7 @@ export async function fightEnemy(
     character_idle = character.avatar_image || null;
     character_run = character.character_run || null;
 
-    if (!progress.is_completed) {
+    if (!progress.has_received_rewards) {
       const wrongChallengesCount = (
         (progress.wrong_challenges as unknown[]) ?? []
       ).length;
@@ -2255,7 +2255,7 @@ export async function fightBossEnemy(
           character_idle = character.avatar_image || null;
           character_run = character.character_run || null;
 
-          if (!progress.is_completed) {
+          if (!progress.has_received_rewards) {
             const totalExp = progress.total_exp_points_earned ?? 0;
             const totalPoints = progress.total_points_earned ?? 0;
             const totalCoins = progress.coins_earned ?? 0;
@@ -2467,7 +2467,7 @@ export async function fightBossEnemy(
         character_idle = character.avatar_image || null;
         character_run = character.character_run || null;
 
-        if (!progress.is_completed) {
+        if (!progress.has_received_rewards) {
           const totalExp = progress.total_exp_points_earned ?? 0;
           const totalPoints = progress.total_points_earned ?? 0;
           const totalCoins = progress.coins_earned ?? 0;
@@ -2537,7 +2537,7 @@ export async function fightBossEnemy(
     character_idle = character.avatar_image || null;
     character_run = character.character_run || null;
 
-    if (!progress.is_completed) {
+    if (!progress.has_received_rewards) {
       const wrongChallengesCount = (
         (progress.wrong_challenges as unknown[]) ?? []
       ).length;
