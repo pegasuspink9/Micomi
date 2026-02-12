@@ -28,12 +28,14 @@ const ExpectedOutput = ({
     <View style={styles.container}>
       <View style={styles.webviewContainer}>
         <WebView
-          source={{ html: htmlOutput }}
+          key={`expected-${currentQuestion?.id}`}
+          source={{ html: htmlOutput, baseUrl: '' }}
           style={styles.webview}
-          scalesPageToFit={true}
+          scalesPageToFit={false}
           startInLoadingState={false}
           javaScriptEnabled={true}
           domStorageEnabled={true}
+          originWhitelist={['*']}
           onError={handleWebViewError}
         />
       </View>

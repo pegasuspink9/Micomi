@@ -52,12 +52,14 @@ const Output = ({
       {shouldShowHTML ? (
         <View style={styles.webviewContainer}>
           <WebView
-            source={{ html: htmlOutput }}
+            key={`output-${currentQuestion?.id}-${selectedAnswers.join('-')}`} // Use key to force reload
+            source={{ html: htmlOutput, baseUrl: '' }}
             style={styles.webview}
-            scalesPageToFit={true}
+            scalesPageToFit={false} 
             startInLoadingState={false}
             javaScriptEnabled={true}
             domStorageEnabled={true}
+            originWhitelist={['*']}
             allowsInlineMediaPlayback={true}
             mediaPlaybackRequiresUserAction={false}
             onError={handleWebViewError}
