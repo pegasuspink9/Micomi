@@ -350,7 +350,7 @@ export const usePotion = async (
     );
     fightResult.character.character_current_state = "Strong";
     fightResult.character.character_attack_overlay =
-      "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+      "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png";
   }
 
   if (potionType === "Immunity" && freshProgressPostTx?.has_freeze_effect) {
@@ -361,20 +361,20 @@ export const usePotion = async (
     );
     fightResult.enemy.enemy_current_state = "Frozen";
     fightResult.enemy.enemy_attack_overlay =
-      "https://micomi-assets.me/Icons/Miscellaneous/Ice%20Overlay.png";
+      "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png";
   }
 
   if (potionType === "Reveal") {
     fightResult.character.character_current_state = "Reveal";
     fightResult.character.character_attack_overlay =
-      "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+      "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
     console.log("Reveal potion overlay set");
   }
 
   if (potionType === "Life") {
     fightResult.character.character_current_state = "Revitalize";
     fightResult.character.character_attack_overlay =
-      "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+      "https://micomi-assets.me/Icons/Miscellaneous/Gino's%20Lightning.png";
     console.log("Life potion overlay set");
   }
 
