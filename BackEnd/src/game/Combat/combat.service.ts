@@ -496,23 +496,23 @@ export async function getCurrentFightState(
   if (potionType === "Power") {
     character_current_state = "Strong";
     character_attack_overlay =
-      "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+      "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
   } else if (potionType === "Immunity") {
     enemy_current_state = "Frozen";
     enemy_attack_overlay =
-      "https://micomi-assets.me/Icons/Miscellaneous/Ice%20Overlay.png";
+      "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png";
   } else if (potionType === "Reveal") {
     character_current_state = "Reveal";
     character_attack_overlay =
-      "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+      "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
   } else if (potionType === "Life") {
     character_current_state = "Revitalize";
     character_attack_overlay =
-      "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+      "https://micomi-assets.me/Icons/Miscellaneous/Gino's%20Lightning.png";
   } else if (progress.has_freeze_effect && !potionType) {
     enemy_current_state = "Frozen";
     enemy_attack_overlay =
-      "https://micomi-assets.me/Icons/Miscellaneous/Ice%20Overlay.png";
+      "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png";
     console.log("- Freeze effect persisting from progress");
   } else if (progress.has_strong_effect && !potionType) {
     character_current_state = "Strong";
@@ -522,7 +522,7 @@ export async function getCurrentFightState(
   } else if (progress.has_ryron_reveal && !potionType) {
     character_current_state = "Reveal";
     character_attack_overlay =
-      "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+      "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
     console.log("- Ryron reveal persisting from progress");
   }
 
@@ -1501,16 +1501,16 @@ export async function fightEnemy(
   if (isCorrect && progress?.consecutive_corrects === 3) {
     if (character.character_name === "Leon") {
       character_attack_overlay =
-        "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+        "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png";
     } else if (character.character_name === "ShiShi") {
       enemy_attack_overlay =
-        "https://micomi-assets.me/Icons/Miscellaneous/Ice%20Overlay.png";
+        "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png";
     } else if (character.character_name === "Ryron") {
       character_attack_overlay =
-        "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+        "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
     } else if (character.character_name === "Gino") {
       character_attack_overlay =
-        "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+        "https://micomi-assets.me/Icons/Miscellaneous/Gino's%20Lightning.png";
       character_current_state = "Revitalize";
     }
   }
@@ -2601,16 +2601,16 @@ export async function fightBossEnemy(
   if (isCorrect && progress.consecutive_corrects === 3) {
     if (character.character_name === "Leon") {
       character_attack_overlay =
-        "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+        "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png";
     } else if (character.character_name === "ShiShi") {
       enemy_attack_overlay =
-        "https://micomi-assets.me/Icons/Miscellaneous/Ice%20Overlay.png";
+        "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png";
     } else if (character.character_name === "Ryron") {
       character_attack_overlay =
-        "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+        "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
     } else if (character.character_name === "Gino") {
       character_attack_overlay =
-        "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+        "https://micomi-assets.me/Icons/Miscellaneous/Gino's%20Lightning.png";
       character_current_state = "Revitalize";
     }
   }

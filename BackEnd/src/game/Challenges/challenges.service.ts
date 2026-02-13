@@ -1332,7 +1332,7 @@ export const submitChallengeService = async (
 
   if (isBonusRound) {
     const { text, audio } = await generateDynamicMessage(
-      true,
+      isCorrect,
       hintUsed,
       updatedProgress.consecutive_corrects ?? 0,
       fightResult.character_health ?? character.health,

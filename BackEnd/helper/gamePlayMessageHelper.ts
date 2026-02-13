@@ -9,7 +9,7 @@ export const generateDynamicMessage = async (
   elapsed: number,
   enemy_name: string,
   enemyHealth: number,
-  isBonusRound: boolean
+  isBonusRound: boolean,
 ): Promise<{ text: string; audio: string[] }> => {
   const lowHealth = playerHealth <= 50 && playerHealth > 0;
   const enemyLowHealth = enemyHealth <= 30 && enemyHealth > 0;
@@ -23,6 +23,9 @@ export const generateDynamicMessage = async (
     if (hintUsed) {
       category = "CORRECT_HINT";
       tags.push("hint");
+    } else if (isBonusRound) {
+      category = "CORRECT_BONUS";
+      tags.push("bonus");
     } else if (streak) {
       category = "CORRECT_STREAK";
       tags.push("streak");
@@ -35,9 +38,6 @@ export const generateDynamicMessage = async (
     } else if (enemyLowHealth) {
       category = "CORRECT_FINAL";
       tags.push("final_blow");
-    } else if (isBonusRound) {
-      category = "CORRECT_BONUS";
-      tags.push("bonus");
     } else {
       category = "CORRECT_BASE";
     }
@@ -61,8 +61,8 @@ export const generateDynamicMessage = async (
   if (!pool || pool.length === 0) {
     console.error(
       `[GameMessage] No messages found for category: ${category}, tags: ${tags.join(
-        ", "
-      )}`
+        ", ",
+      )}`,
     );
     return {
       text: isCorrect ? "Great job!" : "Try again!",
@@ -74,7 +74,7 @@ export const generateDynamicMessage = async (
 
   if (!msg || !msg.textTemplate) {
     console.error(
-      `[GameMessage] Invalid message selected from pool for category: ${category}`
+      `[GameMessage] Invalid message selected from pool for category: ${category}`,
     );
     return {
       text: isCorrect ? "Great job!" : "Try again!",

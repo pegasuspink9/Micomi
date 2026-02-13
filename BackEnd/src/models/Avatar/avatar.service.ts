@@ -10,31 +10,35 @@ interface AvatarOption {
 const AVATAR_LIST: AvatarOption[] = [
   {
     id: 1,
-    url: "https://micomi-assets.me/Player%20Avatars/original-32a59694e59c7e9536e5a32d105292c7.webp",
+    url: "https://micomi-assets.me/Player%20Avatars%20Final/Avatar_1.png",
   },
   {
     id: 2,
-    url: "https://micomi-assets.me/Player%20Avatars/niedlich-astronaut-gamer-halten-joystick-mit-kopfhoerer-karikatur-vektor-symbol-abbildung-wissenschaft-techno_138676-6590.avif",
+    url: "https://micomi-assets.me/Player%20Avatars%20Final/Avatar_2.png",
   },
   {
     id: 3,
-    url: "https://micomi-assets.me/Player%20Avatars/gaming-mascot-logo-vector-59845947.avif",
+    url: "https://micomi-assets.me/Player%20Avatars%20Final/Avatar_3.png",
   },
   {
     id: 4,
-    url: "https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif",
+    url: "https://micomi-assets.me/Player%20Avatars%20Final/Avatar_4.png",
   },
   {
     id: 5,
-    url: "https://micomi-assets.me/Player%20Avatars/a-man-wearing-headphones-and-sunglasses-is-wearing-a-hoodie-free-vector.jpg",
+    url: "https://micomi-assets.me/Player%20Avatars%20Final/Avatar_5.png",
   },
   {
     id: 6,
-    url: "https://micomi-assets.me/Player%20Avatars/8300_8_03.jpg",
+    url: "https://micomi-assets.me/Player%20Avatars%20Final/Avatar_8.png",
   },
   {
     id: 7,
-    url: "https://micomi-assets.me/Player%20Avatars/2169.jpg",
+    url: "https://micomi-assets.me/Player%20Avatars%20Final/Avatar_11.png",
+  },
+  {
+    id: 8,
+    url: "https://micomi-assets.me/Player%20Avatars%20Final/Avatar_14.png",
   },
 ];
 
@@ -44,7 +48,7 @@ export const getAllAvatars = () => {
 
 export const updatePlayerAvatarById = async (
   playerId: number,
-  avatarId: number
+  avatarId: number,
 ) => {
   const selectedAvatar = AVATAR_LIST.find((avatar) => avatar.id === avatarId);
 
