@@ -157,6 +157,11 @@ const SS_BOSS_ICON_CONFIG: Record<
       "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossDarko_SS.png",
     special_skill_description: "Reverses the text of answer options",
   },
+  "Boss Antcool": {
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossAntcool_SS.png",
+    special_skill_description: "Reverses the text of answer options",
+  },
   "Boss Scorcharach": {
     special_skill_image:
       "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossScorarach_SS.pngh",

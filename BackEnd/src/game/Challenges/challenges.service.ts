@@ -15,6 +15,15 @@ import {
 } from "./challenges.types";
 import { getCardForAttackType } from "../Combat/combat.service";
 import { revealAllBlanks } from "../../../helper/revealPotionHelper";
+import {
+  ENEMY_REACTION_LINES,
+  CHARACTER_CORRECT_REACTIONS,
+  CHARACTER_WRONG_REACTIONS,
+} from "../../../helper/reactionLinesHelper";
+import {
+  ENEMY_ATTACK_SOUNDS,
+  DEFAULT_ENEMY_ATTACK_AUDIO,
+} from "../../../helper/enemyAttackSounds";
 
 const prisma = new PrismaClient();
 
@@ -123,6 +132,28 @@ const keepOnlyBlanks = (text: string): string => {
   result += textAfter.replace(/[^\n]/g, "");
 
   return result;
+};
+
+const getUniqueReaction = (
+  usedIndices: number[],
+  reactionPool: string[],
+): { reaction: string; newUsedIndices: number[] } => {
+  const allIndices = Array.from({ length: reactionPool.length }, (_, i) => i);
+
+  let availableIndices = allIndices.filter((i) => !usedIndices.includes(i));
+
+  if (availableIndices.length === 0) {
+    availableIndices = allIndices;
+    usedIndices = [];
+  }
+
+  const randomIndex = Math.floor(Math.random() * availableIndices.length);
+  const selectedIndex = availableIndices[randomIndex];
+
+  return {
+    reaction: reactionPool[selectedIndex],
+    newUsedIndices: [...usedIndices, selectedIndex],
+  };
 };
 
 const isTimedChallengeType = (type: string) =>
@@ -360,6 +391,15 @@ const calculateStars = (
   return 1;
 };
 
+const OVERLAYS = {
+  STRONG:
+    "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png",
+  FREEZE: "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png",
+  REVEAL:
+    "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png",
+  LIFE: "https://micomi-assets.me/Icons/Miscellaneous/Gino's%20Lightning.png",
+};
+
 export const submitChallengeService = async (
   playerId: number,
   levelId: number,
@@ -424,6 +464,21 @@ export const submitChallengeService = async (
 
   const isReplayingCompletedLevel = currentProgress?.is_completed === true;
 
+  if (isReplayingCompletedLevel && currentProgress) {
+    await prisma.playerProgress.update({
+      where: { progress_id: currentProgress.progress_id },
+      data: {
+        coins_earned: 0,
+        total_points_earned: 0,
+        total_exp_points_earned: 0,
+        has_received_rewards: false,
+      },
+    });
+    console.log(
+      `🔄 Replaying completed level ${levelId} - reset coins/points tracking`,
+    );
+  }
+
   if (!currentProgress) {
     currentProgress = await prisma.playerProgress.create({
       data: {
@@ -464,10 +519,13 @@ export const submitChallengeService = async (
   const rawCorrectAnswer = [...correctAnswer];
 
   let effectiveCorrectAnswer = correctAnswer;
-  if (currentProgress.has_reversed_curse && enemy.enemy_name === "Boss Darco") {
+  if (
+    currentProgress.has_reversed_curse &&
+    (enemy.enemy_name === "Boss Darco" || enemy.enemy_name === "Boss Antcool")
+  ) {
     effectiveCorrectAnswer = rawCorrectAnswer.map(reverseString);
     console.log(
-      `- Reversal curse active for Boss Darco: correct answers reversed for comparison`,
+      `- Reversal curse active for Boss Darco or Boss Antcool: correct answers reversed for comparison`,
     );
   }
 
@@ -571,11 +629,59 @@ export const submitChallengeService = async (
   }
 
   let wasEverWrong = false;
+  let generatedReaction: string | null = null;
+
   if (isCorrect) {
     wasEverWrong = (
       (currentProgress.wrong_challenges as number[]) ?? []
     ).includes(challengeId);
   }
+
+  const currentEnemyIndices =
+    (currentProgress.used_enemy_reactions as number[]) || [];
+  const enemyReactionResult = getUniqueReaction(
+    currentEnemyIndices,
+    ENEMY_REACTION_LINES,
+  );
+  generatedReaction = enemyReactionResult.reaction;
+
+  let characterReaction: string = "";
+  let updateReactionData: any = {
+    used_enemy_reactions: enemyReactionResult.newUsedIndices,
+  };
+
+  if (isCorrect) {
+    const usedCorrectIndices =
+      (currentProgress.used_char_correct_reactions as number[]) || [];
+
+    const charResult = getUniqueReaction(
+      usedCorrectIndices,
+      CHARACTER_CORRECT_REACTIONS,
+    );
+
+    characterReaction = charResult.reaction;
+
+    updateReactionData.used_char_correct_reactions = charResult.newUsedIndices;
+  } else {
+    const usedWrongIndices =
+      (currentProgress.used_char_wrong_reactions as number[]) || [];
+
+    const charResult = getUniqueReaction(
+      usedWrongIndices,
+      CHARACTER_WRONG_REACTIONS,
+    );
+
+    characterReaction = charResult.reaction;
+
+    updateReactionData.used_char_wrong_reactions = charResult.newUsedIndices;
+  }
+
+  await prisma.playerProgress.update({
+    where: { progress_id: currentProgress.progress_id },
+    data: updateReactionData,
+  });
+
+  let triggeredGinoPassive = false;
 
   const isBonusRound =
     currentProgress.enemy_hp <= 0 && currentProgress.player_hp > 0;
@@ -655,6 +761,8 @@ export const submitChallengeService = async (
 
       updatedProgress.player_hp = newHp;
       console.log(`- Gino's Passive Triggered: Healed ${healAmount} HP`);
+
+      triggeredGinoPassive = true;
     }
 
     if (character.character_name === "ShiShi") {
@@ -718,6 +826,10 @@ export const submitChallengeService = async (
   const bonusAllCorrect = isCompletingBonus
     ? updatedWrongChallenges.length === 0
     : false;
+
+  const wasStrong = currentProgress.has_strong_effect;
+  const wasFrozen = currentProgress.has_freeze_effect;
+  const wasReveal = currentProgress.has_ryron_reveal;
 
   let fightResult: any;
   let message: string = "Challenge submitted.";
@@ -914,6 +1026,53 @@ export const submitChallengeService = async (
 
     message = text;
     audioResponse = audio;
+  }
+
+  if (fightResult && fightResult.enemy) {
+    (fightResult.enemy as any).enemy_hit_reaction = isCorrect
+      ? generatedReaction
+      : null;
+  }
+
+  if (fightResult) {
+    if (wasStrong) {
+      if (!fightResult.character) fightResult.character = {};
+      fightResult.character.character_current_state = "Strong";
+      fightResult.character.character_attack_overlay = OVERLAYS.STRONG;
+      console.log("- Forcing Strong Overlay into response");
+    }
+
+    if (wasFrozen) {
+      if (!fightResult.enemy) fightResult.enemy = {};
+      fightResult.enemy.enemy_current_state = "Frozen";
+      fightResult.enemy.enemy_attack_overlay = OVERLAYS.FREEZE;
+      console.log("- Forcing Freeze Overlay into response");
+    }
+
+    if (wasReveal) {
+      if (!fightResult.character) fightResult.character = {};
+      fightResult.character.character_current_state = "Reveal";
+      fightResult.character.character_attack_overlay = OVERLAYS.REVEAL;
+    }
+
+    if (triggeredGinoPassive) {
+      if (!fightResult.character) fightResult.character = {};
+      fightResult.character.character_current_state = "Revitalize";
+      fightResult.character.character_attack_overlay = OVERLAYS.LIFE;
+      console.log("- Forcing Gino Life Overlay into response");
+    }
+  }
+
+  if (fightResult && fightResult.character) {
+    if (isCorrect) {
+      (fightResult.character as any).character_correct_reaction =
+        characterReaction;
+      (fightResult.character as any).character_wrong_reaction = null;
+    } else {
+      (fightResult.character as any).character_correct_reaction = null;
+      (fightResult.character as any).character_wrong_reaction =
+        characterReaction;
+    }
   }
 
   const next = await getNextChallengeService(playerId, levelId);
@@ -1357,8 +1516,31 @@ export const submitChallengeService = async (
   let death_audio: string | null = null;
 
   if (!isCorrect) {
-    enemy_attack_audio =
-      "https://micomi-assets.me/Sounds/Final/All%20Universal%20Enemy%20Attack.wav";
+    const soundConfig = ENEMY_ATTACK_SOUNDS[enemy.enemy_name];
+
+    const attackType = fightResult.enemy?.enemy_attack_type;
+
+    if (soundConfig) {
+      if (
+        (attackType === "special attack" || attackType === "special_attack") &&
+        soundConfig.special
+      ) {
+        enemy_attack_audio = soundConfig.special;
+        console.log(
+          `- Audio: Playing SPECIAL attack sound for ${enemy.enemy_name}`,
+        );
+      } else {
+        enemy_attack_audio = soundConfig.basic;
+        console.log(
+          `- Audio: Playing BASIC attack sound for ${enemy.enemy_name}`,
+        );
+      }
+    } else {
+      enemy_attack_audio = DEFAULT_ENEMY_ATTACK_AUDIO;
+      console.log(
+        `- Audio: Using default universal sound for ${enemy.enemy_name}`,
+      );
+    }
   }
 
   if (fightResult.status !== "in_progress") {
@@ -1700,7 +1882,11 @@ const wrapWithTimer = async (
     }
   }
 
-  if (progress.has_reversed_curse && level.enemy?.enemy_name === "Boss Darco") {
+  if (
+    progress.has_reversed_curse &&
+    (level.enemy?.enemy_name === "Boss Darco" ||
+      level.enemy?.enemy_name === "Boss Antcool")
+  ) {
     const options = challenge.options as string[];
     if (Array.isArray(options) && options.length > 0) {
       modifiedChallenge.options = options

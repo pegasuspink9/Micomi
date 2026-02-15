@@ -239,7 +239,11 @@ export const usePotion = async (
         where: { enemy_id: level?.enemy_id ?? 0 },
       });
 
-      if (progress.has_reversed_curse && enemy?.enemy_name === "Boss Darco") {
+      if (
+        progress.has_reversed_curse &&
+        (enemy?.enemy_name === "Boss Darco" ||
+          enemy?.enemy_name === "Boss Antcool")
+      ) {
         effectiveCorrectAnswer = rawCorrectAnswer.map(reverseString);
       }
 
@@ -383,6 +387,12 @@ export const usePotion = async (
     character: {
       ...fightResult.character,
       character_dies: fightResult.character.character_dies ?? "",
+      character_correct_reaction: null,
+      character_wrong_reaction: null,
+    },
+    enemy: {
+      ...fightResult.enemy,
+      enemy_hit_reaction: null,
     },
   };
 

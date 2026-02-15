@@ -340,6 +340,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
           dialogue_id: number;
           level_id: number;
           script: string | null;
+          cover_page?: string | null;
         }[];
       })
     | null = await prisma.level.findUnique({
@@ -382,6 +383,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
             // lesson_id: true,
             // page_number: true,
             page_url: true,
+            cover_page: true,
           },
         },
       },
@@ -393,6 +395,13 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     const lastLesson = lessonList.length
       ? lessonList[lessonList.length - 1]
       : null;
+
+    const lessonWithCover = lessonList.find((l) => l.cover_page !== null);
+    const coverPage = lessonWithCover ? lessonWithCover.cover_page : null;
+
+    const cleanedLessonList = lessonList.map((l) => ({
+      page_url: l.page_url,
+    }));
 
     return {
       level: {
@@ -423,8 +432,11 @@ export const enterLevel = async (playerId: number, levelId: number) => {
 
       energy: energyStatus.energy,
       timeToNextEnergyRestore: energyStatus.timeToNextRestore,
-      lessons,
-      dialogue: [],
+      lessons: {
+        cover_page: coverPage,
+        ...lessons,
+        lessons: cleanedLessonList,
+      },
     };
   }
 

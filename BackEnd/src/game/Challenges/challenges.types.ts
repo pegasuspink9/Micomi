@@ -14,6 +14,7 @@ export interface FightResult {
     enemy_avatar?: string | null;
     enemy_attack_type?: string | null;
     enemy_special_skill?: string | null;
+    enemy_hit_reaction?: string | null;
   };
   character: {
     character_id: number;
@@ -30,6 +31,8 @@ export interface FightResult {
     character_avatar?: string | null;
     character_is_range?: boolean;
     character_attack_pose?: string | null;
+    character_correct_reaction?: string | null;
+    character_wrong_reaction?: string | null;
   };
   timer: string;
   energy: number;
@@ -56,8 +59,7 @@ export interface CompletionRewards {
   playerOutputs?: string[] | null;
 }
 
-export interface SubmitChallengeControllerResult
-  extends SubmitChallengeServiceResult {
+export interface SubmitChallengeControllerResult extends SubmitChallengeServiceResult {
   levelStatus?: LevelStatus;
   completionRewards?: CompletionRewards;
   nextLevel?: {
