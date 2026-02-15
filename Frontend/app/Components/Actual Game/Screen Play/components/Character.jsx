@@ -568,14 +568,27 @@ const Character = ({
         ]}>
           <Animated.View style={[ styles.spriteSheet, animatedStyle, { width: SPRITE_SIZE * SPRITE_COLUMNS, height: SPRITE_SIZE * SPRITE_ROWS } ]}>
           {currentAnimationUrl ? (
-            <Image source={{ uri: currentAnimationUrl }} style={styles.spriteImage} contentFit="cover" cachePolicy="disk" />
+            <Image 
+              source={{ uri: currentAnimationUrl }} 
+              style={styles.spriteImage} 
+              contentFit="cover" 
+              cachePolicy="memory-disk" 
+              priority="high"
+              transition={0}
+            />
           ) : (
             <View style={[styles.spriteImage, { backgroundColor: 'transparent' }]} />
           )}
           
           {currentAnimationUrl && currentState === 'hurt' && (
             <Animated.View style={[StyleSheet.absoluteFill, redFlashStyle, { pointerEvents: 'none' }]}>
-              <Image source={{ uri: currentAnimationUrl }} style={[ styles.spriteImage, { tintColor: '#760404a2' }]} contentFit="cover" cachePolicy="disk" />
+              <Image 
+                source={{ uri: currentAnimationUrl }} 
+                style={[ styles.spriteImage, { tintColor: '#760404a2' }]} 
+                contentFit="cover" 
+                cachePolicy="memory-disk" 
+                priority="high"
+              />
             </Animated.View>
           )}
         </Animated.View>
@@ -599,7 +612,7 @@ const Character = ({
                source={{ uri: potionEffectUrl }} 
                style={styles.spriteImage} 
                contentFit="cover" 
-               cachePolicy="disk" 
+               cachePolicy="memory-disk" 
              />
            </Animated.View>
         )}
@@ -631,7 +644,8 @@ const Character = ({
                     source={{ uri: animationConfig.rangeUrl }} 
                     style={styles.spriteImage} 
                     contentFit="cover" 
-                    cachePolicy="disk" 
+                    cachePolicy="memory-disk" 
+                    priority="high"
                 />
             </Animated.View>
         </Animated.View>
@@ -695,6 +709,6 @@ export default React.memo(Character, (prev, next) => {
     prev.characterName === next.characterName &&
     prev.potionEffectUrl === next.potionEffectUrl &&
     prev.attackOverlayUrl === next.attackOverlayUrl &&
-    JSON.stringify(prev.characterAnimations) === JSON.stringify(next.characterAnimations)
+    prev.characterAnimations === next.characterAnimations
   );
 });

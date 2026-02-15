@@ -78,7 +78,8 @@ return (
           source={{ uri: SPRITE_URL }}
           style={styles.spriteImage}
           contentFit="fill" 
-          cachePolicy="disk"
+          cachePolicy="memory-disk"
+          priority="high"
         />
       </Animated.View>
     </View>

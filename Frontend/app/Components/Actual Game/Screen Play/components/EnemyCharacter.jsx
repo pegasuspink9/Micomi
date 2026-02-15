@@ -53,7 +53,6 @@ const EnemyCharacter = ({
 
     useEffect(() => {
     if (attackOverlayUrl) {
-      // ✅ Entrance Animation: Big to Small + Opacity
       overlayScale.value = 1.6;
       overlayOpacity.value = 0;
 
@@ -63,8 +62,6 @@ const EnemyCharacter = ({
         easing: Easing.out(Easing.back(1.5)) 
       });
 
-
-      // ✅ Start looping animation for overlay sprite
       overlayFrameIndex.value = 0;
       overlayFrameIndex.value = withRepeat(
         withTiming(OVERLAY_TOTAL_FRAMES - 1, { 
@@ -579,7 +576,8 @@ const EnemyCharacter = ({
               source={{ uri: currentAnimationUrl }}
               style={styles.spriteImage}
               contentFit="cover"
-              cachePolicy="disk"
+              cachePolicy="memory-disk"
+              priority="high"
               transition={0}
             />
           ) : (
@@ -592,7 +590,8 @@ const EnemyCharacter = ({
                 source={{ uri: currentAnimationUrl }}
                 style={[ styles.spriteImage, { tintColor: '#00ccff80' } ]}
                 contentFit="cover"
-                cachePolicy="disk"
+                cachePolicy="memory-disk"
+                priority="high"
               />
             </Animated.View>
           )}
@@ -603,7 +602,8 @@ const EnemyCharacter = ({
                 source={{ uri: currentAnimationUrl }}
                 style={[ styles.spriteImage, { tintColor: wasBonusRound.current ? 'rgba(218, 200, 0, 0.88)' : '#760404a2' } ]}
                 contentFit="cover"
-                cachePolicy="disk"
+                cachePolicy="memory-disk"
+                priority="high"
               />
             </Animated.View>
           )}
@@ -670,7 +670,7 @@ export default React.memo(EnemyCharacter, (prev, next) => {
     prev.index === next.index &&      
     prev.attackOverlayUrl === next.attackOverlayUrl && 
      prev.enemyCurrentState === next.enemyCurrentState &&
-    JSON.stringify(prev.characterAnimations) === JSON.stringify(next.characterAnimations)
+    prev.characterAnimations === next.characterAnimations
   );
 });
 
