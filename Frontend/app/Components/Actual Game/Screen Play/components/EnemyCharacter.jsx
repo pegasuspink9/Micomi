@@ -43,17 +43,61 @@ const EnemyCharacter = ({
   const detectedNameRef = useRef(null);
 
   const overlayOpacity = useSharedValue(0);
+  const overlayScale = useSharedValue(1);
+  const overlayFrameIndex = useSharedValue(0);
 
-  useEffect(() => {
-    overlayOpacity.value = withTiming(attackOverlayUrl ? 1 : 0, { duration: 500 });
+  const OVERLAY_COLUMNS = 6;
+  const OVERLAY_ROWS = 4;
+  const OVERLAY_TOTAL_FRAMES = 24;
+  const OVERLAY_SIZE = gameScale(120);
+
+    useEffect(() => {
+    if (attackOverlayUrl) {
+      // ✅ Entrance Animation: Big to Small + Opacity
+      overlayScale.value = 1.6;
+      overlayOpacity.value = 0;
+
+      overlayOpacity.value = withTiming(1, { duration: 600 });
+      overlayScale.value = withTiming(1, { 
+        duration: 700, 
+        easing: Easing.out(Easing.back(1.5)) 
+      });
+
+      // ✅ Start looping animation for overlay sprite
+      overlayFrameIndex.value = 0;
+      overlayFrameIndex.value = withRepeat(
+        withTiming(OVERLAY_TOTAL_FRAMES - 1, { 
+          duration: 1200, 
+          easing: Easing.linear 
+        }),
+        -1,
+        false
+      ); 
+    } else {
+      overlayOpacity.value = withTiming(0, { duration: 400 });
+      cancelAnimation(overlayFrameIndex);
+    }
   }, [attackOverlayUrl]);
+
+  const overlaySpriteStyle = useAnimatedStyle(() => {
+    const column = Math.floor(overlayFrameIndex.value % OVERLAY_COLUMNS);
+    const row = Math.floor(overlayFrameIndex.value / OVERLAY_COLUMNS);
+    return {
+      transform: [
+        { translateX: -column * OVERLAY_SIZE },
+        { translateY: -row * OVERLAY_SIZE },
+      ],
+    };
+  });
 
   const overlayAnimatedStyle = useAnimatedStyle(() => ({
     opacity: overlayOpacity.value,
     transform: [
+      { scale: overlayScale.value },
       { translateY: withRepeat(withTiming(-5, { duration: 1000 }), -1, true) }
     ]
   }));
+
 
 
   const effectiveEnemyName = useMemo(() => {
@@ -511,15 +555,23 @@ const EnemyCharacter = ({
       
       {attackOverlayUrl && (
         <Animated.View style={[styles.attackOverlay, overlayAnimatedStyle]}>
-          <Image 
-            source={{ uri: attackOverlayUrl }} 
-            style={styles.overlayImage} 
-            contentFit="contain"
-          />
+          <View style={styles.overlaySpriteContainer}>
+            <Animated.View style={[
+              styles.overlaySpriteSheet, 
+              overlaySpriteStyle,
+              { width: OVERLAY_SIZE * OVERLAY_COLUMNS, height: OVERLAY_SIZE * OVERLAY_ROWS }
+            ]}>
+              <Image 
+                source={{ uri: attackOverlayUrl }} 
+                style={styles.spriteImage} 
+                contentFit="contain"
+              />
+            </Animated.View>
+          </View>
         </Animated.View>
       )}
 
-      <View style={[styles.spriteContainer, { width: SPRITE_SIZE, height: SPRITE_SIZE }]}>
+      <View style={[styles.spriteContainer, { width: SPRITE_SIZE, height: SPRITE_SIZE, zIndex: 10 }]}>
         <Animated.View style={[ styles.spriteSheet, animatedStyle, { width: SPRITE_SIZE * SPRITE_COLUMNS, height: SPRITE_SIZE * SPRITE_ROWS }]} >
           {currentAnimationUrl ? (
             <Image
@@ -580,12 +632,22 @@ const styles = StyleSheet.create({
   front: {
     zIndex: 9999,
   },
-   attackOverlay: {
+  attackOverlay: {
     position: 'absolute',
     top: gameScale(10),
     width: gameScale(120),
     height: gameScale(120),
     zIndex: 1001,
+  },
+  overlaySpriteContainer: {
+    width: gameScale(120),
+    height: gameScale(120),
+    overflow: 'hidden',
+  },
+  overlaySpriteSheet: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
   },
   overlayImage: {
     width: '100%',

@@ -256,6 +256,14 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
       const fightResult = responseData.fightResult || data.fightResult;
       const levelStatus = responseData.levelStatus || data.levelStatus;
 
+        if (responseData.fightResult?.character?.character_current_state !== undefined) {
+        gameState.selectedCharacter.character_current_state = responseData.fightResult.character.character_current_state;
+      }
+      
+      if (responseData.fightResult?.enemy?.enemy_current_state !== undefined) {
+        gameState.enemy.enemy_current_state = responseData.fightResult.enemy.enemy_current_state;
+      }
+
       gameState.submissionResult = {
         isCorrect: data.isCorrect,
         message: data.message,

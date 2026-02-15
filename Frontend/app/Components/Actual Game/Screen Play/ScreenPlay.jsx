@@ -53,6 +53,9 @@ const ScreenPlay = ({
   const animationCompleteNotifiedRef = useRef(false); 
   const lastProcessedSubmissionIdRef = useRef(null); 
 
+
+
+
   const characterAttackOverlay = useMemo(() => 
     gameState.submissionResult?.fightResult?.character?.character_attack_overlay || 
     gameState.selectedCharacter?.character_attack_overlay, 
@@ -65,10 +68,16 @@ const ScreenPlay = ({
     [gameState.submissionResult, gameState.enemy]
   );
 
-  const enemyCurrentState = useMemo(() => 
+   const enemyCurrentState = useMemo(() => 
     gameState.submissionResult?.fightResult?.enemy?.enemy_current_state || 
     gameState.enemy?.enemy_current_state,
     [gameState.submissionResult, gameState.enemy]
+  );
+
+  const characterCurrentState = useMemo(() => 
+    gameState.submissionResult?.fightResult?.character?.character_current_state || 
+    gameState.selectedCharacter?.character_current_state,
+    [gameState.submissionResult, gameState.selectedCharacter]
   );
 
   const enemies = useMemo(() => {
@@ -702,6 +711,8 @@ useEffect(() => {
           characterName={characterName}
           potionEffectUrl={gameState.submissionResult?.use_potion_effect}
           attackOverlayUrl={characterAttackOverlay} 
+          statusState={characterCurrentState} // ✅ Passing character status
+          enemyStatusState={enemyCurrentState} 
         />
 
          {enemies.map((enemy, index) => {

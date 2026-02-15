@@ -6,10 +6,13 @@ import Animated, {
   useAnimatedStyle,
   withRepeat,
   withTiming,
+  withSpring,
   withDelay, 
   cancelAnimation,
   runOnJS,
   Easing,
+  interpolate,   // Added for shadow focus
+  Extrapolate,  
 } from 'react-native-reanimated';
 import { universalAssetPreloader } from '../../../../services/preloader/universalAssetPreloader';
 import { soundManager } from '../../Sounds/UniversalSoundManager';
@@ -30,6 +33,8 @@ const Character = ({
   containerStyle: propContainerStyle,
   potionEffectUrl = null,
   attackOverlayUrl = null, 
+  statusState = null,       // Status on player (e.g. "Revitalize", "Strong", "Reveal")
+  enemyStatusState = null, 
 }) => {
   // ========== Shared Animation Values ==========
   const frameIndex = useSharedValue(0);
@@ -38,22 +43,99 @@ const Character = ({
   const blinkOpacity = useSharedValue(0);
   const attackInitiated = useSharedValue(false);
   const overlayOpacity = useSharedValue(0);
-
+  const overlayScale = useSharedValue(1);
+  const overlayFrameIndex = useSharedValue(0);
+  
   const rangeProjectileX = useSharedValue(0);
 
   const potionFrameIndex = useSharedValue(0);
   const potionOpacity = useSharedValue(0);
 
-  useEffect(() => {
-    overlayOpacity.value = withTiming(attackOverlayUrl ? 1 : 0, { duration: 500 });
+
+  const OVERLAY_COLUMNS = 6;
+  const OVERLAY_ROWS = 4;
+  const OVERLAY_TOTAL_FRAMES = 24;
+  const OVERLAY_SIZE = gameScale(140);
+
+
+  const overlayZIndex = useMemo(() => {
+    // Revitalize or Frozen status brings the overlay to the front
+    if (enemyStatusState === 'Frozen' ) return 20;
+    // Reveal or Strong keeps the overlay behind
+    if (statusState === 'Reveal' || statusState === 'Strong' || statusState === 'Revitalize') return 1;
+    return 1; // Default behind
+  }, [enemyStatusState, statusState]);
+
+
+    useEffect(() => {
+    if (attackOverlayUrl) {
+      // ✅ Entrance Animation: "Hyper-Scale Drop" Effect
+      // Starting from 6x scale makes it feel like it's falling through the camera
+      overlayScale.value = 6; 
+      overlayOpacity.value = 0;
+      
+      // Snappy fade in
+      overlayOpacity.value = withTiming(1, { duration: 200 });
+      
+      // High-stiffness drop to simulate the "slam" onto the character
+      overlayScale.value = withSpring(1, {
+        damping: 15,       // Less bounce for a cleaner landing
+        stiffness: 180,    // High speed for the "drop" effect
+        mass: 1.2,         // Feels heavier
+        velocity: 30       // Initial speed boost
+      });
+      
+      
+      // ✅ Start looping animation for overlay sprite
+      overlayFrameIndex.value = 0;
+      overlayFrameIndex.value = withRepeat(
+        withTiming(OVERLAY_TOTAL_FRAMES - 1, { 
+          duration: 1200, 
+          easing: Easing.linear 
+        }),
+        -1,
+        false
+      );
+    } else {
+     overlayOpacity.value = withTiming(0, { duration: 500 });
+      overlayScale.value = withTiming(0.8, { duration: 500 }); 
+      cancelAnimation(overlayFrameIndex);
+    }
   }, [attackOverlayUrl]);
 
-  const overlayAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: overlayOpacity.value,
-    transform: [
-      { translateY: withRepeat(withTiming(-5, { duration: 1000 }), -1, true) } // Subtle hover animation
-    ]
-  }));
+  const overlaySpriteStyle = useAnimatedStyle(() => {
+    const column = Math.floor(overlayFrameIndex.value % OVERLAY_COLUMNS);
+    const row = Math.floor(overlayFrameIndex.value / OVERLAY_COLUMNS);
+    return {
+      transform: [
+        { translateX: -column * OVERLAY_SIZE },
+        { translateY: -row * OVERLAY_SIZE },
+      ],
+    };
+  });
+
+ 
+   const overlayAnimatedStyle = useAnimatedStyle(() => {
+    // Sharpness of shadow increases as it lands (scale 6 -> scale 1)
+    const shadowBlur = interpolate(overlayScale.value, [1, 6], [8, 45], Extrapolate.CLAMP);
+    const shadowAlpha = interpolate(overlayScale.value, [1, 6], [0.7, 0.1], Extrapolate.CLAMP);
+
+    return {
+      opacity: overlayOpacity.value,
+      shadowRadius: shadowBlur,
+      shadowOpacity: shadowAlpha,
+      transform: [
+        { scale: overlayScale.value },
+        // Only float *after* the initial drop has landed
+        { translateY: overlayScale.value < 1.1 
+            ? withRepeat(withTiming(-3, { duration: 1500 }), -1, true) 
+            : 0 
+        }
+      ]
+    };
+  });
+
+  
 
   // ========== State Management (Lifted up for use in effectiveName) ==========
   const initialUrl = useMemo(() => {
@@ -76,6 +158,7 @@ const Character = ({
   }, [characterName, currentAnimationUrl]);
 
   // ========== Animation Configuration ==========
+  
   
   //  UPDATED: Uses effectiveCharacterName so size persists even if prop is lost
   const SPRITE_SIZE = useMemo(() => {
@@ -443,24 +526,39 @@ const Character = ({
 
   const showRangeAttack = currentState === 'attack' && animationConfig.isRange && animationConfig.rangeUrl;
 
+  
+
+  
   // ========== Render ==========
   return (
     <Animated.View style={[ styles.characterContainer, containerStyle, propContainerStyle]}>
       
-      {attackOverlayUrl && (
-        <Animated.View style={[styles.attackOverlay, overlayAnimatedStyle]}>
-          <Image 
-            source={{ uri: attackOverlayUrl }} 
-            style={styles.overlayImage} 
-            contentFit="contain"
-          />
+       {attackOverlayUrl && (
+        <Animated.View style={[
+          styles.attackOverlay, 
+          { zIndex: overlayZIndex }, // Applied dynamic zIndex
+          overlayAnimatedStyle
+        ]}>
+          <View style={styles.overlaySpriteContainer}>
+            <Animated.View style={[
+              styles.overlaySpriteSheet, 
+              overlaySpriteStyle,
+              { width: OVERLAY_SIZE * OVERLAY_COLUMNS, height: OVERLAY_SIZE * OVERLAY_ROWS }
+            ]}>
+              <Image 
+                source={{ uri: attackOverlayUrl }} 
+                style={styles.spriteImage} 
+                contentFit="contain"
+              />
+            </Animated.View>
+          </View>
         </Animated.View>
       )}
 
       {/* 1. Main Character Sprite Container */}
           <View style={[
           styles.spriteContainer,
-          { width: SPRITE_SIZE, height: SPRITE_SIZE },
+          { width: SPRITE_SIZE, height: SPRITE_SIZE, zIndex: 10 },
           //  Updated to use effectiveCharacterName
           effectiveCharacterName === 'Leon' 
             ? { marginTop: gameScale(-19), marginLeft: gameScale(-12) } 
@@ -557,12 +655,28 @@ const styles = StyleSheet.create({
   spriteImage: { width: '100%', height: '100%' },
   attackOverlay: {
     position: 'absolute',
-    top: gameScale(5), // Float above the character
-    width: gameScale(100),
-    height: gameScale(100),
-    zIndex: 30,
+    top: gameScale(-30),
+    right: gameScale(10),
+    width: gameScale(140),
+    height: gameScale(140),
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#fff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  overlaySpriteContainer: {
+    width: gameScale(140),
+    height: gameScale(140),
+    opacity: 0.7,
+    overflow: 'hidden',
+  },
+  overlaySpriteSheet: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
   },
   overlayImage: {
     width: '100%',
