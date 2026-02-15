@@ -16,7 +16,8 @@ import {
 import { getCardForAttackType } from "../Combat/combat.service";
 import { revealAllBlanks } from "../../../helper/revealPotionHelper";
 import {
-  ENEMY_REACTION_LINES,
+  ENEMY_WRONG_LINES,
+  ENEMY_CORRECT_LINES,
   CHARACTER_CORRECT_REACTIONS,
   CHARACTER_WRONG_REACTIONS,
 } from "../../../helper/reactionLinesHelper";
@@ -637,43 +638,43 @@ export const submitChallengeService = async (
     ).includes(challengeId);
   }
 
-  const currentEnemyIndices =
-    (currentProgress.used_enemy_reactions as number[]) || [];
-  const enemyReactionResult = getUniqueReaction(
-    currentEnemyIndices,
-    ENEMY_REACTION_LINES,
-  );
-  generatedReaction = enemyReactionResult.reaction;
+  let characterReactionText: string = "";
+  let enemyReactionText: string = "";
 
-  let characterReaction: string = "";
-  let updateReactionData: any = {
-    used_enemy_reactions: enemyReactionResult.newUsedIndices,
-  };
+  let updateReactionData: any = {};
 
   if (isCorrect) {
-    const usedCorrectIndices =
+    const charIndices =
       (currentProgress.used_char_correct_reactions as number[]) || [];
-
     const charResult = getUniqueReaction(
-      usedCorrectIndices,
+      charIndices,
       CHARACTER_CORRECT_REACTIONS,
     );
-
-    characterReaction = charResult.reaction;
-
+    characterReactionText = charResult.reaction;
     updateReactionData.used_char_correct_reactions = charResult.newUsedIndices;
-  } else {
-    const usedWrongIndices =
-      (currentProgress.used_char_wrong_reactions as number[]) || [];
 
+    const enemyIndices =
+      (currentProgress.used_enemy_wrong_reactions as number[]) || [];
+    const enemyResult = getUniqueReaction(enemyIndices, ENEMY_WRONG_LINES);
+    enemyReactionText = enemyResult.reaction;
+    updateReactionData.used_enemy_wrong_reactions = enemyResult.newUsedIndices;
+  } else {
+    const charIndices =
+      (currentProgress.used_char_wrong_reactions as number[]) || [];
     const charResult = getUniqueReaction(
-      usedWrongIndices,
+      charIndices,
       CHARACTER_WRONG_REACTIONS,
     );
-
-    characterReaction = charResult.reaction;
-
+    characterReactionText = charResult.reaction;
     updateReactionData.used_char_wrong_reactions = charResult.newUsedIndices;
+
+    const enemyIndices =
+      (currentProgress.used_enemy_correct_reactions as number[]) || [];
+    const enemyResult = getUniqueReaction(enemyIndices, ENEMY_CORRECT_LINES);
+    enemyReactionText = enemyResult.reaction;
+
+    updateReactionData.used_enemy_correct_reactions =
+      enemyResult.newUsedIndices;
   }
 
   await prisma.playerProgress.update({
@@ -1063,15 +1064,13 @@ export const submitChallengeService = async (
     }
   }
 
-  if (fightResult && fightResult.character) {
-    if (isCorrect) {
-      (fightResult.character as any).character_correct_reaction =
-        characterReaction;
-      (fightResult.character as any).character_wrong_reaction = null;
-    } else {
-      (fightResult.character as any).character_correct_reaction = null;
-      (fightResult.character as any).character_wrong_reaction =
-        characterReaction;
+  if (fightResult) {
+    if (fightResult.character) {
+      (fightResult.character as any).character_reaction = characterReactionText;
+    }
+
+    if (fightResult.enemy) {
+      (fightResult.enemy as any).enemy_reaction = enemyReactionText;
     }
   }
 

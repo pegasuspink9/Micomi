@@ -231,7 +231,8 @@ model PlayerProgress {
   has_ryron_reveal                    Boolean? @default(false)
 
   has_received_rewards   Boolean      @default(false)
-  used_enemy_reactions   Json?        @default("[]") 
+  used_enemy_correct_reactions   Json?        @default("[]") 
+  used_enemy_wrong_reactions   Json?        @default("[]") 
   used_char_correct_reactions  Json?        @default("[]")
   used_char_wrong_reactions  Json?        @default("[]")
 
