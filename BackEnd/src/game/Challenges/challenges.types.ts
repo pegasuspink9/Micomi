@@ -31,6 +31,8 @@ export interface FightResult {
     character_avatar?: string | null;
     character_is_range?: boolean;
     character_attack_pose?: string | null;
+    character_correct_reaction?: string | null;
+    character_wrong_reaction?: string | null;
   };
   timer: string;
   energy: number;

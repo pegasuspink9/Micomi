@@ -33,6 +33,7 @@ model Map {
 model Lesson {  //Micomi level
   lesson_id          Int    @id @default(autoincrement())
   level_id           Int
+  cover_page         String?
   page_number        Int
   page_url           String
   level              Level  @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
@@ -227,10 +228,12 @@ model PlayerProgress {
   stars_earned Int?
 
   // For Ryron passive skill
-  has_ryron_reveal Boolean? @default(false)
+  has_ryron_reveal                    Boolean? @default(false)
 
-  has_received_rewards   Boolean       @default(false)
-  used_enemy_reactions Json? @default("[]") 
+  has_received_rewards   Boolean      @default(false)
+  used_enemy_reactions   Json?        @default("[]") 
+  used_char_correct_reactions  Json?        @default("[]")
+  used_char_wrong_reactions  Json?        @default("[]")
 
   level                  Level         @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
   player                 Player        @relation(fields: [player_id], references: [player_id], onDelete: Cascade)

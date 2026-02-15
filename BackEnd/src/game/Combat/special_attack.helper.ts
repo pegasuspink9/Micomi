@@ -141,9 +141,10 @@ export async function updateProgressForChallenge(
 
         switch (enemyName) {
           case "Boss Darco":
+          case "Boss Antcool":
             hasReversedCurse = true;
             console.log(
-              "- Reversal curse activated for Boss Darco after multiples of 3 consecutive wrongs",
+              "- Reversal curse activated for Boss Darco or Boss Antcool after multiples of 3 consecutive wrongs",
             );
             break;
           case "Boss Joshy":
