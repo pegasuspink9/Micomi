@@ -356,20 +356,23 @@ export const useGameData = (initialLevelId) => {
     }
 
     lastProcessedSubmissionRef.current = submissionId; 
-    console.log('❌ Wrong answer - proceeding to next challenge');
+    console.log('❌ Wrong answer - waiting for proceed');
+    setCanProceed(true);
+
     setGameState(prevState => ({
       ...prevState,
-      currentChallenge: nextChallenge,
-      card: nextChallengeCard, 
-      enemy: pendingData.enemy || prevState.enemy,
+      submissionResult: pendingData.submissionResult,
       selectedCharacter: pendingData.selectedCharacter || prevState.selectedCharacter,
+      enemy: pendingData.enemy || prevState.enemy,
       fightResult: pendingData.fightResult || prevState.fightResult,
-      submissionResult: null,
-      nextChallengeData: null,
-      attemptId: (prevState.attemptId || 0) + 1, // Increment attemptId to force UI refresh
+      nextChallengeData: {
+        ...nextChallenge,
+        card: nextChallengeCard,
+        enemy: pendingData.enemy || prevState.enemy,
+        attemptId: (prevState.attemptId || 0) + 1, // Increment attemptId for the next challenge
+      },
+      card: prevState.card,
     }));
-    
-    setCanProceed(false);
   }
   
   pendingSubmissionRef.current = null;
@@ -395,6 +398,7 @@ export const useGameData = (initialLevelId) => {
       ...prevState,
       currentChallenge: nextChallengeData,
       card: nextChallengeData.card,
+      attemptId: nextChallengeData.attemptId || prevState.attemptId,
       submissionResult: null,
       nextChallengeData: null,
     }));

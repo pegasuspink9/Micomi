@@ -817,6 +817,8 @@ export default function GamePlay() {
                 selectedBlankIndex={selectedBlankIndex}
                 onBlankPress={handleBlankSelect} 
                 isAnswerCorrect={gameState?.submissionResult?.isCorrect}
+                canProceed={canProceed}
+                submissionResult={gameState?.submissionResult}
               />
 
              <View 

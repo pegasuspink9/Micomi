@@ -15,11 +15,15 @@ const GameQuestions = ({
   activeTab,
   isAnswerCorrect, 
   selectedBlankIndex,
-  onBlankPress
+  onBlankPress,
+  canProceed,
+  submissionResult
 }) => {
   const scrollViewRef = useRef(null);
   const blankRefs = useRef({});
   const options = currentQuestion?.options || [];
+
+  const correctAnswersList = submissionResult?.correctAnswer || currentQuestion?.correctAnswer;
 
   
   const getFilledQuestion = (questionText, answers) => {
@@ -73,44 +77,70 @@ const renderSyntaxHighlightedLine = (line, lineIndex) => {
   }
 
   const parts = line.split('_');
-  
   const blanksBeforeCurrent = calculateGlobalBlankIndex(currentQuestion, lineIndex);
   
   return (
     <View style={styles.codeLineContainer}>
-      {parts.map((part, partIndex) => (
-        <React.Fragment key={partIndex}>
+      {parts.map((part, partIndex) => {
+        const globalBlankIndex = blanksBeforeCurrent + partIndex;
+        const isLastPart = partIndex === parts.length - 1;
+
+        // Determine blank state after submission feedback is shown
+        let isWrong = false;
+        let isCorrectBlank = false;
+        
+        // Only apply feedback colors if we are waiting for proceed and the challenge was incorrect
+        if (canProceed && isAnswerCorrect === false && !isLastPart) {
+          const selectedValueIndex = selectedAnswers[globalBlankIndex];
+          const selectedValue = selectedValueIndex != null 
+            ? options[selectedValueIndex] 
+            : null;
+          
+          const correctValue = correctAnswersList?.[globalBlankIndex];
+          
+          if (selectedValue !== correctValue) {
+            isWrong = true;
+          } else if (selectedValue != null) {
+            // Selected value exists and matches the correct value
+            isCorrectBlank = true;
+          }
+        }
+
+        return (
+          <React.Fragment key={partIndex}>
             {part ? <Text style={styles.codeText}>{renderHighlightedText(part)}</Text> : null}
             
-            {partIndex < parts.length - 1 && (
+            {!isLastPart && (
               <Pressable 
-                key={`blank-${blanksBeforeCurrent + partIndex}`}
+                key={`blank-${globalBlankIndex}`}
                 onPress={(e) => {
                   e.stopPropagation();
                   soundManager.playBlankTapSound(1.0);
-                  if (onBlankPress) onBlankPress(blanksBeforeCurrent + partIndex);
+                  if (onBlankPress) onBlankPress(globalBlankIndex);
                 }}
                 ref={(ref) => {
                   if (ref) {
-                    const globalIndex = blanksBeforeCurrent + partIndex;
-                    blankRefs.current[globalIndex] = ref;
+                    blankRefs.current[globalBlankIndex] = ref;
                   }
                 }}
                 hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
                 style={[
                   styles.codeBlankContainer,
-                  (blanksBeforeCurrent + partIndex) === selectedBlankIndex && styles.currentBlank
+                  globalBlankIndex === selectedBlankIndex && styles.currentBlank,
+                  isCorrectBlank && styles.correctBlank,
+                  isWrong && styles.wrongBlank
                 ]}
               >
                 <Text style={styles.codeBlankText}>
-                {selectedAnswers?.[blanksBeforeCurrent + partIndex] != null
-                  ? options?.[selectedAnswers[blanksBeforeCurrent + partIndex]] || '_'
-                  : '_'}
-              </Text>
+                  {selectedAnswers?.[globalBlankIndex] != null
+                    ? options?.[selectedAnswers[globalBlankIndex]] || '_'
+                    : '_'}
+                </Text>
               </Pressable>
             )}
-        </React.Fragment>
-      ))}
+          </React.Fragment>
+        );
+      })}
     </View>
   );
 };
@@ -132,8 +162,6 @@ const renderSyntaxHighlightedLine = (line, lineIndex) => {
           currentQuestion.challenge_type === 'code with guide' || 
           currentQuestion.challenge_type === 'multiple choice') ? (
           <CodeEditor 
-            //  FIX: Adding key forces component to re-mount when ID changes.
-            // This ensures animations start from 0 opacity and state is reset.
             key={currentQuestion.id} 
             currentQuestion={{
               ...currentQuestion,
@@ -169,12 +197,15 @@ export default React.memo(GameQuestions, (prevProps, nextProps) => {
     JSON.stringify(prevProps.selectedAnswers) === JSON.stringify(nextProps.selectedAnswers) &&
     prevProps.activeTab === nextProps.activeTab && 
     prevProps.isAnswerCorrect === nextProps.isAnswerCorrect &&
+    prevProps.canProceed === nextProps.canProceed &&
+    JSON.stringify(prevProps.submissionResult) === JSON.stringify(nextProps.submissionResult) &&
     prevProps.selectedBlankIndex === nextProps.selectedBlankIndex &&
     prevProps.onTabChange === nextProps.onTabChange &&
     prevProps.onBlankPress === nextProps.onBlankPress &&
     prevProps.getBlankIndex === nextProps.getBlankIndex
   );
 });
+
 
 const styles = StyleSheet.create({
   secondGrid: {
@@ -226,6 +257,30 @@ const styles = StyleSheet.create({
     borderBottomColor: '#cc6600',
     borderRightColor: '#e68900',
     shadowColor: '#ff9500',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: gameScale(8),
+    elevation: 12,
+  },
+  wrongBlank: {
+    backgroundColor: '#ff4d4d',
+    borderTopColor: '#ff8080',
+    borderLeftColor: '#ff1a1a',
+    borderBottomColor: '#b30000',
+    borderRightColor: '#e60000',
+    shadowColor: '#ff4d4d',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: gameScale(8),
+    elevation: 12,
+  },
+  correctBlank: {
+    backgroundColor: '#4caf50', // Green
+    borderTopColor: '#81c784',
+    borderLeftColor: '#388e3c',
+    borderBottomColor: '#1b5e20',
+    borderRightColor: '#2e7d32',
+    shadowColor: '#4caf50',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: gameScale(8),
