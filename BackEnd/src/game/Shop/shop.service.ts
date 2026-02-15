@@ -384,6 +384,10 @@ export const usePotion = async (
       ...fightResult.character,
       character_dies: fightResult.character.character_dies ?? "",
     },
+    enemy: {
+      ...fightResult.enemy,
+      enemy_hit_reaction: null,
+    },
   };
 
   const next = await ChallengeService.getNextChallengeService(

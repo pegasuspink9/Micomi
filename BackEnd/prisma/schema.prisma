@@ -230,6 +230,7 @@ model PlayerProgress {
   has_ryron_reveal Boolean? @default(false)
 
   has_received_rewards   Boolean       @default(false)
+  used_enemy_reactions Json? @default("[]") 
 
   level                  Level         @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
   player                 Player        @relation(fields: [player_id], references: [player_id], onDelete: Cascade)

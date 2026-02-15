@@ -15,6 +15,7 @@ import {
 } from "./challenges.types";
 import { getCardForAttackType } from "../Combat/combat.service";
 import { revealAllBlanks } from "../../../helper/revealPotionHelper";
+import { ENEMY_REACTION_LINES } from "../../../helper/enemyHitLines";
 
 const prisma = new PrismaClient();
 
@@ -123,6 +124,31 @@ const keepOnlyBlanks = (text: string): string => {
   result += textAfter.replace(/[^\n]/g, "");
 
   return result;
+};
+
+const getUniqueEnemyReaction = (
+  usedIndices: number[],
+): { reaction: string; newUsedIndices: number[] } => {
+  const totalLines = ENEMY_REACTION_LINES.length;
+
+  const allIndices = Array.from({ length: totalLines }, (_, i) => i);
+
+  let availableIndices = allIndices.filter(
+    (index) => !usedIndices.includes(index),
+  );
+
+  if (availableIndices.length === 0) {
+    availableIndices = allIndices;
+    usedIndices = [];
+  }
+
+  const randomIndex = Math.floor(Math.random() * availableIndices.length);
+  const selectedLineIndex = availableIndices[randomIndex];
+
+  return {
+    reaction: ENEMY_REACTION_LINES[selectedLineIndex],
+    newUsedIndices: [...usedIndices, selectedLineIndex],
+  };
 };
 
 const isTimedChallengeType = (type: string) =>
@@ -424,6 +450,21 @@ export const submitChallengeService = async (
 
   const isReplayingCompletedLevel = currentProgress?.is_completed === true;
 
+  if (isReplayingCompletedLevel && currentProgress) {
+    await prisma.playerProgress.update({
+      where: { progress_id: currentProgress.progress_id },
+      data: {
+        coins_earned: 0,
+        total_points_earned: 0,
+        total_exp_points_earned: 0,
+        has_received_rewards: false,
+      },
+    });
+    console.log(
+      `🔄 Replaying completed level ${levelId} - reset coins/points tracking`,
+    );
+  }
+
   if (!currentProgress) {
     currentProgress = await prisma.playerProgress.create({
       data: {
@@ -571,11 +612,25 @@ export const submitChallengeService = async (
   }
 
   let wasEverWrong = false;
+  let generatedReaction: string | null = null;
+
   if (isCorrect) {
     wasEverWrong = (
       (currentProgress.wrong_challenges as number[]) ?? []
     ).includes(challengeId);
   }
+
+  const currentUsedIndices =
+    (currentProgress.used_enemy_reactions as number[]) || [];
+  const reactionResult = getUniqueEnemyReaction(currentUsedIndices);
+  generatedReaction = reactionResult.reaction;
+
+  await prisma.playerProgress.update({
+    where: { progress_id: currentProgress.progress_id },
+    data: {
+      used_enemy_reactions: reactionResult.newUsedIndices,
+    },
+  });
 
   const isBonusRound =
     currentProgress.enemy_hp <= 0 && currentProgress.player_hp > 0;
@@ -914,6 +969,12 @@ export const submitChallengeService = async (
 
     message = text;
     audioResponse = audio;
+  }
+
+  if (fightResult && fightResult.enemy) {
+    (fightResult.enemy as any).enemy_hit_reaction = isCorrect
+      ? generatedReaction
+      : null;
   }
 
   const next = await getNextChallengeService(playerId, levelId);
