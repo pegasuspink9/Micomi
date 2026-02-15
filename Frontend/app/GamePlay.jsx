@@ -755,25 +755,20 @@ export default function GamePlay() {
   // Error state
   if (error) {
     return (
-      <>
-        <StatusBar hidden={true} />
-        <View style={[styles.container, styles.centerContent]}>
-          <Text style={styles.errorText}>Error: {error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={refetchGameData}>
-            <Text style={styles.retryText}>Tap to retry</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.exitButton} onPress={handleExitGame}>
-            <Text style={styles.exitText}>Exit Game</Text>
-          </TouchableOpacity>
-        </View>
-      </>
+      <View style={[styles.container, styles.centerContent]}>
+        <Text style={styles.errorText}>Error: {error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={refetchGameData}>
+          <Text style={styles.retryText}>Tap to retry</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.exitButton} onPress={handleExitGame}>
+          <Text style={styles.exitText}>Exit Game</Text>
+        </TouchableOpacity>
+      </View>
     );
   }
 
   return (
     <>
-      <StatusBar hidden={true} />
-
       {showVSModal && (
           <CombatVSModal
             visible={showVSModal}

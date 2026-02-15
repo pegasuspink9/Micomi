@@ -367,7 +367,6 @@ const transformPreviewDataWithCache = (data) => {
 
   return (
     <>
-    <StatusBar hidden translucent backgroundColor="transparent" /> 
       <View style={styles.buttonContainer}>
         {/*  Stones using cached image */}
         {stonePositions.map((position, index) => (

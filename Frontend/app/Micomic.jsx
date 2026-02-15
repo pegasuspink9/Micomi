@@ -230,8 +230,6 @@ export default function Micomic() {
 
   return (
     <View style={styles.container} {...panResponder.panHandlers}>
-      <StatusBar hidden translucent backgroundColor="transparent" />
-
       <View style={styles.bookContainer}>
         
         {currentIndex < pages.length - 1 && 

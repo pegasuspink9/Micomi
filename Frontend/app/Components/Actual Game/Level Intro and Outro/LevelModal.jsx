@@ -413,7 +413,6 @@ const LevelModal = ({
       visible={visible}
       transparent={true}
       animationType="none"
-      statusBarTranslucent={true}
     >
       <Animated.View 
         style={[

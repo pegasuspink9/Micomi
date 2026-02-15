@@ -757,6 +757,11 @@ async testR2Download(testUrl) {
          if (enemy.special_skill?.special_skill_image) {
           addAsset(enemy.special_skill.special_skill_image, `${enemy.enemy_name}_special_skill`, 'image', 'game_images');
         }
+
+        if (enemy.enemy_attack_overlay) {
+          addAsset(enemy.enemy_attack_overlay, `${enemy.enemy_name}_attack_overlay`, 'image', 'game_visuals');
+        }
+        
       }
 
       // Character Assets
@@ -773,6 +778,18 @@ async testR2Download(testUrl) {
 
         if (char.special_skill?.special_skill_image) {
           addAsset(char.special_skill.special_skill_image, `${char.character_name}_special_skill`, 'image', 'game_images');
+        }
+
+        if (char.character_attack_overlay) {
+          addAsset(char.character_attack_overlay, `${char.character_name}_attack_overlay`, 'image', 'game_visuals');
+        }
+
+        if (Array.isArray(char.cards)) {
+          char.cards.forEach((card, i) => {
+            if (card.character_attack_card) {
+              addAsset(card.character_attack_card, `${char.character_name}_card_${i}`, 'image', 'game_visuals');
+            }
+          });
         }
       }
 
@@ -1148,8 +1165,25 @@ async testR2Download(testUrl) {
         assets.push({ url: source.selectedCharacter.special_skill.special_skill_image, name: 'character_special_skill', type: 'image', category: 'game_images' });
       }
 
+
+        if (Array.isArray(source.selectedCharacter?.cards)) {
+        source.selectedCharacter.cards.forEach((card, i) => {
+          if (card.character_attack_card) {
+            assets.push({ url: card.character_attack_card, name: `character_card_${i}`, type: 'image', category: 'game_visuals' });
+          }
+        });
+      }
+
       if (source.enemy?.special_skill?.special_skill_image) {
         assets.push({ url: source.enemy.special_skill.special_skill_image, name: 'enemy_special_skill', type: 'image', category: 'game_images' });
+      }
+
+       if (source.enemy?.special_skill?.special_skill_image) {
+        assets.push({ url: source.enemy.special_skill.special_skill_image, name: 'enemy_special_skill', type: 'image', category: 'game_images' });
+      }
+
+          if (source.enemy?.enemy_attack_overlay) {
+        assets.push({ url: source.enemy.enemy_attack_overlay, name: 'enemy_attack_overlay', type: 'image', category: 'game_visuals' });
       }
 
 
@@ -1262,6 +1296,18 @@ async testR2Download(testUrl) {
         { url: character.avatar_image, name: 'avatar_image', type: 'image' },
         { url: character.special_skill?.special_skill_image, name: 'special_skill_icon', type: 'image' }
       ];
+
+      if (Array.isArray(character.cards)) {
+        character.cards.forEach((card, index) => {
+          if (card.character_attack_card) {
+            charAssets.push({
+              url: card.character_attack_card,
+              name: `card_${index}`,
+              type: 'image'
+            });
+          }
+        });
+      }
 
       // Handle character attacks array
       if (Array.isArray(character.character_attacks)) {

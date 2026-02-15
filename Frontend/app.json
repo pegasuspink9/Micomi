@@ -27,7 +27,7 @@
       "navigationBar": {
         "visible": "never"
       },
-      "edgeToEdgeEnabled": true,
+      "edgeToEdgeEnabled": false,
       "permissions": [
         "android.permission.VIBRATE"
       ]

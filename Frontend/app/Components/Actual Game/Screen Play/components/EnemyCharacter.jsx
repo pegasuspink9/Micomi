@@ -63,6 +63,7 @@ const EnemyCharacter = ({
         easing: Easing.out(Easing.back(1.5)) 
       });
 
+
       // ✅ Start looping animation for overlay sprite
       overlayFrameIndex.value = 0;
       overlayFrameIndex.value = withRepeat(

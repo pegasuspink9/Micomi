@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from "expo-router";
-import { StatusBar } from 'expo-status-bar';
 import { useFonts } from '../assets/fonts/font';
-import { View, ActivityIndicator, Platform, AppState } from 'react-native'; // Added AppState
+import { View, ActivityIndicator, Platform, AppState, StatusBar } from 'react-native'; 
+import { setStatusBarHidden, setStatusBarTranslucent, setStatusBarStyle } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar'; 
 import * as SystemUI from 'expo-system-ui'; 
 import { useAuth } from './hooks/useAuth';
@@ -15,26 +15,60 @@ export default function RootLayout() {
 
   useEffect(() => {
     const setupImmersiveMode = async () => {
+      if (Platform.OS !== 'android') return;
+
       try {
-        if (Platform.OS === 'android') {
-          await NavigationBar.setVisibilityAsync('hidden');
-          await SystemUI.setBackgroundColorAsync('transparent');
-        }
+        setStatusBarHidden(true, 'none');
+        setStatusBarTranslucent(true);
+        setStatusBarStyle('light');
+        
+        StatusBar.setHidden(true, 'none');
+        StatusBar.setTranslucent(true);
+        
+        // Navigation Bar (Bottom Bar) setup
+        await NavigationBar.setVisibilityAsync('hidden');
+        
+        // setBehaviorAsync is deprecated/unsupported when edge-to-edge is enabled
+        // We omit it to avoid the warning, as setVisibilityAsync handles the hiding.
+        
+        // System UI background should be transparent to avoid flashes
+        await SystemUI.setBackgroundColorAsync('transparent');
+        
+        // 🛠️ Extra enforce after a small delay (helps on resume from background)
+        setTimeout(() => {
+          StatusBar.setHidden(true, 'none');
+          setStatusBarHidden(true, 'none');
+        }, 100);
+        
+        setTimeout(() => {
+          StatusBar.setHidden(true, 'none');
+          setStatusBarHidden(true, 'none');
+        }, 500);
+
       } catch (error) {
-        console.log('Navigation bar setup failed:', error);
+        console.log('Immersive mode setup failed:', error);
       }
     };
 
+    // Initial run
     setupImmersiveMode();
-    const interval = setInterval(setupImmersiveMode, 500);
+
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        setupImmersiveMode();
+      }
+    });
+
+    const reHideTimer = setInterval(setupImmersiveMode, 1000);
 
     return () => {
-      clearInterval(interval);
+      subscription.remove();
+      clearInterval(reHideTimer);
     };
-  }, []);
+  }, [segments]); // Dependency on segments to re-trigger on navigation
 
   // Handle authentication routing
-   useEffect(() => {
+  useEffect(() => {
     if (!fontsLoaded || loading) return;
 
     const inAuthGroup = segments[0] === '(tabs)';
@@ -57,23 +91,19 @@ export default function RootLayout() {
         backgroundColor: '#034251' 
       }}>
         <ActivityIndicator size="large" color="#fff" />
-        <StatusBar hidden={true} translucent={true} backgroundColor="transparent" />
       </View>
     );
   }
 
   return (
-    <>
-      <StatusBar hidden={true} translucent={true} backgroundColor="transparent" />
-      <Stack 
-        screenOptions={{ 
-          headerShown: false,
-          contentStyle: { flex: 1 }
-        }}
-      >
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
-    </>
+    <Stack 
+      screenOptions={{ 
+        headerShown: false,
+        contentStyle: { flex: 1 }
+      }}
+    >
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+    </Stack>
   );
 }
