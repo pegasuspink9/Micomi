@@ -837,6 +837,7 @@ export const submitChallengeService = async (
   let audioResponse: string[] = [];
   let appliedDamage = 0;
   let character_attack_audio: string | null = null;
+  let character_hurt_audio: string | null = null;
 
   if (isCorrect) {
     const baselineState = await CombatService.getCurrentFightState(
@@ -993,6 +994,20 @@ export const submitChallengeService = async (
       elapsed,
       challengeId,
     );
+
+    if (character.character_name === "Gino") {
+      character_hurt_audio =
+        "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Gino%20Hurt%20sfx.mp3";
+    } else if (character.character_name === "ShiShi") {
+      character_hurt_audio =
+        "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Shi-Shi%20Hurt%20sfx.mp3";
+    } else if (character.character_name === "Ryron") {
+      character_hurt_audio =
+        "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Ryron%20Hurt%20sfx.mp3";
+    } else if (character.character_name === "Leon") {
+      character_hurt_audio =
+        "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Leon%20hurt%20sfx.mp3";
+    }
 
     if (currentProgress.has_freeze_effect) {
       fightResult.character.character_health =
@@ -1580,6 +1595,7 @@ export const submitChallengeService = async (
     is_correct_audio,
     enemy_attack_audio,
     character_attack_audio,
+    character_hurt_audio,
     death_audio,
     gameplay_audio,
     is_victory_audio,

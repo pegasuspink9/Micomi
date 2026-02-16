@@ -256,4 +256,10 @@ export const audioLinks = [
   "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Iceland%20SFX%20Finished/Lord%20Cryo-Scythe%20Broodlord%20sfx/attack%201%20Lord%20Cryo-Scythe%20Broodlord%20scyhte%20slash%20sfx.mp3",
   "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Iceland%20SFX%20Finished/Lord%20Cryo-Scythe%20Broodlord%20sfx/attack%202%20Lord%20Cryo-Scythe%20Broodlord%20scyhte%20slash%20sfx.mp3",
   "https://micomi-assets.me/Sounds/Final/All%20Universal%20Enemy%20Attack.wav",
+
+  //Character hurt audio
+  "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Gino%20Hurt%20sfx.mp3",
+  "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Leon%20hurt%20sfx.mp3",
+  "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Ryron%20Hurt%20sfx.mp3",
+  "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Shi-Shi%20Hurt%20sfx.mp3",
 ];

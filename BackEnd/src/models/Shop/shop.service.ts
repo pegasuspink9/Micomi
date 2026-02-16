@@ -123,13 +123,12 @@ const getCharacterCards = (characterName: string, damage: number[]) => {
   const basicDmg = damage[0] ?? 10;
   const secondDmg = damage[1] ?? 15;
   const thirdDmg = damage[2] ?? 25;
-  const specialDmg = "Passive Damage";
 
   const characterCardsData: Record<string, any[]> = {
     Gino: [
       {
         attack_type: "Special Attack",
-        damage_attack: specialDmg,
+        damage_attack: null,
         card_type: "Stormfang Surge",
         character_attack_card:
           "https://micomi-assets.me/Icons/Skill%20Icons/4th.png",
@@ -159,7 +158,7 @@ const getCharacterCards = (characterName: string, damage: number[]) => {
     ShiShi: [
       {
         attack_type: "Special Attack",
-        damage_attack: specialDmg,
+        damage_attack: null,
         card_type: "Icebound Meteoclaw",
         character_attack_card:
           "https://micomi-assets.me/Icons/Skill%20Icons/Special%20Attack%20Card.png",
@@ -189,7 +188,7 @@ const getCharacterCards = (characterName: string, damage: number[]) => {
     Ryron: [
       {
         attack_type: "Special Attack",
-        damage_attack: specialDmg,
+        damage_attack: null,
         card_type: "God’s Judgment",
         character_attack_card:
           "https://micomi-assets.me/Icons/Skill%20Icons/Ryron%20Ult.png",
@@ -219,7 +218,7 @@ const getCharacterCards = (characterName: string, damage: number[]) => {
     Leon: [
       {
         attack_type: "Special Attack",
-        damage_attack: specialDmg,
+        damage_attack: null,
         card_type: "Inferno Bulwark",
         character_attack_card:
           "https://micomi-assets.me/Icons/Skill%20Icons/Leon%20Ult.png",
