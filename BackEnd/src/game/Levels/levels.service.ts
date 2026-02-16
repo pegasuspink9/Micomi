@@ -933,6 +933,29 @@ const unlockNextMapFirstLevel = async (
 
   console.log(`🏝️ ISLAND TRANSITION: ${currentMap.map_name} → ${nextMapName}`);
 
+  const firstLevel = await prisma.level.findFirst({
+    where: { map_id: nextMap.map_id },
+    orderBy: { level_id: "asc" },
+  });
+
+  if (!firstLevel) return null;
+
+  const existingMapProgress = await prisma.playerProgress.findUnique({
+    where: {
+      player_id_level_id: {
+        player_id: playerId,
+        level_id: firstLevel.level_id,
+      },
+    },
+  });
+
+  if (existingMapProgress) {
+    console.log(
+      `🚫 Player already has progress in ${nextMapName}. Skipping unlock sequence to preserve progress.`,
+    );
+    return null;
+  }
+
   if (!nextMap.is_active) {
     await prisma.map.update({
       where: { map_id: nextMap.map_id },
@@ -940,13 +963,6 @@ const unlockNextMapFirstLevel = async (
     });
     console.log(`✅ Activated island: ${nextMapName}`);
   }
-
-  const firstLevel = await prisma.level.findFirst({
-    where: { map_id: nextMap.map_id },
-    orderBy: { level_id: "asc" },
-  });
-
-  if (!firstLevel) return null;
 
   console.log(`📚 First level of ${nextMapName}: ${firstLevel.level_id}`);
 

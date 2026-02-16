@@ -200,6 +200,19 @@ export const imagesUrls = [
   "https://micomi-assets.me/Comics/Lavaland%202/L2_page4.png",
   "https://micomi-assets.me/Comics/Lavaland%202/L2_page5.png",
 
+  //Cover Pages
+  "https://micomi-assets.me/Comics/Cover%20page/1_Intro.png",
+  "https://micomi-assets.me/Comics/Cover%20page/2_Comics_Html.png",
+  "https://micomi-assets.me/Comics/Cover%20page/3_Greenland1.png",
+  "https://micomi-assets.me/Comics/Cover%20page/4_GreenlandEnding.png",
+  "https://micomi-assets.me/Comics/Cover%20page/5_Lavaland.png",
+  "https://micomi-assets.me/Comics/Cover%20page/6_Lavaland2.png",
+  "https://micomi-assets.me/Comics/Cover%20page/7_Lavaland3.png",
+  "https://micomi-assets.me/Comics/Cover%20page/8_LavalandEnding.png",
+  "https://micomi-assets.me/Comics/Cover%20page/9_Iceland1.png",
+  "https://micomi-assets.me/Comics/Cover%20page/10_Iceland2.png",
+  "https://micomi-assets.me/Comics/Cover%20page/G_Potion.png",
+
   /*Greenland Enemies*/
   //Draco
   "https://micomi-assets.me/Enemies/Greenland/Draco/idle1.png",

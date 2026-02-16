@@ -134,7 +134,12 @@ export async function updateProgressForChallenge(
     if (level) {
       const enemy = level.enemy;
 
-      if (!wasAnySsActive && consecutiveWrongs % 3 == 0) {
+      if (
+        !isBonusRound &&
+        (progress.enemy_hp ?? 0) > 0 &&
+        !wasAnySsActive &&
+        consecutiveWrongs % 3 == 0
+      ) {
         bossSkillActivated = true;
 
         const enemyName = enemy && enemy.enemy_name;
@@ -192,6 +197,12 @@ export async function updateProgressForChallenge(
         }
       } else {
         bossSkillActivated = false;
+
+        if (isBonusRound && consecutiveWrongs % 3 == 0) {
+          console.log(
+            "- Boss cannot activate SS during Bonus Round / Enemy Defeated state.",
+          );
+        }
       }
     }
 
