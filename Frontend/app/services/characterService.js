@@ -128,8 +128,8 @@ export const characterService = {
   // Get damage icon based on character type
   getDamageIcon: (characterType) => {
     const damageIcons = {
-      "Assasin": "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons%20Shop/fighterIcon.png",
-      "Assassin": "https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons%20Shop/fighterIcon.png",
+      "Assasin": "https://micomi-assets.me/Icons%20Shop/fighterIcon.png",
+      "Assassin": "https://micomi-assets.me/Icons%20Shop/fighterIcon.png",
       "Tank": "https://micomi-assets.me/Icons%20Shop/tankIcon.png",
       "Mage": "https://micomi-assets.me/Icons%20Shop/mageIcon.png",
       "Marksman": "https://micomi-assets.me/Icons%20Shop/marksmanIcon.png",

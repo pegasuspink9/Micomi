@@ -1,14 +1,18 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { View, StyleSheet, Image as RNImage } from 'react-native';
+import { View, StyleSheet, Text, Image as RNImage } from 'react-native';
 import { Image } from 'expo-image';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
   withTiming,
+  withSpring,
+  withDelay, 
   cancelAnimation,
   runOnJS,
   Easing,
+  interpolate,   // Added for shadow focus
+  Extrapolate,  
 } from 'react-native-reanimated';
 import { universalAssetPreloader } from '../../../../services/preloader/universalAssetPreloader';
 import { soundManager } from '../../Sounds/UniversalSoundManager';
@@ -33,6 +37,7 @@ const EnemyCharacter = ({
   enemyName = '',
   attackOverlayUrl = null, 
   enemyCurrentState = null,
+  reactionText = null
 }) => {
   // ========== Shared Animation Values ==========
   const frameIndex = useSharedValue(0);
@@ -278,6 +283,27 @@ const EnemyCharacter = ({
   }, [allAnimationUrls, isUrlCached]);
 
   const [currentAnimationUrl, setCurrentAnimationUrl] = useState(initialUrl);
+
+   const [displayReaction, setDisplayReaction] = useState(null);
+  const reactionOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (reactionText) {
+      // Set text and fade in immediately when the prop arrives
+      setDisplayReaction(reactionText);
+      reactionOpacity.value = withTiming(1, { duration: 400 });
+    } else {
+      // Fade out and clear text when prop is removed
+      reactionOpacity.value = withTiming(0, { duration: 300 }, (finished) => {
+        if (finished) runOnJS(setDisplayReaction)(null);
+      });
+    }
+  }, [reactionText]);
+
+  const reactionAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: reactionOpacity.value,
+    transform: [{ translateY: interpolate(reactionOpacity.value, [0, 1], [10, 0]) }]
+  }));
 
    useEffect(() => {
     const targetUrl = animationConfig.isCompound ? animationConfig.runUrl : animationConfig.url;
@@ -550,6 +576,19 @@ const EnemyCharacter = ({
   // ========== Render ==========
   return (
     <Animated.View style={[ styles.enemyContainer, bossLayout, containerStyle, isFront && styles.front ]} >
+
+      {displayReaction && (
+        <Animated.View style={[styles.reactionContainer, reactionAnimatedStyle]}>
+          <View style={styles.reactionBubble}>
+            <Text style={styles.reactionText}>{displayReaction}</Text>
+          </View>
+          <View style={styles.curvyTailContainer}>
+            <View style={[styles.reactionDot, styles.dotLarge]} />
+            <View style={[styles.reactionDot, styles.dotMedium]} />
+            <View style={[styles.reactionDot, styles.dotSmall]} />
+          </View>
+        </Animated.View>
+      )}
       
       {attackOverlayUrl && (
         <Animated.View style={[styles.attackOverlay, overlayAnimatedStyle]}>
@@ -622,6 +661,64 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
   },
+  reactionContainer: {
+    position: 'absolute',
+    bottom: '90%',
+    right: gameScale(60), // Mirror of character's left: 60
+    alignItems: 'center',
+    zIndex: 20000,
+  },
+  reactionBubble: {
+    backgroundColor: 'white',
+    paddingHorizontal: gameScale(12),
+    paddingVertical: gameScale(8),
+    borderRadius: gameScale(8),
+    borderWidth: gameScale(1.5),
+    borderColor: '#d4d4d4',
+    width: gameScale(160),
+  },
+  reactionText: {
+    color: '#333',
+    fontSize: gameScale(12),
+    textAlign: 'center',
+    fontFamily: 'DynaPuff',
+  },
+  curvyTailContainer: {
+    alignItems: 'center',
+    marginTop: gameScale(-2),
+    marginRight: gameScale(-70), // Mirror of character's marginLeft: -70
+  },
+  reactionDot: {
+    backgroundColor: 'white',
+    borderWidth: gameScale(1.5),
+    borderColor: '#d4d4d4',
+    shadowColor: '#000',
+    shadowOffset: { width: -1, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
+    elevation: 2,
+  },
+  dotLarge: {
+    width: gameScale(12),
+    height: gameScale(10),
+    borderRadius: gameScale(6),
+    marginTop: gameScale(4),
+    marginRight: gameScale(9), // Mirror of character's marginLeft: 9
+  },
+  dotMedium: {
+    width: gameScale(8),
+    height: gameScale(7),
+    borderRadius: gameScale(4),
+    marginTop: gameScale(2),
+    marginRight: gameScale(-5),
+  },
+  dotSmall: {
+    width: gameScale(5),
+    height: gameScale(5),
+    borderRadius: gameScale(3),
+    marginTop: gameScale(2),
+    marginRight: gameScale(-12),
+  },
   spriteContainer: {
     overflow: 'hidden',
   },
@@ -661,6 +758,7 @@ const styles = StyleSheet.create({
 
 export default React.memo(EnemyCharacter, (prev, next) => {
   return (
+    prev.reactionText === next.reactionText &&
     prev.currentState === next.currentState &&
     prev.isPaused === next.isPaused &&
     prev.isAttacking === next.isAttacking &&
@@ -669,8 +767,7 @@ export default React.memo(EnemyCharacter, (prev, next) => {
     prev.enemyName === next.enemyName && 
     prev.index === next.index &&      
     prev.attackOverlayUrl === next.attackOverlayUrl && 
-     prev.enemyCurrentState === next.enemyCurrentState &&
+    prev.enemyCurrentState === next.enemyCurrentState &&
     prev.characterAnimations === next.characterAnimations
   );
 });
-

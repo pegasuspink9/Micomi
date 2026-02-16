@@ -340,7 +340,7 @@ async testR2Download(testUrl) {
 
     // --- Static Damage Icons from characterService.js ---
     const damageIcons = [
-      { url: 'https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons%20Shop/fighterIcon.png', name: 'fighter_damage_icon' },
+      { url: 'https://micomi-assets.me/Icons%20Shop/fighterIcon.png', name: 'fighter_damage_icon' },
       { url: 'https://micomi-assets.me/Icons%20Shop/tankIcon.png', name: 'tank_damage_icon' },
       { url: 'https://micomi-assets.me/Icons%20Shop/mageIcon.png', name: 'mage_damage_icon' },
       { url: 'https://micomi-assets.me/Icons%20Shop/marksmanIcon.png', name: 'marksman_damage_icon' },
@@ -562,7 +562,7 @@ async testR2Download(testUrl) {
     addAsset('https://micomi-assets.me/Icons%20Shop/473999709-38e408df-acdc-4d46-abcc-29bb6f28ab59.png', 'marksman_role_icon', 'image', 'character_select_ui');
 
     // Damage Icons
-    addAsset('https://pub-7f09eed735844833be66a15dd02a52a4.r2.dev/Icons%20Shop/fighterIcon.png', 'fighter_damage_icon', 'image', 'character_select_ui');
+    addAsset('https://micomi-assets.me/Icons%20Shop/fighterIcon.png', 'fighter_damage_icon', 'image', 'character_select_ui');
     addAsset('https://micomi-assets.me/Icons%20Shop/tankIcon.png', 'tank_damage_icon', 'image', 'character_select_ui');
     addAsset('https://micomi-assets.me/Icons%20Shop/mageIcon.png', 'mage_damage_icon', 'image', 'character_select_ui');
     addAsset('https://micomi-assets.me/Icons%20Shop/marksmanIcon.png', 'marksman_damage_icon', 'image', 'character_select_ui');

@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     top: gameScale(60),
-    zIndex: 2000,
+    zIndex: -1,
   },
   leftContainer: {
     left: gameScale(10),

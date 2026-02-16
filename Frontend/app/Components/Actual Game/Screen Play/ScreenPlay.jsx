@@ -80,6 +80,61 @@ const ScreenPlay = ({
     [gameState.submissionResult, gameState.selectedCharacter]
   );
 
+
+  const [activeCharReaction, setActiveCharReaction] = useState(null);
+  const [activeEnemyReaction, setActiveEnemyReaction] = useState(null);
+
+  useEffect(() => {
+    const charReaction = gameState.submissionResult?.fightResult?.character?.character_reaction;
+    const enemyReaction = gameState.submissionResult?.fightResult?.enemy?.enemy_reaction;
+    const isCorrect = gameState.submissionResult?.isCorrect;
+
+    // Reset states immediately on new submission result
+    setActiveCharReaction(null);
+    setActiveEnemyReaction(null);
+
+    if (!charReaction && !enemyReaction) return;
+
+    let sequenceTimeouts = [];
+
+    // "entrance delay display 4 seconds" 
+    const startTimeout = setTimeout(() => {
+      /**
+       * Sequential Order Logic:
+       * Correct: Character -> Enemy
+       * Wrong:   Enemy -> Character
+       */
+      const firstText = isCorrect ? charReaction : enemyReaction;
+      const secondText = isCorrect ? enemyReaction : charReaction;
+      
+      const setFirst = isCorrect ? setActiveCharReaction : setActiveEnemyReaction;
+      const setSecond = isCorrect ? setActiveEnemyReaction : setActiveCharReaction;
+
+      // STEP 1: Display the first reactor
+      if (firstText) setFirst(firstText);
+
+      // STEP 2: After 1 second, hide first and show second
+      const step2Timeout = setTimeout(() => {
+        setFirst(null);
+        if (secondText) setSecond(secondText);
+
+        // STEP 3: After another 1 second, hide second
+        const step3Timeout = setTimeout(() => {
+          setSecond(null);
+        }, 2000);
+        sequenceTimeouts.push(step3Timeout);
+      }, 2000);
+
+      sequenceTimeouts.push(step2Timeout);
+    }, 4000); // Wait 4 seconds for entrance animations to pass
+
+    return () => {
+      clearTimeout(startTimeout);
+      sequenceTimeouts.forEach(clearTimeout);
+    };
+  }, [gameState.submissionResult]);
+
+
   const enemies = useMemo(() => {
     return [{
       duration: 10000,
@@ -713,6 +768,7 @@ useEffect(() => {
           attackOverlayUrl={characterAttackOverlay} 
           statusState={characterCurrentState} // ✅ Passing character status
           enemyStatusState={enemyCurrentState} 
+          reactionText={activeCharReaction}
         />
 
          {enemies.map((enemy, index) => {
@@ -736,8 +792,9 @@ useEffect(() => {
               fightStatus={gameState.submissionResult?.fightResult?.status}
               attackAudioUrl={gameState.submissionResult?.enemyAttackAudio}
               onAnimationComplete={handleEnemyAnimationComplete(index)}
-               attackOverlayUrl={enemyAttackOverlay}
+              attackOverlayUrl={enemyAttackOverlay}
               enemyCurrentState={enemyCurrentState}
+              reactionText={activeEnemyReaction}
             />
           );
         })}
@@ -835,7 +892,7 @@ useEffect(() => {
       {/* ✅ NEW: Render the BonusRoundModal component */}
       <BonusRoundModal 
         visible={showBonusRoundText} // ✅ Controlled by the new state
-        message="Bonus Cache!" 
+        message="Bonus Round!" 
         duration={3000} 
         onHide={handleBonusModalHide} 
       />

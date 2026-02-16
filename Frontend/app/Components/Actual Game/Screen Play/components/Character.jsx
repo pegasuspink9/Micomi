@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { View, StyleSheet, Image as RNImage } from 'react-native';
+import { View, StyleSheet, Text, Image as RNImage } from 'react-native';
 import { Image } from 'expo-image';
 import Animated, {
   useSharedValue,
@@ -33,8 +33,9 @@ const Character = ({
   containerStyle: propContainerStyle,
   potionEffectUrl = null,
   attackOverlayUrl = null, 
-  statusState = null,       // Status on player (e.g. "Revitalize", "Strong", "Reveal")
+  statusState = null,
   enemyStatusState = null, 
+  reactionText = null,
 }) => {
   // ========== Shared Animation Values ==========
   const frameIndex = useSharedValue(0);
@@ -51,6 +52,26 @@ const Character = ({
   const potionFrameIndex = useSharedValue(0);
   const potionOpacity = useSharedValue(0);
 
+  const [displayReaction, setDisplayReaction] = useState(null);
+  const reactionOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (reactionText) {
+      // Set text and fade in immediately when the prop arrives
+      setDisplayReaction(reactionText);
+      reactionOpacity.value = withTiming(1, { duration: 400 });
+    } else {
+      // Fade out and clear text when prop is removed
+      reactionOpacity.value = withTiming(0, { duration: 300 }, (finished) => {
+        if (finished) runOnJS(setDisplayReaction)(null);
+      });
+    }
+  }, [reactionText]);
+
+  const reactionAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: reactionOpacity.value,
+    transform: [{ translateY: interpolate(reactionOpacity.value, [0, 1], [10, 0]) }]
+  }));
 
   const OVERLAY_COLUMNS = 6;
   const OVERLAY_ROWS = 4;
@@ -533,6 +554,19 @@ const Character = ({
   return (
     <Animated.View style={[ styles.characterContainer, containerStyle, propContainerStyle]}>
       
+      {displayReaction && (
+        <Animated.View style={[styles.reactionContainer, reactionAnimatedStyle]}>
+          <View style={styles.reactionBubble}>
+            <Text style={styles.reactionText}>{displayReaction}</Text>
+          </View>
+          <View style={styles.curvyTailContainer}>
+            <View style={[styles.reactionDot, styles.dotLarge]} />
+            <View style={[styles.reactionDot, styles.dotMedium]} />
+            <View style={[styles.reactionDot, styles.dotSmall]} />
+          </View>
+        </Animated.View>
+      )}
+      
        {attackOverlayUrl && (
         <Animated.View style={[
           styles.attackOverlay, 
@@ -664,6 +698,65 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10,
   },
+  reactionContainer: {
+    position: 'absolute',
+    bottom: '90%',
+    left: gameScale(60),
+    alignItems: 'center',
+    zIndex: 10000,
+  },
+  reactionBubble: {
+    backgroundColor: 'white',
+    paddingHorizontal: gameScale(12),
+    paddingVertical: gameScale(8),
+    borderRadius: gameScale(8), 
+    borderWidth: gameScale(1.5),
+    borderColor: '#d4d4d4',
+    width: gameScale(160),
+  },
+  reactionText: {
+    color: '#333',
+    fontSize: gameScale(12),
+    textAlign: 'center',
+    fontFamily: 'DynaPuff'
+  },
+  curvyTailContainer: {
+    alignItems: 'center',
+    marginTop: gameScale(-2),
+    marginLeft: gameScale(-70), // Shift tail towards the character
+  },
+    reactionDot: {
+    backgroundColor: 'white',
+    borderWidth: gameScale(1.5),
+    borderColor: '#d4d4d4',
+    // Added 3D Shadow to dots
+    shadowColor: '#000',
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
+    elevation: 2,
+  },
+  dotLarge: {
+    width: gameScale(12),
+    height: gameScale(10),
+    borderRadius: gameScale(6),
+    marginTop: gameScale(4),
+    marginLeft: gameScale(9), // Curvy offset
+  },
+  dotMedium: {
+    width: gameScale(8),
+    height: gameScale(7),
+    borderRadius: gameScale(4),
+    marginTop: gameScale(2),
+    marginLeft: gameScale(-5), // Further curvy offset
+  },
+  dotSmall: {
+    width: gameScale(5),
+    height: gameScale(5),
+    borderRadius: gameScale(3),
+    marginTop: gameScale(2),
+    marginLeft: gameScale(-12), // Final curvy offset
+  },
   spriteContainer: { overflow: 'hidden' },
   spriteSheet: {},
   spriteImage: { width: '100%', height: '100%' },
@@ -704,6 +797,7 @@ const styles = StyleSheet.create({
 
 export default React.memo(Character, (prev, next) => {
   return (
+    prev.reactionText === next.reactionText && 
     prev.currentState === next.currentState &&
     prev.isPaused === next.isPaused &&
     prev.characterName === next.characterName &&

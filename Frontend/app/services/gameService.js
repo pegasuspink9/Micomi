@@ -114,7 +114,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
     if (!responseData) {
       console.warn('⚠️ No response data found');
       return null;
-    }
+    } 
 
     //  Handle both direct and nested data structures
     const data = responseData.data || responseData;
@@ -155,6 +155,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         special_skill: data.enemy?.special_skill || responseData.enemy?.special_skill || null,
         enemy_attack_overlay: data.enemy?.enemy_attack_overlay || responseData.enemy?.enemy_attack_overlay || null,
         enemy_current_state: data.enemy?.enemy_current_state || responseData.enemy?.enemy_current_state || null,
+        enemy_reaction: data.enemy?.enemy_reaction || responseData.enemy?.enemy_reaction || null,
       },
 
       avatar: {
@@ -178,6 +179,8 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         special_skill: data.character?.special_skill || responseData.character?.special_skill || null,
         character_attack_overlay: data.character?.character_attack_overlay || responseData.character?.character_attack_overlay || null,
         character_current_state: data.character?.character_current_state || responseData.character?.character_current_state || null,
+        character_reaction: data.character?.character_reaction || responseData.character?.character_reaction || null
+        
       },
       
       energy: data.energy || responseData.energy || 0,
@@ -309,6 +312,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
             special_skill: fightResult.character.special_skill || null,
             character_attack_overlay: fightResult.character.character_attack_overlay || null,
             character_current_state: fightResult.character.character_current_state || null,
+            character_reaction: fightResult.character.character_reaction || null,
           } : null,
           
           enemy: fightResult.enemy ? {
@@ -327,6 +331,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
             special_skill: fightResult.enemy.special_skill || null,
             enemy_attack_overlay: fightResult.enemy.enemy_attack_overlay || null,
             enemy_current_state: fightResult.enemy.enemy_current_state || null,
+            enemy_reaction: fightResult.enemy.enemy_reaction || null,
           } : null,
         } : null,
       
