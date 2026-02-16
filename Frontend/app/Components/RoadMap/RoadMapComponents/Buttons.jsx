@@ -13,7 +13,6 @@ const BASE_WIDTH = 390;
 const PATTERN_HEIGHT = 700;
 const STONES_PER_PATTERN = 37;
 
-
 // Star Image URL
 const starImage = require('../stars.png');
 
@@ -68,7 +67,6 @@ export default function LevelButtons({
     shopButton: getCachedAssetUrl(theme?.icons?.shopButton || DEFAULT_THEME.icons.shopButton),
     bossButton: getCachedAssetUrl(theme?.icons?.bossButton || DEFAULT_THEME.icons.bossButton),
   }), [theme?.icons]);
-
 
   const BUTTON_IMAGES = useMemo(() => ({
     unlockedButton: getCachedAssetUrl(theme?.buttons?.unlockedButton || DEFAULT_THEME.buttons.unlockedButton),
@@ -159,44 +157,27 @@ export default function LevelButtons({
      if (level.level_type === 'micomiButton') {
       console.log('Navigating directly to Micomic for level:', level.level_id);
       router.push(`/Micomic?levelId=${level.level_id}`);
-      return; // Exit early
+      processingPress.current = false;
+      return; 
     }
 
+    // IMMEDIATELY open modal and show the "Robot Shell" while we load backend data
+    setSelectedLevelId(level.level_id);
+    setLevelPreviewData(null); // Ensure LevelModal sees this as empty and fetches fresh data
+    setModalVisible(true);
 
     try {
-      //  Load cached assets into memory (fast - already downloaded)
-      await Promise.all([
-        universalAssetPreloader.loadCachedAssets('game_animations'),
-        universalAssetPreloader.loadCachedAssets('game_images'),
-        universalAssetPreloader.loadCachedAssets('map_theme_assets'),
-      ]);
+      // Background task: trigger asset pre-loading to speed up transition
+      universalAssetPreloader.loadCachedAssets('game_animations');
+      universalAssetPreloader.loadCachedAssets('game_images');
+      universalAssetPreloader.loadCachedAssets('map_theme_assets');
 
-      // Fetch level preview data
-      const previewResponse = await getLevelPreview(level.level_id);
-      
-      if (previewResponse.success) {
-        //  Transform avatar URLs to use cached paths
-        const transformedData = transformPreviewDataWithCache(previewResponse.data);
-        setLevelPreviewData(transformedData);
-        setSelectedLevelId(level.level_id);
-        setModalVisible(true);
-      } else {
-        console.error('Failed to fetch level preview:', previewResponse.error);
-        const transformedLevel = transformPreviewDataWithCache(level);
-        setLevelPreviewData(transformedLevel);
-        setSelectedLevelId(level.level_id);
-        setModalVisible(true);
-
-        const previewData = await getLevelPreview(level.level_id);
-        const transformedData = transformPreviewDataWithCache(previewData);
-        setLevelPreviewData(transformedData);
-      }
+      // The LevelModal component itself will detect !levelData and fetch from backend.
+      // We reset processingPress here so the user can click again (if they close the modal).
+      processingPress.current = false;
     } catch (error) {
-      console.error('Error fetching level preview:', error);
-      const transformedLevel = transformPreviewDataWithCache(level);
-      setLevelPreviewData(transformedLevel);
-      setSelectedLevelId(level.level_id);
-      setModalVisible(true);
+      console.error('Error starting level sequence:', error);
+      processingPress.current = false;
     }
   };
 
@@ -361,7 +342,6 @@ const transformPreviewDataWithCache = (data) => {
       </View>
     );
   };
-
 
   console.log('🔥 Rendering buttons for levels:', lessons);
 
@@ -626,3 +606,4 @@ const styles = StyleSheet.create({
     marginHorizontal: -5, 
   }
 });
+

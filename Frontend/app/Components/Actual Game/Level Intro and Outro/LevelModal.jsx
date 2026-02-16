@@ -61,6 +61,12 @@ const LevelModal = ({
     }
   }, [visible]);
 
+  useEffect(() => {
+    if (visible && !loading && displayData) {
+      startContinuousAnimations();
+    }
+  }, [loading, visible, !!displayData]);
+
   //  Smooth continuous animations
   const startContinuousAnimations = () => {
     // Glow animation
@@ -82,29 +88,22 @@ const LevelModal = ({
     ).start();
 
     // Scan line animation
-    Animated.sequence([
-    // First scan
-    Animated.timing(scanLineAnim, {
-      toValue: 2,
-      duration: 3000,
-      easing: Easing.linear,
-      useNativeDriver: true,
-    }),
-    // Reset to top
-    Animated.timing(scanLineAnim, {
-      toValue: 0,
-      duration: 100,
-      easing: Easing.linear,
-      useNativeDriver: true,
-    }),
-    // Second scan
-    Animated.timing(scanLineAnim, {
-      toValue: 2,
-      duration: 3000,
-      easing: Easing.linear,
-      useNativeDriver: true,
-    })
-  ]).start();
+     Animated.loop(
+      Animated.sequence([
+        Animated.timing(scanLineAnim, {
+          toValue: 2,
+          duration: 3000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scanLineAnim, {
+          toValue: 0,
+          duration: 0, // Instant reset
+          useNativeDriver: true,
+        })
+      ])
+    ).start();
+  
   };
 
   useEffect(() => {
@@ -113,7 +112,6 @@ const LevelModal = ({
       setIsNavigating(false);
     }
   }, [visible]);
-
 
     const handlePlayPress = useCallback(() => {
     if (isAnimating || isNavigating || hasTriggeredNav.current) return;
@@ -310,6 +308,7 @@ const LevelModal = ({
       setLoading(false);
     }
   };
+  
 
   const transformPreviewDataWithCache = (data) => {
     if (!data) return data;
@@ -344,7 +343,6 @@ const LevelModal = ({
   };
 
 
-
   const displayData = useMemo(() => {
     const data = previewData || levelData;
     if (!data) return null;
@@ -353,7 +351,7 @@ const LevelModal = ({
     return transformPreviewDataWithCache(data);
   }, [previewData, levelData]);
   
-  if (!displayData && !loading) {
+  if (!visible) {
     return null;
   }
 
@@ -376,7 +374,17 @@ const LevelModal = ({
     energy_cost: displayData.energy || 0,
     player_coins: displayData.player_info?.player_coins || 0,
     boss_output: displayData.bossLevelExpectedOutput?.[0] || null
-  } : {};
+  } : {
+    // Default fallback values while loading
+    level_number: '?',
+    level_type: 'LOADING...',
+    level_difficulty: '...',
+    enemy_name: '...',
+    coins_reward: 0,
+    points_reward: 0,
+    energy_cost: 0,
+    content: 'Connecting to mission server...'
+  };
 
   //  Smooth interpolations
   const rotateInterpolate = rotateAnim.interpolate({
@@ -422,91 +430,71 @@ const LevelModal = ({
           }
         ]}
       >
-        {loading && (
-          <Animated.View 
-            style={[
-              styles.loadingContainer,
-              {
-                opacity: opacityAnim,
-                transform: [
-                  { scale: scaleAnim },
-                  { translateY: slideAnim }
-                ],
-              }
-            ]}
-          >
-            <Text style={styles.loadingText}>Loading level data...</Text>
-          </Animated.View>
-        )}
-        
-        {error && (
-          <Animated.View 
-            style={[
-              styles.errorContainer,
-              {
-                opacity: opacityAnim,
-                transform: [
-                  { scale: scaleAnim },
-                  { translateY: slideAnim }
-                ],
-              }
-            ]}
-          >
-            <Text style={styles.errorText}>{error}</Text>
-            <Pressable style={styles.retryButton} onPress={fetchLevelPreview}>
-              <Text style={styles.retryText}>Retry</Text>
-            </Pressable>
-          </Animated.View>
-        )}
-
-        {displayData && (
-          <Animated.View 
-            style={[
-              styles.robotHead,
-              {
-                opacity: opacityAnim,
-                transform: [
-                  { scale: scaleInterpolate },
-                  { rotateX: rotateInterpolate },
-                  { translateY: Animated.add(slideAnim, bounceInterpolate) },
-                ],
-              }
-            ]}
-          >
-            <View style={styles.outerBorder}>
-              <View style={styles.visor}>
-                <ImageBackground
-                source={{ uri: isShopLevel ? 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' :  
-                    'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' }}
-            imageStyle={styles.backgroundImage} 
-            resizeMode="cover"
+        {/* robotHead shell now always renders if visible=true */}
+        <Animated.View 
+          style={[
+            styles.robotHead,
+            {
+              opacity: opacityAnim,
+              transform: [
+                { scale: scaleInterpolate },
+                { rotateX: rotateInterpolate },
+                { translateY: Animated.add(slideAnim, bounceInterpolate) },
+              ],
+            }
+          ]}
+        >
+          <View style={styles.outerBorder}>
+            <View style={styles.visor}>
+              <ImageBackground
+              source={{ uri: isShopLevel ? 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' :  
+                  'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' }}
+          imageStyle={styles.backgroundImage} 
+          resizeMode="cover"
 >
-                  <LinearGradient
-                    colors={[
-                      'rgba(15, 55, 95, 1)',
-                      'rgba(15, 55, 95,  0.15)',
-                      'rgba(15, 55, 95,  0.15)',
-                      'rgba(15, 55, 95,  0.13)',
-                      'rgba(15, 55, 95,  0.15)',
-                      'rgba(15, 55, 95,  0.15)',
-                      'rgba(29, 76, 124, 1)',
-                    ]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.visorGlass}
-                  >
-                    <View style={styles.techGrid} />
+                <LinearGradient
+                  colors={[
+                    'rgba(15, 55, 95, 1)',
+                    'rgba(15, 55, 95,  0.15)',
+                    'rgba(15, 55, 95,  0.15)',
+                    'rgba(15, 55, 95,  0.13)',
+                    'rgba(15, 55, 95,  0.15)',
+                    'rgba(15, 55, 95,  0.15)',
+                    'rgba(29, 76, 124, 1)',
+                  ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.visorGlass}
+                >
+                  <View style={styles.techGrid} />
 
-                    {/*  Animated scan line */}
-                    <Animated.View 
-                      style={[
-                        styles.scanLine,
-                        {
-                          transform: [{ translateY: scanLineTranslate }]
-                        }
-                      ]} 
-                    />
+                  {/*  Animated scan line */}
+                  <Animated.View 
+                    style={[
+                      styles.scanLine,
+                      {
+                        transform: [{ translateY: scanLineTranslate }]
+                      }
+                    ]} 
+                  />
 
+                  {loading ? (
+                    <View style={styles.visorLoadingContainer}>
+                      <View style={styles.loadingPulse}>
+                        {/* Themed Loader Icons */}
+                        <Text style={styles.loadingTechIcon}>🛰️</Text>
+                      </View>
+                      <Text style={styles.visorLoadingText}>Detecing bugs...</Text>
+                      <Text style={styles.visorLoadingSubText}>PREPARING ANIMATIONS & DATA</Text>
+                    </View>
+                  ) : error ? (
+                    <View style={styles.visorLoadingContainer}>
+                      <Text style={[styles.errorText, { marginBottom: gameScale(15) }]}>{error}</Text>
+                      <Pressable style={styles.retryButton} onPress={fetchLevelPreview}>
+                        <Text style={styles.playButtonText}>RETRY</Text>
+                      </Pressable>
+                    </View>
+                  ) : (
                     <View style={styles.modalContent}>
                       <Animated.View 
                         style={[
@@ -530,7 +518,8 @@ const LevelModal = ({
                           <BossLevelModal bossData={displayData?.enemy} opacityAnim={opacityAnim} bounceAnim={bounceAnim} glowAnim={glowAnim} /> 
                         ) : (
                         mappedLevelData.enemy_avatar && (
-                          <Animated.View 
+                           // ... existing code ...
+                           <Animated.View 
                             style={[
                               styles.enemyAvatarContainer,
                               {
@@ -545,7 +534,19 @@ const LevelModal = ({
                           >
                             <View style={styles.enemyFoundContainer}>
                               <View style={styles.curvedEnemyFoundContainer}>
-                                {'Bug Found!'.split('').map((char, index, array) => {
+                                {isBossLevel ? 'Boss Found!'.split('').map((char, index, array) => {
+                                   // ... existing logic ...
+                                   const totalChars = array.length;
+                                   const centerIndex = (totalChars - 1) / 2;
+                                   const distanceFromCenter = index - centerIndex;
+                                   const rotationAngle = (distanceFromCenter / centerIndex) * -1;
+                                   const radiusOffset = Math.abs(distanceFromCenter) * 2;
+                                   return (
+                                     <Animated.Text key={index} style={[styles.curvedEnemyFoundCharacter, { opacity: glowInterpolate, transform: [{ rotate: `${rotationAngle}deg` }, { translateY: radiusOffset }] }]}>
+                                       {char}
+                                     </Animated.Text>
+                                   );
+                                }) : 'Bug Found!'.split('').map((char, index, array) => {
                                   const totalChars = array.length;
                                   const centerIndex = (totalChars - 1) / 2;
                                   const distanceFromCenter = index - centerIndex;
@@ -575,25 +576,23 @@ const LevelModal = ({
                             </View>
 
                             <View style={styles.avatarFrame}>
-                              {/* This View now acts as the circular frame, using the original styles */}
                               <Animated.View 
                                 style={[
                                   styles.enemyAvatar,
                                   {
                                     opacity: glowInterpolate,
-                                    overflow: 'hidden', // Clip the image inside
-                                    justifyContent: 'center', // Center the image horizontally
-                                    alignItems: 'center',     // Center the image vertically
+                                    overflow: 'hidden',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
                                   }
                                 ]}
                               >
-                                {/* The Image is now inside the frame and can be sized independently */}
                                 <Image 
                                   source={{ uri: mappedLevelData.enemy_avatar }}
                                   style={{
                                     width: gameScale(170), 
                                     marginBottom: gameScale(-10),
-                                    height: '100%',       // Fill the height of the frame
+                                    height: '100%',
                                   }}
                                   resizeMode="cover"
                                 />
@@ -709,20 +708,12 @@ const LevelModal = ({
                             <Text style={styles.sectionLabel}>Rewards</Text>
                             <View style={styles.rewardSubFrames}>
                               <View style={styles.rewardItem}>
-                                <Image 
-                                  source={require('../../icons/coins.png')} 
-                                  style={styles.rewardImage}
-                                  resizeMode="contain"
-                                />
+                                <Image source={require('../../icons/coins.png')} style={styles.rewardImage} resizeMode="contain" />
                                 <Text style={styles.rewardText}>{mappedLevelData.coins_reward}</Text>
                               </View>
 
                               <View style={styles.rewardItem}>
-                                <Image 
-                                  source={require('../../icons/points.png')} 
-                                  style={styles.rewardImage}
-                                  resizeMode="contain"
-                                />
+                                <Image source={require('../../icons/points.png')} style={styles.rewardImage} resizeMode="contain" />
                                 <Text style={styles.rewardText}>{mappedLevelData.points_reward}</Text>
                               </View> 
                             </View>
@@ -731,51 +722,33 @@ const LevelModal = ({
                           <View style={styles.rewardSection}>
                             <Text style={styles.sectionLabel}>Energy Cost</Text>
                             <View style={styles.rewardItem}>
-                                <Image 
-                                  source={require('../../icons/energy.png')} 
-                                  style={styles.rewardImage}
-                                  resizeMode="contain"
-                                />
+                                <Image source={require('../../icons/energy.png')} style={styles.rewardImage} resizeMode="contain" />
                               <Text style={styles.rewardText}>{mappedLevelData.energy_cost}</Text>
                             </View>
                           </View>
                         </View>
                       </Animated.View>
                     </View>
-                  </LinearGradient>
-                </ImageBackground>
-              </View>
+                  )}
+                </LinearGradient>
+              </ImageBackground>
             </View>
+          </View>
 
-             <Pressable 
-                style={({ pressed }) => [
-                  styles.closeButton,
-                  pressed && styles.closeButtonPressed
-                ]}
-                onPress={handleModalClose}
-                disabled={isAnimating}
-              >
-                <Text style={styles.closeButtonText}>×</Text>
-              </Pressable>
-            
-            {/*  Smooth close button */}
-            <Animated.View
-              style={{
-                opacity: opacityAnim,
-                transform: [
-                  { scale: scaleAnim },
-                  { rotate: rotateAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ['45deg', '0deg']
-                  })}
-                ]
-              }}
-            >
-             
-            </Animated.View>
-          </Animated.View>
-        )}
+          {/* Close button is now always available inside robotHead frame */}
+          <Pressable 
+            style={({ pressed }) => [
+              styles.closeButton,
+              pressed && styles.closeButtonPressed
+            ]}
+            onPress={handleModalClose}
+            disabled={isAnimating}
+          >
+            <Text style={styles.closeButtonText}>×</Text>
+          </Pressable>
+        </Animated.View>
 
+        {/* Play button only shows when content is fully loaded */}
         {displayData && !loading && !error && (
           <Animated.View 
             style={[
@@ -808,22 +781,12 @@ const LevelModal = ({
               disabled={isAnimating}
             >
               <LinearGradient
-                colors={[
-                  'rgba(0, 159, 227, 0.76)',
-                  'rgba(0, 159, 227, 0.76)'
-                ]}
+                colors={['rgba(0, 159, 227, 0.76)', 'rgba(0, 159, 227, 0.76)']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.playButtonMiddle}
               >
-                <Animated.Text 
-                  style={[
-                    styles.playButtonText,
-                    {
-                      opacity: glowInterpolate,
-                    }
-                  ]}
-                >
+                <Animated.Text style={[styles.playButtonText, { opacity: glowInterpolate }]}>
                   {isShopLevel ? "ENTER SHOP" : "PLAY"}
                 </Animated.Text>
               </LinearGradient>
@@ -831,6 +794,7 @@ const LevelModal = ({
           </Animated.View>
         )}
       </Animated.View>
+
          <Modal
         visible={showWebView}
         transparent={true}
@@ -1495,6 +1459,42 @@ const styles = StyleSheet.create({
     fontSize: gameScale(12),
     fontFamily: 'DynaPuff',
     fontWeight: 'bold',
+  },
+  visorLoadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  visorLoadingText: {
+    color: '#00ffff',
+    fontSize: gameScale(18),
+    fontFamily: 'FunkySign',
+    marginTop: gameScale(20),
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 255, 255, 0.8)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: gameScale(10),
+  },
+  visorLoadingSubText: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: gameScale(10),
+    fontFamily: 'monospace',
+    marginTop: gameScale(5),
+    letterSpacing: 2,
+  },
+  loadingTechIcon: {
+    fontSize: gameScale(40),
+  },
+  loadingPulse: {
+    width: gameScale(80),
+    height: gameScale(80),
+    borderRadius: gameScale(40),
+    backgroundColor: 'rgba(0, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#00ffff',
   },
 });
 
