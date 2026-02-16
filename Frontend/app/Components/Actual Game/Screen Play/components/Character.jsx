@@ -135,7 +135,7 @@ const Character = ({
     };
   });
 
- 
+  
    const overlayAnimatedStyle = useAnimatedStyle(() => {
     // Sharpness of shadow increases as it lands (scale 6 -> scale 1)
     const shadowBlur = interpolate(overlayScale.value, [1, 6], [8, 45], Extrapolate.CLAMP);
