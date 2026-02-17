@@ -935,7 +935,7 @@ const unlockNextMapFirstLevel = async (
 
   const firstLevel = await prisma.level.findFirst({
     where: { map_id: nextMap.map_id },
-    orderBy: { level_id: "asc" },
+    orderBy: [{ level_number: "asc" }, { level_id: "asc" }],
   });
 
   if (!firstLevel) return null;
@@ -1219,9 +1219,17 @@ export const unlockNextLevel = async (
   const nextLevel = await prisma.level.findFirst({
     where: {
       map_id: mapId,
-      level_id: { gt: currentLevel.level_id },
+      OR: [
+        {
+          level_number: { gt: currentLevel.level_number! },
+        },
+        {
+          level_number: currentLevel.level_number,
+          level_id: { gt: currentLevel.level_id },
+        },
+      ],
     },
-    orderBy: { level_id: "asc" },
+    orderBy: [{ level_number: "asc" }, { level_id: "asc" }],
   });
 
   if (!nextLevel) {

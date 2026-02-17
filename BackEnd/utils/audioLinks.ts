@@ -259,7 +259,20 @@ export const audioLinks = [
 
   //Character hurt audio
   "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Gino%20Hurt%20sfx.mp3",
-  "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Leon%20hurt%20sfx.mp3",
+  "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Leon%20hurt%20sfx%20final.mp3",
   "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Ryron%20Hurt%20sfx.mp3",
-  "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Shi-Shi%20Hurt%20sfx.mp3",
+  "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Shis_Hurt.mp3",
+
+  //Enemy hurt audio
+  "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/green%20land/darko%20hurt%20sfx.mp3",
+  "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/green%20land/joshy%20hurt%20sfx.mp3",
+  "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/green%20land/king%20grimnir%20hurt%20sfx.mp3",
+  "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/autumn%20land/antcool%20hurt%20sfx.mp3",
+  "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/lava%20land/Boss%20Scorcharach%20hurt%20sfx.mp3",
+  "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/lava%20land/boss%20maggmaw%20hurt%20sfx.mp3",
+  "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/lava%20land/boss%20pyroformic%20hurt%20sfx.mp3",
+  "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/ice%20land/Boss%20Icycreamero%20hurt%20sfx.mp3",
+  "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/ice%20land/King%20Feanaly%20hurt%20sfx.mp3",
+  "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/ice%20land/Lord%20Cryo-Scythe%20Broodlord%20hurt%20sfx.mp3",
+  "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/enemies%20universal%20hurt%20sfx.mp3",
 ];

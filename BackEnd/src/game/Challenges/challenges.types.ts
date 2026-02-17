@@ -79,6 +79,7 @@ export interface SubmitChallengeControllerResult extends SubmitChallengeServiceR
   enemy_attack_audio?: string | null;
   character_attack_audio?: string | null;
   character_hurt_audio?: string | null;
+  enemy_hurt_audio?: string | null;
   death_audio?: string | null;
   gameplay_audio?: string | null;
   is_victory_audio?: string | null;
