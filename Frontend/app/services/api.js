@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Try different possible backend URLs (local IP, Android Emulator IP, and localhost)
 const POSSIBLE_BACKEND_URLS = [
-  'http://10.35.204.202:3000', 
+  'http://192.168.254.122:3000', 
   'http://10.0.2.2:3000',      
   'http://localhost:3000'
 ];
@@ -10,7 +10,7 @@ const POSSIBLE_BACKEND_URLS = [
 class ApiService {
   constructor() {
     this.baseURL = POSSIBLE_BACKEND_URLS[0];
-    this.isBackendAvailable = false;
+    this.isBackendAvailable = false; 
     this.authToken = null;
   }
 

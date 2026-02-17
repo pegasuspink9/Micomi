@@ -1207,6 +1207,31 @@ async testR2Download(testUrl) {
 
   extractGameImageAssets(levelData) {
     const assets = [];
+    const lessonsData = levelData.lessons;
+    
+    // 1. Preload Cover Page if exists
+    if (lessonsData?.cover_page) {
+      assets.push({
+        url: lessonsData.cover_page,
+        category: 'game_images',
+        name: 'lesson_cover_page'
+      });
+    }
+
+    // 2. Preload Lesson Pages
+    const lessons = lessonsData?.lessons || [];
+    if (Array.isArray(lessons)) {
+      lessons.forEach((lesson, index) => {
+        if (lesson.page_url) {
+          assets.push({
+            url: lesson.page_url,
+            category: 'game_images',
+            name: `lesson_page_${index}`
+          });
+        }
+      });
+    }
+
     if (levelData && Array.isArray(levelData.imagesUrls)) {
       levelData.imagesUrls.forEach(url => {
         if (url && typeof url === 'string' && this.isImageFile(url)) {
@@ -3185,6 +3210,8 @@ transformPotionShopDataWithCache(levelPreviewData) {
       }
     }
 
+    
+
 
 
     // Transform fight result animations
@@ -3316,6 +3343,22 @@ transformPotionShopDataWithCache(levelPreviewData) {
     if (transformedGameState.currentLesson && transformedGameState.currentLesson.page_url) {
       transformedGameState.currentLesson.page_url = this.getCachedAssetPath(transformedGameState.currentLesson.page_url);
     }
+
+     if (gameState.lessons) {
+      // Cache cover page
+      if (gameState.lessons.cover_page) {
+        gameState.lessons.cover_page = this.getCachedAssetPathSync(gameState.lessons.cover_page);
+      }
+      
+      // Cache lesson array
+      if (Array.isArray(gameState.lessons.lessons)) {
+        gameState.lessons.lessons = gameState.lessons.lessons.map(lesson => ({
+          ...lesson,
+          page_url: this.getCachedAssetPathSync(lesson.page_url)
+        }));
+      }
+    }
+
 
     return transformedGameState;
   }

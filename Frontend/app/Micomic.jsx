@@ -7,7 +7,6 @@ import {
   Animated, 
   PanResponder, 
   Easing, 
-  ActivityIndicator, 
   StatusBar 
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -15,6 +14,7 @@ import { ImageBackground } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as NavigationBar from 'expo-navigation-bar';
 import { useGameData } from './hooks/useGameData'; 
+import MainLoading from './Components/Actual Game/Loading/MainLoading';
 
 const { width, height } = Dimensions.get('screen');
 
@@ -37,10 +37,13 @@ export default function Micomic() {
 
   // --- 1. SORT PAGES ---
   const pages = useMemo(() => {
-    const rawLessons = gameState?.lessons?.lessons;
+    const lessonsData = gameState?.lessons;
+    const rawLessons = lessonsData?.lessons;
+    const coverPage = lessonsData?.cover_page;
+    
     if (!Array.isArray(rawLessons)) return [];
 
-    return [...rawLessons]
+    const sortedPages = [...rawLessons]
       .sort((a, b) => {
         const getNum = (str) => {
           const match = str.match(/Cpage(\d+)\./i);
@@ -49,7 +52,12 @@ export default function Micomic() {
         return getNum(a.page_url) - getNum(b.page_url);
       })
       .map(lesson => lesson.page_url);
+
+    // Prepend cover page if it exists
+    return coverPage ? [coverPage, ...sortedPages] : sortedPages;
   }, [gameState]);
+
+  const hasCoverPage = !!gameState?.lessons?.cover_page;
 
   // --- 2. HIDE NAVIGATION BAR ---
   useEffect(() => {
@@ -219,43 +227,44 @@ export default function Micomic() {
     );
   };
   
-  if (loading || pages.length === 0) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#fff" />
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
-  }
+  const isDataReady = !loading && pages.length > 0 && imagesLoaded;
 
   return (
     <View style={styles.container} {...panResponder.panHandlers}>
-      <View style={styles.bookContainer}>
-        
-        {currentIndex < pages.length - 1 && 
-          renderPage(currentIndex + 1, {}, 1)
-        }
-        {renderPage(currentIndex, animatedCurrentStyle, 10)}
+      <MainLoading visible={!isDataReady} />
 
-      </View>
-
-      <View style={styles.floatingHeader}>
-        <Text style={styles.pageCounter}>
-          Page {currentIndex + 1} / {pages.length}
-        </Text>
-      </View>
-
-       <View style={styles.swipeIndicatorContainer}>
-          <Text style={styles.swipeText}>
-            {currentIndex === 0 && pages.length > 1 ? "Swipe Left for Next" :
-             currentIndex === pages.length - 1 && pages.length > 0 ? "Swipe Left to Finish" :
-             ""
+      {isDataReady && (
+        <>
+          <View style={styles.bookContainer}>
+            {currentIndex < pages.length - 1 && 
+              renderPage(currentIndex + 1, {}, 1)
             }
-          </Text>
-      </View>
+            {renderPage(currentIndex, animatedCurrentStyle, 10)}
+          </View>
+
+          {/* Hide counter for the cover page (index 0) if it exists */}
+          {(!hasCoverPage || currentIndex > 0) && (
+            <View style={styles.floatingHeader}>
+              <Text style={styles.pageCounter}>
+                Page {hasCoverPage ? currentIndex : currentIndex + 1} / {hasCoverPage ? pages.length - 1 : pages.length}
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.swipeIndicatorContainer}>
+              <Text style={styles.swipeText}>
+                {currentIndex === 0 && pages.length > 1 ? "Swipe Left to Begin" :
+                 currentIndex === pages.length - 1 && pages.length > 0 ? "Swipe Left to Finish" :
+                 ""
+                }
+              </Text>
+          </View>
+        </>
+      )}
     </View>
   );
 }
+
 
 
 const styles = StyleSheet.create({
