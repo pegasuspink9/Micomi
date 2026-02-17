@@ -29,7 +29,7 @@ const TickItem = ({ amount = 1, index = 0, animated = true, isBonusRound = false
       ? 145 + Math.random() * 90
       : -40 + Math.random() * 90;
     
-    const scatterDistance = 50 + Math.random() * 100;
+    const scatterDistance = gameScale(50) + Math.random() * gameScale(100);
     
     const finalX = Math.cos((randomAngle * Math.PI) / 180) * scatterDistance;
     const finalY = Math.sin((randomAngle * Math.PI) / 180) * scatterDistance;

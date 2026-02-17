@@ -16,11 +16,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { universalAssetPreloader } from '../../../../services/preloader/universalAssetPreloader';
 import { soundManager } from '../../Sounds/UniversalSoundManager';
-import { 
-  gameScale,
-  getDeviceType,
-  SCREEN
-} from '../../../Responsiveness/gameResponsive';
+import { gameScale, getDeviceType, SCREEN } from '../../../Responsiveness/gameResponsive';
+
 
 
 const Character = ({
@@ -55,6 +52,13 @@ const Character = ({
   const [displayReaction, setDisplayReaction] = useState(null);
   const reactionOpacity = useSharedValue(0);
 
+  const REACTION_OFFSET = useMemo(() => gameScale(10), []);
+  const OVERLAY_SIZE = useMemo(() => gameScale(140), []);
+  const SHADOW_BLUR_START = useMemo(() => gameScale(8), []);
+  const SHADOW_BLUR_END = useMemo(() => gameScale(45), []);
+  const FLOAT_OFFSET = useMemo(() => -gameScale(3), []);
+
+
   useEffect(() => {
     if (reactionText) {
       // Set text and fade in immediately when the prop arrives
@@ -70,13 +74,12 @@ const Character = ({
 
   const reactionAnimatedStyle = useAnimatedStyle(() => ({
     opacity: reactionOpacity.value,
-    transform: [{ translateY: interpolate(reactionOpacity.value, [0, 1], [10, 0]) }]
+    transform: [{ translateY: interpolate(reactionOpacity.value, [0, 1], [REACTION_OFFSET, 0]) }]
   }));
 
   const OVERLAY_COLUMNS = 6;
   const OVERLAY_ROWS = 4;
   const OVERLAY_TOTAL_FRAMES = 24;
-  const OVERLAY_SIZE = gameScale(140);
 
 
   const overlayZIndex = useMemo(() => {
@@ -135,21 +138,19 @@ const Character = ({
     };
   });
 
-  
-   const overlayAnimatedStyle = useAnimatedStyle(() => {
+  const overlayAnimatedStyle = useAnimatedStyle(() => {
     // Sharpness of shadow increases as it lands (scale 6 -> scale 1)
-    const shadowBlur = interpolate(overlayScale.value, [1, 6], [8, 45], Extrapolate.CLAMP);
+    const shadowBlur = interpolate(overlayScale.value, [1, 6], [SHADOW_BLUR_START, SHADOW_BLUR_END], Extrapolate.CLAMP);
     const shadowAlpha = interpolate(overlayScale.value, [1, 6], [0.7, 0.1], Extrapolate.CLAMP);
 
-    return {
+     return {
       opacity: overlayOpacity.value,
       shadowRadius: shadowBlur,
       shadowOpacity: shadowAlpha,
       transform: [
         { scale: overlayScale.value },
-        // Only float *after* the initial drop has landed
         { translateY: overlayScale.value < 1.1 
-            ? withRepeat(withTiming(-3, { duration: 1500 }), -1, true) 
+            ? withRepeat(withTiming(FLOAT_OFFSET, { duration: 1500 }), -1, true) 
             : 0 
         }
       ]
@@ -203,8 +204,13 @@ const Character = ({
     diesOutro: 500,
   }), []);
   
-  const ATTACK_RUN_DISTANCE = useMemo(() => {
-    return gameScale(205); 
+   const ATTACK_RUN_DISTANCE = useMemo(() => {
+    // Dynamically calculate distance based on screen width - 140 base for accurate reach
+    return SCREEN.width - gameScale(200); 
+  }, []);
+
+  const RUN_AWAY_DISTANCE = useMemo(() => {
+    return SCREEN.width + gameScale(200); 
   }, []);
 
 
@@ -457,7 +463,6 @@ const Character = ({
   
   if (currentState === 'run' && !config.isCompound) {
     attackInitiated.value = true; 
-    const RUN_AWAY_DISTANCE = SCREEN.width; 
 
     frameIndex.value = withRepeat(withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false);
     positionX.value = withTiming(RUN_AWAY_DISTANCE, { duration: ANIMATION_DURATIONS.run, easing: Easing.linear }, (finished) => {
@@ -692,8 +697,8 @@ const Character = ({
 const styles = StyleSheet.create({
   characterContainer: {
     position: 'absolute',
-    left: gameScale(-8),
-    top: gameScale(133),
+    left: gameScale(-10),
+    top: gameScale(130),
     justifyContent: 'flex-start',
     alignItems: 'center',
     zIndex: 10,
@@ -731,10 +736,10 @@ const styles = StyleSheet.create({
     borderColor: '#d4d4d4',
     // Added 3D Shadow to dots
     shadowColor: '#000',
-    shadowOffset: { width: 1, height: 1 },
+    shadowOffset: { width: gameScale(1), height: gameScale(1) },
     shadowOpacity: 0.2,
-    shadowRadius: 1,
-    elevation: 2,
+    shadowRadius: gameScale(1),
+    elevation: gameScale(2),
   },
   dotLarge: {
     width: gameScale(12),
@@ -771,8 +776,8 @@ const styles = StyleSheet.create({
     shadowColor: '#fff',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowRadius: gameScale(10),
+    elevation: gameScale(5),
   },
   overlaySpriteContainer: {
     width: gameScale(140),
@@ -789,9 +794,9 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: gameScale(2) },
     shadowOpacity: 0.5,
-    shadowRadius: 3,
+    shadowRadius: gameScale(3),
   }
 });
 

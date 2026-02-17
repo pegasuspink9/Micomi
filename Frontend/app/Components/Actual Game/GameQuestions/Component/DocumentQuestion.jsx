@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { gameScale } from '../../../Responsiveness/gameResponsive';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const DocumentQuestion = ({ currentQuestion, selectedAnswers }) => {
-  const questionText = currentQuestion.question;
+  const questionText = currentQuestion.question || '';
   const parts = questionText.split('_');
 
   return (
@@ -51,27 +52,27 @@ const DocumentQuestion = ({ currentQuestion, selectedAnswers }) => {
 const styles = StyleSheet.create({
   documentContainer: {
     backgroundColor: '#1e1e1e32',
-    borderRadius: 12,
-    margin: 5, // Same margin as CodeEditor
+    borderRadius: gameScale(12),
+    margin: gameScale(5), // Same margin as CodeEditor
     overflow: 'hidden',
     flex: 1,
     
     // Same border styling as CodeEditor
-    borderTopWidth: 2,
+    borderTopWidth: gameScale(2),
     borderTopColor: '#4a4a4a',
-    borderLeftWidth: 2,
+    borderLeftWidth: gameScale(2),
     borderLeftColor: '#3a3a3a',
-    borderBottomWidth: 4,
+    borderBottomWidth: gameScale(4),
     borderBottomColor: '#0a0a0a',
-    borderRightWidth: 3,
+    borderRightWidth: gameScale(3),
     borderRightColor: '#1a1a1a',
     
     // Same shadow as CodeEditor
     shadowColor: '#000',
-    shadowOffset: { width: 3, height: 6 },
+    shadowOffset: { width: gameScale(3), height: gameScale(6) },
     shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 16,
+    shadowRadius: gameScale(12),
+    elevation: gameScale(16),
   },
 
   // Header matching CodeEditor's editorHeader
@@ -79,19 +80,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#2d2d30',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: gameScale(12),
+    paddingVertical: gameScale(8),
     
-    borderBottomWidth: 2,
+    borderBottomWidth: gameScale(2),
     borderBottomColor: '#1a1a1a',
-    borderTopWidth: 1,
+    borderTopWidth: gameScale(1),
     borderTopColor: '#505050',
     
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: gameScale(2) },
     shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 8,
+    shadowRadius: gameScale(4),
+    elevation: gameScale(8),
   },
 
   // Window controls matching CodeEditor
@@ -101,28 +102,28 @@ const styles = StyleSheet.create({
   },
   
   windowButton: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 8,
+    width: gameScale(12),
+    height: gameScale(12),
+    borderRadius: gameScale(6),
+    marginRight: gameScale(8),
     
-    borderTopWidth: 1,
+    borderTopWidth: gameScale(1),
     borderTopColor: 'rgba(255, 255, 255, 0.3)',
-    borderBottomWidth: 1,
+    borderBottomWidth: gameScale(1),
     borderBottomColor: 'rgba(0, 0, 0, 0.5)',
     
     shadowColor: '#000',
-    shadowOffset: { width: 1, height: 2 },
+    shadowOffset: { width: gameScale(1), height: gameScale(2) },
     shadowOpacity: 0.4,
-    shadowRadius: 2,
-    elevation: 4,
+    shadowRadius: gameScale(2),
+    elevation: gameScale(4),
   },
   
   fileName: {
     color: '#cccccc',
-    fontSize: 13,
+    fontSize: gameScale(13),
     fontWeight: '500',
-    marginLeft: 12,
+    marginLeft: gameScale(12),
     fontFamily: 'monospace',
   },
   
@@ -133,44 +134,44 @@ const styles = StyleSheet.create({
   // Content container similar to codeContainer
   contentContainer: {
     backgroundColor: '#000d2f99',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    minHeight: SCREEN_HEIGHT * 0.15, // Minimum height for content
+    paddingVertical: gameScale(12),
+    paddingHorizontal: gameScale(16),
+    minHeight: gameScale(844 * 0.15), // Minimum height for content
     
-    borderTopWidth: 1,
+    borderTopWidth: gameScale(1),
     borderTopColor: '#0a0a0a',
-    borderLeftWidth: 1,
+    borderLeftWidth: gameScale(1),
     borderLeftColor: '#0a0a0a',
     
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
+    shadowOffset: { width: 0, height: gameScale(-2) },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: gameScale(4),
+    elevation: gameScale(2),
   },
 
   documentQuestion: {
-    fontSize: 16,
+    fontSize: gameScale(16),
     fontWeight: '400',
     color: '#cccccc', // Matching code editor text color
-    lineHeight: 24,
+    lineHeight: gameScale(24),
     fontFamily: 'monospace', // Consistent with code editor
     zIndex: 1,
   },
 
   documentBlank: {
     backgroundColor: '#264f78', // VS Code selection color
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    borderWidth: 1,
+    paddingHorizontal: gameScale(8),
+    paddingVertical: gameScale(2),
+    borderRadius: gameScale(4),
+    borderWidth: gameScale(1),
     borderColor: '#1a73e8',
-    minWidth: 80,
-    marginHorizontal: 4,
+    minWidth: gameScale(80),
+    marginHorizontal: gameScale(4),
   },
 
   documentBlankText: {
-    fontSize: 14,
+    fontSize: gameScale(14),
     color: '#ffffff',
     textAlign: 'center',
     fontFamily: 'monospace',
@@ -182,15 +183,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingTop: 12,
-    paddingLeft: 16,
+    paddingTop: gameScale(12),
+    paddingLeft: gameScale(16),
     opacity: 0.1,
   },
 
   paperLine: {
-    height: 1,
+    height: gameScale(1),
     backgroundColor: '#cccccc',
-    marginBottom: 23,
+    marginBottom: gameScale(23),
   },
 });
 

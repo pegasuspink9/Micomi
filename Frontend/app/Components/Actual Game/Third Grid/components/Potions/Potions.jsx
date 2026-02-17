@@ -8,7 +8,7 @@ import {
   Pressable,
   ScrollView
 } from 'react-native';
-import { scale, scaleWidth, scaleHeight, hp, wp } from '../../../../Responsiveness/gameResponsive';
+import { scale, scaleWidth, scaleHeight, hp, wp, gameScale } from '../../../../Responsiveness/gameResponsive';
 import { soundManager } from '../../../Sounds/UniversalSoundManager';
 
 import Reanimated, {
@@ -262,10 +262,10 @@ const styles = StyleSheet.create({
     borderRadius: wp(3),
     padding: scale(2),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: scale(6) },
+    shadowOffset: { width: 0, height: gameScale(6) },
     shadowOpacity: 0.4,
-    shadowRadius: scale(8),
-    elevation: 12,
+    shadowRadius: gameScale(8),
+    elevation: gameScale(12),
     borderTopWidth: wp(0.4), borderTopColor: 'rgba(255, 255, 255, 0.3)',
     borderLeftWidth: wp(0.4), borderLeftColor: 'rgba(255, 255, 255, 0.3)',
     borderBottomWidth: wp(0.6), borderBottomColor: 'rgba(0, 0, 0, 0.4)',
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     borderTopWidth: scale(2), borderLeftWidth: scale(2),
     borderBottomWidth: scale(3), borderRightWidth: scale(3),
     shadowColor: '#000', shadowOffset: { width: 0, height: scale(4) },
-    shadowOpacity: 0.3, shadowRadius: scale(6), elevation: 10,
+    shadowOpacity: 0.3, shadowRadius: scale(6), elevation: gameScale(10),
   },
   potionSlotPressed: {
     transform: [{ translateY: scale(3)}],
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
     borderRadius: scale(6), justifyContent: 'center', alignItems: 'center',
     borderWidth: scale(1), borderColor: '#000000ff',
     backgroundColor: 'rgba(60, 4, 91, 0.7)',
-    zIndex: 3, elevation: 3,
+    zIndex: 3, elevation: gameScale(3),
   },
   countContainerDisabled: { backgroundColor: 'rgba(0, 0, 0, 0.4)', borderColor: '#666' },
   countText: { color: '#ffffff', fontSize: wp(2), fontFamily: 'DynaPuff' },
@@ -332,8 +332,8 @@ const styles = StyleSheet.create({
   },
   nameText: {
     color: '#ffffffff', fontSize: scale(8),
-    textShadowColor: '#000000ff', textShadowOffset: { width: 2, height: scale(1) },
-    textShadowRadius: scale(10), fontFamily: 'MusicVibes', textAlign: 'center',
+    textShadowColor: '#000000ff', textShadowOffset: { width: gameScale(2), height: scale(1) },
+    textShadowRadius: gameScale(10), fontFamily: 'MusicVibes', textAlign: 'center',
   },
   nameTextDisabled: { color: '#666' },
   selectedPotionFrame: {

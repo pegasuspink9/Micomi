@@ -1,5 +1,6 @@
 import React, {useMemo} from 'react';
 import { Pressable, Text, StyleSheet, Dimensions, View } from 'react-native';
+import { gameScale } from '../../../Responsiveness/gameResponsive';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -107,73 +108,73 @@ const GameButton = ({
 
 const styles = StyleSheet.create({
   buttonFrame: {
-    borderRadius: SCREEN_WIDTH * 0.025,
+    borderRadius: gameScale(10),
     position: 'absolute',
-    bottom: SCREEN_WIDTH * 0.005,
+    bottom: gameScale(2),
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 6,
+      height: gameScale(6),
     },
     shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 12,
-    borderTopWidth: 1,
+    shadowRadius: gameScale(8),
+    elevation: gameScale(12),
+    borderTopWidth: gameScale(1),
     borderTopColor: 'rgba(255, 255, 255, 0.3)',
-    borderLeftWidth: 1,
+    borderLeftWidth: gameScale(1),
     borderLeftColor: 'rgba(255, 255, 255, 0.3)',
-    borderBottomWidth: 3,
+    borderBottomWidth: gameScale(3),
     borderBottomColor: 'rgba(0, 0, 0, 0.4)',
-    borderRightWidth: 2,
+    borderRightWidth: gameScale(2),
     borderRightColor: 'rgba(0, 0, 0, 0.3)',
   },
 
   leftPosition: {
-    left: SCREEN_WIDTH * 0.02,
+    left: gameScale(8),
     alignSelf: 'flex-start',
   },
 
   rightPosition: {
-    right: SCREEN_WIDTH * 0.02,
+    right: gameScale(8),
     alignSelf: 'flex-end',
   },
 
   buttonContainer: {
-    borderRadius: SCREEN_WIDTH * 0.02,
-    width: SCREEN_WIDTH * 0.2,
+    borderRadius: gameScale(8),
+    width: gameScale(78),
     position: 'relative',
     overflow: 'hidden',
     
-    borderTopWidth: 2,
-    borderLeftWidth: 2,
-    borderBottomWidth: 3,
-    borderRightWidth: 3,
+    borderTopWidth: gameScale(2),
+    borderLeftWidth: gameScale(2),
+    borderBottomWidth: gameScale(3),
+    borderRightWidth: gameScale(3),
     
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: gameScale(4),
     },
     shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 10,
+    shadowRadius: gameScale(6),
+    elevation: gameScale(10),
   },
 
   innerButton: {
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: SCREEN_WIDTH * 0.015,
-    paddingVertical: SCREEN_WIDTH * 0.009,
-    paddingHorizontal: SCREEN_WIDTH * 0.015,
+    borderRadius: gameScale(6),
+    paddingVertical: gameScale(4),
+    paddingHorizontal: gameScale(6),
     
-    borderTopWidth: 1,
+    borderTopWidth: gameScale(1),
     borderTopColor: 'rgba(255, 255, 255, 0.3)',
-    borderLeftWidth: 1,
+    borderLeftWidth: gameScale(1),
     borderLeftColor: 'rgba(255, 255, 255, 0.2)',
-    borderBottomWidth: 1,
+    borderBottomWidth: gameScale(1),
     borderBottomColor: 'rgba(0, 0, 0, 0.3)',
-    borderRightWidth: 1,
+    borderRightWidth: gameScale(1),
     borderRightColor: 'rgba(0, 0, 0, 0.2)',
   },
 
@@ -184,8 +185,8 @@ const styles = StyleSheet.create({
     right: 0,
     height: '40%',
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderTopLeftRadius: SCREEN_WIDTH * 0.015,
-    borderTopRightRadius: SCREEN_WIDTH * 0.015,
+    borderTopLeftRadius: gameScale(6),
+    borderTopRightRadius: gameScale(6),
     pointerEvents: 'none',
   },
 
@@ -196,22 +197,22 @@ const styles = StyleSheet.create({
     right: 0,
     height: '30%',
     backgroundColor: 'rgba(0, 0, 0, 0.15)',
-    borderBottomLeftRadius: SCREEN_WIDTH * 0.015,
-    borderBottomRightRadius: SCREEN_WIDTH * 0.015,
+    borderBottomLeftRadius: gameScale(6),
+    borderBottomRightRadius: gameScale(6),
     pointerEvents: 'none',
   },
 
   buttonPressed: {
-    transform: [{ translateY: 1 }],
+    transform: [{ translateY: gameScale(1) }],
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: gameScale(2),
     },
     shadowOpacity: 0.2,
-    borderTopWidth: 3,
-    borderLeftWidth: 3,
-    borderBottomWidth: 1,
-    borderRightWidth: 1,
+    borderTopWidth: gameScale(3),
+    borderLeftWidth: gameScale(3),
+    borderBottomWidth: gameScale(1),
+    borderRightWidth: gameScale(1),
   },
 
   buttonDisabled: {
@@ -224,13 +225,13 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    fontSize: SCREEN_WIDTH * 0.030,
+    fontSize: gameScale(11),
     color: '#ffffff',
     textAlign: 'center',
     fontFamily: 'DynaPuff',
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textShadowOffset: { width: gameScale(1), height: gameScale(1) },
+    textShadowRadius: gameScale(2),
     zIndex: 1,
   },
 

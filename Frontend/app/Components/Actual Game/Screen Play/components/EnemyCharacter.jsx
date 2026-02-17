@@ -16,11 +16,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { universalAssetPreloader } from '../../../../services/preloader/universalAssetPreloader';
 import { soundManager } from '../../Sounds/UniversalSoundManager';
-import { 
-  gameScale,
-  getDeviceType,
-  SCREEN
-} from '../../../Responsiveness/gameResponsive';
+import { gameScale, getDeviceType, SCREEN } from '../../../Responsiveness/gameResponsive';
+
 
 const EnemyCharacter = ({
   isPaused,
@@ -51,10 +48,13 @@ const EnemyCharacter = ({
   const overlayScale = useSharedValue(1);
   const overlayFrameIndex = useSharedValue(0);
 
+  const REACTION_OFFSET = useMemo(() => gameScale(10), []);
+  const OVERLAY_SIZE = useMemo(() => gameScale(140), []);
+  const FLOAT_OFFSET_ENEMY = useMemo(() => -gameScale(5), []);
+
   const OVERLAY_COLUMNS = 6;
   const OVERLAY_ROWS = 4;
   const OVERLAY_TOTAL_FRAMES = 24;
-  const OVERLAY_SIZE = gameScale(120);
 
     useEffect(() => {
     if (attackOverlayUrl) {
@@ -97,7 +97,7 @@ const EnemyCharacter = ({
     opacity: overlayOpacity.value,
     transform: [
       { scale: overlayScale.value },
-      { translateY: withRepeat(withTiming(-5, { duration: 1000 }), -1, true) }
+      { translateY: withRepeat(withTiming(FLOAT_OFFSET_ENEMY, { duration: 1000 }), -1, true) }
     ]
   }));
 
@@ -181,14 +181,18 @@ const EnemyCharacter = ({
     idle: -1,
     attack: 1300,
     hurt: 2000,
-    run: -1,
+    run: 1200,
     dies: 2000,
     diesOutro: 500
   }), []);
 
-    const RUN_DISTANCE = useMemo(() => {
-    // -160 mirrors the character's movement
-    return -gameScale(200); 
+  const RUN_DISTANCE = useMemo(() => {
+    return -(SCREEN.width - gameScale(200)); 
+  }, []);
+
+  const RUN_AWAY_DISTANCE = useMemo(() => {
+    // Moves to the right (off-screen)
+    return SCREEN.width + gameScale(200); 
   }, []);
 
 
@@ -302,7 +306,7 @@ const EnemyCharacter = ({
 
   const reactionAnimatedStyle = useAnimatedStyle(() => ({
     opacity: reactionOpacity.value,
-    transform: [{ translateY: interpolate(reactionOpacity.value, [0, 1], [10, 0]) }]
+    transform: [{ translateY: interpolate(reactionOpacity.value, [0, 1], [REACTION_OFFSET, 0]) }]
   }));
 
    useEffect(() => {
@@ -505,6 +509,19 @@ const EnemyCharacter = ({
     return;
   }
 
+  if (currentState === 'run' && !config.isCompound) {
+    attackInitiated.value = true;
+
+    frameIndex.value = withRepeat(withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false);
+    positionX.value = withTiming(RUN_AWAY_DISTANCE, { duration: ANIMATION_DURATIONS.run, easing: Easing.linear }, (finished) => {
+      if (finished) {
+        cancelAnimation(frameIndex);
+        runOnJS(notifyAnimationComplete)();
+      }
+    });
+    return;
+  }
+
   // --- LOOPING LOGIC ---
   if (config.shouldLoop) {
     if (currentState === 'hurt' && isBonusRound) {
@@ -656,8 +673,8 @@ const EnemyCharacter = ({
 const styles = StyleSheet.create({
   enemyContainer: {
     position: 'absolute',
-    right: gameScale(-8),
-    top: gameScale(126),
+    right: gameScale(-10),
+    top: gameScale(125),
     justifyContent: 'flex-start',
     alignItems: 'center',
   },
@@ -693,10 +710,10 @@ const styles = StyleSheet.create({
     borderWidth: gameScale(1.5),
     borderColor: '#d4d4d4',
     shadowColor: '#000',
-    shadowOffset: { width: -1, height: 1 },
+    shadowOffset: { width: -gameScale(1), height: gameScale(1) },
     shadowOpacity: 0.2,
-    shadowRadius: 1,
-    elevation: 2,
+    shadowRadius: gameScale(1),
+    elevation: gameScale(2),
   },
   dotLarge: {
     width: gameScale(12),
@@ -733,13 +750,13 @@ const styles = StyleSheet.create({
   attackOverlay: {
     position: 'absolute',
     top: gameScale(10),
-    width: gameScale(120),
-    height: gameScale(120),
+    width: gameScale(140),
+    height: gameScale(140),
     zIndex: 1001,
   },
   overlaySpriteContainer: {
-    width: gameScale(120),
-    height: gameScale(120),
+    width: gameScale(140),
+    height: gameScale(140),
     overflow: 'hidden',
   },
   overlaySpriteSheet: {

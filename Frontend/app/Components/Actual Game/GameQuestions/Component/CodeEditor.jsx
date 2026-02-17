@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: gameScale(8) },
     shadowOpacity: 0.4,
     shadowRadius: gameScale(12),
-    elevation: 16,
+    elevation: gameScale(16),
     minHeight: 0, 
   },
 
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: gameScale(4) },
     shadowOpacity: 0.3,
     shadowRadius: gameScale(6),
-    elevation: 8,
+    elevation: gameScale(8),
   },
 
   windowControls: {
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: gameScale(1), height: gameScale(2) },
     shadowOpacity: 0.4,
     shadowRadius: gameScale(2),
-    elevation: 4,
+    elevation: gameScale(4),
   },
 
   tabsContainer: {
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: gameScale(-1) },
     shadowOpacity: 0.2,
     shadowRadius: gameScale(2),
-    elevation: 1,
+    elevation: gameScale(1),
     minWidth: gameScale(20),
   },
 
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
     borderLeftColor: '#1177bb',
     borderRightColor: '#1177bb',
     shadowOpacity: 0,
-    elevation: 3,
+    elevation: gameScale(3),
     zIndex: 10,
     marginBottom: gameScale(-2),
     flex: 0,
@@ -499,7 +499,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: gameScale(-2) },
     shadowOpacity: 0.2,
     shadowRadius: gameScale(4),
-    elevation: 2,
+    elevation: gameScale(2),
   },
 
   codeLine: {
@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: gameScale(1), height: 0 },
     shadowOpacity: 0.3,
     shadowRadius: gameScale(2),
-    elevation: 3,
+    elevation: gameScale(3),
   },
 
   lineNumber: {

@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Dimensions, Animated, Image, ActivityIndicator, Pressable, Text } from 'react-native';
-import { scale, scaleWidth, scaleHeight, RESPONSIVE, wp, hp } from '../../../Responsiveness/gameResponsive';
+import { scale, scaleWidth, scaleHeight, RESPONSIVE, wp, hp, gameScale} from '../../../Responsiveness/gameResponsive';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import FadeOutWrapper from '../../Screen Play/FadeOutWrapper/FadeOutWrapper';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 import { soundManager } from '../../Sounds/UniversalSoundManager';
+
 
 const GridContainer = ({ 
     children, 
@@ -312,23 +313,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#061e52ff',
     top: hp(-1),
     right: wp(2),
-    borderRadius: SCREEN_WIDTH * 0.01,
-    padding: scale(2),
+    borderRadius: gameScale(3.9),
+    padding: gameScale(2),
     shadowColor: '#052a53ff',
     shadowOffset: {
       width: 0,
-      height: scale(12),
+      height: gameScale(12),
     },
     shadowOpacity: 0.6,
-    shadowRadius: scale(16),
-    elevation: 20,
-    borderTopWidth: scale(3),
+    shadowRadius: gameScale(16),
+    elevation: gameScale(20),
+    borderTopWidth: gameScale(3),
     borderTopColor: '#87ceeb',
-    borderLeftWidth: scale(2),
+    borderLeftWidth: gameScale(2),
     borderLeftColor: '#87ceeb',
-    borderBottomWidth: scale(5),
+    borderBottomWidth: gameScale(5),
     borderBottomColor: '#2c5282',
-    borderRightWidth: scale(4),
+    borderRightWidth: gameScale(4),
     borderRightColor: '#2c5282',
   },
 
@@ -378,23 +379,23 @@ const styles = StyleSheet.create({
   outerFrame: {
     flex: 1,
     backgroundColor: '#b4bdc6ff',
-    borderRadius: SCREEN_WIDTH * 0.03,
-    padding: scale(2),
+    borderRadius: gameScale(11.7),
+    padding: gameScale(2),
     shadowColor: '#052a53ff',
     shadowOffset: {
       width: 0,
-      height: scale(12),
+      height: gameScale(12),
     },
     shadowOpacity: 0.6,
-    shadowRadius: scale(16),
-    elevation: 20,
-    borderTopWidth: scale(3),
+    shadowRadius: gameScale(16),
+    elevation: gameScale(20),
+    borderTopWidth: gameScale(3),
     borderTopColor: '#2c5282',
-    borderLeftWidth: scale(2),
+    borderLeftWidth: gameScale(2),
     borderLeftColor: '#2c5282',
-    borderBottomWidth: scale(5),
+    borderBottomWidth: gameScale(5),
     borderBottomColor: '#2c5282',
-    borderRightWidth: scale(4),
+    borderRightWidth: gameScale(4),
     borderRightColor: '#2c5282',
   },
 
@@ -419,16 +420,16 @@ const styles = StyleSheet.create({
   innerContent: {
     flex: 1,
     backgroundColor: '#052a53ff',
-    borderRadius: SCREEN_WIDTH * 0.045,
+    borderRadius: gameScale(17.5),
     padding: RESPONSIVE.margin.sm,
     shadowColor: '#1a365d',
     shadowOffset: {
       width: 0,
-      height: scale(8),
+      height: gameScale(8),
     },
     shadowOpacity: 0.5,
-    shadowRadius: scale(12),
-    elevation: 18,
+    shadowRadius: gameScale(12),
+    elevation: gameScale(18),
   },
 
   innerContentProceed: {
@@ -442,12 +443,12 @@ const styles = StyleSheet.create({
   innerBorder: {
     flex: 1,
     backgroundColor: '#000000fc',
-    borderRadius: SCREEN_WIDTH * 0.03,
+    borderRadius: gameScale(11.7),
     position: 'relative',
     overflow: 'hidden',
     shadowOpacity: 0.3,
-    shadowRadius: scale(6),
-    elevation: 8,
+    shadowRadius: gameScale(6),
+    elevation: gameScale(8),
     flexDirection: 'column',
     justifyContent: 'space-between',
   },
@@ -471,12 +472,12 @@ const styles = StyleSheet.create({
   },
   crackLine: {
     position: 'absolute',
-    height: scale(1.5),
+    height: gameScale(1.5),
     backgroundColor: '#000',
     shadowColor: '#444',
-    shadowOffset: { width: 1, height: 1 },
+    shadowOffset: { width: gameScale(1), height: gameScale(1) },
     shadowOpacity: 0.5,
-    shadowRadius: 1,
+    shadowRadius: gameScale(1),
   },
 
   backlightOverlay: {
@@ -486,7 +487,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(135, 206, 235, 0.15)', 
-    borderRadius: SCREEN_WIDTH * 0.03,
+    borderRadius: gameScale(11.7),
     pointerEvents: 'none',
   },
 
@@ -495,9 +496,9 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: scale(30),
-    borderTopLeftRadius: SCREEN_WIDTH * 0.03,
-    borderTopRightRadius: SCREEN_WIDTH * 0.03,
+    height: gameScale(30),
+    borderTopLeftRadius: gameScale(11.7),
+    borderTopRightRadius: gameScale(11.7),
     pointerEvents: 'none',
   },
 

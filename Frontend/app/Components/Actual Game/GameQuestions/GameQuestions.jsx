@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: gameScale(1), height: gameScale(2) },
     shadowOpacity: 0.4,
     shadowRadius: gameScale(3),
-    elevation: 6,
+    elevation: gameScale(6),
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: gameScale(8),
-    elevation: 12,
+    elevation: gameScale(12),
   },
   wrongBlank: {
     backgroundColor: '#ff4d4d',
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: gameScale(8),
-    elevation: 12,
+    elevation: gameScale(12),
   },
   correctBlank: {
     backgroundColor: '#4caf50', // Green
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: gameScale(8),
-    elevation: 12,
+    elevation: gameScale(12),
   },
   codeBlankText: {
     color: '#ffffff',
