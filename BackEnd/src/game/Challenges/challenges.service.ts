@@ -976,12 +976,12 @@ export const submitChallengeService = async (
     message = text;
     audioResponse = audio;
 
-    if (!hintUsed && !isReplayingCompletedLevel) {
+    if (!hintUsed && !isReplayingCompletedLevel && !computedAlreadyAnswered) {
       await updateQuestProgress(playerId, QuestType.solve_challenge_no_hint, 1);
       console.log("Quest progress updated - first-time completion");
     } else if (isReplayingCompletedLevel) {
       console.log("Skipping quest update - replaying completed level");
-    }
+    } 
   } else {
     const baselineState = await CombatService.getCurrentFightState(
       playerId,

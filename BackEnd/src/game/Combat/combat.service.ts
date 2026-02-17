@@ -1457,9 +1457,12 @@ export async function fightEnemy(
 
       await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
 
-      if (wrongChallengesCount === 0 && !progress.took_damage) {
-        await updateQuestProgress(playerId, QuestType.defeat_enemy_full_hp, 1);
+      if (wrongChallengesCount === 0) {
         await updateQuestProgress(playerId, QuestType.perfect_level, 1);
+      }
+
+      if (!progress.took_damage) {
+        await updateQuestProgress(playerId, QuestType.defeat_enemy_full_hp, 1);
       }
     }
 
@@ -2566,9 +2569,12 @@ export async function fightBossEnemy(
 
       await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
 
-      if (wrongChallengesCount === 0 && !progress.took_damage) {
-        await updateQuestProgress(playerId, QuestType.defeat_enemy_full_hp, 1);
+      if (wrongChallengesCount === 0) {
         await updateQuestProgress(playerId, QuestType.perfect_level, 1);
+      }
+
+      if (!progress.took_damage) {
+        await updateQuestProgress(playerId, QuestType.defeat_enemy_full_hp, 1);
       }
     }
 

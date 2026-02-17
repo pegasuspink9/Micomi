@@ -968,6 +968,10 @@ const unlockNextMapFirstLevel = async (
 
   const isMicomi = firstLevel.level_type === "micomiButton";
 
+  if (isMicomi) {
+    await updateQuestProgress(playerId, QuestType.complete_lesson, 1);
+  }
+
   await prisma.playerProgress.upsert({
     where: {
       player_id_level_id: {
@@ -1229,6 +1233,26 @@ export const unlockNextLevel = async (
 
   if (nextLevel.level_type === "micomiButton") {
     console.log(`📚 Auto-completing micomiButton ${nextLevel.level_id}...`);
+
+    const existingMicomi = await prisma.playerProgress.findUnique({
+      where: {
+        player_id_level_id: {
+          player_id: playerId,
+          level_id: nextLevel.level_id,
+        },
+      },
+    });
+
+    if (!existingMicomi || !existingMicomi.is_completed) {
+      await updateQuestProgress(playerId, QuestType.complete_lesson, 1);
+      console.log(
+        `✨ Quest updated: First time completing micomi level ${nextLevel.level_id}`,
+      );
+    }
+
+    if (!existingMicomi?.is_completed) {
+      await updateQuestProgress(playerId, QuestType.complete_lesson, 1);
+    }
 
     await prisma.playerProgress.upsert({
       where: {

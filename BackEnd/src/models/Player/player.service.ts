@@ -74,6 +74,9 @@ export const addExpAndUpdateLevel = async (
         newLevel,
         totalExp: newExp,
       });
+
+      const levelsGained = newLevel - player.level;
+      await updateQuestProgress(playerId, QuestType.reach_level, 1);
     }
 
     return updated;

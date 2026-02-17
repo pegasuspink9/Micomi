@@ -243,11 +243,11 @@ export const imagesUrls = [
   "https://micomi-assets.me/Enemies/Greenland/Beertomoly/run_cxiduo.png",
   "https://micomi-assets.me/Enemies/Avatar/beertolomy_zqmsjz.png",
   //Greenemy
-  "https://micomi-assets.me/Enemies/Greenland/Greenemy/idle.png",
-  "https://micomi-assets.me/Enemies/Greenland/Greenemy/attack.png",
-  "https://micomi-assets.me/Enemies/Greenland/Greenemy/death.png",
-  "https://micomi-assets.me/Enemies/Greenland/Greenemy/hurt.png",
-  "https://micomi-assets.me/Enemies/Greenland/Greenemy/run.png",
+  "https://micomi-assets.me/Enemies/Greenland/Greenemy/idle1.png",
+  "https://micomi-assets.me/Enemies/Greenland/Greenemy/attack1.png",
+  "https://micomi-assets.me/Enemies/Greenland/Greenemy/death1.png",
+  "https://micomi-assets.me/Enemies/Greenland/Greenemy/hurt1.png",
+  "https://micomi-assets.me/Enemies/Greenland/Greenemy/run1.png",
   "https://micomi-assets.me/Enemies/Avatar/Greenemy.png",
   //Formica
   "https://micomi-assets.me/Enemies/Greenland/Formica/idle_mzpwqq.png",
