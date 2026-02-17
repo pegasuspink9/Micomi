@@ -287,6 +287,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     alignItems: 'center',
+    pointerEvents: 'box-none',
     justifyContent: 'flex-end',
     height: hp(32),
     backgroundColor: 'transparent',

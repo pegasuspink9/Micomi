@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderRadius: gameScale(43),
+    borderRadius: gameScale(43)
   },
   // 3-Layer Cabinet Border (replacing old container)
   containerBorderOuter: {
