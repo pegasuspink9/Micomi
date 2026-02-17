@@ -768,6 +768,7 @@ useEffect(() => {
           attackOverlayUrl={characterAttackOverlay} 
           statusState={characterCurrentState} // ✅ Passing character status
           enemyStatusState={enemyCurrentState} 
+          hurtAudioUrl={gameState.submissionResult?.characterHurtAudio}
           reactionText={activeCharReaction}
         />
 
@@ -795,6 +796,7 @@ useEffect(() => {
               attackOverlayUrl={enemyAttackOverlay}
               enemyCurrentState={enemyCurrentState}
               reactionText={activeEnemyReaction}
+              hurtAudioUrl={gameState.submissionResult?.enemyHurtAudio}
             />
           );
         })}

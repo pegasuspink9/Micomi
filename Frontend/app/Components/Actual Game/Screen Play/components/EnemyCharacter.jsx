@@ -34,7 +34,8 @@ const EnemyCharacter = ({
   enemyName = '',
   attackOverlayUrl = null, 
   enemyCurrentState = null,
-  reactionText = null
+  reactionText = null,
+  hurtAudioUrl = null,
 }) => {
   // ========== Shared Animation Values ==========
   const frameIndex = useSharedValue(0);
@@ -349,7 +350,7 @@ const EnemyCharacter = ({
     }
   }, [allAnimationUrls, isUrlCached, index]);
 
-  useEffect(() => {
+   useEffect(() => {
     if (attackSoundTimeoutRef.current) {
       clearTimeout(attackSoundTimeoutRef.current);
     }
@@ -359,6 +360,8 @@ const EnemyCharacter = ({
       attackSoundTimeoutRef.current = setTimeout(() => {
         soundManager.playCachedSound(attackAudioUrl, 'combat', 1.0);
       }, SOUND_DELAY);
+    } else if (currentState === 'hurt' && hurtAudioUrl) {
+      soundManager.playCachedSound(hurtAudioUrl, 'combat', 1.0);
     }
 
     return () => {
@@ -366,7 +369,7 @@ const EnemyCharacter = ({
         clearTimeout(attackSoundTimeoutRef.current);
       }
     };
-  }, [currentState, attackAudioUrl, index]);
+  }, [currentState, attackAudioUrl, hurtAudioUrl, index]);
 
   if (isBonusRound) wasBonusRound.current = true;
   else if (currentState === 'idle') wasBonusRound.current = false;

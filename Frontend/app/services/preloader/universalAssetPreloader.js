@@ -821,6 +821,8 @@ async testR2Download(testUrl) {
       
       addAsset(level.enemy_attack_audio, `level_${levelIndex}_enemy_attack_audio`, 'audio', 'game_audio');
       addAsset(level.character_attack_audio, `level_${levelIndex}_character_attack_audio`, 'audio', 'game_audio');
+      addAsset(level.enemy_hurt_audio, `level_${levelIndex}_enemy_hurt_audio`, 'audio', 'game_audio');
+      addAsset(level.character_hurt_audio, `level_${levelIndex}_character_hurt_audio`, 'audio', 'game_audio');
       addAsset(level.is_correct_audio, `level_${levelIndex}_is_correct_audio`, 'audio', 'game_audio');
       addAsset(level.death_audio, `level_${levelIndex}_death_audio`, 'audio', 'game_audio');
       addAsset(level.is_victory_audio, `level_${levelIndex}_is_victory_audio`, 'audio', 'game_audio');
@@ -1278,6 +1280,13 @@ async testR2Download(testUrl) {
       });
     }
 
+    if (levelData && levelData.character_hurt_audio && typeof levelData.character_hurt_audio === 'string' && this.isAudioFile(levelData.character_hurt_audio)) {
+      assets.push({ url: levelData.character_hurt_audio, name: 'character_hurt_audio', type: 'audio', category: 'game_audio' });
+    }
+    if (levelData && levelData.enemy_hurt_audio && typeof levelData.enemy_hurt_audio === 'string' && this.isAudioFile(levelData.enemy_hurt_audio)) {
+      assets.push({ url: levelData.enemy_hurt_audio, name: 'enemy_hurt_audio', type: 'audio', category: 'game_audio' });
+    }
+
      if (levelData && levelData.is_victory_audio && typeof levelData.is_victory_audio === 'string' && this.isAudioFile(levelData.is_victory_audio)) {
       assets.push({
         url: levelData.is_victory_audio,
@@ -1286,6 +1295,8 @@ async testR2Download(testUrl) {
         category: 'game_audio'
       });
     }
+
+
 
 
     if (levelData && Array.isArray(levelData.audioLinks)) {
@@ -3192,6 +3203,14 @@ transformPotionShopDataWithCache(levelPreviewData) {
       transformedGameState.gameplay_audio = this.getCachedAssetPath(transformedGameState.gameplay_audio);
     }
 
+    if (transformedGameState.character_hurt_audio) {
+      transformedGameState.character_hurt_audio = this.getCachedAssetPath(transformedGameState.character_hurt_audio);
+    }
+    if (transformedGameState.enemy_hurt_audio) {
+      transformedGameState.enemy_hurt_audio = this.getCachedAssetPath(transformedGameState.enemy_hurt_audio);
+    }
+
+
     if (transformedGameState.use_potion_effect) {
       transformedGameState.use_potion_effect = this.getCachedAssetPath(transformedGameState.use_potion_effect);
     }
@@ -3253,6 +3272,15 @@ transformPotionShopDataWithCache(levelPreviewData) {
       if (sub.character_attack_audio) {
         sub.character_attack_audio = this.getCachedAssetPath(sub.character_attack_audio);
       }
+
+      if (sub.character_hurt_audio) {
+        sub.character_hurt_audio = this.getCachedAssetPath(sub.character_hurt_audio);
+      }
+      if (sub.enemy_hurt_audio) {
+        sub.enemy_hurt_audio = this.getCachedAssetPath(sub.enemy_hurt_audio);
+      }
+
+      
 
       if (sub.is_victory_audio) {
         sub.is_victory_audio = this.getCachedAssetPath(sub.is_victory_audio);

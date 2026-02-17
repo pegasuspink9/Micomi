@@ -278,6 +278,8 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         isCorrectAudio: data.is_correct_audio || responseData.is_correct_audio || null,
         enemyAttackAudio: data.enemy_attack_audio || responseData.enemy_attack_audio || null,
         characterAttackAudio: data.character_attack_audio || responseData.character_attack_audio || null,
+        enemyHurtAudio: data.enemy_hurt_audio || responseData.enemy_hurt_audio || null,
+        characterHurtAudio: data.character_hurt_audio || responseData.character_hurt_audio || null,
         gameplay_audio: data.gameplay_audio || responseData.gameplay_audio || null,
         is_victory_audio: data.is_victory_audio || responseData.is_victory_audio || null,
         is_victory_image: data.is_victory_image || responseData.is_victory_image || null,

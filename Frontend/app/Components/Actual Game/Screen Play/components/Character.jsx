@@ -33,6 +33,7 @@ const Character = ({
   statusState = null,
   enemyStatusState = null, 
   reactionText = null,
+  hurtAudioUrl = null,
 }) => {
   // ========== Shared Animation Values ==========
   const frameIndex = useSharedValue(0);
@@ -275,18 +276,25 @@ const Character = ({
     }
   }, [allAnimationUrls, isUrlCached]);
 
+  
+
   useEffect(() => {
     if (attackSoundTimeoutRef.current) clearTimeout(attackSoundTimeoutRef.current);
+    
     if (currentState === 'attack' && attackAudioUrl) {
       const SOUND_DELAY = 1000; 
       attackSoundTimeoutRef.current = setTimeout(() => {
         soundManager.playCombatSound(attackAudioUrl);
       }, SOUND_DELAY);
+    } else if (currentState === 'hurt' && hurtAudioUrl) {
+      // Hurt sounds usually trigger immediately or with very short delay
+      soundManager.playCombatSound(hurtAudioUrl);
     }
+
     return () => {
       if (attackSoundTimeoutRef.current) clearTimeout(attackSoundTimeoutRef.current);
     };
-  }, [currentState, attackAudioUrl]);
+  }, [currentState, attackAudioUrl, hurtAudioUrl]);
 
   // ========== Animation Configuration Logic ==========
   const animationConfig = useMemo(() => {
