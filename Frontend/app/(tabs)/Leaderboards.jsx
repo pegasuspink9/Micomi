@@ -269,9 +269,9 @@ export default function Leaderboards() {
       {/* --- TOP SECTION (30%) --- */}
       <View style={styles.topSection}>
         <ImageBackground
-          source={require('../Components/icons/leaderboardbackground.jpeg')} 
+          source={require('../Components/icons/leaderboardbackground.png')} 
           style={styles.topBackground}
-          resizeMode="contain" 
+          resizeMode="cover" 
         >
           {/* Header Banner */}
           <View style={styles.headerBanner}>
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   topBackground: {
-    width: gameScale(420),
+    width: gameScale(560),
     height: gameScale(420),
     alignSelf: 'center',
     marginTop: -gameScale(50),
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
   },
   podiumColumn: {
     alignItems: 'center',
-    width: width * 0.28,
+    width: gameScale(110),
   },
   podiumAvatarContainer: {
     alignItems: 'center',

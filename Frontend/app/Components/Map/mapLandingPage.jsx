@@ -1,15 +1,15 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  ImageBackground,
   StyleSheet,
   View,
   Animated
 } from 'react-native';
+import { Image } from 'expo-image';
 import MapNavigate from './MapNavigate';
 import MapHeader from './mapHeader';
-import { LinearGradient } from 'expo-linear-gradient';
 import LottieView from 'lottie-react-native';
 import { Dimensions } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
@@ -24,6 +24,16 @@ const BACKGROUND_KEYS = ['HTML', 'CSS', 'JavaScript', 'Computer'];
 
 export default function MapLandingPage() {
   const [currentMapName, setCurrentMapName] = useState('HTML');
+  const [isFocused, setIsFocused] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      setIsFocused(true);
+      return () => {
+        setIsFocused(false);
+      };
+    }, [])
+  );
   
   const fadeAnims = useRef(
     BACKGROUND_KEYS.reduce((acc, key) => {
@@ -54,40 +64,46 @@ export default function MapLandingPage() {
           key={mapName}
           style={[
             styles.absoluteBackground,
-            { opacity: fadeAnims[mapName] }
+            { 
+              opacity: fadeAnims[mapName],
+              zIndex: mapName === currentMapName ? 1 : 0
+            }
           ]}
         >
-          <ImageBackground
+          {/* Changed ImageBackground to expo-image for better memory management and caching */}
+          <Image
             source={BACKGROUND_THEMES[mapName]}
             style={styles.backgroundImage}
-            resizeMode="cover"
+            contentFit="cover"
+            cachePolicy="memory-disk"
           />
         </Animated.View>
       ))}
 
       {/* Content Layer */}
       <View style={styles.contentLayer}>
-        {/* Lower Hills */}
+        {/* Lower Hills - Optimization: Pause when not focused */}
         <LottieView
           source={{ uri: 'https://lottie.host/7a86b8d3-7b6b-4841-994d-3a12acb80eb1/1UKTK3rnbF.lottie' }}
           style={styles.lowerHills}
           resizeMode="contain"
-          autoPlay
-          loop
+          autoPlay={isFocused}
+          loop={isFocused}
           speed={2}
           pointerEvents="none"
         />
 
-        {/* Clouds */}
+        {/* Clouds - Optimization: Pause when not focused */}
         <LottieView
           source={{ uri: 'https://lottie.host/6dc90492-37c5-4169-9db7-4a6f79ad0bf9/pR3Q6bxLZq.lottie' }}
           style={styles.clouds}
           resizeMode="cover"
-          autoPlay
-          loop
+          autoPlay={isFocused}
+          loop={isFocused}
           speed={0.8}
           pointerEvents="none"
         />
+
 
         {/* Header */}
         <View style={styles.headerContainer}>

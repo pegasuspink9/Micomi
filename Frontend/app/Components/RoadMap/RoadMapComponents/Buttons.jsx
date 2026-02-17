@@ -1,5 +1,6 @@
 import { View, Image, StyleSheet, Dimensions, ImageBackground, Pressable, Animated, Text, StatusBar } from 'react-native'; 
 import { useEffect, useRef, useState, useMemo } from 'react';
+import { gameScale } from '../../Responsiveness/gameResponsive';
 import { DEFAULT_THEME } from '../MapLevel/MapDatas/mapData';
 import LevelModal from '../../Actual Game/Level Intro and Outro/LevelModal';
 import { useLevelData } from '../../../hooks/useLevelData';
@@ -136,7 +137,7 @@ export default function LevelButtons({
 
   const floatTransform = floatAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -15] 
+    outputRange: [0, gameScale(-15)] 
   });
 
   // Handle level button press - show modal instead of direct navigation
@@ -303,18 +304,18 @@ const transformPreviewDataWithCache = (data) => {
   const stonePositions = generateStonePositions();
 
   // ✅ Helper to render stars in a curved/arch layout
-  const renderStars = (count) => {
+    const renderStars = (count) => {
     // Configurations for positioning stars in an arc
     const starLayouts = {
       1: [{ translateY: 0, rotate: '0deg', scale: 1.2 }],
       2: [
-        { translateY: 5, rotate: '-10deg', scale: 1 }, 
-        { translateY: 5, rotate: '15deg', scale: 1 }
+        { translateY: gameScale(5), rotate: '-10deg', scale: 1 }, 
+        { translateY: gameScale(5), rotate: '15deg', scale: 1 }
       ],
       3: [
-        { translateY: 10, rotate: '-25deg', scale: 0.9 }, 
+        { translateY: gameScale(10), rotate: '-25deg', scale: 0.9 }, 
         { translateY: 0, rotate: '0deg', scale: 1.2 }, 
-        { translateY: 10, rotate: '25deg', scale: 0.9 }
+        { translateY: gameScale(10), rotate: '25deg', scale: 0.9 }
       ]
     };
 
@@ -526,7 +527,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 20,
   },
-  // Container for floating elements (Stars or Comment Bubble)
   floatElementContainer: {
     position: 'absolute',
     width: '100%',
@@ -535,32 +535,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 25,
   },
-    floatComment: {
+  floatComment: {
     position: 'absolute',
     width: '95%',
     height: '95%',
-    top: -35,
+    top: gameScale(-35),
     alignItems: 'center',
     zIndex: 25,
   },
   unlockedButton: {
     width: '130%',
     height: '130%',
-    top: -25,
-    left: -2
+    top: gameScale(-25),
+    left: gameScale(-2)
   },
   lockedButton: {
     width: '110%',
     height: '110%',
-    top: -25,
-    left: -2
+    top: gameScale(-25),
+    left: gameScale(-2)
   },
   floatIcon: {
     width: '80%',
     height: '80%',
-    top: 7,
+    top: gameScale(7),
     opacity: 0.7,
-    right: 2
+    right: gameScale(2)
   },
   buttonImageBackground: {
     width: '100%', 
@@ -598,12 +598,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'center',
     width: '120%',
-    marginTop: -138,
+    marginTop: gameScale(-138),
   },
   starIcon: {
-    width: 30,
-    height:25,
-    marginHorizontal: -5, 
+    width: gameScale(30),
+    height: gameScale(25),
+    marginHorizontal: gameScale(-5), 
   }
 });
 

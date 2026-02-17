@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
 import { DEFAULT_THEME } from './MapLevel/MapDatas/mapData';
 import { useMemo } from 'react';
+import { gameScale } from '../Responsiveness/gameResponsive';
 
 const { height: defaultHeight, width: defaultWidth } = Dimensions.get('window');
 
@@ -70,9 +71,7 @@ export default function RoadMapLandPage() {
               color: '#a2e3ceff',
               fontFamily: 'MusicVibes',
               textAlign: 'center',
-              marginTop: -10 * responsive.heightRatio, 
             }}>
-              ShiShi's Shop
             </Text>
           </View>
         </Pressable>
