@@ -375,7 +375,7 @@ export default function PotionShop() {
         <View style={styles.backButtonContainer}>
         <TouchableOpacity 
           style={styles.backButton} 
-          onPress={() => router.back()}  // Navigate back
+          onPress={() => router.back()}  
           activeOpacity={0.7}
         >
           <View style={{ flexDirection: 'row' }}>
@@ -421,37 +421,36 @@ export default function PotionShop() {
               </View>
             )}
           </View>
+        </View>
 
-          {/* NEW INVENTORY CABINET WITH 3-LAYER BORDER */}
-          <View style={styles.cabinetOuterBorder}>
-            <View style={styles.cabinetMiddleBorder}>
-              <View style={styles.cabinetInnerBorder}>
-                <View style={styles.inventoryCabinet}>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.inventoryScroll}>
-                    {potions.filter(p => p.quantity > 0).map((potion, index) => (
-                      <View key={`inv-${potion.id}`} style={styles.inventorySlot}>
-                        <View style={styles.inventoryImageContainer}>
-                          <PotionSprite 
-                            icon={getCachedImagePath(potion.image)} 
-                            frameSize={gameScale(70)}
-                          />
-                        </View>
-                        <View style={styles.inventoryCountBadge}>
-                          <Text style={styles.inventoryCountText}>{potion.quantity}</Text>
-                        </View>
-                        {/* Vertical Separator */}
-                        <View style={styles.cabinetSeparator} />
+        {/* NEW INVENTORY CABINET WITH 3-LAYER BORDER - Moved outside bottomFrame to be absolute at bottom of screen */}
+        <View style={styles.cabinetOuterBorder}>
+          <View style={styles.cabinetMiddleBorder}>
+            <View style={styles.cabinetInnerBorder}>
+              <View style={styles.inventoryCabinet}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.inventoryScroll}>
+                  {potions.filter(p => p.quantity > 0).map((potion, index) => (
+                    <View key={`inv-${potion.id}`} style={styles.inventorySlot}>
+                      <View style={styles.inventoryImageContainer}>
+                        <PotionSprite 
+                          icon={getCachedImagePath(potion.image)} 
+                          frameSize={gameScale(70)}
+                        />
                       </View>
-                    ))}
-                    {potions.filter(p => p.quantity > 0).length === 0 && (
-                      <Text style={styles.emptyInventoryText}>No potions yet</Text>
-                    )}
-                  </ScrollView>
-                </View>
+                      <View style={styles.inventoryCountBadge}>
+                        <Text style={styles.inventoryCountText}>{potion.quantity}</Text>
+                      </View>
+                      {/* Vertical Separator */}
+                      <View style={styles.cabinetSeparator} />
+                    </View>
+                  ))}
+                  {potions.filter(p => p.quantity > 0).length === 0 && (
+                    <Text style={styles.emptyInventoryText}>No potions yet</Text>
+                  )}
+                </ScrollView>
               </View>
             </View>
           </View>
-
         </View>
 
         {/* DROPPING POTION ANIMATION OVERLAY */}
@@ -1053,7 +1052,7 @@ const styles = StyleSheet.create({
   // INVENTORY CABINET STYLES WITH 3-LAYER BORDER
   cabinetOuterBorder: {
     position: 'absolute',
-    bottom: gameScale(-80),
+    bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: '#943f02ff', 
