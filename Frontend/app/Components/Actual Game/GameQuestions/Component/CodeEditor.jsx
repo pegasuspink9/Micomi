@@ -579,22 +579,25 @@ const styles = StyleSheet.create({
 
 });
 
-export default React.memo(CodeEditor, (prevProps, nextProps) => {
-  // Minimize deep comparisons to prevent frame drops on long questions
-  if (prevProps.currentQuestion?.id !== nextProps.currentQuestion?.id) return false;
-  if (prevProps.activeTab !== nextProps.activeTab) return false;
-  if (prevProps.isCorrect !== nextProps.isCorrect) return false;
+export default React.memo(CodeEditor, (prev, next) => {
+  // Drastically reduce comparisons - JSON.stringify is a bottleneck on high-frequency UI updates
+  if (prev.currentQuestion?.id !== next.currentQuestion?.id) return false;
+  if (prev.activeTab !== next.activeTab) return false;
+  if (prev.isCorrect !== next.isCorrect) return false;
   
-  const prevAns = prevProps.selectedAnswers;
-  const nextAns = nextProps.selectedAnswers;
+  // Use length or shallow comparison for answers instead of deep stringify
+  const prevAns = prev.selectedAnswers;
+  const nextAns = next.selectedAnswers;
   if (prevAns !== nextAns) {
-      if (prevAns?.length !== nextAns?.length) return false;
-      if (JSON.stringify(prevAns) !== JSON.stringify(nextAns)) return false;
+    if (prevAns?.length !== nextAns?.length) return false;
+    // If they have same length, check only changed indexes if necessary, 
+    // but usually a simple reference change is enough to trigger false here
+    return false; 
   }
 
   return (
-    prevProps.renderSyntaxHighlightedLine === nextProps.renderSyntaxHighlightedLine &&
-    prevProps.userOutput === nextProps.userOutput &&
-    prevProps.expectedOutput === nextProps.expectedOutput
+    prev.renderSyntaxHighlightedLine === next.renderSyntaxHighlightedLine &&
+    prev.userOutput === next.userOutput &&
+    prev.expectedOutput === next.expectedOutput
   );
 });

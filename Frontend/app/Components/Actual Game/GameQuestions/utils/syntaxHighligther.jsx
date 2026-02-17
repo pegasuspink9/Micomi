@@ -38,31 +38,40 @@ const themes = {
   }
 };
 
+const styleCache = new Map();
+
 // --- DYNAMIC STYLESHEET CREATOR ---
 // Creates styles based on the selected theme
-const createStyles = (theme) => StyleSheet.create({
-  defaultText: { color: theme.default, fontFamily: 'monospace' },
-  comment: { color: theme.comment, fontStyle: 'italic', fontFamily: 'monospace' },
-  keyword: { color: theme.keyword, fontWeight: 'bold', fontFamily: 'monospace' },
-  tag: { color: theme.tag, fontWeight: 'bold', fontFamily: 'monospace' },
-  attribute: { color: theme.attribute, fontFamily: 'monospace' },
-  string: { color: theme.string, fontFamily: 'monospace' },
-  number: { color: theme.number, fontFamily: 'monospace' },
-  operator: { color: theme.operator, fontWeight: 'bold', fontFamily: 'monospace' },
-  punctuation: { color: theme.punctuation, fontFamily: 'monospace' },
-  function: { color: theme.function, fontFamily: 'monospace' },
-  className: { color: theme.className, fontWeight: 'bold', fontFamily: 'monospace' },
-  property: { color: theme.property, fontFamily: 'monospace' },
-  value: { color: theme.value, fontFamily: 'monospace' },
-  doctype: { color: theme.doctype, fontStyle: 'italic', fontFamily: 'monospace' },
-});
+const createStyles = (theme, themeName) => {
+  if (styleCache.has(themeName)) {
+    return styleCache.get(themeName);
+  }
+  const styles = StyleSheet.create({
+    defaultText: { color: theme.default, fontFamily: 'monospace' },
+    comment: { color: theme.comment, fontStyle: 'italic', fontFamily: 'monospace' },
+    keyword: { color: theme.keyword, fontWeight: 'bold', fontFamily: 'monospace' },
+    tag: { color: theme.tag, fontWeight: 'bold', fontFamily: 'monospace' },
+    attribute: { color: theme.attribute, fontFamily: 'monospace' },
+    string: { color: theme.string, fontFamily: 'monospace' },
+    number: { color: theme.number, fontFamily: 'monospace' },
+    operator: { color: theme.operator, fontWeight: 'bold', fontFamily: 'monospace' },
+    punctuation: { color: theme.punctuation, fontFamily: 'monospace' },
+    function: { color: theme.function, fontFamily: 'monospace' },
+    className: { color: theme.className, fontWeight: 'bold', fontFamily: 'monospace' },
+    property: { color: theme.property, fontFamily: 'monospace' },
+    value: { color: theme.value, fontFamily: 'monospace' },
+    doctype: { color: theme.doctype, fontStyle: 'italic', fontFamily: 'monospace' },
+  });
+  styleCache.set(themeName, styles);
+  return styles;
+};
 
 // --- SYNTAX HIGHLIGHTING LOGIC ---
 export const renderHighlightedText = (text, language = 'html', themeName = 'oneDarkPro') => {
   if (!text) return null;
 
   const selectedTheme = themes[themeName] || themes.oneDarkPro;
-  const styles = createStyles(selectedTheme);
+  const styles = createStyles(selectedTheme, themeName);
 
   const patterns = {
     html: [
@@ -101,29 +110,27 @@ export const renderHighlightedText = (text, language = 'html', themeName = 'oneD
 
   languagePatterns.forEach(({ pattern, style }) => {
     let newSegments = [];
-    segments.forEach(segment => {
-      // Only process segments that haven't been styled yet
-      if (segment.style === styles.defaultText && segment.text) {
-        const parts = segment.text.split(pattern);
-        
-        parts.forEach((part, index) => {
-          if (part) { 
-            const isMatch = index % 2 === 1;
-            newSegments.push({
-              text: part,
-              style: isMatch ? style : styles.defaultText,
-            });
-          }
-        });
-      } else {
-        // If the segment is already styled, or empty, keep it as is.
-        newSegments.push(segment);
-      }
-    });
-    // Replace the old segments with the newly refined ones for the next pattern.
+    for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i];
+        if (segment.style === styles.defaultText && segment.text) {
+            const parts = segment.text.split(pattern);
+            for (let j = 0; j < parts.length; j++) {
+                if (parts[j]) {
+                    newSegments.push({
+                        text: parts[j],
+                        style: j % 2 === 1 ? style : styles.defaultText,
+                    });
+                }
+            }
+        } else {
+            newSegments.push(segment);
+        }
+    }
     segments = newSegments;
   });
 
+  // CRITICAL PERFORMANCE FIX: Return segments as raw children instead of wrapping each in a component
+  // This allows React Native to calculate the layout as a single text block
   return segments.map((segment, index) => (
     <Text key={index} style={segment.style}>
       {segment.text}

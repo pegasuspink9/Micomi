@@ -48,21 +48,23 @@ const specialAttackBorderColors = {
 };
 
 const AnswerOption = ({ item, index, isSelected, isDisabled, onPress, customStyles = null, isSpecialAttack = false }) => {
-    console.log('isSpecialAttack:', isSpecialAttack); // Add this line to debug
   const colors = isSpecialAttack ? specialAttackBorderColors : (isDisabled ? disabledBorderColors : (isSelected ? selectedBorderColors : borderColors));
+
+  // useMemo for container style to prevent unnecessary object creation
+  const dynamicBorderStyles = React.useMemo(() => ({
+    backgroundColor: colors.outerBg,
+    borderTopColor: colors.outerBorderTop,
+    borderLeftColor: colors.outerBorderTop,
+    borderBottomColor: colors.outerBorderBottom,
+    borderRightColor: colors.outerBorderBottom,
+  }), [colors]);
 
   return (
     <View style={[styles.container, customStyles?.container]}>
       {/* 3-Layer Border - Outer */}
       <View style={[
         styles.borderOuter,
-        {
-          backgroundColor: colors.outerBg,
-          borderTopColor: colors.outerBorderTop,
-          borderLeftColor: colors.outerBorderTop,
-          borderBottomColor: colors.outerBorderBottom,
-          borderRightColor: colors.outerBorderBottom,
-        },
+        dynamicBorderStyles,
         isSelected && styles.borderOuterSelected, 
         customStyles?.buttonFrame
       ]}>

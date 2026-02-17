@@ -309,11 +309,18 @@ const styles = StyleSheet.create({
   }
 });
 
+
+const areArraysEqual = (a, b) => {
+  if (a === b) return true;
+  if (!a || !b || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+};
+
 // Memo comparison
 export default React.memo(ThirdGrid, (prev, next) => {
     const potionEqual = prev.selectedPotion?.id === next.selectedPotion?.id;
-    
-    const answersEqual = JSON.stringify(prev.selectedAnswers) === JSON.stringify(next.selectedAnswers);
+    const answersEqual = areArraysEqual(prev.selectedAnswers, next.selectedAnswers);
 
     // Check if the attack type changed
     const prevAttackType = prev.gameState?.submissionResult?.fightResult?.enemy?.enemy_attack_type ?? 

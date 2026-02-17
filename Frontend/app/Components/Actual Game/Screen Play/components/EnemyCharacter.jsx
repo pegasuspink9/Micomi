@@ -683,7 +683,7 @@ const styles = StyleSheet.create({
     bottom: '90%',
     right: gameScale(60), // Mirror of character's left: 60
     alignItems: 'center',
-    zIndex: 20000,
+    zIndex: 1000000,
   },
   reactionBubble: {
     backgroundColor: 'white',

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { Text, View, StyleSheet, Dimensions, ScrollView, Pressable} from 'react-native';
 import CodeEditor from './Component/CodeEditor';
 import DocumentQuestion from './Component/DocumentQuestion';
@@ -25,6 +25,21 @@ const GameQuestions = ({
 
   const correctAnswersList = submissionResult?.correctAnswer || currentQuestion?.correctAnswer;
 
+  const cumulativeBlankCounts = useMemo(() => {
+    if (!currentQuestion?.question) return [];
+    
+    const lines = currentQuestion.question.split('\n');
+    const counts = [];
+    let runningTotal = 0;
+    
+    for (const line of lines) {
+      counts.push(runningTotal);
+      const blanks = (line.match(/_/g) || []).length;
+      runningTotal += blanks;
+    }
+    return counts;
+  }, [currentQuestion?.question]);
+
   
   const getFilledQuestion = (questionText, answers) => {
     if (!questionText || !Array.isArray(answers) || answers.length === 0) {
@@ -48,9 +63,9 @@ const GameQuestions = ({
     return result;
   };
 
-  const displayQuestion = isAnswerCorrect 
+  const displayQuestion = useMemo(() => isAnswerCorrect 
     ? getFilledQuestion(currentQuestion?.question, currentQuestion?.correctAnswer) 
-    : currentQuestion?.question;
+    : currentQuestion?.question, [isAnswerCorrect, currentQuestion?.question, currentQuestion?.correctAnswer, getFilledQuestion]);
 
   useEffect(() => {
     if (!currentQuestion) return;
@@ -65,19 +80,20 @@ const GameQuestions = ({
     }
   }, [selectedAnswers, currentQuestion, selectedBlankIndex]);
 
-  const handleTabChange = (tabName) => {
+  const handleTabChange = useCallback((tabName) => {
     if (onTabChange) {
       onTabChange(tabName);
     }
-  };
+  }, [onTabChange]);
 
-const renderSyntaxHighlightedLine = (line, lineIndex) => {
+const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
   if (!line || typeof line !== 'string') {
     return <Text style={styles.codeText}></Text>;
   }
 
   const parts = line.split('_');
-  const blanksBeforeCurrent = calculateGlobalBlankIndex(currentQuestion, lineIndex);
+  // Use pre-calculated cumulative index instead of expensive O(N^2) search
+  const blanksBeforeCurrent = cumulativeBlankCounts[lineIndex] || 0;
   
   return (
     <View style={styles.codeLineContainer}>
@@ -89,7 +105,7 @@ const renderSyntaxHighlightedLine = (line, lineIndex) => {
         let isWrong = false;
         let isCorrectBlank = false;
         
-        // Only apply feedback colors if we are waiting for proceed and the challenge was incorrect
+        // Optimization: Only compute feedback logic when actually needed
         if (canProceed && isAnswerCorrect === false && !isLastPart) {
           const selectedValueIndex = selectedAnswers[globalBlankIndex];
           const selectedValue = selectedValueIndex != null 
@@ -101,7 +117,6 @@ const renderSyntaxHighlightedLine = (line, lineIndex) => {
           if (selectedValue !== correctValue) {
             isWrong = true;
           } else if (selectedValue != null) {
-            // Selected value exists and matches the correct value
             isCorrectBlank = true;
           }
         }
@@ -143,7 +158,7 @@ const renderSyntaxHighlightedLine = (line, lineIndex) => {
       })}
     </View>
   );
-};
+}, [cumulativeBlankCounts, canProceed, isAnswerCorrect, selectedAnswers, selectedBlankIndex, options, correctAnswersList, onBlankPress]);
 
   if (!currentQuestion) {
     return (
@@ -163,10 +178,11 @@ const renderSyntaxHighlightedLine = (line, lineIndex) => {
           currentQuestion.challenge_type === 'multiple choice') ? (
           <CodeEditor 
             key={currentQuestion.id} 
-            currentQuestion={{
+            // Only update currentQuestion reference when actual question data or correctness changes
+            currentQuestion={useMemo(() => ({
               ...currentQuestion,
               question: displayQuestion 
-            }}
+            }), [currentQuestion.id, displayQuestion])}
             selectedAnswers={selectedAnswers}
             getBlankIndex={getBlankIndex}
             scrollViewRef={scrollViewRef}
@@ -177,12 +193,11 @@ const renderSyntaxHighlightedLine = (line, lineIndex) => {
           />
         ) : (
           <DocumentQuestion 
-            //  FIX: Adding key here as well for consistency
             key={currentQuestion.id}
-            currentQuestion={{
+            currentQuestion={useMemo(() => ({
               ...currentQuestion,
               question: displayQuestion 
-            }}
+            }), [currentQuestion, displayQuestion])}
             selectedAnswers={selectedAnswers}
           />
         )}
@@ -191,18 +206,16 @@ const renderSyntaxHighlightedLine = (line, lineIndex) => {
   );
 };
 
-export default React.memo(GameQuestions, (prevProps, nextProps) => {
+export default React.memo(GameQuestions, (prev, next) => {
+  // Use faster reference or length checks instead of JSON.stringify for large arrays
   return (
-    prevProps.currentQuestion?.id === nextProps.currentQuestion?.id &&
-    JSON.stringify(prevProps.selectedAnswers) === JSON.stringify(nextProps.selectedAnswers) &&
-    prevProps.activeTab === nextProps.activeTab && 
-    prevProps.isAnswerCorrect === nextProps.isAnswerCorrect &&
-    prevProps.canProceed === nextProps.canProceed &&
-    JSON.stringify(prevProps.submissionResult) === JSON.stringify(nextProps.submissionResult) &&
-    prevProps.selectedBlankIndex === nextProps.selectedBlankIndex &&
-    prevProps.onTabChange === nextProps.onTabChange &&
-    prevProps.onBlankPress === nextProps.onBlankPress &&
-    prevProps.getBlankIndex === nextProps.getBlankIndex
+    prev.currentQuestion?.id === next.currentQuestion?.id &&
+    prev.activeTab === next.activeTab && 
+    prev.isAnswerCorrect === next.isAnswerCorrect &&
+    prev.canProceed === next.canProceed &&
+    prev.selectedBlankIndex === next.selectedBlankIndex &&
+    prev.selectedAnswers === next.selectedAnswers && // Reference equality for Redux/State updates
+    prev.submissionResult === next.submissionResult
   );
 });
 
