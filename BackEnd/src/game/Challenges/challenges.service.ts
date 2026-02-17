@@ -14,7 +14,10 @@ import {
   CompletionRewards,
 } from "./challenges.types";
 import { getCardForAttackType } from "../Combat/combat.service";
-import { revealAllBlanks } from "../../../helper/revealPotionHelper";
+import {
+  revealAllBlanks,
+  applyRetryReveal,
+} from "../../../helper/revealPotionHelper";
 import {
   ENEMY_WRONG_LINES,
   ENEMY_CORRECT_LINES,
@@ -393,8 +396,8 @@ const calculateStars = (
 };
 
 const OVERLAYS = {
-  STRONG:
-    "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png",
+  // STRONG:
+  //   "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png",
   FREEZE: "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png",
   REVEAL:
     "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png",
@@ -1051,12 +1054,12 @@ export const submitChallengeService = async (
   }
 
   if (fightResult) {
-    if (wasStrong) {
-      if (!fightResult.character) fightResult.character = {};
-      fightResult.character.character_current_state = "Strong";
-      fightResult.character.character_attack_overlay = OVERLAYS.STRONG;
-      console.log("- Forcing Strong Overlay into response");
-    }
+    // if (wasStrong) {
+    //   if (!fightResult.character) fightResult.character = {};
+    //   fightResult.character.character_current_state = "Strong";
+    //   fightResult.character.character_attack_overlay = OVERLAYS.STRONG;
+    //   console.log("- Forcing Strong Overlay into response");
+    // }
 
     if (wasFrozen) {
       if (!fightResult.enemy) fightResult.enemy = {};
@@ -1839,61 +1842,82 @@ const wrapWithTimer = async (
 
   let modifiedChallenge = { ...challenge };
 
-  if (progress.has_ryron_reveal) {
+  const wrongChallenges = (progress.wrong_challenges as number[]) || [];
+  const isRetryOfWrong = wrongChallenges.includes(challenge.challenge_id);
+
+  if (progress.has_ryron_reveal || isRetryOfWrong) {
     let effectiveCorrectAnswer = challenge.correct_answer as string[];
 
-    const revealResult = revealAllBlanks(
-      challenge.question ?? "",
-      effectiveCorrectAnswer,
-    );
-
-    if (!revealResult.success) {
-      console.error(
-        `Ryron's Passive - Cannot reveal challenge ${challenge.challenge_id}: ${revealResult.error}`,
+    if (progress.has_ryron_reveal) {
+      const revealResult = revealAllBlanks(
+        challenge.question ?? "",
+        effectiveCorrectAnswer,
       );
-    } else {
-      const filledQuestion = revealResult.filledQuestion;
 
-      const challengeKey = challenge.challenge_id.toString();
-      const currentPlayerAnswer =
-        progress.player_answer && typeof progress.player_answer === "object"
-          ? (progress.player_answer as Record<string, unknown>)
-          : {};
+      if (revealResult.success && revealResult.filledQuestion) {
+        const filledQuestion = revealResult.filledQuestion;
 
-      await prisma.playerProgress.update({
-        where: {
-          player_id_level_id: {
-            player_id: progress.player_id,
-            level_id: progress.level_id,
+        const challengeKey = challenge.challenge_id.toString();
+        const currentPlayerAnswer =
+          progress.player_answer && typeof progress.player_answer === "object"
+            ? (progress.player_answer as Record<string, unknown>)
+            : {};
+
+        await prisma.playerProgress.update({
+          where: {
+            player_id_level_id: {
+              player_id: progress.player_id,
+              level_id: progress.level_id,
+            },
           },
-        },
-        data: {
-          player_answer: {
-            ...(currentPlayerAnswer as Record<string, unknown>),
-            [challengeKey]: ["_REVEAL_PENDING_"],
-          } as any,
-          has_ryron_reveal: false,
-          challenge_start_time: new Date(),
-        },
-      });
+          data: {
+            player_answer: {
+              ...(currentPlayerAnswer as Record<string, unknown>),
+              [challengeKey]: ["_REVEAL_PENDING_"],
+            } as any,
+            has_ryron_reveal: false,
+            challenge_start_time: new Date(),
+          },
+        });
 
-      modifiedChallenge = {
-        ...(challenge as Challenge),
-        question: filledQuestion,
-        options: ["Attack"],
-        answer: effectiveCorrectAnswer,
-      } as ChallengeDTO;
+        modifiedChallenge = {
+          ...(challenge as Challenge),
+          question: filledQuestion,
+          options: ["Attack"],
+          answer: effectiveCorrectAnswer,
+        } as ChallengeDTO;
 
-      console.log(
-        `- Ryron's Passive Applied: All blanks revealed for challenge ${challenge.challenge_id}`,
-      );
+        console.log(
+          `- Ryron's Passive Applied: All blanks revealed for challenge ${challenge.challenge_id}`,
+        );
 
-      const timeRemaining = CHALLENGE_TIME_LIMIT;
-      const builtChallenge = buildChallengeWithTimer(
-        modifiedChallenge,
-        timeRemaining,
-      );
-      return { nextChallenge: builtChallenge };
+        const timeRemaining = CHALLENGE_TIME_LIMIT;
+        return {
+          nextChallenge: buildChallengeWithTimer(
+            modifiedChallenge,
+            timeRemaining,
+          ),
+        };
+      }
+    } else {
+      if (effectiveCorrectAnswer.length >= 8) {
+        const revealResult = await applyRetryReveal(
+          challenge,
+          effectiveCorrectAnswer,
+        );
+
+        if (revealResult.success && revealResult.revealedChallenge) {
+          modifiedChallenge = revealResult.revealedChallenge;
+
+          console.log(
+            `- Retry Reveal Applied: Partial reveal (leaving 5 blanks) for challenge ${challenge.challenge_id}`,
+          );
+        }
+      } else {
+        console.log(
+          `- Retry of wrong challenge ${challenge.challenge_id}: Blanks count (${effectiveCorrectAnswer.length}) < 8. No reveal applied.`,
+        );
+      }
     }
   }
 

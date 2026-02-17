@@ -124,7 +124,7 @@ model Enemy {
 
 model Player {
   player_id          Int                 @id @default(autoincrement())
-  player_name        String              @unique
+  player_name        String              
   username           String              @unique
   email              String              @unique
   password           String?
