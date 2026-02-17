@@ -14,7 +14,10 @@ import {
   CompletionRewards,
 } from "./challenges.types";
 import { getCardForAttackType } from "../Combat/combat.service";
-import { revealAllBlanks } from "../../../helper/revealPotionHelper";
+import {
+  revealAllBlanks,
+  applyRetryReveal,
+} from "../../../helper/revealPotionHelper";
 import {
   ENEMY_WRONG_LINES,
   ENEMY_CORRECT_LINES,
@@ -393,8 +396,8 @@ const calculateStars = (
 };
 
 const OVERLAYS = {
-  STRONG:
-    "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png",
+  // STRONG:
+  //   "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png",
   FREEZE: "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png",
   REVEAL:
     "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png",
@@ -642,6 +645,43 @@ export const submitChallengeService = async (
   let enemyReactionText: string = "";
 
   let updateReactionData: any = {};
+
+  let enemy_hurt_audio: string = "";
+
+  if (enemy.enemy_name === "Boss Darco") {
+    enemy_hurt_audio =
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/green%20land/darko%20hurt%20sfx.mp3";
+  } else if (enemy.enemy_name === "Boss Joshy") {
+    enemy_hurt_audio =
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/green%20land/joshy%20hurt%20sfx.mp3";
+  } else if (enemy.enemy_name === "King Grimnir") {
+    enemy_hurt_audio =
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/green%20land/king%20grimnir%20hurt%20sfx.mp3";
+  } else if (enemy.enemy_name === "Boss Antcool") {
+    enemy_hurt_audio =
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/autumn%20land/antcool%20hurt%20sfx.mp3";
+  } else if (enemy.enemy_name === "Boss Scorcharach") {
+    enemy_hurt_audio =
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/lava%20land/Boss%20Scorcharach%20hurt%20sfx.mp3";
+  } else if (enemy.enemy_name === "Boss Maggmaw") {
+    enemy_hurt_audio =
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/lava%20land/boss%20maggmaw%20hurt%20sfx.mp3";
+  } else if (enemy.enemy_name === "Boss Pyroformic") {
+    enemy_hurt_audio =
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/lava%20land/boss%20pyroformic%20hurt%20sfx.mp3";
+  } else if (enemy.enemy_name === "Boss Icycreamero") {
+    enemy_hurt_audio =
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/ice%20land/Boss%20Icycreamero%20hurt%20sfx.mp3";
+  } else if (enemy.enemy_name === "King Feannaly") {
+    enemy_hurt_audio =
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/ice%20land/King%20Feanaly%20hurt%20sfx.mp3";
+  } else if (enemy.enemy_name === "Boss Scythe") {
+    enemy_hurt_audio =
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/ice%20land/Lord%20Cryo-Scythe%20Broodlord%20hurt%20sfx.mp3";
+  } else {
+    enemy_hurt_audio =
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/enemies%20universal%20hurt%20sfx.mp3";
+  }
 
   if (isCorrect) {
     const charIndices =
@@ -973,7 +1013,7 @@ export const submitChallengeService = async (
     message = text;
     audioResponse = audio;
 
-    if (!hintUsed && !isReplayingCompletedLevel) {
+    if (!hintUsed && !isReplayingCompletedLevel && !computedAlreadyAnswered) {
       await updateQuestProgress(playerId, QuestType.solve_challenge_no_hint, 1);
       console.log("Quest progress updated - first-time completion");
     } else if (isReplayingCompletedLevel) {
@@ -1000,13 +1040,13 @@ export const submitChallengeService = async (
         "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Gino%20Hurt%20sfx.mp3";
     } else if (character.character_name === "ShiShi") {
       character_hurt_audio =
-        "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Shi-Shi%20Hurt%20sfx.mp3";
+        "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Shis_Hurt.mp3";
     } else if (character.character_name === "Ryron") {
       character_hurt_audio =
         "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Ryron%20Hurt%20sfx.mp3";
     } else if (character.character_name === "Leon") {
       character_hurt_audio =
-        "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Leon%20hurt%20sfx.mp3";
+        "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Leon%20hurt%20sfx%20final.mp3";
     }
 
     if (currentProgress.has_freeze_effect) {
@@ -1051,12 +1091,12 @@ export const submitChallengeService = async (
   }
 
   if (fightResult) {
-    if (wasStrong) {
-      if (!fightResult.character) fightResult.character = {};
-      fightResult.character.character_current_state = "Strong";
-      fightResult.character.character_attack_overlay = OVERLAYS.STRONG;
-      console.log("- Forcing Strong Overlay into response");
-    }
+    // if (wasStrong) {
+    //   if (!fightResult.character) fightResult.character = {};
+    //   fightResult.character.character_current_state = "Strong";
+    //   fightResult.character.character_attack_overlay = OVERLAYS.STRONG;
+    //   console.log("- Forcing Strong Overlay into response");
+    // }
 
     if (wasFrozen) {
       if (!fightResult.enemy) fightResult.enemy = {};
@@ -1596,6 +1636,7 @@ export const submitChallengeService = async (
     enemy_attack_audio,
     character_attack_audio,
     character_hurt_audio,
+    enemy_hurt_audio,
     death_audio,
     gameplay_audio,
     is_victory_audio,
@@ -1839,61 +1880,82 @@ const wrapWithTimer = async (
 
   let modifiedChallenge = { ...challenge };
 
-  if (progress.has_ryron_reveal) {
+  const wrongChallenges = (progress.wrong_challenges as number[]) || [];
+  const isRetryOfWrong = wrongChallenges.includes(challenge.challenge_id);
+
+  if (progress.has_ryron_reveal || isRetryOfWrong) {
     let effectiveCorrectAnswer = challenge.correct_answer as string[];
 
-    const revealResult = revealAllBlanks(
-      challenge.question ?? "",
-      effectiveCorrectAnswer,
-    );
-
-    if (!revealResult.success) {
-      console.error(
-        `Ryron's Passive - Cannot reveal challenge ${challenge.challenge_id}: ${revealResult.error}`,
+    if (progress.has_ryron_reveal) {
+      const revealResult = revealAllBlanks(
+        challenge.question ?? "",
+        effectiveCorrectAnswer,
       );
-    } else {
-      const filledQuestion = revealResult.filledQuestion;
 
-      const challengeKey = challenge.challenge_id.toString();
-      const currentPlayerAnswer =
-        progress.player_answer && typeof progress.player_answer === "object"
-          ? (progress.player_answer as Record<string, unknown>)
-          : {};
+      if (revealResult.success && revealResult.filledQuestion) {
+        const filledQuestion = revealResult.filledQuestion;
 
-      await prisma.playerProgress.update({
-        where: {
-          player_id_level_id: {
-            player_id: progress.player_id,
-            level_id: progress.level_id,
+        const challengeKey = challenge.challenge_id.toString();
+        const currentPlayerAnswer =
+          progress.player_answer && typeof progress.player_answer === "object"
+            ? (progress.player_answer as Record<string, unknown>)
+            : {};
+
+        await prisma.playerProgress.update({
+          where: {
+            player_id_level_id: {
+              player_id: progress.player_id,
+              level_id: progress.level_id,
+            },
           },
-        },
-        data: {
-          player_answer: {
-            ...(currentPlayerAnswer as Record<string, unknown>),
-            [challengeKey]: ["_REVEAL_PENDING_"],
-          } as any,
-          has_ryron_reveal: false,
-          challenge_start_time: new Date(),
-        },
-      });
+          data: {
+            player_answer: {
+              ...(currentPlayerAnswer as Record<string, unknown>),
+              [challengeKey]: ["_REVEAL_PENDING_"],
+            } as any,
+            has_ryron_reveal: false,
+            challenge_start_time: new Date(),
+          },
+        });
 
-      modifiedChallenge = {
-        ...(challenge as Challenge),
-        question: filledQuestion,
-        options: ["Attack"],
-        answer: effectiveCorrectAnswer,
-      } as ChallengeDTO;
+        modifiedChallenge = {
+          ...(challenge as Challenge),
+          question: filledQuestion,
+          options: ["Attack"],
+          answer: effectiveCorrectAnswer,
+        } as ChallengeDTO;
 
-      console.log(
-        `- Ryron's Passive Applied: All blanks revealed for challenge ${challenge.challenge_id}`,
-      );
+        console.log(
+          `- Ryron's Passive Applied: All blanks revealed for challenge ${challenge.challenge_id}`,
+        );
 
-      const timeRemaining = CHALLENGE_TIME_LIMIT;
-      const builtChallenge = buildChallengeWithTimer(
-        modifiedChallenge,
-        timeRemaining,
-      );
-      return { nextChallenge: builtChallenge };
+        const timeRemaining = CHALLENGE_TIME_LIMIT;
+        return {
+          nextChallenge: buildChallengeWithTimer(
+            modifiedChallenge,
+            timeRemaining,
+          ),
+        };
+      }
+    } else {
+      if (effectiveCorrectAnswer.length >= 8) {
+        const revealResult = await applyRetryReveal(
+          challenge,
+          effectiveCorrectAnswer,
+        );
+
+        if (revealResult.success && revealResult.revealedChallenge) {
+          modifiedChallenge = revealResult.revealedChallenge;
+
+          console.log(
+            `- Retry Reveal Applied: Partial reveal (leaving 5 blanks) for challenge ${challenge.challenge_id}`,
+          );
+        }
+      } else {
+        console.log(
+          `- Retry of wrong challenge ${challenge.challenge_id}: Blanks count (${effectiveCorrectAnswer.length}) < 8. No reveal applied.`,
+        );
+      }
     }
   }
 

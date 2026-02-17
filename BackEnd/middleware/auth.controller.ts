@@ -14,16 +14,35 @@ import {
   updatePlayerActivity,
 } from "../src/models/Player/player.service";
 import { QuestType } from "@prisma/client";
+import { differenceInCalendarDays } from "date-fns";
 import * as PlayerService from "../src/models/Player/player.service";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_WEB_CLIENT_ID);
 
 async function handleLoginSideEffects(playerId: number) {
+  // 1. Fetch the player BEFORE updating to check the previous last_active date
+  // We use the PlayerService you already imported to get the data
+  const player = await PlayerService.getPlayerById(playerId);
+
+  if (!player) return null;
+
+  const now = new Date();
+  const lastActive = player.last_active
+    ? new Date(player.last_active)
+    : new Date(0);
+
+  const daysDiff = differenceInCalendarDays(now, lastActive);
+
   const updatedPlayer = await updatePlayerActivity(playerId);
-  if (updatedPlayer) {
+
+  if (updatedPlayer && daysDiff >= 1) {
     await updateQuestProgress(playerId, QuestType.login_days, 1);
     await checkAchievements(playerId);
+    console.log(
+      `📅 New day detected for player ${playerId}. Login quest updated.`,
+    );
   }
+
   return updatedPlayer;
 }
 
@@ -72,7 +91,7 @@ export const googleMobileAuth = async (req: Request, res: Response) => {
           longest_streak: updatedPlayer?.longest_streak,
         },
       },
-      "Login successful"
+      "Login successful",
     );
   } catch (error) {
     console.error("Google auth error:", error);
@@ -107,7 +126,7 @@ export const facebookMobileAuth = async (req: Request, res: Response) => {
         res,
         null,
         "Failed to retrieve Facebook profile",
-        401
+        401,
       );
     }
 
@@ -146,7 +165,7 @@ export const facebookMobileAuth = async (req: Request, res: Response) => {
           longest_streak: updatedPlayer?.longest_streak,
         },
       },
-      "Login successful"
+      "Login successful",
     );
   } catch (error) {
     console.error("Facebook auth error:", error);
@@ -164,6 +183,8 @@ export const refreshToken = async (req: Request, res: Response) => {
 
     const decoded = verifyRefreshToken(refreshToken) as any;
 
+    await handleLoginSideEffects(decoded.id);
+
     const newAccessToken = generateAccessToken({
       id: decoded.id,
       role: decoded.role,
@@ -174,7 +195,7 @@ export const refreshToken = async (req: Request, res: Response) => {
       {
         token: newAccessToken,
       },
-      "Token refreshed successfully"
+      "Token refreshed successfully",
     );
   } catch (error) {
     return errorResponse(res, error, "Invalid or expired refresh token", 403);
@@ -193,7 +214,7 @@ export const requestPasswordReset = async (req: Request, res: Response) => {
     return successResponse(
       res,
       null,
-      "If an account exists with this email, a password reset link has been sent."
+      "If an account exists with this email, a password reset link has been sent.",
     );
   } catch (error) {
     console.error("Forgot password error:", error);
@@ -214,7 +235,7 @@ export const resetPassword = async (req: Request, res: Response) => {
         res,
         null,
         "Password must be at least 6 characters",
-        400
+        400,
       );
     }
 
@@ -223,14 +244,14 @@ export const resetPassword = async (req: Request, res: Response) => {
     return successResponse(
       res,
       null,
-      "Password has been successfully reset. You can now login."
+      "Password has been successfully reset. You can now login.",
     );
   } catch (error: any) {
     return errorResponse(
       res,
       error,
       error.message || "Failed to reset password",
-      400
+      400,
     );
   }
 };

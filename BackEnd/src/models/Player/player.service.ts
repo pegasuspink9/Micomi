@@ -23,7 +23,7 @@ import {
 const prisma = new PrismaClient();
 
 const DEFAULT_AVATAR_URL =
-  "https://micomi-assets.me/Player%20Avatars/original-32a59694e59c7e9536e5a32d105292c7.webp";
+  "https://micomi-assets.me/Player%20Avatars%20Final/Avatar_1.png";
 
 const BASE_EXP_REQUIREMENT = 100;
 const EXP_EXPONENT = 1.5;
@@ -74,6 +74,9 @@ export const addExpAndUpdateLevel = async (
         newLevel,
         totalExp: newExp,
       });
+
+      const levelsGained = newLevel - player.level;
+      await updateQuestProgress(playerId, QuestType.reach_level, 1);
     }
 
     return updated;
@@ -244,6 +247,13 @@ export const getPlayerProfile = async (player_id: number) => {
 
   const calculatedLevel = calculatePlayerLevel(player.exp_points);
 
+  let maxLevelExp = 0;
+  for (let i = 2; i <= calculatedLevel + 1; i++) {
+    maxLevelExp += Math.floor(
+      BASE_EXP_REQUIREMENT * Math.pow(i - 1, EXP_EXPONENT),
+    );
+  }
+
   return {
     player_name: player.player_name,
     player_avatar: player.player_avatar || DEFAULT_AVATAR_URL,
@@ -252,6 +262,7 @@ export const getPlayerProfile = async (player_id: number) => {
     current_streak: player.current_streak,
     exp_points: player.exp_points,
     player_level: calculatedLevel,
+    max_level_exp: maxLevelExp,
     ownedCharacters: player.ownedCharacters,
     ownedPotions: player.ownedPotions,
 

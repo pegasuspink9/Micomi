@@ -935,7 +935,7 @@ const unlockNextMapFirstLevel = async (
 
   const firstLevel = await prisma.level.findFirst({
     where: { map_id: nextMap.map_id },
-    orderBy: { level_id: "asc" },
+    orderBy: [{ level_number: "asc" }, { level_id: "asc" }],
   });
 
   if (!firstLevel) return null;
@@ -967,6 +967,10 @@ const unlockNextMapFirstLevel = async (
   console.log(`📚 First level of ${nextMapName}: ${firstLevel.level_id}`);
 
   const isMicomi = firstLevel.level_type === "micomiButton";
+
+  if (isMicomi) {
+    await updateQuestProgress(playerId, QuestType.complete_lesson, 1);
+  }
 
   await prisma.playerProgress.upsert({
     where: {
@@ -1215,9 +1219,17 @@ export const unlockNextLevel = async (
   const nextLevel = await prisma.level.findFirst({
     where: {
       map_id: mapId,
-      level_id: { gt: currentLevel.level_id },
+      OR: [
+        {
+          level_number: { gt: currentLevel.level_number! },
+        },
+        {
+          level_number: currentLevel.level_number,
+          level_id: { gt: currentLevel.level_id },
+        },
+      ],
     },
-    orderBy: { level_id: "asc" },
+    orderBy: [{ level_number: "asc" }, { level_id: "asc" }],
   });
 
   if (!nextLevel) {
@@ -1229,6 +1241,26 @@ export const unlockNextLevel = async (
 
   if (nextLevel.level_type === "micomiButton") {
     console.log(`📚 Auto-completing micomiButton ${nextLevel.level_id}...`);
+
+    const existingMicomi = await prisma.playerProgress.findUnique({
+      where: {
+        player_id_level_id: {
+          player_id: playerId,
+          level_id: nextLevel.level_id,
+        },
+      },
+    });
+
+    if (!existingMicomi || !existingMicomi.is_completed) {
+      await updateQuestProgress(playerId, QuestType.complete_lesson, 1);
+      console.log(
+        `✨ Quest updated: First time completing micomi level ${nextLevel.level_id}`,
+      );
+    }
+
+    if (!existingMicomi?.is_completed) {
+      await updateQuestProgress(playerId, QuestType.complete_lesson, 1);
+    }
 
     await prisma.playerProgress.upsert({
       where: {
