@@ -552,18 +552,7 @@ export default function MapNavigate({ onMapChange }) {
     );
   }
 
-  // No maps available
-  if (maps.length === 0) {
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>No maps available</Text>
-        <Text style={styles.errorSubText}>Please check your backend connection</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={refetch}>
-          <Text style={styles.retryText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+ 
 
   // Get proper image source for LottieView
   const getMapImageSource = (mapData) => {
@@ -683,111 +672,6 @@ export default function MapNavigate({ onMapChange }) {
         </View>
         <MiniQuestPreview />
       </View>
-      
-      {/* Download Modal - Now shows automatically when needed */}
-      <Modal
-        visible={downloadModalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={handleDownloadModalClose}
-      >
-        <View style={styles.downloadModalOverlay}>
-          <View style={styles.downloadModalContainer}>
-            <ImageBackground
-              source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758946190/472267126-6b3dbdbb-1575-41a1-b1d8-4da2dd80f628_2_ojgh1u.png' }}
-              style={styles.downloadModalBackground}
-              resizeMode="cover"
-            >
-              <View style={styles.downloadModalHeader}>
-                <Text style={styles.downloadModalTitle}>
-                  {downloadProgress.isComplete ? ' Ready!' : 'Preparing Game Assets'}
-                </Text>
-                <Text style={styles.downloadModalSubtitle}>
-                  {downloadProgress.isComplete 
-                    ? 'All assets loaded successfully!' 
-                    : 'Downloading assets for smooth gameplay...'}
-                </Text>
-              </View>
-
-              {/* Overall Progress */}
-              <View style={styles.progressSection}>
-                <View style={styles.progressLabelContainer}>
-                  <Text style={styles.progressLabel}>
-                    {downloadProgress.mapName || 'Assets'} ({downloadProgress.successCount}/{downloadProgress.total})
-                  </Text>
-                  <Text style={styles.progressPercent}>
-                    {Math.round(downloadProgress.progress * 100)}%
-                  </Text>
-                </View>
-                
-                <View style={styles.progressBarContainer}>
-                  <View 
-                    style={[
-                      styles.progressBarFill,
-                      { width: `${downloadProgress.progress * 100}%` }
-                    ]} 
-                  />
-                </View>
-              </View>
-
-              {/* Current Asset Progress */}
-              {currentAssetProgress.url && !downloadProgress.isComplete && (
-                <View style={styles.progressSection}>
-                  <View style={styles.progressLabelContainer}>
-                    <Text style={styles.currentAssetLabel}>
-                      {currentAssetProgress.category}/{currentAssetProgress.name}
-                    </Text>
-                    <Text style={styles.progressPercent}>
-                      {Math.round(currentAssetProgress.progress * 100)}%
-                    </Text>
-                  </View>
-                  
-                  <View style={styles.progressBarContainer}>
-                    <View 
-                      style={[
-                        styles.progressBarFill,
-                        styles.currentAssetProgressBar,
-                        { width: `${currentAssetProgress.progress * 100}%` }
-                      ]} 
-                    />
-                  </View>
-                  
-                  <Text style={styles.currentUrlText} numberOfLines={1}>
-                    {currentAssetProgress.url.slice(-50)}
-                  </Text>
-                </View>
-              )}
-
-              {/* Status Messages */}
-              <View style={styles.statusContainer}>
-                {downloadProgress.isDownloading && downloadProgress.currentAsset && (
-                  <Text style={styles.statusText}>
-                    📦 Downloading: {downloadProgress.currentAsset.category}/{downloadProgress.currentAsset.name}
-                  </Text>
-                )}
-                
-                {downloadProgress.isComplete && (
-                  <Text style={styles.statusCompleteText}>
-                    🎮 Ready to play!
-                  </Text>
-                )}
-              </View>
-
-              {/* Close Button - Only show when not downloading */}
-              {!downloadProgress.isDownloading && (
-                <TouchableOpacity 
-                  style={styles.downloadModalCloseButton}
-                  onPress={handleDownloadModalClose}
-                >
-                  <Text style={styles.downloadModalCloseText}>
-                    {downloadProgress.isComplete ? 'Continue' : 'Close'}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </ImageBackground>
-          </View>
-        </View>
-      </Modal>
 
       <MainLoading visible={isNavigating}/>
     </>

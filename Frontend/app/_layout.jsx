@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useFonts } from '../assets/fonts/font';
 import { View, ActivityIndicator, Platform, AppState, StatusBar } from 'react-native'; 
@@ -7,10 +7,12 @@ import * as NavigationBar from 'expo-navigation-bar';
 import * as SystemUI from 'expo-system-ui'; 
 import { useAuth } from './hooks/useAuth';
 import { soundManager } from './Components/Actual Game/Sounds/UniversalSoundManager';
+import MainLoadingScreen from './MainLoadingScreen';
 
 export default function RootLayout() {
   const fontsLoaded = useFonts();
   const { user, loading } = useAuth();
+  const [isMainLoading, setIsMainLoading] = useState(true);
   const segments = useSegments();
   const router = useRouter();
 
@@ -69,8 +71,8 @@ export default function RootLayout() {
   }, [segments]); // Dependency on segments to re-trigger on navigation
 
   // Handle authentication routing
-    useEffect(() => {
-    if (!fontsLoaded || loading) return;
+  useEffect(() => {
+    if (!fontsLoaded || loading || isMainLoading) return;
 
     const inAuthGroup = segments[0] === '(tabs)';
     const isAtLoginPage = segments.length === 0 || (segments.length === 1 && segments[0] === 'index');
@@ -95,7 +97,7 @@ export default function RootLayout() {
     } else if (isAtLoginPage) {
       soundManager.stopBackgroundMusic();
     }
-  }, [user, segments, fontsLoaded, loading]);
+  }, [user, segments, fontsLoaded, loading, isMainLoading]);
 
   // Page detection for the Universal Tap (outside useEffect for use in JSX)
    const isNavPage = 
@@ -107,7 +109,7 @@ export default function RootLayout() {
 
 
   
-  if (!fontsLoaded || loading) {
+    if (!fontsLoaded || (loading && !user)) {
     return (
       <View style={{ 
         flex: 1, 
@@ -117,6 +119,16 @@ export default function RootLayout() {
       }}>
         <ActivityIndicator size="large" color="#fff" />
       </View>
+    );
+  }
+
+  // Only show the preloading screen if the user is logged in
+  if (user && isMainLoading) {
+    return (
+      <MainLoadingScreen 
+        fontsLoaded={fontsLoaded} 
+        onComplete={() => setIsMainLoading(false)} 
+      />
     );
   }
 
