@@ -361,6 +361,7 @@ const EnemyCharacter = ({
         soundManager.playCachedSound(attackAudioUrl, 'combat', 1.0);
       }, SOUND_DELAY);
     } else if (currentState === 'hurt' && hurtAudioUrl) {
+      // Play enemy hurt sound immediately when the animation state changes
       soundManager.playCachedSound(hurtAudioUrl, 'combat', 1.0);
     }
 

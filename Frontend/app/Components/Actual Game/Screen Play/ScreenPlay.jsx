@@ -763,6 +763,7 @@ useEffect(() => {
           currentState={characterAnimationState}
           onAnimationComplete={handleCharacterAnimationComplete}
           attackAudioUrl={gameState.submissionResult?.characterAttackAudio}
+          isBonusRound={gameState.submissionResult?.isBonusRound ?? false}
           characterName={characterName}
           potionEffectUrl={gameState.submissionResult?.use_potion_effect}
           attackOverlayUrl={characterAttackOverlay} 

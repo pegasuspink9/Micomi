@@ -33,6 +33,7 @@ const Character = ({
   statusState = null,
   enemyStatusState = null, 
   reactionText = null,
+  isBonusRound = false,
   hurtAudioUrl = null,
 }) => {
   // ========== Shared Animation Values ==========
@@ -286,7 +287,7 @@ const Character = ({
       attackSoundTimeoutRef.current = setTimeout(() => {
         soundManager.playCombatSound(attackAudioUrl);
       }, SOUND_DELAY);
-    } else if (currentState === 'hurt' && hurtAudioUrl) {
+    } else if (currentState === 'hurt' && hurtAudioUrl && !isBonusRound) {
       // Hurt sounds usually trigger immediately or with very short delay
       soundManager.playCombatSound(hurtAudioUrl);
     }
@@ -294,7 +295,7 @@ const Character = ({
     return () => {
       if (attackSoundTimeoutRef.current) clearTimeout(attackSoundTimeoutRef.current);
     };
-  }, [currentState, attackAudioUrl, hurtAudioUrl]);
+  }, [currentState, attackAudioUrl, hurtAudioUrl, isBonusRound]);
 
   // ========== Animation Configuration Logic ==========
   const animationConfig = useMemo(() => {
@@ -813,6 +814,7 @@ export default React.memo(Character, (prev, next) => {
     prev.reactionText === next.reactionText && 
     prev.currentState === next.currentState &&
     prev.isPaused === next.isPaused &&
+    prev.isBonusRound === next.isBonusRound &&
     prev.characterName === next.characterName &&
     prev.potionEffectUrl === next.potionEffectUrl &&
     prev.attackOverlayUrl === next.attackOverlayUrl &&
