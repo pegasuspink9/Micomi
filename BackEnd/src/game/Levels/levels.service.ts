@@ -397,7 +397,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
             create: {
               player_id: playerId,
               level_id: firstLevelOfMap.level_id,
-              current_level: firstLevelOfMap.level_number,
+              current_level: firstLevelOfMap.level_number ?? 0,
               is_completed: true,
               completed_at: new Date(),
               done_micomi_level: true,
@@ -428,6 +428,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
               has_strong_effect: false,
               has_freeze_effect: false,
               has_ryron_reveal: false,
+              has_received_rewards: false,
             },
           });
 
@@ -450,7 +451,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
               create: {
                 player_id: playerId,
                 level_id: secondLevelOfMap.level_id,
-                current_level: secondLevelOfMap.level_number,
+                current_level: secondLevelOfMap.level_number ?? 0,
                 is_completed: false,
                 completed_at: null,
                 attempts: 0,
@@ -480,6 +481,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
                 has_strong_effect: false,
                 has_freeze_effect: false,
                 has_ryron_reveal: false,
+                has_received_rewards: false,
               },
             });
           }
@@ -713,7 +715,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       data: {
         player_id: playerId,
         level_id: levelId,
-        current_level: level.level_number,
+        current_level: level.level_number ?? 0,
         attempts: 0,
         player_answer: {},
         completed_at: null,
@@ -743,6 +745,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         has_strong_effect: false,
         has_freeze_effect: false,
         has_ryron_reveal: false,
+        has_received_rewards: false,
         ...(level.level_type === "micomiButton"
           ? { done_micomi_level: false }
           : {}),
@@ -912,8 +915,8 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         gameplay_audio = "https://micomi-assets.me/Sounds/Final/Lavaland.mp3";
       }
       break;
-    case "JavaScript":
-      versus_background = "https://micomi-assets.me/Sounds/Final/Snowland.mp3";
+     case "JavaScript":
+      versus_background = "https://micomi-assets.me/Versus%20Maps/Snow.png";
       if (level.level_type === "bossButton") {
         gameplay_audio = "https://micomi-assets.me/Sounds/Final/Boss.ogg";
       } else {
@@ -921,8 +924,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       }
       break;
     case "Computer":
-      versus_background =
-        "https://micomi-assets.me/Sounds/Final/Autumnland.mp3";
+      versus_background = "https://micomi-assets.me/Versus%20Maps/Autumn.png";
       if (level.level_type === "bossButton") {
         gameplay_audio = "https://micomi-assets.me/Sounds/Final/Boss.ogg";
       } else {
