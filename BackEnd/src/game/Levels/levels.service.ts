@@ -365,25 +365,76 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     });
 
     if (firstLevelOfMap) {
-      const hasStartedMap = await prisma.playerProgress.findFirst({
-        where: {
-          player_id: playerId,
-          level: { map_id: level.map_id },
-        },
-      });
+      console.log("🖥️ Initializing Computer Map logic...");
 
-      if (!hasStartedMap) {
-        console.log("🖥️ Initializing Computer Map for first time...");
-
-        if (firstLevelOfMap.level_type === "micomiButton") {
-          await prisma.playerProgress.create({
-            data: {
+      if (firstLevelOfMap.level_type === "micomiButton") {
+        await prisma.playerProgress.upsert({
+          where: {
+            player_id_level_id: {
               player_id: playerId,
               level_id: firstLevelOfMap.level_id,
-              current_level: firstLevelOfMap.level_number,
-              is_completed: true,
-              completed_at: new Date(),
-              done_micomi_level: true,
+            },
+          },
+          update: {},
+          create: {
+            player_id: playerId,
+            level_id: firstLevelOfMap.level_id,
+            current_level: firstLevelOfMap.level_number,
+            is_completed: true,
+            completed_at: new Date(),
+            done_micomi_level: true,
+            attempts: 0,
+            player_answer: {},
+            challenge_start_time: new Date(),
+            player_hp: 0,
+            enemy_hp: 0,
+            battle_status: BattleStatus.in_progress,
+            wrong_challenges: [],
+            coins_earned: 0,
+            total_points_earned: 0,
+            total_exp_points_earned: 0,
+            consecutive_corrects: 0,
+            consecutive_wrongs: 0,
+            wrong_challenges_count: 0,
+            boss_skill_activated: false,
+            took_damage: false,
+            has_reversed_curse: false,
+            has_boss_shield: false,
+            has_force_character_attack_type: false,
+            has_both_hp_decrease: false,
+            has_shuffle_ss: false,
+            has_permuted_ss: false,
+            has_dollar_sign_ss: false,
+            has_only_blanks_ss: false,
+            has_reverse_words_ss: false,
+            has_strong_effect: false,
+            has_freeze_effect: false,
+            has_ryron_reveal: false,
+          },
+        });
+
+        const secondLevelOfMap = await prisma.level.findFirst({
+          where: {
+            map_id: level.map_id,
+            level_number: (firstLevelOfMap.level_number ?? 0) + 1,
+          },
+        });
+
+        if (secondLevelOfMap) {
+          await prisma.playerProgress.upsert({
+            where: {
+              player_id_level_id: {
+                player_id: playerId,
+                level_id: secondLevelOfMap.level_id,
+              },
+            },
+            update: {},
+            create: {
+              player_id: playerId,
+              level_id: secondLevelOfMap.level_id,
+              current_level: secondLevelOfMap.level_number,
+              is_completed: false,
+              completed_at: null,
               attempts: 0,
               player_answer: {},
               challenge_start_time: new Date(),
@@ -413,52 +464,6 @@ export const enterLevel = async (playerId: number, levelId: number) => {
               has_ryron_reveal: false,
             },
           });
-
-          const secondLevelOfMap = await prisma.level.findFirst({
-            where: {
-              map_id: level.map_id,
-              level_number: (firstLevelOfMap.level_number ?? 0) + 1,
-            },
-          });
-
-          if (secondLevelOfMap) {
-            await prisma.playerProgress.create({
-              data: {
-                player_id: playerId,
-                level_id: secondLevelOfMap.level_id,
-                current_level: secondLevelOfMap.level_number,
-                is_completed: false,
-                completed_at: null,
-                attempts: 0,
-                player_answer: {},
-                challenge_start_time: new Date(),
-                player_hp: 0,
-                enemy_hp: 0,
-                battle_status: BattleStatus.in_progress,
-                wrong_challenges: [],
-                coins_earned: 0,
-                total_points_earned: 0,
-                total_exp_points_earned: 0,
-                consecutive_corrects: 0,
-                consecutive_wrongs: 0,
-                wrong_challenges_count: 0,
-                boss_skill_activated: false,
-                took_damage: false,
-                has_reversed_curse: false,
-                has_boss_shield: false,
-                has_force_character_attack_type: false,
-                has_both_hp_decrease: false,
-                has_shuffle_ss: false,
-                has_permuted_ss: false,
-                has_dollar_sign_ss: false,
-                has_only_blanks_ss: false,
-                has_reverse_words_ss: false,
-                has_strong_effect: false,
-                has_freeze_effect: false,
-                has_ryron_reveal: false,
-              },
-            });
-          }
         }
       }
     }
