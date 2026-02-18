@@ -396,8 +396,8 @@ const calculateStars = (
 };
 
 const OVERLAYS = {
-  // STRONG:
-  //   "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png",
+  STRONG:
+    "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png",
   FREEZE: "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png",
   REVEAL:
     "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png",
@@ -1091,12 +1091,12 @@ export const submitChallengeService = async (
   }
 
   if (fightResult) {
-    // if (wasStrong) {
-    //   if (!fightResult.character) fightResult.character = {};
-    //   fightResult.character.character_current_state = "Strong";
-    //   fightResult.character.character_attack_overlay = OVERLAYS.STRONG;
-    //   console.log("- Forcing Strong Overlay into response");
-    // }
+    if (wasStrong) {
+      if (!fightResult.character) fightResult.character = {};
+      fightResult.character.character_current_state = "Strong";
+      fightResult.character.character_attack_overlay = OVERLAYS.STRONG;
+      console.log("- Forcing Strong Overlay into response");
+    }
 
     if (wasFrozen) {
       if (!fightResult.enemy) fightResult.enemy = {};

@@ -498,6 +498,8 @@ export async function getCurrentFightState(
   let character_attack_overlay: string | null = null;
   let enemy_attack_overlay: string | null = null;
 
+  const questionType = level.map.map_name;
+
   if (potionType === "Power") {
     character_current_state = "Strong";
     character_attack_overlay =
@@ -605,6 +607,7 @@ export async function getCurrentFightState(
     energy: energyStatus.energy,
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
     combat_background: combatBackground,
+    question_type: questionType,
     boss_skill_activated: progress?.boss_skill_activated || false,
     isEnemyFrozen: progress?.has_freeze_effect || false,
   };
