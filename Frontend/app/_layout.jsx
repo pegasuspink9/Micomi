@@ -6,6 +6,7 @@ import { setStatusBarHidden, setStatusBarTranslucent, setStatusBarStyle } from '
 import * as NavigationBar from 'expo-navigation-bar'; 
 import * as SystemUI from 'expo-system-ui'; 
 import { useAuth } from './hooks/useAuth';
+import { soundManager } from './Components/Actual Game/Sounds/UniversalSoundManager';
 
 export default function RootLayout() {
   const fontsLoaded = useFonts();
@@ -79,6 +80,24 @@ export default function RootLayout() {
     } else if (user && isAtLoginPage) {
       router.replace('/map');
     }
+
+    // --- UNIVERSAL BGM LOGIC ---
+    // Pages that should play the Navigation BGM
+    const NAV_BGM_URL = 'https://micomi-assets.me/Sounds/Final/Navigation.mp3';
+    const isNavigationPage = 
+      segments.includes('map') || 
+      segments.includes('CharacterSelect') || 
+      segments.includes('PotionShop') || 
+      segments.includes('RoadMapLandPage') ||
+      segments.includes('(tabs)'); 
+
+    if (isNavigationPage && user) {
+      soundManager.playBackgroundMusic(NAV_BGM_URL, 0.15);
+    } else if (isAtLoginPage) {
+      soundManager.stopBackgroundMusic();
+    }
+    // We don't explicitly "stop" for GamePlay because the GamePlay component 
+    // will call playBackgroundMusic itself, which handles the override.
   }, [user, segments, fontsLoaded, loading]);
 
   
