@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import { Text, View, StyleSheet, Dimensions, ScrollView, Pressable} from 'react-native';
 import CodeEditor from './Component/CodeEditor';
 import DocumentQuestion from './Component/DocumentQuestion';
+import ComputerEditor from './Component/ComputerEditor';
 import { renderHighlightedText } from './utils/syntaxHighligther';
 import { scrollToNextBlank, calculateGlobalBlankIndex } from './utils/blankHelper';
 import { soundManager } from '../Sounds/UniversalSoundManager';
@@ -86,6 +87,9 @@ const GameQuestions = ({
     }
   }, [onTabChange]);
 
+  const isComputerMap = currentQuestion?.map_name === 'Computer' || 
+                        currentQuestion?.question_type?.toLowerCase() === 'computer';
+
 const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
   if (!line || typeof line !== 'string') {
     return <Text style={styles.codeText}></Text>;
@@ -123,7 +127,11 @@ const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
 
         return (
           <React.Fragment key={partIndex}>
-            {part ? <Text style={styles.codeText}>{renderHighlightedText(part)}</Text> : null}
+            {part ? (
+              <Text style={[styles.codeText, isComputerMap && styles.codeTextBook]}>
+                {isComputerMap ? part : renderHighlightedText(part)}
+              </Text>
+            ) : null}
             
             {!isLastPart && (
               <Pressable 
@@ -143,10 +151,12 @@ const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
                   styles.codeBlankContainer,
                   globalBlankIndex === selectedBlankIndex && styles.currentBlank,
                   isCorrectBlank && styles.correctBlank,
-                  isWrong && styles.wrongBlank
+                  isWrong && styles.wrongBlank,
+                  isComputerMap && styles.codeBlankBook,
+                  isComputerMap && globalBlankIndex === selectedBlankIndex && styles.currentBlankBook,
                 ]}
               >
-                <Text style={styles.codeBlankText}>
+                <Text style={[styles.codeBlankText, isComputerMap && styles.codeBlankTextBook]}>
                   {selectedAnswers?.[globalBlankIndex] != null
                     ? options?.[selectedAnswers[globalBlankIndex]] || '_'
                     : '_'}
@@ -173,7 +183,22 @@ const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
   return (
     <View style={styles.secondGrid}>
       <View style={styles.questionContainer}>
-        {(currentQuestion.challenge_type === 'fill in the blank' || 
+        {isComputerMap ? (
+            <ComputerEditor 
+              key={currentQuestion.id} 
+              currentQuestion={useMemo(() => ({
+                ...currentQuestion,
+                question: displayQuestion 
+              }), [currentQuestion.id, displayQuestion])}
+              selectedAnswers={selectedAnswers}
+              getBlankIndex={getBlankIndex}
+              scrollViewRef={scrollViewRef}
+              blankRefs={blankRefs}
+              renderSyntaxHighlightedLine={renderSyntaxHighlightedLine}
+              onTabChange={handleTabChange}
+              activeTab={activeTab}
+            />
+        ) : (currentQuestion.challenge_type === 'fill in the blank' || 
           currentQuestion.challenge_type === 'code with guide' || 
           currentQuestion.challenge_type === 'multiple choice') ? (
           <CodeEditor 
@@ -238,9 +263,43 @@ const styles = StyleSheet.create({
     minHeight: gameScale(25),
   },
   codeText: {
-    color: '#ffffff',
+    color: '#943232',
     fontFamily: 'monospace',
     fontSize: gameScale(14),
+  },
+  codeTextBook: {
+    color: '#000000',
+    fontFamily: 'DynaPuff', // Changed from GoldenAge
+    fontSize: gameScale(20),
+    marginBottom: gameScale(10),
+  },
+  codeBlankBook: {
+    backgroundColor: '#d6c8a1',
+    borderColor: '#8b5a2b',
+    borderWidth: gameScale(2),
+    borderRadius: gameScale(4),
+    shadowColor: '#4a331d',
+    paddingHorizontal: gameScale(15),
+    paddingVertical: gameScale(15),
+    shadowOpacity: 0.3,
+    borderBottomWidth: gameScale(4),
+  },
+  currentBlankBook: {
+    backgroundColor: '#ffecb3',
+    borderColor: '#ff9800',
+    shadowOpacity: 0.6,
+    shadowRadius: gameScale(6),
+  },
+   codeBlankText: {
+    color: '#ffffff', // Default for CodeEditor (Blue theme)
+    fontFamily: 'DynaPuff',
+    fontSize: gameScale(15),
+    textAlign: 'center'
+  },
+  codeBlankTextBook: {
+    color: '#000000', // Pure black for Computer map
+    fontFamily: 'DynaPuff',
+    fontSize: gameScale(20), // Increased to match question text better
   },
   codeBlankContainer: {
     backgroundColor: '#0e639c',
@@ -302,7 +361,6 @@ const styles = StyleSheet.create({
   codeBlankText: {
     color: '#ffffff',
     fontFamily: 'monospace',
-    fontWeight: 'bold',
     fontSize: gameScale(13),
     textAlign: 'center'
   },
