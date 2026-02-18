@@ -200,6 +200,35 @@ export const imagesUrls = [
   "https://micomi-assets.me/Comics/Lavaland%202/L2_page4.png",
   "https://micomi-assets.me/Comics/Lavaland%202/L2_page5.png",
 
+  //Lavaland Ending
+  "https://micomi-assets.me/Comics/Lavaland%20Ending/L4_page1.png",
+  "https://micomi-assets.me/Comics/Lavaland%20Ending/L4_page2.png",
+  "https://micomi-assets.me/Comics/Lavaland%20Ending/L4_page3.png",
+  "https://micomi-assets.me/Comics/Lavaland%20Ending/L4_page4.png",
+  "https://micomi-assets.me/Comics/Lavaland%20Ending/L4_page5.png",
+  "https://micomi-assets.me/Comics/Lavaland%20Ending/L4_page6.png",
+  "https://micomi-assets.me/Comics/Lavaland%20Ending/L4_page7.png",
+  "https://micomi-assets.me/Comics/Lavaland%20Ending/L4_page8.png",
+  "https://micomi-assets.me/Comics/Lavaland%20Ending/L4_page9.png",
+  "https://micomi-assets.me/Comics/Lavaland%20Ending/L4_page10.png",
+  "https://micomi-assets.me/Comics/Lavaland%20Ending/L4_page11.png",
+
+  //Autumnland 1
+  "https://micomi-assets.me/Comics/Into%20Autumnland/A_page1.jpg",
+  "https://micomi-assets.me/Comics/Into%20Autumnland/A_page2.jpg",
+  "https://micomi-assets.me/Comics/Into%20Autumnland/A_page3.jpg",
+  "https://micomi-assets.me/Comics/Into%20Autumnland/A_page4.jpg",
+
+  //Iceland 1
+  "https://micomi-assets.me/Comics/Iceland/I_page1.jpg",
+  "https://micomi-assets.me/Comics/Iceland/I_page2.jpg",
+  "https://micomi-assets.me/Comics/Iceland/I_page3.jpg",
+  "https://micomi-assets.me/Comics/Iceland/I_page4.jpg",
+  "https://micomi-assets.me/Comics/Iceland/I_page5.jpg",
+  "https://micomi-assets.me/Comics/Iceland/I_page6.jpg",
+  "https://micomi-assets.me/Comics/Iceland/I_page7.jpg",
+  "https://micomi-assets.me/Comics/Iceland/I_page8.jpg",
+
   //Cover Pages
   "https://micomi-assets.me/Comics/Cover%20page/1_Intro.png",
   "https://micomi-assets.me/Comics/Cover%20page/2_Comics_Html.png",
