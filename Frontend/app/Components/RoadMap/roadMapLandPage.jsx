@@ -57,6 +57,9 @@ export default function RoadMapLandPage() {
             router.push('/PotionShop');
           }}
         >
+
+          
+          
           <View style={{ alignItems: 'center', marginTop: -100 * responsive.heightRatio }}>
             <Image
               source={require('./ShopButton.png')}
@@ -74,6 +77,32 @@ export default function RoadMapLandPage() {
             }}>
             </Text>
           </View>
+        </Pressable>
+
+          <Pressable
+          style={{
+            position: 'absolute',
+            bottom: 40 * responsive.heightRatio,
+            left: 20 * responsive.widthRatio,
+            width: 80 * responsive.widthRatio,
+            height: 80 * responsive.heightRatio,
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000, 
+          }}
+          onPress={() => {
+            router.back();
+          }}
+        >
+          <Image
+            source={require('../icons/map.png')} // Uses the global map icon
+            style={{
+              width: 90 * responsive.widthRatio,  
+              height: 90 * responsive.heightRatio,
+              left: 10 * responsive.widthRatio, // Adjust left position to better align with the edge
+            }}
+            resizeMode="contain"
+          />
         </Pressable>
 
         <UniversalMapLevel />

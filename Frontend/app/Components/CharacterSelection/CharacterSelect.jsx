@@ -11,6 +11,7 @@ import { Video } from 'expo-av';
 import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
 import { gameScale } from '../../Components/Responsiveness/gameResponsive';
 import MainLoading from '../Actual Game/Loading/MainLoading';
+import BackButton from "../Actual Game/Back/BackButton";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -153,6 +154,17 @@ export default function CharacterProfile() {
       <View style={styles.headerContainer}>
         <MapHeader coins={userCoins} />
       </View>
+
+      <BackButton 
+        width={gameScale(160)} 
+        height={gameScale(80)}
+        containerStyle={{ 
+          position: 'absolute', 
+          top: gameScale(60), 
+          left: gameScale(-30), 
+          zIndex: 110 
+        }} 
+      />
 
       {currentHero && (
         <>

@@ -376,6 +376,8 @@ export default function PotionShop() {
         <BackButton 
           width={scaleWidth(100)} 
           height={scaleHeight(80)}
+          tintColor="#ff670eab" 
+          tintOpacity={0.9} // Adjust this value between 0 and 1 to control intensity
           containerStyle={styles.backButtonContainer} 
         />
         
