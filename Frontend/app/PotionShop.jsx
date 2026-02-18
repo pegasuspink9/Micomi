@@ -34,6 +34,7 @@ import Reanimated, {
   Easing as ReanimatedEasing,
   cancelAnimation
 } from 'react-native-reanimated';
+import BackButton from './Components/Actual Game/Back/BackButton'; 
 
 
 
@@ -372,18 +373,11 @@ export default function PotionShop() {
       >
         <View style={styles.backgroundOverlay} />
 
-        <View style={styles.backButtonContainer}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => router.back()}  
-          activeOpacity={0.7}
-        >
-          <View style={{ flexDirection: 'row' }}>
-            <Text style={styles.backButtonText}>{"<"}</Text>
-            <Text style={styles.backButtonTextBack}>Back</Text>
-          </View>
-        </TouchableOpacity>
-        </View>
+        <BackButton 
+          width={scaleWidth(100)} 
+          height={scaleHeight(80)}
+          containerStyle={styles.backButtonContainer} 
+        />
         
         <View style={styles.topFrame}>
         <Video
@@ -1021,14 +1015,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: scaleWidth(6),
   },
-  backButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 6,
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#000000ff',
-    backgroundColor: '#f3f4f6',
+  backButtonContainer: {
+    position: 'absolute',
+    top: scaleHeight(20), 
+    left: scaleWidth(-10),
+    zIndex: 1000, 
   },
   actionText: {
     color: '#fff',
@@ -1135,28 +1126,6 @@ const styles = StyleSheet.create({
     width: '100%',
     textAlign: 'center',
     marginTop: 0,
-  },
-  backButtonContainer: {
-    position: 'absolute',
-    top: scaleHeight(20), 
-    left: scaleWidth(20),
-    zIndex: 1000, 
-  },
-  backButton: {
-    paddingHorizontal: scaleWidth(12),
-    paddingVertical: scaleHeight(8),
-  },
-  backButtonText: {
-    color: '#fff',
-    fontSize: scaleWidth(50),
-    fontFamily: 'MusicVibes'
-  },
-  backButtonTextBack: {
-    color: '#fff',
-    fontSize: scaleWidth(20),
-    top: scaleHeight(15),
-    left: scaleWidth(10),
-    fontFamily: 'MusicVibes'
   },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { color: '#fff', fontSize: 16, fontFamily: 'DynaPuff', marginTop: 16 },
