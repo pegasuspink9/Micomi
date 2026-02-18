@@ -361,8 +361,10 @@ const EnemyCharacter = ({
         soundManager.playCachedSound(attackAudioUrl, 'combat', 1.0);
       }, SOUND_DELAY);
     } else if (currentState === 'hurt' && hurtAudioUrl) {
-      // Play enemy hurt sound immediately when the animation state changes
-      soundManager.playCachedSound(hurtAudioUrl, 'combat', 1.0);
+      const HURT_DELAY = 700; 
+      attackSoundTimeoutRef.current = setTimeout(() => {
+        soundManager.playCachedSound(hurtAudioUrl, 'combat', 1.0);
+      }, HURT_DELAY);
     }
 
     return () => {
@@ -370,7 +372,7 @@ const EnemyCharacter = ({
         clearTimeout(attackSoundTimeoutRef.current);
       }
     };
-  }, [currentState, attackAudioUrl, hurtAudioUrl, index]);
+  }, [currentState, attackAudioUrl, hurtAudioUrl, index, isBonusRound]);
 
   if (isBonusRound) wasBonusRound.current = true;
   else if (currentState === 'idle') wasBonusRound.current = false;

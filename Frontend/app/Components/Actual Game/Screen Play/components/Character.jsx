@@ -288,8 +288,10 @@ const Character = ({
         soundManager.playCombatSound(attackAudioUrl);
       }, SOUND_DELAY);
     } else if (currentState === 'hurt' && hurtAudioUrl && !isBonusRound) {
-      // Hurt sounds usually trigger immediately or with very short delay
-      soundManager.playCombatSound(hurtAudioUrl);
+      const CHAR_HURT_DELAY = 700;
+      attackSoundTimeoutRef.current = setTimeout(() => {
+        soundManager.playCombatSound(hurtAudioUrl);
+      }, CHAR_HURT_DELAY);
     }
 
     return () => {
