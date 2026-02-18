@@ -109,6 +109,62 @@ export const ENEMY_ATTACK_SOUNDS: Record<
       "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Lavaland%20SFX%20Finished/timothymos%20sfx/claw%20attack%20sfx.mp3",
   },
 
+  //Autumn Enemies
+  Barbalony: {
+    basic:
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Autumnland%20SFX%20Finished/barbalony%20sfx/scratch%20fx.mp3",
+  },
+  Baterlomio: {
+    basic:
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Autumnland%20SFX%20Finished/baterlomio%20sfx/spark%20sfx.mp3",
+  },
+  Bluejudy: {
+    basic:
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Autumnland%20SFX%20Finished/bluejudy%20sfx/bite%20sfx.mp3",
+  },
+  Ladybago: {
+    basic:
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Autumnland%20SFX%20Finished/ladybago%20sfx/ladybago%20scratch%20sfx.mp3",
+  },
+  Mosquitomas: {
+    basic:
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Autumnland%20SFX%20Finished/mosquitomas%20sfx/mosquitomas%20spark%20sfx.mp3",
+  },
+  Mostketero: {
+    basic:
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Autumnland%20SFX%20Finished/mostketero%20sfx/mostketero%20slice%20sfx.mp3",
+  },
+  Nutsubitsu: {
+    basic:
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Autumnland%20SFX%20Finished/nutsubistsu%20sfx/nutsubistsu%20scratch%20sfx.mp3",
+  },
+  Regreden: {
+    basic:
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Autumnland%20SFX%20Finished/redgreden%20sfx/bite%20sfx.mp3",
+  },
+  Stripy: {
+    basic:
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Autumnland%20SFX%20Finished/stripy%20sfx/stripy%20slash%20sfx.mp3",
+  },
+  Thumbug: {
+    basic:
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Autumnland%20SFX%20Finished/thumbug%20sfx/splash.mp3",
+  },
+
+  //Iceland (3 only)
+  Blububee: {
+    basic:
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Iceland%20SFX%20Finished/blububee%20sfx/blububee%20slash%20attack.mp3",
+  },
+  Winkito: {
+    basic:
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Iceland%20SFX%20Finished/winkito%20sfx/winkito%20mutiverse%20attack%20sfx.mp3",
+  },
+  Beernabee: {
+    basic:
+      "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Iceland%20SFX%20Finished/beernabee%20sfx/beernabee%20slash%20sfx.mp3",
+  },
+
   // --- Bosses & Kings ---
   "Boss Joshy": {
     basic:
