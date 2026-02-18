@@ -247,7 +247,7 @@ export const imagesUrls = [
   "https://micomi-assets.me/Enemies/Greenland/Greenemy/attack1.png",
   "https://micomi-assets.me/Enemies/Greenland/Greenemy/death1.png",
   "https://micomi-assets.me/Enemies/Greenland/Greenemy/hurt1.png",
-  "https://micomi-assets.me/Enemies/Greenland/Greenemy/run1.png",
+  "https://micomi-assets.me/Enemies/Greenland/Greenemy/runfinal.png",
   "https://micomi-assets.me/Enemies/Avatar/Greenemy.png",
   //Formica
   "https://micomi-assets.me/Enemies/Greenland/Formica/idle_mzpwqq.png",
@@ -311,8 +311,8 @@ export const imagesUrls = [
 
   //Autumnland Enemies (no boss yet)
   //Barbalony
-  "https://micomi-assets.me/Enemies/Autumn%20Land/Barbalony/idle.png",
-  "https://micomi-assets.me/Enemies/Autumn%20Land/Barbalony/idle.png",
+  "https://micomi-assets.me/Enemies/Autumn%20Land/Barbalony/idle1.png",
+  "https://micomi-assets.me/Enemies/Autumn%20Land/Barbalony/attack.png",
   "https://micomi-assets.me/Enemies/Autumn%20Land/Barbalony/death.png",
   "https://micomi-assets.me/Enemies/Autumn%20Land/Barbalony/hurt.png",
   "https://micomi-assets.me/Enemies/Autumn%20Land/Barbalony/run1.png",

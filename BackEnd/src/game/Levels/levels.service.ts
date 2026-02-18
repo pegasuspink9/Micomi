@@ -913,7 +913,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       }
       break;
     case "JavaScript":
-      versus_background = "https://micomi-assets.me/Sounds/Final/Snowland.mp3";
+      versus_background = "https://micomi-assets.me/Versus%20Maps/Snow.png";
       if (level.level_type === "bossButton") {
         gameplay_audio = "https://micomi-assets.me/Sounds/Final/Boss.ogg";
       } else {
@@ -921,13 +921,13 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       }
       break;
     case "Computer":
-      versus_background =
-        "https://micomi-assets.me/Sounds/Final/Autumnland.mp3";
+      versus_background = "https://micomi-assets.me/Versus%20Maps/Autumn.png";
       if (level.level_type === "bossButton") {
         gameplay_audio = "https://micomi-assets.me/Sounds/Final/Boss.ogg";
       } else {
         gameplay_audio = "https://micomi-assets.me/Sounds/Final/Autumnland.mp3";
       }
+      break;
   }
 
   const heroSS = getHeroSpecialSkillInfo(
