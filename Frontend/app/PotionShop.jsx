@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { 
   Text, 
   View, 
@@ -36,7 +36,8 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import BackButton from './Components/Actual Game/Back/BackButton'; 
 import { soundManager } from './Components/Actual Game/Sounds/UniversalSoundManager';
-
+import { usePlayerProfile } from '../app/hooks/usePlayerProfile';
+import { useFocusEffect } from '@react-navigation/native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -216,6 +217,22 @@ export default function PotionShop() {
     soundManager.playBackgroundMusic(SHOP_BGM_URL, 0.4);
   }, []);
 
+  const { playerData, loadPlayerProfile, refreshPlayerData } = usePlayerProfile();
+  const currentPlayerCoins = playerData?.coins || 0; 
+
+  useFocusEffect(
+    useCallback(() => {
+      loadPlayerProfile();
+
+      const syncInterval = setInterval(() => {
+        refreshPlayerData();
+      }, 5000); 
+
+      return () => clearInterval(syncInterval);
+    }, [loadPlayerProfile, refreshPlayerData])
+  );
+
+
   const fetchPotionData = async () => {
     try {
       // Only set main loading on initial load to avoid flickering during drops
@@ -383,7 +400,7 @@ export default function PotionShop() {
           width={scaleWidth(100)} 
           height={scaleHeight(80)}
           tintColor="#ff670eab" 
-          tintOpacity={0.9} // Adjust this value between 0 and 1 to control intensity
+          tintOpacity={0.9} 
           containerStyle={styles.backButtonContainer} 
         />
         
@@ -407,6 +424,21 @@ export default function PotionShop() {
           >
           </ImageBackground>
 
+          {/* NEW: MapHeader-style Coin Display - Placed at top-right of bottomFrame */}
+          <View style={styles.bottomFrameCoinContainer}>
+            <View style={styles.resourceWrapperCompact}>
+              <View style={styles.resourceCapsuleCompact}>
+                <Text style={styles.resourceTextCompact}>{currentPlayerCoins}</Text>
+              </View>
+              <Image 
+                source={require('../app/Components/icons/coins.png')} 
+                style={styles.coinIconAbsoluteCompact} 
+                contentFit="contain"
+                cachePolicy="memory-disk"
+              />
+            </View>
+          </View>
+
           <View style={styles.potionsOverlay}>
              <PotionsGrid data={potions} onSelect={setSelected} getCachedImagePath={getCachedImagePath} />
             
@@ -415,7 +447,7 @@ export default function PotionShop() {
                 <DetailView 
                   selected={selected} 
                   onBack={() => setSelected(null)}
-                  playerCoins={playerCoins}
+                  playerCoins={playerCoins} // Use existing playerCoins from PotionShop state
                   getCachedImagePath={getCachedImagePath}
                   onBuy={handleBuyPotion} 
                   buyingPotion={buyingPotion}
@@ -425,7 +457,6 @@ export default function PotionShop() {
           </View>
         </View>
 
-        {/* NEW INVENTORY CABINET WITH 3-LAYER BORDER - Moved outside bottomFrame to be absolute at bottom of screen */}
         <View style={styles.cabinetOuterBorder}>
           <View style={styles.cabinetMiddleBorder}>
             <View style={styles.cabinetInnerBorder}>
@@ -455,7 +486,6 @@ export default function PotionShop() {
           </View>
         </View>
 
-        {/* DROPPING POTION ANIMATION OVERLAY */}
         {droppingPotion && (
           <PotionDropAnimation 
             imageUri={droppingPotion} 
@@ -735,10 +765,52 @@ const styles = StyleSheet.create({
     borderBottomWidth: scale(20),
     borderBottomColor: 'rgba(255, 255, 255, 0.3)',
   },
-  bottomFrame: {
+    bottomFrame: {
     height: hp(60),
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative', 
+  },
+  
+  bottomFrameCoinContainer: {
+    position: 'absolute',
+    top: gameScale(-20), // Adjust as needed for padding from the top edge of bottomFrame
+    right: gameScale(20), 
+  },
+  resourceWrapperCompact: {
+    
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: gameScale(30), 
+  },
+  resourceCapsuleCompact: {
+    backgroundColor: 'rgb(190, 113, 11)', // Same as MapHeader's default
+    borderRadius: gameScale(15),
+    paddingVertical: gameScale(1),
+    paddingRight: gameScale(10),
+    paddingLeft: gameScale(20), 
+    minWidth: gameScale(60), 
+    justifyContent: 'center',
+  },
+  resourceTextCompact: {
+    color: '#ffffff',
+    fontSize: gameScale(13),
+    fontFamily: 'Grobold', // Assuming Poppins is available
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  coinIconAbsoluteCompact: {
+    position: 'absolute',
+    left: gameScale(-10), // Hangs off the left edge, matching MapHeader
+    width: gameScale(25),
+    height: gameScale(25),
+    zIndex: 10, // Sits on top of the capsule
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: gameScale(2) },
+    shadowOpacity: 0.4,
   },
   potionsOverlay: {
     position: 'absolute',

@@ -15,6 +15,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as NavigationBar from 'expo-navigation-bar';
 import { useGameData } from './hooks/useGameData'; 
 import MainLoading from './Components/Actual Game/Loading/MainLoading';
+import { soundManager } from './Components/Actual Game/Sounds/UniversalSoundManager';
 
 const { width, height } = Dimensions.get('screen');
 
@@ -111,6 +112,8 @@ export default function Micomic() {
   const handleNext = useCallback(() => {
     if (isAnimating.current) return;
 
+    soundManager.playPageFlipSound(0.6);
+
     if (currentIndex >= pages.length - 1) {
       animateTurnPage(1, () => {
         router.back(); 
@@ -129,6 +132,8 @@ export default function Micomic() {
   const handlePrev = useCallback(() => {
     if (isAnimating.current || currentIndex <= 0) return;
     
+    soundManager.playPageFlipSound(0.6);
+
     // Immediately set to flipped out position so the incoming page
     // starts off-screen and flies in.
     flipAnim.setValue(1); 

@@ -6,14 +6,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { gameScale } from "../Responsiveness/gameResponsive";
 import { useAuth } from "../../hooks/useAuth";
 
-const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, expPoints, playerAvatar, onAvatarPress }) => { 
+const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, expPoints, maxLevelExp, playerAvatar, onAvatarPress }) => { 
   const { logout } = useAuth();
 
   const calculateLevelProgress = () => {
     const currentLevel = playerLevel || 1;
     const currentExp = expPoints || 0;
-    
-    const nextLevelExp = Math.floor(100 * Math.pow(currentLevel, 1.5));
+    const nextLevelExp = maxLevelExp || 100; 
     
     const progress = Math.min((currentExp / nextLevelExp) * 100, 100);
     
@@ -24,6 +23,7 @@ const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, e
       progress: Math.max(0, progress) 
     };
   };
+
 
   const levelData = calculateLevelProgress();
 

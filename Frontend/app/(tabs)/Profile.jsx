@@ -18,7 +18,7 @@ import { gameScale } from '../Components/Responsiveness/gameResponsive';
 import { usePlayerProfile } from '../hooks/usePlayerProfile';
 
 // Import all Profile components
-import PlayerInfoSection from '../Components/Profile Components/PlayerInfoSection';
+import PlayerInfoSection from '../Comp\onents/Profile Components/PlayerInfoSection';
 import StatsGridSection from '../Components/Profile Components/StatsGridSection';
 import InventorySection from '../Components/Profile Components/InventorySection';
 
@@ -106,6 +106,7 @@ export default function Profile() {
             selectedBadge={playerData.selectedBadge}
             playerLevel={playerData.playerLevel}
             expPoints={playerData.expPoints}
+            maxLevelExp={playerData.maxLevelExp}
             playerAvatar={playerData.playerAvatar}
             onAvatarPress={() => setIsAvatarModalVisible(true)}
           />
@@ -114,6 +115,8 @@ export default function Profile() {
             coins={playerData.coins}
             currentStreak={playerData.currentStreak}
             expPoints={playerData.expPoints}
+            maxStreak={playerData.maxStreak}
+            maxLevelExp={playerData.maxLevelExp}
             mapsOpened={playerData.mapsOpened}
             statsIcons={playerData.statsIcons}
             hero={playerData.heroSelected}

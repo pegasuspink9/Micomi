@@ -124,6 +124,7 @@ export const playerService = {
       daysLogin: apiData.totalActiveMaps || 0,
       currentStreak: apiData.current_streak,
       expPoints: apiData.exp_points,
+      maxLevelExp: apiData.max_level_exp,
       mapsOpened: apiData.totalActiveMaps,
       badges: transformedBadges,
       quests: transformedQuests,

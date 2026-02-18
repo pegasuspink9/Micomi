@@ -132,6 +132,12 @@ class UniversalSoundManager {
     this._playSimpleSound('ui', flipSoundUrl, null, v);
   }
 
+   playPageFlipSound(volume = 1.0) {
+    const pageFlipUrl = this._getCachedUrl('https://micomi-assets.me/Sounds/Final/page%20flip.mp3');
+    const v = Math.max(0, Math.min(1, volume));
+    this._playSimpleSound('ui', pageFlipUrl, null, v);
+  }
+
   playBlankTapSound(volume = 1.0) {
     const blankTapUrl = this._getCachedUrl('https://micomi-assets.me/Sounds/Final/Tap2.wav');
     const v = Math.max(0, Math.min(1, volume));

@@ -120,7 +120,7 @@ export default function CharacterProfile() {
     }
   }, [selectedHero]);
 
-  const CHARACTER_SHOP_BGM_URL = 'https://micomi-assets.me/Sounds/Final/Character%20Shop.mp3';
+  const CHARACTER_SHOP_BGM_URL = 'https://micomi-assets.me/Sounds/Final/Character%20Select%20Screen.mp3';
 
   React.useEffect(() => {
     // Play the character shop music when this component mounts

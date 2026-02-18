@@ -429,7 +429,9 @@ async testR2Download(testUrl) {
 
   addAsset('https://micomi-assets.me/Sounds/Final/Shop.ogg', 'shop_bgm', 'audio', 'static_sounds');
 
-  addAsset('https://micomi-assets.me/Sounds/Final/Character%20Shop.mp3', 'character_shop_bgm', 'audio', 'static_sounds');
+  addAsset('https://micomi-assets.me/Sounds/Final/Character%20Select%20Screen.mp3', 'character_shop_bgm', 'audio', 'static_sounds');
+
+  addAsset('https://micomi-assets.me/Sounds/Final/page%20flip.mp3', 'page_flip_sound', 'audio', 'static_sounds');
   
 
   console.log(`🔊 Static sound assets: ${assets.length}`);
