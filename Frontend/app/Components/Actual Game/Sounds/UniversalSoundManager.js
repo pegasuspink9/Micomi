@@ -110,9 +110,14 @@ class UniversalSoundManager {
     this._playSimpleSound('button', tapSoundUrl, null);
   }
 
-  playGameButtonTapSound() {
+  playGameButtonTapSound(volume = 1.0) {
     const tapSoundUrl = this._getCachedUrl('https://micomi-assets.me/Sounds/Final/Tap3.wav');
-    this._playSimpleSound('button', tapSoundUrl, null);
+    const v = Math.max(0, Math.min(1, volume));
+    this._playSimpleSound('button', tapSoundUrl, null, v);
+  }
+  
+  playUniversalTap() {
+    this.playGameButtonTapSound(0.3); // Subtle default volume for generic taps
   }
 
   playLoadingSound() {

@@ -308,12 +308,12 @@ const styles = StyleSheet.create({
   },
 
   simpleFrame: {
-    width: wp(20),
-    height: hp(5),
+    width: gameScale(78),
+    height: gameScale(42),
     position: 'absolute',
     backgroundColor: '#061e52ff',
-    top: hp(-1),
-    right: wp(2),
+    top: gameScale(-8),
+    right: gameScale(8),
     borderRadius: gameScale(3.9),
     padding: gameScale(2),
     shadowColor: '#052a53ff',
@@ -335,31 +335,31 @@ const styles = StyleSheet.create({
   },
 
   cardImageInGrid: {
-    width: wp(20),
-    height: hp(18),
+    width: gameScale(78),
+    height: gameScale(152),
     position: 'absolute',
-    top: hp(-8),
-    right: wp(2),
+    top: gameScale(-68),
+    right: gameScale(8),
   },
-
-  imageInGrid: {
+  
+    imageInGrid: {
     width: '100%',
     height: '100%',
   },
   damageOverlay: {
     position: 'absolute',
-    top: scale(31),
-    right: scale(10),
-    borderRadius: scale(50),
-    paddingHorizontal: scale(4),
-    paddingVertical: scale(2),
+    top: hp(3.5),
+    right: wp(2),
+    borderRadius: gameScale(50),
+    paddingHorizontal: gameScale(4),
+    paddingVertical: gameScale(2),
   },
   damageText: {
     color: '#ffffffcf',
     textShadowColor: 'rgba(0, 0, 0, 1)',
-    textShadowOffset: { width: scale(1), height: scale(1) },
-    textShadowRadius: scale(2),
-    fontSize: scale(8),
+    textShadowOffset: { width: gameScale(1), height: gameScale(1) },
+    textShadowRadius: gameScale(2),
+    fontSize: gameScale(10),
     fontFamily: 'Grobold',
   },
    

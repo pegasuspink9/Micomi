@@ -12,6 +12,7 @@ import { universalAssetPreloader } from '../../services/preloader/universalAsset
 import { gameScale } from '../../Components/Responsiveness/gameResponsive';
 import MainLoading from '../Actual Game/Loading/MainLoading';
 import BackButton from "../Actual Game/Back/BackButton";
+import { soundManager } from '../../Components/Actual Game/Sounds/UniversalSoundManager';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -118,6 +119,17 @@ export default function CharacterProfile() {
       backgroundOpacity.setValue(1);
     }
   }, [selectedHero]);
+
+  const CHARACTER_SHOP_BGM_URL = 'https://micomi-assets.me/Sounds/Final/Character%20Shop.mp3';
+
+  React.useEffect(() => {
+    // Play the character shop music when this component mounts
+    soundManager.playBackgroundMusic(CHARACTER_SHOP_BGM_URL, 0.4);
+
+    // No explicit cleanup needed here, as the _layout.jsx will manage transitions
+    // when navigating away from this screen.
+  }, []);
+
 
   const renderHeroBox = (heroName) => {
     const hero = charactersData[heroName];

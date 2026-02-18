@@ -35,7 +35,7 @@ import Reanimated, {
   cancelAnimation
 } from 'react-native-reanimated';
 import BackButton from './Components/Actual Game/Back/BackButton'; 
-
+import { soundManager } from './Components/Actual Game/Sounds/UniversalSoundManager';
 
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -209,6 +209,12 @@ export default function PotionShop() {
   
   // State for dropping animation
   const [droppingPotion, setDroppingPotion] = useState(null);
+
+  const SHOP_BGM_URL = 'https://micomi-assets.me/Sounds/Final/Shop.ogg';
+
+  useEffect(() => {
+    soundManager.playBackgroundMusic(SHOP_BGM_URL, 0.4);
+  }, []);
 
   const fetchPotionData = async () => {
     try {

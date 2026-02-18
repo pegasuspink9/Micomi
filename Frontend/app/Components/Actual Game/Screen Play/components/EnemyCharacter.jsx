@@ -597,8 +597,16 @@ const EnemyCharacter = ({
   const isFront = useMemo(() => currentState === 'attack' || isAttacking, [currentState, isAttacking]);
 
   // ========== Render ==========
-  return (
-    <Animated.View style={[ styles.enemyContainer, bossLayout, containerStyle, isFront && styles.front ]} >
+    return (
+    <Animated.View 
+      style={[ 
+        styles.enemyContainer, 
+        bossLayout, 
+        containerStyle, 
+        isFront && styles.front,
+        displayReaction && { zIndex: 1000005 } 
+      ]} 
+    >
 
       {displayReaction && (
         <Animated.View style={[styles.reactionContainer, reactionAnimatedStyle]}>

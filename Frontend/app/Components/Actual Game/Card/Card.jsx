@@ -9,7 +9,7 @@ import {
   Text,
 } from 'react-native';
 import {soundManager} from '../Sounds/UniversalSoundManager';
-import { scale, hp, wp } from '../../Responsiveness/gameResponsive';
+import { scale, hp, wp, gameScale } from '../../Responsiveness/gameResponsive';
 
 const PLACEHOLDER_IMAGE = '';
 
@@ -152,7 +152,7 @@ const Card = ({
           useNativeDriver: true,
         }),
         Animated.timing(cardTypeDropAnim, {
-          toValue: hp(50),
+          toValue: gameScale(422),
           duration: 800,
           useNativeDriver: true,
         }),
@@ -280,55 +280,57 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 9999,
   },
-  contentWrapper: {
+   contentWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  imageWrapper: {
+   imageWrapper: {
+    width: gameScale(273),
+    height: gameScale(422),
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
-  image: {
-    width: wp(70),
-    height: hp(50),
+   image: {
+    width: '100%',
+    height: '100%',
   },
   loader: {
     position: 'absolute',
     zIndex: 1,
   },
-  cardTypeContainer: {
+    cardTypeContainer: {
     alignItems: 'center',
-    paddingVertical: scale(10),
-    paddingHorizontal: scale(16),
-    marginBottom: scale(20),
-    marginTop: scale(-20),
-    borderRadius: scale(8),
-    minWidth: wp(40),
+    paddingVertical: gameScale(10),
+    paddingHorizontal: gameScale(16),
+    marginBottom: gameScale(20),
+    marginTop: gameScale(-20),
+    borderRadius: gameScale(8),
+    minWidth: gameScale(156),
   },
   cardTypeText: {
-    fontSize: scale(30),
+    fontSize: gameScale(34),
     textAlign: 'center',
     color: '#cbcbcbff',
     textShadowColor: 'rgba(4, 44, 78, 1)',
     fontFamily: 'Oups',
-    textShadowOffset: { width: scale(-2), height: scale(1) },
-    textShadowRadius: scale(1),
+    textShadowOffset: { width: gameScale(-2), height: gameScale(1) },
+    textShadowRadius: gameScale(1),
   },
-  damageOverlay: {
+    damageOverlay: {
     position: 'absolute',
-    top: scale(60),
-    right: scale(45),
-    borderRadius: scale(50),
-    paddingHorizontal: scale(8),
-    paddingVertical: scale(4),
+    top: gameScale(60),
+    right: gameScale(40),
+    borderRadius: gameScale(50),
+    paddingHorizontal: gameScale(8),
+    paddingVertical: gameScale(4),
   },
   damageText: {
     color: '#ffffffcf',
     textShadowColor: 'rgba(0, 0, 0, 1)',
-    textShadowOffset: { width: scale(1), height: scale(1) },
-    textShadowRadius: scale(2),
-    fontSize: scale(25),
+    textShadowOffset: { width: gameScale(1.5), height: gameScale(1.5) },
+    textShadowRadius: gameScale(2),
+    fontSize: gameScale(28),
     fontFamily: 'Grobold',
   },
 });

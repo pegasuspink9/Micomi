@@ -69,7 +69,7 @@ export default function RootLayout() {
   }, [segments]); // Dependency on segments to re-trigger on navigation
 
   // Handle authentication routing
-  useEffect(() => {
+    useEffect(() => {
     if (!fontsLoaded || loading) return;
 
     const inAuthGroup = segments[0] === '(tabs)';
@@ -82,13 +82,12 @@ export default function RootLayout() {
     }
 
     // --- UNIVERSAL BGM LOGIC ---
-    // Pages that should play the Navigation BGM
     const NAV_BGM_URL = 'https://micomi-assets.me/Sounds/Final/Navigation.mp3';
+    
+    // Check if current screen is a navigation/UI page
     const isNavigationPage = 
       segments.includes('map') || 
-      segments.includes('CharacterSelect') || 
-      segments.includes('PotionShop') || 
-      segments.includes('RoadMapLandPage') ||
+      segments.includes('roadMapLandPage') ||
       segments.includes('(tabs)'); 
 
     if (isNavigationPage && user) {
@@ -96,9 +95,16 @@ export default function RootLayout() {
     } else if (isAtLoginPage) {
       soundManager.stopBackgroundMusic();
     }
-    // We don't explicitly "stop" for GamePlay because the GamePlay component 
-    // will call playBackgroundMusic itself, which handles the override.
   }, [user, segments, fontsLoaded, loading]);
+
+  // Page detection for the Universal Tap (outside useEffect for use in JSX)
+   const isNavPage = 
+    segments.includes('map') || 
+    segments.includes('CharacterSelect') || 
+    segments.includes('PotionShop') || 
+    segments.includes('roadMapLandPage') ||
+    segments.includes('(tabs)');
+
 
   
   if (!fontsLoaded || loading) {
@@ -115,14 +121,25 @@ export default function RootLayout() {
   }
 
   return (
-    <Stack 
-      screenOptions={{ 
-        headerShown: false,
-        contentStyle: { flex: 1 }
+     <View 
+      style={{ flex: 1 }}
+      onStartShouldSetResponderCapture={() => {
+        // Only trigger universal tap on navigation pages
+        if (isNavPage && user) {
+          soundManager.playUniversalTap();
+        }
+        return false; // Do not block children from receiving the touch
       }}
     >
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-    </Stack>
+      <Stack 
+        screenOptions={{ 
+          headerShown: false,
+          contentStyle: { flex: 1 }
+        }}
+      >
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      </Stack>
+    </View>
   );
 }
