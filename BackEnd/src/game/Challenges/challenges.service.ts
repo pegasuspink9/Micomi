@@ -160,6 +160,36 @@ const getUniqueReaction = (
   };
 };
 
+const formatReaction = (
+  text: string,
+  replacements: {
+    player_name?: string;
+    line_number?: number;
+    first_wrong_answer?: string;
+  },
+) => {
+  return text
+    .replace(/{player_name}/g, replacements.player_name || "Player")
+    .replace(/{line_number}/g, String(replacements.line_number || "X"))
+    .replace(
+      /{first_wrong_answer}/g,
+      replacements.first_wrong_answer || "that",
+    );
+};
+
+const calculateTargetLine = (question: string | null): number => {
+  if (!question) return 1;
+  const lines = question.split("\n");
+  const blankRegex = /<(_|\/_|blank)>|\{blank\}|\[_+\]|_+|"_+|'_+|`_+/;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (blankRegex.test(lines[i])) {
+      return i + 1;
+    }
+  }
+  return 1;
+};
+
 const isTimedChallengeType = (type: string) =>
   ["multiple choice", "fill in the blank"].includes(type);
 
@@ -460,6 +490,12 @@ export const submitChallengeService = async (
   if (!character)
     return { message: "No selected character found", success: false } as any;
 
+  const reactionContext = {
+    player_name: player.username || "Player",
+    line_number: calculateTargetLine(challenge.question),
+    first_wrong_answer: answer[0] || "that",
+  };
+
   const enemyMaxHealth = getBaseEnemyHp(level);
 
   let currentProgress = await prisma.playerProgress.findUnique({
@@ -690,13 +726,16 @@ export const submitChallengeService = async (
       charIndices,
       CHARACTER_CORRECT_REACTIONS,
     );
-    characterReactionText = charResult.reaction;
+    characterReactionText = formatReaction(
+      charResult.reaction,
+      reactionContext,
+    );
     updateReactionData.used_char_correct_reactions = charResult.newUsedIndices;
 
     const enemyIndices =
       (currentProgress.used_enemy_wrong_reactions as number[]) || [];
     const enemyResult = getUniqueReaction(enemyIndices, ENEMY_WRONG_LINES);
-    enemyReactionText = enemyResult.reaction;
+    enemyReactionText = formatReaction(enemyResult.reaction, reactionContext);
     updateReactionData.used_enemy_wrong_reactions = enemyResult.newUsedIndices;
   } else {
     const charIndices =
@@ -705,13 +744,16 @@ export const submitChallengeService = async (
       charIndices,
       CHARACTER_WRONG_REACTIONS,
     );
-    characterReactionText = charResult.reaction;
+    characterReactionText = formatReaction(
+      charResult.reaction,
+      reactionContext,
+    );
     updateReactionData.used_char_wrong_reactions = charResult.newUsedIndices;
 
     const enemyIndices =
       (currentProgress.used_enemy_correct_reactions as number[]) || [];
     const enemyResult = getUniqueReaction(enemyIndices, ENEMY_CORRECT_LINES);
-    enemyReactionText = enemyResult.reaction;
+    enemyReactionText = formatReaction(enemyResult.reaction, reactionContext);
 
     updateReactionData.used_enemy_correct_reactions =
       enemyResult.newUsedIndices;
