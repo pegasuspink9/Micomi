@@ -39,7 +39,8 @@ class UniversalSoundManager {
       return;
     }
 
-    let fullUrl = url;
+    const fullUrl = this._getCachedUrl(url);
+    
     if (typeof fullUrl === 'string' && !fullUrl.startsWith('http') && !fullUrl.startsWith('file')) {
       fullUrl = `https://${fullUrl}`;
     }
@@ -159,7 +160,8 @@ class UniversalSoundManager {
       return;
     }
 
-    let fullUrl = url;
+     const fullUrl = this._getCachedUrl(url);
+
     if (typeof fullUrl === 'string' && !fullUrl.startsWith('http') && !fullUrl.startsWith('file')) {
       fullUrl = `https://${fullUrl}`;
     }
@@ -246,7 +248,8 @@ class UniversalSoundManager {
       return;
     }
 
-    let fullUrl = url;
+    const fullUrl = this._getCachedUrl(url);
+     
     if (typeof fullUrl === 'string' && !fullUrl.startsWith('http') && !fullUrl.startsWith('file')) {
       fullUrl = `https://${fullUrl}`;
     }

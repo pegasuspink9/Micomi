@@ -15,7 +15,7 @@ import { gameScale } from './Components/Responsiveness/gameResponsive';
 import GamePauseModal from '../app/Components/Actual Game/Screen Play/Pauses/GamePauseModal';
 import DialogueOverlay from './Components/Actual Game/Dialogue/DialogueOverlay';
 import MainLoading from './Components/Actual Game/Loading/MainLoading';
-
+import Micomic from './Micomic';
 
 export default function GamePlay() {
   const router = useRouter();
@@ -51,6 +51,8 @@ export default function GamePlay() {
   const [activeGameTab, setActiveGameTab] = useState('code');
   const [selectedBlankIndex, setSelectedBlankIndex] = useState(0); 
   const [showVSModal, setShowVSModal] = useState(false);
+  const [showMicomic, setShowMicomic] = useState(false);
+  const hasFinishedMicomic = useRef(false);
   const [showGameplay, setShowGameplay] = useState(false);
   const [showGameOver, setShowGameOver] = useState(false);
   const [showGameOverModal, setShowGameOverModal] = useState(false);
@@ -282,13 +284,33 @@ export default function GamePlay() {
 
   useEffect(() => {
     if (currentChallenge && !loading && !animationsLoading && !hasShownVSModalRef.current) {
-      console.log(' Challenge loaded, showing VS modal (first time only)');
-      setShowVSModal(true);
-      setShowGameplay(false); 
-      setShowAttackCard(false);
-      hasShownVSModalRef.current = true;
+      
+      // Check if this level has comic lessons and we haven't shown them yet
+      const hasLessons = gameState?.lessons?.lessons?.length > 0;
+
+      if (hasLessons && !hasFinishedMicomic.current) {
+        console.log('📖 Level has lessons, showing Micomic first');
+        setShowMicomic(true);
+        setShowVSModal(false);
+        setShowGameplay(false);
+      } else {
+        console.log('⚔️ No lessons or already seen, showing VS modal');
+        setShowVSModal(true);
+        setShowGameplay(false);
+        hasShownVSModalRef.current = true;
+      }
     }
-  }, [currentChallenge?.id, loading, animationsLoading]);
+  }, [currentChallenge?.id, loading, animationsLoading, gameState?.lessons]);
+
+  const handleMicomicComplete = useCallback(() => {
+    console.log('📖 Micomic finished, transitioning to VS Modal');
+    hasFinishedMicomic.current = true;
+    setShowMicomic(false);
+    
+    // Trigger the next step in the sequence
+    setShowVSModal(true);
+    hasShownVSModalRef.current = true;
+  }, []);
 
   // useEffect(() => {
   //   if (currentChallenge && !loading && !animationsLoading && (isRetrying || isLoadingNextLevel)) {
@@ -770,6 +792,16 @@ export default function GamePlay() {
 
   return (
     <>
+      {showMicomic && (
+        <View style={StyleSheet.absoluteFill}>
+          <Micomic 
+            isComponent={true} 
+            manualGameState={gameState} 
+            onComplete={handleMicomicComplete} 
+          />
+        </View>
+      )}
+
       {showVSModal && (
           <CombatVSModal
             visible={showVSModal}

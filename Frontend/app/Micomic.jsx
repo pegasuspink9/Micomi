@@ -21,13 +21,15 @@ const { width, height } = Dimensions.get('screen');
 
 const PAPER_TEXTURE_URL = 'https://www.transparenttextures.com/patterns/aged-paper.png'; 
 
-export default function Micomic() {
+export default function Micomic({ isComponent = false, manualGameState = null, onComplete = null }) {
   const router = useRouter(); 
   const params = useLocalSearchParams();
-  const levelId = parseInt(params.levelId);
+  const levelId = manualGameState ? null : parseInt(params.levelId);
 
-  const { gameState, loading, error } = useGameData(levelId);
-
+  const { gameState: hookGameState, loading: hookLoading } = useGameData(levelId);
+  const gameState = manualGameState || hookGameState;
+  const loading = manualGameState ? false : hookLoading;
+  
   // --- STATE ---
   const [currentIndex, setCurrentIndex] = useState(0);
   const [imagesLoaded, setImagesLoaded] = useState(false);
@@ -116,7 +118,11 @@ export default function Micomic() {
 
     if (currentIndex >= pages.length - 1) {
       animateTurnPage(1, () => {
-        router.back(); 
+        if (isComponent && onComplete) {
+          onComplete();
+        } else {
+          router.back(); 
+        }
       });
     } else {
       animateTurnPage(1, () => {
@@ -234,9 +240,12 @@ export default function Micomic() {
   
   const isDataReady = !loading && pages.length > 0 && imagesLoaded;
 
+  if (!isDataReady && !isComponent) return <MainLoading visible={true} />;
+
   return (
-    <View style={styles.container} {...panResponder.panHandlers}>
-      <MainLoading visible={!isDataReady} />
+    <View style={[styles.container, isComponent && { zIndex: 2000 }]} {...panResponder.panHandlers}>
+      {/* Pre-loading specifically for the standalone version */}
+      {!isComponent && <MainLoading visible={!isDataReady} />}
 
       {isDataReady && (
         <>
