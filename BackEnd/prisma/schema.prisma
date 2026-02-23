@@ -53,6 +53,7 @@ model Level {
   challenges                 Challenge[]
   dialogue                   Dialogue[]
   lessons                    Lesson[]
+  modules                    Module[]
   enemy                      Enemy?           @relation(fields: [enemy_id], references: [enemy_id], onDelete: Cascade)
   map                        Map              @relation(fields: [map_id], references: [map_id], onDelete: Cascade)
   playerProgress             PlayerProgress[]
@@ -317,16 +318,10 @@ model BackgroundMapping {
 }
 
 model Module {
-  module_id    Int             @id @default(autoincrement())
-  module_title String
-  content      ModuleContent[]
-}
-
-model ModuleContent {
-  module_content_id Int    @id @default(autoincrement())
-  module_id         Int
-  module_content    String
-  module            Module @relation(fields: [module_id], references: [module_id], onDelete: Cascade)
+  module_id         Int             @id @default(autoincrement())
+  level_id          Int
+  lesson_content    String          
+  level             Level           @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
 }
 
 model GameplayMessage {
