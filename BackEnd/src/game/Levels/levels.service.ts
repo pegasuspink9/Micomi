@@ -913,7 +913,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       }
       break;
     case "JavaScript":
-      versus_background = "https://micomi-assets.me/Versus%20Maps/Snow.png";
+      versus_background = "https://micomi-assets.me/Versus%20Maps/Winter.png";
       if (level.level_type === "bossButton") {
         gameplay_audio = "https://micomi-assets.me/Sounds/Final/Boss.ogg";
       } else {

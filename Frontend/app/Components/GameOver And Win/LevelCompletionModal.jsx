@@ -503,7 +503,7 @@ const LevelCompletionModal = ({
               {/* Coins */}
               <Reanimated.View style={[styles.rewardItem, reward1Style]}>
                 <Image 
-                  source={{uri: 'https://github.com/user-attachments/assets/4e1d0813-aa7d-4dcf-8333-a1ff2cd0971e'}} 
+                  source={require('../icons/coins.png')} 
                   style={styles.rewardIcon}
                   resizeMode="contain"
                 />
@@ -513,7 +513,7 @@ const LevelCompletionModal = ({
               {/* Points */}
               <Reanimated.View style={[styles.rewardItem, reward2Style]}>
                 <Image 
-                  source={{uri: 'https://github.com/user-attachments/assets/4e1d0813-aa7d-4dcf-8333-a1ff2cd0971e'}} 
+                  source={require('../icons/points.png')} 
                   style={styles.rewardIcon}
                   resizeMode="contain"
                 />
@@ -523,7 +523,7 @@ const LevelCompletionModal = ({
               {/* EXP */}
               <Reanimated.View style={[styles.rewardItem, reward3Style]}>
                 <Image 
-                  source={{uri: 'https://github.com/user-attachments/assets/4e1d0813-aa7d-4dcf-8333-a1ff2cd0971e'}} 
+                  source={require('../icons/exp.png')} 
                   style={styles.rewardIcon}
                   resizeMode="contain"
                 />

@@ -113,21 +113,21 @@ export const usePotion = async (
   challengeId: number,
   playerPotionId: number,
 ): Promise<SubmitChallengeControllerResult | UsePotionErrorResponse> => {
-  const playerProgress = await prisma.playerProgress.findMany({
-    where: { player_id: playerId },
-    select: { level_id: true },
-  });
+  // const playerProgress = await prisma.playerProgress.findMany({
+  //   where: { player_id: playerId },
+  //   select: { level_id: true },
+  // });
 
-  const unlockedLevelIds = playerProgress.map((p) => p.level_id);
-  const maxUnlockedLevel =
-    unlockedLevelIds.length > 0 ? Math.max(...unlockedLevelIds) : 0;
+  // const unlockedLevelIds = playerProgress.map((p) => p.level_id);
+  // const maxUnlockedLevel =
+  //   unlockedLevelIds.length > 0 ? Math.max(...unlockedLevelIds) : 0;
 
-  if (maxUnlockedLevel < 14) {
-    return {
-      message: `Potions unlock at Level 14. You are currently at Level ${maxUnlockedLevel}.`,
-      success: false,
-    };
-  }
+  // if (maxUnlockedLevel < 14) {
+  //   return {
+  //     message: `Potions unlock at Level 14. You are currently at Level ${maxUnlockedLevel}.`,
+  //     success: false,
+  //   };
+  // }
 
   const playerPotion = await prisma.playerPotion.findUnique({
     where: { player_potion_id: playerPotionId },

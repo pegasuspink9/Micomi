@@ -5,8 +5,7 @@ import { gameScale } from '../Components/Responsiveness/gameResponsive';
 export default function PracticeScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to the Practice Area!</Text>
-      <Text style={styles.subtitle}>Start practicing your skills here.</Text>
+      <Text style={styles.title}>Coming soon!!</Text>
     </View>
   );
 }
