@@ -19,7 +19,6 @@ import { soundManager } from '../../Sounds/UniversalSoundManager';
 import { gameScale, getDeviceType, SCREEN } from '../../../Responsiveness/gameResponsive';
 
 
-
 const Character = ({
   isPaused,
   characterAnimations = {},
@@ -53,6 +52,7 @@ const Character = ({
 
   const [displayReaction, setDisplayReaction] = useState(null);
   const reactionOpacity = useSharedValue(0);
+  const prevOverlayUrlRef = useRef(null);
 
   const REACTION_OFFSET = useMemo(() => gameScale(10), []);
   const OVERLAY_SIZE = useMemo(() => gameScale(140), []);
@@ -95,24 +95,33 @@ const Character = ({
 
     useEffect(() => {
     if (attackOverlayUrl) {
-      // ✅ Entrance Animation: "Hyper-Scale Drop" Effect
-      // Starting from 6x scale makes it feel like it's falling through the camera
-      overlayScale.value = 6; 
-      overlayOpacity.value = 0;
+      // Check if we are switching between two active overlays
+      const isSwitching = prevOverlayUrlRef.current !== null && prevOverlayUrlRef.current !== attackOverlayUrl;
+      prevOverlayUrlRef.current = attackOverlayUrl;
+
+      // Cancel any ongoing animations to prevent conflicts
+      cancelAnimation(overlayScale);
+      cancelAnimation(overlayOpacity);
+      cancelAnimation(overlayFrameIndex);
+
+      if (isSwitching) {
+        // STEP: Quick transition for switches (No heavy drop)
+        overlayOpacity.value = withTiming(1, { duration: 100 });
+        overlayScale.value = withTiming(1, { duration: 150 });
+      } else {
+        overlayScale.value = 6; 
+        overlayOpacity.value = 0;
+        
+        overlayOpacity.value = withTiming(1, { duration: 200 });
+        overlayScale.value = withSpring(1, {
+          damping: 15,
+          stiffness: 180,
+          mass: 1.2,
+          velocity: 30
+        });
+      }
       
-      // Snappy fade in
-      overlayOpacity.value = withTiming(1, { duration: 200 });
-      
-      // High-stiffness drop to simulate the "slam" onto the character
-      overlayScale.value = withSpring(1, {
-        damping: 15,       // Less bounce for a cleaner landing
-        stiffness: 180,    // High speed for the "drop" effect
-        mass: 1.2,         // Feels heavier
-        velocity: 30       // Initial speed boost
-      });
-      
-      
-      // ✅ Start looping animation for overlay sprite
+      // Reset and loop frame index for the new sprite sheet
       overlayFrameIndex.value = 0;
       overlayFrameIndex.value = withRepeat(
         withTiming(OVERLAY_TOTAL_FRAMES - 1, { 
@@ -123,8 +132,9 @@ const Character = ({
         false
       );
     } else {
-     overlayOpacity.value = withTiming(0, { duration: 500 });
-      overlayScale.value = withTiming(0.8, { duration: 500 }); 
+      prevOverlayUrlRef.current = null;
+      overlayOpacity.value = withTiming(0, { duration: 400 });
+      overlayScale.value = withTiming(0.8, { duration: 400 }); 
       cancelAnimation(overlayFrameIndex);
     }
   }, [attackOverlayUrl]);

@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
 
   xpBarLayer1: {
     height: gameScale(22),
-    width: '40%',
+    width: '42%',
     backgroundColor: '#000000ff',
     borderRadius: gameScale(20),
     shadowColor: '#000000',
