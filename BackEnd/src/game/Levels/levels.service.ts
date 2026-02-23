@@ -504,46 +504,21 @@ export const enterLevel = async (playerId: number, levelId: number) => {
   if (!player) throw new Error("Player not found");
 
   if (level.level_type === "micomiButton") {
-    // const lessons = await prisma.level.findFirst({
-    //   where: { level_id: levelId },
-    //   include: {
-    //     lessons: {
-    //       orderBy: { lesson_id: "asc" },
-    //       select: {
-    //         page_url: true,
-    //         cover_page: true,
-    //       },
-    //     },
-    //   },
-    // });
-
-    // const lessonList = lessons?.lessons ?? [];
-
-    // const lessonWithCover = lessonList.find((l) => l.cover_page !== null);
-    // const coverPage = lessonWithCover ? lessonWithCover.cover_page : null;
-
-    // const cleanedLessonList = lessonList.map((l) => ({
-    //   page_url: l.page_url,
-    // }));
+    const modules = await prisma.level.findFirst({
+      where: { level_id: levelId },
+      include: {
+        modules: {
+          orderBy: { module_id: "asc" },
+        },
+      },
+    });
 
     return {
       level: {
-        level_id: level.level_id,
-        level_number: null,
-        level_difficulty: level.level_difficulty,
-        level_title: level.level_title,
-        level_type: level.level_type,
-        content: level.content,
-        total_points: totalPoints,
-        total_coins: totalCoins,
+        modules,
       },
       energy: energyStatus.energy,
       timeToNextEnergyRestore: energyStatus.timeToNextRestore,
-      // lessons: {
-      //   cover_page: coverPage,
-      //   ...lessons,
-      //   lessons: cleanedLessonList,
-      // },
     };
   }
 
