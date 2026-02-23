@@ -504,34 +504,27 @@ export const enterLevel = async (playerId: number, levelId: number) => {
   if (!player) throw new Error("Player not found");
 
   if (level.level_type === "micomiButton") {
-    const lessons = await prisma.level.findFirst({
-      where: { level_id: levelId },
-      include: {
-        lessons: {
-          orderBy: { lesson_id: "asc" },
-          select: {
-            // lesson_id: true,
-            // page_number: true,
-            page_url: true,
-            cover_page: true,
-          },
-        },
-      },
-    });
+    // const lessons = await prisma.level.findFirst({
+    //   where: { level_id: levelId },
+    //   include: {
+    //     lessons: {
+    //       orderBy: { lesson_id: "asc" },
+    //       select: {
+    //         page_url: true,
+    //         cover_page: true,
+    //       },
+    //     },
+    //   },
+    // });
 
-    const lessonList = lessons?.lessons ?? [];
+    // const lessonList = lessons?.lessons ?? [];
 
-    const currentLesson = lessonList[0] ?? null;
-    const lastLesson = lessonList.length
-      ? lessonList[lessonList.length - 1]
-      : null;
+    // const lessonWithCover = lessonList.find((l) => l.cover_page !== null);
+    // const coverPage = lessonWithCover ? lessonWithCover.cover_page : null;
 
-    const lessonWithCover = lessonList.find((l) => l.cover_page !== null);
-    const coverPage = lessonWithCover ? lessonWithCover.cover_page : null;
-
-    const cleanedLessonList = lessonList.map((l) => ({
-      page_url: l.page_url,
-    }));
+    // const cleanedLessonList = lessonList.map((l) => ({
+    //   page_url: l.page_url,
+    // }));
 
     return {
       level: {
@@ -544,29 +537,13 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         total_points: totalPoints,
         total_coins: totalCoins,
       },
-      // currentLesson: currentLesson
-      //   ? {
-      //       lesson_id: currentLesson.lesson_id,
-      //       page_number: currentLesson.page_number,
-      //       page_url: currentLesson.page_url,
-      //     }
-      //   : null,
-
-      // lastPage: lastLesson
-      //   ? {
-      //       lesson_id: lastLesson.lesson_id,
-      //       page_number: lastLesson.page_number,
-      //       page_url: lastLesson.page_url,
-      //     }
-      //   : null,
-
       energy: energyStatus.energy,
       timeToNextEnergyRestore: energyStatus.timeToNextRestore,
-      lessons: {
-        cover_page: coverPage,
-        ...lessons,
-        lessons: cleanedLessonList,
-      },
+      // lessons: {
+      //   cover_page: coverPage,
+      //   ...lessons,
+      //   lessons: cleanedLessonList,
+      // },
     };
   }
 
@@ -973,6 +950,28 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     };
   }
 
+  const lessons = await prisma.level.findFirst({
+    where: { level_id: levelId },
+    include: {
+      lessons: {
+        orderBy: { lesson_id: "asc" },
+        select: {
+          page_url: true,
+          cover_page: true,
+        },
+      },
+    },
+  });
+
+  const lessonList = lessons?.lessons ?? [];
+
+  const lessonWithCover = lessonList.find((l) => l.cover_page !== null);
+  const coverPage = lessonWithCover ? lessonWithCover.cover_page : null;
+
+  const cleanedLessonList = lessonList.map((l) => ({
+    page_url: l.page_url,
+  }));
+
   return {
     level: {
       level_id: level.level_id,
@@ -1024,6 +1023,11 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       card_type,
       character_attack_card,
       character_damage_card,
+    },
+    lessons: {
+      cover_page: coverPage,
+      ...lessons,
+      lessons: cleanedLessonList,
     },
     dialogue,
     currentChallenge: firstChallenge,
