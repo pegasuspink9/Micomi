@@ -118,14 +118,13 @@ const ScreenPlay = ({
         setFirst(null);
         if (secondText) setSecond(secondText);
 
-        // STEP 3: After another 1 second, hide second
         const step3Timeout = setTimeout(() => {
           setSecond(null);
         }, 5000);
         sequenceTimeouts.push(step3Timeout);
       }, 5000);
       sequenceTimeouts.push(step2Timeout);
-    }, 4000); // Wait 4 seconds for entrance animations to pass
+    }, 4000);
 
     return () => {
       clearTimeout(startTimeout);
