@@ -11,6 +11,7 @@ export interface ChallengeDTO {
   coins_reward: number;
   guide?: string | null;
   test_cases?: Prisma.InputJsonValue | null;
+  options?: Prisma.InputJsonValue | null;
 
   timer: string;
 }

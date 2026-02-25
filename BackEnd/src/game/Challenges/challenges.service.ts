@@ -398,7 +398,6 @@ const calculateErrorPosition = (
       if (
         userAnswers[currentBlankIndex] !== correctAnswers[currentBlankIndex]
       ) {
-        // Returns the position of the first error found
         return { line: String(i + 1), column: String(match.index + 1) };
       }
       currentBlankIndex++;
@@ -417,6 +416,53 @@ function shuffleArray<T>(array: T[]): T[] {
   }
   return array;
 }
+
+export const generateDynamicOptions = (
+  currentChallenge: Challenge,
+  allChallenges: Challenge[],
+): string[] => {
+  const currentCorrectAnswers =
+    (currentChallenge.correct_answer as string[]) || [];
+
+  if (currentCorrectAnswers.length >= 5) {
+    return shuffleArray([...currentCorrectAnswers]);
+  }
+
+  let options = [...currentCorrectAnswers];
+  const targetCount = 5;
+
+  const currentIndex = allChallenges.findIndex(
+    (c) => c.challenge_id === currentChallenge.challenge_id,
+  );
+
+  if (currentIndex === -1) return shuffleArray(options);
+
+  let fwdIdx = currentIndex + 1;
+  while (options.length < targetCount && fwdIdx < allChallenges.length) {
+    const nextAnswers =
+      (allChallenges[fwdIdx].correct_answer as string[]) || [];
+    for (const ans of nextAnswers) {
+      if (options.length < targetCount) {
+        options.push(ans);
+      }
+    }
+    fwdIdx++;
+  }
+
+  let bwdIdx = currentIndex - 1;
+  while (options.length < targetCount && bwdIdx >= 0) {
+    const prevAnswers =
+      (allChallenges[bwdIdx].correct_answer as string[]) || [];
+    for (const ans of prevAnswers) {
+      if (options.length < targetCount) {
+        options.push(ans);
+      }
+    }
+    bwdIdx--;
+  }
+
+  return shuffleArray(options);
+};
 
 const buildChallengeWithTimer = (
   challenge: Challenge,
@@ -982,7 +1028,6 @@ export const submitChallengeService = async (
     const charIndices =
       (currentProgress.used_char_wrong_reactions as number[]) || [];
 
-    // Check if it's Computer Island to use the dynamic spelling hint reactions
     const isComputerIsland = level.map.map_name === "Computer";
 
     if (mismatch) {
@@ -2182,6 +2227,11 @@ const wrapWithTimer = async (
 
   let modifiedChallenge = { ...challenge };
 
+  if (level && level.challenges) {
+    const dynamicOptions = generateDynamicOptions(challenge, level.challenges);
+    modifiedChallenge.options = dynamicOptions;
+  }
+
   const wrongChallenges = (progress.wrong_challenges as number[]) || [];
   const isRetryOfWrong = wrongChallenges.includes(challenge.challenge_id);
 
@@ -2266,7 +2316,7 @@ const wrapWithTimer = async (
     (level.enemy?.enemy_name === "Boss Darco" ||
       level.enemy?.enemy_name === "Boss Antcool")
   ) {
-    const options = challenge.options as string[];
+    const options = modifiedChallenge.options as string[];
     if (Array.isArray(options) && options.length > 0) {
       modifiedChallenge.options = options
         .map(reverseString)
@@ -2279,7 +2329,7 @@ const wrapWithTimer = async (
     progress.has_shuffle_ss &&
     level.enemy?.enemy_name === "Boss Maggmaw"
   ) {
-    const options = challenge.options as string[];
+    const options = modifiedChallenge.options as string[];
     if (Array.isArray(options) && options.length > 0) {
       modifiedChallenge.options = shuffleArray([...options]);
       console.log("- Shuffle SS applied: options shuffled for display");
@@ -2288,7 +2338,7 @@ const wrapWithTimer = async (
     progress.has_permuted_ss &&
     level.enemy?.enemy_name === "Boss Pyroformic"
   ) {
-    const options = challenge.options as string[];
+    const options = modifiedChallenge.options as string[];
     if (Array.isArray(options) && options.length > 0) {
       const permutedOptions = options.map(permuteLetters);
       modifiedChallenge.options = permutedOptions;
@@ -2338,7 +2388,7 @@ const wrapWithTimer = async (
     progress.has_dollar_sign_ss &&
     level.enemy?.enemy_name === "Boss Icycreamero"
   ) {
-    const options = challenge.options as string[];
+    const options = modifiedChallenge.options as string[];
     if (Array.isArray(options) && options.length > 0) {
       modifiedChallenge.options = options.map(replaceCharWithDollar);
       console.log("- Boss Icycreamero SS applied: Added '$' to options.");
