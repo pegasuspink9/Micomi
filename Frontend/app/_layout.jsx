@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useFonts } from '../assets/fonts/font';
-import { View, ActivityIndicator, Platform, AppState, StatusBar as RNStatusBar } from 'react-native'; 
+import { View, ActivityIndicator, Platform, AppState, StatusBar as RNStatusBar, Keyboard } from 'react-native'; 
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar'; 
 import * as SystemUI from 'expo-system-ui'; 
@@ -16,9 +16,19 @@ export default function RootLayout() {
   const segments = useSegments();
   const router = useRouter();
   const appStateRef = useRef(AppState.currentState);
+  const isKeyboardVisible = useRef(false); // Track keyboard state
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;
+
+    // Listen for keyboard events to prevent status bar flicker while typing
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+      isKeyboardVisible.current = true;
+    });
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      isKeyboardVisible.current = false;
+      forceRehide(); // Restore immersive mode when keyboard closes
+    });
 
     const hideSystemUI = async () => {
       try {
@@ -50,7 +60,8 @@ export default function RootLayout() {
 
     // LINK STATUS BAR TO BOTTOM BAR:
     const navBarListener = NavigationBar.addVisibilityListener(({ visibility }) => {
-      if (visibility === 'visible') {
+      // Only force rehide if the keyboard is NOT visible
+      if (visibility === 'visible' && !isKeyboardVisible.current) {
         forceRehide();
         setTimeout(forceRehide, 200); // Fallback delay
       }
@@ -59,9 +70,11 @@ export default function RootLayout() {
     // Handle returning to the app from the background
     const appStateListener = AppState.addEventListener('change', (nextState) => {
       if (appStateRef.current.match(/inactive|background/) && nextState === 'active') {
-        forceRehide();
-        setTimeout(forceRehide, 200);
-        setTimeout(forceRehide, 600);
+        if (!isKeyboardVisible.current) {
+          forceRehide();
+          setTimeout(forceRehide, 200);
+          setTimeout(forceRehide, 600);
+        }
       }
       appStateRef.current = nextState;
     });
@@ -69,6 +82,8 @@ export default function RootLayout() {
     return () => {
       navBarListener.remove();
       appStateListener.remove();
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
     };
   }, []); 
 

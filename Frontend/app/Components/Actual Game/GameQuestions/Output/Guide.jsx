@@ -47,6 +47,7 @@ const webViewInjectedJS = `
     function sendHeight() {
       var body = document.body;
       var html = document.documentElement;
+      if (!body || !html) return; // Safety check during rapid re-renders
       var height = Math.max(body.scrollHeight, body.offsetHeight, html.clientHeight, html.scrollHeight, html.offsetHeight);
       if (height !== lastHeight && height > 0) {
         lastHeight = height;
@@ -54,7 +55,9 @@ const webViewInjectedJS = `
       }
     }
     var observer = new MutationObserver(sendHeight);
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true });
+    if (document.body) {
+      observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true });
+    }
     window.addEventListener('load', sendHeight);
     window.addEventListener('resize', sendHeight);
     sendHeight();
@@ -119,7 +122,7 @@ const ExampleOutput = ({ exampleCode, exampleKey }) => {
 const InteractiveEditor = ({ initialCode }) => {
   const [code, setCode] = useState(initialCode || '<h1>Hello World!</h1>\n<p>Welcome to Micomi.</p>');
   const [debouncedCode, setDebouncedCode] = useState(code);
-  const [webViewHeight, setWebViewHeight] = useState(scale(10)); // Increased default initial height
+  const [webViewHeight, setWebViewHeight] = useState(scale(40)); // Start with a reasonable min height
   const [hasMeasured, setHasMeasured] = useState(false);
 
   // --- 2. ADDED DEBOUNCE TO PREVENT FLICKERING WHILE TYPING ---
@@ -136,7 +139,8 @@ const InteractiveEditor = ({ initialCode }) => {
     try {
       const height = Number(event.nativeEvent.data);
       if (!isNaN(height) && height > 0) {
-        setWebViewHeight(height); 
+        // Ensure it doesn't shrink smaller than a base height to prevent glitching when empty
+        setWebViewHeight(Math.max(scale(40), height)); 
         setHasMeasured(true);
       }
     } catch (e) {
@@ -145,6 +149,7 @@ const InteractiveEditor = ({ initialCode }) => {
   };
   
   const lines = code.split('\n');
+
 
   return (
     <View style={styles.interactiveSection}>

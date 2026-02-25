@@ -99,76 +99,99 @@ const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
   // Use pre-calculated cumulative index instead of expensive O(N^2) search
   const blanksBeforeCurrent = cumulativeBlankCounts[lineIndex] || 0;
   
-  return (
-    <View style={styles.codeLineContainer}>
-      {parts.map((part, partIndex) => {
-        const globalBlankIndex = blanksBeforeCurrent + partIndex;
-        const isLastPart = partIndex === parts.length - 1;
+  const renderedParts = parts.map((part, partIndex) => {
+    const globalBlankIndex = blanksBeforeCurrent + partIndex;
+    const isLastPart = partIndex === parts.length - 1;
 
-        // Determine blank state after submission feedback is shown
-        let isWrong = false;
-        let isCorrectBlank = false;
+    // Determine blank state after submission feedback is shown
+    let isWrong = false;
+    let isCorrectBlank = false;
+    
+    // Optimization: Only compute feedback logic when actually needed
+    if (canProceed && isAnswerCorrect === false && !isLastPart) {
+      const selectedValueIndex = selectedAnswers[globalBlankIndex];
+      const selectedValue = selectedValueIndex != null 
+        ? options[selectedValueIndex] 
+        : null;
+      
+      const correctValue = correctAnswersList?.[globalBlankIndex];
+      
+      if (selectedValue !== correctValue) {
+        isWrong = true;
+      } else if (selectedValue != null) {
+        isCorrectBlank = true;
+      }
+    }
+
+    return (
+      <React.Fragment key={partIndex}>
+        {part ? (
+          <Text style={[styles.codeText, isComputerMap && styles.codeTextBook]}>
+            {isComputerMap ? part : renderHighlightedText(part)}
+          </Text>
+        ) : null}
         
-        // Optimization: Only compute feedback logic when actually needed
-        if (canProceed && isAnswerCorrect === false && !isLastPart) {
-          const selectedValueIndex = selectedAnswers[globalBlankIndex];
-          const selectedValue = selectedValueIndex != null 
-            ? options[selectedValueIndex] 
-            : null;
-          
-          const correctValue = correctAnswersList?.[globalBlankIndex];
-          
-          if (selectedValue !== correctValue) {
-            isWrong = true;
-          } else if (selectedValue != null) {
-            isCorrectBlank = true;
-          }
-        }
-
-        return (
-          <React.Fragment key={partIndex}>
-            {part ? (
-              <Text style={[styles.codeText, isComputerMap && styles.codeTextBook]}>
-                {isComputerMap ? part : renderHighlightedText(part)}
-              </Text>
-            ) : null}
+        {!isLastPart && (
+          <React.Fragment>
+            {!isComputerMap && <Text>{"\u200B"}</Text>}
             
-            {!isLastPart && (
-              <Pressable 
-                key={`blank-${globalBlankIndex}`}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  soundManager.playBlankTapSound(1.0);
-                  if (onBlankPress) onBlankPress(globalBlankIndex);
-                }}
-                ref={(ref) => {
-                  if (ref) {
-                    blankRefs.current[globalBlankIndex] = ref;
-                  }
-                }}
-                hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
-                style={[
-                  styles.codeBlankContainer,
-                  globalBlankIndex === selectedBlankIndex && styles.currentBlank,
-                  isCorrectBlank && styles.correctBlank,
-                  isWrong && styles.wrongBlank,
-                  isComputerMap && styles.codeBlankBook,
-                  isComputerMap && globalBlankIndex === selectedBlankIndex && styles.currentBlankBook,
-                ]}
-              >
-                <Text style={[styles.codeBlankText, isComputerMap && styles.codeBlankTextBook]}>
-                  {selectedAnswers?.[globalBlankIndex] != null
-                    ? options?.[selectedAnswers[globalBlankIndex]] || '_'
-                    : '_'}
-                </Text>
-              </Pressable>
-            )}
+            <Pressable 
+              key={`blank-${globalBlankIndex}`}
+              onPress={(e) => {
+                e.stopPropagation();
+                soundManager.playBlankTapSound(1.0);
+                if (onBlankPress) onBlankPress(globalBlankIndex);
+              }}
+              ref={(ref) => {
+                if (ref) {
+                  blankRefs.current[globalBlankIndex] = ref;
+                }
+              }}
+              hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
+              style={[
+                styles.codeBlankContainer,
+                !isComputerMap && {
+                  transform: [{ translateY: gameScale(4) }],
+                  maxWidth: '90%',
+                },
+                globalBlankIndex === selectedBlankIndex && styles.currentBlank,
+                isCorrectBlank && styles.correctBlank,
+                isWrong && styles.wrongBlank,
+                isComputerMap && styles.codeBlankBook,
+                isComputerMap && globalBlankIndex === selectedBlankIndex && styles.currentBlankBook,
+              ]}
+            >
+              <Text style={[styles.codeBlankText, isComputerMap && styles.codeBlankTextBook]}>
+                {selectedAnswers?.[globalBlankIndex] != null
+                  ? options?.[selectedAnswers[globalBlankIndex]] || '_'
+                  : '_'}
+              </Text>
+            </Pressable>
+
+            {/* Zero-width space allows the text engine to wrap after the blank if needed */}
+            {!isComputerMap && <Text>{"\u200B"}</Text>}
           </React.Fragment>
-        );
-      })}
-    </View>
+        )}
+      </React.Fragment>
+    );
+  });
+
+  // Keep the original View wrapper for Computer map to preserve its specific layout
+  if (isComputerMap) {
+    return (
+      <View style={styles.codeLineContainer}>
+        {renderedParts}
+      </View>
+    );
+  }
+
+  // Use a Text wrapper for the Code Editor to enable perfect inline wrapping
+  return (
+    <Text style={styles.codeLineTextWrapper}>
+      {renderedParts}
+    </Text>
   );
-}, [cumulativeBlankCounts, canProceed, isAnswerCorrect, selectedAnswers, selectedBlankIndex, options, correctAnswersList, onBlankPress]);
+}, [cumulativeBlankCounts, canProceed, isAnswerCorrect, selectedAnswers, selectedBlankIndex, options, correctAnswersList, onBlankPress, isComputerMap]);
 
   if (!currentQuestion) {
     return (
@@ -250,17 +273,21 @@ const styles = StyleSheet.create({
     flex: 1, 
     minHeight: 0, 
   },
-  questionContainer: {
+   questionContainer: {
     flex: 1,
     width: '100%',
     minHeight: 0, 
     maxHeight: '100%',
   },
-   codeLineContainer: {
+  codeLineContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
     minHeight: gameScale(25),
+  },
+  codeLineTextWrapper: {
+    lineHeight: gameScale(25), 
+    textAlignVertical: 'center',
   },
   codeText: {
     color: '#943232',
@@ -304,7 +331,7 @@ const styles = StyleSheet.create({
   codeBlankContainer: {
     backgroundColor: '#0e639c',
     borderRadius: gameScale(6),
-    paddingHorizontal: gameScale(12),
+    paddingHorizontal: gameScale(10),
     borderTopWidth: gameScale(1),
     borderTopColor: '#4da6ff',
     borderLeftWidth: gameScale(1),
