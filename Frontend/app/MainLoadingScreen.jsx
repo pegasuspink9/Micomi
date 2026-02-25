@@ -52,7 +52,7 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
   useEffect(() => {
     Animated.timing(progressAnim, {
       toValue: 1,
-      duration: 5000,
+      duration: 2000,
       easing: Easing.linear,
       useNativeDriver: false,
     }).start(({ finished }) => {

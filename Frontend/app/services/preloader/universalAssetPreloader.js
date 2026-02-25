@@ -393,6 +393,14 @@ async testR2Download(testUrl) {
           });
         }
 
+        if (Array.isArray(character.cards)) {
+          character.cards.forEach((card, i) => {
+            if (card.character_attack_card) {
+              addAsset(card.character_attack_card, `${charName}_card_${i}`, 'image', 'game_visuals');
+            }
+          });
+        }
+
         // Role and damage icons (already added above as static, but character-specific ones)
         addAsset(character.roleIcon, `${charName}_role_icon`, 'image', 'character_select_ui');
         addAsset(character.damageIcon, `${charName}_damage_icon`, 'image', 'character_select_ui');

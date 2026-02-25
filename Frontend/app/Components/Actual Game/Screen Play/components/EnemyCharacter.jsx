@@ -596,6 +596,30 @@ const EnemyCharacter = ({
 
   const isFront = useMemo(() => currentState === 'attack' || isAttacking, [currentState, isAttacking]);
 
+  const renderReactionText = (text) => {
+    if (!text) return null;
+
+    // --- Dynamic Height/FontSize calculation based on text length ---
+    const len = text.length;
+    let fontSize = gameScale(13); // Default
+    if (len > 80) fontSize = gameScale(9);
+    else if (len > 50) fontSize = gameScale(10.5);
+    else if (len > 30) fontSize = gameScale(12);
+
+    const parts = text.split(/(".*?")/g);
+    return parts.map((part, index) => {
+      const isRed = part.startsWith('"') && part.endsWith('"');
+      return (
+        <Text key={index} style={[
+          { fontSize }, // Apply dynamic font size
+          isRed && styles.reactionHighlight
+        ]}>
+          {part}
+        </Text>
+      );
+    });
+  };
+
   // ========== Render ==========
     return (
     <Animated.View 
@@ -611,7 +635,7 @@ const EnemyCharacter = ({
       {displayReaction && (
         <Animated.View style={[styles.reactionContainer, reactionAnimatedStyle]}>
           <View style={styles.reactionBubble}>
-            <Text style={styles.reactionText}>{displayReaction}</Text>
+            <Text style={styles.reactionText}>{renderReactionText(displayReaction)}</Text>
           </View>
           <View style={styles.curvyTailContainer}>
             <View style={[styles.reactionDot, styles.dotLarge]} />
@@ -695,24 +719,29 @@ const styles = StyleSheet.create({
   reactionContainer: {
     position: 'absolute',
     bottom: '90%',
-    right: gameScale(60), // Mirror of character's left: 60
+    right: gameScale(30), 
     alignItems: 'center',
     zIndex: 1000000,
   },
-  reactionBubble: {
+    reactionBubble: {
     backgroundColor: 'white',
-    paddingHorizontal: gameScale(12),
+    paddingHorizontal: gameScale(8),
     paddingVertical: gameScale(8),
-    borderRadius: gameScale(8),
+    borderRadius: gameScale(8), 
     borderWidth: gameScale(1.5),
     borderColor: '#d4d4d4',
-    width: gameScale(160),
+    width: gameScale(220), // Fixed width
+    height: gameScale(55), // Fixed height
+    justifyContent: 'center', // Centered vertically
   },
   reactionText: {
     color: '#333',
     fontSize: gameScale(12),
     textAlign: 'center',
     fontFamily: 'DynaPuff',
+  },
+  reactionHighlight: {
+    color: '#e30000', // Red color for quoted text
   },
   curvyTailContainer: {
     alignItems: 'center',

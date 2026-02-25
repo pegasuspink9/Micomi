@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useFonts } from '../assets/fonts/font';
-import { View, ActivityIndicator, Platform, AppState, StatusBar } from 'react-native'; 
-import { setStatusBarHidden, setStatusBarTranslucent, setStatusBarStyle } from 'expo-status-bar';
+import { View, ActivityIndicator, Platform, AppState, StatusBar as RNStatusBar } from 'react-native'; 
+import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar'; 
 import * as SystemUI from 'expo-system-ui'; 
 import { useAuth } from './hooks/useAuth';
@@ -15,60 +15,62 @@ export default function RootLayout() {
   const [isMainLoading, setIsMainLoading] = useState(true);
   const segments = useSegments();
   const router = useRouter();
+  const appStateRef = useRef(AppState.currentState);
 
   useEffect(() => {
-    const setupImmersiveMode = async () => {
-      if (Platform.OS !== 'android') return;
+    if (Platform.OS !== 'android') return;
 
+    const hideSystemUI = async () => {
       try {
-        setStatusBarHidden(true, 'none');
-        setStatusBarTranslucent(true);
-        setStatusBarStyle('light');
-        
-        StatusBar.setHidden(true, 'none');
-        StatusBar.setTranslucent(true);
-        
-        // Navigation Bar (Bottom Bar) setup
+        RNStatusBar.setHidden(true, 'none');
         await NavigationBar.setVisibilityAsync('hidden');
-        
-        // setBehaviorAsync is deprecated/unsupported when edge-to-edge is enabled
-        // We omit it to avoid the warning, as setVisibilityAsync handles the hiding.
-        
-        // System UI background should be transparent to avoid flashes
         await SystemUI.setBackgroundColorAsync('transparent');
-        
-        // 🛠️ Extra enforce after a small delay (helps on resume from background)
-        setTimeout(() => {
-          StatusBar.setHidden(true, 'none');
-          setStatusBarHidden(true, 'none');
-        }, 100);
-        
-        setTimeout(() => {
-          StatusBar.setHidden(true, 'none');
-          setStatusBarHidden(true, 'none');
-        }, 500);
-
       } catch (error) {
         console.log('Immersive mode setup failed:', error);
       }
     };
 
-    // Initial run
-    setupImmersiveMode();
+    // THE FIX: Force Android to redraw the status bar by toggling it
+    const forceRehide = async () => {
+      try {
+        await NavigationBar.setVisibilityAsync('hidden');
+        
+        // Briefly set to false, then true to force the OS to update
+        RNStatusBar.setHidden(false, 'none');
+        setTimeout(() => {
+          RNStatusBar.setHidden(true, 'none');
+        }, 50);
+      } catch (error) {
+        console.log('Force rehide failed:', error);
+      }
+    };
 
-    const subscription = AppState.addEventListener('change', (nextState) => {
-      if (nextState === 'active') {
-        setupImmersiveMode();
+    // Initial run
+    hideSystemUI();
+
+    // LINK STATUS BAR TO BOTTOM BAR:
+    const navBarListener = NavigationBar.addVisibilityListener(({ visibility }) => {
+      if (visibility === 'visible') {
+        forceRehide();
+        setTimeout(forceRehide, 200); // Fallback delay
       }
     });
 
-    const reHideTimer = setInterval(setupImmersiveMode, 1000);
+    // Handle returning to the app from the background
+    const appStateListener = AppState.addEventListener('change', (nextState) => {
+      if (appStateRef.current.match(/inactive|background/) && nextState === 'active') {
+        forceRehide();
+        setTimeout(forceRehide, 200);
+        setTimeout(forceRehide, 600);
+      }
+      appStateRef.current = nextState;
+    });
 
     return () => {
-      subscription.remove();
-      clearInterval(reHideTimer);
+      navBarListener.remove();
+      appStateListener.remove();
     };
-  }, [segments]); // Dependency on segments to re-trigger on navigation
+  }, []); 
 
   // Handle authentication routing
   useEffect(() => {
@@ -117,6 +119,7 @@ export default function RootLayout() {
         alignItems: 'center', 
         backgroundColor: '#034251' 
       }}>
+        <ExpoStatusBar hidden={true} />
         <ActivityIndicator size="large" color="#fff" />
       </View>
     );
@@ -143,6 +146,9 @@ export default function RootLayout() {
         return false; // Do not block children from receiving the touch
       }}
     >
+      {/* Declarative component ensures React Native enforces the hidden state */}
+      <ExpoStatusBar hidden={true} />
+      
       <Stack 
         screenOptions={{ 
           headerShown: false,

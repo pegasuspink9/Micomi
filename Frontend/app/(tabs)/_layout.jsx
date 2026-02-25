@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { gameScale } from '../Components/Responsiveness/gameResponsive';
 import TabBarIconWrapper from '../Components/Tabs Components/TabBarIconWrapper';
 import CustomTabBarButton from '../Components/Tabs Components/CustomTabBarButton';
+import { useImmersiveMode } from '../statusBar/useImmersiveMode';
 
 const practiceIconUri = require('../Components/Tabs Components/PracticeIcon.png');
 const mapIconUri = require('../Components/Tabs Components/MapIcon.png');
@@ -13,6 +14,8 @@ const profileIconUri = require('../Components/Tabs Components/ProfileIcon.png');
 const backgroundIcon = require('../Components/Tabs Components/BackgroundIcon.png');
 
 export default function TabLayout() {
+  useImmersiveMode(true); // Enable immersive mode for this screen
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
     <Tabs
@@ -24,7 +27,7 @@ export default function TabLayout() {
       }}
     >
      <Tabs.Screen
-        name="Practice" // This ensures the tab is visible and uses Practice.jsx
+        name="Practice"
         options={{
           title: '',
           tabBarItemStyle: [styles.tabBarItem, { borderLeftWidth: 0 }],
