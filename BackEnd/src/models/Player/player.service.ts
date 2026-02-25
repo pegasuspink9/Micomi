@@ -278,80 +278,26 @@ export const getPlayerProfile = async (player_id: number) => {
 };
 
 const initializeNewGameState = async (playerId: number) => {
-  const firstLevel = await prisma.level.findFirst({
-    orderBy: { level_number: "asc" },
+  await prisma.playerAchievement.create({
+    data: {
+      player_id: playerId,
+      achievement_id: 11,
+      is_owned: true,
+      is_selected: true,
+      earned_at: new Date(),
+    },
   });
 
-  if (firstLevel) {
-    const isMicomi = firstLevel.level_type === "micomiButton";
+  await prisma.playerCharacter.create({
+    data: {
+      player_id: playerId,
+      character_id: 4,
+      is_purchased: true,
+      is_selected: true,
+    },
+  });
 
-    await prisma.playerProgress.create({
-      data: {
-        player_id: playerId,
-        level_id: firstLevel.level_id,
-        current_level: firstLevel.level_number,
-        attempts: 0,
-        player_answer: {},
-        wrong_challenges: [],
-        is_completed: isMicomi,
-        completed_at: isMicomi ? new Date() : null,
-        challenge_start_time: new Date(),
-        ...(isMicomi
-          ? { done_micomi_level: true }
-          : { done_micomi_level: false }),
-      },
-    });
-
-    if (isMicomi) {
-      const secondLevel = await prisma.level.findFirst({
-        where: {
-          map_id: firstLevel.map_id,
-          level_id: { gt: firstLevel.level_id },
-        },
-        orderBy: { level_id: "asc" },
-      });
-
-      if (secondLevel) {
-        await prisma.playerProgress.create({
-          data: {
-            player_id: playerId,
-            level_id: secondLevel.level_id,
-            current_level: secondLevel.level_number,
-            attempts: 0,
-            player_answer: {},
-            wrong_challenges: [],
-            is_completed: false,
-            completed_at: null,
-            challenge_start_time: new Date(),
-          },
-        });
-        console.log(
-          `Auto-unlocked Level ${secondLevel.level_number} because Level 1 was Micomi.`,
-        );
-      }
-    }
-
-    await prisma.playerAchievement.create({
-      data: {
-        player_id: playerId,
-        achievement_id: 11,
-        is_owned: true,
-        is_selected: true,
-        earned_at: new Date(),
-      },
-    });
-
-    await prisma.playerCharacter.create({
-      data: {
-        player_id: playerId,
-        character_id: 4,
-        is_purchased: true,
-        is_selected: true,
-      },
-    });
-
-    console.log(`Assigned default character (id 4) to player ${playerId}`);
-  }
+  console.log(`Assigned default character (id 4) to player ${playerId}`);
 };
 
 export const createPlayer = async (data: PlayerCreateInput) => {

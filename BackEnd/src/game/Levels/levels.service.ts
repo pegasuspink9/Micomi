@@ -16,6 +16,7 @@ import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
 import { updateQuestProgress } from "../Quests/quests.service";
 import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 import { getCardForAttackType } from "../Combat/combat.service";
+import { generateDynamicOptions } from "../Challenges/challenges.service";
 
 const prisma = new PrismaClient();
 
@@ -735,6 +736,14 @@ export const enterLevel = async (playerId: number, levelId: number) => {
   );
 
   const firstChallenge = challengesWithTimer[0] ?? null;
+
+  if (firstChallenge && level.challenges) {
+    const dynamicOptions = generateDynamicOptions(
+      firstChallenge as unknown as Challenge,
+      level.challenges,
+    );
+    firstChallenge.options = dynamicOptions;
+  }
 
   const currentEnemyHealth = progress.enemy_hp ?? enemyMaxHealth;
   const currentPlayerHealth = progress.player_hp ?? playerMaxHealth;
