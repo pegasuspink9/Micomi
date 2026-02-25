@@ -15,6 +15,15 @@ export default function LessonPage() {
   const { gameState, loading } = useGameData(levelId);
   const [currentPage, setCurrentPage] = useState(0);
   const [showTopics, setShowTopics] = useState(false);
+  const [showLoading, setShowLoading] = useState(true);
+
+  // Use useEffect to handle state transitions properly
+  React.useEffect(() => {
+    if (!loading) {
+      // This will trigger the exit (opening panels) animation in MainLoading
+      setShowLoading(false);
+    }
+  }, [loading]);
 
   const pages = useMemo(() => {
     if (gameState?.modules && gameState.modules.length > 0) {
@@ -54,11 +63,12 @@ export default function LessonPage() {
     }
   };
 
-  if (loading) return <MainLoading visible={true} />;
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar hidden={true} />
+
+        <MainLoading visible={showLoading} />
+      
       
       <View style={styles.headerWrapper}>
         <View style={styles.header}>

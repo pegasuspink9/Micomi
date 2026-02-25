@@ -62,14 +62,14 @@ const webViewInjectedJS = `
     window.addEventListener('resize', sendHeight);
     sendHeight();
     setTimeout(sendHeight, 100);
-    setTimeout(sendHeight, 500);
+    setTimeout(sendHeight, 100);
   })();
   true;
 `;
 
 const ExampleOutput = ({ exampleCode, exampleKey }) => {
   const [htmlOutput, setHtmlOutput] = useState('');
-  const [webViewHeight, setWebViewHeight] = useState(scale(10)); 
+  const [webViewHeight, setWebViewHeight] = useState(scale(1)); // Start at 1
   const [hasMeasured, setHasMeasured] = useState(false);
 
   useEffect(() => {
@@ -122,14 +122,13 @@ const ExampleOutput = ({ exampleCode, exampleKey }) => {
 const InteractiveEditor = ({ initialCode }) => {
   const [code, setCode] = useState(initialCode || '<h1>Hello World!</h1>\n<p>Welcome to Micomi.</p>');
   const [debouncedCode, setDebouncedCode] = useState(code);
-  const [webViewHeight, setWebViewHeight] = useState(scale(40)); // Start with a reasonable min height
+  const [webViewHeight, setWebViewHeight] = useState(scale(1)); // Logic matched: Start at 1
   const [hasMeasured, setHasMeasured] = useState(false);
 
-  // --- 2. ADDED DEBOUNCE TO PREVENT FLICKERING WHILE TYPING ---
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedCode(code);
-    }, 500); // Waits 500ms after you stop typing to update the output
+    }, 500); 
     return () => clearTimeout(timer);
   }, [code]);
 
@@ -139,8 +138,7 @@ const InteractiveEditor = ({ initialCode }) => {
     try {
       const height = Number(event.nativeEvent.data);
       if (!isNaN(height) && height > 0) {
-        // Ensure it doesn't shrink smaller than a base height to prevent glitching when empty
-        setWebViewHeight(Math.max(scale(40), height)); 
+        setWebViewHeight(height); // Logic matched: No Math.max floor
         setHasMeasured(true);
       }
     } catch (e) {
