@@ -1,88 +1,84 @@
-import React, { useCallback, useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { renderHighlightedText } from '../utils/syntaxHighligther';
 import { 
   scale, 
   scaleWidth, 
-  scaleHeight, 
   RESPONSIVE 
 } from '../../../Responsiveness/gameResponsive';
 
-const Guide = ({ currentQuestion, isFullPageLesson = false }) => {
-  const [exampleOutputs, setExampleOutputs] = useState({});
+// --- 1. MOVED OUTSIDE TO PREVENT REMOUNTING GLITCHES ---
+const generateExampleOutput = (exampleCode) => {
+  if (!exampleCode) return '';
 
-  const generateExampleOutput = useCallback((exampleCode) => {
-    if (!exampleCode) return '';
+  let htmlCode = exampleCode.trim();
 
-    let htmlCode = exampleCode.trim();
+  if (!htmlCode.includes('<!DOCTYPE')) {
+    htmlCode = `<!DOCTYPE html>\n${htmlCode}`;
+  }
 
-    if (!htmlCode.includes('<!DOCTYPE')) {
-      htmlCode = `<!DOCTYPE html>\n${htmlCode}`;
-    }
-
-    if (!htmlCode.includes('<html>')) {
-      htmlCode = `<html>\n<head>
-        <title>Example Output</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          html, body { margin: 0; padding: 0; height: auto; }
-          body { 
-            font-family: Arial, sans-serif; 
-            font-size: 18px; 
-            line-height: 1.6; 
-            padding: 15px; 
-            color: #333;
-            overflow-wrap: break-word;
-          }
-          h1, h2, h3 { color: #2c3e50; margin-bottom: 15px; margin-top: 0; }
-          p { margin-bottom: 15px; margin-top: 0; }
-        </style>
-      </head>\n<body>\n${htmlCode}\n</body>\n</html>`;
-    }
-
-    return htmlCode;
-  }, []);
-
-  const webViewInjectedJS = `
-    (function() {
-      var lastHeight = 0;
-      function sendHeight() {
-        var body = document.body;
-        var html = document.documentElement;
-        var height = Math.max(body.scrollHeight, body.offsetHeight, html.clientHeight, html.scrollHeight, html.offsetHeight);
-        if (height !== lastHeight && height > 0) {
-          lastHeight = height;
-          window.ReactNativeWebView.postMessage(height.toString());
+  if (!htmlCode.includes('<html>')) {
+    htmlCode = `<html>\n<head>
+      <title>Example Output</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        html, body { margin: 0; padding: 0; height: auto; }
+        body { 
+          font-family: Arial, sans-serif; 
+          font-size: 18px; 
+          line-height: 1.6; 
+          padding: 15px; 
+          color: #333;
+          overflow-wrap: break-word;
         }
+        h1, h2, h3 { color: #2c3e50; margin-bottom: 15px; margin-top: 0; }
+        p { margin-bottom: 15px; margin-top: 0; }
+      </style>
+    </head>\n<body>\n${htmlCode}\n</body>\n</html>`;
+  }
+
+  return htmlCode;
+};
+
+const webViewInjectedJS = `
+  (function() {
+    var lastHeight = 0;
+    function sendHeight() {
+      var body = document.body;
+      var html = document.documentElement;
+      var height = Math.max(body.scrollHeight, body.offsetHeight, html.clientHeight, html.scrollHeight, html.offsetHeight);
+      if (height !== lastHeight && height > 0) {
+        lastHeight = height;
+        window.ReactNativeWebView.postMessage(height.toString());
       }
-      var observer = new MutationObserver(sendHeight);
-      observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true });
-      window.addEventListener('load', sendHeight);
-      window.addEventListener('resize', sendHeight);
-      sendHeight();
-      setTimeout(sendHeight, 100);
-      setTimeout(sendHeight, 500);
-    })();
-    true;
-  `;
+    }
+    var observer = new MutationObserver(sendHeight);
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true });
+    window.addEventListener('load', sendHeight);
+    window.addEventListener('resize', sendHeight);
+    sendHeight();
+    setTimeout(sendHeight, 100);
+    setTimeout(sendHeight, 500);
+  })();
+  true;
+`;
 
-
-
-const ExampleOutput = useCallback(({ exampleCode, exampleKey }) => {
+const ExampleOutput = ({ exampleCode, exampleKey }) => {
   const [htmlOutput, setHtmlOutput] = useState('');
-  const [webViewHeight, setWebViewHeight] = useState(scale(50)); 
+  const [webViewHeight, setWebViewHeight] = useState(scale(10)); 
+  const [hasMeasured, setHasMeasured] = useState(false);
 
   useEffect(() => {
-    const output = generateExampleOutput(exampleCode);
-    setHtmlOutput(output);
-  }, [exampleCode, generateExampleOutput]);
+    setHtmlOutput(generateExampleOutput(exampleCode));
+  }, [exampleCode]);
 
   const onWebViewMessage = (event) => {
     try {
       const height = Number(event.nativeEvent.data);
       if (!isNaN(height) && height > 0) {
-        setWebViewHeight(height); // Exact height, no extra padding needed due to CSS fix
+        setWebViewHeight(height); 
+        setHasMeasured(true);
       }
     } catch (e) {
       console.warn("Failed to parse WebView height", e);
@@ -100,7 +96,7 @@ const ExampleOutput = useCallback(({ exampleCode, exampleKey }) => {
   if (!hasVisibleContent) return null;
 
   return (
-    <View style={styles.exampleOutputContainer}>
+    <View style={[styles.exampleOutputContainer, { opacity: hasMeasured ? 1 : 0 }]}>
       <Text style={styles.exampleOutputLabel}>Output:</Text>
       <View style={[styles.exampleWebviewContainer, { height: webViewHeight }]}>
         <WebView
@@ -118,20 +114,30 @@ const ExampleOutput = useCallback(({ exampleCode, exampleKey }) => {
       </View>
     </View>
   );
-}, [generateExampleOutput]);
+};
 
-// --- ADDED: Interactive Editor Component ---
-const InteractiveEditor = useCallback(({ initialCode }) => {
+const InteractiveEditor = ({ initialCode }) => {
   const [code, setCode] = useState(initialCode || '<h1>Hello World!</h1>\n<p>Welcome to Micomi.</p>');
-  const [webViewHeight, setWebViewHeight] = useState(scale(50));
+  const [debouncedCode, setDebouncedCode] = useState(code);
+  const [webViewHeight, setWebViewHeight] = useState(scale(10)); // Increased default initial height
+  const [hasMeasured, setHasMeasured] = useState(false);
 
-  const htmlOutput = useMemo(() => generateExampleOutput(code), [code, generateExampleOutput]);
+  // --- 2. ADDED DEBOUNCE TO PREVENT FLICKERING WHILE TYPING ---
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedCode(code);
+    }, 500); // Waits 500ms after you stop typing to update the output
+    return () => clearTimeout(timer);
+  }, [code]);
+
+  const htmlOutput = useMemo(() => generateExampleOutput(debouncedCode), [debouncedCode]);
 
   const onWebViewMessage = (event) => {
     try {
       const height = Number(event.nativeEvent.data);
       if (!isNaN(height) && height > 0) {
-        setWebViewHeight(height); // Exact height
+        setWebViewHeight(height); 
+        setHasMeasured(true);
       }
     } catch (e) {
       console.warn("Failed to parse WebView height", e);
@@ -161,9 +167,7 @@ const InteractiveEditor = useCallback(({ initialCode }) => {
             ))}
           </View>
           
-          {/* Layered Input for Syntax Highlighting */}
           <View style={styles.interactiveInputWrapper}>
-            {/* Background Layer: Shows syntax highlighted code */}
             <Text style={styles.interactiveHighlightedLayer} pointerEvents="none">
               {lines.map((line, i) => (
                 <React.Fragment key={i}>
@@ -173,7 +177,6 @@ const InteractiveEditor = useCallback(({ initialCode }) => {
               ))}
             </Text>
             
-            {/* Interaction Layer: Hidden text, visible cursor */}
             <TextInput
               style={styles.interactiveInput}
               multiline={true}
@@ -190,9 +193,8 @@ const InteractiveEditor = useCallback(({ initialCode }) => {
         </View>
       </View>
 
-
-      <Text style={styles.exampleOutputLabel}>Output:</Text>
-      <View style={[styles.exampleWebviewContainer, { height: webViewHeight }]}>
+      <Text style={styles.interactiveOutputLabel}>Output:</Text>
+      <View style={[styles.exampleWebviewContainer, { height: webViewHeight, opacity: hasMeasured ? 1 : 0 }]}>
         <WebView
           source={{ html: htmlOutput }}
           style={styles.exampleWebview}
@@ -207,17 +209,15 @@ const InteractiveEditor = useCallback(({ initialCode }) => {
       </View>
     </View>
   );
-}, [generateExampleOutput]);
+};
 
+// --- MAIN GUIDE COMPONENT ---
+const Guide = ({ currentQuestion, isFullPageLesson = false }) => {
 
   const renderStyledContent = (content) => {
     const parts = [];
     let lastIndex = 0;
     
-    // Regex explanation:
-    // 1. \*(.*?)\*  -> Captures text between asterisks (Group 1)
-    // 2. `(.*?)`    -> Captures text between backticks (Group 2)
-    // 3. (<[^>]+>)  -> Captures HTML tags (Group 3)
     const tokenRegex = /\*(.*?)\*|`(.*?)`|(<[^>]+>)/g;
     
     let match;
@@ -231,19 +231,16 @@ const InteractiveEditor = useCallback(({ initialCode }) => {
       }
 
       if (match[1]) {
-        // Found *bold* text
         parts.push({
           type: 'bold',
           content: match[1],
         });
       } else if (match[2]) {
-        // Found `backticked` text - just show content, disregard backticks
         parts.push({
-          type: 'code_inline', // or just 'text' depending on preference, logic below uses text style
+          type: 'code_inline', 
           content: match[2],
         });
       } else if (match[3]) {
-        // Found <html tag>
         parts.push({
           type: 'tag',
           content: match[3],
@@ -266,9 +263,9 @@ const InteractiveEditor = useCallback(({ initialCode }) => {
       if (part.type === 'tag') {
         style = styles.htmlTag;
       } else if (part.type === 'bold') {
-        style = styles.guideBoldText; // Grobold style
+        style = styles.guideBoldText; 
       } else if (part.type === 'code_inline') {
-        style = styles.guideInlineCode; // Red Grobold style
+        style = styles.guideInlineCode; 
       }
       
       return (
@@ -293,8 +290,7 @@ const InteractiveEditor = useCallback(({ initialCode }) => {
       const line = lines[i];
       const trimmedLine = line.trim();
 
-      // --- Detect Centered Header Syntax --Header-- ---
-       if (isFullPageLesson && trimmedLine.startsWith('--') && trimmedLine.endsWith('--')) {
+      if (isFullPageLesson && trimmedLine.startsWith('--') && trimmedLine.endsWith('--')) {
         const headerText = trimmedLine.substring(2, trimmedLine.length - 2);
         result.push(
           <Text key={`header-${i}`} style={styles.guideHeader}>
@@ -305,34 +301,28 @@ const InteractiveEditor = useCallback(({ initialCode }) => {
         continue;
       }
 
-      // --- Intercept "Try it yourself" ---
       if (trimmedLine === 'Try it yourself') {
         result.push(<InteractiveEditor key={`interactive-${i}`} initialCode={lastExampleCode} />);
         i++;
-        // Skip subsequent "Run" or "Output" lines
         while (i < lines.length && (lines[i].trim() === 'Run' || lines[i].trim() === 'Output' || lines[i].trim() === '')) {
           i++;
         }
         continue;
       }
 
-      // --- Intercept "Example:" Block ---
       if (trimmedLine.startsWith('Example:')) {
         const exampleLines = [];
         
-        // Check if there is content on the same line as "Example:"
         const firstLineContent = line.substring(8).trim(); 
         if (firstLineContent) {
           exampleLines.push(firstLineContent);
         }
 
-        i++; // Move to next line
+        i++; 
         
-        // Capture lines until "End of example" or end of file
         while (i < lines.length) {
           const currentLine = lines[i];
           if (currentLine.trim() === 'End of example' || currentLine.trim() === 'Try it yourself') {
-             // Stop collecting, but don't increment i if it is 'Try it yourself' so the next loop iteration catches it
              if (currentLine.trim() === 'End of example') i++;
              break;
           }
@@ -340,7 +330,6 @@ const InteractiveEditor = useCallback(({ initialCode }) => {
           i++;
         }
 
-        // Clean up leading/trailing empty lines from the example block
         let startIndex = 0;
         while (startIndex < exampleLines.length && exampleLines[startIndex].trim() === '') startIndex++;
         let endIndex = exampleLines.length - 1;
@@ -371,7 +360,6 @@ const InteractiveEditor = useCallback(({ initialCode }) => {
                     ))}
                 </View>
                 </View>
-                {/* Example output below the code block */}
                 <ExampleOutput exampleCode={exampleCode} exampleKey={exampleKey} />
             </View>
             );
@@ -381,7 +369,6 @@ const InteractiveEditor = useCallback(({ initialCode }) => {
         continue;
       }
 
-      // Regular text lines
       if (line.trim() !== '') {
         result.push(
           <Text key={`text-${i}`} style={styles.guideLine}>
@@ -405,7 +392,7 @@ const InteractiveEditor = useCallback(({ initialCode }) => {
       style={styles.guideContainer}
       contentContainerStyle={styles.guideScrollContent}
       showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled" // Allows tapping the editor easily
+      keyboardShouldPersistTaps="handled" 
     >
       <View style={styles.guideContent}>
         {renderGuideContent(currentQuestion?.guide)}
@@ -415,6 +402,9 @@ const InteractiveEditor = useCallback(({ initialCode }) => {
 };
 
 const styles = StyleSheet.create({
+// ...existing code...
+// (Keep all your existing styles exactly as they are)
+// ...existing code...
   guideContainer: {
     backgroundColor: '#ffffffff',
     flex: 1,
@@ -424,7 +414,7 @@ const styles = StyleSheet.create({
   guideScrollContent: {
     flexGrow: 1,
     padding: RESPONSIVE.margin.lg,
-    paddingBottom: scale(100), // Extra padding for keyboard
+    paddingBottom: scale(100), 
   },
 
   guideTitle: {
@@ -462,13 +452,13 @@ const styles = StyleSheet.create({
 
   guideBoldText: {
     fontFamily: 'Grobold',
-    color: '#0d253f', // Dark blue specific for highlighted terms
+    color: '#0d253f', 
     fontSize: RESPONSIVE.fontSize.md,
   },
 
   guideInlineCode: {
     fontFamily: 'Grobold',
-    color: '#e30a0aff', // Red
+    color: '#e30a0aff', 
     fontSize: RESPONSIVE.fontSize.md,
   },
 
@@ -549,14 +539,21 @@ const styles = StyleSheet.create({
     fontFamily: 'DynaPuff',
     marginBottom: scale(6),
   },
+  
+  interactiveOutputLabel: {
+    fontSize: RESPONSIVE.fontSize.md,
+    fontWeight: '600',
+    color: '#ffffff', 
+    fontFamily: 'DynaPuff',
+    marginBottom: scale(6),
+  },
 
   exampleWebviewContainer: {
     backgroundColor: '#fff',
     borderRadius: scale(6),
     borderWidth: scale(1),
     borderColor: '#e9ecef',
-    overflow: 'hidden',
-    minHeight: scale(80), 
+    overflow: 'hidden'
   },
 
   exampleWebview: {
@@ -564,14 +561,13 @@ const styles = StyleSheet.create({
     width: '100%',
   },
 
-  // --- ADDED: Interactive Editor Styles ---
    interactiveSection: {
     marginVertical: scale(20),
     padding: scale(15),
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#0d4277',
     borderRadius: scale(10),
     borderWidth: scale(2),
-    borderColor: '#4dabf7',
+    borderColor: '#065290',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: scale(2) },
     shadowOpacity: 0.1,
@@ -581,7 +577,7 @@ const styles = StyleSheet.create({
 
   interactiveTitle: {
     fontSize: RESPONSIVE.fontSize.lg,
-    color: '#0e639c',
+    color: '#ffffff',
     fontFamily: 'DynaPuff',
     marginBottom: scale(12),
   },
@@ -678,12 +674,12 @@ const styles = StyleSheet.create({
     fontSize: RESPONSIVE.fontSize.md,
     lineHeight: scale(20),
     textAlignVertical: 'top',
-    includeFontPadding: false, // Critical for perfect alignment on Android
+    includeFontPadding: false, 
   },
 
   interactiveInput: {
     flex: 1,
-    color: 'rgba(255, 255, 255, 0)', // Forces the raw text to be completely invisible
+    color: 'rgba(255, 255, 255, 0)',
     backgroundColor: 'transparent',
     fontFamily: 'monospace',
     fontSize: RESPONSIVE.fontSize.md,
@@ -691,13 +687,11 @@ const styles = StyleSheet.create({
     paddingTop: scale(12),
     textAlignVertical: 'top',
     lineHeight: scale(20),
-    includeFontPadding: false, // Critical for perfect alignment on Android
+    includeFontPadding: false, 
   },
 
-
-
   editorContainer: {
-    backgroundColor: '#000d2fff', // Matches exampleCodeBox
+    backgroundColor: '#000d2fff', 
     borderRadius: scale(6),
     borderWidth: scale(2),
     borderColor: '#4a4a4a',
@@ -706,12 +700,12 @@ const styles = StyleSheet.create({
   },
 
   editorInput: {
-    color: '#f8f8f2', // Matches exampleCode
+    color: '#f8f8f2', 
     fontFamily: 'monospace',
     fontSize: RESPONSIVE.fontSize.md,
-    minHeight: scale(120), // Starts with a decent height
+    minHeight: scale(120), 
     padding: scale(12),
-    textAlignVertical: 'top', // Ensures text starts at the top on Android
+    textAlignVertical: 'top', 
   },
 });
 
