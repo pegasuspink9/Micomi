@@ -23,6 +23,7 @@ import {
   ENEMY_CORRECT_LINES,
   CHARACTER_CORRECT_REACTIONS,
   CHARACTER_WRONG_REACTIONS,
+  CHARACTER_MISMATCHED_TAG_REACTIONS,
 } from "../../../helper/reactionLinesHelper";
 import {
   ENEMY_ATTACK_SOUNDS,
@@ -164,30 +165,172 @@ const formatReaction = (
   text: string,
   replacements: {
     player_name?: string;
-    line_number?: number;
-    first_wrong_answer?: string;
+    line_number?: string;
+    wrong_answer?: string;
+    wrong_open_tag?: string;
+    wrong_close_tag?: string;
   },
 ) => {
   return text
-    .replace(/{player_name}/g, replacements.player_name || "Player")
-    .replace(/{line_number}/g, String(replacements.line_number || "X"))
-    .replace(
-      /{first_wrong_answer}/g,
-      replacements.first_wrong_answer || "that",
-    );
+    .split("{player_name}")
+    .join(replacements.player_name || "Player")
+    .split("{line_number}")
+    .join(replacements.line_number || "X")
+    .split("{wrong_answer}")
+    .join(replacements.wrong_answer || "that")
+    .split("{wrong_open_tag}")
+    .join(replacements.wrong_open_tag || "")
+    .split("{wrong_close_tag}")
+    .join(replacements.wrong_close_tag || "");
 };
 
-const calculateTargetLine = (question: string | null): number => {
-  if (!question) return 1;
-  const lines = question.split("\n");
-  const blankRegex = /<(_|\/_|blank)>|\{blank\}|\[_+\]|_+|"_+|'_+|`_+/;
+const detectTagMismatch = (
+  userAnswers: string[],
+  correctAnswers: string[],
+  question: string | null,
+): { open: string; close: string } | null => {
+  if (!question) return null;
 
-  for (let i = 0; i < lines.length; i++) {
-    if (blankRegex.test(lines[i])) {
-      return i + 1;
+  const tagPairRegex = /^<?\/?([a-zA-Z0-9]*?)>?$/;
+
+  const getContextualTag = (val: string, index: number, q: string) => {
+    const blankRegex = /<(_|\/_|blank)>|\{blank\}|\[_+\]|_+|"_+|'_+|`_+/g;
+    let match;
+    let count = 0;
+    while ((match = blankRegex.exec(q)) !== null) {
+      if (count === index) {
+        const text = String(val).trim();
+        const beforeMatch = q.substring(
+          Math.max(0, match.index - 2),
+          match.index,
+        );
+        if (beforeMatch.endsWith("</")) return `/${text.replace(/^\//, "")}`;
+        if (text.startsWith("/")) return text;
+        return text;
+      }
+      count++;
+    }
+    return val;
+  };
+
+  const isPair = (t1: string, t2: string) => {
+    const m1 = String(t1).match(tagPairRegex);
+    const m2 = String(t2).match(tagPairRegex);
+    if (!m1 || !m2) return false;
+
+    const name1 = m1[1],
+      name2 = m2[1];
+    const isClosing1 = String(t1).includes("/"),
+      isClosing2 = String(t2).includes("/");
+
+    if (name1 !== "" && name2 !== "") {
+      return name1 === name2 && isClosing1 !== isClosing2;
+    }
+    if (name1 !== "" && name2 === "" && isClosing2) return true;
+    if (name2 !== "" && name1 === "" && isClosing1) return true;
+    return false;
+  };
+
+  const lines = question.split("\n");
+  const blankRegex = /<(_|\/_|blank)>|\{blank\}|\[_+\]|_+|"_+|'_+|`_+/g;
+  const blankToLineMap: number[] = [];
+
+  lines.forEach((line, lineIdx) => {
+    let match;
+    while ((match = blankRegex.exec(line)) !== null) {
+      blankToLineMap.push(lineIdx + 1);
+    }
+  });
+
+  for (let i = 0; i < correctAnswers.length; i++) {
+    for (let j = i + 1; j < correctAnswers.length; j++) {
+      if (blankToLineMap[i] === blankToLineMap[j]) {
+        const c1 = getContextualTag(correctAnswers[i], i, question);
+        const c2 = getContextualTag(correctAnswers[j], j, question);
+
+        if (isPair(c1, c2)) {
+          const u1 = getContextualTag(userAnswers[i], i, question);
+          const u2 = getContextualTag(userAnswers[j], j, question);
+
+          if (!isPair(u1, u2)) {
+            return { open: userAnswers[i], close: userAnswers[j] };
+          }
+        }
+      }
     }
   }
-  return 1;
+  return null;
+};
+
+const formatWrongAnswersDescription = (
+  userAnswers: string[],
+  correctAnswers: string[],
+  mismatch: { open: string; close: string } | null,
+): string => {
+  if (mismatch) {
+    return `"${mismatch.open}" is not a perfect pair for "${mismatch.close}"`;
+  }
+
+  const incorrectChoices = userAnswers.filter(
+    (val, index) => val !== correctAnswers[index],
+  );
+
+  if (incorrectChoices.length === 0) return "that";
+
+  let selected: string[];
+  const totalBlanks = userAnswers.length;
+
+  if (totalBlanks <= 3) {
+    selected = [...incorrectChoices];
+  } else if (totalBlanks <= 5) {
+    selected = [...incorrectChoices]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 2);
+  } else {
+    selected = [...incorrectChoices]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 1);
+  }
+
+  const quoted = selected.map((s) => `"${s}"`);
+  if (quoted.length === 1) return quoted[0];
+  const last = quoted.pop();
+  return quoted.join(", ") + ` and ${last}`;
+};
+
+const calculateErrorLines = (
+  question: string | null,
+  userAnswers: string[],
+  correctAnswers: string[],
+): string => {
+  if (!question) return "unknown";
+
+  const lines = question.split("\n");
+  const blankRegex = /<(_|\/_|blank)>|\{blank\}|\[_+\]|_+|"_+|'_+|`_+/g;
+  const errorLines = new Set<number>();
+
+  let currentBlankIndex = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    let match;
+    // Reset regex for each line search
+    const lineStr = lines[i];
+    while ((match = blankRegex.exec(lineStr)) !== null) {
+      if (
+        userAnswers[currentBlankIndex] !== correctAnswers[currentBlankIndex]
+      ) {
+        errorLines.add(i + 1);
+      }
+      currentBlankIndex++;
+    }
+  }
+
+  const sortedLines = Array.from(errorLines).sort((a, b) => a - b);
+  if (sortedLines.length === 0) return "X";
+  if (sortedLines.length === 1) return String(sortedLines[0]);
+
+  const lastLine = sortedLines.pop();
+  return sortedLines.join(", ") + " and " + lastLine;
 };
 
 const isTimedChallengeType = (type: string) =>
@@ -490,12 +633,7 @@ export const submitChallengeService = async (
   if (!character)
     return { message: "No selected character found", success: false } as any;
 
-  const reactionContext = {
-    player_name: player.username || "Player",
-    line_number: calculateTargetLine(challenge.question),
-    first_wrong_answer: answer[0] || "that",
-  };
-
+  let correctAnswered = challenge.correct_answer as string[];
   const enemyMaxHealth = getBaseEnemyHp(level);
 
   let currentProgress = await prisma.playerProgress.findUnique({
@@ -657,6 +795,26 @@ export const submitChallengeService = async (
     ? true
     : multisetEqual(finalAnswer, effectiveCorrectAnswer);
 
+  const mismatch = !isCorrect
+    ? detectTagMismatch(finalAnswer, effectiveCorrectAnswer, challenge.question)
+    : null;
+
+  const reactionContext = {
+    player_name: player.username || "Player",
+    line_number: calculateErrorLines(
+      challenge.question,
+      answer,
+      correctAnswered,
+    ),
+    wrong_answer: formatWrongAnswersDescription(
+      answer,
+      correctAnswered,
+      mismatch,
+    ),
+    wrong_open_tag: mismatch?.open || "",
+    wrong_close_tag: mismatch?.close || "",
+  };
+
   if (isRevealConfirmed) {
     answers[key] = effectiveCorrectAnswer;
 
@@ -720,10 +878,8 @@ export const submitChallengeService = async (
   }
 
   if (isCorrect) {
-    const charIndices =
-      (currentProgress.used_char_correct_reactions as number[]) || [];
     const charResult = getUniqueReaction(
-      charIndices,
+      (currentProgress.used_char_correct_reactions as number[]) || [],
       CHARACTER_CORRECT_REACTIONS,
     );
     characterReactionText = formatReaction(
@@ -740,15 +896,28 @@ export const submitChallengeService = async (
   } else {
     const charIndices =
       (currentProgress.used_char_wrong_reactions as number[]) || [];
-    const charResult = getUniqueReaction(
-      charIndices,
-      CHARACTER_WRONG_REACTIONS,
-    );
-    characterReactionText = formatReaction(
-      charResult.reaction,
-      reactionContext,
-    );
-    updateReactionData.used_char_wrong_reactions = charResult.newUsedIndices;
+
+    if (mismatch) {
+      const charResult = getUniqueReaction(
+        charIndices,
+        CHARACTER_MISMATCHED_TAG_REACTIONS,
+      );
+      characterReactionText = formatReaction(
+        charResult.reaction,
+        reactionContext,
+      );
+      updateReactionData.used_char_wrong_reactions = charResult.newUsedIndices;
+    } else {
+      const charResult = getUniqueReaction(
+        charIndices,
+        CHARACTER_WRONG_REACTIONS,
+      );
+      characterReactionText = formatReaction(
+        charResult.reaction,
+        reactionContext,
+      );
+      updateReactionData.used_char_wrong_reactions = charResult.newUsedIndices;
+    }
 
     const enemyIndices =
       (currentProgress.used_enemy_correct_reactions as number[]) || [];
@@ -1133,21 +1302,30 @@ export const submitChallengeService = async (
   }
 
   if (fightResult) {
-    if (wasStrong) {
+    const postFightProgress = await prisma.playerProgress.findUnique({
+      where: { progress_id: currentProgress.progress_id },
+      select: {
+        has_strong_effect: true,
+        has_freeze_effect: true,
+        has_ryron_reveal: true,
+      },
+    });
+
+    if (postFightProgress?.has_strong_effect) {
       if (!fightResult.character) fightResult.character = {};
       fightResult.character.character_current_state = "Strong";
       fightResult.character.character_attack_overlay = OVERLAYS.STRONG;
       console.log("- Forcing Strong Overlay into response");
     }
 
-    if (wasFrozen) {
+    if (postFightProgress?.has_freeze_effect) {
       if (!fightResult.enemy) fightResult.enemy = {};
       fightResult.enemy.enemy_current_state = "Frozen";
       fightResult.enemy.enemy_attack_overlay = OVERLAYS.FREEZE;
       console.log("- Forcing Freeze Overlay into response");
     }
 
-    if (wasReveal) {
+    if (postFightProgress?.has_ryron_reveal) {
       if (!fightResult.character) fightResult.character = {};
       fightResult.character.character_current_state = "Reveal";
       fightResult.character.character_attack_overlay = OVERLAYS.REVEAL;
