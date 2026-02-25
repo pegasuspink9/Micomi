@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { renderHighlightedText } from '../utils/syntaxHighligther';
 import { 
@@ -9,7 +9,7 @@ import {
   RESPONSIVE 
 } from '../../../Responsiveness/gameResponsive';
 
-const Guide = ({ currentQuestion }) => {
+const Guide = ({ currentQuestion, isFullPageLesson = false }) => {
   const [exampleOutputs, setExampleOutputs] = useState({});
 
   const generateExampleOutput = useCallback((exampleCode) => {
@@ -26,17 +26,17 @@ const Guide = ({ currentQuestion }) => {
         <title>Example Output</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
+          html, body { margin: 0; padding: 0; height: auto; }
           body { 
             font-family: Arial, sans-serif; 
             font-size: 18px; 
             line-height: 1.6; 
-            margin: 0; 
-            padding: 20px; 
+            padding: 15px; 
             color: #333;
-            overflow: hidden;
+            overflow-wrap: break-word;
           }
-          h1, h2, h3 { color: #2c3e50; margin-bottom: 15px; }
-          p { margin-bottom: 15px; }
+          h1, h2, h3 { color: #2c3e50; margin-bottom: 15px; margin-top: 0; }
+          p { margin-bottom: 15px; margin-top: 0; }
         </style>
       </head>\n<body>\n${htmlCode}\n</body>\n</html>`;
     }
@@ -44,10 +44,34 @@ const Guide = ({ currentQuestion }) => {
     return htmlCode;
   }, []);
 
+  const webViewInjectedJS = `
+    (function() {
+      var lastHeight = 0;
+      function sendHeight() {
+        var body = document.body;
+        var html = document.documentElement;
+        var height = Math.max(body.scrollHeight, body.offsetHeight, html.clientHeight, html.scrollHeight, html.offsetHeight);
+        if (height !== lastHeight && height > 0) {
+          lastHeight = height;
+          window.ReactNativeWebView.postMessage(height.toString());
+        }
+      }
+      var observer = new MutationObserver(sendHeight);
+      observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true });
+      window.addEventListener('load', sendHeight);
+      window.addEventListener('resize', sendHeight);
+      sendHeight();
+      setTimeout(sendHeight, 100);
+      setTimeout(sendHeight, 500);
+    })();
+    true;
+  `;
+
+
 
 const ExampleOutput = useCallback(({ exampleCode, exampleKey }) => {
   const [htmlOutput, setHtmlOutput] = useState('');
-  const [webViewHeight, setWebViewHeight] = useState(scale(150)); 
+  const [webViewHeight, setWebViewHeight] = useState(scale(50)); 
 
   useEffect(() => {
     const output = generateExampleOutput(exampleCode);
@@ -58,8 +82,7 @@ const ExampleOutput = useCallback(({ exampleCode, exampleKey }) => {
     try {
       const height = Number(event.nativeEvent.data);
       if (!isNaN(height) && height > 0) {
-        // Use a much smaller buffer since we use padding now
-        setWebViewHeight(height + scale(10));
+        setWebViewHeight(height); // Exact height, no extra padding needed due to CSS fix
       }
     } catch (e) {
       console.warn("Failed to parse WebView height", e);
@@ -74,23 +97,6 @@ const ExampleOutput = useCallback(({ exampleCode, exampleKey }) => {
     /<body[^>]*>[\s\S]*?<\/body>/.test(htmlOutput) && 
     /<body[^>]*>[\s\S]*?<\/body>/.exec(htmlOutput)[0].replace(/<[^>]*>/g, '').trim().length > 0;
 
-
-  const injectedJS = `
-    (function() {
-      function sendHeight() {
-        var height = document.body.offsetHeight || document.documentElement.offsetHeight;
-        window.ReactNativeWebView.postMessage(height.toString());
-      }
-      // Initial trigger
-      sendHeight();
-      // Trigger again when assets/fonts are likely loaded
-      window.onload = sendHeight;
-      setTimeout(sendHeight, 500);
-      setTimeout(sendHeight, 1500);
-    })();
-    true;
-  `;
-
   if (!hasVisibleContent) return null;
 
   return (
@@ -98,13 +104,13 @@ const ExampleOutput = useCallback(({ exampleCode, exampleKey }) => {
       <Text style={styles.exampleOutputLabel}>Output:</Text>
       <View style={[styles.exampleWebviewContainer, { height: webViewHeight }]}>
         <WebView
-          key={exampleKey} // Forces recreation when switching questions
+          key={exampleKey} 
           source={{ html: htmlOutput }}
           style={styles.exampleWebview}
           onMessage={onWebViewMessage}
-          injectedJavaScript={injectedJS}
+          injectedJavaScript={webViewInjectedJS}
           scrollEnabled={false} 
-          scalesPageToFit={false} // Disable auto-scaling to get accurate pixel measurements
+          scalesPageToFit={false} 
           javaScriptEnabled={true}
           domStorageEnabled={true}
           originWhitelist={['*']}
@@ -114,10 +120,106 @@ const ExampleOutput = useCallback(({ exampleCode, exampleKey }) => {
   );
 }, [generateExampleOutput]);
 
+// --- ADDED: Interactive Editor Component ---
+const InteractiveEditor = useCallback(({ initialCode }) => {
+  const [code, setCode] = useState(initialCode || '<h1>Hello World!</h1>\n<p>Welcome to Micomi.</p>');
+  const [webViewHeight, setWebViewHeight] = useState(scale(50));
+
+  const htmlOutput = useMemo(() => generateExampleOutput(code), [code, generateExampleOutput]);
+
+  const onWebViewMessage = (event) => {
+    try {
+      const height = Number(event.nativeEvent.data);
+      if (!isNaN(height) && height > 0) {
+        setWebViewHeight(height); // Exact height
+      }
+    } catch (e) {
+      console.warn("Failed to parse WebView height", e);
+    }
+  };
+  
+  const lines = code.split('\n');
+
+  return (
+    <View style={styles.interactiveSection}>
+      <Text style={styles.interactiveTitle}>Try it yourself 🚀</Text>
+      
+      <View style={styles.interactiveEditorContainer}>
+        <View style={styles.interactiveHeader}>
+          <View style={styles.windowControls}>
+            <View style={[styles.windowButton, { backgroundColor: '#ff5f56' }]} />
+            <View style={[styles.windowButton, { backgroundColor: '#ffbd2e' }]} />
+            <View style={[styles.windowButton, { backgroundColor: '#27ca3f' }]} />
+          </View>
+          <Text style={styles.interactiveHeaderText}>index.html</Text>
+        </View>
+
+        <View style={styles.interactiveBody}>
+          <View style={styles.interactiveLineNumbers}>
+            {lines.map((_, i) => (
+              <Text key={i} style={styles.interactiveLineNumberText}>{i + 1}</Text>
+            ))}
+          </View>
+          
+          {/* Layered Input for Syntax Highlighting */}
+          <View style={styles.interactiveInputWrapper}>
+            {/* Background Layer: Shows syntax highlighted code */}
+            <Text style={styles.interactiveHighlightedLayer} pointerEvents="none">
+              {lines.map((line, i) => (
+                <React.Fragment key={i}>
+                  {renderHighlightedText(line)}
+                  {i < lines.length - 1 ? '\n' : ''}
+                </React.Fragment>
+              ))}
+            </Text>
+            
+            {/* Interaction Layer: Hidden text, visible cursor */}
+            <TextInput
+              style={styles.interactiveInput}
+              multiline={true}
+              value={code}
+              onChangeText={setCode}
+              autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
+              placeholder="Type your HTML here..."
+              placeholderTextColor="#75715E"
+              cursorColor="#f8f8f2"
+            />
+          </View>
+        </View>
+      </View>
+
+
+      <Text style={styles.exampleOutputLabel}>Output:</Text>
+      <View style={[styles.exampleWebviewContainer, { height: webViewHeight }]}>
+        <WebView
+          source={{ html: htmlOutput }}
+          style={styles.exampleWebview}
+          onMessage={onWebViewMessage}
+          injectedJavaScript={webViewInjectedJS}
+          scrollEnabled={false}
+          scalesPageToFit={false}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          originWhitelist={['*']}
+        />
+      </View>
+    </View>
+  );
+}, [generateExampleOutput]);
+
+
   const renderStyledContent = (content) => {
     const parts = [];
     let lastIndex = 0;
-    const tokenRegex = /(<\/?[^>]+>)|\*([A-Z]+)\*/g;
+    
+    // Regex explanation:
+    // 1. \*(.*?)\*  -> Captures text between asterisks (Group 1)
+    // 2. `(.*?)`    -> Captures text between backticks (Group 2)
+    // 3. (<[^>]+>)  -> Captures HTML tags (Group 3)
+    const tokenRegex = /\*(.*?)\*|`(.*?)`|(<[^>]+>)/g;
+    
     let match;
 
     while ((match = tokenRegex.exec(content)) !== null) {
@@ -129,14 +231,22 @@ const ExampleOutput = useCallback(({ exampleCode, exampleKey }) => {
       }
 
       if (match[1]) {
+        // Found *bold* text
         parts.push({
-          type: 'tag',
+          type: 'bold',
           content: match[1],
         });
       } else if (match[2]) {
+        // Found `backticked` text - just show content, disregard backticks
         parts.push({
-          type: 'allCaps',
+          type: 'code_inline', // or just 'text' depending on preference, logic below uses text style
           content: match[2],
+        });
+      } else if (match[3]) {
+        // Found <html tag>
+        parts.push({
+          type: 'tag',
+          content: match[3],
         });
       }
 
@@ -150,20 +260,23 @@ const ExampleOutput = useCallback(({ exampleCode, exampleKey }) => {
       });
     }
 
-    return parts.map((part, idx) => (
-      <Text
-        key={idx}
-        style={
-          part.type === 'tag' 
-            ? styles.htmlTag 
-            : part.type === 'allCaps'
-              ? styles.guideAllCaps
-              : styles.guidePlainText
-        }
-      >
-        {part.content}
-      </Text>
-    ));
+    return parts.map((part, idx) => {
+      let style = styles.guidePlainText;
+
+      if (part.type === 'tag') {
+        style = styles.htmlTag;
+      } else if (part.type === 'bold') {
+        style = styles.guideBoldText; // Grobold style
+      } else if (part.type === 'code_inline') {
+        style = styles.guideInlineCode; // Red Grobold style
+      }
+      
+      return (
+        <Text key={idx} style={style}>
+          {part.content}
+        </Text>
+      );
+    });
   };
 
   const renderGuideContent = (guideText) => {
@@ -174,61 +287,101 @@ const ExampleOutput = useCallback(({ exampleCode, exampleKey }) => {
     const result = [];
     let i = 0;
     let exampleCounter = 0;
+    let lastExampleCode = ''; 
 
     while (i < lines.length) {
       const line = lines[i];
+      const trimmedLine = line.trim();
 
-      if (line.trim().startsWith('Example:')) {
+      // --- Detect Centered Header Syntax --Header-- ---
+       if (isFullPageLesson && trimmedLine.startsWith('--') && trimmedLine.endsWith('--')) {
+        const headerText = trimmedLine.substring(2, trimmedLine.length - 2);
+        result.push(
+          <Text key={`header-${i}`} style={styles.guideHeader}>
+            {headerText}
+          </Text>
+        );
+        i++;
+        continue;
+      }
+
+      // --- Intercept "Try it yourself" ---
+      if (trimmedLine === 'Try it yourself') {
+        result.push(<InteractiveEditor key={`interactive-${i}`} initialCode={lastExampleCode} />);
+        i++;
+        // Skip subsequent "Run" or "Output" lines
+        while (i < lines.length && (lines[i].trim() === 'Run' || lines[i].trim() === 'Output' || lines[i].trim() === '')) {
+          i++;
+        }
+        continue;
+      }
+
+      // --- Intercept "Example:" Block ---
+      if (trimmedLine.startsWith('Example:')) {
         const exampleLines = [];
-        const firstLine = line.trim().substring('Example:'.length).trim();
         
-        if (firstLine) {
-          exampleLines.push(firstLine);
+        // Check if there is content on the same line as "Example:"
+        const firstLineContent = line.substring(8).trim(); 
+        if (firstLineContent) {
+          exampleLines.push(firstLineContent);
         }
 
-        i++;
+        i++; // Move to next line
+        
+        // Capture lines until "End of example" or end of file
         while (i < lines.length) {
-          const nextLine = lines[i];
-          
-          if (nextLine.trim() === '' || /^•/.test(nextLine.trim())) {
-            break;
+          const currentLine = lines[i];
+          if (currentLine.trim() === 'End of example' || currentLine.trim() === 'Try it yourself') {
+             // Stop collecting, but don't increment i if it is 'Try it yourself' so the next loop iteration catches it
+             if (currentLine.trim() === 'End of example') i++;
+             break;
           }
-          
-          exampleLines.push(nextLine);
+          exampleLines.push(currentLine);
           i++;
         }
 
-        const exampleCode = exampleLines.join('\n');
+        // Clean up leading/trailing empty lines from the example block
+        let startIndex = 0;
+        while (startIndex < exampleLines.length && exampleLines[startIndex].trim() === '') startIndex++;
+        let endIndex = exampleLines.length - 1;
+        while (endIndex >= 0 && exampleLines[endIndex].trim() === '') endIndex--;
+
+        const cleanExampleLines = exampleLines.slice(startIndex, endIndex + 1);
+        const exampleCode = cleanExampleLines.join('\n');
+        
+        lastExampleCode = exampleCode; 
         const exampleKey = `example-${exampleCounter}`;
 
-        //  ADDED: Render example code and its output
-        result.push(
-          <View key={exampleKey} style={styles.exampleSection}>
-            <View style={styles.exampleContainer}>
-              <View style={styles.exampleCodeBox}>
-                {exampleLines.map((codeLine, lineIdx) => (
-                  <View key={lineIdx} style={styles.codeLine}>
-                    <View style={styles.lineNumberContainer}>
-                      <Text style={styles.lineNumber}>{lineIdx + 1}</Text>
+        if (exampleCode.length > 0) {
+            result.push(
+            <View key={exampleKey} style={styles.exampleSection}>
+                <View style={styles.exampleContainer}>
+                <View style={styles.exampleCodeBox}>
+                    {cleanExampleLines.map((codeLine, lineIdx) => (
+                    <View key={lineIdx} style={styles.codeLine}>
+                        <View style={styles.lineNumberContainer}>
+                        <Text style={styles.lineNumber}>{lineIdx + 1}</Text>
+                        </View>
+                        <View style={styles.lineContent}>
+                        <Text style={styles.exampleCode}>
+                            {renderHighlightedText(codeLine)}
+                        </Text>
+                        </View>
                     </View>
-                    <View style={styles.lineContent}>
-                      <Text style={styles.exampleCode}>
-                        {renderHighlightedText(codeLine)}
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
+                    ))}
+                </View>
+                </View>
+                {/* Example output below the code block */}
+                <ExampleOutput exampleCode={exampleCode} exampleKey={exampleKey} />
             </View>
-            {/*  ADDED: Example output below code */}
-            <ExampleOutput exampleCode={exampleCode} exampleKey={exampleKey} />
-          </View>
-        );
+            );
+        }
 
         exampleCounter++;
         continue;
       }
 
+      // Regular text lines
       if (line.trim() !== '') {
         result.push(
           <Text key={`text-${i}`} style={styles.guideLine}>
@@ -252,6 +405,7 @@ const ExampleOutput = useCallback(({ exampleCode, exampleKey }) => {
       style={styles.guideContainer}
       contentContainerStyle={styles.guideScrollContent}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled" // Allows tapping the editor easily
     >
       <View style={styles.guideContent}>
         {renderGuideContent(currentQuestion?.guide)}
@@ -270,6 +424,7 @@ const styles = StyleSheet.create({
   guideScrollContent: {
     flexGrow: 1,
     padding: RESPONSIVE.margin.lg,
+    paddingBottom: scale(100), // Extra padding for keyboard
   },
 
   guideTitle: {
@@ -291,9 +446,30 @@ const styles = StyleSheet.create({
     marginBottom: scale(8),
   },
 
+  guideHeader: {
+    fontSize: scale(27),
+    fontFamily: 'Grobold',
+    color: '#0d253f',
+    textAlign: 'center',
+    marginVertical: scale(12),
+    width: '100%',
+  },
+
   guidePlainText: {
     fontFamily: 'Poppins',
     color: '#495057',
+  },
+
+  guideBoldText: {
+    fontFamily: 'Grobold',
+    color: '#0d253f', // Dark blue specific for highlighted terms
+    fontSize: RESPONSIVE.fontSize.md,
+  },
+
+  guideInlineCode: {
+    fontFamily: 'Grobold',
+    color: '#e30a0aff', // Red
+    fontSize: RESPONSIVE.fontSize.md,
   },
 
   htmlTag: {
@@ -307,7 +483,6 @@ const styles = StyleSheet.create({
     color: '#0077ffff',
   },
 
-  //  ADDED: Example section wrapper
   exampleSection: {
     marginVertical: scale(16),
   },
@@ -362,7 +537,6 @@ const styles = StyleSheet.create({
     lineHeight: scale(20),
   },
 
-  //  ADDED: Example output styles
   exampleOutputContainer: {
     marginLeft: scale(12),
     marginBottom: scale(16),
@@ -376,18 +550,168 @@ const styles = StyleSheet.create({
     marginBottom: scale(6),
   },
 
-    exampleWebviewContainer: {
+  exampleWebviewContainer: {
     backgroundColor: '#fff',
     borderRadius: scale(6),
     borderWidth: scale(1),
     borderColor: '#e9ecef',
     overflow: 'hidden',
-    minHeight: scale(80), // Lowered minHeight so it can fit small content
+    minHeight: scale(80), 
   },
 
   exampleWebview: {
-    backgroundColor: 'transparent', // Ensure it doesn't hide the container background
+    backgroundColor: 'transparent', 
     width: '100%',
+  },
+
+  // --- ADDED: Interactive Editor Styles ---
+   interactiveSection: {
+    marginVertical: scale(20),
+    padding: scale(15),
+    backgroundColor: '#f8f9fa',
+    borderRadius: scale(10),
+    borderWidth: scale(2),
+    borderColor: '#4dabf7',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: scale(2) },
+    shadowOpacity: 0.1,
+    shadowRadius: scale(4),
+    elevation: 3,
+  },
+
+  interactiveTitle: {
+    fontSize: RESPONSIVE.fontSize.lg,
+    color: '#0e639c',
+    fontFamily: 'DynaPuff',
+    marginBottom: scale(12),
+  },
+
+  interactiveEditorContainer: {
+    backgroundColor: '#1e1e1e32',
+    borderRadius: scale(12),
+    overflow: 'hidden',
+    borderTopColor: '#4a4a4a',
+    borderLeftWidth: scale(1),
+    borderLeftColor: '#3a3a3a',
+    borderBottomWidth: scale(4),
+    borderBottomColor: '#0a0a0a',
+    borderRightWidth: scale(1),
+    borderRightColor: '#3a3a3a',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: scale(8) },
+    shadowOpacity: 0.4,
+    shadowRadius: scale(12),
+    elevation: scale(16),
+    marginBottom: scale(16),
+  },
+
+  interactiveHeader: {
+    backgroundColor: '#2d2d30',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: scale(12),
+    paddingVertical: scale(8),
+    borderTopWidth: scale(1),
+    borderTopColor: '#505050',
+  },
+
+  windowControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  windowButton: {
+    width: scale(10),
+    height: scale(10),
+    borderRadius: scale(6),
+    marginRight: scale(8),
+    borderTopWidth: scale(1),
+    borderTopColor: 'rgba(255, 255, 255, 0.3)',
+    borderBottomWidth: scale(1),
+    borderBottomColor: 'rgba(0, 0, 0, 0.5)',
+  },
+
+  interactiveHeaderText: {
+    color: '#d1d5d9',
+    fontSize: RESPONSIVE.fontSize.xs,
+    fontFamily: 'DynaPuff',
+    marginLeft: scale(10),
+  },
+
+  interactiveBody: {
+    flexDirection: 'row',
+    backgroundColor: '#000d2f',
+    minHeight: scale(120),
+  },
+
+  interactiveLineNumbers: {
+    paddingVertical: scale(12),
+    paddingHorizontal: scale(8),
+    backgroundColor: '#1e1e1e',
+    borderRightWidth: scale(1),
+    borderRightColor: '#3a3a3a',
+    alignItems: 'center',
+    minWidth: scaleWidth(35),
+  },
+
+   interactiveLineNumberText: {
+    color: '#ffffff7e',
+    fontSize: RESPONSIVE.fontSize.xs,
+    fontFamily: 'monospace',
+    lineHeight: scale(20),
+  },
+
+  interactiveInputWrapper: {
+    flex: 1,
+    position: 'relative',
+  },
+
+  interactiveHighlightedLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    padding: scale(12),
+    paddingTop: scale(12),
+    fontFamily: 'monospace',
+    fontSize: RESPONSIVE.fontSize.md,
+    lineHeight: scale(20),
+    textAlignVertical: 'top',
+    includeFontPadding: false, // Critical for perfect alignment on Android
+  },
+
+  interactiveInput: {
+    flex: 1,
+    color: 'rgba(255, 255, 255, 0)', // Forces the raw text to be completely invisible
+    backgroundColor: 'transparent',
+    fontFamily: 'monospace',
+    fontSize: RESPONSIVE.fontSize.md,
+    padding: scale(12),
+    paddingTop: scale(12),
+    textAlignVertical: 'top',
+    lineHeight: scale(20),
+    includeFontPadding: false, // Critical for perfect alignment on Android
+  },
+
+
+
+  editorContainer: {
+    backgroundColor: '#000d2fff', // Matches exampleCodeBox
+    borderRadius: scale(6),
+    borderWidth: scale(2),
+    borderColor: '#4a4a4a',
+    marginBottom: scale(16),
+    overflow: 'hidden',
+  },
+
+  editorInput: {
+    color: '#f8f8f2', // Matches exampleCode
+    fontFamily: 'monospace',
+    fontSize: RESPONSIVE.fontSize.md,
+    minHeight: scale(120), // Starts with a decent height
+    padding: scale(12),
+    textAlignVertical: 'top', // Ensures text starts at the top on Android
   },
 });
 

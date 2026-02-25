@@ -1,0 +1,249 @@
+Make me a lesson same as MDN flow with the syntax like this
+
+--HTML Structure Basics:--
+
+Every webpage has a skeleton made of tags that work together:
+
+• DOCTYPE - This tells the browser 'Hey, I'm an HTML page!' It's always at the very top.
+   Example: <!DOCTYPE html>
+• <html> tag - This is the container for your *ENTIRE* page. Everything else goes inside it.
+   Example:
+   <html>
+     ...
+   </html>
+
+next page
+
+• <head> tag - Holds info about the page like <title>. People don't see head content on the page.
+   Example:
+   <head>
+     <title>Site Name</title>
+   </head>
+
+next page
+
+• <body> tag - The visible part of the page. Headings usually go here.
+   Example:
+   <body>
+     <h2>Welcome!</h2>
+   </body>
+
+Try it yourself
+Run
+
+Output 
+
+Remember: Tags open and close like parentheses. If you open <h1>, you must close it with </h1>!
+
+Now look at the blanks - which tag belongs where?
+
+
+NOTE: 
+
+Every topic of the lesson must cover with the regex text -- -- example: --HTML Structure Basics:--
+
+and the content of that topic must have in a bullet form to be more readable or any form will do just make it clear and has an example code of that topic like this
+
+• DOCTYPE - This tells the browser 'Hey, I'm an HTML page!' It's always at the very top.
+   Example: <!DOCTYPE html>
+• <html> tag - This is the container for your *ENTIRE* page. Everything else goes inside it.
+   
+Example:
+   <html>
+     ...
+   </html>
+
+End of example
+
+Try it yourself
+Run
+
+Output 
+
+the code must be in code form too, and add a Try it yourself Run and Output not in the same line word as a indentifier for regex, and put a End of example after the example code
+
+
+also make sure that there is a pagination so there must be a word "next page"
+
+also add a special characters like * * in a text for bolding
+
+this is the example of the complete lessons:
+
+--The Origin of HTML:--
+
+• Did you know HTML was invented by a scientist named *Tim Berners-Lee* in 1989?
+• He wanted a simple way for scientists to share documents with each other all over the world.
+• HTML stands for *HyperText Markup Language*. It is the secret code that builds the skeleton of *EVERY* website you visit!
+
+Example:
+<p>Hello World! I am learning the language of the web!</p>
+
+End of example
+
+Try it yourself
+Run
+
+Output
+
+next page
+
+--HTML Basic 1: Tags and Elements:--
+
+• HTML uses special words called *tags* wrapped in angle brackets, like `<tag>`.
+• Most tags have an *opening* tag and a *closing* tag (which has a slash `/`).
+• Think of tags like a sandwich! The opening and closing tags are the bread, and your content is the yummy filling inside.
+
+Example:
+<p>This is my sandwich content!</p>
+
+End of example
+
+Try it yourself
+Run
+
+Output
+
+Remember: If you open a tag, you *MUST* close it!
+
+next page
+
+--HTML Basic Tags: Headings and Paragraphs:--
+
+• *Heading Tags* act like titles in a book. There are 6 sizes, from `<h1>` down to `<h6>`.
+• `<h1>` is the biggest and most important, while `<h6>` is the smallest heading.
+• The *Paragraph Tag* `<p>` is used for regular everyday text. Every new sentence or idea goes in a new `<p>` tag!
+
+Example:
+<!DOCTYPE html>
+<html>
+<head>
+   <title>Heading Example</title>
+</head>
+<body>
+   <h1>This is heading 1 (Very Big!)</h1>
+   <h2>This is heading 2</h2>
+   <h3>This is heading 3</h3>
+   <p>Here is a first paragraph of text.</p>
+   <p>Here is a second paragraph of text.</p>
+</body>
+</html>
+
+End of example
+
+Try it yourself
+Run
+
+Output
+
+next page
+
+--HTML Basic Tags: Line Breaks and Horizontal Rules:--
+
+• Sometimes you want text to go to the next line *without* starting a whole new paragraph. Use the *Line Break Tag* `<br>`!
+• Want to draw a cool straight line across the screen to separate your ideas? Use the *Horizontal Rule Tag* `<hr>`.
+• *Secret Fact:* `<br>` and `<hr>` are "empty tags." That means they stand alone and do not need a closing tag!
+
+Example:
+<!DOCTYPE html>
+<html>
+<head>
+   <title>Breaks and Lines</title>
+</head>
+<body>
+   <p>Hello!<br>You finished your homework on time.<br>Great job!</p>
+   <hr>
+   <p>This paragraph is sitting at the bottom of the line.</p>
+</body>
+</html>
+
+End of example
+
+Try it yourself
+Run
+
+Output
+
+next page
+
+--HTML Basic Tags: Centering and Preserve Formatting:--
+
+• In the old days, people used a `<center>` tag, but now we use modern *CSS styling* to center text perfectly!
+• Browsers usually ignore extra spaces or "enters". If you want to make text look *exactly* how you typed it (with all your custom spacing), use the *Preserve Formatting Tag* `<pre>`.
+
+Example:
+<!DOCTYPE html>
+<html>
+<head>
+   <title>Center and Pre</title>
+   <style>
+      .center-text {
+         text-align: center;
+      }
+   </style>
+</head>
+<body>
+   <p class="center-text">Look at me, I am right in the center!</p>
+   <pre>
+      function testFunction( strText ){
+         alert (strText)
+      }
+   </pre>
+</body>
+</html>
+
+End of example
+
+Try it yourself
+Run
+
+Output
+
+next page
+
+--HTML Basic Tags: Spaces and Lists:--
+
+• If you want to force the browser to show extra blank spaces between words, you can use the special *Non-breaking Space* code: `&nbsp;`.
+• To make a bulleted list, use the *Unordered List Tag* `<ul>`.
+• To make a numbered list (1, 2, 3...), use the *Ordered List Tag* `<ol>`.
+• Every single item inside your lists must be wrapped in a *List Item Tag* `<li>`!
+
+Example:
+<!DOCTYPE html>
+<html>
+<head>
+   <title>Spaces and Lists</title>
+</head>
+<body>
+   <p>Look at all these spaces "12&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Angry Men."</p>
+
+   <h2>My Unordered List (Bullets)</h2>
+   <ul>
+     <li>Apples</li>
+     <li>Bananas</li>
+     <li>Oranges</li>
+   </ul>
+
+   <h2>My Ordered List (Numbers)</h2>
+   <ol>
+     <li>First Place</li>
+     <li>Second Place</li>
+     <li>Third Place</li>
+   </ol>  
+</body>
+</html>
+
+End of example
+
+Try it yourself
+Run
+
+Output
+
+
+Make it a understandable lesson that kids could learn after navigating or learning it, and the inspired of the flow topics should be like from MDN
+
+
+the lessons we making would be basic origin of HTML, HTML basic 1 and HTML Basic Tags:
+
+Focusly on this lesson
+

@@ -156,8 +156,8 @@ export default function LevelButtons({
     });
 
      if (level.level_type === 'micomiButton') {
-      console.log('Navigating directly to Micomic for level:', level.level_id);
-      router.push(`/Micomic?levelId=${level.level_id}`);
+      console.log('Navigating directly to LessonPage for level:', level.level_id);
+      router.push(`/LessonPage?levelId=${level.level_id}`);
       processingPress.current = false;
       return; 
     }

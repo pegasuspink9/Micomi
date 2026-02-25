@@ -128,14 +128,17 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
     // Base game state structure
     const gameState = {
       level: {
-        level_id: data.level?.level_id || responseData.level?.level_id || null,
-        level_number: data.level?.level_number || responseData.level?.level_number || null,
-        level_difficulty: data.level?.level_difficulty || responseData.level?.level_difficulty || null,
-        level_title: data.level?.level_title || responseData.level?.level_title || null,
-        content: data.level?.content || responseData.level?.content || null,
-        level_type: data.level?.level_type || responseData.level?.level_type || null,  // Add level_type extraction
+        level_id: data.level?.level_id || data.level?.modules?.level_id || responseData.level?.level_id || null,
+        level_number: data.level?.level_number || data.level?.modules?.level_number || responseData.level?.level_number || null,
+        level_difficulty: data.level?.level_difficulty || data.level?.modules?.level_difficulty || responseData.level?.level_difficulty || null,
+        level_title: data.level?.level_title || data.level?.modules?.level_title || responseData.level?.level_title || null,
+        content: data.level?.content || data.level?.modules?.content || responseData.level?.content || null,
+        level_type: data.level?.level_type || data.level?.modules?.level_type || responseData.level?.level_type || null, 
+        map_name: data.level?.map?.map_name || responseData.level?.map?.map_name || null,
       },
 
+        
+        modules: data.level?.modules?.modules || responseData.level?.modules?.modules || [],
         lessons: data.lessons || responseData.lessons || [],
         currentLesson: data.currentLesson || responseData.currentLesson || null,
       
