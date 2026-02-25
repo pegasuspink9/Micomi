@@ -1302,21 +1302,30 @@ export const submitChallengeService = async (
   }
 
   if (fightResult) {
-    if (wasStrong) {
+    const postFightProgress = await prisma.playerProgress.findUnique({
+      where: { progress_id: currentProgress.progress_id },
+      select: {
+        has_strong_effect: true,
+        has_freeze_effect: true,
+        has_ryron_reveal: true,
+      },
+    });
+
+    if (postFightProgress?.has_strong_effect) {
       if (!fightResult.character) fightResult.character = {};
       fightResult.character.character_current_state = "Strong";
       fightResult.character.character_attack_overlay = OVERLAYS.STRONG;
       console.log("- Forcing Strong Overlay into response");
     }
 
-    if (wasFrozen) {
+    if (postFightProgress?.has_freeze_effect) {
       if (!fightResult.enemy) fightResult.enemy = {};
       fightResult.enemy.enemy_current_state = "Frozen";
       fightResult.enemy.enemy_attack_overlay = OVERLAYS.FREEZE;
       console.log("- Forcing Freeze Overlay into response");
     }
 
-    if (wasReveal) {
+    if (postFightProgress?.has_ryron_reveal) {
       if (!fightResult.character) fightResult.character = {};
       fightResult.character.character_current_state = "Reveal";
       fightResult.character.character_attack_overlay = OVERLAYS.REVEAL;
