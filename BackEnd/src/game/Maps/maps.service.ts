@@ -26,58 +26,6 @@ export const selectMap = async (playerId: number, mapId: number) => {
     });
   }
 
-  const existingProgress = await prisma.playerProgress.findFirst({
-    where: {
-      player_id: playerId,
-      level: {
-        map_id: mapId,
-      },
-    },
-  });
-
-  if (!existingProgress) {
-    const firstLevel = await prisma.level.findFirst({
-      where: { map_id: mapId },
-      orderBy: { level_id: "asc" },
-    });
-
-    if (firstLevel) {
-      const isMicomiButton = firstLevel.level_type === "micomiButton";
-
-      await prisma.playerProgress.create({
-        data: {
-          player_id: playerId,
-          level_id: firstLevel.level_id,
-          current_level: firstLevel.level_number,
-          is_completed: isMicomiButton,
-          completed_at: isMicomiButton ? new Date() : null,
-          attempts: 0,
-          player_answer: {},
-          challenge_start_time: new Date(),
-          player_hp: 0,
-          enemy_hp: 0,
-          battle_status: "in_progress",
-          coins_earned: 0,
-          total_points_earned: 0,
-          total_exp_points_earned: 0,
-          wrong_challenges: [],
-          consecutive_corrects: 0,
-          consecutive_wrongs: 0,
-          has_reversed_curse: false,
-          has_boss_shield: false,
-          has_force_character_attack_type: false,
-          has_both_hp_decrease: false,
-          has_permuted_ss: false,
-          has_shuffle_ss: false,
-          took_damage: false,
-          has_strong_effect: false,
-          has_freeze_effect: false,
-          ...(isMicomiButton ? { done_micomi_level: true } : {}),
-        },
-      });
-    }
-  }
-
   const fullMap = await prisma.map.findUnique({
     where: { map_id: mapId },
     include: {
