@@ -167,10 +167,9 @@ const formatReaction = (
   text: string,
   replacements: {
     player_name?: string;
-    line_number?: string;
+    line_display?: string;
     wrong_answer?: string;
     wrong_open_tag?: string;
-    column_number?: string;
     wrong_close_tag?: string;
     wrong_letter?: string;
     correct_letter?: string;
@@ -180,18 +179,9 @@ const formatReaction = (
   return text
     .split("{player_name}")
     .join(replacements.player_name || "Player")
-    .replace(
-      /line \{line_number\}/gi,
-      (match) =>
-        `"${match.replace("{line_number}", replacements.line_number || "X")}"`,
-    )
-    .replace(
-      /column \{column_number\}/gi,
-      (match) =>
-        `"${match.replace("{column_number}", replacements.column_number || "X")}"`,
-    )
+    .replace(/line \{line_number\}/gi, replacements.line_display || "line X")
     .split("{wrong_answer}")
-    .join(`"${replacements.wrong_answer || "that"}"`)
+    .join(replacements.wrong_answer || "that")
     .split("{wrong_open_tag}")
     .join(`"${replacements.wrong_open_tag || ""}"`)
     .split("{wrong_close_tag}")
@@ -350,7 +340,11 @@ const formatWrongAnswersDescription = (
   mismatch: { open: string; close: string } | null,
 ): string => {
   if (mismatch) {
-    return `${mismatch.open} and ${mismatch.close}`;
+    const opening = mismatch.open || "opening tag";
+    const closing = mismatch.close.startsWith("/")
+      ? mismatch.close
+      : `/${mismatch.close}`;
+    return `"${opening}" and "${closing}"`;
   }
 
   const incorrectChoices = userAnswers.filter(
@@ -374,36 +368,69 @@ const formatWrongAnswersDescription = (
       .slice(0, 1);
   }
 
-  if (selected.length === 1) return selected[0];
-  const last = selected.pop();
-  return selected.join(", ") + ` and ${last}`;
+  const quotedSelected = selected.map((choice) => `"${choice}"`);
+
+  if (quotedSelected.length === 1) return quotedSelected[0];
+  const last = quotedSelected.pop();
+  return quotedSelected.join(", ") + ` and ${last}`;
 };
 
-const calculateErrorPosition = (
+const calculateErrorDetails = (
   question: string | null,
   userAnswers: string[],
   correctAnswers: string[],
-): { line: string; column: string } => {
-  if (!question) return { line: "X", column: "X" };
+): { line: string; wrongAnswers: string[] }[] => {
+  if (!question) return [];
 
   const lines = question.split("\n");
   const blankRegex = /<(_|\/_|blank)>|\{blank\}|\[_+\]|_+|"_+|'_+|`_+/g;
   let currentBlankIndex = 0;
+  const errors: { line: string; wrongAnswers: string[] }[] = [];
 
   for (let i = 0; i < lines.length; i++) {
     const lineStr = lines[i];
     blankRegex.lastIndex = 0;
     let match;
+    const lineErrors: string[] = [];
+
     while ((match = blankRegex.exec(lineStr)) !== null) {
       if (
         userAnswers[currentBlankIndex] !== correctAnswers[currentBlankIndex]
       ) {
-        return { line: String(i + 1), column: String(match.index + 1) };
+        lineErrors.push(userAnswers[currentBlankIndex] || "empty");
       }
       currentBlankIndex++;
     }
+
+    if (lineErrors.length > 0) {
+      errors.push({ line: String(i + 1), wrongAnswers: lineErrors });
+    }
   }
-  return { line: "X", column: "X" };
+  return errors.slice(0, 2);
+};
+
+const formatErrorContext = (
+  errorDetails: { line: string; wrongAnswers: string[] }[],
+) => {
+  if (errorDetails.length === 0)
+    return { lineDisplay: "X", answerDisplay: "that" };
+
+  const lines = errorDetails.map((d) => d.line);
+  const allWrong = Array.from(
+    new Set(errorDetails.flatMap((d) => d.wrongAnswers)),
+  ).map((a) => `"${a}"`);
+
+  const lineDisplay =
+    lines.length > 1
+      ? `"line ${lines[0]}" and "${lines[1]}"`
+      : `"line ${lines[0]}"`;
+
+  const answerDisplay =
+    allWrong.length > 1
+      ? `${allWrong.slice(0, -1).join(", ")} and ${allWrong[allWrong.length - 1]}`
+      : allWrong[0];
+
+  return { lineDisplay, answerDisplay };
 };
 
 const isTimedChallengeType = (type: string) =>
@@ -924,21 +951,19 @@ export const submitChallengeService = async (
     effectiveCorrectAnswer,
   );
 
-  const errorPos = calculateErrorPosition(
+  const errorDetails = calculateErrorDetails(
     challenge.question,
     finalAnswer,
     effectiveCorrectAnswer,
   );
+  const { lineDisplay, answerDisplay } = formatErrorContext(errorDetails);
 
   const reactionContext = {
     player_name: player.username || "Player",
-    line_number: errorPos.line,
-    column_number: errorPos.column,
-    wrong_answer: formatWrongAnswersDescription(
-      answer,
-      correctAnswered,
-      mismatch,
-    ),
+    line_display: lineDisplay,
+    wrong_answer: mismatch
+      ? formatWrongAnswersDescription(answer, [""], mismatch)
+      : answerDisplay,
     wrong_open_tag: mismatch?.open || "",
     wrong_close_tag: mismatch?.close || "",
     wrong_letter: wrongLetter,
