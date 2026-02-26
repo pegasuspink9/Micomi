@@ -121,8 +121,7 @@ export default function RootLayout() {
     segments.includes('map') || 
     segments.includes('CharacterSelect') || 
     segments.includes('PotionShop') || 
-    segments.includes('roadMapLandPage') ||
-    segments.includes('(tabs)');
+    segments.includes('roadMapLandPage') 
 
 
   

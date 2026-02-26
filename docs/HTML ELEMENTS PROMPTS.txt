@@ -1,0 +1,133 @@
+--What Is an HTML Element?:--
+
+• An *HTML Element* is the basic building block of a webpage. It is like a Lego piece for your site!
+• It is made of three parts: an *Opening Tag*, the *Content* (the text you want people to see), and a *Closing Tag*.
+• Think of it like a room: the opening tag is the front door, the content is the furniture inside, and the closing tag is the back door!
+
+Example:
+<p>This is my paragraph content!</p>
+<h1>This is my big heading!</h1>
+
+End of example
+
+Try it yourself
+Run
+
+Output
+
+next page
+
+--Elements vs. Tags: What is the Difference?:--
+
+• It is easy to get confused between elements and tags, so let's think about a *sandwich*!
+• An *HTML Tag* is just the opening `<p>` or closing `</p>`. They are the slices of bread.
+• An *HTML Element* is the *ENTIRE* thing together: the top bread (opening tag), the yummy filling (content), and the bottom bread (closing tag).
+
+Example:
+<div>I am a complete HTML element. My tags are the bread!</div>
+
+End of example
+
+Try it yourself
+Run
+
+Output
+
+next page
+
+--Nested Elements: Boxes Inside Boxes:--
+
+• HTML lets you put elements *inside* other elements! This is called *Nesting*.
+• Think of it like a big box that holds smaller boxes inside it. The outside element is the *parent*, and the inside element is the *child*.
+• *Important Rule:* The tag you open *last* must be closed *first*! 
+
+Example:
+<!DOCTYPE html>
+<html>
+<head>
+   <title>Nested Magic</title>
+</head>
+<body>
+   <h1>This is an <i>italic</i> word in a heading!</h1>
+   <p>This is an <u>underlined</u> word in a paragraph.</p>
+</body>
+</html>
+
+End of example
+
+Try it yourself
+Run
+
+Output
+
+next page
+
+--Special Empty Elements: The Rule Breakers!:--
+
+• Most elements need an opening and closing tag, but some are called *Empty (Void) Elements*.
+• They do not have text filling inside, so they *do not need a closing tag*!
+• The *Line Break Tag* `<br>` moves text to the next line, and the *Horizontal Rule Tag* `<hr>` draws a line across the screen. They stand all alone!
+
+Example:
+<!DOCTYPE html>
+<html>
+<body>
+   <p>Look at this line.<br>Now I am on a brand new line!</p>
+   <hr>
+   <p>I am separated by a cool straight line.</p>
+</body>
+</html>
+
+End of example
+
+Try it yourself
+Run
+
+Output
+
+next page
+
+--HTML Attributes: Giving Tags Superpowers:--
+
+• *Attributes* are secret instructions you put *inside the opening tag* to give it special powers.
+• They tell the tag extra details about what to do.
+• For example, when you use an empty image tag `<img>`, you need to tell the browser *which* picture to show by using the `src` (source) attribute!
+
+Example:
+<!DOCTYPE html>
+<html>
+<body>
+   <p>Here is a picture of a logo:</p>
+   <img src="logo.jpg" alt="A cool logo">
+</body>
+</html>
+
+End of example
+
+Try it yourself
+Run
+
+Output
+
+next page
+
+--HTML Golden Rules: Closing Tags and Lowercase:--
+
+• *Rule 1: Always close your tags!* If you forget to close a `<p>` tag, the browser might get confused and your webpage might look messy.
+• *Rule 2: Use lowercase letters!* Browsers are smart and *can* read uppercase like `<P>`, but it is not good practice. Always use lowercase letters like `<p>` so your code looks clean and professional!
+
+Example:
+<!DOCTYPE html>
+<html>
+<body>
+   <p>This is the perfect way to write a tag! All lowercase and safely closed.</p>
+   <P>THIS WORKS BUT IT IS SHOUTING! Try not to use uppercase letters for tags.</P>
+</body>
+</html>
+
+End of example
+
+Try it yourself
+Run
+
+Output
