@@ -486,7 +486,7 @@ const generateMotivationalMessage = (
   totalChallenges: number,
   isBonusRound: boolean,
   playerWon: boolean,
-  levelNumber: number,
+  levelNumber: number | null,
 ): string => {
   const random = (messages: string[]) =>
     messages[Math.floor(Math.random() * messages.length)];
@@ -1768,7 +1768,7 @@ export const submitChallengeService = async (
     : 0;
 
   const combatBackground = [
-    await getBackgroundForLevel(level.map.map_name, level.level_number),
+    await getBackgroundForLevel(level.map.map_name, level?.level_number),
   ];
 
   const questionType = level.map.map_name;

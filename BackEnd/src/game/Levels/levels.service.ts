@@ -405,7 +405,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         create: {
           player_id: playerId,
           level_id: levelId,
-          current_level: level.level_number,
+          current_level: level.level_number ?? 0,
           attempts: 0,
           player_answer: {},
           completed_at: new Date(),

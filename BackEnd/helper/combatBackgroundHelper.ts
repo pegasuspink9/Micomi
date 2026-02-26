@@ -57,15 +57,17 @@ const defaultBackground = `https://micomi-assets.me/Maps/Snowland/10.png`;
 
 export async function getBackgroundForLevel(
   mapName: string,
-  levelNumber: number
+  levelNumber: number | null,
 ): Promise<string> {
   const key = mapName as MapName;
   const bgList = backgrounds[key];
 
   if (!bgList) return defaultBackground;
 
+  const safeLevelNumber = levelNumber ?? 0;
+
   const existing = await prisma.backgroundMapping.findFirst({
-    where: { mapName: key, levelNumber },
+    where: { mapName: key, levelNumber: safeLevelNumber },
   });
 
   if (existing) return existing.backgroundUrl;
@@ -84,11 +86,16 @@ export async function getBackgroundForLevel(
   if (available.length > 0) {
     selected = available[0];
   } else {
-    selected = bgList[(levelNumber - 1) % bgList.length];
+    selected =
+      bgList[Math.floor(Math.abs(safeLevelNumber - 1)) % bgList.length];
   }
 
   await prisma.backgroundMapping.create({
-    data: { mapName: key, levelNumber, backgroundUrl: selected },
+    data: {
+      mapName: key,
+      levelNumber: safeLevelNumber,
+      backgroundUrl: selected,
+    },
   });
 
   return selected;
