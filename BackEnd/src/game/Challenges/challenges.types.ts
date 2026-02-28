@@ -63,7 +63,7 @@ export interface SubmitChallengeControllerResult extends SubmitChallengeServiceR
   completionRewards?: CompletionRewards;
   nextLevel?: {
     level_id: number;
-    level_number: number;
+    level_number: number | null;
   } | null;
   correct_answer_length?: number;
   character_attack_image?: string | null;

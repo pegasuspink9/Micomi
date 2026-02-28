@@ -41,7 +41,7 @@ model Lesson {
 model Level {
   level_id                   Int              @id @default(autoincrement())
   map_id                     Int
-  level_number               Int
+  level_number               Float
   content                    String
   is_unlocked                Boolean          @default(false)
   feedback_message           String
@@ -145,7 +145,7 @@ model PlayerProgress {
   progress_id                     Int           @id @default(autoincrement())
   player_id                       Int
   level_id                        Int
-  current_level                   Int
+  current_level                   Float
   is_completed                    Boolean       @default(false)
   completed_at                    DateTime?
   attempts                        Int           @default(0)
@@ -311,7 +311,7 @@ model PlayerQuest {
 model BackgroundMapping {
   id            Int    @id @default(autoincrement())
   mapName       String
-  levelNumber   Int
+  levelNumber   Float
   backgroundUrl String
 
   @@unique([mapName, levelNumber])
