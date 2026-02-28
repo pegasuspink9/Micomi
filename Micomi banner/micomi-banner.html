@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Micomi - Promotional Banner</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ===== RESET & PRINT SETUP ===== */
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  @page {
+    size: 24in 72in;
+    margin: 0;
+  }
+
+  html, body {
+    width: 24in;
+    height: 72in;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  body {
+    font-family: 'Open Sans', 'Nunito', Arial, sans-serif;
+    background: #0a1628;
+  }
+
+  .banner {
+    width: 24in;
+    height: 72in;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ===== UTILITY ===== */
+  .section-title {
+    font-family: 'Fredoka One', 'Nunito', sans-serif;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* ===== SECTION 1: HEADER (Top ~15%) ===== */
+  .header-section {
+    width: 100%;
+    height: 15%;
+    background: linear-gradient(180deg, #0b1a3a 0%, #0e3d8a 40%, #1a6fd4 70%, #3ec6f0 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 0.4in 0.5in;
+    overflow: hidden;
+  }
+
+  .header-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(circle at 15% 30%, rgba(255,255,255,0.07) 0%, transparent 40%),
+      radial-gradient(circle at 85% 60%, rgba(255,255,255,0.05) 0%, transparent 35%);
+    pointer-events: none;
+  }
+
+  /* Stars decoration */
+  .stars {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+  }
+  .star {
+    position: absolute;
+    background: #fff;
+    border-radius: 50%;
+    opacity: 0.5;
+  }
+  .star:nth-child(1) { width: 6px; height: 6px; top: 8%; left: 12%; opacity: 0.7; }
+  .star:nth-child(2) { width: 4px; height: 4px; top: 15%; left: 80%; }
+  .star:nth-child(3) { width: 5px; height: 5px; top: 5%; left: 55%; opacity: 0.6; }
+  .star:nth-child(4) { width: 3px; height: 3px; top: 25%; left: 30%; }
+  .star:nth-child(5) { width: 7px; height: 7px; top: 3%; left: 90%; opacity: 0.4; }
+  .star:nth-child(6) { width: 4px; height: 4px; top: 20%; left: 70%; opacity: 0.5; }
+
+  /* Logo */
+  .logo-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 0.25in;
+    z-index: 2;
+  }
+
+  .logo-icon {
+    width: 1.8in;
+    height: 1.8in;
+    position: relative;
+    margin-bottom: 0.15in;
+  }
+
+  /* CSS Robot Character */
+  .robot {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  .robot-head {
+    width: 1.3in;
+    height: 1.1in;
+    background: linear-gradient(145deg, #4fc3f7, #0288d1);
+    border-radius: 0.25in;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid #01579b;
+    box-shadow: inset 0 -8px 0 rgba(0,0,0,0.15), 0 6px 20px rgba(0,0,0,0.3);
+  }
+
+  .robot-eye {
+    width: 0.3in;
+    height: 0.35in;
+    background: #fff;
+    border-radius: 50%;
+    position: absolute;
+    top: 0.25in;
+    border: 3px solid #01579b;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+  }
+  .robot-eye.left { left: 0.2in; }
+  .robot-eye.right { right: 0.2in; }
+
+  .robot-eye::after {
+    content: '';
+    width: 0.14in;
+    height: 0.16in;
+    background: #0d47a1;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .robot-eye-shine {
+    width: 0.06in;
+    height: 0.06in;
+    background: #fff;
+    border-radius: 50%;
+    position: absolute;
+    top: 0.08in;
+    right: 0.06in;
+    z-index: 1;
+  }
+
+  .robot-mouth {
+    width: 0.5in;
+    height: 0.22in;
+    background: #01579b;
+    border-radius: 0 0 0.15in 0.15in;
+    position: absolute;
+    bottom: 0.18in;
+    left: 50%;
+    transform: translateX(-50%);
+    overflow: hidden;
+  }
+
+  .robot-mouth::after {
+    content: '';
+    width: 0.3in;
+    height: 0.12in;
+    background: #e53935;
+    border-radius: 0 0 0.1in 0.1in;
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .robot-antenna {
+    width: 4px;
+    height: 0.3in;
+    background: #01579b;
+    position: absolute;
+    top: -0.3in;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .robot-antenna::after {
+    content: '';
+    width: 0.18in;
+    height: 0.18in;
+    background: radial-gradient(circle, #ffeb3b, #ff9800);
+    border-radius: 50%;
+    position: absolute;
+    top: -0.1in;
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 0 12px rgba(255,235,59,0.7);
+  }
+
+  .robot-body {
+    width: 1.0in;
+    height: 0.65in;
+    background: linear-gradient(145deg, #4fc3f7, #0288d1);
+    border-radius: 0.15in;
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid #01579b;
+    box-shadow: inset 0 -6px 0 rgba(0,0,0,0.15);
+  }
+
+  .robot-body::before {
+    content: '♥';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.35in;
+    color: #ff5252;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  .robot-arm {
+    width: 0.18in;
+    height: 0.55in;
+    background: linear-gradient(145deg, #4fc3f7, #0288d1);
+    border: 3px solid #01579b;
+    border-radius: 0.1in;
+    position: absolute;
+    bottom: 0.1in;
+  }
+  .robot-arm.left {
+    left: 0;
+    transform: rotate(20deg);
+    transform-origin: top center;
+  }
+  .robot-arm.right {
+    right: 0;
+    transform: rotate(-30deg);
+    transform-origin: top center;
+  }
+  .robot-arm.right::after {
+    content: '👋';
+    font-size: 0.25in;
+    position: absolute;
+    bottom: -0.1in;
+    left: -0.1in;
+  }
+
+  .logo-text {
+    font-family: 'Fredoka One', sans-serif;
+    font-size: 1.1in;
+    color: #fff;
+    text-shadow:
+      0 0 20px rgba(62,198,240,0.5),
+      4px 4px 0 #0b4f8a,
+      6px 6px 0 rgba(0,0,0,0.3);
+    letter-spacing: 0.08in;
+    line-height: 1;
+  }
+
+  .headline {
+    font-family: 'Fredoka One', sans-serif;
+    font-size: 0.82in;
+    color: #fff;
+    text-align: center;
+    text-shadow:
+      3px 3px 0 #0b1a3a,
+      5px 5px 0 rgba(0,0,0,0.25);
+    line-height: 1.15;
+    z-index: 2;
+    margin-bottom: 0.12in;
+  }
+
+  .sub-headline {
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.38in;
+    color: #b3e5fc;
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: 0.02in;
+    z-index: 2;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.4);
+  }
+
+  /* ===== SECTION 2: HERO IMAGE (25%) ===== */
+  .hero-section {
+    width: 100%;
+    height: 25%;
+    background: linear-gradient(180deg, #3ec6f0 0%, #1565c0 20%, #0d47a1 50%, #1a237e 100%);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0.4in 0.4in 0.3in;
+    overflow: hidden;
+  }
+
+  /* Grid/circuit pattern overlay */
+  .hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(0deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 0.4in 0.4in;
+    pointer-events: none;
+  }
+
+  .app-description {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 0.28in;
+    color: #b3e5fc;
+    text-align: center;
+    line-height: 1.5;
+    max-width: 22in;
+    margin-bottom: 0.35in;
+    z-index: 2;
+    font-weight: 400;
+    padding: 0.2in 0.3in;
+    background: rgba(0,0,0,0.2);
+    border-radius: 0.15in;
+    border: 2px solid rgba(62,198,240,0.2);
+  }
+
+  /* Battle Scene */
+  .battle-scene {
+    width: 100%;
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+  }
+
+  /* Character Cards */
+  .hero-characters {
+    display: flex;
+    justify-content: center;
+    gap: 0.25in;
+    position: relative;
+    width: 100%;
+  }
+
+  .hero-char {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+
+  .char-avatar {
+    width: 2.8in;
+    height: 3.5in;
+    border-radius: 0.3in;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+      0 8px 30px rgba(0,0,0,0.4),
+      inset 0 0 40px rgba(255,255,255,0.05);
+    border: 4px solid rgba(255,255,255,0.2);
+  }
+
+  .char-avatar::before {
+    content: '';
+    position: absolute;
+    top: -2px; left: -2px; right: -2px; bottom: -2px;
+    border-radius: 0.32in;
+    background: linear-gradient(135deg, rgba(255,255,255,0.3), transparent, rgba(255,255,255,0.1));
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Micomi Robot Center */
+  .char-micomi .char-avatar {
+    background: linear-gradient(145deg, #1565c0, #0d47a1);
+    width: 3.2in;
+    height: 4.2in;
+    border-color: #4fc3f7;
+  }
+
+  .char-emoji {
+    font-size: 1.8in;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+    line-height: 1;
+  }
+  .char-micomi .char-emoji { font-size: 2.2in; }
+
+  .char-name-badge {
+    font-family: 'Fredoka One', sans-serif;
+    font-size: 0.26in;
+    color: #fff;
+    background: rgba(0,0,0,0.5);
+    padding: 0.06in 0.2in;
+    border-radius: 0.15in;
+    position: absolute;
+    bottom: 0.12in;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    z-index: 2;
+    white-space: nowrap;
+  }
+
+  /* Leon */
+  .char-leon .char-avatar {
+    background: linear-gradient(145deg, #c62828, #8e0000);
+    border-color: #ef5350;
+  }
+  /* ShiShi */
+  .char-shishi .char-avatar {
+    background: linear-gradient(145deg, #7b1fa2, #4a0072);
+    border-color: #ce93d8;
+  }
+  /* Ryron */
+  .char-ryron .char-avatar {
+    background: linear-gradient(145deg, #00695c, #004d40);
+    border-color: #4db6ac;
+  }
+  /* Minotaur */
+  .char-minotaur .char-avatar {
+    background: linear-gradient(145deg, #e65100, #bf360c);
+    border-color: #ff9800;
+  }
+
+  /* Bug Monsters floating */
+  .bug-monsters {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .bug {
+    position: absolute;
+    font-size: 0.6in;
+    opacity: 0.6;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+  }
+  .bug:nth-child(1) { top: 10%; left: 3%; font-size: 0.8in; opacity: 0.7; }
+  .bug:nth-child(2) { top: 25%; right: 5%; font-size: 0.65in; }
+  .bug:nth-child(3) { bottom: 20%; left: 6%; font-size: 0.5in; }
+  .bug:nth-child(4) { top: 5%; right: 15%; font-size: 0.55in; opacity: 0.5; }
+  .bug:nth-child(5) { bottom: 10%; right: 8%; font-size: 0.7in; opacity: 0.55; }
+  .bug:nth-child(6) { top: 40%; left: 2%; font-size: 0.45in; opacity: 0.4; }
+
+  .hero-battle-text {
+    font-family: 'Fredoka One', sans-serif;
+    font-size: 0.72in;
+    color: #ffeb3b;
+    text-align: center;
+    text-shadow:
+      3px 3px 0 #e65100,
+      5px 5px 0 rgba(0,0,0,0.3);
+    margin-top: 0.25in;
+    z-index: 3;
+    letter-spacing: 0.02in;
+  }
+
+  /* Energy lines */
+  .energy-burst {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18in;
+    height: 18in;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .energy-line {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, rgba(62,198,240,0.3), transparent);
+    transform-origin: left center;
+  }
+  .energy-line:nth-child(1) { width: 5in; transform: rotate(0deg); }
+  .energy-line:nth-child(2) { width: 4in; transform: rotate(45deg); }
+  .energy-line:nth-child(3) { width: 6in; transform: rotate(90deg); }
+  .energy-line:nth-child(4) { width: 4.5in; transform: rotate(135deg); }
+  .energy-line:nth-child(5) { width: 5in; transform: rotate(180deg); }
+  .energy-line:nth-child(6) { width: 4in; transform: rotate(225deg); }
+  .energy-line:nth-child(7) { width: 5.5in; transform: rotate(270deg); }
+  .energy-line:nth-child(8) { width: 4in; transform: rotate(315deg); }
+
+  /* ===== SECTION 3: FEATURES (25%) ===== */
+  .features-section {
+    width: 100%;
+    height: 25%;
+    background: linear-gradient(180deg, #1a237e 0%, #0d1b4a 20%, #0a1628 60%, #0d1b4a 100%);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5in 0.6in;
+    overflow: hidden;
+  }
+
+  /* Binary pattern */
+  .features-section::before {
+    content: '01001101 01101001 01100011 01101111 01101101 01101001 00100000 01000011 01101111 01100100 01100101 00100000 01000001 01100100 01110110 01100101 01101110 01110100 01110101 01110010 01100101 00100000 01001100 01100101 01100001 01110010 01101110';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.18in;
+    color: rgba(62,198,240,0.06);
+    line-height: 1.8;
+    word-break: break-all;
+    padding: 0.3in;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .features-title {
+    font-family: 'Fredoka One', sans-serif;
+    font-size: 0.7in;
+    color: #fff;
+    text-align: center;
+    margin-bottom: 0.45in;
+    text-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+    z-index: 2;
+  }
+
+  .features-title span {
+    color: #3ec6f0;
+  }
+
+  .features-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35in;
+    width: 100%;
+    z-index: 2;
+  }
+
+  .feature-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.35in;
+    width: 100%;
+  }
+
+  .feature-row:nth-child(even) {
+    flex-direction: row-reverse;
+  }
+
+  .feature-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.3in;
+    background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+    border: 3px solid rgba(62,198,240,0.2);
+    border-radius: 0.25in;
+    padding: 0.35in 0.4in;
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 0.08in;
+    height: 100%;
+    border-radius: 0.25in 0 0 0.25in;
+  }
+
+  .feature-card:nth-child(1)::before { background: #3ec6f0; }
+  .feature-card:nth-child(2)::before { background: #ff9800; }
+
+  .feature-icon-box {
+    width: 1.2in;
+    height: 1.2in;
+    min-width: 1.2in;
+    border-radius: 0.2in;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65in;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  }
+
+  .feature-card:nth-child(1) .feature-icon-box { background: linear-gradient(135deg, #1565c0, #0d47a1); }
+  .feature-card:nth-child(2) .feature-icon-box { background: linear-gradient(135deg, #e65100, #bf360c); }
+
+  .feature-text h3 {
+    font-family: 'Fredoka One', sans-serif;
+    font-size: 0.36in;
+    color: #fff;
+    margin-bottom: 0.08in;
+  }
+
+  .feature-text p {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 0.26in;
+    color: #b3e5fc;
+    line-height: 1.45;
+  }
+
+  /* Colors for icon boxes in rows */
+  .features-grid .feature-row:nth-child(1) .feature-card:nth-child(1) .feature-icon-box {
+    background: linear-gradient(135deg, #1565c0, #0d47a1);
+  }
+  .features-grid .feature-row:nth-child(1) .feature-card:nth-child(2) .feature-icon-box {
+    background: linear-gradient(135deg, #e65100, #bf360c);
+  }
+  .features-grid .feature-row:nth-child(2) .feature-card:nth-child(1) .feature-icon-box {
+    background: linear-gradient(135deg, #2e7d32, #1b5e20);
+  }
+  .features-grid .feature-row:nth-child(2) .feature-card:nth-child(2) .feature-icon-box {
+    background: linear-gradient(135deg, #6a1b9a, #4a148c);
+  }
+
+  .features-grid .feature-row:nth-child(1) .feature-card:nth-child(1)::before { background: #3ec6f0; }
+  .features-grid .feature-row:nth-child(1) .feature-card:nth-child(2)::before { background: #ff9800; }
+  .features-grid .feature-row:nth-child(2) .feature-card:nth-child(1)::before { background: #4caf50; }
+  .features-grid .feature-row:nth-child(2) .feature-card:nth-child(2)::before { background: #ab47bc; }
+
+  /* ===== SECTION 4: HEROES (15%) ===== */
+  .heroes-section {
+    width: 100%;
+    height: 15%;
+    background: linear-gradient(180deg, #0d1b4a 0%, #0b2961 30%, #0e3d8a 70%, #1565c0 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4in 0.5in;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .heroes-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse at 50% 50%, rgba(62,198,240,0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .heroes-title {
+    font-family: 'Fredoka One', sans-serif;
+    font-size: 0.68in;
+    color: #ffeb3b;
+    text-shadow:
+      3px 3px 0 #e65100,
+      5px 5px 0 rgba(0,0,0,0.3);
+    margin-bottom: 0.4in;
+    text-align: center;
+    z-index: 2;
+  }
+
+  .heroes-grid {
+    display: flex;
+    justify-content: center;
+    gap: 0.45in;
+    z-index: 2;
+    width: 100%;
+  }
+
+  .hero-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    max-width: 5in;
+  }
+
+  .hero-circle {
+    width: 2.8in;
+    height: 2.8in;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4in;
+    margin-bottom: 0.18in;
+    position: relative;
+    box-shadow:
+      0 6px 25px rgba(0,0,0,0.4),
+      inset 0 -4px 10px rgba(0,0,0,0.2),
+      inset 0 4px 10px rgba(255,255,255,0.1);
+    border: 5px solid rgba(255,255,255,0.3);
+  }
+
+  .hero-circle::after {
+    content: '';
+    position: absolute;
+    top: 8%;
+    left: 15%;
+    width: 35%;
+    height: 20%;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    transform: rotate(-20deg);
+  }
+
+  .hero-card:nth-child(1) .hero-circle { background: linear-gradient(145deg, #ce93d8, #6a1b9a); border-color: #e1bee7; }
+  .hero-card:nth-child(2) .hero-circle { background: linear-gradient(145deg, #ef5350, #b71c1c); border-color: #ef9a9a; }
+  .hero-card:nth-child(3) .hero-circle { background: linear-gradient(145deg, #ff9800, #e65100); border-color: #ffcc80; }
+  .hero-card:nth-child(4) .hero-circle { background: linear-gradient(145deg, #4db6ac, #00695c); border-color: #80cbc4; }
+
+  .hero-card-name {
+    font-family: 'Fredoka One', sans-serif;
+    font-size: 0.36in;
+    color: #fff;
+    margin-bottom: 0.06in;
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+  }
+
+  .hero-card-role {
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.24in;
+    color: #b3e5fc;
+    font-weight: 700;
+    margin-bottom: 0.06in;
+  }
+
+  .hero-card-power {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 0.22in;
+    color: #80deea;
+    font-style: italic;
+    padding: 0.05in 0.18in;
+    background: rgba(0,0,0,0.3);
+    border-radius: 0.1in;
+  }
+
+  /* ===== SECTION 5: BENEFITS (10%) ===== */
+  .benefits-section {
+    width: 100%;
+    height: 10%;
+    background: linear-gradient(180deg, #1565c0 0%, #0a1e3d 30%, #0a1628 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4in 0.6in;
+    position: relative;
+  }
+
+  .benefits-box {
+    background: linear-gradient(135deg, #0d2754, #0a1e3d);
+    border: 4px solid #1565c0;
+    border-radius: 0.3in;
+    padding: 0.45in 0.6in;
+    width: 100%;
+    box-shadow:
+      0 8px 30px rgba(0,0,0,0.4),
+      inset 0 1px 0 rgba(255,255,255,0.05);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .benefits-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3ec6f0, #ff9800, #3ec6f0);
+  }
+
+  .benefits-title {
+    font-family: 'Fredoka One', sans-serif;
+    font-size: 0.56in;
+    color: #3ec6f0;
+    text-align: center;
+    margin-bottom: 0.3in;
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+  }
+
+  .benefits-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.22in;
+  }
+
+  .benefit-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25in;
+  }
+
+  .benefit-check {
+    width: 0.55in;
+    height: 0.55in;
+    min-width: 0.55in;
+    background: linear-gradient(135deg, #4caf50, #2e7d32);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.32in;
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(76,175,80,0.3);
+    font-weight: 900;
+  }
+
+  .benefit-text {
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.32in;
+    color: #fff;
+    font-weight: 700;
+  }
+
+  .benefit-text span {
+    color: #b3e5fc;
+    font-weight: 400;
+  }
+
+  /* ===== SECTION 6: FOOTER / CTA (10%) ===== */
+  .footer-section {
+    width: 100%;
+    height: 10%;
+    background: linear-gradient(180deg, #ff8f00, #ff6f00, #e65100);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4in 0.5in;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .footer-section::before {
+    content: '';
+    position: absolute;
+    top: -0.3in;
+    left: 0;
+    right: 0;
+    height: 0.6in;
+    background: linear-gradient(180deg, transparent, rgba(255,143,0,0.5));
+    pointer-events: none;
+  }
+
+  /* Decorative circles */
+  .footer-deco {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+  }
+  .footer-deco:nth-child(1) { width: 3in; height: 3in; top: -1in; left: -0.5in; }
+  .footer-deco:nth-child(2) { width: 4in; height: 4in; bottom: -2in; right: -1.5in; }
+  .footer-deco:nth-child(3) { width: 2in; height: 2in; top: 0.5in; right: 0.5in; opacity: 0.5; }
+
+  .cta-text {
+    font-family: 'Fredoka One', sans-serif;
+    font-size: 0.78in;
+    color: #fff;
+    text-shadow:
+      3px 3px 0 #bf360c,
+      5px 5px 0 rgba(0,0,0,0.2);
+    text-align: center;
+    margin-bottom: 0.3in;
+    z-index: 2;
+    letter-spacing: 0.03in;
+  }
+
+  .store-badges {
+    display: flex;
+    justify-content: center;
+    gap: 0.4in;
+    margin-bottom: 0.3in;
+    z-index: 2;
+  }
+
+  .store-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.15in;
+    background: #000;
+    color: #fff;
+    padding: 0.18in 0.4in;
+    border-radius: 0.15in;
+    border: 3px solid #333;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  }
+
+  .store-badge-icon {
+    font-size: 0.5in;
+  }
+
+  .store-badge-text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .store-badge-text small {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 0.16in;
+    color: #ccc;
+    text-transform: uppercase;
+  }
+
+  .store-badge-text strong {
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.28in;
+    font-weight: 800;
+  }
+
+  .footer-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6in;
+    z-index: 2;
+  }
+
+  .qr-placeholder {
+    width: 1.8in;
+    height: 1.8in;
+    background: #fff;
+    border-radius: 0.15in;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    border: 4px solid #333;
+    position: relative;
+  }
+
+  .qr-inner {
+    width: 1.3in;
+    height: 1.3in;
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(7, 1fr);
+    gap: 1px;
+  }
+
+  .qr-cell {
+    background: #000;
+    border-radius: 1px;
+  }
+  .qr-cell.w { background: #fff; }
+
+  .qr-label {
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.16in;
+    color: #333;
+    font-weight: 700;
+    margin-top: 0.05in;
+    text-align: center;
+  }
+
+  .scan-text {
+    font-family: 'Fredoka One', sans-serif;
+    font-size: 0.3in;
+    color: #fff;
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+    text-align: center;
+  }
+
+  .website-url {
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.3in;
+    color: #fff;
+    font-weight: 800;
+    text-align: center;
+    z-index: 2;
+    margin-top: 0.15in;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+    letter-spacing: 0.02in;
+  }
+
+  /* ===== Decorative shapes throughout ===== */
+  .floating-shape {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0.08;
+  }
+
+  .shape-circle {
+    border-radius: 50%;
+    background: #3ec6f0;
+  }
+
+  .shape-diamond {
+    background: #ff9800;
+    transform: rotate(45deg);
+  }
+
+  /* 3D effect shadows for sections */
+  .section-divider {
+    width: 100%;
+    height: 6px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.3), transparent);
+    position: relative;
+    z-index: 10;
+  }
+
+  /* Print optimizations */
+  @media print {
+    html, body {
+      width: 24in;
+      height: 72in;
+    }
+    .banner {
+      page-break-inside: avoid;
+      page-break-after: avoid;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="banner">
+
+  <!-- ============================================================ -->
+  <!-- SECTION 1: HEADER - THE HOOK (Top 15%) -->
+  <!-- ============================================================ -->
+  <div class="header-section">
+    <div class="stars">
+      <div class="star"></div>
+      <div class="star"></div>
+      <div class="star"></div>
+      <div class="star"></div>
+      <div class="star"></div>
+      <div class="star"></div>
+    </div>
+
+    <div class="logo-area">
+      <!-- CSS Robot -->
+      <div class="logo-icon">
+        <div class="robot">
+          <div class="robot-head">
+            <div class="robot-antenna"></div>
+            <div class="robot-eye left">
+              <div class="robot-eye-shine"></div>
+            </div>
+            <div class="robot-eye right">
+              <div class="robot-eye-shine"></div>
+            </div>
+            <div class="robot-mouth"></div>
+          </div>
+          <div class="robot-body">
+            <div class="robot-arm left"></div>
+            <div class="robot-arm right"></div>
+          </div>
+        </div>
+      </div>
+      <div class="logo-text">MICOMI</div>
+    </div>
+
+    <div class="headline">Make Coding Fun Again!</div>
+    <div class="sub-headline">Learn to Code. Play the Game. Save the World.</div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 2: HERO IMAGE - THE WOW FACTOR (25%) -->
+  <!-- ============================================================ -->
+  <div class="hero-section">
+    <div class="app-description">
+      A gamified learning platform that integrates structured curriculum with turn-based adventure mechanics. Micomi reinforces computer-related concepts by requiring users to solve coding challenges and execute commands to trigger hero abilities — offering a compelling alternative to traditional study methods.
+    </div>
+
+    <div class="battle-scene">
+      <div class="energy-burst">
+        <div class="energy-line"></div>
+        <div class="energy-line"></div>
+        <div class="energy-line"></div>
+        <div class="energy-line"></div>
+        <div class="energy-line"></div>
+        <div class="energy-line"></div>
+        <div class="energy-line"></div>
+        <div class="energy-line"></div>
+      </div>
+
+      <div class="bug-monsters">
+        <div class="bug">🐛</div>
+        <div class="bug">🕷️</div>
+        <div class="bug">🪲</div>
+        <div class="bug">🐜</div>
+        <div class="bug">🦟</div>
+        <div class="bug">🪳</div>
+      </div>
+
+      <div class="hero-characters">
+        <div class="hero-char char-leon">
+          <div class="char-avatar">
+            <div class="char-emoji">🐺</div>
+            <div class="char-name-badge">LEON — Assassin</div>
+          </div>
+        </div>
+
+        <div class="hero-char char-shishi">
+          <div class="char-avatar">
+            <div class="char-emoji">🐱</div>
+            <div class="char-name-badge">SHISHI — Mage</div>
+          </div>
+        </div>
+
+        <div class="hero-char char-micomi">
+          <div class="char-avatar">
+            <div class="char-emoji">🤖</div>
+            <div class="char-name-badge">MICOMI — Leader</div>
+          </div>
+        </div>
+
+        <div class="hero-char char-minotaur">
+          <div class="char-avatar">
+            <div class="char-emoji">🐂</div>
+            <div class="char-name-badge">MINOTAUR — Tank</div>
+          </div>
+        </div>
+
+        <div class="hero-char char-ryron">
+          <div class="char-avatar">
+            <div class="char-emoji">🦅</div>
+            <div class="char-name-badge">RYRON — Marksman</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-battle-text">⚔️ Defeat the Bugs with Your Code! ⚔️</div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 3: GAME FEATURES (25%) -->
+  <!-- ============================================================ -->
+  <div class="features-section">
+    <div class="features-title">What's <span>Inside</span>?</div>
+
+    <div class="features-grid">
+      <div class="feature-row">
+        <div class="feature-card">
+          <div class="feature-icon-box">🗺️</div>
+          <div class="feature-text">
+            <h3>Epic Story Mode</h3>
+            <p>Journey through 4 Islands, enjoy comic-style storytelling, and battle Boss Bugs in an immersive adventure!</p>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-box">📱</div>
+          <div class="feature-text">
+            <h3>Mobile Code Playground</h3>
+            <p>Built-in compiler to practice coding anytime, anywhere. Write real code on your phone!</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="feature-row">
+        <div class="feature-card">
+          <div class="feature-icon-box">🎓</div>
+          <div class="feature-text">
+            <h3>4 Languages to Master</h3>
+            <p>Learn HTML, CSS, JavaScript, and Computer Basics through interactive lessons and challenges.</p>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-box">🏆</div>
+          <div class="feature-text">
+            <h3>Track & Earn</h3>
+            <p>Collect Badges, Potions, and track your coding stats. Level up as you learn!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 4: HEROES SHOWCASE (15%) -->
+  <!-- ============================================================ -->
+  <div class="heroes-section">
+    <div class="heroes-title">⭐ CHOOSE YOUR HERO ⭐</div>
+
+    <div class="heroes-grid">
+      <div class="hero-card">
+        <div class="hero-circle">🐱</div>
+        <div class="hero-card-name">ShiShi</div>
+        <div class="hero-card-role">THE MAGE</div>
+        <div class="hero-card-power">❄️ Ice Power</div>
+      </div>
+
+      <div class="hero-card">
+        <div class="hero-circle">🐺</div>
+        <div class="hero-card-name">Leon</div>
+        <div class="hero-card-role">THE ASSASSIN</div>
+        <div class="hero-card-power">🩸 Healing Blood</div>
+      </div>
+
+      <div class="hero-card">
+        <div class="hero-circle">🐂</div>
+        <div class="hero-card-name">Minotaur</div>
+        <div class="hero-card-role">THE TANK</div>
+        <div class="hero-card-power">🛡️ Iron Defense</div>
+      </div>
+
+      <div class="hero-card">
+        <div class="hero-circle">🦅</div>
+        <div class="hero-card-name">Ryron</div>
+        <div class="hero-card-role">THE MARKSMAN</div>
+        <div class="hero-card-power">👁️ Reveal Vision</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 5: BENEFITS (10%) -->
+  <!-- ============================================================ -->
+  <div class="benefits-section">
+    <div class="benefits-box">
+      <div class="benefits-title">🎮 WHY PLAY MICOMI?</div>
+      <div class="benefits-list">
+        <div class="benefit-item">
+          <div class="benefit-check">✔</div>
+          <div class="benefit-text">Zero Experience Needed: <span>Perfect for absolute beginners!</span></div>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-check">✔</div>
+          <div class="benefit-text">100% Free to Play: <span>High-quality education for everyone.</span></div>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-check">✔</div>
+          <div class="benefit-text">Visual Learning: <span>No boring lectures, just fun adventures.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 6: FOOTER CTA (10%) -->
+  <!-- ============================================================ -->
+  <div class="footer-section">
+    <div class="footer-deco"></div>
+    <div class="footer-deco"></div>
+    <div class="footer-deco"></div>
+
+    <div class="cta-text">🚀 DOWNLOAD MICOMI NOW!</div>
+
+    <div class="store-badges">
+      <div class="store-badge">
+        <div class="store-badge-icon">▶️</div>
+        <div class="store-badge-text">
+          <small>Get it on</small>
+          <strong>Google Play</strong>
+        </div>
+      </div>
+      <div class="store-badge">
+        <div class="store-badge-icon">🍎</div>
+        <div class="store-badge-text">
+          <small>Download on the</small>
+          <strong>App Store</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="qr-placeholder">
+        <div class="qr-inner">
+          <!-- Stylized QR pattern -->
+          <div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell"></div>
+          <div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell"></div>
+          <div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell"></div>
+          <div class="qr-cell w"></div><div class="qr-cell w"></div><div class="qr-cell w"></div><div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell w"></div><div class="qr-cell w"></div>
+          <div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell"></div>
+          <div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell w"></div><div class="qr-cell"></div>
+          <div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell"></div>
+        </div>
+        <div class="qr-label">SCAN ME</div>
+      </div>
+
+      <div>
+        <div class="scan-text">Scan to Start<br>Your Journey!</div>
+      </div>
+    </div>
+
+    <div class="website-url">www.micomi-app.com</div>
+  </div>
+
+</div>
+</body>
+</html>
