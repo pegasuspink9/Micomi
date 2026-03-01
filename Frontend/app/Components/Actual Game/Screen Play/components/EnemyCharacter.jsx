@@ -288,6 +288,9 @@ const EnemyCharacter = ({
   }, [allAnimationUrls, isUrlCached]);
 
   const [currentAnimationUrl, setCurrentAnimationUrl] = useState(initialUrl);
+  const currentAnimationUrlRef = useRef(initialUrl);
+  
+
 
    const [displayReaction, setDisplayReaction] = useState(null);
   const reactionOpacity = useSharedValue(0);
@@ -425,6 +428,17 @@ const EnemyCharacter = ({
   const isFrozen = enemyCurrentState === 'Frozen';
 
 
+  useEffect(() => {
+    const config = animationConfig;
+    const targetUrl = config.isCompound ? config.runUrl : config.url;
+    if (targetUrl && currentAnimationUrlRef.current !== targetUrl) {
+      currentAnimationUrlRef.current = targetUrl;
+      setCurrentAnimationUrl(targetUrl);
+    }
+  }, [animationConfig]);
+
+
+
   // ========== Main Animation Effect ==========
   useEffect(() => {
   if (currentState === 'attack' && attackInitiated.value) {
@@ -434,12 +448,16 @@ const EnemyCharacter = ({
   const config = animationConfig;
   const targetUrl = config.isCompound ? config.runUrl : config.url;
 
-  if (targetUrl && currentAnimationUrl !== targetUrl) {
+  // FIX: Sync URL immediately via ref instead of returning early
+  if (targetUrl && currentAnimationUrlRef.current !== targetUrl) {
+    currentAnimationUrlRef.current = targetUrl;
     setCurrentAnimationUrl(targetUrl);
-    return; 
+    // DON'T return — continue to start the animation below
   }
 
-  const isCurrentUrlCached = isUrlCached(currentAnimationUrl) || preloadedImages.has(currentAnimationUrl);
+  const activeUrl = currentAnimationUrlRef.current;
+
+  const isActiveUrlCached = isUrlCached(activeUrl) || preloadedImages.has(activeUrl);
   const isTargetUrlCached = targetUrl ? (isUrlCached(targetUrl) || preloadedImages.has(targetUrl)) : true;
   
   if (isPaused || isFrozen) {
@@ -452,7 +470,7 @@ const EnemyCharacter = ({
   }
 
   const isCriticalState = currentState === 'attack' || currentState === 'hurt' || currentState === 'dies';
-  const canProceed = isCriticalState ? (isCurrentUrlCached || isTargetUrlCached) : (imageReady || isCurrentUrlCached || isTargetUrlCached);
+  const canProceed = isCriticalState ? (isActiveUrlCached || isTargetUrlCached) : (imageReady || isActiveUrlCached || isTargetUrlCached);
 
   if (!canProceed) {
     return; 
@@ -485,6 +503,12 @@ const EnemyCharacter = ({
     if (isUrlCached(runUrl)) preloadedImages.set(runUrl, true);
     if (isUrlCached(attackUrl)) preloadedImages.set(attackUrl, true);
 
+    // FIX: Ensure run URL is active before starting
+    if (currentAnimationUrlRef.current !== runUrl) {
+      currentAnimationUrlRef.current = runUrl;
+      setCurrentAnimationUrl(runUrl);
+    }
+
     const RUN_DURATION = 400;
     const ATTACK_DURATION = ANIMATION_DURATIONS.attack;
 
@@ -500,6 +524,7 @@ const EnemyCharacter = ({
 
       cancelAnimation(frameIndex);
       frameIndex.value = 0;
+      currentAnimationUrlRef.current = attackUrl;
       runOnJS(setCurrentAnimationUrl)(attackUrl);
 
       frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration: ATTACK_DURATION, easing: Easing.linear }, (attackFinished) => {
@@ -534,15 +559,12 @@ const EnemyCharacter = ({
       blinkOpacity.value = withRepeat(withTiming(0.7, { duration: 100 }), -1, true);
     }
 
-    // ✅ FIX: Determine if we should "Ping-Pong" (reverse loop).
-    // We want this for IDLE and HURT to make them look smooth. 
-    // We do NOT want this for RUN (running backwards looks weird).
     const shouldPingPong = currentState === 'idle' || currentState === 'hurt';
 
     frameIndex.value = withRepeat(
       withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), 
       -1, 
-      shouldPingPong // ✅ True for idle/hurt (0->23->0), False for run (0->23, 0->23)
+      shouldPingPong
     );
     return;
   }

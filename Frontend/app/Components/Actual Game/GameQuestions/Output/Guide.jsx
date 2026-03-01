@@ -67,9 +67,9 @@ const webViewInjectedJS = `
   true;
 `;
 
-const ExampleOutput = ({ exampleCode, exampleKey }) => {
+const ExampleOutput = ({ exampleCode, exampleKey, hideLabel = false }) => {
   const [htmlOutput, setHtmlOutput] = useState('');
-  const [webViewHeight, setWebViewHeight] = useState(scale(1)); // Start at 1
+  const [webViewHeight, setWebViewHeight] = useState(scale(1));
   const [hasMeasured, setHasMeasured] = useState(false);
 
   useEffect(() => {
@@ -100,7 +100,7 @@ const ExampleOutput = ({ exampleCode, exampleKey }) => {
 
   return (
     <View style={[styles.exampleOutputContainer, { opacity: hasMeasured ? 1 : 0 }]}>
-      <Text style={styles.exampleOutputLabel}>Output:</Text>
+      {!hideLabel && <Text style={styles.exampleOutputLabel}>Output:</Text>}
       <View style={[styles.exampleWebviewContainer, { height: webViewHeight }]}>
         <WebView
           key={exampleKey} 
@@ -122,98 +122,80 @@ const ExampleOutput = ({ exampleCode, exampleKey }) => {
 const InteractiveEditor = ({ initialCode }) => {
   const [code, setCode] = useState(initialCode || '<h1>Hello World!</h1>\n<p>Welcome to Micomi.</p>');
   const [debouncedCode, setDebouncedCode] = useState(code);
-  const [webViewHeight, setWebViewHeight] = useState(scale(1)); // Logic matched: Start at 1
-  const [hasMeasured, setHasMeasured] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedCode(code);
-    }, 500); 
+    }, 500);
     return () => clearTimeout(timer);
   }, [code]);
 
-  const htmlOutput = useMemo(() => generateExampleOutput(debouncedCode), [debouncedCode]);
-
-  const onWebViewMessage = (event) => {
-    try {
-      const height = Number(event.nativeEvent.data);
-      if (!isNaN(height) && height > 0) {
-        setWebViewHeight(height); // Logic matched: No Math.max floor
-        setHasMeasured(true);
-      }
-    } catch (e) {
-      console.warn("Failed to parse WebView height", e);
-    }
-  };
-  
   const lines = code.split('\n');
-
 
   return (
     <View style={styles.interactiveSection}>
-      <Text style={styles.interactiveTitle}>Try it yourself 🚀</Text>
-      
-      <View style={styles.interactiveEditorContainer}>
-        <View style={styles.interactiveHeader}>
-          <View style={styles.windowControls}>
-            <View style={[styles.windowButton, { backgroundColor: '#ff5f56' }]} />
-            <View style={[styles.windowButton, { backgroundColor: '#ffbd2e' }]} />
-            <View style={[styles.windowButton, { backgroundColor: '#27ca3f' }]} />
-          </View>
-          <Text style={styles.interactiveHeaderText}>index.html</Text>
-        </View>
+      {/* Absolute background layer */}
+      <View style={styles.interactiveBg} />
 
-        <View style={styles.interactiveBody}>
-          <View style={styles.interactiveLineNumbers}>
-            {lines.map((_, i) => (
-              <Text key={i} style={styles.interactiveLineNumberText}>{i + 1}</Text>
-            ))}
+      {/* Content layer */}
+      <View style={styles.interactiveContent}>
+        <Text style={styles.interactiveTitle}>Try it yourself 🚀</Text>
+
+        <View style={styles.interactiveEditorContainer}>
+          <View style={styles.interactiveHeader}>
+            <View style={styles.windowControls}>
+              <View style={[styles.windowButton, { backgroundColor: '#ff5f56' }]} />
+              <View style={[styles.windowButton, { backgroundColor: '#ffbd2e' }]} />
+              <View style={[styles.windowButton, { backgroundColor: '#27ca3f' }]} />
+            </View>
+            <Text style={styles.interactiveHeaderText}>index.html</Text>
           </View>
-          
-          <View style={styles.interactiveInputWrapper}>
-            <Text style={styles.interactiveHighlightedLayer} pointerEvents="none">
-              {lines.map((line, i) => (
-                <React.Fragment key={i}>
-                  {renderHighlightedText(line)}
-                  {i < lines.length - 1 ? '\n' : ''}
-                </React.Fragment>
+
+          <View style={styles.interactiveBody}>
+            <View style={styles.interactiveLineNumbers}>
+              {lines.map((_, i) => (
+                <Text key={i} style={styles.interactiveLineNumberText}>{i + 1}</Text>
               ))}
-            </Text>
-            
-            <TextInput
-              style={styles.interactiveInput}
-              multiline={true}
-              value={code}
-              onChangeText={setCode}
-              autoCapitalize="none"
-              autoCorrect={false}
-              spellCheck={false}
-              placeholder="Type your HTML here..."
-              placeholderTextColor="#75715E"
-              cursorColor="#f8f8f2"
-            />
+            </View>
+
+            <View style={styles.interactiveInputWrapper}>
+              <Text style={styles.interactiveHighlightedLayer} pointerEvents="none">
+                {lines.map((line, i) => (
+                  <React.Fragment key={i}>
+                    {renderHighlightedText(line)}
+                    {i < lines.length - 1 ? '\n' : ''}
+                  </React.Fragment>
+                ))}
+              </Text>
+
+              <TextInput
+                style={styles.interactiveInput}
+                multiline={true}
+                value={code}
+                onChangeText={setCode}
+                autoCapitalize="none"
+                autoCorrect={false}
+                spellCheck={false}
+                placeholder="Type your HTML here..."
+                placeholderTextColor="#75715E"
+                cursorColor="#f8f8f2"
+              />
+            </View>
           </View>
         </View>
-      </View>
 
-      <Text style={styles.interactiveOutputLabel}>Output:</Text>
-      <View style={[styles.exampleWebviewContainer, { height: webViewHeight, opacity: hasMeasured ? 1 : 0 }]}>
-        <WebView
-          source={{ html: htmlOutput }}
-          style={styles.exampleWebview}
-          onMessage={onWebViewMessage}
-          injectedJavaScript={webViewInjectedJS}
-          scrollEnabled={false}
-          scalesPageToFit={false}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-          originWhitelist={['*']}
+        <Text style={styles.interactiveOutputLabel}>Output:</Text>
+
+
+        <ExampleOutput 
+          exampleCode={debouncedCode} 
+          exampleKey={`interactive-output`}
+           hideLabel={true} 
         />
       </View>
     </View>
   );
 };
-
 // --- MAIN GUIDE COMPONENT ---
 const Guide = ({ currentQuestion, isFullPageLesson = false }) => {
 
@@ -566,7 +548,25 @@ const styles = StyleSheet.create({
 
    interactiveSection: {
     marginVertical: scale(20),
-    padding: scale(15),
+    position: 'relative', // Anchor for absolute background
+  },
+  hiddenMeasureContainer: {
+    position: 'absolute',
+    left: -9999,
+    top: -9999,
+    width: '100%',
+    height: scale(1),
+    opacity: 0,
+    pointerEvents: 'none',
+  },
+
+  // Absolute background that stretches to fill parent
+  interactiveBg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: '#0d4277',
     borderRadius: scale(10),
     borderWidth: scale(2),
@@ -576,6 +576,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: scale(4),
     elevation: 3,
+  },
+
+  // Transparent content layer - drives the size of the parent
+  interactiveContent: {
+    padding: scale(15),
   },
 
   interactiveTitle: {

@@ -370,9 +370,9 @@ export default function CodePlayGround() {
         <View style={styles.container}>
           <View style={styles.headerTitleContainer}>
             <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-              <Text style={styles.backButtonText}>{'< Back'}</Text>
+              <Text style={styles.backButtonText}>{'Back'}</Text>
             </TouchableOpacity>
-            <Text style={styles.title}>Code Playground 🚀</Text>
+            <Text style={styles.title}>Code Playground</Text>
             <View style={styles.placeholder} />
           </View>
 

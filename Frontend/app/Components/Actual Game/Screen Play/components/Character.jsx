@@ -181,6 +181,8 @@ const Character = ({
   }, [characterAnimations]);
 
   const [currentAnimationUrl, setCurrentAnimationUrl] = useState(initialUrl);
+  const currentAnimationUrlRef = useRef(initialUrl);
+  
 
   //  NEW: Robust Character Name Detection
   // If characterName prop is missing (during transition), fallback to checking the URL
@@ -404,136 +406,171 @@ const Character = ({
     if (onAnimationComplete) onAnimationComplete(currentState);
   }, [onAnimationComplete, currentState]);
 
+
+  useEffect(() => {
+    const config = animationConfig;
+    const targetUrl = config.isCompound ? config.runUrl : config.url;
+    if (targetUrl && currentAnimationUrlRef.current !== targetUrl) {
+      currentAnimationUrlRef.current = targetUrl;
+      setCurrentAnimationUrl(targetUrl);
+    }
+  }, [animationConfig]);
+
   // ========== Main Animation Effect ==========
-    useEffect(() => {
-  if (currentState !== 'attack' && currentState !== 'run') {
-    attackInitiated.value = false;
-  }
+  useEffect(() => {
+    if (currentState !== 'attack' && currentState !== 'run') {
+      attackInitiated.value = false;
+    }
 
-  if (currentState === 'run' && attackInitiated.value) return;
-  if (currentState === 'attack' && attackInitiated.value) return;
+    if (currentState === 'run' && attackInitiated.value) return;
+    if (currentState === 'attack' && attackInitiated.value) return;
 
+    const config = animationConfig;
+    const targetUrl = config.isCompound ? config.runUrl : config.url;
 
-  const config = animationConfig;
-  const targetUrl = config.isCompound ? config.runUrl : config.url;
+    // Sync URL immediately via ref
+    if (targetUrl && currentAnimationUrlRef.current !== targetUrl) {
+      currentAnimationUrlRef.current = targetUrl;
+      setCurrentAnimationUrl(targetUrl);
+    }
 
-  if (targetUrl && currentAnimationUrl !== targetUrl) {
-    setCurrentAnimationUrl(targetUrl);
-    return; 
-  }
+    const activeUrl = currentAnimationUrlRef.current;
 
-  const isCurrentUrlCached = isUrlCached(currentAnimationUrl) || preloadedImages.has(currentAnimationUrl);
-  const isTargetUrlCached = targetUrl ? (isUrlCached(targetUrl) || preloadedImages.has(targetUrl)) : true;
-  
-  if (isPaused) {
-    cancelAnimation(frameIndex);
-    cancelAnimation(positionX);
-    cancelAnimation(blinkOpacity);
-    cancelAnimation(rangeProjectileX);
-    blinkOpacity.value = 0;
-    return;
-  }
+    const isActiveUrlCached = isUrlCached(activeUrl) || preloadedImages.has(activeUrl);
+    const isTargetUrlCached = targetUrl ? (isUrlCached(targetUrl) || preloadedImages.has(targetUrl)) : true;
 
-  const isCriticalState = currentState === 'attack' || currentState === 'hurt' || currentState === 'dies';
-  const canProceed = isCriticalState ? (isCurrentUrlCached || isTargetUrlCached) : (imageReady || isCurrentUrlCached || isTargetUrlCached);
-
-  if (!canProceed) {
-    return;
-  }
-  
-  cancelAnimation(frameIndex);
-  cancelAnimation(positionX);
-  cancelAnimation(opacity);
-  cancelAnimation(blinkOpacity);
-  cancelAnimation(rangeProjectileX);
-  
-  blinkOpacity.value = 0;
-  frameIndex.value = 0;
-
-  positionX.value = 0; 
-  opacity.value = 1;
-
-  if (config.isCompound && currentState === 'attack') {
-    if (attackInitiated.value) return; 
-    attackInitiated.value = true;
-    const { runUrl, attackUrl } = config;
-    if (!runUrl || !attackUrl) {
-      runOnJS(notifyAnimationComplete)();
+    if (isPaused) {
+      cancelAnimation(frameIndex);
+      cancelAnimation(positionX);
+      cancelAnimation(blinkOpacity);
+      cancelAnimation(rangeProjectileX);
+      blinkOpacity.value = 0;
       return;
     }
 
-    if (isUrlCached(runUrl)) preloadedImages.set(runUrl, true);
-    if (isUrlCached(attackUrl)) preloadedImages.set(attackUrl, true);
+    const isCriticalState = currentState === 'attack' || currentState === 'hurt' || currentState === 'dies';
+    const canProceed = isCriticalState ? (isActiveUrlCached || isTargetUrlCached) : (imageReady || isActiveUrlCached || isTargetUrlCached);
 
-    frameIndex.value = withRepeat(withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false);
-    positionX.value = withTiming(ATTACK_RUN_DISTANCE, { duration: 400, easing: Easing.in(Easing.quad) }, (finished) => {
-      if (!finished) return;
-      cancelAnimation(frameIndex);
-      frameIndex.value = 0;
-      runOnJS(setCurrentAnimationUrl)(attackUrl);
-      frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration: ANIMATION_DURATIONS.attack, easing: Easing.linear }, (attackFinished) => {
-        if (attackFinished) {
-          positionX.value = withTiming(0, { duration: 300, easing: Easing.quad }, (returnFinished) => {
-            if (returnFinished) runOnJS(notifyAnimationComplete)();
-          });
+    if (!canProceed) {
+      return;
+    }
+
+    cancelAnimation(frameIndex);
+    cancelAnimation(positionX);
+    cancelAnimation(opacity);
+    cancelAnimation(blinkOpacity);
+    cancelAnimation(rangeProjectileX);
+
+    blinkOpacity.value = 0;
+    frameIndex.value = 0;
+    positionX.value = 0;
+    opacity.value = 1;
+
+    if (config.isCompound && currentState === 'attack') {
+      if (attackInitiated.value) return;
+      attackInitiated.value = true;
+      const { runUrl, attackUrl } = config;
+      if (!runUrl || !attackUrl) {
+        runOnJS(notifyAnimationComplete)();
+        return;
+      }
+
+      if (isUrlCached(runUrl)) preloadedImages.set(runUrl, true);
+      if (isUrlCached(attackUrl)) preloadedImages.set(attackUrl, true);
+
+      // Ensure run URL is active before starting — match EnemyCharacter pattern
+      currentAnimationUrlRef.current = runUrl;
+      setCurrentAnimationUrl(runUrl);
+
+      // Reset position and opacity explicitly — match EnemyCharacter pattern
+      positionX.value = 0;
+      opacity.value = 1;
+
+      frameIndex.value = withRepeat(
+        withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }),
+        -1,
+        false
+      );
+
+      positionX.value = withTiming(ATTACK_RUN_DISTANCE, { duration: 400, easing: Easing.in(Easing.quad) }, (finished) => {
+        if (!finished) return;
+
+        cancelAnimation(frameIndex);
+        frameIndex.value = 0;
+        currentAnimationUrlRef.current = attackUrl;
+        runOnJS(setCurrentAnimationUrl)(attackUrl);
+
+        frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration: ANIMATION_DURATIONS.attack, easing: Easing.linear }, (attackFinished) => {
+          if (attackFinished) {
+            positionX.value = withTiming(0, { duration: 300, easing: Easing.quad }, (returnFinished) => {
+              if (returnFinished) runOnJS(notifyAnimationComplete)();
+            });
+          }
+        });
+      });
+      return;
+    }
+
+    if (currentState === 'run' && !config.isCompound) {
+      attackInitiated.value = true;
+
+      frameIndex.value = withRepeat(
+        withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }),
+        -1,
+        false
+      );
+      positionX.value = withTiming(RUN_AWAY_DISTANCE, { duration: ANIMATION_DURATIONS.run, easing: Easing.linear }, (finished) => {
+        if (finished) {
+          cancelAnimation(frameIndex);
+          runOnJS(notifyAnimationComplete)();
         }
       });
-    });
-    return;
-  }
-  
-  if (currentState === 'run' && !config.isCompound) {
-    attackInitiated.value = true; 
+      return;
+    }
 
-    frameIndex.value = withRepeat(withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false);
-    positionX.value = withTiming(RUN_AWAY_DISTANCE, { duration: ANIMATION_DURATIONS.run, easing: Easing.linear }, (finished) => {
-      if (finished) {
-        cancelAnimation(frameIndex);
-        runOnJS(notifyAnimationComplete)();
-      }
-    });
-    return;
-  }
+    if (config.shouldLoop) {
+      frameIndex.value = withRepeat(
+        withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }),
+        -1,
+        false
+      );
+      return;
+    }
 
-  if (config.shouldLoop) {
-    frameIndex.value = withRepeat(withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false);
-    return;
-  }
+    if (currentState === 'hurt') {
+      blinkOpacity.value = withRepeat(withTiming(0.7, { duration: 100 }), Math.floor(ANIMATION_DURATIONS.hurt / 200), true);
+    } else {
+      blinkOpacity.value = 0;
+    }
 
-  if (currentState === 'hurt') {
-    blinkOpacity.value = withRepeat(withTiming(0.7, { duration: 100 }), Math.floor(ANIMATION_DURATIONS.hurt / 200), true);
-  } else {
-    blinkOpacity.value = 0;
-  }
+    const duration = ANIMATION_DURATIONS[currentState] || (FRAME_DURATION * TOTAL_FRAMES);
 
-  const duration = ANIMATION_DURATIONS[currentState] || (FRAME_DURATION * TOTAL_FRAMES);
-  
-  //  LOGIC FOR RANGE ATTACK MOVEMENT
-  if (currentState === 'attack' && config.isRange) {
-    if (effectiveCharacterName === 'Ryron') { //  Updated to use effectiveCharacterName
+    if (currentState === 'attack' && config.isRange) {
+      if (effectiveCharacterName === 'Ryron') {
         rangeProjectileX.value = 0;
         rangeProjectileX.value = withDelay(700, withTiming(ATTACK_RUN_DISTANCE, {
-            duration: duration * 0.4, 
-            easing: Easing.linear
+          duration: duration * 0.4,
+          easing: Easing.linear
         }));
-    } else {
-        rangeProjectileX.value = ATTACK_RUN_DISTANCE + gameScale(50);
-    }
-  }
-
-  frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration, easing: Easing.inOut(Easing.ease) }, (finished) => {
-    if (finished) {
-      if (currentState === 'dies') {
-        opacity.value = withTiming(0, { duration: ANIMATION_DURATIONS.diesOutro }, (fadeFinished) => {
-          if (fadeFinished) runOnJS(notifyAnimationComplete)();
-        });
       } else {
-        runOnJS(notifyAnimationComplete)();
-        frameIndex.value = 0;
+        rangeProjectileX.value = ATTACK_RUN_DISTANCE + gameScale(50);
       }
     }
-  });
-  }, [currentState, isPaused, currentAnimationUrl, animationConfig, notifyAnimationComplete, isUrlCached, effectiveCharacterName, SPRITE_SIZE]); //  Added effectiveCharacterName dependency
+
+    frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration, easing: Easing.inOut(Easing.ease) }, (finished) => {
+      if (finished) {
+        if (currentState === 'dies') {
+          opacity.value = withTiming(0, { duration: ANIMATION_DURATIONS.diesOutro }, (fadeFinished) => {
+            if (fadeFinished) runOnJS(notifyAnimationComplete)();
+          });
+        } else {
+          runOnJS(notifyAnimationComplete)();
+          frameIndex.value = 0;
+        }
+      }
+    });
+  }, [currentState, isPaused, currentAnimationUrl, animationConfig, notifyAnimationComplete, isUrlCached, effectiveCharacterName, SPRITE_SIZE]);
+
 
   // ========== Animated Styles ==========
   const animatedStyle = useAnimatedStyle(() => {
