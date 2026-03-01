@@ -33,7 +33,7 @@ export default function PracticeScreen() {
               { backgroundColor: '#27ca3f', borderBottomColor: '#1e9e31' },
               pressed && styles.boxButtonPressed
             ]}
-            onPress={() => router.push('/Study')} // Placeholder for future route
+            onPress={() => router.push('../../Components/Practice Components/LessonModules')} // Placeholder for future route
           >
             <Text style={styles.boxText}>Study</Text>
           </Pressable>

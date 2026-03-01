@@ -322,14 +322,14 @@ model Module {
   lesson_content String
   level_id       Int
   level          Level        @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
-  moduleTitle    ModuleTitle? 
+  moduleTitle    ModuleTitle?
 }
 
 model ModuleTitle {
-  module_title_id Int     @id @default(autoincrement())
-  module_title           String
-  module_id       Int     @unique 
-  module          Module  @relation(fields: [module_id], references: [module_id], onDelete: Cascade)
+  module_title_id Int    @id @default(autoincrement())
+  module_title    String
+  module_id       Int    @unique
+  module          Module @relation(fields: [module_id], references: [module_id], onDelete: Cascade)
 }
 
 model GameplayMessage {
