@@ -11,9 +11,9 @@ const router = express.Router();
 // Get all module languages
 router.get("/languages", ModuleService.getModuleLanguages);
 // Get the module by :/mapId
-router.get("/languages/:mapId", ModuleService.getModuleTitlesByMap);
+router.post("/languages/:mapId", ModuleService.getModuleTitlesByMap);
 // Get module content by :/moduleId
-router.get("/languages/map/:moduleId", ModuleService.getModuleContentById);
+router.post("/languages/map/:moduleId", ModuleService.getModuleContentById);
 
 router.get("/", ModuleService.getAllModules);
 router.get("/:id", ModuleService.getModuleById);
