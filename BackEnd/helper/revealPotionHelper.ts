@@ -7,14 +7,15 @@ interface BlankMatch {
 function parseAndValidateBlanks(question: string): BlankMatch[] {
   const matches: BlankMatch[] = [];
 
-  for (let i = 0; i < question.length; i++) {
-    if (question[i] === "_") {
-      matches.push({
-        index: i,
-        match: "_",
-        type: "underscore",
-      });
-    }
+  const regex = /_/g;
+  let match;
+
+  while ((match = regex.exec(question)) !== null) {
+    matches.push({
+      index: match.index,
+      match: "_",
+      type: "underscore",
+    });
   }
 
   return matches;

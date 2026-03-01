@@ -8,9 +8,19 @@ import {
 
 const router = express.Router();
 
+// Get all module languages
+router.get("/languages", ModuleService.getModuleLanguages);
+// Get the module by :/mapId
+router.get("/languages/:mapId", ModuleService.getModuleTitlesByMap);
+// Get module content by :/moduleId
+router.get("/languages/map/:moduleId", ModuleService.getModuleContentById);
+
 router.get("/", ModuleService.getAllModules);
 router.get("/:id", ModuleService.getModuleById);
 router.post("/", ModuleService.createModule);
 router.put("/:id", ModuleService.updateModule);
+
+router.post("/title", ModuleService.createModuleTitle);
+router.put("/title/:id", ModuleService.updateModuleTitle);
 
 export default router;
