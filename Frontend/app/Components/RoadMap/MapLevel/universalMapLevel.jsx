@@ -13,6 +13,7 @@ import { universalAssetPreloader } from '../../../services/preloader/universalAs
 import { useFocusEffect } from '@react-navigation/native'; 
 import { Platform } from 'react-native';
 import * as NavigationBar from 'expo-navigation-bar';
+import { gameScale } from '../../Responsiveness/gameResponsive';
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
@@ -134,48 +135,43 @@ export default function UniversalMapLevel() {
 
   // Memoized functions to prevent re-renders
   const getResponsiveValues = useCallback(() => {
-    const baseHeight = 844;
-    const heightRatio = screenHeight / baseHeight;
-    
     return {
-      baseTop: 200 * heightRatio,
-      loopSpacing: 700 * heightRatio, 
-      buttonSpacing: 130 * heightRatio,
-      roadmapHeight: screenHeight * 1.45,
-      roadmapSpacing: screenHeight * 1.2,
-      heightRatio,
+      baseTop: gameScale(200),
+      loopSpacing: gameScale(700), 
+      buttonSpacing: gameScale(130),
+      roadmapHeight: gameScale(844 * 1.45),
+      roadmapSpacing: gameScale(844 * 1.2),
+      heightRatio: 1, // keeping this as 1 to avoid bugs in other places
     };
   }, []);
   
   const calculateContentHeight = useCallback(() => {
-    if (levels.length === 0) return screenHeight * 2; 
-    
-    const responsive = getResponsiveValues();
+    if (levels.length === 0) return gameScale(844) * 2; 
     
     const lastIndex = levels.length - 1; 
     let lastButtonTop;
 
     if (lastIndex === 0) {
-      lastButtonTop = 200 * responsive.heightRatio;
+      lastButtonTop = gameScale(200);
     } 
     else {
       const fourButtonPositions = [
-        { top: 350 * responsive.heightRatio },  
-        { top: 540 * responsive.heightRatio },  
-        { top: 735 * responsive.heightRatio },  
-        { top: 900 * responsive.heightRatio }, 
+        { top: gameScale(350) },  
+        { top: gameScale(540) },  
+        { top: gameScale(735) },  
+        { top: gameScale(900) }, 
       ];
 
       const patternIndex = (lastIndex - 1) % 4; 
       const loopNumber = Math.floor((lastIndex - 1) / 4); 
 
-      const verticalOffset = loopNumber * 700 * responsive.heightRatio;
+      const verticalOffset = loopNumber * gameScale(700);
       lastButtonTop = fourButtonPositions[patternIndex].top + verticalOffset;
     }
 
     
-    return lastButtonTop + (500 * responsive.heightRatio);
-  }, [levels, getResponsiveValues]); // Changed from lessons to levels
+    return lastButtonTop + gameScale(500);
+  }, [levels]); // Changed from lessons to levels
   
 
   useEffect(() => {
@@ -184,21 +180,20 @@ export default function UniversalMapLevel() {
 
     if (currentIndex !== -1) {
     console.log(`🎯 Found current unlocked level at index ${currentIndex}. Scrolling...`);
-    const responsive = getResponsiveValues();
     let targetTop;
 
     if (currentIndex === 0) {
-      targetTop = 200 * responsive.heightRatio;
+      targetTop = gameScale(200);
     } else {
       const fourButtonPositions = [350, 540, 735, 900];
       const patternIndex = (currentIndex - 1) % 4;
       const loopNumber = Math.floor((currentIndex - 1) / 4);
-      const verticalOffset = loopNumber * 700 * responsive.heightRatio;
-      targetTop = (fourButtonPositions[patternIndex] * responsive.heightRatio) + verticalOffset;
+      const verticalOffset = loopNumber * gameScale(700);
+      targetTop = gameScale(fourButtonPositions[patternIndex]) + verticalOffset;
     }
 
     // Center the button in the screen (approximate)
-    const scrollY = Math.max(0, targetTop - (screenHeight / 2) + 150);
+    const scrollY = Math.max(0, targetTop - (gameScale(844) / 2) + gameScale(150));
     
     // Slight delay to ensure layout is ready
     const timer = setTimeout(() => {
@@ -215,7 +210,7 @@ export default function UniversalMapLevel() {
 
   const handleScroll = useCallback(({ nativeEvent }) => {
     const { contentOffset } = nativeEvent;
-    const currentScreen = Math.floor(contentOffset.y / screenHeight);
+    const currentScreen = Math.floor(contentOffset.y / gameScale(844));
     const neededBackgrounds = currentScreen + 20;
    
     if (neededBackgrounds > backgroundCount) {
@@ -241,7 +236,6 @@ export default function UniversalMapLevel() {
         //   <BushAnimations 
         //     mapName={mapName}
         //     calculateContentHeight={calculateContentHeight}
-        //     getResponsiveValues={getResponsiveValues}
         //   />
         // );
       case 'CSS':
@@ -249,7 +243,6 @@ export default function UniversalMapLevel() {
           <PopAnimations 
             mapName={mapName}
             calculateContentHeight={calculateContentHeight}
-            getResponsiveValues={getResponsiveValues}
           />
         );
       case 'JavaScript':
@@ -276,8 +269,8 @@ export default function UniversalMapLevel() {
         }}
         style={[
           styles.backgroundSegment,
-          { top: screenHeight + (index * screenHeight)},
-          { marginTop: theme?.backgrounds?.topBackgroundPosition?.marginTop || 0 }
+          { top: gameScale(844) + (index * gameScale(844))},
+          { marginTop: theme?.backgrounds?.topBackgroundPosition?.marginTop !== undefined ? gameScale(theme.backgrounds.topBackgroundPosition.marginTop) : 0 }
         ]}
         resizeMode="fill"
       />
@@ -322,8 +315,8 @@ export default function UniversalMapLevel() {
           style={[
             styles.lottieTopBackground,
             {
-              top: theme?.backgrounds?.positions?.lottieTop || -250,
-              left: theme?.backgrounds?.positions?.lottieLeft || 0,
+              top: theme?.backgrounds?.positions?.lottieTop !== undefined ? gameScale(theme.backgrounds.positions.lottieTop) : gameScale(-250),
+              left: theme?.backgrounds?.positions?.lottieLeft !== undefined ? gameScale(theme.backgrounds.positions.lottieLeft) : 0,
               width: theme?.backgrounds?.positions?.lottieWidth || '120%',
             }, 
             theme?.backgrounds?.lottieBackgroundStyle
@@ -337,7 +330,7 @@ export default function UniversalMapLevel() {
         {/*  Top Background using cached URL */}
         <View style={[
             styles.topBackground,
-            { marginTop: theme?.backgrounds?.backgroundPosition?.marginTop || 0 }
+            { marginTop: theme?.backgrounds?.backgroundPosition?.marginTop !== undefined ? gameScale(theme.backgrounds.backgroundPosition.marginTop) : 0 }
         ]}>
           <ImageBackground
               source={{ 
@@ -385,9 +378,9 @@ const styles = StyleSheet.create({
   },
   lottieTopBackground: {
     position: 'absolute',
-    top: -250,
+    top: gameScale(-250),
     width: '120%',
-    height: screenHeight,
+    height: gameScale(844),
     zIndex: 1,
     alignSelf: 'center',
   },
@@ -395,7 +388,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     width: '100%',
-    height: screenHeight,
+    height: gameScale(844),
     zIndex: 1,
     opacity: 1 
   },
@@ -414,10 +407,10 @@ const styles = StyleSheet.create({
   backgroundSegment: {
     position: 'absolute',
     width: '100%',
-    height: screenHeight,
+    height: gameScale(844),
   },
   levelButtonsContainer: {
-    top: 100,
+    top: gameScale(100),
   },
   fixedSnowEffects: {
     position: 'absolute',

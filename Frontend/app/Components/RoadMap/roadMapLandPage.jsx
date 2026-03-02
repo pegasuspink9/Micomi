@@ -11,19 +11,9 @@ import { DEFAULT_THEME } from './MapLevel/MapDatas/mapData';
 import { useMemo } from 'react';
 import { gameScale } from '../Responsiveness/gameResponsive';
 
-const { height: defaultHeight, width: defaultWidth } = Dimensions.get('window');
-
-const BASE_HEIGHT = 844;
-const BASE_WIDTH = 390;
-
 export default function RoadMapLandPage() {
   const { mapName } = useLocalSearchParams();
   const router = useRouter();
-
-  const responsive = {
-    heightRatio: defaultHeight / BASE_HEIGHT,
-    widthRatio: defaultWidth / BASE_WIDTH,
-  };
 
   const getCachedAssetUrl = (url) => {
     return universalAssetPreloader.getCachedAssetPath(url);
@@ -44,14 +34,14 @@ export default function RoadMapLandPage() {
         <Pressable
           style={{
             position: 'absolute',
-            top: 140 * responsive.heightRatio,
-            right: 20 * responsive.widthRatio,
-            width: 80 * responsive.widthRatio,
-            height: 80 * responsive.heightRatio,  // Increased height to fit text
+            top: gameScale(140),
+            right: gameScale(20),
+            width: gameScale(80),
+            height: gameScale(80),  // Increased height to fit text
             justifyContent: 'center',
             alignItems: 'center',
             zIndex: 30,
-            borderRadius: 30,
+            borderRadius: gameScale(30),
           }}
           onPress={() => {
             router.push('/PotionShop');
@@ -60,17 +50,17 @@ export default function RoadMapLandPage() {
 
           
           
-          <View style={{ alignItems: 'center', marginTop: -100 * responsive.heightRatio }}>
+          <View style={{ alignItems: 'center', marginTop: gameScale(-100) }}>
             <Image
               source={require('./ShopButton.png')}
               style={{
-                width: 80 * responsive.widthRatio,  
-                height: 70 * responsive.heightRatio,
+                width: gameScale(80),  
+                height: gameScale(70),
               }}
               resizeMode="contain"
             />
             <Text style={{
-              fontSize: 14 * responsive.widthRatio,
+              fontSize: gameScale(14),
               color: '#a2e3ceff',
               fontFamily: 'MusicVibes',
               textAlign: 'center',
@@ -82,10 +72,10 @@ export default function RoadMapLandPage() {
           <Pressable
           style={{
             position: 'absolute',
-            bottom: 40 * responsive.heightRatio,
-            left: 20 * responsive.widthRatio,
-            width: 80 * responsive.widthRatio,
-            height: 80 * responsive.heightRatio,
+            bottom: gameScale(40),
+            left: gameScale(20),
+            width: gameScale(80),
+            height: gameScale(80),
             justifyContent: 'center',
             alignItems: 'center',
             zIndex: 1000, 
@@ -97,9 +87,9 @@ export default function RoadMapLandPage() {
           <Image
             source={require('../icons/map.png')} // Uses the global map icon
             style={{
-              width: 90 * responsive.widthRatio,  
-              height: 90 * responsive.heightRatio,
-              left: 10 * responsive.widthRatio, // Adjust left position to better align with the edge
+              width: gameScale(90),  
+              height: gameScale(90),
+              left: gameScale(10), // Adjust left position to better align with the edge
             }}
             resizeMode="contain"
           />

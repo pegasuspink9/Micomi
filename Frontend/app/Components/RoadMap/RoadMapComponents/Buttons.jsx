@@ -116,22 +116,14 @@ export default function LevelButtons({
   }, [floatAnim]);
 
   const responsive = {
-    heightRatio: screenHeight / BASE_HEIGHT,
-    widthRatio: screenWidth / BASE_WIDTH,
-    get buttonSize() { return Math.min(100 * this.widthRatio, 100 * this.heightRatio); },
-    get stoneSize() { return Math.min(100 * this.widthRatio, 100 * this.heightRatio); },
-    get signageScale() { 
-      return Math.min(this.widthRatio, this.heightRatio);
-    },
-    get signageWidth() { return 90 * this.signageScale; },
-    get signageHeight() { return 90 * this.signageScale; },
-    get signageTop() { return 15 * this.heightRatio; },
-    get signageLeft() { return 40 * this.widthRatio; },
+    get buttonSize() { return gameScale(100); },
+    get stoneSize() { return gameScale(100); },
+    get signageWidth() { return gameScale(90); },
+    get signageHeight() { return gameScale(90); },
+    get signageTop() { return gameScale(15); },
+    get signageLeft() { return gameScale(40); },
     get textSize() { 
-      const baseSize = 22;
-      let scaleFactor = this.signageScale;
-      const scaledSize = baseSize * scaleFactor;
-      return Math.max(30, Math.min(scaledSize, 20)); 
+      return gameScale(22); 
     }
   };
 
@@ -246,7 +238,7 @@ const transformPreviewDataWithCache = (data) => {
     
     const totalStones = Math.ceil(lessons.length / 4) * STONES_PER_PATTERN;
     const positions = [];
-    const patternHeight = PATTERN_HEIGHT * responsive.heightRatio;
+    const patternHeight = gameScale(PATTERN_HEIGHT);
 
     for (let i = 0; i < totalStones; i++) {
       const patternIndex = i % STONES_PER_PATTERN;
@@ -254,7 +246,7 @@ const transformPreviewDataWithCache = (data) => {
       const baseStone = BASE_STONE_PATTERN[patternIndex];
       
       positions.push({
-        top: (baseStone.top * responsive.heightRatio) + (loopNumber * patternHeight),
+        top: gameScale(baseStone.top) + (loopNumber * patternHeight),
         left: baseStone.left
       });
     }
@@ -264,8 +256,8 @@ const transformPreviewDataWithCache = (data) => {
   const getButtonPosition = (index) => {
     if (index === 0) {
       return {
-        top: 200 * responsive.heightRatio,
-        left: '45%'
+        top: gameScale(200),
+        left: '45%' // Using base percentage as width acts on the container naturally
       };
     }
 
@@ -274,7 +266,7 @@ const transformPreviewDataWithCache = (data) => {
     const pattern = BUTTON_PATTERNS[patternIndex];
     
     return {
-      top: (pattern.top * responsive.heightRatio) + (loopNumber * PATTERN_HEIGHT * responsive.heightRatio),
+      top: gameScale(pattern.top) + (loopNumber * gameScale(PATTERN_HEIGHT)),
       left: pattern.left
     };
   };
@@ -519,7 +511,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textAlignVertical: 'center',
     fontFamily: 'MusicVibes',
-    marginTop: defaultHeight * -0.045, 
+    marginTop: gameScale(-38), 
   },
   levelButton: {
     position: 'absolute',
@@ -537,27 +529,27 @@ const styles = StyleSheet.create({
   },
   floatComment: {
     position: 'absolute',
-    width: '95%',
-    height: '95%',
+    width: gameScale(95),
+    height: gameScale(95),
     top: gameScale(-35),
     alignItems: 'center',
     zIndex: 25,
   },
   unlockedButton: {
-    width: '130%',
-    height: '130%',
+    width: gameScale(130),
+    height: gameScale(130),
     top: gameScale(-25),
     left: gameScale(-2)
   },
   lockedButton: {
-    width: '110%',
-    height: '110%',
+    width: gameScale(110),
+    height: gameScale(110),
     top: gameScale(-25),
     left: gameScale(-2)
   },
   floatIcon: {
-    width: '80%',
-    height: '80%',
+    width: gameScale(80),
+    height: gameScale(80),
     top: gameScale(7),
     opacity: 0.7,
     right: gameScale(2)

@@ -1,12 +1,10 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Image, Animated, Dimensions, StyleSheet } from 'react-native'; // ADD StyleSheet import
-
-const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
+import { View, Image, Animated, Dimensions, StyleSheet } from 'react-native'; 
+import { gameScale } from '../../../../Responsiveness/gameResponsive';
 
 const BushAnimations = ({ 
   mapName, 
   calculateContentHeight, 
-  getResponsiveValues 
 }) => {
   const bushSwayAnim = useRef(new Animated.Value(0)).current;
 
@@ -48,28 +46,25 @@ const BushAnimations = ({
   const createInfiniteBushes = () => {
     if (mapName !== 'HTML') return [];
 
-    const responsive = getResponsiveValues();
-    const isLargerThanPhone = screenWidth > 500 || screenHeight > 900;
-
     const originalBushes = [
-      { id: 'bush0', top: 200, zIndex: 100, right: isLargerThanPhone ? 380 * responsive.heightRatio : 10 * responsive.heightRatio },
-      { id: 'bush1', top: 280, zIndex: 100, right: isLargerThanPhone ? 370 * responsive.heightRatio : 12 * responsive.heightRatio },
-      { id: 'bush2', top: 380, zIndex: 100, right: isLargerThanPhone ? 350 * responsive.heightRatio : 100 },
-      { id: 'bush3', top: 450, zIndex: 100, right: isLargerThanPhone ? 320 * responsive.heightRatio : 170 },
-      { id: 'bush4', top: 550, zIndex: 100, right: isLargerThanPhone ? 350 * responsive.heightRatio : 220 },
-      { id: 'bush5', top: 650, zIndex: 100, right: isLargerThanPhone ? 408 * responsive.heightRatio : 240 },
-      { id: 'bush6', top: 750, zIndex: 100, right: isLargerThanPhone ? 360 * responsive.heightRatio : 80 },
-      { id: 'bush11', top: 200, right: isLargerThanPhone ? -190 * responsive.heightRatio : -330, zIndex: 100 },
-      { id: 'bush12', top: 300, right: isLargerThanPhone ? -220 * responsive.heightRatio : -350, zIndex: 100 },
-      { id: 'bush13', top: 400, right: isLargerThanPhone ? -200 * responsive.heightRatio : -250, zIndex: 100 },
-      { id: 'bush14', top: 500, right: isLargerThanPhone ? -230 * responsive.heightRatio : -140, zIndex: 100 },
-      { id: 'bush15', top: 600, right: isLargerThanPhone ? -190 * responsive.heightRatio : -160, zIndex: 100 },
-      { id: 'bush16', top: 1100, right: isLargerThanPhone ? -240 * responsive.heightRatio : -190, zIndex: 100 },
-      { id: 'bush17', top: 700, right: isLargerThanPhone ? -280 * responsive.heightRatio : -280, zIndex: 100 },
+      { id: 'bush0', top: gameScale(200), zIndex: 100, right: gameScale(10) },
+      { id: 'bush1', top: gameScale(280), zIndex: 100, right: gameScale(12) },
+      { id: 'bush2', top: gameScale(380), zIndex: 100, right: gameScale(100) },
+      { id: 'bush3', top: gameScale(450), zIndex: 100, right: gameScale(170) },
+      { id: 'bush4', top: gameScale(550), zIndex: 100, right: gameScale(220) },
+      { id: 'bush5', top: gameScale(650), zIndex: 100, right: gameScale(240) },
+      { id: 'bush6', top: gameScale(750), zIndex: 100, right: gameScale(80) },
+      { id: 'bush11', top: gameScale(200), right: gameScale(-330), zIndex: 100 },
+      { id: 'bush12', top: gameScale(300), right: gameScale(-350), zIndex: 100 },
+      { id: 'bush13', top: gameScale(400), right: gameScale(-250), zIndex: 100 },
+      { id: 'bush14', top: gameScale(500), right: gameScale(-140), zIndex: 100 },
+      { id: 'bush15', top: gameScale(600), right: gameScale(-160), zIndex: 100 },
+      { id: 'bush16', top: gameScale(1100), right: gameScale(-190), zIndex: 100 },
+      { id: 'bush17', top: gameScale(700), right: gameScale(-280), zIndex: 100 },
     ];
 
     const contentHeight = calculateContentHeight();
-    const patternHeight = 620;
+    const patternHeight = gameScale(620);
     const repetitions = Math.ceil(contentHeight / patternHeight) + 5;
     
     const allBushes = [];
@@ -159,8 +154,8 @@ const styles = StyleSheet.create({
   },
   bush: {
     position: 'absolute',
-    width: 450,
-    height: 450,
+    width: gameScale(370), 
+    height: gameScale(180), 
   },
 });
 

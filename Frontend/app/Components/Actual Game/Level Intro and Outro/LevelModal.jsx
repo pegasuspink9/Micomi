@@ -30,8 +30,8 @@ const LevelModal = ({
   const scaleAnim = useRef(new Animated.Value(0.3)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(-200)).current;
-  const playButtonSlideAnim = useRef(new Animated.Value(100)).current;
+  const slideAnim = useRef(new Animated.Value(gameScale(-200))).current;
+  const playButtonSlideAnim = useRef(new Animated.Value(gameScale(100))).current;
   const backgroundOpacityAnim = useRef(new Animated.Value(0)).current;
   
   const bounceAnim = useRef(new Animated.Value(0)).current;
@@ -157,8 +157,8 @@ const LevelModal = ({
     scaleAnim.setValue(0.3);
     rotateAnim.setValue(0);
     opacityAnim.setValue(0);
-    slideAnim.setValue(-200);
-    playButtonSlideAnim.setValue(100);
+    slideAnim.setValue(gameScale(-200));
+    playButtonSlideAnim.setValue(gameScale(100));
     backgroundOpacityAnim.setValue(0);
     bounceAnim.setValue(0);
 
@@ -245,13 +245,13 @@ const LevelModal = ({
         useNativeDriver: true,
       }),
       Animated.timing(slideAnim, {
-        toValue: -100,
+        toValue: gameScale(-100),
         duration: 250,
         easing: Easing.in(Easing.quad),
         useNativeDriver: true,
       }),
       Animated.timing(playButtonSlideAnim, {
-        toValue: 150,
+        toValue: gameScale(150),
         duration: 200,
         easing: Easing.in(Easing.quad),
         useNativeDriver: true,
@@ -272,8 +272,8 @@ const LevelModal = ({
     scaleAnim.setValue(0.3);
     rotateAnim.setValue(0);
     opacityAnim.setValue(0);
-    slideAnim.setValue(-200);
-    playButtonSlideAnim.setValue(100);
+    slideAnim.setValue(gameScale(-200));
+    playButtonSlideAnim.setValue(gameScale(100));
     backgroundOpacityAnim.setValue(0);
     bounceAnim.setValue(0);
     glowAnim.setValue(0);
@@ -430,21 +430,22 @@ const LevelModal = ({
           }
         ]}
       >
-        {/* robotHead shell now always renders if visible=true */}
-        <Animated.View 
-          style={[
-            styles.robotHead,
-            {
-              opacity: opacityAnim,
-              transform: [
-                { scale: scaleInterpolate },
-                { rotateX: rotateInterpolate },
-                { translateY: Animated.add(slideAnim, bounceInterpolate) },
-              ],
-            }
-          ]}
-        >
-          <View style={styles.outerBorder}>
+        <View style={styles.masterCenteringContainer}>
+          {/* robotHead shell now sits in a flex flow */}
+          <Animated.View 
+            style={[
+              styles.robotHead,
+              {
+                opacity: opacityAnim,
+                transform: [
+                  { scale: scaleInterpolate },
+                  { rotateX: rotateInterpolate },
+                  { translateY: Animated.add(slideAnim, bounceInterpolate) },
+                ],
+              }
+            ]}
+          >
+            <View style={styles.outerBorder}>
             <View style={styles.visor}>
               <ImageBackground
               source={{ uri: isShopLevel ? 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1759901895/labBackground_otqad4.jpg' :  
@@ -478,21 +479,24 @@ const LevelModal = ({
                     ]} 
                   />
 
-                  {loading ? (
-                    <View style={styles.visorLoadingContainer}>
-                      <View style={styles.loadingPulse}>
-                        {/* Themed Loader Icons */}
-                        <Text style={styles.loadingTechIcon}>🛰️</Text>
-                      </View>
-                      <Text style={styles.visorLoadingText}>Detecing bugs...</Text>
-                      <Text style={styles.visorLoadingSubText}>PREPARING ANIMATIONS & DATA</Text>
-                    </View>
-                  ) : error ? (
-                    <View style={styles.visorLoadingContainer}>
-                      <Text style={[styles.errorText, { marginBottom: gameScale(15) }]}>{error}</Text>
-                      <Pressable style={styles.retryButton} onPress={fetchLevelPreview}>
-                        <Text style={styles.playButtonText}>RETRY</Text>
-                      </Pressable>
+                  {loading || error ? (
+                    <View style={styles.visorStatusWrapper}>
+                      {loading ? (
+                        <View style={styles.visorLoadingContainer}>
+                          <View style={styles.loadingPulse}>
+                            <Text style={styles.loadingTechIcon}>🛰️</Text>
+                          </View>
+                          <Text style={styles.visorLoadingText}>Detecting bugs...</Text>
+                          <Text style={styles.visorLoadingSubText}>PREPARING ANIMATIONS & DATA</Text>
+                        </View>
+                      ) : (
+                        <View style={styles.visorLoadingContainer}>
+                          <Text style={[styles.errorText, { marginBottom: gameScale(15) }]}>{error}</Text>
+                          <Pressable style={styles.retryButton} onPress={fetchLevelPreview}>
+                            <Text style={styles.playButtonText}>RETRY</Text>
+                          </Pressable>
+                        </View>
+                      )}
                     </View>
                   ) : (
                     <View style={styles.modalContent}>
@@ -652,8 +656,8 @@ const LevelModal = ({
                             opacity: opacityAnim,
                             transform: [
                               { translateY: slideAnim.interpolate({
-                                inputRange: [-200, 0],
-                                outputRange: [50, 0]
+                                inputRange: [gameScale(-200), 0],
+                                outputRange: [gameScale(50), 0]
                               })}
                             ]
                           }
@@ -677,8 +681,8 @@ const LevelModal = ({
                             opacity: opacityAnim,
                             transform: [
                               { translateY: slideAnim.interpolate({
-                                inputRange: [-200, 0],
-                                outputRange: [80, 0]
+                                inputRange: [gameScale(-200), 0],
+                                outputRange: [gameScale(80), 0]
                               })}
                             ]
                           }
@@ -737,63 +741,76 @@ const LevelModal = ({
 
           {/* Close button is now always available inside robotHead frame */}
           <Pressable 
-            style={({ pressed }) => [
-              styles.closeButton,
-              pressed && styles.closeButtonPressed
-            ]}
-            onPress={handleModalClose}
-            disabled={isAnimating}
-          >
-            <Text style={styles.closeButtonText}>×</Text>
-          </Pressable>
-        </Animated.View>
-
-        {/* Play button only shows when content is fully loaded */}
-        {displayData && !loading && !error && (
-          <Animated.View 
-            style={[
-               styles.playButtonContainer,
-              isBossLevel && styles.playButtonContainerBoss,
-              {
-                opacity: opacityAnim,
-                transform: [
-                  { 
-                    scale: scaleAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.8, 1]
-                    })
-                  },
-                  { translateY: playButtonSlideAnim },
-                ],
-              }
-            ]}
-          >
-            <Pressable 
               style={({ pressed }) => [
-                styles.playButtonOuter,
-                pressed && styles.playButtonPressed,
-                {
-                  shadowOpacity: pressed ? 0.3 : 0.6,
-                  transform: pressed ? [{ translateY: 3 }, { scale: 0.98 }] : [{ translateY: 0 }, { scale: 1 }]
-                }
+                styles.closeButton,
+                pressed && styles.closeButtonPressed
               ]}
-              onPress={handlePlayPress}
+              onPress={handleModalClose}
               disabled={isAnimating}
             >
-              <LinearGradient
-                colors={['rgba(0, 159, 227, 0.76)', 'rgba(0, 159, 227, 0.76)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.playButtonMiddle}
-              >
-                <Animated.Text style={[styles.playButtonText, { opacity: glowInterpolate }]}>
-                  {isShopLevel ? "ENTER SHOP" : "PLAY"}
-                </Animated.Text>
-              </LinearGradient>
+              <Text style={styles.closeButtonText}>×</Text>
             </Pressable>
           </Animated.View>
-        )}
+
+          {/* Play button now sits naturally below the modal in the flex flow */}
+          {(displayData && !loading && !error) ? (
+            <Animated.View 
+              style={[
+                styles.playButtonContainer,
+                isBossLevel && styles.playButtonContainerBoss,
+                {
+                  opacity: opacityAnim,
+                  transform: [
+                    { 
+                      scale: scaleAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.8, 1]
+                      })
+                    },
+                    { translateY: playButtonSlideAnim },
+                  ],
+                }
+              ]}
+            >
+              <Pressable 
+                style={({ pressed }) => [
+                  styles.playButtonOuter,
+                  pressed && styles.playButtonPressed,
+                  {
+                    shadowOpacity: pressed ? 0.3 : 0.6,
+                    transform: pressed 
+                      ? [{ translateY: gameScale(3) }, { scale: 0.98 }] 
+                      : [{ translateY: 0 }, { scale: 1 }]
+                  }
+                ]}
+                onPress={handlePlayPress}
+                disabled={isAnimating}
+              >
+                <LinearGradient
+                  colors={['rgba(0, 159, 227, 0.76)', 'rgba(0, 159, 227, 0.76)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.playButtonMiddle}
+                >
+                  <Animated.Text style={[styles.playButtonText, { opacity: glowInterpolate }]}>
+                    {isShopLevel ? "ENTER SHOP" : "PLAY"}
+                  </Animated.Text>
+                </LinearGradient>
+              </Pressable>
+            </Animated.View>
+          ) : (
+            /* FIX: Invisible placeholder to maintain vertical centering during loading/error */
+            <View style={[styles.playButtonContainer, { opacity: 0 }]} pointerEvents="none">
+              <View style={styles.playButtonOuter}>
+                <View style={styles.playButtonMiddle}>
+                  <Text style={styles.playButtonText}>SPACER</Text>
+                </View>
+              </View>
+            </View>
+          )}
+        </View>
       </Animated.View>
+
 
          <Modal
         visible={showWebView}
@@ -899,11 +916,15 @@ const styles = StyleSheet.create({
     fontSize: gameScale(16),
     fontWeight: 'bold',
   },
+   masterCenteringContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
   robotHead: {
-    alignSelf: 'center',
-    marginTop: gameScale(-169),
     width: gameScale(332),
     position: 'relative',
+    // Removed absolute centering logic and negative margins
   },
   enemyAvatarContainer: {
     alignItems: 'center',
@@ -1039,7 +1060,7 @@ const styles = StyleSheet.create({
     shadowRadius: gameScale(8),
     elevation: 10,
   },
-  visorGlass: {
+ visorGlass: {
     minHeight: gameScale(338),
     position: 'relative',
     overflow: 'hidden',
@@ -1052,6 +1073,18 @@ const styles = StyleSheet.create({
     borderLeftColor: 'rgba(30, 144, 255, 0.5)',
     borderBottomColor: 'rgba(65, 105, 225, 0.6)',
     borderRightColor: 'rgba(100, 149, 237, 0.5)',
+  },
+  visorStatusWrapper: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  visorLoadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: gameScale(20),
+    width: '100%',
   },
   techGrid: {
     position: 'absolute',
@@ -1340,12 +1373,12 @@ const styles = StyleSheet.create({
     textShadowRadius: gameScale(2),
   },
   playButtonContainer: {
-    position: 'absolute',
-    bottom: gameScale(90),
+    marginTop: gameScale(155), // Fixed distance from modal bottom using gameScale
     alignItems: 'center',
+    position: 'relative', // Removed absolute
   },
   playButtonContainerBoss: {
-    bottom: gameScale(40),
+    marginTop: gameScale(15),
   },
   playButtonOuter: {
     backgroundColor: '#d0d0d0ff',
@@ -1459,12 +1492,6 @@ const styles = StyleSheet.create({
     fontSize: gameScale(12),
     fontFamily: 'DynaPuff',
     fontWeight: 'bold',
-  },
-  visorLoadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
   },
   visorLoadingText: {
     color: '#00ffff',

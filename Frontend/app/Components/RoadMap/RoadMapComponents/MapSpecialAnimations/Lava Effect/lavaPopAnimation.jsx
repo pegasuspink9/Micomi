@@ -1,8 +1,7 @@
 import React from 'react';
 import { View, Dimensions, StyleSheet } from 'react-native';
 import PopSequenceAnimation from './PopSequenceAnimation';
-
-const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
+import { gameScale } from '../../../../Responsiveness/gameResponsive';
 
 const popSequenceImages = [
   'https://github.com/user-attachments/assets/c7f6b7b0-d029-46b2-ad98-0f03e135877c', 
@@ -13,26 +12,22 @@ const popSequenceImages = [
 const PopAnimations = ({ 
   mapName, 
   calculateContentHeight, 
-  getResponsiveValues 
 }) => {
 
   const createInfinitePopAnimations = () => {
     if (mapName !== 'CSS') return [];
 
-    const responsive = getResponsiveValues();
-    const isLargerThanPhone = screenWidth > 500 || screenHeight > 900;
-
     const originalPopAnimations = [
-      { id: 'pop0', top: 100, right: isLargerThanPhone ? -10 * responsive.heightRatio : 10 * responsive.heightRatio, zIndex: 50 },
-      { id: 'pop1', top: 140, right: isLargerThanPhone ? -10 * responsive.heightRatio : 40 * responsive.heightRatio, zIndex: 50 },
-      { id: 'pop2', top: 180, right: isLargerThanPhone ? 50 * responsive.heightRatio : 30 * responsive.heightRatio, zIndex: 50 },
-      { id: 'pop3', top: 220, right: isLargerThanPhone ? -200 * responsive.heightRatio : -100 * responsive.heightRatio, zIndex: 50 },
-      { id: 'pop4', top: 260, right: isLargerThanPhone ? -60 * responsive.heightRatio : -50 * responsive.heightRatio, zIndex: 50 },
-      { id: 'pop5', top: 300, right: isLargerThanPhone ? -60 * responsive.heightRatio : -100 * responsive.heightRatio, zIndex: 50 },
+      { id: 'pop0', top: gameScale(100), right: gameScale(10), zIndex: 50 },
+      { id: 'pop1', top: gameScale(140), right: gameScale(40), zIndex: 50 },
+      { id: 'pop2', top: gameScale(180), right: gameScale(30), zIndex: 50 },
+      { id: 'pop3', top: gameScale(220), right: gameScale(-100), zIndex: 50 },
+      { id: 'pop4', top: gameScale(260), right: gameScale(-50), zIndex: 50 },
+      { id: 'pop5', top: gameScale(300), right: gameScale(-100), zIndex: 50 },
     ];
 
     const contentHeight = calculateContentHeight();
-    const patternHeight = 305;
+    const patternHeight = gameScale(305);
     const repetitions = Math.ceil(contentHeight / patternHeight) + 5;
 
     const allPopAnimations = [];
@@ -87,8 +82,8 @@ const styles = StyleSheet.create({
   },
   popAnimationBase: {
     position: 'absolute',
-    width: 490,
-    height: 420,
+    width: gameScale(490),
+    height: gameScale(420),
   },
 });
 

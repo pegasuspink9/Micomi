@@ -27,7 +27,7 @@ const GamePauseModal = ({
   const scaleAnim = useRef(new Animated.Value(0.3)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(-200)).current;
+  const slideAnim = useRef(new Animated.Value(gameScale(-200))).current;
   const backgroundOpacityAnim = useRef(new Animated.Value(0)).current;
   const buttonScaleAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
@@ -110,7 +110,7 @@ const GamePauseModal = ({
     scaleAnim.setValue(0.3);
     rotateAnim.setValue(0);
     opacityAnim.setValue(0);
-    slideAnim.setValue(-200);
+    slideAnim.setValue(gameScale(-200));
     backgroundOpacityAnim.setValue(0);
     buttonScaleAnim.setValue(0);
 
@@ -189,7 +189,7 @@ const GamePauseModal = ({
         useNativeDriver: true,
       }),
       Animated.timing(slideAnim, {
-        toValue: -100,
+        toValue: gameScale(-100),
         duration: 200,
         easing: Easing.in(Easing.quad),
         useNativeDriver: true,
@@ -216,7 +216,7 @@ const GamePauseModal = ({
     scaleAnim.setValue(0.3);
     rotateAnim.setValue(0);
     opacityAnim.setValue(0);
-    slideAnim.setValue(-200);
+    slideAnim.setValue(gameScale(-200));
     backgroundOpacityAnim.setValue(0);
     buttonScaleAnim.setValue(0);
     glowAnim.setValue(0);
