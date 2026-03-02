@@ -557,7 +557,7 @@ const LevelCompletionModal = ({
                         disabled={isAnimating}
                       >
                         <Image
-                          source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760510848/Untitled_design_14_rzz5wx.png' }}
+                          source={require('./GameOverImage/Home.png')}
                           style={[styles.buttonImage, styles.buttonImage1]}
                           resizeMode="contain"
                         />
@@ -572,7 +572,7 @@ const LevelCompletionModal = ({
                           disabled={isAnimating}
                         >
                           <Image
-                            source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760514009/Untitled_design_15_tdknw8.png' }}
+                            source={require('./GameOverImage/NextLevel.png')}
                             style={[styles.buttonImage, styles.buttonImage2]}
                             resizeMode="contain"
                           />
@@ -594,7 +594,7 @@ const LevelCompletionModal = ({
                         disabled={isAnimating}
                       >
                         <Image
-                          source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760510778/Untitled_design_13_ginrqf.png' }}
+                          source={require('./GameOverImage/Retry.png')}
                           style={[styles.buttonImage, styles.buttonImage3]}
                           resizeMode="contain"
                         />

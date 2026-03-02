@@ -123,7 +123,7 @@ export default function LevelButtons({
     get signageTop() { return gameScale(15); },
     get signageLeft() { return gameScale(40); },
     get textSize() { 
-      return gameScale(22); 
+      return gameScale(35); 
     }
   };
 
@@ -451,7 +451,6 @@ const transformPreviewDataWithCache = (data) => {
               {isUnlocked && (
                 <View style={styles.floatElementContainer}>
                   {hasStars ? (
-                    // 🌟 Render Stars (Static View, no movement)
                     renderStars(starCount)
                   ) : (
                     // 💬 Else render Float Comment (Animated View)
@@ -511,7 +510,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textAlignVertical: 'center',
     fontFamily: 'MusicVibes',
-    marginTop: gameScale(-38), 
+    marginTop: gameScale(-30), 
   },
   levelButton: {
     position: 'absolute',
@@ -552,7 +551,7 @@ const styles = StyleSheet.create({
     height: gameScale(80),
     top: gameScale(7),
     opacity: 0.7,
-    right: gameScale(2)
+    right: gameScale(-1)
   },
   buttonImageBackground: {
     width: '100%', 

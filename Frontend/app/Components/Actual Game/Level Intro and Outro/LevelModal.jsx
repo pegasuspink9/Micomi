@@ -20,7 +20,7 @@ const LevelModal = ({
   navigation = null 
 }) => {
   const router = useRouter();
-  const [isNavigating, setIsNavigating] = useState(false); // ✅ New state
+  const [isNavigating, setIsNavigating] = useState(false);
   const hasTriggeredNav = useRef(false); 
   const [previewData, setPreviewData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -1373,12 +1373,9 @@ const styles = StyleSheet.create({
     textShadowRadius: gameScale(2),
   },
   playButtonContainer: {
-    marginTop: gameScale(155), // Fixed distance from modal bottom using gameScale
+    marginTop: gameScale(155), 
     alignItems: 'center',
     position: 'relative', // Removed absolute
-  },
-  playButtonContainerBoss: {
-    marginTop: gameScale(15),
   },
   playButtonOuter: {
     backgroundColor: '#d0d0d0ff',

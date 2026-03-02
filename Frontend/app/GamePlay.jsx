@@ -710,9 +710,9 @@ export default function GamePlay() {
       <View style={[styles.container, styles.centerContent, { position: 'absolute', width: '100%', height: '100%', zIndex: 100000, backgroundColor: 'transparent' }]}>
 
         {isRetrying ? (
-          <Text style={styles.loadingText}>Restarting level...</Text>
+          <Text style={styles.loadingText}></Text>
         ) : isLoadingNextLevel ? (
-          <Text style={styles.loadingText}>Loading next level...</Text>
+          <Text style={styles.loadingText}></Text>
         ) : loading ? (
           <Text style={styles.loadingText}></Text>
         ) : (

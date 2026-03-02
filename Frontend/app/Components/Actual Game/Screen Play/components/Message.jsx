@@ -371,7 +371,7 @@ export default function Message({
 }
 
 const styles = StyleSheet.create({
-  viewport: {
+    viewport: {
     position: 'absolute',
     top: gameScale(80),
     left: 0,
@@ -383,21 +383,25 @@ const styles = StyleSheet.create({
   badge: {
     borderRadius: gameScale(12),
     paddingHorizontal: gameScale(20),
-    paddingVertical: gameScale(12)
+    paddingVertical: gameScale(15), 
+    minWidth: gameScale(200),     
+    justifyContent: 'center',
   },
   glowEffect: {
     position: 'absolute',
-    width: gameScale(100),
-    height: gameScale(50),
-    borderRadius: gameScale(25)
+    width: gameScale(220),        
+    height: gameScale(80),       
+    borderRadius: gameScale(40)
   },
   messageText: {
     color: '#094385ff',
     fontSize: gameScale(20),
     textAlign: 'center',
-    lineHeight: gameScale(22),
+    lineHeight: gameScale(28),    
     fontFamily: 'Oups',
     textShadowRadius: gameScale(10),
-    letterSpacing: gameScale(1), 
+    letterSpacing: gameScale(2),
+    includeFontPadding: false,     
+    textAlignVertical: 'center',   
   },
 });

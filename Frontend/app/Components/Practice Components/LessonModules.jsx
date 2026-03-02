@@ -14,16 +14,16 @@ const BORDER_PALETTES = [
     innerBg: 'rgba(74, 144, 217, 0.15)', innerBorder: 'rgba(74, 144, 217, 0.3)',
   },
   { // Green
-    gradient: ['#2d5a2d', '#1a3d1a'],
-    outerBg: '#2d5a2d', outerBorderTop: '#1a3d1a', outerBorderBottom: '#4CAF50',
-    middleBg: '#1a3d1a', middleBorderTop: '#66BB6A', middleBorderBottom: '#0d260d',
-    innerBg: 'rgba(76, 175, 80, 0.2)', innerBorder: 'rgba(102, 187, 106, 0.4)',
-  },
-  { // Light Blue
-    gradient: ['#1a5276', '#0e3a52'],
+     gradient: ['#1a5276', '#0e3a52'],
     outerBg: '#1a5276', outerBorderTop: '#0e3a52', outerBorderBottom: '#2980b9',
     middleBg: '#14415e', middleBorderTop: '#3498db', middleBorderBottom: '#0a2d42',
     innerBg: 'rgba(52, 152, 219, 0.15)', innerBorder: 'rgba(52, 152, 219, 0.3)',
+  },
+  { // Light Blue
+     gradient: ['#1e3a5f', '#0d1f33'],
+    outerBg: '#1e3a5f', outerBorderTop: '#0d1f33', outerBorderBottom: '#2d5a87',
+    middleBg: '#152d4a', middleBorderTop: '#4a90d9', middleBorderBottom: '#0a1929',
+    innerBg: 'rgba(74, 144, 217, 0.15)', innerBorder: 'rgba(74, 144, 217, 0.3)',
   },
   { // Purple / Dark Blue
     gradient: ['#2a4a6e', '#15304d'],
@@ -64,7 +64,7 @@ const ModuleCard = ({ item, index }) => {
   };
 
   return (
-    <TouchableOpacity activeOpacity={0.8} onPress={handlePress} style={styles.cardWrapper}>
+    <TouchableOpacity activeOpacity={0.9} onPress={handlePress} style={styles.cardWrapper}>
       <View style={[
         styles.cardBorderOuter, 
         { 
@@ -218,17 +218,19 @@ const styles = StyleSheet.create({
     fontSize: gameScale(16),
   },
   container: {
-    flex: 1,
+    flex: 1
   },
   scrollContent: {
-    padding: gameScale(20),
-    gap: gameScale(25),
+    padding: gameScale(10),
+    gap: gameScale(20),
     paddingBottom: gameScale(50),
   },
   cardWrapper: {
     width: '100%',
+    height: gameScale(110), // Set a fixed height for the entire card box
   },
   cardBorderOuter: {
+    flex: 1,
     borderWidth: gameScale(1),
     padding: gameScale(2),
     shadowColor: '#000',
@@ -240,23 +242,23 @@ const styles = StyleSheet.create({
     borderRadius: gameScale(16),
   },
   cardBorderMiddle: {
-    flex: 1,
+    flex: 1, // Allow middle border to fill its parent height
     borderWidth: gameScale(1.5),
     padding: gameScale(1.5),
     borderRadius: gameScale(14),
     overflow: 'hidden',
   },
   cardBorderInner: {
-    flex: 1,
+    flex: 1, // Allow inner border to fill its parent height
     borderRadius: gameScale(12),
     borderWidth: gameScale(1),
     overflow: 'hidden',
   },
   cardGradient: {
+    flex: 1, // Changed from minHeight to flex: 1 to fill parent's height
     justifyContent: 'center',
     alignItems: 'center',
     padding: gameScale(10),
-    minHeight: gameScale(140), 
     position: 'relative',
   },
   dotsOverlay: {

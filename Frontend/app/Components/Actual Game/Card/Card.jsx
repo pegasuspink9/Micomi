@@ -227,7 +227,7 @@ const Card = ({
       {loading && (
         <ActivityIndicator 
           size="large" 
-          color="#ffffff" 
+          color="#ffffff00" 
           style={styles.loader}
         />
       )}
@@ -252,7 +252,6 @@ const Card = ({
         </Animated.View>
       ): (
           <View style={styles.imageWrapper}>
-            <ActivityIndicator size="large" color="#ffffff" />
           </View>
         )}
 
