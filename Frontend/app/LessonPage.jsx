@@ -1,40 +1,68 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, StatusBar, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useGameData } from './hooks/useGameData';
+import { useLesson } from './hooks/useLesson'; 
 import Guide from './Components/Actual Game/GameQuestions/Output/Guide';
 import MainLoading from './Components/Actual Game/Loading/MainLoading';
 import { Ionicons } from '@expo/vector-icons';
 import { gameScale } from './Components/Responsiveness/gameResponsive';
-import { LinearGradient } from 'expo-linear-gradient'; // Added import for gradients
+import { LinearGradient } from 'expo-linear-gradient'; 
 
 export default function LessonPage() {
-  const { levelId } = useLocalSearchParams();
+  const { levelId, moduleId, title } = useLocalSearchParams();
   const router = useRouter();
   
-  const { gameState, loading } = useGameData(levelId);
+ const { gameState, loading: gameLoading } = useGameData(levelId);
+  const { moduleContent, contentLoading, fetchModuleContent } = useLesson();
   const [currentPage, setCurrentPage] = useState(0);
   const [showTopics, setShowTopics] = useState(false);
   const [showLoading, setShowLoading] = useState(true);
 
   // Use useEffect to handle state transitions properly
-  React.useEffect(() => {
-    if (!loading) {
-      // This will trigger the exit (opening panels) animation in MainLoading
-      setShowLoading(false);
-    }
-  }, [loading]);
+  const isDataLoading = useMemo(() => {
+    if (levelId) return gameLoading;
+    if (moduleId) return contentLoading;
+    return false;
+  }, [levelId, gameLoading, moduleId, contentLoading]);
 
-  const pages = useMemo(() => {
-    if (gameState?.modules && gameState.modules.length > 0) {
-      const fullContent = gameState.modules.map(m => m.lesson_content).join('\n\n');
-      return fullContent
+  // FIX: Sync showLoading with the derived isDataLoading state
+  useEffect(() => {
+    if (!isDataLoading) {
+      // Use a small delay to ensure content is ready before sliding panels open
+      const timer = setTimeout(() => {
+        setShowLoading(false);
+      }, 100);
+      return () => clearTimeout(timer);
+    } else {
+      setShowLoading(true);
+    }
+  }, [isDataLoading]);
+
+  useEffect(() => {
+    if (moduleId) {
+      fetchModuleContent(moduleId);
+    }
+  }, [moduleId, fetchModuleContent]);
+
+   const pages = useMemo(() => {
+    let content = "";
+    if (levelId && gameState?.modules) {
+      content = gameState.modules.map(m => m.lesson_content).join('\n\n');
+    } else if (moduleId && moduleContent) {
+      content = moduleContent.lesson_content;
+    }
+
+    if (content) {
+      return content
         .split(/next page/i)
         .map(page => page.trim())
         .filter(page => page.length > 0);
     }
     return [];
-  }, [gameState]);
+  }, [gameState, moduleContent, levelId, moduleId]);
+
+  const headerDisplay = gameState?.level?.level_title || title || 'Lesson Guide';
 
   const topics = useMemo(() => {
     return pages.map((pageContent, index) => {
@@ -153,7 +181,7 @@ export default function LessonPage() {
           </TouchableOpacity>
         )}
         
-        <TouchableOpacity 
+         <TouchableOpacity 
           style={[
             styles.completeButton, 
             { marginLeft: currentPage > 0 ? gameScale(10) : 0 }
@@ -162,7 +190,9 @@ export default function LessonPage() {
           onPress={handleNext}
         >
           <Text style={styles.completeButtonText}>
-            {currentPage < pages.length - 1 ? 'Next Page' : 'Ready to fight!'}
+            {currentPage < pages.length - 1 
+              ? 'Next Page' 
+              : (moduleId ? 'Finish Lesson' : 'Ready to fight!')}
           </Text>
         </TouchableOpacity>
       </View>

@@ -18,7 +18,7 @@ import { gameScale } from '../Components/Responsiveness/gameResponsive';
 import { usePlayerProfile } from '../hooks/usePlayerProfile';
 
 // Import all Profile components
-import PlayerInfoSection from '../Comp\onents/Profile Components/PlayerInfoSection';
+import PlayerInfoSection from '../Components/Profile Components/PlayerInfoSection';
 import StatsGridSection from '../Components/Profile Components/StatsGridSection';
 import InventorySection from '../Components/Profile Components/InventorySection';
 
