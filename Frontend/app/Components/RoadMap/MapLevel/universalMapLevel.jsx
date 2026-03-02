@@ -17,7 +17,7 @@ import { gameScale } from '../../Responsiveness/gameResponsive';
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
-export default function UniversalMapLevel() {
+export default function UniversalMapLevel({ onLevelFocus }) {
 
    const navigation = useNavigation();
    const scrollViewRef = useRef(null);
@@ -31,6 +31,10 @@ export default function UniversalMapLevel() {
   const getCurrentTheme = () => {
     return MAP_THEMES[mapName] || DEFAULT_THEME;
   };
+
+
+  
+
 
   const theme = useMemo(() => {
     const baseTheme = MAP_THEMES[mapName] || DEFAULT_THEME;
@@ -167,11 +171,20 @@ export default function UniversalMapLevel() {
 
       const verticalOffset = loopNumber * gameScale(700);
       lastButtonTop = fourButtonPositions[patternIndex].top + verticalOffset;
-    }
+  }
+  return lastButtonTop + gameScale(500);
+}, [levels]); 
 
-    
-    return lastButtonTop + gameScale(500);
-  }, [levels]); // Changed from lessons to levels
+  useEffect(() => {
+    if (levels.length > 0 && onLevelFocus && !lastFocusedId.current) {
+      // Prioritize the current unlocked level, fallback to the first level
+      const currentIndex = levels.findIndex(level => level.isCurrentUnlocked === true);
+      const initialLevel = currentIndex !== -1 ? levels[currentIndex] : levels[0];
+      
+      lastFocusedId.current = initialLevel.level_id;
+      onLevelFocus(initialLevel);
+    }
+  }, [levels, onLevelFocus]);
   
 
   useEffect(() => {
@@ -208,15 +221,63 @@ export default function UniversalMapLevel() {
   }, [loading, levels, getResponsiveValues]);
 
 
+  const lastFocusedId = useRef(null);
+
+  // Pre-calculate mathematically where every node button lives (Identical to Buttons.jsx logic)
+  const buttonTops = useMemo(() => {
+    if (!levels || levels.length === 0) return [];
+    return levels.map((_, index) => {
+      if (index === 0) return gameScale(200);
+      const patternIndex = (index - 1) % 4;
+      const loopNumber = Math.floor((index - 1) / 4);
+      const BUTTON_PATTERNS = [350, 540, 735, 900];
+      return gameScale(BUTTON_PATTERNS[patternIndex]) + (loopNumber * gameScale(700));
+    });
+  }, [levels]);
+
   const handleScroll = useCallback(({ nativeEvent }) => {
-    const { contentOffset } = nativeEvent;
+    const { contentOffset, layoutMeasurement } = nativeEvent;
     const currentScreen = Math.floor(contentOffset.y / gameScale(844));
     const neededBackgrounds = currentScreen + 20;
    
     if (neededBackgrounds > backgroundCount) {
       setBackgroundCount(Math.max(neededBackgrounds, 15));
     }
-  }, [backgroundCount]);
+
+    // NEW Logic: Calculate the viewport center to snap the current UI data
+    if (buttonTops.length > 0) {
+      
+      // 🚀 TWEAK THIS: Increase this number to delay the data change even more. 
+      // Higher number = button must be physically higher on screen to trigger limit
+      const triggerDelayOffset = gameScale(50); 
+      
+      const triggerY = contentOffset.y + (layoutMeasurement.height / 2) - triggerDelayOffset;
+      
+      let closestIndex = 0;
+      let minDistance = Infinity;
+
+      for (let i = 0; i < buttonTops.length; i++) {
+        // Fix: Added gameScale(100) because your levelButtonsContainer has a top offset of 100
+        const actualButtonPositionOnScreen = buttonTops[i] + gameScale(100);
+        
+        const dist = Math.abs(actualButtonPositionOnScreen - triggerY);
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestIndex = i;
+        }
+      }
+
+      const closestLevel = levels[closestIndex];
+      // Only trigger re-render on parent if the focused node actually changed
+      if (closestLevel && closestLevel.level_id !== lastFocusedId.current) {
+        lastFocusedId.current = closestLevel.level_id;
+        if (onLevelFocus) {
+          onLevelFocus(closestLevel);
+        }
+      }
+    }
+  }, [backgroundCount, buttonTops, levels, onLevelFocus]);
+
 
   const handleLevelPress = useCallback((level) => {
     console.log('🎯 Level pressed:', {
