@@ -271,13 +271,13 @@ const detectTagMismatch = (
     let count = 0;
     while ((match = blankRegex.exec(q)) !== null) {
       if (count === index) {
-        const text = String(val).trim();
+        const text = String(val || "").trim();
         const beforeMatch = q.substring(
           Math.max(0, match.index - 2),
           match.index,
         );
         if (beforeMatch.endsWith("</")) return `/${text.replace(/^\//, "")}`;
-        if (text.startsWith("/")) return text;
+        if (text && text.startsWith("/")) return text;
         return text;
       }
       count++;
@@ -286,20 +286,20 @@ const detectTagMismatch = (
   };
 
   const isPair = (t1: string, t2: string) => {
-    const m1 = String(t1).match(tagPairRegex);
-    const m2 = String(t2).match(tagPairRegex);
+    const s1 = String(t1 || "");
+    const s2 = String(t2 || "");
+    const m1 = s1.match(tagPairRegex);
+    const m2 = s2.match(tagPairRegex);
     if (!m1 || !m2) return false;
 
     const name1 = m1[1],
       name2 = m2[1];
-    const isClosing1 = String(t1).includes("/"),
-      isClosing2 = String(t2).includes("/");
+    const isClosing1 = s1.includes("/"),
+      isClosing2 = s2.includes("/");
 
     if (name1 !== "" && name2 !== "") {
       return name1 === name2 && isClosing1 !== isClosing2;
     }
-    if (name1 !== "" && name2 === "" && isClosing2) return true;
-    if (name2 !== "" && name1 === "" && isClosing1) return true;
     return false;
   };
 
@@ -315,17 +315,28 @@ const detectTagMismatch = (
   });
 
   for (let i = 0; i < correctAnswers.length; i++) {
+    const c1 = getContextualTag(correctAnswers[i], i, question);
+    const u1 = userAnswers[i] || "";
+
+    if (c1.startsWith("/") && u1 && !u1.startsWith("/")) {
+      return { open: "unclosed tag", close: u1 };
+    }
+
     for (let j = i + 1; j < correctAnswers.length; j++) {
       if (blankToLineMap[i] === blankToLineMap[j]) {
-        const c1 = getContextualTag(correctAnswers[i], i, question);
         const c2 = getContextualTag(correctAnswers[j], j, question);
 
         if (isPair(c1, c2)) {
-          const u1 = getContextualTag(userAnswers[i], i, question);
-          const u2 = getContextualTag(userAnswers[j], j, question);
+          const u2 = userAnswers[j] || "";
 
-          if (!isPair(u1, u2)) {
-            return { open: userAnswers[i], close: userAnswers[j] };
+          const u1Contextual = getContextualTag(u1, i, question);
+          const u2Contextual = getContextualTag(u2, j, question);
+
+          if (!isPair(u1Contextual, u2Contextual)) {
+            return {
+              open: u1 || "missing tag",
+              close: u2 || "missing tag",
+            };
           }
         }
       }
@@ -340,10 +351,15 @@ const formatWrongAnswersDescription = (
   mismatch: { open: string; close: string } | null,
 ): string => {
   if (mismatch) {
+    if (mismatch.open === "unclosed tag") {
+      return `leaving "${mismatch.close}" hanging open`;
+    }
+    if (mismatch.open === "missing tag" || mismatch.close === "missing tag") {
+      return `a missing pair component`;
+    }
     const opening = mismatch.open || "opening tag";
-    const closing = mismatch.close.startsWith("/")
-      ? mismatch.close
-      : `/${mismatch.close}`;
+    const closingVal = String(mismatch.close || "");
+    const closing = closingVal.startsWith("/") ? closingVal : `/${closingVal}`;
     return `"${opening}" and "${closing}"`;
   }
 
@@ -382,6 +398,15 @@ const calculateErrorDetails = (
 ): { line: string; wrongAnswers: string[] }[] => {
   if (!question) return [];
 
+  const techPlaceholders = [
+    "null reference",
+    "undefined logic",
+    "missing parameter",
+    "empty stack",
+    "void input",
+    "unassigned variable",
+  ];
+
   const lines = question.split("\n");
   const blankRegex = /<(_|\/_|blank)>|\{blank\}|\[_+\]|_+|"_+|'_+|`_+/g;
   let currentBlankIndex = 0;
@@ -397,7 +422,14 @@ const calculateErrorDetails = (
       if (
         userAnswers[currentBlankIndex] !== correctAnswers[currentBlankIndex]
       ) {
-        lineErrors.push(userAnswers[currentBlankIndex] || "empty");
+        const val = userAnswers[currentBlankIndex];
+        const displayVal =
+          val && val.trim()
+            ? val
+            : techPlaceholders[
+                Math.floor(Math.random() * techPlaceholders.length)
+              ];
+        lineErrors.push(displayVal);
       }
       currentBlankIndex++;
     }
@@ -957,6 +989,14 @@ export const submitChallengeService = async (
     effectiveCorrectAnswer,
   );
   const { lineDisplay, answerDisplay } = formatErrorContext(errorDetails);
+
+  const finalWrongAnswerDescription = mismatch
+    ? formatWrongAnswersDescription(
+        finalAnswer,
+        effectiveCorrectAnswer,
+        mismatch,
+      )
+    : answerDisplay;
 
   const reactionContext = {
     player_name: player.username || "Player",
