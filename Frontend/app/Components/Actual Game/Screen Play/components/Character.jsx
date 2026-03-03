@@ -345,13 +345,20 @@ const Character = ({
   }, [currentState, characterAnimations]);
 
   // ========== Image Preloading ==========
-  useEffect(() => {
+    useEffect(() => {
     if (!currentAnimationUrl) return;
     
-    const isCached = isUrlCached(currentAnimationUrl);
+    // 🚀 NEW: Collect ALL URLs needed for the current state to prevent mid-sequence stalls
+    const requiredUrls = new Set([currentAnimationUrl]);
+    if (currentState === 'attack') {
+      if (animationConfig.runUrl) requiredUrls.add(animationConfig.runUrl);
+      if (animationConfig.attackUrl) requiredUrls.add(animationConfig.attackUrl);
+      if (animationConfig.rangeUrl) requiredUrls.add(animationConfig.rangeUrl);
+    }
+
+    const missingUrls = Array.from(requiredUrls).filter(url => !isUrlCached(url) && !preloadedImages.has(url));
     
-    if (isCached || preloadedImages.has(currentAnimationUrl)) {
-      preloadedImages.set(currentAnimationUrl, true);
+    if (missingUrls.length === 0) {
       if (!imageReady) setImageReady(true);
       return;
     }
@@ -361,23 +368,22 @@ const Character = ({
     
     (async () => {
       try {
-        await RNImage.prefetch(currentAnimationUrl);
-        if (animationConfig.rangeUrl) {
-           await RNImage.prefetch(animationConfig.rangeUrl);
-        }
+        // 🚀 Fetch all missing assets concurrently
+        await Promise.all(missingUrls.map(url => RNImage.prefetch(url)));
 
         if (mounted) {
-          preloadedImages.set(currentAnimationUrl, true);
-          setImageReady(true);
+          missingUrls.forEach(url => preloadedImages.set(url, true));
+          setImageReady(true); // Triggers main animation to proceed
         }
       } catch (err) { 
         console.warn(`Character prefetch failed:`, err);
-        if (mounted) setImageReady(true);
+        if (mounted) setImageReady(true); // Proceed anyway to avoid hard-lock
       }
     })();
     
     return () => { mounted = false; };
-  }, [currentAnimationUrl, isUrlCached, animationConfig.rangeUrl]);
+  }, [currentAnimationUrl, currentState, animationConfig, isUrlCached, preloadedImages]);
+
 
     useEffect(() => {
     if (potionEffectUrl) {
@@ -446,13 +452,16 @@ const Character = ({
       return;
     }
 
-    // 🚀 NEW: Specifically check if it's a compound attack and require BOTH URLs to be loaded
+    // 🚀 FIX: Broaden readiness check to include Range projectiles & strictly evaluate ALL active attack pieces
     let compoundReady = true;
-    if (config.isCompound && currentState === 'attack') {
-        const { runUrl, attackUrl } = config;
-        const runCached = isUrlCached(runUrl) || preloadedImages.has(runUrl);
-        const attackCached = isUrlCached(attackUrl) || preloadedImages.has(attackUrl);
-        compoundReady = runCached && attackCached;
+    if (currentState === 'attack') {
+        const { runUrl, attackUrl, rangeUrl } = config;
+        
+        const runCached = !runUrl || isUrlCached(runUrl) || preloadedImages.has(runUrl);
+        const attackCached = !attackUrl || isUrlCached(attackUrl) || preloadedImages.has(attackUrl);
+        const rangeCached = !rangeUrl || isUrlCached(rangeUrl) || preloadedImages.has(rangeUrl);
+        
+        compoundReady = runCached && attackCached && rangeCached;
     }
 
     const isCriticalState = currentState === 'attack' || currentState === 'hurt' || currentState === 'dies' || currentState === 'run';
