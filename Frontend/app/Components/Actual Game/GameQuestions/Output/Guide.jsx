@@ -296,6 +296,58 @@ const Guide = ({ currentQuestion, isFullPageLesson = false }) => {
         continue;
       }
 
+      // 🚀 NEW: Detect Image blocks
+      if (trimmedLine.startsWith('Image:')) {
+        let imageUrl = trimmedLine.substring(6).trim();
+
+        i++; 
+        // Advance lines until we find "End of Image"
+        while (i < lines.length) {
+          const currentLine = lines[i].trim();
+          if (currentLine === 'End of Image') {
+             break;
+          }
+          // Just in case the URL was accidentally dropped to the next line
+          if (!imageUrl && currentLine.startsWith('http')) {
+             imageUrl = currentLine;
+          }
+          i++;
+        }
+
+        if (imageUrl) {
+          // Wrap the image in a basic HTML skeleton to map it perfectly in the WebView
+          const imageHtml = `
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+              </head>
+              <body style="margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: transparent;">
+                <img src="${imageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;" />
+              </body>
+            </html>
+          `;
+
+          result.push(
+            <View key={`image-view-${i}`} style={styles.imageWebViewContainer}>
+              <WebView
+                source={{ html: imageHtml }}
+                style={styles.imageWebView}
+                scrollEnabled={false}
+                scalesPageToFit={false}
+                showsVerticalScrollIndicator={false}
+                showsHorizontalScrollIndicator={false}
+                originWhitelist={['*']}
+              />
+            </View>
+          );
+        }
+
+        i++;
+        continue;
+      }
+
+
       if (trimmedLine.startsWith('Example:')) {
         const exampleLines = [];
         
@@ -542,6 +594,32 @@ const styles = StyleSheet.create({
   exampleWebview: {
     backgroundColor: 'transparent', 
     width: '100%',
+  },
+
+  imageWebViewContainer: {
+    height: scale(220), // Fixed consistency height
+    width: '100%',
+    marginVertical: scale(12),
+    borderRadius: scale(8),
+    overflow: 'hidden',
+    backgroundColor: '#ffffff',
+    borderWidth: scale(1),
+    borderColor: '#e9ecef',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: scale(2) },
+    shadowOpacity: 0.1,
+    shadowRadius: scale(4),
+    elevation: 2,
+  },
+
+   imageWebView: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+
+  interactiveSection: {
+    marginVertical: scale(20),
+    position: 'relative', 
   },
 
    interactiveSection: {

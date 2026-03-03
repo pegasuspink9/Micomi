@@ -689,7 +689,15 @@ const LevelModal = ({
                         ]}
                       >
                         <View style={styles.rewardFrames}>
-                          <View style={styles.rewardSection}>
+                          <Pressable 
+                            style={styles.rewardSection}
+                            onPress={() => {
+                              handleModalClose();
+                              setTimeout(() => {
+                                router.push('/Components/CharacterSelection/CharacterSelect');
+                              }, 300);
+                            }}
+                          >
                             <Text style={styles.sectionLabel}>Hero</Text>
                             <View style={styles.rewardFrame}>
                               <View style={styles.rewardBox}>
@@ -703,10 +711,10 @@ const LevelModal = ({
                                   ) : (
                                     <Text style={styles.rewardIcon}>👤</Text>
                                   )}
-                                </View>
+                                </View> 
                               </View>
                             </View>
-                          </View>
+                          </Pressable>
                           
                           <View style={styles.rewardSection}>
                             <Text style={styles.sectionLabel}>Rewards</Text>

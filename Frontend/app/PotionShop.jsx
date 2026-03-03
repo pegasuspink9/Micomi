@@ -214,8 +214,14 @@ export default function PotionShop() {
   const SHOP_BGM_URL = 'https://micomi-assets.me/Sounds/Final/Shop.ogg';
 
   useEffect(() => {
+    // 1. Play the music when the component mounts
     soundManager.playBackgroundMusic(SHOP_BGM_URL, 0.4);
+
+    return () => {
+      soundManager.stopBackgroundMusic();
+    };
   }, []);
+
 
   const { playerData, loadPlayerProfile, refreshPlayerData } = usePlayerProfile();
   const currentPlayerCoins = playerData?.coins || 0; 

@@ -105,10 +105,7 @@ export default function RootLayout() {
     
     // Check if current screen is a navigation/UI page
     const isNavigationPage = 
-      segments.includes('map') || 
-      segments.includes('roadMapLandPage') ||
-      segments.includes('(tabs)'); 
-
+      segments.includes('map') 
     if (isNavigationPage && user) {
       soundManager.playBackgroundMusic(NAV_BGM_URL, 0.15);
     } else if (isAtLoginPage) {
@@ -118,10 +115,10 @@ export default function RootLayout() {
 
   // Page detection for the Universal Tap (outside useEffect for use in JSX)
    const isNavPage = 
-    segments.includes('map') || 
-    segments.includes('CharacterSelect') || 
-    segments.includes('PotionShop') || 
-    segments.includes('roadMapLandPage') 
+    segments.includes('roadMapLandPage') ||
+    segments.includes('(tabs)') ||
+
+    segments.includes('map')
 
 
   

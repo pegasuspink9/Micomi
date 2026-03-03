@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const POSSIBLE_BACKEND_URLS = [
-  'http://192.168.254.123:3000'
+  'http://10.147.104.202:3000'
 ];
 
 class ApiService {

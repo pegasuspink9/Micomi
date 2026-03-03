@@ -95,39 +95,79 @@ export default function LessonPage() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar hidden={true} />
 
-        <MainLoading visible={showLoading} />
+      <MainLoading visible={showLoading} />
       
-      
-      <View style={styles.headerWrapper}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={gameScale(24)} color="#fff" />
-          </TouchableOpacity>
-          
-          <Text style={styles.headerTitle}>
-            {gameState?.level?.level_title || 'Lesson Guide'}
+      {/* 🚀 Changed: Removed headerWrapper, just kept the header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={gameScale(24)} color="#fff" />
+        </TouchableOpacity>
+        
+        <Text style={styles.headerTitle}>
+          {gameState?.level?.level_title || 'Lesson Guide'}
+        </Text>
+        
+        <TouchableOpacity 
+          style={styles.pageIndicatorContainer}
+          onPress={() => setShowTopics(!showTopics)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.pageIndicatorText}>
+            {pages.length > 0 ? `${currentPage + 1} / ${pages.length}` : ''}
           </Text>
+          <Ionicons 
+            name={showTopics ? "chevron-up" : "chevron-down"} 
+            size={gameScale(16)} 
+            color="#4dabf7" 
+            style={{ marginLeft: gameScale(4) }} 
+          />
+        </TouchableOpacity>
+      </View>
+
+      {/* 🚀 NEW: Wrapper for everything below the header so touch spans the screen */}
+      <View style={styles.mainBodyContainer}>
+        <View style={styles.content}>
+           <Guide 
+            key={currentPage} 
+            currentQuestion={{ guide: currentGuideContent }} 
+            isFullPageLesson={true} 
+          />
+        </View>
+
+        <View style={styles.footer}>
+          {currentPage > 0 && (
+            <TouchableOpacity style={styles.prevButton} onPress={handlePrev} activeOpacity={0.9}>
+              <Ionicons name="chevron-back" size={gameScale(24)} color="#ffffff" />
+            </TouchableOpacity>
+          )}
           
-          <TouchableOpacity 
-            style={styles.pageIndicatorContainer}
-            onPress={() => setShowTopics(!showTopics)}
-            activeOpacity={0.7}
+           <TouchableOpacity 
+            style={[
+              styles.completeButton, 
+              { marginLeft: currentPage > 0 ? gameScale(10) : 0 }
+            ]} 
+            activeOpacity={0.9}
+            onPress={handleNext}
           >
-            <Text style={styles.pageIndicatorText}>
-              {pages.length > 0 ? `${currentPage + 1} / ${pages.length}` : ''}
+            <Text style={styles.completeButtonText}>
+              {currentPage < pages.length - 1 
+                ? 'Next Page' 
+                : (moduleId ? 'Finish Lesson' : 'Ready to fight!')}
             </Text>
-            <Ionicons 
-              name={showTopics ? "chevron-up" : "chevron-down"} 
-              size={gameScale(16)} 
-              color="#4dabf7" 
-              style={{ marginLeft: gameScale(4) }} 
-            />
           </TouchableOpacity>
         </View>
 
+        {/* 🚀 FIX: Dropdown is now absolute inside the main body. Touches are no longer clipped! */}
         {showTopics && (
           <View style={styles.dropdownContainer}>
-            <ScrollView style={styles.dropdownScroll} showsVerticalScrollIndicator={false}>
+            <ScrollView 
+              style={styles.dropdownScroll} 
+              contentContainerStyle={styles.dropdownScrollContent}
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+              scrollEnabled={true}
+              bounces={true}
+            >
               {topics.map((topic, idx) => {
                 const isActive = currentPage === topic.pageIndex;
                 return (
@@ -165,37 +205,6 @@ export default function LessonPage() {
           </View>
         )}
       </View>
-
-      <View style={styles.content}>
-         <Guide 
-          key={currentPage} 
-          currentQuestion={{ guide: currentGuideContent }} 
-          isFullPageLesson={true} 
-        />
-      </View>
-
-      <View style={styles.footer}>
-        {currentPage > 0 && (
-          <TouchableOpacity style={styles.prevButton} onPress={handlePrev} activeOpacity={0.9}>
-            <Ionicons name="chevron-back" size={gameScale(24)} color="#ffffff" />
-          </TouchableOpacity>
-        )}
-        
-         <TouchableOpacity 
-          style={[
-            styles.completeButton, 
-            { marginLeft: currentPage > 0 ? gameScale(10) : 0 }
-          ]} 
-          activeOpacity={0.9}
-          onPress={handleNext}
-        >
-          <Text style={styles.completeButtonText}>
-            {currentPage < pages.length - 1 
-              ? 'Next Page' 
-              : (moduleId ? 'Finish Lesson' : 'Ready to fight!')}
-          </Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 }
@@ -205,9 +214,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0d253f', 
   },
-  headerWrapper: {
-    zIndex: 10, 
-    elevation: 10,
+     mainBodyContainer: {
+    flex: 1,
+    position: 'relative', 
+    zIndex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -247,28 +257,32 @@ const styles = StyleSheet.create({
   },
   
   // --- Hanging Dropdown Styles (100% Width) ---
-   dropdownContainer: {
+  dropdownContainer: {
     position: 'absolute',
-    top: '100%', 
+    top: 0, // Starts exactly below header because it's localized to mainBodyContainer
     left: 0,
     right: 0,
     width: '100%',
-    backgroundColor: 'rgba(13, 37, 63, 0.98)', // Slightly more opaque
+    backgroundColor: '#0d253f', 
     borderBottomWidth: gameScale(2),
     borderColor: '#4dabf7',
-    maxHeight: gameScale(600), 
+    maxHeight: gameScale(800), // 🚀 Using maxHeight Allows it to be smaller if fewer items, caps it at 400 for scrolling
     shadowColor: '#000',
     shadowOffset: { width: 0, height: gameScale(6) },
     shadowOpacity: 0.6,
     shadowRadius: gameScale(8),
-    elevation: 15,
-    zIndex: 10,
+    elevation: 25, 
+    zIndex: 2000,  
   },
   dropdownScroll: {
-    flexGrow: 0,
+    flex: 1, 
+    height: '100%', // 🚀 Ensure it fills the container
+  },
+  dropdownScrollContent: {
     paddingHorizontal: gameScale(15),
     paddingTop: gameScale(15),
-    paddingBottom: 0, // Removed bottom padding as requested
+    paddingBottom: gameScale(50), 
+    flexGrow: 1, // 🚀 Mandatory for ScrollView content to be scrollable
   },
 
   // --- Leaderboard-style 3D Cards ---
