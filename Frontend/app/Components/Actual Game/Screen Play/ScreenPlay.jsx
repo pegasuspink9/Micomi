@@ -195,6 +195,12 @@ const ScreenPlay = ({
            '';
   }, [gameState.submissionResult, gameState.selectedCharacter]);
 
+   const characterAttackType = useMemo(() => 
+    gameState.submissionResult?.fightResult?.character?.character_attack_type || 
+    gameState.selectedCharacter?.character_attack_type,
+    [gameState.submissionResult, gameState.selectedCharacter]
+  );
+
   const enemyName = useMemo(() => {
     return gameState.submissionResult?.fightResult?.enemy?.enemy_name ?? 
            gameState.enemy?.enemy_name ??
@@ -747,7 +753,6 @@ useEffect(() => {
     const base = gameState.enemy;
     const action = gameState.submissionResult?.fightResult?.enemy;
   
-    //  FIX: Prioritize action-specific animations from the fight result
     return {
       character_idle: action?.enemy_idle ?? base?.enemy_idle,
       character_attack: action?.enemy_attack ?? base?.enemy_attack,
@@ -755,11 +760,15 @@ useEffect(() => {
       character_run: action?.enemy_run ?? base?.enemy_run,
       character_dies: action?.enemy_dies ?? base?.enemy_dies,
     };
-  //  DEPENDENCY FIX: Re-calculate whenever fight result enemy or base enemy data changes.
   }, [gameState.submissionResult?.fightResult?.enemy, gameState.enemy]);
   return (
     <GameContainer borderColor={borderColor}   setBorderColor={setBorderColor}>
-      <GameBackground isPaused={isPaused} combatBackground={combatBackground}>
+      <GameBackground 
+        isPaused={isPaused} 
+        combatBackground={combatBackground}
+        characterCurrentState={characterCurrentState}
+        characterAttackType={characterAttackType}
+      >
         <DogCharacter 
           isPaused={isPaused} 
           characterAnimations={characterAnimations}

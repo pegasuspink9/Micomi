@@ -14,8 +14,20 @@ import { gameScale } from '../../../Responsiveness/gameResponsive';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const GameBackground = ({ children, isPaused, combatBackground }) => {
+const GameBackground = ({ children, isPaused, combatBackground, characterName, characterAttackType }) => {
   const frameIndex = useSharedValue(0);
+  const darkOverlayOpacity = useSharedValue(0);
+  const activeOverlayColor = useSharedValue('#e71212'); 
+
+  const specialColors = {
+    'Gino': '#000000',   
+    'Leon': '#d30606',     
+    'ShiShi': '#004d66', 
+    'Ryron': '#66004d',     
+  };
+
+  const overlayColor = specialColors[characterName] || '#000000';
+
   
   const SPRITE_URL = combatBackground && Array.isArray(combatBackground) && combatBackground.length > 0 
   ? combatBackground[0] 
@@ -25,6 +37,25 @@ const GameBackground = ({ children, isPaused, combatBackground }) => {
   const TOTAL_FRAMES = COLUMNS * ROWS; 
   const FRAME_DURATION = 50;
   const TOTAL_ANIMATION_DURATION = FRAME_DURATION * TOTAL_FRAMES;
+
+  useEffect(() => {
+    const shouldShowSpecial = characterAttackType === 'special_attack';
+    
+    if (shouldShowSpecial) {
+      activeOverlayColor.value = specialColors[characterName] || '#000000';
+
+      darkOverlayOpacity.value = withTiming(0.75, { duration: 400 });
+
+      const timer = setTimeout(() => {
+        darkOverlayOpacity.value = withTiming(0, { duration: 1000 });
+      }, 2500);
+
+      return () => clearTimeout(timer);
+    } else {
+      darkOverlayOpacity.value = withTiming(0, { duration: 600 });
+    }
+  }, [characterAttackType, characterName]); 
+
 
   useEffect(() => {
     if (!isPaused) {
@@ -68,6 +99,14 @@ const animatedSpriteStyle = useAnimatedStyle(() => {
   };
 }, []);
 
+
+const darkOverlayStyle = useAnimatedStyle(() => ({
+  opacity: darkOverlayOpacity.value,
+  backgroundColor: activeOverlayColor.value,
+}));
+
+
+
 return (
   <View style={[styles.container, isPaused && styles.pausedBackground]}>
     <View style={styles.spriteContainer}>
@@ -81,6 +120,9 @@ return (
         />
       </Animated.View>
     </View>
+
+    {/* Special Skill Dark Overlay */}
+    <Animated.View style={[styles.darkOverlay, darkOverlayStyle]} pointerEvents="none" />
     
     {/*  Overlay for pause effect */}
     {isPaused && <View style={styles.pauseOverlay} />}
@@ -115,6 +157,12 @@ const styles = StyleSheet.create({
   spriteImage: {
     width: '100%',
     height: '100%',
+  },
+
+  darkOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#000000',
+    zIndex: 1, 
   },
   
   pauseOverlay: {
