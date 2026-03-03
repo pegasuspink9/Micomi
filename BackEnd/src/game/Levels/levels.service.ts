@@ -447,6 +447,39 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       await unlockNextLevel(playerId, level.map_id, levelId);
     }
 
+    if (modules?.modules) {
+      modules.modules = modules.modules.map((module) => {
+        const content = module.lesson_content || "";
+
+        const sections = content.split(/next page\n*/i);
+        const seenTopics = new Set<string>();
+
+        const processedSections = sections
+          .map((section) => {
+            const topicMatch = section.match(/^--([^-]+)--/m);
+            const topicTitle = topicMatch ? topicMatch[1].trim() : null;
+
+            if (topicTitle && seenTopics.has(topicTitle)) {
+              return section.replace(/^--[^-]+--\n*/m, "");
+            }
+
+            if (topicTitle) {
+              seenTopics.add(topicTitle);
+            }
+
+            return section;
+          })
+          .filter((section) => section.trim() !== "");
+
+        const cleanedContent = processedSections.join("\n\nnext page\n\n");
+
+        return {
+          ...module,
+          lesson_content: cleanedContent,
+        };
+      });
+    }
+
     return {
       level: {
         modules,
