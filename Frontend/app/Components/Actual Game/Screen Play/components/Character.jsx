@@ -224,7 +224,7 @@ const Character = ({
   }, []);
 
   const RUN_AWAY_DISTANCE = useMemo(() => {
-    return SCREEN.width + gameScale(200); 
+    return SCREEN.width + gameScale(400); 
   }, []);
 
 
@@ -512,6 +512,7 @@ const Character = ({
     }
 
     if (currentState === 'run' && !config.isCompound) {
+      if (attackInitiated.value) return; // Prevent double-trigger
       attackInitiated.value = true;
 
       frameIndex.value = withRepeat(
@@ -519,7 +520,12 @@ const Character = ({
         -1,
         false
       );
-      positionX.value = withTiming(RUN_AWAY_DISTANCE, { duration: ANIMATION_DURATIONS.run, easing: Easing.linear }, (finished) => {
+
+      // Linear retreat to the right
+      positionX.value = withTiming(RUN_AWAY_DISTANCE, { 
+        duration: ANIMATION_DURATIONS.run, 
+        easing: Easing.linear 
+      }, (finished) => {
         if (finished) {
           cancelAnimation(frameIndex);
           runOnJS(notifyAnimationComplete)();

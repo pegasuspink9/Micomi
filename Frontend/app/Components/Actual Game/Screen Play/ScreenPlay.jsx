@@ -342,7 +342,7 @@ const ScreenPlay = ({
 
    const isCorrect = gameState?.submissionResult?.isCorrect;
 
-  if (fightResult?.status === 'won' && 
+    if (fightResult?.status === 'won' && 
     fightResult?.enemy?.enemy_health === 0 &&
     victoryAnimationPhase === 'idle' && isCorrect === true) {
   
@@ -351,18 +351,22 @@ const ScreenPlay = ({
     setCharacterAnimationState('idle');
     
     victoryTimeoutRef.current = setTimeout(() => {
-      console.log('🎉 Celebration complete - notifying animation completion');
+      console.log('🏃 Celebration complete - character retreating');
       setVictoryAnimationPhase('waiting');
-
-      if (animationCompleteNotifiedRef.current) {
-        console.log('⚠️ Animation complete already notified, skipping duplicate');
-        return;
-      }
-      animationCompleteNotifiedRef.current = true;
       
-      if (onSubmissionAnimationComplete) {
-        onSubmissionAnimationComplete();
-      }
+      // TRIGGER RUN STATE
+      setCharacterAnimationState('run');
+      setIsCharacterRunning(true);
+
+      if (animationCompleteNotifiedRef.current) return;
+      
+      // Wait for the Character.jsx RUN_AWAY_DISTANCE animation to finish
+      setTimeout(() => {
+        animationCompleteNotifiedRef.current = true;
+        if (onSubmissionAnimationComplete) {
+          onSubmissionAnimationComplete();
+        }
+      }, 2600); // Slightly longer than ANIMATION_DURATIONS.run (2500)
     }, 3000); 
    }
   

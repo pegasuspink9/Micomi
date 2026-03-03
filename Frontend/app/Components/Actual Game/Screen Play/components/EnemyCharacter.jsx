@@ -143,7 +143,7 @@ const EnemyCharacter = ({
       return { ...baseBossStyle, marginTop: gameScale(-32) };
     }
     else if (effectiveEnemyName === 'Draco') {
-      return { ...baseBossStyle, marginTop: gameScale(-5) };
+      return { marginTop: gameScale(-5) };
     }
     else if (effectiveEnemyName === 'Boss Joshy') {
       return { ...baseBossStyle, marginTop: gameScale(-48) };
@@ -192,7 +192,7 @@ const EnemyCharacter = ({
 
   const RUN_AWAY_DISTANCE = useMemo(() => {
     // Moves to the right (off-screen)
-    return SCREEN.width + gameScale(200); 
+    return -(SCREEN.width - gameScale(200)); 
   }, []);
 
 
