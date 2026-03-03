@@ -2350,7 +2350,11 @@ const wrapWithTimer = async (
 
   let modifiedChallenge = { ...challenge };
 
-  if (modifiedChallenge.question) {
+  if (
+    modifiedChallenge.question &&
+    level.level_type === "enemyButton" &&
+    level.map_id !== 2
+  ) {
     modifiedChallenge.question = dynamicBlankSetter(
       modifiedChallenge.question,
       (modifiedChallenge.correct_answer as string[]) || [],
