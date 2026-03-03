@@ -360,13 +360,12 @@ const ScreenPlay = ({
 
       if (animationCompleteNotifiedRef.current) return;
       
-      // Wait for the Character.jsx RUN_AWAY_DISTANCE animation to finish
       setTimeout(() => {
         animationCompleteNotifiedRef.current = true;
         if (onSubmissionAnimationComplete) {
           onSubmissionAnimationComplete();
         }
-      }, 2600); // Slightly longer than ANIMATION_DURATIONS.run (2500)
+      }, 1000); // Slightly longer than ANIMATION_DURATIONS.run (2500)
     }, 3000); 
    }
   

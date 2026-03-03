@@ -416,12 +416,9 @@ const Character = ({
 
   // ========== Main Animation Effect ==========
   useEffect(() => {
-    if (currentState !== 'attack' && currentState !== 'run') {
-      attackInitiated.value = false;
+    if (currentState === 'attack' && attackInitiated.value) {
+      return;
     }
-
-    if (currentState === 'run' && attackInitiated.value) return;
-    if (currentState === 'attack' && attackInitiated.value) return;
 
     const config = animationConfig;
     const targetUrl = config.isCompound ? config.runUrl : config.url;
@@ -468,6 +465,11 @@ const Character = ({
     // Hold animation progression completely if assets are streaming into memory
     if (!canProceed) {
       return;
+    }
+
+    // 🚀 FIX 2: Clear the action flag safely AFTER the cache checks pass
+    if (currentState !== 'attack' && currentState !== 'run') {
+      attackInitiated.value = false;
     }
 
     cancelAnimation(frameIndex);
@@ -537,7 +539,6 @@ const Character = ({
     }
 
     if (currentState === 'run' && !config.isCompound) {
-      if (attackInitiated.value) return; // Prevent double-trigger
       attackInitiated.value = true;
 
       frameIndex.value = withRepeat(
