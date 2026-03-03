@@ -262,15 +262,28 @@ export const usePotion = async (
       if (isAlreadyHinted || isPending) {
         dynamicMessage = `Full hint already applied or pending confirmation—no extra reveal!`;
       } else {
+        const currentChallengeData = await prisma.challenge.findUnique({
+          where: { challenge_id: challengeId },
+        });
+
         const revealResult = revealAllBlanks(
           currentChallenge.question ?? "",
           effectiveCorrectAnswer,
         );
 
         if (!revealResult.success) {
-          throw new Error(
-            `Cannot reveal challenge ${challengeId}: ${revealResult.error}`,
+          const fallbackResult = revealAllBlanks(
+            currentChallengeData?.question ?? "",
+            effectiveCorrectAnswer,
           );
+
+          if (!fallbackResult.success) {
+            throw new Error(
+              `Cannot reveal challenge ${challengeId}: ${fallbackResult.error}`,
+            );
+          }
+
+          revealResult.filledQuestion = fallbackResult.filledQuestion;
         }
 
         await prisma.playerProgress.update({

@@ -55,6 +55,19 @@ export const ENEMY_WRONG_LINES = [
   "I need a healer!",
 ];
 
+export const ENEMY_BLANK_REACTIONS = [
+  "Leaving it blank? Your hesitation is my strength!",
+  "An empty answer? My firewall remains untouched!",
+  "You forgot to code! That's a fatal error, {player_name}!",
+  "Blank spaces won't save you from my attack!",
+  "Is that all? Silence is a weak weapon, {player_name}!",
+  "You're giving up already? Not even a single character typed!",
+  "A void in your logic! I'll fill that with damage!",
+  "Incomplete data! You're making this too easy!",
+  "You missed a spot! Actually, you missed the whole thing!",
+  "Sending 'null' to a boss fight? Bold, but foolish!",
+];
+
 export const ENEMY_CORRECT_LINES = [
   "The {wrong_answer} makes me overpower to attack you!",
   "Did you really think {wrong_answer} would hurt me?",

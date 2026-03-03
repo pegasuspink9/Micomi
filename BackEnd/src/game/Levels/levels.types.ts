@@ -12,6 +12,7 @@ export interface ChallengeDTO {
   guide?: string | null;
   test_cases?: Prisma.InputJsonValue | null;
   options?: Prisma.InputJsonValue | null;
+  question?: string | null;
 
   timer: string;
 }

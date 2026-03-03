@@ -16,7 +16,11 @@ import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
 import { updateQuestProgress } from "../Quests/quests.service";
 import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 import { getCardForAttackType } from "../Combat/combat.service";
-import { generateDynamicOptions } from "../Challenges/challenges.service";
+import {
+  generateDynamicOptions,
+  overrideChallengeGuide,
+  dynamicBlankSetter,
+} from "../Challenges/challenges.service";
 
 const prisma = new PrismaClient();
 
@@ -735,9 +739,21 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     },
   );
 
-  const firstChallenge = challengesWithTimer[0] ?? null;
+  let firstChallenge = challengesWithTimer[0] ?? null;
 
   if (firstChallenge && level.challenges) {
+    firstChallenge = (await overrideChallengeGuide(
+      firstChallenge as unknown as Challenge,
+      level,
+    )) as unknown as ChallengeDTO;
+
+    if (firstChallenge.question) {
+      firstChallenge.question = dynamicBlankSetter(
+        firstChallenge.question,
+        (firstChallenge.correct_answer as string[]) || [],
+      );
+    }
+
     const dynamicOptions = generateDynamicOptions(
       firstChallenge as unknown as Challenge,
       level.challenges,

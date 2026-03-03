@@ -14,7 +14,7 @@ export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
       return errorResponse(
         res,
         new Error("Player not authenticated"),
-        "Player ID required"
+        "Player ID required",
       );
     }
     const playerIdNum = Number(user.id);
@@ -25,6 +25,31 @@ export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
 
     const enhancedMaps = await Promise.all(
       maps.map(async (map) => {
+        const levelsData = await prisma.level.findMany({
+          where: {
+            map_id: map.map_id,
+            enemy_id: { not: null },
+          },
+          orderBy: { level_number: "asc" },
+          include: {
+            enemy: {
+              select: {
+                enemy_name: true,
+                avatar_enemy: true,
+              },
+            },
+            playerProgress: {
+              where: { player_id: playerIdNum },
+              select: {
+                has_received_rewards: true,
+              },
+            },
+          },
+        });
+
+        const isDefaultUnlocked =
+          map.map_name === "HTML" || map.map_name === "Computer";
+
         const hasProgress = await prisma.playerProgress.findFirst({
           where: {
             player_id: playerIdNum,
@@ -35,8 +60,11 @@ export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
           select: { progress_id: true },
         });
 
-        const isDefaultUnlocked =
-          map.map_name === "HTML" || map.map_name === "Computer";
+        const enemies = levelsData.map((lvl) => ({
+          enemy_name: lvl.enemy?.enemy_name,
+          avatar_enemy: lvl.enemy?.avatar_enemy,
+          is_defeated: lvl.playerProgress[0]?.has_received_rewards ?? false,
+        }));
 
         return {
           map_id: map.map_id,
@@ -48,8 +76,9 @@ export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
           map_image: map.map_image,
           player_id: playerIdNum,
           difficulty_level: map.difficulty_level,
+          enemies,
         };
-      })
+      }),
     );
 
     const freshQuests = await prisma.playerQuest.findMany({
@@ -87,7 +116,7 @@ export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
         imagesUrls,
         audioLinks,
       },
-      "Maps and fresh quests fetched successfully"
+      "Maps and fresh quests fetched successfully",
     );
   } catch (error) {
     console.error("Error in getAllMapsByPlayerId:", error);
@@ -105,7 +134,7 @@ export const getAllMaps = async (req: Request, res: Response) => {
         data: maps,
         audio: "https://micomi-assets.me/Sounds/Final/Navigation.mp3",
       },
-      "All maps fetched"
+      "All maps fetched",
     );
   } catch (error) {
     return errorResponse(res, error, "Failed to fetch maps");
