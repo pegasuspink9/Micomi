@@ -275,7 +275,8 @@ const Guide = ({ currentQuestion, isFullPageLesson = false }) => {
       const line = lines[i];
       const trimmedLine = line.trim();
 
-      if (isFullPageLesson && trimmedLine.startsWith('--') && trimmedLine.endsWith('--')) {
+      // REMOVED isFullPageLesson check to allow headers everywhere
+      if (trimmedLine.startsWith('--') && trimmedLine.endsWith('--')) {
         const headerText = trimmedLine.substring(2, trimmedLine.length - 2);
         result.push(
           <Text key={`header-${i}`} style={styles.guideHeader}>
@@ -387,9 +388,6 @@ const Guide = ({ currentQuestion, isFullPageLesson = false }) => {
 };
 
 const styles = StyleSheet.create({
-// ...existing code...
-// (Keep all your existing styles exactly as they are)
-// ...existing code...
   guideContainer: {
     backgroundColor: '#ffffffff',
     flex: 1,

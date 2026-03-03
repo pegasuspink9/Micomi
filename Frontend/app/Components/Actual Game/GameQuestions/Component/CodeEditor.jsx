@@ -19,7 +19,8 @@ const CodeEditor = ({
   expectedOutput = "",
   isCorrect = null,
   onTabChange,
-  activeTab: externalActiveTab
+  activeTab: externalActiveTab,
+  submissionResult
 }) => {
   const [activeTab, setActiveTab] = useState('code');
   // Initialize as false so the useEffect triggers the animation on mount
@@ -249,7 +250,7 @@ const CodeEditor = ({
         </View>
 
         <View style={styles.tabsContainer}>
-           {currentQuestion?.guide && (
+          {currentQuestion?.guide && submissionResult?.isCorrect === false && (
             <Pressable
               onPress={handleGuideTabPress}
               style={[
@@ -264,7 +265,7 @@ const CodeEditor = ({
                 styles.webTabText, 
                 activeTab === 'guide' && styles.webTabTextActive
               ]}>
-                Guide
+                Review
               </Text>
             </Pressable>
           )}
@@ -274,7 +275,7 @@ const CodeEditor = ({
             style={[
               styles.webTab,
               activeTab === 'code' && styles.webTabActive,
-              !currentQuestion?.guide && styles.webTabFirst,
+              (!currentQuestion?.guide || submissionResult?.isCorrect !== false) && styles.webTabFirst,
               tabsDisabled && { opacity: 0.5 } 
             ]}
             disabled={tabsDisabled} 

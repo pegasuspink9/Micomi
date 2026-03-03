@@ -309,6 +309,8 @@ const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
             renderSyntaxHighlightedLine={renderSyntaxHighlightedLine}
             onTabChange={handleTabChange}
             activeTab={activeTab}
+            isCorrect={isAnswerCorrect}
+            submissionResult={submissionResult}
           />
         ) : (
           <DocumentQuestion 
