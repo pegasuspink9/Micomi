@@ -97,7 +97,7 @@ const keepOnlyBlanks = (text: string): string => {
     /`(_+)`/g,
     /\{blank\}/g,
     /\[_+\]/g,
-    /_+/g,
+    /_{2,}/g, // FIX: Avoid matching single underscores in code variables like 'my_var'
   ];
 
   const occupiedRanges: { start: number; end: number }[] = [];
@@ -139,6 +139,49 @@ const keepOnlyBlanks = (text: string): string => {
   result += textAfter.replace(/[^\n]/g, "");
 
   return result;
+};
+
+export const dynamicBlankSetter = (
+  question: string,
+  correctAnswers: string[],
+): string => {
+  if (!question || !correctAnswers || correctAnswers.length === 0)
+    return question;
+
+  const blankPatterns = /<_>|<\/_>|\{blank\}|\[_+\]|_{2,}/;
+  if (blankPatterns.test(question)) return question;
+
+  let modifiedQuestion = question;
+  let searchStartIndex = 0;
+
+  correctAnswers.forEach((answer) => {
+    if (!answer) return;
+
+    const escapedAnswer = answer.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    const prefix = /^[a-zA-Z0-9_-]/.test(answer) ? "(?<![a-zA-Z0-9_-])" : "";
+    const suffix = /[a-zA-Z0-9_-]$/.test(answer) ? "(?![a-zA-Z0-9_-])" : "";
+
+    const regex = new RegExp(prefix + escapedAnswer + suffix, "g");
+    regex.lastIndex = searchStartIndex;
+
+    const match = regex.exec(modifiedQuestion);
+
+    if (match) {
+      const offset = match.index;
+
+      const replacement = "_";
+
+      modifiedQuestion =
+        modifiedQuestion.substring(0, offset) +
+        replacement +
+        modifiedQuestion.substring(offset + match[0].length);
+
+      searchStartIndex = offset + replacement.length;
+    }
+  });
+
+  return modifiedQuestion;
 };
 
 const getUniqueReaction = (
@@ -316,10 +359,10 @@ const detectTagMismatch = (
 
   for (let i = 0; i < correctAnswers.length; i++) {
     const c1 = getContextualTag(correctAnswers[i], i, question);
-    const u1 = userAnswers[i] || "";
+    const u1Raw = userAnswers[i] || "";
 
-    if (c1.startsWith("/") && u1 && !u1.startsWith("/")) {
-      return { open: "unclosed tag", close: u1 };
+    if (c1.startsWith("/") && u1Raw && !u1Raw.startsWith("/")) {
+      return { open: "unclosed tag", close: u1Raw };
     }
 
     for (let j = i + 1; j < correctAnswers.length; j++) {
@@ -329,12 +372,12 @@ const detectTagMismatch = (
         if (isPair(c1, c2)) {
           const u2 = userAnswers[j] || "";
 
-          const u1Contextual = getContextualTag(u1, i, question);
+          const u1Contextual = getContextualTag(u1Raw, i, question);
           const u2Contextual = getContextualTag(u2, j, question);
 
           if (!isPair(u1Contextual, u2Contextual)) {
             return {
-              open: u1 || "missing tag",
+              open: u1Raw || "missing tag",
               close: u2 || "missing tag",
             };
           }
@@ -354,41 +397,26 @@ const formatWrongAnswersDescription = (
     if (mismatch.open === "unclosed tag") {
       return `leaving "${mismatch.close}" hanging open`;
     }
-    if (mismatch.open === "missing tag" || mismatch.close === "missing tag") {
-      return `a missing pair component`;
-    }
-    const opening = mismatch.open || "opening tag";
-    const closingVal = String(mismatch.close || "");
-    const closing = closingVal.startsWith("/") ? closingVal : `/${closingVal}`;
-    return `"${opening}" and "${closing}"`;
+    const openTag = mismatch.open || "opening tag";
+    const closeVal = String(mismatch.close || "");
+    const closeTag = closeVal.startsWith("/") ? closeVal : `/${closeVal}`;
+    return `"${openTag}" and "${closeTag}"`;
   }
 
-  const incorrectChoices = userAnswers.filter(
-    (val, index) => val !== correctAnswers[index],
-  );
+  const incorrectChoices = userAnswers
+    .map((val, index) => {
+      if (val === correctAnswers[index]) return null;
+      return val && val.trim() ? `"${val}"` : "nothing";
+    })
+    .filter(Boolean) as string[];
 
   if (incorrectChoices.length === 0) return "that";
 
-  let selected: string[];
-  const totalBlanks = userAnswers.length;
+  const selected = incorrectChoices.slice(0, 2);
+  if (selected.length === 1) return selected[0];
 
-  if (totalBlanks <= 3) {
-    selected = [...incorrectChoices];
-  } else if (totalBlanks <= 5) {
-    selected = [...incorrectChoices]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 2);
-  } else {
-    selected = [...incorrectChoices]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 1);
-  }
-
-  const quotedSelected = selected.map((choice) => `"${choice}"`);
-
-  if (quotedSelected.length === 1) return quotedSelected[0];
-  const last = quotedSelected.pop();
-  return quotedSelected.join(", ") + ` and ${last}`;
+  const last = selected.pop();
+  return `${selected.join(", ")} and ${last}`;
 };
 
 const calculateErrorDetails = (
@@ -397,15 +425,6 @@ const calculateErrorDetails = (
   correctAnswers: string[],
 ): { line: string; wrongAnswers: string[] }[] => {
   if (!question) return [];
-
-  const techPlaceholders = [
-    "null reference",
-    "undefined logic",
-    "missing parameter",
-    "empty stack",
-    "void input",
-    "unassigned variable",
-  ];
 
   const lines = question.split("\n");
   const blankRegex = /<(_|\/_|blank)>|\{blank\}|\[_+\]|_+|"_+|'_+|`_+/g;
@@ -423,13 +442,7 @@ const calculateErrorDetails = (
         userAnswers[currentBlankIndex] !== correctAnswers[currentBlankIndex]
       ) {
         const val = userAnswers[currentBlankIndex];
-        const displayVal =
-          val && val.trim()
-            ? val
-            : techPlaceholders[
-                Math.floor(Math.random() * techPlaceholders.length)
-              ];
-        lineErrors.push(displayVal);
+        lineErrors.push(val && val.trim() ? val : "missing input");
       }
       currentBlankIndex++;
     }
@@ -2013,6 +2026,12 @@ export const submitChallengeService = async (
     death_audio = "https://micomi-assets.me/Sounds/Final/All%20Death.wav";
   }
 
+  if (freshProgress?.has_freeze_effect) {
+    enemy_attack_audio = null;
+    enemy_hurt_audio = "";
+    console.log("- Freeze effect active: Muting all enemy audio responses.");
+  }
+
   return {
     isCorrect,
     attempts: freshProgress?.attempts ?? updatedProgress.attempts,
@@ -2283,6 +2302,45 @@ function getNextWrongChallenge(
   return challenge || null;
 }
 
+export const overrideChallengeGuide = async (
+  challenge: Challenge,
+  level: any,
+): Promise<Challenge> => {
+  if (
+    level &&
+    level.level_type === "enemyButton" &&
+    level.map_id !== 2 &&
+    challenge.guide
+  ) {
+    const matchingModule = await prisma.module.findFirst({
+      where: {
+        lesson_content: {
+          contains: challenge.guide,
+        },
+      },
+    });
+
+    if (matchingModule && matchingModule.lesson_content) {
+      const pages = matchingModule.lesson_content.split("next page");
+
+      const targetPage = pages.find((page) =>
+        page.includes(challenge.guide as string),
+      );
+
+      if (targetPage) {
+        const contentOnly = targetPage.replace(
+          /Try it yourself[\s\S]*?Output/g,
+          "",
+        );
+
+        return { ...challenge, guide: contentOnly.trim() };
+      }
+    }
+  }
+
+  return challenge;
+};
+
 const wrapWithTimer = async (
   progress: any,
   challenge: Challenge | null,
@@ -2291,6 +2349,18 @@ const wrapWithTimer = async (
   if (!challenge) return { nextChallenge: null };
 
   let modifiedChallenge = { ...challenge };
+
+  if (modifiedChallenge.question) {
+    modifiedChallenge.question = dynamicBlankSetter(
+      modifiedChallenge.question,
+      (modifiedChallenge.correct_answer as string[]) || [],
+    );
+  }
+
+  modifiedChallenge = await overrideChallengeGuide(
+    modifiedChallenge as Challenge,
+    level,
+  );
 
   if (level && level.challenges) {
     const dynamicOptions = generateDynamicOptions(challenge, level.challenges);
