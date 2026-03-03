@@ -66,8 +66,8 @@ export const updateModule = async (req: Request, res: Response) => {
 
 export const createModuleTitle = async (req: Request, res: Response) => {
   try {
-    const data: CreateModuleTitle = req.body;
-    const moduleTitle = await prisma.moduleTitle.create({ data });
+    const data: CreateModuleTitle[] = req.body;
+    const moduleTitle = await prisma.moduleTitle.createMany({ data });
     return successResponse(res, moduleTitle, "Module Title created", 201);
   } catch (error) {
     return errorResponse(res, error, "Failed to create module title");

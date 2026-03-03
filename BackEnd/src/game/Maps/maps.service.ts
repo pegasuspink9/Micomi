@@ -30,7 +30,7 @@ export const selectMap = async (playerId: number, mapId: number) => {
     where: { map_id: mapId },
     include: {
       levels: {
-        orderBy: { level_id: "asc" },
+        orderBy: { level_number: "asc" },
         include: {
           playerProgress: {
             where: { player_id: playerId },
@@ -71,6 +71,10 @@ export const selectMap = async (playerId: number, mapId: number) => {
       ? allPlayerProgress[allPlayerProgress.length - 1]
       : null;
 
+  const allLevelsCompleted = fullMap.levels.every(
+    (l) => l.playerProgress.length > 0 && l.playerProgress[0].is_completed,
+  );
+
   const enhancedMap = {
     ...fullMap,
     levels: fullMap.levels.map((level, index) => {
@@ -80,15 +84,25 @@ export const selectMap = async (playerId: number, mapId: number) => {
         isUnlocked = !!level.playerProgress.length;
       }
 
+      let isCurrentUnlocked = false;
+
+      if (playerId === 11 && fullMap.map_name === "HTML") {
+        isCurrentUnlocked = level.level_id === 24; //For testing purposes, unlock level 25 for player 11 on HTML map
+      } else if (allLevelsCompleted) {
+        isCurrentUnlocked = index === fullMap.levels.length - 1;
+      } else if (latestUnlockedProgress) {
+        isCurrentUnlocked = level.level_id === latestUnlockedProgress.level_id;
+      } else {
+        isCurrentUnlocked = index === 0;
+      }
+
       return {
         ...level,
         level_number: SPECIAL_BUTTON_TYPES.includes(level.level_type as any)
           ? null
           : level.level_number,
         is_unlocked: isUnlocked,
-        isCurrentUnlocked: latestUnlockedProgress
-          ? level.level_id === latestUnlockedProgress.level_id
-          : index === 0,
+        isCurrentUnlocked,
       };
     }),
   };
