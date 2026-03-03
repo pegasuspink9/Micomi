@@ -100,7 +100,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent', 
     position: 'relative',
     overflow: 'hidden',
-    // ✅ FIXED: Using gameScale for a consistent height based on the base design.
     minHeight: gameScale(287), 
   },
   

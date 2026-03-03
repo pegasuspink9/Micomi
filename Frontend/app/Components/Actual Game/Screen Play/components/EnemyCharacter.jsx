@@ -114,11 +114,13 @@ const EnemyCharacter = ({
     if (enemyName === 'Boss Darco' || enemy?.enemy_name === 'Boss Darco') detected = 'Boss Darco';
     else if (enemyName === 'King Grimnir' || enemy?.enemy_name === 'King Grimnir') detected = 'King Grimnir';
     else if (enemyName === 'Draco' || enemy?.enemy_name === 'Draco') detected = 'Draco';
+    else if (enemyName === 'Boss Joshy' || enemy?.enemy_name === 'Boss Joshy') detected = 'Boss Joshy';
     
     // 3. URL fallback if props are missing/transitioning
     else if (currentAnimationUrl?.includes('Boss%20Darco') || currentAnimationUrl?.includes('Boss Darco')) detected = 'Boss Darco';
     else if (currentAnimationUrl?.includes('King') || currentAnimationUrl?.includes('Grimnir')) detected = 'King Grimnir'; 
     else if (currentAnimationUrl?.includes('Draco')) detected = 'Draco';
+    else if (currentAnimationUrl?.includes('Boss%20Joshy') || currentAnimationUrl?.includes('Boss Joshy')) detected = 'Boss Joshy';
 
     // 4. Update Ref if valid name found
     if (detected) {
@@ -132,28 +134,21 @@ const EnemyCharacter = ({
 
 
     const bossLayout = useMemo(() => {
+    const baseBossStyle = { right: gameScale(-30) };
+
     if (effectiveEnemyName === 'Boss Darco') {
-      return {
-        marginTop: gameScale(-37),
-        left: gameScale(210), // Positioning from left
-        right: undefined,     // CLEAR the default 'right' style
-      };
+      return { ...baseBossStyle, marginTop: gameScale(-37) };
     } 
     else if (effectiveEnemyName === 'King Grimnir') {
-      return {  // Slightly higher due to larger size
-        marginTop: gameScale(-32),
-        left: gameScale(205), // Adjusted left for larger width to keep relative center
-        right: undefined,    
-      };
+      return { ...baseBossStyle, marginTop: gameScale(-32) };
     }
     else if (effectiveEnemyName === 'Draco') {
-      return {
-        marginTop: gameScale(-5)
-      };
+      return { ...baseBossStyle, marginTop: gameScale(-5) };
+    }
+    else if (effectiveEnemyName === 'Boss Joshy') {
+      return { ...baseBossStyle, marginTop: gameScale(-48) };
     }
 
-    
-    // Default for regular enemies (empty object allows default styles to apply)
     return {};
   }, [effectiveEnemyName]);
 
@@ -169,10 +164,14 @@ const EnemyCharacter = ({
     if (effectiveEnemyName === 'King Grimnir') {
       return gameScale(200);
     }
+    if (effectiveEnemyName === 'Boss Joshy') {
+      return gameScale(200);
+    }
     return gameScale(150);
 
     
   }, [effectiveEnemyName]);
+  
   const SPRITE_COLUMNS = 6;
   const SPRITE_ROWS = 4;
   const TOTAL_FRAMES = 24;
@@ -364,7 +363,7 @@ const EnemyCharacter = ({
         soundManager.playCachedSound(attackAudioUrl, 'combat', 1.0);
       }, SOUND_DELAY);
     } else if (currentState === 'hurt' && hurtAudioUrl) {
-      const HURT_DELAY = 700; 
+      const HURT_DELAY = 1000; 
       attackSoundTimeoutRef.current = setTimeout(() => {
         soundManager.playCachedSound(hurtAudioUrl, 'combat', 1.0);
       }, HURT_DELAY);

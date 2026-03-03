@@ -206,6 +206,13 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
 
     // Extract challenge data
     const challengeSource = isSubmission ? responseData.nextChallenge || data.nextChallenge : responseData.currentChallenge || data.currentChallenge;
+
+    const questionType = data.question_type || 
+                        responseData.question_type || 
+                        data.fightResult?.question_type || 
+                        responseData.fightResult?.question_type || 
+                        null;
+
     if (challengeSource) {
       let options = [];
       if (Array.isArray(challengeSource.options)) {
@@ -233,7 +240,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         options: options,
         correctAnswer: correctAnswer,
         challenge_type: challengeSource.challenge_type,
-        question_type: data.question_type || responseData.question_type || null,
+        question_type: questionType,
         timeLimit: challengeSource.timeLimit || challengeSource.timer,
         timeRemaining: challengeSource.timeRemaining,
         timer: challengeSource.timer,

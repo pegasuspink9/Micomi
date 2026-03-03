@@ -96,8 +96,79 @@ const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
   }
 
   const parts = line.split('_');
-  // Use pre-calculated cumulative index instead of expensive O(N^2) search
   const blanksBeforeCurrent = cumulativeBlankCounts[lineIndex] || 0;
+
+  if (isComputerMap) {
+    const textContent = parts.join('').trim();
+    
+    return (
+      <View style={styles.codeLineContainerBookCol} key={`line-${lineIndex}`}>
+        {/* Render text on its own line above */}
+        {textContent ? (
+          <Text style={styles.codeTextBook}>{textContent}</Text>
+        ) : null}
+        
+        {/* Render all blanks belonging to this line in a single, shrinking, non-wrapping row */}
+        {parts.length > 1 && (
+          <View style={styles.blanksRowContainer}>
+            {parts.map((_, partIndex) => {
+              const isLastPart = partIndex === parts.length - 1;
+              if (isLastPart) return null; // Empties after the last blank
+              
+              const globalBlankIndex = blanksBeforeCurrent + partIndex;
+              let isWrong = false;
+              let isCorrectBlank = false;
+              
+              if (canProceed && isAnswerCorrect === false) {
+                const selectedValueIndex = selectedAnswers[globalBlankIndex];
+                const selectedValue = selectedValueIndex != null ? options[selectedValueIndex] : null;
+                const correctValue = correctAnswersList?.[globalBlankIndex];
+                
+                if (selectedValue !== correctValue) {
+                  isWrong = true;
+                } else if (selectedValue != null) {
+                  isCorrectBlank = true;
+                }
+              }
+
+              return (
+                <Pressable 
+                  key={`blank-${globalBlankIndex}`}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    soundManager.playBlankTapSound(1.0);
+                    if (onBlankPress) onBlankPress(globalBlankIndex);
+                  }}
+                  ref={(ref) => {
+                    if (ref) blankRefs.current[globalBlankIndex] = ref;
+                  }}
+                  hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
+                  style={[
+                    styles.codeBlankContainer,
+                    styles.codeBlankBook,
+                    globalBlankIndex === selectedBlankIndex && styles.currentBlankBook,
+                    isCorrectBlank && styles.correctBlank,
+                    isWrong && styles.wrongBlank,
+                  ]}
+                >
+                  <Text 
+                    style={styles.codeBlankTextBook}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit={true} // Shrinks text instead of wrapping!
+                    minimumFontScale={0.4}
+                  >
+                    {selectedAnswers?.[globalBlankIndex] != null
+                      ? options?.[selectedAnswers[globalBlankIndex]] || '_'
+                      : '_'}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+      </View>
+    );
+  }
   
   const renderedParts = parts.map((part, partIndex) => {
     const globalBlankIndex = blanksBeforeCurrent + partIndex;
@@ -279,11 +350,25 @@ const styles = StyleSheet.create({
     minHeight: 0, 
     maxHeight: '100%',
   },
-  codeLineContainer: {
+    codeLineContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
     minHeight: gameScale(25),
+  },
+   codeLineContainerBookCol: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    width: '100%',
+    marginBottom: gameScale(15), 
+  },
+  blanksRowContainer: {
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    width: '100%',
+    justifyContent: 'flex-start',
+    gap: gameScale(2),
+    marginTop: gameScale(8),
   },
   codeLineTextWrapper: {
     lineHeight: gameScale(25), 
@@ -306,10 +391,16 @@ const styles = StyleSheet.create({
     borderWidth: gameScale(2),
     borderRadius: gameScale(4),
     shadowColor: '#4a331d',
-    paddingHorizontal: gameScale(15),
-    paddingVertical: gameScale(15),
+    paddingHorizontal: gameScale(6),
+    paddingVertical: gameScale(12),
     shadowOpacity: 0.3,
     borderBottomWidth: gameScale(4),
+    flexShrink: 1,     
+    flex: 1,           
+    maxWidth: gameScale(80),
+    minWidth: gameScale(20),  
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   currentBlankBook: {
     backgroundColor: '#ffecb3',

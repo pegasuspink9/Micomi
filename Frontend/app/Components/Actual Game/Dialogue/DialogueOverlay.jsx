@@ -17,6 +17,7 @@ const DialogueOverlay = ({ visible, dialogueData, onComplete }) => {
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef(null);
+  const isSpammingRef = useRef(false); 
   
   // Shared values for animations
   const slideAnim = useSharedValue(0); 
@@ -90,6 +91,13 @@ const DialogueOverlay = ({ visible, dialogueData, onComplete }) => {
   }, [parsedContent]);
 
   const handlePress = () => {
+    if (isSpammingRef.current) return;
+    
+    isSpammingRef.current = true;
+    setTimeout(() => {
+      isSpammingRef.current = false;
+    }, 300); // 300ms delay
+
     soundManager.playGameButtonTapSound();
     
     if (isTyping) {

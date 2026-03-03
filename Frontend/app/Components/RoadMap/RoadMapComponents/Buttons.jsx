@@ -227,7 +227,6 @@ const transformPreviewDataWithCache = (data) => {
         levelData: levelData
       });
     } else if (handleLevelPress) {
-      // Legacy fallback
       const originalLevel = lessons.find(level => level.level_id === selectedLevelId);
       handleLevelPress(originalLevel || levelData);
     }
