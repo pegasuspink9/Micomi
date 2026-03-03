@@ -23,7 +23,6 @@ const CodeEditor = ({
   submissionResult
 }) => {
   const [activeTab, setActiveTab] = useState('code');
-  // Initialize as false so the useEffect triggers the animation on mount
   const [hasAnimated, setHasAnimated] = useState(false); 
   const lineAnimations = useRef([]);
   const [tabsDisabled, setTabsDisabled] = useState(false); 
@@ -53,8 +52,6 @@ const CodeEditor = ({
     { key: 'computer_file', short: 'File', long: 'file.txt' },
   ], []);
 
-  //  UPDATED: Only handle tab disabling here. 
-  // We removed the setHasAnimated(false) logic because the key prop in parent handles component reset.
    useEffect(() => {
     setTabsDisabled(true); 
     const timer = setTimeout(() => {

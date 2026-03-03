@@ -70,7 +70,6 @@ const animatedSpriteStyle = useAnimatedStyle(() => {
 
 return (
   <View style={[styles.container, isPaused && styles.pausedBackground]}>
-    {/* ✅ Sprite sheet background */}
     <View style={styles.spriteContainer}>
       <Animated.View style={[animatedSpriteStyle]}>
         <Image

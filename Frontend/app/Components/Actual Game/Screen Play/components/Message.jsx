@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
     lineHeight: gameScale(28),    
     fontFamily: 'Oups',
     textShadowRadius: gameScale(10),
-    letterSpacing: gameScale(2),
+    letterSpacing: gameScale(1),
     includeFontPadding: false,     
     textAlignVertical: 'center',   
   },
