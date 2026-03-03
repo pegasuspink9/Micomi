@@ -14,9 +14,21 @@ export const selectMap = async (playerId: number, mapId: number) => {
     return { message: "Map not found", success: false };
   }
 
-  const mapUnlocked = await isMapUnlockedForPlayer(playerId, map.map_name);
-  if (!mapUnlocked) {
-    return { message: "Map not unlocked yet for this player", success: false };
+  const existingProgress = await prisma.playerProgress.findFirst({
+    where: {
+      player_id: playerId,
+      level: { map_id: mapId },
+    },
+  });
+
+  if (!existingProgress) {
+    const mapUnlocked = await isMapUnlockedForPlayer(playerId, map.map_name);
+    if (!mapUnlocked) {
+      return {
+        message: "Map not unlocked yet for this player",
+        success: false,
+      };
+    }
   }
 
   if (!map.is_active) {
