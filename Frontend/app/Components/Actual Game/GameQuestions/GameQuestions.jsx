@@ -291,6 +291,9 @@ const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
               renderSyntaxHighlightedLine={renderSyntaxHighlightedLine}
               onTabChange={handleTabChange}
               activeTab={activeTab}
+              isCorrect={isAnswerCorrect} 
+              submissionResult={submissionResult}
+
             />
         ) : (currentQuestion.challenge_type === 'fill in the blank' || 
           currentQuestion.challenge_type === 'code with guide' || 

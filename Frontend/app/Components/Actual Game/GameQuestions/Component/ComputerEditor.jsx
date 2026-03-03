@@ -12,7 +12,9 @@ const ComputerEditor = ({
   blankRefs,
   renderSyntaxHighlightedLine,
   onTabChange,
-  activeTab: externalActiveTab
+  activeTab: externalActiveTab,
+  isCorrect,
+  submissionResult
 }) => {
   const [activeTab, setActiveTab] = useState('code');
   const [hasAnimated, setHasAnimated] = useState(false); 
@@ -137,7 +139,7 @@ const ComputerEditor = ({
       <View style={styles.bookHeader}>
         <View style={styles.spineShadow} />
         <View style={styles.tabsContainer}>
-           {currentQuestion?.guide && (
+             {currentQuestion?.guide && submissionResult?.isCorrect === false && (
             <Pressable
               onPress={() => handleTabChange('guide')}
               style={[
@@ -148,7 +150,7 @@ const ComputerEditor = ({
               disabled={tabsDisabled} 
             >
               <Text style={[styles.bookTabText, activeTab === 'guide' && styles.bookTabTextActive]}>
-                Guide
+                Review
               </Text>
             </Pressable>
           )}

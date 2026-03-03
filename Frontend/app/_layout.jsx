@@ -101,7 +101,7 @@ export default function RootLayout() {
     }
 
     // --- UNIVERSAL BGM LOGIC ---
-    const NAV_BGM_URL = 'https://micomi-assets.me/Sounds/Final/Navigation.mp';
+    const NAV_BGM_URL = 'https://micomi-assets.me/Sounds/Final/Navigation.mp3';
     
     // Check if current screen is a navigation/UI page
     const isNavigationPage = 
