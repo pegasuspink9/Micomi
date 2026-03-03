@@ -1170,6 +1170,14 @@ export async function fightEnemy(
       character_run = null;
     }
 
+    if (
+      character.character_name === "Leon" &&
+      character_attack_type === "special_attack"
+    ) {
+      character_attack = attacksArray[3] || null;
+      character_range_attack = rangeAttacksArray[3] || null;
+    }
+
     console.log("- Attack type:", character_attack_type);
     console.log("- Base damage:", damage);
     console.log("- Paired attack URL:", character_attack);
@@ -2164,6 +2172,14 @@ export async function fightBossEnemy(
       console.log("- Enemy already defeated: no attack shown.");
       character_idle = character.avatar_image || null;
       character_run = null;
+    }
+
+    if (
+      character.character_name === "Leon" &&
+      character_attack_type === "special_attack"
+    ) {
+      character_attack = attacksArray[3] || null;
+      character_range_attack = rangeAttacksArray[3] || null;
     }
 
     console.log("- Attack type:", character_attack_type);
