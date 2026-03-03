@@ -59,7 +59,6 @@ const animatedSpriteStyle = useAnimatedStyle(() => {
   const yOffset = -(row * frameHeightPercent);
   
   return {
-    // ✅ Scale the sprite sheet to be exactly COLUMNS × ROWS times larger
     width: `${COLUMNS * 100}%`,  // 500%
     height: `${ROWS * 100}%`,    // 400%
     transform: [
