@@ -175,7 +175,7 @@ const EnemyCharacter = ({
   const SPRITE_COLUMNS = 6;
   const SPRITE_ROWS = 4;
   const TOTAL_FRAMES = 24;
-  const FRAME_DURATION = 35;
+  const FRAME_DURATION = 50;
 
   const ANIMATION_DURATIONS = useMemo(() => ({
     idle: -1,
