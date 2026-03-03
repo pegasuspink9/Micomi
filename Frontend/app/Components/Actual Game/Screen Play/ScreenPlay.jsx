@@ -357,6 +357,8 @@ const ScreenPlay = ({
       // TRIGGER RUN STATE
       setCharacterAnimationState('run');
       setIsCharacterRunning(true);
+      
+      setIsPlayingSubmissionAnimation(true); 
 
       if (animationCompleteNotifiedRef.current) return;
       
@@ -365,7 +367,7 @@ const ScreenPlay = ({
         if (onSubmissionAnimationComplete) {
           onSubmissionAnimationComplete();
         }
-      }, 1000); // Slightly longer than ANIMATION_DURATIONS.run (2500)
+      }, 2500);
     }, 3000); 
    }
   

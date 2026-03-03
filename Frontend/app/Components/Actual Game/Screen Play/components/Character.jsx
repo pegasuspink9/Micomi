@@ -400,9 +400,17 @@ const Character = ({
 
 
   // ========== Animation Callbacks ==========
+  const onAnimationCompleteRef = useRef(onAnimationComplete);
+
+  useEffect(() => {
+    onAnimationCompleteRef.current = onAnimationComplete;
+  }, [onAnimationComplete]);
+
+  // ========== Animation Callbacks ==========
   const notifyAnimationComplete = useCallback(() => {
-    if (onAnimationComplete) onAnimationComplete(currentState);
-  }, [onAnimationComplete, currentState]);
+    if (onAnimationCompleteRef.current) onAnimationCompleteRef.current(currentState);
+  }, [currentState]);
+
 
 
   useEffect(() => {
@@ -601,7 +609,12 @@ const Character = ({
         }
       }
     });
-  }, [currentState, isPaused, currentAnimationUrl, animationConfig, notifyAnimationComplete, isUrlCached, effectiveCharacterName, SPRITE_SIZE]);
+  }, [
+    currentState, isPaused, currentAnimationUrlRef.current, 
+    animationConfig.isCompound, animationConfig.shouldLoop, animationConfig.url, 
+    animationConfig.runUrl, animationConfig.rangeUrl, animationConfig.isRange,
+    notifyAnimationComplete, isUrlCached, effectiveCharacterName, SPRITE_SIZE
+  ]);
 
 
   // ========== Animated Styles ==========
