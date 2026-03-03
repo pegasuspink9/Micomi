@@ -51,6 +51,7 @@ export default function MapNavigate({ onMapChange }) {
   const [animations, setAnimations] = useState([]);
   
   const [downloadModalVisible, setDownloadModalVisible] = useState(false);
+  const [isMapInfoVisible, setIsMapInfoVisible] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState({
     loaded: 0,
     total: 0,
@@ -502,18 +503,22 @@ export default function MapNavigate({ onMapChange }) {
   };
 
   // Island click now just navigates (assets already preloaded)
-  const handleIslandClick = () => {
-    if (!isValidMap || !maps[currentMapIndex].is_active) {
+    const handleIslandClick = () => {
+    if (!isValidMap) {
       return;
     }
+    setIsMapInfoVisible(true);
+  };
 
-    const currentMapName = maps[currentMapIndex].map_name;
-
+  // 🚀 NEW: Actual navigation handler triggered from inside the Woody Modal
+  const proceedToMap = () => {
+    if (!maps[currentMapIndex].is_active) return;
+    
+    setIsMapInfoVisible(false);
     setIsNavigating(true);
     
-    // Navigate directly - assets are already preloaded
     setTimeout(() => {
-        navigateToMap(currentMapName);
+        navigateToMap(maps[currentMapIndex].map_name);
     }, 400); 
   };
 
@@ -573,7 +578,7 @@ export default function MapNavigate({ onMapChange }) {
     return { uri: 'https://lottie.host/9875685d-8bb8-4749-ac63-c56953f45726/UnBHY7vAPX.json' };
   };
 
-  return (
+   return (
     <>
      <StatusBar hidden={true} translucent={true} backgroundColor="transparent" /> 
       <View style={styles.scrollContent}>
@@ -585,6 +590,7 @@ export default function MapNavigate({ onMapChange }) {
             </Text>
           </View>
         )}
+
 
         <View style={styles.islandsContainer}>
           {maps.map((map, index) => (
@@ -616,26 +622,34 @@ export default function MapNavigate({ onMapChange }) {
                     maxWidth: index === currentMapIndex ? width * 2 : width * 1, 
                   }
                 ]}
-                disabled={!map.is_active}
               >
-                <LottieView
-                  source={getMapImageSource(map)}
-                  style={styles.islandImage}
-                  autoPlay
-                  loop
-                  speed={map.is_active ? 1 : 0}
-                  resizeMode='contain'
-                  cacheComposition={true}
-                  renderMode='HARDWARE'
-                />
-
-                {!map.is_active && (
-                  <Image
-                    source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945939/473288860-e8a1b478-91d3-44c9-8a59-4bc46db4d1c0_jaroj9.png'}}
-                    style={styles.lockedOverlay}
+                {/* 🚀 FIX: Made the physical Island image clickable to open the Modal */}
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}
+                  onPress={() => {
+                    if (index === currentMapIndex) handleIslandClick();
+                  }}
+                >
+                  <LottieView
+                    source={getMapImageSource(map)}
+                    style={styles.islandImage}
+                    autoPlay
+                    loop
+                    speed={map.is_active ? 1 : 0}
                     resizeMode='contain'
+                    cacheComposition={true}
+                    renderMode='HARDWARE'
                   />
-                )}
+
+                  {!map.is_active && (
+                    <Image
+                      source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945939/473288860-e8a1b478-91d3-44c9-8a59-4bc46db4d1c0_jaroj9.png'}}
+                      style={styles.lockedOverlay}
+                      resizeMode='contain'
+                    />
+                  )}
+                </TouchableOpacity>
               </View>
             </Animated.View>
           ))}
@@ -672,6 +686,49 @@ export default function MapNavigate({ onMapChange }) {
         </View>
         <MiniQuestPreview />
       </View>
+
+      <Modal visible={isMapInfoVisible} transparent={true} animationType="fade" onRequestClose={() => setIsMapInfoVisible(false)}>
+        <View style={styles.mapModalOverlay}>
+          <View style={styles.mapModalWoodyFrame}>
+            {/* --- 3D DOTS (Bolts/Rivets) --- */}
+            <View style={[styles.cornerDot, styles.dotTopLeft]} />
+            <View style={[styles.cornerDot, styles.dotTopRight]} />
+            <View style={[styles.cornerDot, styles.dotBottomLeft]} />
+            <View style={[styles.cornerDot, styles.dotBottomRight]} />
+
+            <View style={styles.woodySlot}>
+              <View style={styles.woodySlotContent}>
+                <View style={styles.woodyHighlight} />
+                <View style={styles.woodyShadow} />
+
+                <View style={styles.mapModalInnerContainer}>
+                  <Text style={styles.mapModalTitleText}>{maps[currentMapIndex]?.map_name || 'Unknown Region'}</Text>
+                  <Text style={styles.mapModalDescriptionText} adjustsFontSizeToFit>
+                    {maps[currentMapIndex]?.description || "Explore this area to learn more!"}
+                  </Text>
+
+                  <View style={styles.mapModalButtonGroup}>
+                    <TouchableOpacity style={styles.mapModalCloseBtn} onPress={() => setIsMapInfoVisible(false)}>
+                      <Text style={styles.mapModalBtnText}>Close</Text>
+                    </TouchableOpacity>
+
+                    {maps[currentMapIndex]?.is_active ? (
+                      <TouchableOpacity style={styles.mapModalEnterBtn} onPress={proceedToMap}>
+                        <Text style={styles.mapModalBtnText}>Enter</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={[styles.mapModalEnterBtn, { backgroundColor: '#555', borderColor: '#333' }]}>
+                        <Text style={[styles.mapModalBtnText, { color: '#999' }]}>Locked</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
 
       <MainLoading visible={isNavigating}/>
     </>
@@ -811,6 +868,91 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'FunkySign',
   },
+  mapModalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  mapModalWoodyFrame: {
+    width: '85%',
+    backgroundColor: '#943f02', 
+    borderRadius: 15,
+    padding: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+    elevation: 20,
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderBottomWidth: 5,
+    borderRightWidth: 2,
+    borderTopColor: '#c46623',
+    borderLeftColor: '#c46623',
+    borderBottomColor: '#4a1e00',
+    borderRightColor: '#6e2f01',
+    position: 'relative',
+  },
+  mapModalInnerContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapModalTitleText: {
+    color: '#FFD700',
+    fontSize: 30,
+    fontFamily: 'Grobold',
+    textShadowColor: '#000',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 3,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  mapModalDescriptionText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontFamily: 'DynaPuff',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  mapModalButtonGroup: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 10,
+  },
+  mapModalCloseBtn: {
+    backgroundColor: '#d9534f',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#a94442',
+    elevation: 5,
+  },
+  mapModalEnterBtn: {
+    backgroundColor: '#5cb85c',
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#4cae4c',
+    elevation: 5,
+  },
+  mapModalBtnText: {
+    color: '#fff',
+    fontFamily: 'Grobold',
+    fontSize: 16,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+  },
+
   lockedOverlay: {
     position: 'absolute',
     width: '120%',

@@ -126,6 +126,9 @@ export default function CharacterProfile() {
     // Play the character shop music when this component mounts
     soundManager.playBackgroundMusic(CHARACTER_SHOP_BGM_URL, 0.4);
 
+    return () => {
+          soundManager.stopBackgroundMusic();
+        };
     // No explicit cleanup needed here, as the _layout.jsx will manage transitions
     // when navigating away from this screen.
   }, []);
