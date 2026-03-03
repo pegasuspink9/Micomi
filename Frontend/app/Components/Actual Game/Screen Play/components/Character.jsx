@@ -446,12 +446,24 @@ const Character = ({
       return;
     }
 
-    const isCriticalState = currentState === 'attack' || currentState === 'hurt' || currentState === 'dies';
-    const canProceed = isCriticalState ? (isActiveUrlCached || isTargetUrlCached) : (imageReady || isActiveUrlCached || isTargetUrlCached);
+    // 🚀 NEW: Specifically check if it's a compound attack and require BOTH URLs to be loaded
+    let compoundReady = true;
+    if (config.isCompound && currentState === 'attack') {
+        const { runUrl, attackUrl } = config;
+        const runCached = isUrlCached(runUrl) || preloadedImages.has(runUrl);
+        const attackCached = isUrlCached(attackUrl) || preloadedImages.has(attackUrl);
+        compoundReady = runCached && attackCached;
+    }
 
+    const isCriticalState = currentState === 'attack' || currentState === 'hurt' || currentState === 'dies' || currentState === 'run';
+    const canProceed = isCriticalState 
+        ? (isActiveUrlCached || isTargetUrlCached) && compoundReady 
+        : (imageReady || isActiveUrlCached || isTargetUrlCached);
+    
     if (!canProceed) {
       return;
     }
+
 
     cancelAnimation(frameIndex);
     cancelAnimation(positionX);
@@ -464,10 +476,15 @@ const Character = ({
     positionX.value = 0;
     opacity.value = 1;
 
-    if (config.isCompound && currentState === 'attack') {
+      if (config.isCompound && currentState === 'attack') {
       if (attackInitiated.value) return;
-      attackInitiated.value = true;
+      
       const { runUrl, attackUrl } = config;
+      // 🚀 FIX: Double check run/attack cache before starting movement
+      if (!isUrlCached(runUrl) && !preloadedImages.has(runUrl)) return;
+
+      attackInitiated.value = true;
+
       if (!runUrl || !attackUrl) {
         runOnJS(notifyAnimationComplete)();
         return;
