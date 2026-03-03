@@ -85,15 +85,27 @@ export const authService = {
       const refreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
       if (!refreshToken) throw new Error('No refresh token available');
 
-      const response = await apiService.post('/auth/refresh', { refreshToken });
+      console.log("Sending refresh token payload to /auth/refresh");
       
-      if (response.success && response.data.token) {
-        const newAccessToken = response.data.token;
+      // Use raw fetch to bypass ApiService logic and avoid infinite retry loops
+      const response = await fetch(`${apiService.baseURL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken })
+      });
+      
+      const result = await response.json();
+      
+      // Map to your new backend response (result.data.token)
+      if (result.success && result.data && result.data.token) {
+        const newAccessToken = result.data.token;
+        
         await AsyncStorage.setItem(TOKEN_KEY, newAccessToken);
         apiService.setAuthToken(newAccessToken);
+        
         return newAccessToken;
       }
-      throw new Error('Refresh failed');
+      throw new Error(result.message || 'Refresh response invalid');
     } catch (error) {
       await this.logout();
       throw error;

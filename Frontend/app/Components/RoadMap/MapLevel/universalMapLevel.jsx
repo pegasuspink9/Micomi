@@ -247,9 +247,7 @@ export default function UniversalMapLevel({ onLevelFocus }) {
     // NEW Logic: Calculate the viewport center to snap the current UI data
     if (buttonTops.length > 0) {
       
-      // 🚀 TWEAK THIS: Increase this number to delay the data change even more. 
-      // Higher number = button must be physically higher on screen to trigger limit
-      const triggerDelayOffset = gameScale(50); 
+      const triggerDelayOffset = gameScale(20); 
       
       const triggerY = contentOffset.y + (layoutMeasurement.height / 2) - triggerDelayOffset;
       
@@ -257,8 +255,7 @@ export default function UniversalMapLevel({ onLevelFocus }) {
       let minDistance = Infinity;
 
       for (let i = 0; i < buttonTops.length; i++) {
-        // Fix: Added gameScale(100) because your levelButtonsContainer has a top offset of 100
-        const actualButtonPositionOnScreen = buttonTops[i] + gameScale(100);
+        const actualButtonPositionOnScreen = buttonTops[i] + gameScale(200);
         
         const dist = Math.abs(actualButtonPositionOnScreen - triggerY);
         if (dist < minDistance) {

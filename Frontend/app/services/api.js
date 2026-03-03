@@ -51,7 +51,7 @@ class ApiService {
     return false;
   }
 
-  async request(endpoint, options = {}) {
+  async request(endpoint, options = {}, isRetry = false) {
     // 1. Try to recover token if missing (Fixes the race condition)
     if (!this.authToken) {
       const storedToken = await AsyncStorage.getItem('accessToken');
@@ -90,27 +90,62 @@ class ApiService {
       console.log(`Making API request to: ${url}`);
       const response = await fetch(url, config);
       clearTimeout(timeoutId);
+
+      let isJwtExpired = false;
+      let errorData = null;
+
+      // ✅ Step 1: Safely parse the error body first if the request failed
+      if (!response.ok) {
+        const clone = response.clone(); // Clone so we don't consume the stream
+        try {
+          errorData = await clone.json();
+          const errMsg = typeof errorData.error === 'string' ? errorData.error : errorData.message;
+          
+          // Trigger refresh if status is 401 OR if the text explicitly says "jwt expired"
+          if (response.status === 401 || (errMsg && errMsg.includes('jwt expired'))) {
+            isJwtExpired = true;
+          }
+        } catch (e) {
+          if (response.status === 401) isJwtExpired = true;
+        }
+      }
       
+      // ✅ Step 2: Intercept Expired Token based on the smarter check above
+      if (isJwtExpired && !isRetry && !endpoint.includes('/refresh')) {
+        console.log("🔄 JWT Expired strictly detected. Attempting automatic token refresh...");
+        try {
+          const { authService } = require('./authService');
+          const newToken = await authService.refreshAccessToken();
+          
+          if (newToken) {
+            console.log("✅ Token refreshed successfully! Retrying original request...");
+            this.setAuthToken(newToken);
+            
+            const retryConfig = {
+              ...options,
+              headers: {
+                ...options.headers,
+                'Authorization': `Bearer ${newToken}`
+              }
+            };
+            return await this.request(endpoint, retryConfig, true);
+          }
+        } catch (refreshError) {
+          console.error("❌ Token refresh failed:", refreshError.message);
+          throw new Error('Session expired. Please log in again.');
+        }
+      }
+
+      // ✅ Step 3: Handle all other standard API errors
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
-        let errorData = null;
-        try {
-          errorData = await response.json();
-          // Prioritize the detailed 'error' field if the 'message' is generic
-          if (errorData) {
-            if (errorData.error && typeof errorData.error === 'string') {
-              errorMessage = errorData.error;
-            } else if (errorData.message) {
-              errorMessage = errorData.message;
-            }
-          }
-        } catch (jsonError) {
-          // If response is not JSON, or parsing fails, use the default HTTP error message
-          console.warn(`Could not parse error response from ${url} as JSON (status ${response.status}):`, jsonError);
-        }
         
-        // Log a more specific warning for 401, using the extracted message if available
-        if (response.status === 401) {
+        if (errorData) {
+          if (errorData.error && typeof errorData.error === 'string') {
+            errorMessage = errorData.error;
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          }
         }
         
         throw new Error(errorMessage);
