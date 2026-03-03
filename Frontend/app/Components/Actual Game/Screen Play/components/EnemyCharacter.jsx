@@ -175,13 +175,13 @@ const EnemyCharacter = ({
   const SPRITE_COLUMNS = 6;
   const SPRITE_ROWS = 4;
   const TOTAL_FRAMES = 24;
-  const FRAME_DURATION = 50;
+  const FRAME_DURATION = 35;
 
   const ANIMATION_DURATIONS = useMemo(() => ({
     idle: -1,
     attack: 1300,
     hurt: 2000,
-    run: 1200,
+    run: 2500,
     dies: 2000,
     diesOutro: 500
   }), []);
@@ -508,7 +508,7 @@ const EnemyCharacter = ({
       setCurrentAnimationUrl(runUrl);
     }
 
-    const RUN_DURATION = 400;
+    const RUN_DURATION = 700;
     const ATTACK_DURATION = ANIMATION_DURATIONS.attack;
 
     positionX.value = 0; 
@@ -528,7 +528,8 @@ const EnemyCharacter = ({
 
       frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration: ATTACK_DURATION, easing: Easing.linear }, (attackFinished) => {
         if (attackFinished) {
-          positionX.value = withTiming(0, { duration: 300, easing: Easing.quad }, (returnFinished) => {
+          // 🐌 Slower: Increase return (jumping back) duration
+          positionX.value = withTiming(0, { duration: 500, easing: Easing.quad }, (returnFinished) => {
             if (returnFinished) {
               runOnJS(notifyAnimationComplete)();
             }

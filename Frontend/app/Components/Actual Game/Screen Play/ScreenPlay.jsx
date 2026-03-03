@@ -282,8 +282,8 @@ const ScreenPlay = ({
 
         // Clear all timeouts
         enemyRunTimeoutsRef.current = {};
-      }, 3000); //  Increased from 2700ms to 3000ms to match run animation (1200ms) + fade-out (300ms) + buffer
-    }, 1000); 
+      }, 4300); // 🐌 Slower: Increased from 3000ms to 3800ms specifically to match the new 2000ms run duration + buffer
+    }, 1000);
   }, 1500);
 }, [onSubmissionAnimationComplete]);
 
@@ -588,8 +588,8 @@ useEffect(() => {
       console.log('🏃 Run animation duration complete - returning to idle');
       setCharacterAnimationState('run');
       setIsPlayingSubmissionAnimation(false);
-      setIsCharacterRunning(false); // NEW: Reset running flag
-    }, 2400); // Match character run animation duration
+      setIsCharacterRunning(false); 
+    }, 3700); // 🐌 Slower: Increased from 2400 to 3200 to match new run sequence duration
     
     return () => clearTimeout(runTimeout);
   }

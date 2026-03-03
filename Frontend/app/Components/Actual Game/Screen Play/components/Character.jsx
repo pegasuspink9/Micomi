@@ -89,7 +89,7 @@ const Character = ({
     if (enemyStatusState === 'Frozen' ) return 20;
     // Reveal or Strong keeps the overlay behind
     if (statusState === 'Reveal' || statusState === 'Strong' || statusState === 'Revitalize') return 1;
-    return 1; // Default behind
+    return 1;
   }, [enemyStatusState, statusState]);
 
 
@@ -207,13 +207,13 @@ const Character = ({
   const SPRITE_COLUMNS = 6;
   const SPRITE_ROWS = 4;
   const TOTAL_FRAMES = 24;
-  const FRAME_DURATION = 50;
+  const FRAME_DURATION = 35;
 
   const ANIMATION_DURATIONS = useMemo(() => ({
     idle: -1,
     attack: 1300,
     hurt: 2000,
-    run: 1200,
+    run: 2500,
     dies: 2000,
     diesOutro: 500,
   }), []);
@@ -384,9 +384,7 @@ const Character = ({
       // Reset
       potionFrameIndex.value = 0;
       potionOpacity.value = 1;
-      
-      // Play 12 frames (4 cols * 3 rows)
-      // Assuming rough duration of ~800ms for the effect
+    
       potionFrameIndex.value = withTiming(11, { 
         duration: 800, 
         easing: Easing.linear 
@@ -486,13 +484,14 @@ const Character = ({
       positionX.value = 0;
       opacity.value = 1;
 
-      frameIndex.value = withRepeat(
+       frameIndex.value = withRepeat(
         withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }),
         -1,
         false
       );
 
-      positionX.value = withTiming(ATTACK_RUN_DISTANCE, { duration: 400, easing: Easing.in(Easing.quad) }, (finished) => {
+      // 🐌 Slower: Increase the charge attack distance duration
+      positionX.value = withTiming(ATTACK_RUN_DISTANCE, { duration: 700, easing: Easing.in(Easing.quad) }, (finished) => {
         if (!finished) return;
 
         cancelAnimation(frameIndex);
@@ -502,7 +501,8 @@ const Character = ({
 
         frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration: ANIMATION_DURATIONS.attack, easing: Easing.linear }, (attackFinished) => {
           if (attackFinished) {
-            positionX.value = withTiming(0, { duration: 300, easing: Easing.quad }, (returnFinished) => {
+            // 🐌 Slower: Increase return (jumping back) duration
+            positionX.value = withTiming(0, { duration: 500, easing: Easing.quad }, (returnFinished) => {
               if (returnFinished) runOnJS(notifyAnimationComplete)();
             });
           }
