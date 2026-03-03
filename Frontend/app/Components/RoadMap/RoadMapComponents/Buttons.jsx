@@ -257,7 +257,7 @@ const transformPreviewDataWithCache = (data) => {
     if (index === 0) {
       return {
         top: gameScale(200),
-        left: '45%' // Using base percentage as width acts on the container naturally
+        left: '45%' 
       };
     }
 
