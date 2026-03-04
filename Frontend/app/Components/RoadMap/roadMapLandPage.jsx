@@ -59,7 +59,7 @@ export default function RoadMapLandPage() {
                     )}
                     
                     <View style={styles.titleInfoContainer}>
-                      <Text style={styles.lessonToLearnText}>Lesson to learn</Text>
+                      <Text style={styles.lessonToLearnText}>Topic to learn</Text>
                       
                       <Text 
                         style={styles.bannerLevelTitle} 

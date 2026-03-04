@@ -16,7 +16,6 @@ import { soundManager } from '../../Components/Actual Game/Sounds/UniversalSound
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-// Keep your existing imports and logic, I am just updating the styles to ensure the layers work
 export default function CharacterProfile() {
   
   const {

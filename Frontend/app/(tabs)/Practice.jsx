@@ -62,7 +62,7 @@ export default function PracticeScreen() {
         <View style={styles.menuContainer}>
           <MenuButton 
             title="Story Mode" 
-            onPress={() => router.push('/StoryMode')} 
+            onPress={() => router.push('/map')} 
             bgImage={require('../Components/Practice Components/Story.png')} 
             color="#4a6e10a9"
           />
