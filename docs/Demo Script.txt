@@ -1,0 +1,148 @@
+Here is your polished, formal, and engaging demo script. I have kept your exact flow and context but upgraded the vocabulary and sentence structure to sound more professional and captivating for the audience.
+
+Key Guide:
+
+[Bold Text] = Emphasize these words; speak clearly and with energy.
+
+[Italicized Text] = Actions you should perform.
+
+MICOMI APP DEMONSTRATION SCRIPT
+
+Speaker: Noel Avila
+
+1. GREETINGS & THE HOOK
+
+[Stand confidently, face the panel/audience. Establish eye contact before speaking.]
+
+"Good afternoon, everyone. We are here today to present and demonstrate our capstone project. I am Noel Avila, and I am joined by my distinguished colleagues.
+
+Before we begin, I have a question for everyone: Have you ever wanted to learn how to code, but felt limited because you lacked a high-end laptop? Or perhaps, you possess a smartphone, but you find traditional learning methods dry, confusing, and uninspiring?
+
+Imagine this: What if you could innovate the way you study—moving away from static, boring lectures to a self-paced, story-driven adventure?
+
+The wait is over. Today, we present the solution. Introducing Micomi: The first-ever mobile gamified e-learning application designed to make programming accessible, adventurous, and interactive."
+
+2. INTRODUCING THE MAPS (NAVIGATION)
+
+[Open the App to the Home/Map Screen]
+
+"Let’s navigate the interface. As you can see, our curriculum is visualized as an Adventure Map.
+
+We feature four distinct learning tracks or 'Islands' that are deeply intertwined with our game’s lore: HTML, CSS, JavaScript, and Computer Basics. Notice that these maps are sequentially unlocked. This structure ensures that learners strictly master the prerequisites before advancing to complex topics.
+
+[Tap on a locked map, then a verified/open map]
+
+Even before starting, clicking on an island provides a brief description, giving beginners insight into why that specific technology is vital for their journey as a future tech enthusiast.
+
+As we enter the map, you see the Learning Roadmap. Each button represents a specific topic, visually reflecting its difficulty level through the hanging wood design above. This roadmap compels the user to learn from start to finish—creating a paced environment where you must clear one level to proceed to the next. This breaks down complex coding concepts into manageable steps, preventing user confusion."
+
+3. THE LESSON MODE (PRE-COMBAT)
+
+[Select HTML Map -> Select the First Level]
+
+"Let’s demonstrate the gameplay loop using the HTML Map.
+
+We don't just throw users into a fight blindly. We start with the Lesson Page.
+[Scroll slowly through the lesson]
+This section breaks down the topic into digestible parts. But unlike a textbook, this is interactive.
+
+[Tap the 'Try It Yourself' section]
+Here, we have an embedded console where users can edit example code and see the results instantly. This ensures they understand the logic before the challenge begins. You can also filter specific topics via the dropdown menu. Once the user is confident, they proceed to the next stage until the button transforms into: 'READY TO FIGHT!'"
+
+4. THE CORE GAMEPLAY (COMBAT & STORY)
+
+[Click 'Ready to Fight' -> Show the Modal]
+
+"This triggers our Combat Modal. Here, the system detects a 'Bug'—a glitch monster created by our antagonist, Dr. H.
+
+Since this is a story-mode adventure, we integrated Comic-Style Narratives to provide context.
+
+The Lore:
+The story begins with Micomi, a robot originally built by Dr. H. However, Dr. H’s ambition turned into chaos; she created massive machines that resulted in errors and 'Bugs.' While Micomi was innocently picking apples, these Bugs overran the lab. Upon returning, Micomi found the lab destroyed and Dr. H missing—likely captured by her own creations.
+
+Micomi, being a helper robot, cannot fight alone. Thus, he engineered Heroes—inspired by animals—to be your companions on this mission.
+
+Our Mission: Find Dr. H and debug the world.
+
+[Select a Hero]
+The user selects a Hero based on their preference, and the battle begins. The modal displays the map description and the strategy to defeat the Bug.
+
+The Mechanics:
+In this RPG-style combat, knowledge is your weapon.
+Everything happening on screen depends entirely on the knowledge you possess."
+
+5. SKILLS, PASSIVES & POTIONS
+
+[Point to the Cards/Skill Icons]
+
+"To deepen the gamification, we integrated Card Skills and Passive Abilities.
+
+The Cards:
+The cards displayed represent your Hero's anticipated attack. The intensity of the attack depends on the difficulty of the coding questions and the blanks you need to fill.
+
+Active Skills:
+These trigger based on your Answer Streak—the more correct blanks you fill continuously, the stronger the attack becomes.
+
+Passive Abilities:
+[Click the icon]
+Each hero has unique passives that activate automatically when their gauge fills up.
+
+Potions:
+[Click Potion Icon]
+Following the lore of Shishi, our alchemist character, players can utilize potions to survive difficult levels: Ice for protection, Life for health, Hint for answers, and Strong for double damage.
+
+The Coding Interface:
+For clear visualization, we use a Real-Time Syntax Flow. We present well-structured code with blanks. To make this mobile-friendly, we implemented a Context-Aware Keyboard that provides choices without being confusing, maintaining a balance between difficulty and accessibility.
+
+Now, let’s play:
+
+Correct Answers: If the user answers correctly, the Hero attacks. This signifies Mastery of the Topic.
+
+Incorrect Answers: If wrong, the Enemy attacks, depleting your life.
+
+Immediate Feedback: The enemy teases the player, but more importantly, the Hero acts as a Compiler Console, explaining exactly why the answer was wrong so the user can review.
+
+Bonus Round:
+If your character is strong enough to defeat the enemy early, we ensure education isn't skipped. Any remaining questions appear in a Bonus Round, allowing users to earn extra coins.
+
+Level Completion:
+After the fight, a screen displays rewards and Positive Reinforcement phrases to keep the user motivated without pressure."
+
+6. THE BOSS FIGHT
+
+[Navigate to a Boss Level or describe it]
+
+"Every island culminates in a Boss Level.
+
+Unlike normal stages, the Boss tests everything you have learned from start to finish. It mimics a Real-World Project. To defeat the boss, you must sequentially build a project from scratch.
+
+The Boss possesses its own passive skills and punishes the player for every three mistakes. It is the ultimate test of retention."
+
+7. COMPUTER BASICS (DIFFERENT INTERFACE)
+
+[Go back and select Computer Basics Map]
+
+"Briefly, I want to show the Computer Basics Map. Since this is designed for absolute beginners, the interface shifts to a more visual, 'Interactive Book-Style' approach.
+
+[Show an image-based question]
+We utilize Image Association and word-matching here to make technical terms relatable. However, the core loop remains the same: Learn, Review, and Battle."
+
+8. GAME MODES & QUESTS
+
+[Go to the Main Menu]
+
+"Beyond the main campaign, Micomi offers variety to keep users engaged:
+
+Story Mode: The main adventure we just demonstrated.
+
+Study Lessons: A linear mode for pure reviewing without the pressure of combat.
+
+Playground: A free-form compiler where users can code anything they want from scratch without guides.
+
+Quests: Daily challenges that reward Coins and EXP to upgrade your profile."
+
+9. TRANSITION
+
+"Speaking of profiles and competition, to demonstrate our User Profile system and the Leaderboards, I would like to call on my colleague, Sheena."
+
+[Hand over the floor/microphone]
