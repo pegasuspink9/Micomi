@@ -190,10 +190,16 @@ export const refreshToken = async (req: Request, res: Response) => {
       role: decoded.role,
     });
 
+    const newRefreshToken = generateRefreshToken({
+      id: decoded.id,
+      role: decoded.role,
+    });
+
     return successResponse(
       res,
       {
         token: newAccessToken,
+        refreshToken: newRefreshToken,
       },
       "Token refreshed successfully",
     );
