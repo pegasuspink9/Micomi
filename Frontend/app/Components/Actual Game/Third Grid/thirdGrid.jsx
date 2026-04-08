@@ -163,7 +163,7 @@ const ThirdGrid = ({
     }
     setTimeout(() => {
       setRunDisabled(false);
-    }, 3000);
+    }, 5000);
   }, [selectedPotion, usePotion, handleCheckAnswer, setBorderColor]);
 
   const handleClearAll = useCallback(() => {

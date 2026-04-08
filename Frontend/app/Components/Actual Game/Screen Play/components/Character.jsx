@@ -174,18 +174,16 @@ const Character = ({
   // ========== State Management (Lifted up for use in effectiveName) ==========
   const initialUrl = useMemo(() => {
     const candidates = [
-      characterAnimations.character_idle, 
-      characterAnimations.idle
+      universalAssetPreloader.getCachedAssetPath(characterAnimations.character_idle || ''),
+      universalAssetPreloader.getCachedAssetPath(characterAnimations.idle || '')
     ].filter(url => url && typeof url === 'string');
     return candidates[0] || '';
-  }, [characterAnimations]);
+  }, [characterAnimations.character_idle, characterAnimations.idle]);
 
   const [currentAnimationUrl, setCurrentAnimationUrl] = useState(initialUrl);
   const currentAnimationUrlRef = useRef(initialUrl);
   
 
-  //  NEW: Robust Character Name Detection
-  // If characterName prop is missing (during transition), fallback to checking the URL
   const effectiveCharacterName = useMemo(() => {
     if (characterName) return characterName;
     if (currentAnimationUrl?.includes('Leon')) return 'Leon';
@@ -235,29 +233,34 @@ const Character = ({
     return cachedPath !== url && cachedPath.startsWith('file://');
   }, []);
 
+  const resolveCachedUrl = useCallback((url) => {
+    if (!url || typeof url !== 'string') return url;
+    return universalAssetPreloader.getCachedAssetPath(url);
+  }, []);
+
   const allAnimationUrls = useMemo(() => {
     const urls = [];
-    if (characterAnimations.character_idle) urls.push(characterAnimations.character_idle);
-    if (characterAnimations.idle) urls.push(characterAnimations.idle);
-    if (characterAnimations.character_run) urls.push(characterAnimations.character_run);
-    if (characterAnimations.run) urls.push(characterAnimations.run);
-    if (characterAnimations.character_hurt) urls.push(characterAnimations.character_hurt);
-    if (characterAnimations.hurt) urls.push(characterAnimations.hurt);
-    if (characterAnimations.character_dies) urls.push(characterAnimations.character_dies);
-    if (characterAnimations.dies) urls.push(characterAnimations.dies);
+    if (characterAnimations.character_idle) urls.push(resolveCachedUrl(characterAnimations.character_idle));
+    if (characterAnimations.idle) urls.push(resolveCachedUrl(characterAnimations.idle));
+    if (characterAnimations.character_run) urls.push(resolveCachedUrl(characterAnimations.character_run));
+    if (characterAnimations.run) urls.push(resolveCachedUrl(characterAnimations.run));
+    if (characterAnimations.character_hurt) urls.push(resolveCachedUrl(characterAnimations.character_hurt));
+    if (characterAnimations.hurt) urls.push(resolveCachedUrl(characterAnimations.hurt));
+    if (characterAnimations.character_dies) urls.push(resolveCachedUrl(characterAnimations.character_dies));
+    if (characterAnimations.dies) urls.push(resolveCachedUrl(characterAnimations.dies));
     
     if (Array.isArray(characterAnimations.character_attack)) {
-      characterAnimations.character_attack.filter(Boolean).forEach(url => urls.push(url));
+      characterAnimations.character_attack.filter(Boolean).forEach(url => urls.push(resolveCachedUrl(url)));
     } else if (characterAnimations.character_attack) {
-      urls.push(characterAnimations.character_attack);
+      urls.push(resolveCachedUrl(characterAnimations.character_attack));
     }
     
     if (characterAnimations.character_range_attack) {
-        urls.push(characterAnimations.character_range_attack);
+        urls.push(resolveCachedUrl(characterAnimations.character_range_attack));
     }
 
     return urls.filter(url => url && typeof url === 'string');
-  }, [characterAnimations]);
+  }, [characterAnimations, resolveCachedUrl]);
 
 
   const allAnimationsCached = useMemo(() => {
@@ -269,6 +272,7 @@ const Character = ({
   const [preloadedImages] = useState(new Map());
   const attackSoundTimeoutRef = useRef(null);
   const hasInitialized = useRef(false);
+  const attackSequenceRef = useRef({ runUrl: null, attackUrl: null });
 
   useEffect(() => {
     if (!hasInitialized.current) {
@@ -314,35 +318,36 @@ const Character = ({
   // ========== Animation Configuration Logic ==========
   const animationConfig = useMemo(() => {
     const isRange = characterAnimations.character_is_range === true;
-    const rangeUrl = characterAnimations.character_range_attack;
+    const rangeUrl = resolveCachedUrl(characterAnimations.character_range_attack);
     
     const attackUrl = Array.isArray(characterAnimations.character_attack) 
       ? characterAnimations.character_attack.filter(Boolean)[0] 
       : characterAnimations.character_attack;
+    const resolvedAttackUrl = resolveCachedUrl(attackUrl);
 
-    const runUrl = characterAnimations.character_run || characterAnimations.run;
+    const runUrl = resolveCachedUrl(characterAnimations.character_run || characterAnimations.run);
 
     const configs = {
       idle: { 
-        url: characterAnimations.character_idle || characterAnimations.idle, 
+        url: resolveCachedUrl(characterAnimations.character_idle || characterAnimations.idle), 
         shouldLoop: true, 
         isCompound: false 
       },
       attack: { 
-          url: isRange ? attackUrl : runUrl, 
+          url: isRange ? resolvedAttackUrl : runUrl, 
           runUrl: runUrl, 
-          attackUrl: attackUrl, 
+          attackUrl: resolvedAttackUrl, 
           rangeUrl: rangeUrl,
           isRange: isRange,
           shouldLoop: false, 
           isCompound: !isRange && !!runUrl 
       },
-      hurt: { url: characterAnimations.character_hurt || characterAnimations.hurt, shouldLoop: false, isCompound: false },
-      run: { url: characterAnimations.character_run || characterAnimations.run, shouldLoop: true, isCompound: false },
-      dies: { url: characterAnimations.character_dies || characterAnimations.dies, shouldLoop: false, isCompound: false },
+      hurt: { url: resolveCachedUrl(characterAnimations.character_hurt || characterAnimations.hurt), shouldLoop: false, isCompound: false },
+      run: { url: runUrl, shouldLoop: true, isCompound: false },
+      dies: { url: resolveCachedUrl(characterAnimations.character_dies || characterAnimations.dies), shouldLoop: false, isCompound: false },
     };
     return configs[currentState] || configs.idle;
-  }, [currentState, characterAnimations]);
+  }, [currentState, characterAnimations, resolveCachedUrl]);
 
   // ========== Image Preloading ==========
   useEffect(() => {
@@ -414,18 +419,37 @@ const Character = ({
 
 
   useEffect(() => {
-    const config = animationConfig;
-    const targetUrl = config.isCompound ? config.runUrl : config.url;
+    if (currentState === 'attack' && attackInitiated.value && animationConfig.isCompound) {
+      const sequenceUnchanged =
+        attackSequenceRef.current.runUrl === animationConfig.runUrl &&
+        attackSequenceRef.current.attackUrl === animationConfig.attackUrl;
+
+      if (sequenceUnchanged) {
+        return;
+      }
+
+      attackInitiated.value = false;
+    }
+
+    const targetUrl = animationConfig.isCompound ? animationConfig.runUrl : animationConfig.url;
     if (targetUrl && currentAnimationUrlRef.current !== targetUrl) {
       currentAnimationUrlRef.current = targetUrl;
       setCurrentAnimationUrl(targetUrl);
     }
-  }, [animationConfig]);
+  }, [currentState, animationConfig.url, animationConfig.runUrl, animationConfig.attackUrl, animationConfig.isCompound]);
 
   // ========== Main Animation Effect ==========
   useEffect(() => {
-    if (currentState === 'attack' && attackInitiated.value) {
-      return;
+    if (currentState === 'attack' && attackInitiated.value && animationConfig.isCompound) {
+      const sequenceUnchanged =
+        attackSequenceRef.current.runUrl === animationConfig.runUrl &&
+        attackSequenceRef.current.attackUrl === animationConfig.attackUrl;
+
+      if (sequenceUnchanged) {
+        return;
+      }
+
+      attackInitiated.value = false;
     }
 
     const config = animationConfig;
@@ -435,6 +459,11 @@ const Character = ({
     if (targetUrl && currentAnimationUrlRef.current !== targetUrl) {
       currentAnimationUrlRef.current = targetUrl;
       setCurrentAnimationUrl(targetUrl);
+    }
+
+    if (currentState !== 'attack' && currentState !== 'run') {
+      attackInitiated.value = false;
+      attackSequenceRef.current = { runUrl: null, attackUrl: null };
     }
 
     const activeUrl = currentAnimationUrlRef.current;
@@ -475,11 +504,6 @@ const Character = ({
       return;
     }
 
-    // 🚀 FIX 2: Clear the action flag safely AFTER the cache checks pass
-    if (currentState !== 'attack' && currentState !== 'run') {
-      attackInitiated.value = false;
-    }
-
     cancelAnimation(frameIndex);
     cancelAnimation(positionX);
     cancelAnimation(opacity);
@@ -492,15 +516,23 @@ const Character = ({
     opacity.value = 1;
 
       if (config.isCompound && currentState === 'attack') {
-      if (attackInitiated.value) return;
-      
       const { runUrl, attackUrl } = config;
+
+      const hasNewCompoundUrls =
+        attackSequenceRef.current.runUrl !== runUrl ||
+        attackSequenceRef.current.attackUrl !== attackUrl;
+
+      if (attackInitiated.value && !hasNewCompoundUrls) return;
+      if (attackInitiated.value && hasNewCompoundUrls) {
+        attackInitiated.value = false;
+      }
       
       // 🚀 FIX: Double check BOTH urls exist in cache strictly before authorizing movement
       const isRunReady = isUrlCached(runUrl) || preloadedImages.has(runUrl);
       const isAttackReady = isUrlCached(attackUrl) || preloadedImages.has(attackUrl);
       if (!isRunReady || !isAttackReady) return;
 
+      attackSequenceRef.current = { runUrl, attackUrl };
       attackInitiated.value = true;
 
       if (!runUrl || !attackUrl) {
@@ -610,9 +642,9 @@ const Character = ({
       }
     });
   }, [
-    currentState, isPaused, currentAnimationUrlRef.current, 
+    currentState, isPaused, currentAnimationUrl,
     animationConfig.isCompound, animationConfig.shouldLoop, animationConfig.url, 
-    animationConfig.runUrl, animationConfig.rangeUrl, animationConfig.isRange,
+    animationConfig.runUrl, animationConfig.attackUrl, animationConfig.rangeUrl, animationConfig.isRange,
     notifyAnimationComplete, isUrlCached, effectiveCharacterName, SPRITE_SIZE
   ]);
 
