@@ -23,6 +23,7 @@ export const useCharacterSelection = () => {
       await Promise.all([
         universalAssetPreloader.loadCachedAssets('game_animations'),
         universalAssetPreloader.loadCachedAssets('game_images'),
+        universalAssetPreloader.loadCachedAssets('game_visuals'),
         universalAssetPreloader.loadCachedAssets('characters'),
         universalAssetPreloader.loadCachedAssets('ui_videos'),
         universalAssetPreloader.loadCachedAssets('character_select_ui'),

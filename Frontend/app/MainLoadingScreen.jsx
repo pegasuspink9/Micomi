@@ -33,7 +33,7 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
     mapName: ''
   });
   
-  const [currentAssetProgress, setCurrentAssetProgress] = useState({
+  const [, setCurrentAssetProgress] = useState({
     url: '',
     progress: 0,
     currentIndex: 0,
@@ -45,22 +45,40 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
   const [assetsReady, setAssetsReady] = useState(false);
   const [timerFinished, setTimerFinished] = useState(false);
   const { maps } = useMapData();
-  const progressAnim = useRef(new Animated.Value(0)).current;
+  const shimmerAnim = useRef(new Animated.Value(-1)).current;
   const hasAutoPreloaded = useRef(false);
+
+  const uiProgress = downloadProgress.isComplete
+    ? 1
+    : Math.max(0, Math.min(1, downloadProgress.progress || 0));
+  const uiPercent = Math.round(uiProgress * 100);
 
   // 1. Timer logic (Linear 5-second progress bar fill)
   useEffect(() => {
-    Animated.timing(progressAnim, {
-      toValue: 1,
-      duration: 2000,
-      easing: Easing.linear,
-      useNativeDriver: false,
-    }).start(({ finished }) => {
-      if (finished) {
-        setTimerFinished(true);
-      }
-    });
+    const timeout = setTimeout(() => {
+      setTimerFinished(true);
+    }, 2000);
+
+    return () => clearTimeout(timeout);
   }, []);
+
+  useEffect(() => {
+    const shimmerLoop = Animated.loop(
+      Animated.timing(shimmerAnim, {
+        toValue: 1,
+        duration: 1200,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+
+    shimmerLoop.start();
+
+    return () => {
+      shimmerLoop.stop();
+      shimmerAnim.setValue(-1);
+    };
+  }, [shimmerAnim]);
 
   // 2. Transferred Preloading Logic from MapNavigate
   useEffect(() => {
@@ -265,9 +283,9 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
     }
   };
 
-const progressPercent = progressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
+  const shimmerTranslateX = shimmerAnim.interpolate({
+    inputRange: [-1, 1],
+    outputRange: [-gameScale(50), width * 0.85],
   });
 
   return (
@@ -283,21 +301,30 @@ const progressPercent = progressAnim.interpolate({
           <View style={styles.progressBarLayer1}>
             <View style={styles.progressBarLayer2}>
               <View style={styles.progressBarLayer3}>
-                <Animated.View style={[styles.progressFillWrapper, { width: progressPercent }]}>
+                <View style={[styles.progressFillWrapper, { width: `${uiProgress * 100}%` }]}>
                   <LinearGradient
                     colors={['#00D1FF', '#0077FF']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.progressBarFill}
                   />
-                </Animated.View>
+                  <Animated.View
+                    pointerEvents="none"
+                    style={[
+                      styles.progressShimmerOverlay,
+                      {
+                        transform: [{ translateX: shimmerTranslateX }],
+                      },
+                    ]}
+                  />
+                </View>
               </View>
             </View>
           </View>
 
           <Text style={[styles.statusText, !fontsLoaded && styles.fallbackFont]}>
             {downloadProgress.isDownloading 
-              ? `Downloading ${downloadProgress.mapName}... ${Math.round(downloadProgress.progress * 100)}%` 
+              ? `Downloading ${downloadProgress.mapName}... ${uiPercent}%` 
               : 'Preloading Game Data...'}
           </Text>
         </View>
@@ -367,6 +394,7 @@ const styles = StyleSheet.create({
   progressFillWrapper: {
     height: '100%',
     borderRadius: gameScale(16),
+    overflow: 'hidden',
   },
   progressBarFill: {
     flex: 1,
@@ -377,6 +405,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 4,
     elevation: 3,
+  },
+  progressShimmerOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: gameScale(50),
+    borderRadius: gameScale(16),
+    backgroundColor: 'rgba(255, 255, 255, 0.28)',
   },
   statusText: {
     marginTop: gameScale(15),
