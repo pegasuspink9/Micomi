@@ -24,6 +24,7 @@ import authRoutes from "../middleware/auth.routes";
 import { getAllPlayerProgress } from "../src/models/Player/playerProgress.service";
 import avatarRoutes from "./models/Avatar/avatar.routes";
 import moduleRoutes from "./models/Module/module.routes";
+import socialRoutes from "./models/Social/social.routes";
 
 import testRoutes from "../middleware/testing.toutes";
 
@@ -66,6 +67,7 @@ app.use("/dialogue", dialogueRoutes);
 app.use("/game", gameRoutes);
 app.use("/avatar", avatarRoutes);
 app.use("/module", moduleRoutes);
+app.use("/social", socialRoutes);
 
 //temporary
 app.get("/progress", getAllPlayerProgress);

@@ -17,6 +17,34 @@ export const getPlayers = async (_req: Request, res: Response) => {
   }
 };
 
+export const searchPlayersByUsername = async (req: Request, res: Response) => {
+  try {
+    const username =
+      (req.query.username as string) ||
+      (req.query.q as string) ||
+      (req.body?.username as string) ||
+      (req.body?.q as string);
+
+    const page = Number(req.query.page ?? req.body?.page ?? 1);
+    const limit = Number(req.query.limit ?? req.body?.limit ?? 20);
+
+    const result = await PlayerService.searchPlayersByUsername(
+      username,
+      page,
+      limit,
+    );
+
+    return successResponse(res, result, "Players searched successfully");
+  } catch (error: any) {
+    return errorResponse(
+      res,
+      error,
+      error.message || "Failed to search players",
+      400,
+    );
+  }
+};
+
 /*GET all player by ID*/
 export const getPlayerById = async (req: Request, res: Response) => {
   try {
@@ -136,6 +164,13 @@ export const loginPlayer = async (req: Request, res: Response) => {
     const refreshToken = generateRefreshToken({
       id: result.player_id,
       role: "player",
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     return successResponse(

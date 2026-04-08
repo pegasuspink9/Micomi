@@ -120,6 +120,61 @@ export const getAllPlayers = () =>
     },
   });
 
+export const searchPlayersByUsername = async (
+  username: string,
+  page = 1,
+  limit = 20,
+) => {
+  const normalizedUsername = username.trim();
+
+  if (!normalizedUsername) {
+    throw new Error("Username search term is required.");
+  }
+
+  const safeLimit = Math.min(Math.max(limit, 1), 20);
+  const safePage = Math.max(page, 1);
+  const skip = (safePage - 1) * safeLimit;
+
+  const [players, total] = await Promise.all([
+    prisma.player.findMany({
+      where: {
+        OR: [
+          { username: { equals: normalizedUsername, mode: "insensitive" } },
+          { username: { startsWith: normalizedUsername, mode: "insensitive" } },
+        ],
+      },
+      select: {
+        player_id: true,
+        username: true,
+        player_name: true,
+        player_avatar: true,
+        level: true,
+        current_streak: true,
+      },
+      orderBy: { username: "asc" },
+      skip,
+      take: safeLimit,
+    }),
+    prisma.player.count({
+      where: {
+        OR: [
+          { username: { equals: normalizedUsername, mode: "insensitive" } },
+          { username: { startsWith: normalizedUsername, mode: "insensitive" } },
+        ],
+      },
+    }),
+  ]);
+
+  return {
+    query: normalizedUsername,
+    page: safePage,
+    limit: safeLimit,
+    total,
+    totalPages: Math.ceil(total / safeLimit),
+    players,
+  };
+};
+
 export const getPlayerById = (player_id: number) =>
   prisma.player.findUnique({
     where: { player_id },
@@ -163,6 +218,21 @@ export const getPlayerProfile = async (player_id: number) => {
   if (!player) return null;
 
   await checkAchievements(player_id);
+
+  const friendCount = await (prisma as any).friend.count({
+    where: {
+      OR: [{ player_one_id: player_id }, { player_two_id: player_id }],
+    },
+  });
+
+  const incomingFriendRequestCount = await (prisma as any).friendRequest.count({
+    where: {
+      receiver_id: player_id,
+      status: "pending",
+    },
+  });
+
+  const followerCount = friendCount + incomingFriendRequestCount;
 
   const questsData = await getAllPlayerQuests(player_id);
 
@@ -262,6 +332,8 @@ export const getPlayerProfile = async (player_id: number) => {
     current_streak: player.current_streak,
     exp_points: player.exp_points,
     player_level: calculatedLevel,
+    friends_count: friendCount,
+    follower_count: followerCount,
     max_level_exp: maxLevelExp,
     ownedCharacters: player.ownedCharacters,
     ownedPotions: player.ownedPotions,

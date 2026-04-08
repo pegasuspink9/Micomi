@@ -880,12 +880,6 @@ export async function fightEnemy(
         card_type = cardInfo.card_type;
         character_attack_card = cardInfo.character_attack_card;
 
-        await prisma.playerProgress.update({
-          where: { progress_id: progress.progress_id },
-          data: { has_freeze_effect: false },
-        });
-        progress.has_freeze_effect = false;
-
         console.log(
           `- ShiShi's SS Execution! Animation: special_attack, Freeze Re-applied`,
         );
@@ -1042,12 +1036,6 @@ export async function fightEnemy(
         );
         card_type = cardInfo.card_type;
         character_attack_card = cardInfo.character_attack_card;
-
-        await prisma.playerProgress.update({
-          where: { progress_id: progress.progress_id },
-          data: { has_freeze_effect: false },
-        });
-        progress.has_freeze_effect = false;
 
         console.log(
           `- ShiShi's SS Execution! Animation: special_attack, Freeze Re-applied`,
@@ -1307,48 +1295,57 @@ export async function fightEnemy(
 
       if (progress.has_freeze_effect) {
         enemy_damage = 0;
+        enemy_run = null;
+        enemy_attack = null;
+        enemy_current_state = null;
+        character_hurt = null;
+        character_run = null;
+        enemy_idle = enemy.enemy_avatar || null;
+
         await prisma.playerProgress.update({
           where: { progress_id: progress.progress_id },
           data: { has_freeze_effect: false },
         });
-        console.log("- Freeze potion active, enemy attack nullified");
+        progress.has_freeze_effect = false;
+
+        console.log(
+          "- Freeze effect consumed: enemy turn skipped and no damage taken.",
+        );
       } else {
         enemy_damage = enemy.enemy_damage;
-      }
-
-      enemy_damage = enemy.enemy_damage;
-      charHealth = Math.max(charHealth - enemy_damage, 0);
-      enemy_idle = enemy.enemy_avatar || null;
-      enemy_run = enemy.enemy_run || null;
-      enemy_attack = enemy.enemy_attack || null;
-      character_hurt = character.character_hurt || null;
-      character_run = null;
-      console.log(
-        "- Enemy dealt",
-        enemy_damage,
-        "damage, player health:",
-        charHealth,
-      );
-
-      if (charHealth < character.health) {
-        await prisma.playerProgress.update({
-          where: { progress_id: progress.progress_id },
-          data: { took_damage: true },
-        });
-      }
-
-      if (charHealth <= 0) {
-        status = BattleStatus.lost;
-        character_hurt = character.character_hurt || null;
-        character_dies = character.character_dies || null;
-
+        charHealth = Math.max(charHealth - enemy_damage, 0);
+        enemy_idle = enemy.enemy_avatar || null;
         enemy_run = enemy.enemy_run || null;
-
-        character_idle = null;
+        enemy_attack = enemy.enemy_attack || null;
+        character_hurt = character.character_hurt || null;
         character_run = null;
-        character_attack_type = null;
+        console.log(
+          "- Enemy dealt",
+          enemy_damage,
+          "damage, player health:",
+          charHealth,
+        );
 
-        // await EnergyService.deductEnergy(playerId, 10); disabled to allow retries while testing
+        if (charHealth < character.health) {
+          await prisma.playerProgress.update({
+            where: { progress_id: progress.progress_id },
+            data: { took_damage: true },
+          });
+        }
+
+        if (charHealth <= 0) {
+          status = BattleStatus.lost;
+          character_hurt = character.character_hurt || null;
+          character_dies = character.character_dies || null;
+
+          enemy_run = enemy.enemy_run || null;
+
+          character_idle = null;
+          character_run = null;
+          character_attack_type = null;
+
+          // await EnergyService.deductEnergy(playerId, 10); disabled to allow retries while testing
+        }
       }
     } else if (effectiveBonusRound) {
       console.log(
@@ -1874,13 +1871,6 @@ export async function fightBossEnemy(
 
         character_run = null;
 
-        await prisma.playerProgress.update({
-          where: { progress_id: progress.progress_id },
-          data: { has_freeze_effect: false },
-        });
-
-        progress.has_freeze_effect = false;
-
         console.log(
           `- ShiShi's SS triggered! Animation: special_attack, Enemy Frozen set to TRUE`,
         );
@@ -2046,12 +2036,6 @@ export async function fightBossEnemy(
 
         character_idle = character.avatar_image || null;
         character_run = null;
-
-        await prisma.playerProgress.update({
-          where: { progress_id: progress.progress_id },
-          data: { has_freeze_effect: false },
-        });
-        progress.has_freeze_effect = false;
 
         console.log(
           `- ShiShi's SS triggered! Animation: special_attack, Enemy Frozen set to TRUE`,
@@ -2344,14 +2328,25 @@ export async function fightBossEnemy(
       enemy_hurt = enemy.enemy_hurt || null;
       console.log("- Boss bonus round wrong: Enemy stays hurt, no counter");
     } else if (enemyHealth > 0) {
-      if (progress.has_freeze_effect) {
+      const freezeConsumedThisTurn = progress.has_freeze_effect === true;
+      if (freezeConsumedThisTurn) {
         enemy_damage = 0;
+        enemy_run = null;
+        enemy_attack = null;
+        enemy_attack_type = null;
+        enemy_current_state = null;
+        character_hurt = null;
+        character_run = null;
+        enemy_idle = enemy.enemy_avatar || null;
+
         await prisma.playerProgress.update({
           where: { progress_id: progress.progress_id },
           data: { has_freeze_effect: false },
         });
         progress.has_freeze_effect = false;
-        console.log("- Freeze potion active, enemy attack nullified");
+        console.log(
+          "- Freeze effect consumed: enemy turn skipped and no damage taken.",
+        );
       }
 
       if (progress.has_strong_effect) {
@@ -2365,107 +2360,109 @@ export async function fightBossEnemy(
         );
       }
 
-      enemy_damage = enemy.enemy_damage;
-      charHealth = Math.max(charHealth - enemy_damage, 0);
-      enemy_idle = enemy.enemy_avatar || null;
-      enemy_run = enemy.enemy_run || null;
-      character_run = null;
-      if (progress.has_reversed_curse) {
-        enemy_ss_type = "reverse";
-        enemy_run = enemy.enemy_run || null;
+      if (!freezeConsumedThisTurn) {
+        enemy_damage = enemy.enemy_damage;
+        charHealth = Math.max(charHealth - enemy_damage, 0);
         enemy_idle = enemy.enemy_avatar || null;
-        enemy_attack_type = "special attack";
-        enemy_attack = enemy.special_skill || null;
-        console.log("- Reversed curse active: using special skill attack");
-      } else if (progress.has_only_blanks_ss) {
-        enemy_ss_type = "only_blanks";
-        enemy_attack_type = "special attack";
-        enemy_attack = enemy.special_skill || null;
-        console.log("- King Feanaly SS active: Hiding text");
-      } else if (progress.has_dollar_sign_ss) {
-        enemy_ss_type = "dollar_sign";
-        enemy_attack_type = "special attack";
-        enemy_attack = enemy.special_skill || null;
-        console.log("- Boss Icycreamero SS active: Inserting $ symbols");
-      } else if (progress.has_reverse_words_ss) {
-        enemy_ss_type = "reverse_words";
-        enemy_attack_type = "special attack";
-        enemy_attack = enemy.special_skill || null;
-        console.log("- Boss Scythe SS active: Reversing 3 words");
-      } else if (progress.has_shuffle_ss) {
-        enemy_ss_type = "shuffle";
         enemy_run = enemy.enemy_run || null;
-        enemy_idle = enemy.enemy_avatar || null;
-        enemy_attack_type = "special attack";
-        enemy_attack = enemy.special_skill || null;
-        console.log("- Shuffle options active: using special skill attack");
-      } else if (progress.has_permuted_ss) {
-        enemy_ss_type = "permuted";
-        enemy_run = enemy.enemy_run || null;
-        enemy_idle = enemy.enemy_avatar || null;
-        enemy_attack_type = "special attack";
-        enemy_attack = enemy.special_skill || null;
-        console.log(
-          "- Letters shuffled in a word active: using special skill attack",
-        );
-      } else if (progress.has_boss_shield) {
-        enemy_ss_type = "shield";
-        enemy_run =
-          "https://micomi-assets.me/Enemies/Greenland/Boss%20Joshy/Run2.png";
-        enemy_idle =
-          "https://micomi-assets.me/Enemies/Greenland/Boss%20Joshy/idle2.png";
-
-        enemy_attack_type = "special attack";
-        enemy_attack = enemy.special_skill || null;
-        console.log("- Shield curse active: using special skill attack");
-      } else if (progress.has_force_character_attack_type) {
-        enemy_ss_type = "force_basic_attack";
-        enemy_run = enemy.enemy_run || null;
-        enemy_idle = enemy.enemy_avatar || null;
-
-        enemy_attack_type = "special attack";
-        enemy_attack = enemy.special_skill || null;
-        console.log("- Force basic curse active: using special skill attack");
-      } else if (progress.has_both_hp_decrease) {
-        enemy_ss_type = "mutual_damage";
-        enemy_run = enemy.enemy_run || null;
-        enemy_idle = enemy.enemy_avatar || null;
-
-        enemy_attack_type = "special attack";
-        enemy_attack = enemy.special_skill || null;
-        console.log("- Both hp decrease: using special skill attack");
-      } else {
-        enemy_attack_type = "basic attack";
-        enemy_attack = enemy.enemy_attack || null;
-      }
-      character_hurt = character.character_hurt || null;
-      console.log(
-        "- Enemy dealt",
-        enemy_damage,
-        "damage, player health:",
-        charHealth,
-      );
-
-      if (charHealth < character.health) {
-        await prisma.playerProgress.update({
-          where: { progress_id: progress.progress_id },
-          data: { took_damage: true },
-        });
-        progress.took_damage = true;
-      }
-
-      if (charHealth <= 0) {
-        status = BattleStatus.lost;
-        character_hurt = character.character_hurt || null;
-        character_dies = character.character_dies || null;
-
-        enemy_run = enemy.enemy_run || null;
-
-        character_idle = null;
         character_run = null;
-        character_attack_type = null;
+        if (progress.has_reversed_curse) {
+          enemy_ss_type = "reverse";
+          enemy_run = enemy.enemy_run || null;
+          enemy_idle = enemy.enemy_avatar || null;
+          enemy_attack_type = "special attack";
+          enemy_attack = enemy.special_skill || null;
+          console.log("- Reversed curse active: using special skill attack");
+        } else if (progress.has_only_blanks_ss) {
+          enemy_ss_type = "only_blanks";
+          enemy_attack_type = "special attack";
+          enemy_attack = enemy.special_skill || null;
+          console.log("- King Feanaly SS active: Hiding text");
+        } else if (progress.has_dollar_sign_ss) {
+          enemy_ss_type = "dollar_sign";
+          enemy_attack_type = "special attack";
+          enemy_attack = enemy.special_skill || null;
+          console.log("- Boss Icycreamero SS active: Inserting $ symbols");
+        } else if (progress.has_reverse_words_ss) {
+          enemy_ss_type = "reverse_words";
+          enemy_attack_type = "special attack";
+          enemy_attack = enemy.special_skill || null;
+          console.log("- Boss Scythe SS active: Reversing 3 words");
+        } else if (progress.has_shuffle_ss) {
+          enemy_ss_type = "shuffle";
+          enemy_run = enemy.enemy_run || null;
+          enemy_idle = enemy.enemy_avatar || null;
+          enemy_attack_type = "special attack";
+          enemy_attack = enemy.special_skill || null;
+          console.log("- Shuffle options active: using special skill attack");
+        } else if (progress.has_permuted_ss) {
+          enemy_ss_type = "permuted";
+          enemy_run = enemy.enemy_run || null;
+          enemy_idle = enemy.enemy_avatar || null;
+          enemy_attack_type = "special attack";
+          enemy_attack = enemy.special_skill || null;
+          console.log(
+            "- Letters shuffled in a word active: using special skill attack",
+          );
+        } else if (progress.has_boss_shield) {
+          enemy_ss_type = "shield";
+          enemy_run =
+            "https://micomi-assets.me/Enemies/Greenland/Boss%20Joshy/Run2.png";
+          enemy_idle =
+            "https://micomi-assets.me/Enemies/Greenland/Boss%20Joshy/idle2.png";
 
-        // await EnergyService.deductEnergy(playerId, 10); disabled to allow retries while testing
+          enemy_attack_type = "special attack";
+          enemy_attack = enemy.special_skill || null;
+          console.log("- Shield curse active: using special skill attack");
+        } else if (progress.has_force_character_attack_type) {
+          enemy_ss_type = "force_basic_attack";
+          enemy_run = enemy.enemy_run || null;
+          enemy_idle = enemy.enemy_avatar || null;
+
+          enemy_attack_type = "special attack";
+          enemy_attack = enemy.special_skill || null;
+          console.log("- Force basic curse active: using special skill attack");
+        } else if (progress.has_both_hp_decrease) {
+          enemy_ss_type = "mutual_damage";
+          enemy_run = enemy.enemy_run || null;
+          enemy_idle = enemy.enemy_avatar || null;
+
+          enemy_attack_type = "special attack";
+          enemy_attack = enemy.special_skill || null;
+          console.log("- Both hp decrease: using special skill attack");
+        } else {
+          enemy_attack_type = "basic attack";
+          enemy_attack = enemy.enemy_attack || null;
+        }
+        character_hurt = character.character_hurt || null;
+        console.log(
+          "- Enemy dealt",
+          enemy_damage,
+          "damage, player health:",
+          charHealth,
+        );
+
+        if (charHealth < character.health) {
+          await prisma.playerProgress.update({
+            where: { progress_id: progress.progress_id },
+            data: { took_damage: true },
+          });
+          progress.took_damage = true;
+        }
+
+        if (charHealth <= 0) {
+          status = BattleStatus.lost;
+          character_hurt = character.character_hurt || null;
+          character_dies = character.character_dies || null;
+
+          enemy_run = enemy.enemy_run || null;
+
+          character_idle = null;
+          character_run = null;
+          character_attack_type = null;
+
+          // await EnergyService.deductEnergy(playerId, 10); disabled to allow retries while testing
+        }
       }
     } else {
       console.log("- Enemy already defeated: no counterattack damage.");
