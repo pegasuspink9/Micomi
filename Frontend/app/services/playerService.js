@@ -123,6 +123,8 @@ export const playerService = {
       coins: apiData.coins,
       daysLogin: apiData.totalActiveMaps || 0,
       currentStreak: apiData.current_streak,
+      friendsCount: apiData.friends_count ?? apiData.following_count ?? 0,
+      followerCount: apiData.follower_count ?? apiData.followers_count ?? 0,
       expPoints: apiData.exp_points,
       maxLevelExp: apiData.max_level_exp,
       mapsOpened: apiData.totalActiveMaps,

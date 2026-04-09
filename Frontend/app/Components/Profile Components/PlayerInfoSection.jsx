@@ -6,7 +6,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { gameScale } from "../Responsiveness/gameResponsive";
 import { useAuth } from "../../hooks/useAuth";
 
-const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, expPoints, maxLevelExp, playerAvatar, onAvatarPress }) => { 
+const PlayerInfoSection = ({
+  playerName,
+  username,
+  selectedBadge,
+  playerLevel,
+  expPoints,
+  maxLevelExp,
+  playerAvatar,
+  onAvatarPress,
+  friendsCount = 0,
+  followerCount = 0,
+  onSocialPress,
+}) => {
   const { logout } = useAuth();
 
   const calculateLevelProgress = () => {
@@ -29,6 +41,20 @@ const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, e
 
   const defaultAvatarSource = { uri: 'https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif' };
   const currentAvatarSource = playerAvatar ? { uri: playerAvatar } : defaultAvatarSource;
+
+  const socialStatsContent = (
+    <View style={styles.socialStatsCard}>
+      <View style={styles.socialStatsItem}>
+        <Text style={styles.socialStatsValue}>{friendsCount || 0}</Text>
+        <Text style={styles.socialStatsLabel}>Friends</Text>
+      </View>
+      <View style={styles.socialStatsDivider} />
+      <View style={styles.socialStatsItem}>
+        <Text style={styles.socialStatsValue}>{followerCount || 0}</Text>
+        <Text style={styles.socialStatsLabel}>Followers</Text>
+      </View>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -114,6 +140,14 @@ const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, e
                 </View>
               </View>
             </View>
+
+            <TouchableOpacity
+              style={styles.socialStatsWrapper}
+              onPress={onSocialPress}
+              activeOpacity={0.8}
+            >
+              {socialStatsContent}
+            </TouchableOpacity>
           </View>
         </ImageBackground>
       ) : (
@@ -188,6 +222,14 @@ const PlayerInfoSection = ({ playerName, username, selectedBadge, playerLevel, e
                 </View>
               </View>
             </View>
+
+            <TouchableOpacity
+              style={styles.socialStatsWrapper}
+              onPress={onSocialPress}
+              activeOpacity={0.8}
+            >
+              {socialStatsContent}
+            </TouchableOpacity>
           </View>
         </LinearGradient>
       )}
@@ -270,6 +312,7 @@ const styles = StyleSheet.create({
     right: 0,
     paddingBottom: gameScale(16),
     paddingLeft: gameScale(10),
+    minHeight: gameScale(105),
   },
   username: {
     fontSize: gameScale(13),
@@ -438,6 +481,46 @@ const styles = StyleSheet.create({
     height: gameScale(50),
     borderRadius: gameScale(5),
     resizeMode: 'cover', 
+  },
+  socialStatsWrapper: {
+    position: 'absolute',
+    right: gameScale(8),
+    bottom: gameScale(6),
+  },
+  socialStatsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    borderRadius: gameScale(12),
+    paddingVertical: gameScale(8),
+    paddingHorizontal: gameScale(10),
+    borderWidth: gameScale(1),
+    borderColor: 'rgba(255, 255, 255, 0.28)',
+  },
+  socialStatsItem: {
+    minWidth: gameScale(54),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  socialStatsDivider: {
+    width: gameScale(1),
+    height: gameScale(24),
+    marginHorizontal: gameScale(8),
+    backgroundColor: 'rgba(255, 255, 255, 0.55)',
+  },
+  socialStatsValue: {
+    fontSize: gameScale(14),
+    fontFamily: 'Grobold',
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+  },
+  socialStatsLabel: {
+    fontSize: gameScale(10),
+    fontFamily: 'DynaPuff',
+    color: '#D7F4FF',
+    marginTop: gameScale(1),
   },
 });
 

@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 
 import { gameScale } from '../Components/Responsiveness/gameResponsive';
 import { usePlayerProfile } from '../hooks/usePlayerProfile';
@@ -23,6 +24,7 @@ import StatsGridSection from '../Components/Profile Components/StatsGridSection'
 import InventorySection from '../Components/Profile Components/InventorySection';
 
 export default function Profile() {
+  const router = useRouter();
   const {
     playerData,
     loading,
@@ -53,6 +55,10 @@ export default function Profile() {
       setSelectedAvatarId(null);
     }
   };
+
+  const handleOpenSocial = useCallback(() => {
+    router.push('/social');
+  }, [router]);
 
   // Simplified loading - assets are already cached from Map API
   if (loading || !playerData) {
@@ -109,6 +115,9 @@ export default function Profile() {
             maxLevelExp={playerData.maxLevelExp}
             playerAvatar={playerData.playerAvatar}
             onAvatarPress={() => setIsAvatarModalVisible(true)}
+            friendsCount={playerData.friendsCount}
+            followerCount={playerData.followerCount}
+            onSocialPress={handleOpenSocial}
           />
 
           <StatsGridSection 
