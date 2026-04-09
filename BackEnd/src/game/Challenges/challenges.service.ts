@@ -1049,7 +1049,7 @@ export const submitChallengeService = async (
 
   let updateReactionData: any = {};
 
-  let enemy_hurt_audio: string = "";
+  let enemy_hurt_audio: string | null = "";
 
   if (enemy.enemy_name === "Boss Darco") {
     enemy_hurt_audio =
@@ -1294,7 +1294,8 @@ export const submitChallengeService = async (
     : false;
 
   const wasStrong = currentProgress.has_strong_effect;
-  const wasFrozen = currentProgress.has_freeze_effect;
+  const hadFreezeThisTurn = currentProgress.has_freeze_effect === true;
+  const wasFrozen = isCorrect && hadFreezeThisTurn;
   const wasReveal = currentProgress.has_ryron_reveal;
 
   let fightResult: any;
@@ -1474,13 +1475,17 @@ export const submitChallengeService = async (
         "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Leon%20hurt%20sfx%20final.mp3";
     }
 
-    if (currentProgress.has_freeze_effect) {
+    if (hadFreezeThisTurn) {
       fightResult.character.character_health =
         baselineState.character.character_health;
+      fightResult.charHealth = baselineState.character.character_health;
       fightResult.character.character_hurt = null;
       fightResult.enemy.enemy_damage = 0;
       fightResult.enemy.enemy_attack = null;
       fightResult.enemy.enemy_run = null;
+      fightResult.enemy.enemy_attack_type = null;
+      fightResult.enemy.enemy_current_state = null;
+      currentProgress.has_freeze_effect = false;
       console.log(
         "Freeze effect applied on wrong answer: No enemy attack, no damage taken.",
       );
@@ -2026,9 +2031,10 @@ export const submitChallengeService = async (
     death_audio = "https://micomi-assets.me/Sounds/Final/All%20Death.wav";
   }
 
-  if (freshProgress?.has_freeze_effect) {
+  if (hadFreezeThisTurn || freshProgress?.has_freeze_effect) {
     enemy_attack_audio = null;
-    enemy_hurt_audio = "";
+    enemy_hurt_audio = null;
+    character_hurt_audio = null;
     console.log("- Freeze effect active: Muting all enemy audio responses.");
   }
 

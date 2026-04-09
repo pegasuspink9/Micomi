@@ -136,9 +136,41 @@ model Player {
   ownedPotions       PlayerPotion[]
   playerProgress     PlayerProgress[]
   playerQuests       PlayerQuest[]
+  friendRequestsSent FriendRequest[]     @relation("FriendRequestSender")
+  friendRequestsRecv FriendRequest[]     @relation("FriendRequestReceiver")
+  friendsAsPlayerOne Friend[]            @relation("FriendPlayerOne")
+  friendsAsPlayerTwo Friend[]            @relation("FriendPlayerTwo")
 
   @@index([email])
   @@index([total_points])
+}
+
+model FriendRequest {
+  friend_request_id Int                 @id @default(autoincrement())
+  sender_id         Int
+  receiver_id       Int
+  status            FriendRequestStatus @default(pending)
+  created_at        DateTime            @default(now())
+  responded_at      DateTime?
+  sender            Player              @relation("FriendRequestSender", fields: [sender_id], references: [player_id], onDelete: Cascade)
+  receiver          Player              @relation("FriendRequestReceiver", fields: [receiver_id], references: [player_id], onDelete: Cascade)
+
+  @@unique([sender_id, receiver_id])
+  @@index([sender_id, status])
+  @@index([receiver_id, status])
+}
+
+model Friend {
+  friend_id      Int      @id @default(autoincrement())
+  player_one_id  Int
+  player_two_id  Int
+  created_at     DateTime @default(now())
+  playerOne      Player   @relation("FriendPlayerOne", fields: [player_one_id], references: [player_id], onDelete: Cascade)
+  playerTwo      Player   @relation("FriendPlayerTwo", fields: [player_two_id], references: [player_id], onDelete: Cascade)
+
+  @@unique([player_one_id, player_two_id])
+  @@index([player_one_id])
+  @@index([player_two_id])
 }
 
 model PlayerProgress {
@@ -414,4 +446,10 @@ enum BattleStatus {
   in_progress
   won
   lost
+}
+
+enum FriendRequestStatus {
+  pending
+  accepted
+  declined
 }

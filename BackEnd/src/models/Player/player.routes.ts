@@ -26,6 +26,7 @@ router.put(
 );
 
 router.get("/", PlayerController.getPlayers);
+router.get("/search", PlayerController.searchPlayersByUsername);
 router.get("/:id", PlayerController.getPlayerById);
 router.put("/:id", authenticate, requireAdmin, PlayerController.updatePlayer);
 router.delete("/:id", PlayerController.deletePlayer);
