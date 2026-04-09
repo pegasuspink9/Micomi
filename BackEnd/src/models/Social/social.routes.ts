@@ -44,6 +44,13 @@ router.delete(
 );
 
 router.get(
+  "/following",
+  authenticate,
+  requirePlayer,
+  SocialController.getFollowing,
+);
+
+router.get(
   "/following/:playerId",
   authenticate,
   requirePlayer,
