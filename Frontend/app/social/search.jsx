@@ -269,7 +269,6 @@ export default function SocialSearchScreen() {
           </View>
         ) : (
           <View style={styles.resultMetaRow}>
-            <Ionicons name="sparkles" size={gameScale(16)} color="#D7F2FF" />
             <Text style={styles.resultMetaText}>Friend recommendations</Text>
           </View>
         )}
@@ -371,7 +370,7 @@ const styles = StyleSheet.create({
   resultMetaText: {
     color: '#D7F2FF',
     fontFamily: 'DynaPuff',
-    fontSize: gameScale(12),
+    fontSize: gameScale(15),
   },
   errorText: {
     color: '#FF9B9B',
