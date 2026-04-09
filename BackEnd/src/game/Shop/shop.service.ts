@@ -278,9 +278,10 @@ export const usePotion = async (
           );
 
           if (!fallbackResult.success) {
-            throw new Error(
-              `Cannot reveal challenge ${challengeId}: ${fallbackResult.error}`,
-            );
+            return {
+              success: false,
+              message: `Cannot use hint potion: ${fallbackResult.error}`,
+            } as unknown as SubmitChallengeControllerResult;
           }
 
           revealResult.filledQuestion = fallbackResult.filledQuestion;
@@ -303,7 +304,7 @@ export const usePotion = async (
           answer: effectiveCorrectAnswer,
         } as any;
 
-        dynamicMessage = `All blanks revealed: Select "Attack" to confirm and proceed!`;
+        dynamicMessage = `All revealed: Select 'Attack'!`;
 
         console.log(
           `Successfully revealed ${effectiveCorrectAnswer.length} blanks for challenge ${challengeId}`,

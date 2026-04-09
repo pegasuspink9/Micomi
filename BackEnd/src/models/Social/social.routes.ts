@@ -4,6 +4,7 @@ import {
   requirePlayer,
 } from "../../../middleware/auth.middleware";
 import * as SocialController from "./social.controller";
+import * as PlayerController from "../Player/player.controller";
 
 const router = Router();
 
@@ -47,6 +48,13 @@ router.get(
   authenticate,
   requirePlayer,
   SocialController.getPublicPlayerProfile,
+);
+
+router.get(
+  "/recommendations",
+  authenticate,
+  requirePlayer,
+  PlayerController.getFriendRecommendations,
 );
 
 export default router;
