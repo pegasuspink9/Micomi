@@ -659,3 +659,40 @@ export const resetPassword = async (token: string, newPassword: string) => {
 
   return { success: true };
 };
+
+export const getFriendRecommendations = async (
+  playerId: number,
+  limit: number = 10,
+) => {
+  const following = await (prisma as any).follow.findMany({
+    where: { follower_id: playerId },
+    select: { following_id: true },
+  });
+
+  const followingIds = following.map((f: any) => f.following_id);
+
+  const recommendations = await prisma.player.findMany({
+    where: {
+      player_id: {
+        not: playerId,
+        notIn: followingIds,
+      },
+    },
+    orderBy: {
+      created_at: "desc",
+    },
+    take: limit,
+    select: {
+      player_id: true,
+      username: true,
+      player_name: true,
+      player_avatar: true,
+      level: true,
+    },
+  });
+
+  return recommendations.map((player) => ({
+    ...player,
+    player_avatar: player.player_avatar || DEFAULT_AVATAR_URL,
+  }));
+};

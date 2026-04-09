@@ -182,3 +182,23 @@ export const loginPlayer = async (req: Request, res: Response) => {
     return errorResponse(res, error, "Failed to login", 500);
   }
 };
+
+/*GET friends recommendations*/
+export const getFriendRecommendations = async (req: Request, res: Response) => {
+  try {
+    const playerId = (req as any).user.id;
+
+    const recommendations = await PlayerService.getFriendRecommendations(
+      playerId,
+      10,
+    );
+
+    return successResponse(
+      res,
+      recommendations,
+      "Friend recommendations fetched successfully",
+    );
+  } catch (error) {
+    return errorResponse(res, error, "Failed to fetch friend recommendations");
+  }
+};
