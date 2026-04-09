@@ -1,6 +1,5 @@
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -8,7 +7,7 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { gameScale } from '../Components/Responsiveness/gameResponsive';
 import PlayerInfoSection from '../Components/Profile Components/PlayerInfoSection';
@@ -34,6 +33,7 @@ const normalizeRelation = (relation) => {
 
 export default function PublicPlayerProfileScreen() {
   const { playerId } = useLocalSearchParams();
+  const router = useRouter();
   const socialService = useSocialHook();
 
   const [playerData, setPlayerData] = useState(null);
@@ -167,6 +167,8 @@ export default function PublicPlayerProfileScreen() {
             friendsCount={playerData.friendsCount}
             followerCount={playerData.followerCount}
             onSocialPress={() => {}}
+            headerAction="back"
+            onHeaderAction={() => router.back()}
           />
 
           <StatsGridSection
@@ -180,20 +182,10 @@ export default function PublicPlayerProfileScreen() {
             hero={playerData.heroSelected}
             background={playerData.background}
             disableHeroPress={true}
+            relationButtonMeta={relationButtonMeta}
+            onRelationPress={handleRelationAction}
+            relationActionLoading={actionLoading}
           />
-
-          <TouchableOpacity
-            style={[styles.relationButton, relationButtonMeta.style]}
-            onPress={handleRelationAction}
-            disabled={actionLoading}
-            activeOpacity={0.85}
-          >
-            {actionLoading ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={styles.relationButtonText}>{relationButtonMeta.label}</Text>
-            )}
-          </TouchableOpacity>
 
           <InventorySection
             activeTab={inventoryTab}
@@ -230,20 +222,6 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
   },
-  relationButton: {
-    alignSelf: 'center',
-    minWidth: gameScale(95),
-    width: '48%',
-    borderRadius: gameScale(10),
-    borderWidth: gameScale(1),
-    borderColor: 'rgba(255,255,255,0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: gameScale(12),
-    paddingVertical: gameScale(10),
-    marginTop: gameScale(4),
-    marginBottom: gameScale(14),
-  },
   addButton: {
     backgroundColor: '#0A7FB8',
   },
@@ -252,11 +230,6 @@ const styles = StyleSheet.create({
   },
   followBackButton: {
     backgroundColor: '#0B9568',
-  },
-  relationButtonText: {
-    color: '#fff',
-    fontFamily: 'DynaPuff',
-    fontSize: gameScale(11),
   },
   errorText: {
     color: 'red',

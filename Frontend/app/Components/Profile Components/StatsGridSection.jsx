@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ImageBackground, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ImageBackground, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { gameScale } from '../Responsiveness/gameResponsive';
 import StatCard from './StatCard';
@@ -14,8 +14,29 @@ const StatsGridSection = ({
   hero,
   background,
   disableHeroPress = false,
+  relationButtonMeta,
+  onRelationPress,
+  relationActionLoading = false,
 }) => {
   const router = useRouter();
+
+  const formatCompactNumber = (value) => {
+    const numericValue = Number(value || 0);
+
+    if (Math.abs(numericValue) >= 1000000) {
+      const millions = numericValue / 1000000;
+      const roundedMillions = Math.round(millions * 10) / 10;
+      return `${Number.isInteger(roundedMillions) ? roundedMillions.toFixed(0) : roundedMillions}M`;
+    }
+
+    if (Math.abs(numericValue) >= 1000) {
+      const thousands = numericValue / 1000;
+      const roundedThousands = Math.round(thousands * 10) / 10;
+      return `${Number.isInteger(roundedThousands) ? roundedThousands.toFixed(0) : roundedThousands}K`;
+    }
+
+    return numericValue.toLocaleString();
+  };
   
   const handleHeroPress = () => {
     router.push('/Components/CharacterSelection/CharacterSelect');
@@ -32,7 +53,7 @@ const StatsGridSection = ({
             <StatCard 
               icon={require('../icons/coins.png')}
               label="Coins" 
-              value={coins.toLocaleString()}
+              value={formatCompactNumber(coins)}
             />
             <StatCard 
               icon={require('../icons/fire.png')}
@@ -48,13 +69,28 @@ const StatsGridSection = ({
               <Text style={styles.heroName}>{hero.name}</Text>
             </View>
             <ProfileHeroSprite hero={hero} />
+
+            {relationButtonMeta && onRelationPress ? (
+              <TouchableOpacity
+                style={[styles.relationButton, relationButtonMeta.style]}
+                onPress={onRelationPress}
+                disabled={relationActionLoading}
+                activeOpacity={0.85}
+              >
+                {relationActionLoading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.relationButtonText}>{relationButtonMeta.label}</Text>
+                )}
+              </TouchableOpacity>
+            ) : null}
           </View>
 
           <View style={styles.statColumn}>
             <StatCard 
               icon={require('../icons/exp.png')} 
               label="EXP Points" 
-              value={expPoints.toLocaleString()}
+              value={formatCompactNumber(expPoints)}
             />
             <StatCard 
               icon={require('../icons/map.png')} 
@@ -123,7 +159,7 @@ const styles = StyleSheet.create({
   },
   heroColumn: {
     width: '40%',
-    justifyContent: 'space-between', 
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingBottom: gameScale(20),
   },
@@ -141,6 +177,22 @@ const styles = StyleSheet.create({
     fontSize: gameScale(36),
     fontFamily: 'GoldenAge',
     color: '#ffffffff',
+  },
+  relationButton: {
+    width: '92%',
+    borderRadius: gameScale(10),
+    borderWidth: gameScale(1),
+    borderColor: 'rgba(255,255,255,0.35)',
+    paddingHorizontal: gameScale(8),
+    paddingVertical: gameScale(6),
+    position: 'absolute',
+    bottom: gameScale(2),
+  },
+  relationButtonText: {
+    color: '#fff',
+    fontFamily: 'DynaPuff',
+    fontSize: gameScale(10),
+    textAlign: 'center',
   },
 });
 

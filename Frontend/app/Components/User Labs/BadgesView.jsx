@@ -264,6 +264,7 @@ export default function BadgesView() {
         gradientColors={selectedGradient}
         onClose={() => setModalVisible(false)}
         onBadgeApplied={handleBadgeApplied}
+        disableApply={isVisitMode}
       />
     </SafeAreaView>
   );

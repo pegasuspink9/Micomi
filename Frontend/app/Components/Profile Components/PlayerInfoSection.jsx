@@ -18,8 +18,19 @@ const PlayerInfoSection = ({
   friendsCount = 0,
   followerCount = 0,
   onSocialPress,
+  headerAction = 'logout',
+  onHeaderAction,
 }) => {
   const { logout } = useAuth();
+  const isBackAction = headerAction === 'back';
+  const handleHeaderAction = () => {
+    if (isBackAction && typeof onHeaderAction === 'function') {
+      onHeaderAction();
+      return;
+    }
+
+    logout();
+  };
 
   const calculateLevelProgress = () => {
     const currentLevel = playerLevel || 1;
@@ -46,7 +57,7 @@ const PlayerInfoSection = ({
     <View style={styles.socialStatsCard}>
       <View style={styles.socialStatsItem}>
         <Text style={styles.socialStatsValue}>{friendsCount || 0}</Text>
-        <Text style={styles.socialStatsLabel}>Friends</Text>
+        <Text style={styles.socialStatsLabel}>Following</Text>
       </View>
       <View style={styles.socialStatsDivider} />
       <View style={styles.socialStatsItem}>
@@ -69,14 +80,13 @@ const PlayerInfoSection = ({
             style={styles.coverOverlay}
           />
           
-          {/* Logout Button */}
+          {/* Header Action Button */}
           <TouchableOpacity 
             style={styles.logoutButton}
-            onPress={logout}
+            onPress={handleHeaderAction}
             activeOpacity={0.7}
           >
-            <Ionicons name="log-out-outline" size={gameScale(20)} color="#FFFFFF" />
-            <Text style={styles.logoutText}>Logout</Text>
+            <Text style={styles.logoutText}>{isBackAction ? 'Back' : 'Logout'}</Text>
           </TouchableOpacity>
 
           <View style={styles.badgeNameTop}>
@@ -155,14 +165,14 @@ const PlayerInfoSection = ({
           colors={['#0a192f', '#1c2e4a', '#0a192f']}
           style={styles.fallbackBackground}
         >
-          {/* Logout Button */}
+          {/* Header Action Button */}
           <TouchableOpacity 
             style={styles.logoutButton}
-            onPress={logout}
+            onPress={handleHeaderAction}
             activeOpacity={0.7}
           >
-            <Ionicons name="log-out-outline" size={gameScale(20)} color="#FFFFFF" />
-            <Text style={styles.logoutText}>Logout</Text>
+            <Ionicons name={isBackAction ? "arrow-back" : "log-out-outline"} size={gameScale(20)} color="#FFFFFF" />
+            <Text style={styles.logoutText}>{isBackAction ? 'Back' : 'Logout'}</Text>
           </TouchableOpacity>
 
           <View style={styles.badgeNameTop}>
@@ -267,16 +277,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingHorizontal: gameScale(12),
+    paddingHorizontal: gameScale(8),
     paddingVertical: gameScale(6),
-    borderRadius: gameScale(20),
+    borderRadius: gameScale(10),
     zIndex: 100,
     borderWidth: gameScale(1),
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   logoutText: {
     color: '#FFFFFF',
-    fontSize: gameScale(12),
+    fontSize: gameScale(10),
     fontFamily: 'DynaPuff',
     marginLeft: gameScale(5),
   },

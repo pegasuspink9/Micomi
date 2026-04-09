@@ -17,7 +17,7 @@ import { playerService } from '../../../services/playerService';
 
 const STATUS_BAR_HEIGHT = StatusBar.currentHeight || 0;
 
-const BadgeDetailModal = ({ visible, badge, onClose, onBadgeApplied }) => {
+const BadgeDetailModal = ({ visible, badge, onClose, onBadgeApplied, disableApply = false }) => {
   const [isApplying, setIsApplying] = useState(false);
 
   // ✅ If not visible, render nothing.
@@ -93,15 +93,19 @@ const BadgeDetailModal = ({ visible, badge, onClose, onBadgeApplied }) => {
               <View style={styles.buttonLayer1}>
                 <View style={styles.buttonLayer2}>
                   <TouchableOpacity 
-                    style={[styles.buttonLayer3, styles.applyButton]} 
+                    style={[
+                      styles.buttonLayer3,
+                      styles.applyButton,
+                      disableApply && styles.disabledButton,
+                    ]}
                     activeOpacity={0.8}
                     onPress={handleApplyBadge}
-                    disabled={isApplying}
+                    disabled={isApplying || disableApply}
                   >
                     {isApplying ? (
                       <ActivityIndicator size="small" color="#ffffff" />
                     ) : (
-                      <Text style={styles.buttonText}>Apply Badge</Text>
+                      <Text style={styles.buttonText}>{disableApply ? 'Visit Only' : 'Apply Badge'}</Text>
                     )}
                   </TouchableOpacity>
                 </View>
@@ -235,6 +239,9 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     backgroundColor: '#757575', 
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   buttonText: {
     color: '#ffffffff',
