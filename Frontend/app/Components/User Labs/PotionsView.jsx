@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   StyleSheet,
   SafeAreaView,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import Reanimated, {
   useSharedValue,
@@ -21,12 +21,51 @@ import Reanimated, {
 import { usePlayerProfile } from '../../hooks/usePlayerProfile';
 import { wp, gameScale } from '../Responsiveness/gameResponsive';
 import PotionDetailModal from './Badge Modal/PotionDetailModal';
+import { useSocialHook } from '../../hooks/useSocialHook';
+import { playerService } from '../../services/playerService';
 
 export default function PotionsView() {
   const router = useRouter();
-  const { playerData, loading } = usePlayerProfile();
+  const { playerId } = useLocalSearchParams();
+  const socialService = useSocialHook();
+  const { playerData: ownPlayerData, loading: ownLoading } = usePlayerProfile();
+  const [visitedPlayerData, setVisitedPlayerData] = useState(null);
+  const [visitedLoading, setVisitedLoading] = useState(false);
   const [selectedPotion, setSelectedPotion] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+
+  const isVisitMode = !!playerId;
+  const playerData = isVisitMode ? visitedPlayerData : ownPlayerData;
+  const loading = isVisitMode ? visitedLoading : ownLoading;
+
+  const loadVisitedProfile = useCallback(async () => {
+    if (!playerId) return;
+
+    try {
+      setVisitedLoading(true);
+      const apiData = await socialService.getPublicProfile(playerId);
+      const transformTarget = { ...(apiData || {}) };
+
+      if (!transformTarget.selectedBadge) {
+        transformTarget.selectedBadge = transformTarget.latestAchievement || null;
+      }
+
+      setVisitedPlayerData(playerService.transformPlayerData(transformTarget));
+    } catch (error) {
+      console.error('Failed to load visited player potions:', error);
+      setVisitedPlayerData({ badges: [], potions: [] });
+    } finally {
+      setVisitedLoading(false);
+    }
+  }, [playerId, socialService]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (isVisitMode) {
+        loadVisitedProfile();
+      }
+    }, [isVisitMode, loadVisitedProfile])
+  );
 
   //  Simplified loading state - assets are already cached from Map API
   if (loading || !playerData) {

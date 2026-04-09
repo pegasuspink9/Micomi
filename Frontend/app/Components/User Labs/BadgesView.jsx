@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -8,20 +8,59 @@ import {
   StyleSheet,
   SafeAreaView,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { usePlayerProfile } from '../../hooks/usePlayerProfile';
 import { gameScale } from '../Responsiveness/gameResponsive';
 import BadgeDetailModal from './Badge Modal/BadgeDetailModal';
+import { useSocialHook } from '../../hooks/useSocialHook';
+import { playerService } from '../../services/playerService';
 
 export default function BadgesView() {
   const router = useRouter();
+  const { playerId } = useLocalSearchParams();
+  const socialService = useSocialHook();
   // ✅ Simplified - removed assetsLoading and assetsProgress (no longer needed)
-  const { playerData, loading, loadPlayerProfile } = usePlayerProfile();
+  const { playerData: ownPlayerData, loading: ownLoading, loadPlayerProfile } = usePlayerProfile();
+  const [visitedPlayerData, setVisitedPlayerData] = useState(null);
+  const [visitedLoading, setVisitedLoading] = useState(false);
 
   const [selectedBadge, setSelectedBadge] = useState(null);
   const [selectedGradient, setSelectedGradient] = useState(['#8B4513', '#be874fff']);
   const [modalVisible, setModalVisible] = useState(false);
+
+  const isVisitMode = !!playerId;
+  const playerData = isVisitMode ? visitedPlayerData : ownPlayerData;
+  const loading = isVisitMode ? visitedLoading : ownLoading;
+
+  const loadVisitedProfile = useCallback(async () => {
+    if (!playerId) return;
+
+    try {
+      setVisitedLoading(true);
+      const apiData = await socialService.getPublicProfile(playerId);
+      const transformTarget = { ...(apiData || {}) };
+
+      if (!transformTarget.selectedBadge) {
+        transformTarget.selectedBadge = transformTarget.latestAchievement || null;
+      }
+
+      setVisitedPlayerData(playerService.transformPlayerData(transformTarget));
+    } catch (error) {
+      console.error('Failed to load visited player badges:', error);
+      setVisitedPlayerData({ badges: [], potions: [] });
+    } finally {
+      setVisitedLoading(false);
+    }
+  }, [playerId, socialService]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (isVisitMode) {
+        loadVisitedProfile();
+      }
+    }, [isVisitMode, loadVisitedProfile])
+  );
 
   const getRandomPastelGradient = (index) => {
     const pastelGradients = [
@@ -52,6 +91,11 @@ export default function BadgesView() {
 
   const handleBadgeApplied = async (badge) => {
     console.log(`🎖️ Badge "${badge.name}" was applied, refreshing profile...`);
+    if (isVisitMode) {
+      await loadVisitedProfile();
+      return;
+    }
+
     await loadPlayerProfile();
   };
 

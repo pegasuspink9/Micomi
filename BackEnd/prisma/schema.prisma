@@ -131,13 +131,13 @@ model Player {
   google_id          String?             @unique
   facebook_id        String?             @unique
   player_avatar      String?
+  following          Follow[]            @relation("FollowFollower")
+  followers          Follow[]            @relation("FollowFollowing")
   playerAchievements PlayerAchievement[]
   ownedCharacters    PlayerCharacter[]
   ownedPotions       PlayerPotion[]
   playerProgress     PlayerProgress[]
   playerQuests       PlayerQuest[]
-  followers          Follow[]            @relation("FollowFollowing")
-  following          Follow[]            @relation("FollowFollower")
 
   @@index([email])
   @@index([total_points])
@@ -430,4 +430,3 @@ enum BattleStatus {
   won
   lost
 }
-

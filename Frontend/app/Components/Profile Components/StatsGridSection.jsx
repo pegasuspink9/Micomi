@@ -5,65 +5,79 @@ import { gameScale } from '../Responsiveness/gameResponsive';
 import StatCard from './StatCard';
 import ProfileHeroSprite from './ProfileHeroSprite';
 
-const StatsGridSection = ({ coins, currentStreak, expPoints, mapsOpened, statsIcons, hero, background }) => {
+const StatsGridSection = ({
+  coins,
+  currentStreak,
+  expPoints,
+  mapsOpened,
+  statsIcons,
+  hero,
+  background,
+  disableHeroPress = false,
+}) => {
   const router = useRouter();
   
   const handleHeroPress = () => {
     router.push('/Components/CharacterSelection/CharacterSelect');
   };
 
+  const overviewContent = (
+    <View style={styles.overviewBorderOuter}>
+      <View style={styles.overviewBorderMiddle}>
+        <ImageBackground 
+          source={{ uri: background }} 
+          style={styles.overviewContainer}
+        >
+          <View style={styles.statColumn}>
+            <StatCard 
+              icon={require('../icons/coins.png')}
+              label="Coins" 
+              value={coins.toLocaleString()}
+            />
+            <StatCard 
+              icon={require('../icons/fire.png')}
+              label="Streak" 
+              value={currentStreak}
+            />
+          </View>
+
+
+          <View style={styles.heroColumn}>
+            <View style={styles.heroInfo}>
+              <Text style={styles.heroLabel}>Selected Hero</Text>
+              <Text style={styles.heroName}>{hero.name}</Text>
+            </View>
+            <ProfileHeroSprite hero={hero} />
+          </View>
+
+          <View style={styles.statColumn}>
+            <StatCard 
+              icon={require('../icons/exp.png')} 
+              label="EXP Points" 
+              value={expPoints.toLocaleString()}
+            />
+            <StatCard 
+              icon={require('../icons/map.png')} 
+              label="Maps" 
+              value={mapsOpened}
+            />
+          </View>
+        </ImageBackground>
+      </View>
+    </View>
+  );
+
   return (
     <View style={styles.statsSection}>
       <Text style={[styles.sectionTitle, { textAlign: 'center' }]}>Overview</Text>
-      
-      <TouchableOpacity 
-        onPress={handleHeroPress}
-        activeOpacity={0.8}
-      >
-        <View style={styles.overviewBorderOuter}>
-          <View style={styles.overviewBorderMiddle}>
-            <ImageBackground 
-              source={{ uri: background }} 
-              style={styles.overviewContainer}
-            >
-              <View style={styles.statColumn}>
-               <StatCard 
-                  icon={require('../icons/coins.png')}
-                  label="Coins" 
-                  value={coins.toLocaleString()}
-                />
-                <StatCard 
-                  icon={require('../icons/fire.png')}
-                  label="Streak" 
-                  value={currentStreak}
-                />
-              </View>
 
-
-              <View style={styles.heroColumn}>
-                <View style={styles.heroInfo}>
-                  <Text style={styles.heroLabel}>Selected Hero</Text>
-                  <Text style={styles.heroName}>{hero.name}</Text>
-                </View>
-                <ProfileHeroSprite hero={hero} />
-              </View>
-
-               <View style={styles.statColumn}>
-                <StatCard 
-                  icon={require('../icons/exp.png')} 
-                  label="EXP Points" 
-                  value={expPoints.toLocaleString()}
-                />
-                <StatCard 
-                  icon={require('../icons/map.png')} 
-                  label="Maps" 
-                  value={mapsOpened}
-                />
-              </View>
-            </ImageBackground> 
-          </View>
-        </View>
-      </TouchableOpacity>
+      {disableHeroPress ? (
+        overviewContent
+      ) : (
+        <TouchableOpacity onPress={handleHeroPress} activeOpacity={0.8}>
+          {overviewContent}
+        </TouchableOpacity>
+      )}
     </View>
   );
 };

@@ -7,7 +7,7 @@ import InventoryTabButton from './InventoryTabButton';
 import BadgeCard from './BadgeCard';
 import PotionCard from './PotionCard';
 
-const InventorySection = ({ activeTab, setActiveTab, badges, potions }) => {
+const InventorySection = ({ activeTab, setActiveTab, badges, potions, viewPlayerId }) => {
   const router = useRouter();
   
   // UPDATED: Sort badges - earned first, then unearned
@@ -25,9 +25,15 @@ const InventorySection = ({ activeTab, setActiveTab, badges, potions }) => {
 
   const handleViewAll = () => {
     if (activeTab === 'Badges') {
-      router.push('/Components/User Labs/BadgesView');
+      router.push({
+        pathname: '/Components/User Labs/BadgesView',
+        params: viewPlayerId ? { playerId: String(viewPlayerId) } : undefined,
+      });
     } else {
-      router.push('/Components/User Labs/PotionsView');
+      router.push({
+        pathname: '/Components/User Labs/PotionsView',
+        params: viewPlayerId ? { playerId: String(viewPlayerId) } : undefined,
+      });
     }
   };
 

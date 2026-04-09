@@ -12,13 +12,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { gameScale } from '../Components/Responsiveness/gameResponsive';
-import { socialService } from '../services/socialService';
+import { useSocialHook } from '../hooks/useSocialHook';
 
 const DEFAULT_AVATAR =
   'https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif';
 
 export default function SocialConnectionsScreen() {
   const router = useRouter();
+  const socialService = useSocialHook();
   const [activeTab, setActiveTab] = useState('following');
   const [following, setFollowing] = useState([]);
   const [followers, setFollowers] = useState([]);
