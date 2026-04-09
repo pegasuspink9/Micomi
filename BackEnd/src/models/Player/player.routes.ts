@@ -15,14 +15,14 @@ router.get(
   "/profile",
   authenticate,
   requirePlayer,
-  PlayerController.getPlayerProfile
+  PlayerController.getPlayerProfile,
 );
 
 router.put(
   "/profile",
   authenticate,
   requirePlayer,
-  PlayerController.updatePlayerProfile
+  PlayerController.updatePlayerProfile,
 );
 
 router.get("/", PlayerController.getPlayers);

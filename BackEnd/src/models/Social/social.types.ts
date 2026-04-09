@@ -6,7 +6,8 @@ export interface SocialProfileResponse {
   current_streak: number;
   exp_points: number;
   player_level: number;
-  friends_count: number;
+  followers_count: number;
+  following_count: number;
   max_level_exp: number;
   ownedCharacters: any[];
   selectedBadge: any;
@@ -15,10 +16,5 @@ export interface SocialProfileResponse {
   totalActiveMaps: number;
   mapsPlayed: string[];
 
-  relation_status:
-    | "self"
-    | "friend"
-    | "outgoing_pending"
-    | "incoming_pending"
-    | "none";
+  relation_status: "self" | "following" | "followed_by" | "mutual" | "none";
 }

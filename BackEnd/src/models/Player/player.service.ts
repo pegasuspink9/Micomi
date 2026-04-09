@@ -219,20 +219,17 @@ export const getPlayerProfile = async (player_id: number) => {
 
   await checkAchievements(player_id);
 
-  const friendCount = await (prisma as any).friend.count({
+  const followersCount = await (prisma as any).follow.count({
     where: {
-      OR: [{ player_one_id: player_id }, { player_two_id: player_id }],
+      following_id: player_id,
     },
   });
 
-  const incomingFriendRequestCount = await (prisma as any).friendRequest.count({
+  const followingCount = await (prisma as any).follow.count({
     where: {
-      receiver_id: player_id,
-      status: "pending",
+      follower_id: player_id,
     },
   });
-
-  const followerCount = friendCount + incomingFriendRequestCount;
 
   const questsData = await getAllPlayerQuests(player_id);
 
@@ -332,8 +329,8 @@ export const getPlayerProfile = async (player_id: number) => {
     current_streak: player.current_streak,
     exp_points: player.exp_points,
     player_level: calculatedLevel,
-    friends_count: friendCount,
-    follower_count: followerCount,
+    followers_count: followersCount,
+    following_count: followingCount,
     max_level_exp: maxLevelExp,
     ownedCharacters: player.ownedCharacters,
     ownedPotions: player.ownedPotions,
