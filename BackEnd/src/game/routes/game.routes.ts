@@ -7,6 +7,7 @@ import * as MapController from "../Maps/maps.controller";
 import * as LeaderboardController from "../Leaderboard/leaderboard.controller";
 import * as ModelShopService from "../../models/Shop/shop.service";
 import * as LessonsController from "../Lessons/lesson.controller";
+import * as PvPDailyController from "../PvP/pvpDaily.controller";
 import {
   authenticate,
   requirePlayer,
@@ -19,25 +20,25 @@ router.get(
   "/entryLevel/:levelId/preview",
   authenticate,
   requirePlayer,
-  LevelController.previewLevelController
+  LevelController.previewLevelController,
 );
 router.post(
   "/entryLevel/:levelId",
   authenticate,
   requirePlayer,
-  LevelController.enterLevelController
+  LevelController.enterLevelController,
 );
 router.post(
   "/lesson/:levelId/:lessonId/next",
   authenticate,
   requirePlayer,
-  LessonsController.getNextLesson //next page
+  LessonsController.getNextLesson, //next page
 );
 router.post(
   "/lesson/:levelId/:lessonId/previous",
   authenticate,
   requirePlayer,
-  LessonsController.getPreviousLesson //previous page
+  LessonsController.getPreviousLesson, //previous page
 );
 
 //Challenge route
@@ -45,7 +46,7 @@ router.post(
   "/submit-challenge/:levelId/:challengeId",
   authenticate,
   requirePlayer,
-  ChallengeController.submitChallenge
+  ChallengeController.submitChallenge,
 );
 
 //Shop routes
@@ -53,25 +54,25 @@ router.get(
   "/player-characters",
   authenticate,
   requirePlayer,
-  ModelShopService.getAllPlayerCharacter
+  ModelShopService.getAllPlayerCharacter,
 );
 router.post(
   "/buy-character/:characterShopId",
   authenticate,
   requirePlayer,
-  ShopController.buyCharacter
+  ShopController.buyCharacter,
 );
 router.get(
   "/potion",
   authenticate,
   requirePlayer,
-  ModelShopService.getAllPlayerPotions
+  ModelShopService.getAllPlayerPotions,
 );
 router.post(
   "/submit-challenge/:levelId/:challengeId/use-potion",
   authenticate,
   requirePlayer,
-  ShopController.usePotion
+  ShopController.usePotion,
 );
 
 //Achievement routes
@@ -80,13 +81,13 @@ router.get(
   "/player-achievement",
   authenticate,
   requirePlayer,
-  AchievementController.getPlayerAchievements
+  AchievementController.getPlayerAchievements,
 );
 router.post(
   "/select-badge/:achievementId",
   authenticate,
   requirePlayer,
-  AchievementController.selectBadge
+  AchievementController.selectBadge,
 ); //badge selection
 
 //Leaderboard routes
@@ -94,13 +95,51 @@ router.get(
   "/leaderboard",
   authenticate,
   requirePlayer,
-  LeaderboardController.getLeaderboard
+  LeaderboardController.getLeaderboard,
 );
 router.get(
   "/player-rank",
   authenticate,
   requirePlayer,
-  LeaderboardController.getPlayerRank
+  LeaderboardController.getPlayerRank,
+);
+
+// Daily PvP routes
+router.get(
+  "/pvp/daily/preview",
+  authenticate,
+  requirePlayer,
+  PvPDailyController.getDailyPreview,
+);
+router.post(
+  "/pvp/daily/play",
+  authenticate,
+  requirePlayer,
+  PvPDailyController.playDailyPvp,
+);
+router.get(
+  "/pvp/daily/status",
+  authenticate,
+  requirePlayer,
+  PvPDailyController.getMatchmakingStatus,
+);
+router.post(
+  "/pvp/daily/cancel",
+  authenticate,
+  requirePlayer,
+  PvPDailyController.cancelMatchmaking,
+);
+router.get(
+  "/pvp/daily/match/:matchId",
+  authenticate,
+  requirePlayer,
+  PvPDailyController.getMatchState,
+);
+router.post(
+  "/pvp/daily/match/:matchId/answer",
+  authenticate,
+  requirePlayer,
+  PvPDailyController.submitAnswer,
 );
 
 export default router;
