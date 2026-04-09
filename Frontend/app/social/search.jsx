@@ -180,7 +180,7 @@ export default function SocialSearchScreen() {
     }
 
     return {
-      text: 'Add friend',
+      text: 'Follow',
       style: styles.addButton,
     };
   };

@@ -82,10 +82,6 @@ export default function SocialConnectionsScreen() {
     [router]
   );
 
-  const headerTitle = isVisitMode
-    ? `${visitUsername || 'Player'} Friends`
-    : 'Friends';
-
   const renderItem = ({ item }) => {
     const avatarSource = { uri: item.playerAvatar || DEFAULT_AVATAR };
 
@@ -125,7 +121,20 @@ export default function SocialConnectionsScreen() {
             <Ionicons name="arrow-back" size={gameScale(20)} color="#fff" />
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>{headerTitle}</Text>
+          <View style={styles.headerTitleContainer}>
+            {isVisitMode ? (
+              <Text 
+                style={[styles.headerTitle, styles.visitUsername]} 
+                numberOfLines={1} 
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+              >
+                {visitUsername || 'Player'}'s Friends
+              </Text>
+            ) : (
+              <Text style={styles.headerTitle} numberOfLines={1} adjustsFontSizeToFit>Friends</Text>
+            )}
+          </View>
 
           <TouchableOpacity
             style={styles.iconButton}
@@ -232,6 +241,16 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: 'Grobold',
     fontSize: gameScale(26),
+  },
+  headerTitleContainer: {
+    flex: 1,
+    paddingHorizontal: gameScale(8),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  visitUsername: {
+    fontFamily: 'DynaPuff',
+    fontSize: gameScale(22),
   },
   tabContainer: {
     flexDirection: 'row',

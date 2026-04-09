@@ -140,7 +140,7 @@ export default function PublicPlayerProfileScreen() {
       ? { label: 'Unfollow', style: styles.unfollowButton }
       : relationStatus === 'follower_only'
       ? { label: 'Follow back', style: styles.followBackButton }
-      : { label: 'Add friend', style: styles.addButton };
+      : { label: 'Follow', style: styles.addButton };
 
   if (loading || !playerData) {
     return (
