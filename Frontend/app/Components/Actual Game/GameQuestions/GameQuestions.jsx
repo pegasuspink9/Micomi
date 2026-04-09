@@ -22,7 +22,11 @@ const GameQuestions = ({
 }) => {
   const scrollViewRef = useRef(null);
   const blankRefs = useRef({});
+  const computerQuestionTemplateRef = useRef({});
   const options = currentQuestion?.options || [];
+
+  const isComputerMap = currentQuestion?.map_name === 'Computer' || 
+                        currentQuestion?.question_type?.toLowerCase() === 'computer';
 
   const correctAnswersList = submissionResult?.correctAnswer || currentQuestion?.correctAnswer;
 
@@ -64,9 +68,33 @@ const GameQuestions = ({
     return result;
   };
 
-  const displayQuestion = useMemo(() => isAnswerCorrect 
-    ? getFilledQuestion(currentQuestion?.question, currentQuestion?.correctAnswer) 
-    : currentQuestion?.question, [isAnswerCorrect, currentQuestion?.question, currentQuestion?.correctAnswer, getFilledQuestion]);
+  useEffect(() => {
+    if (!isComputerMap || !currentQuestion?.id || typeof currentQuestion?.question !== 'string') {
+      return;
+    }
+
+    // Persist the original blank template so Computer mode never flattens into plain text.
+    if (currentQuestion.question.includes('_')) {
+      computerQuestionTemplateRef.current[currentQuestion.id] = currentQuestion.question;
+    }
+  }, [isComputerMap, currentQuestion?.id, currentQuestion?.question]);
+
+  const displayQuestion = useMemo(() => {
+    if (isComputerMap) {
+      return computerQuestionTemplateRef.current[currentQuestion?.id] || currentQuestion?.question;
+    }
+
+    return isAnswerCorrect
+      ? getFilledQuestion(currentQuestion?.question, currentQuestion?.correctAnswer)
+      : currentQuestion?.question;
+  }, [
+    isComputerMap,
+    isAnswerCorrect,
+    currentQuestion?.id,
+    currentQuestion?.question,
+    currentQuestion?.correctAnswer,
+    getFilledQuestion,
+  ]);
 
   useEffect(() => {
     if (!currentQuestion) return;
@@ -86,9 +114,6 @@ const GameQuestions = ({
       onTabChange(tabName);
     }
   }, [onTabChange]);
-
-  const isComputerMap = currentQuestion?.map_name === 'Computer' || 
-                        currentQuestion?.question_type?.toLowerCase() === 'computer';
 
 const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
   if (!line || typeof line !== 'string') {
@@ -119,17 +144,21 @@ const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
               let isWrong = false;
               let isCorrectBlank = false;
               
-              if (canProceed && isAnswerCorrect === false) {
+              if ((canProceed && isAnswerCorrect === false) || (isAnswerCorrect && isComputerMap)) {
                 const selectedValueIndex = selectedAnswers[globalBlankIndex];
                 const selectedValue = selectedValueIndex != null ? options[selectedValueIndex] : null;
                 const correctValue = correctAnswersList?.[globalBlankIndex];
                 
-                if (selectedValue !== correctValue) {
+                if (selectedValue !== correctValue && !isAnswerCorrect) {
                   isWrong = true;
-                } else if (selectedValue != null) {
+                } else if (selectedValue != null || isAnswerCorrect) {
                   isCorrectBlank = true;
                 }
               }
+
+              const valueToDisplay = isAnswerCorrect 
+                ? correctAnswersList?.[globalBlankIndex] 
+                : (selectedAnswers?.[globalBlankIndex] != null ? options?.[selectedAnswers[globalBlankIndex]] : '_');
 
               return (
                 <Pressable 
@@ -157,9 +186,7 @@ const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
                     adjustsFontSizeToFit={true} // Shrinks text instead of wrapping!
                     minimumFontScale={0.4}
                   >
-                    {selectedAnswers?.[globalBlankIndex] != null
-                      ? options?.[selectedAnswers[globalBlankIndex]] || '_'
-                      : '_'}
+                    {valueToDisplay}
                   </Text>
                 </Pressable>
               );

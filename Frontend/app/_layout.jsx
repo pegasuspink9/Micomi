@@ -21,7 +21,6 @@ export default function RootLayout() {
   useEffect(() => {
     if (Platform.OS !== 'android') return;
 
-    // Listen for keyboard events to prevent status bar flicker while typing
     const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
       isKeyboardVisible.current = true;
     });

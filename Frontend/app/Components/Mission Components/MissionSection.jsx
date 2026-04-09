@@ -94,105 +94,113 @@ const MissionSection = () => {
 
   return (
     <View style={styles.container}>
-      {/* Landscape Cover Image with Summary overlaid */}
-      <View style={styles.coverContainer}>
-        <ImageBackground
-          source={require('./Mission Image/Mission.jpeg')}
-          style={styles.coverBackground}
-          resizeMode="cover"
-        >
-          <LinearGradient
-            colors={['rgba(0, 0, 0, 0.1)', 'transparent', 'rgba(0, 0, 0, 0.6)']}
-            style={styles.coverOverlay}
-          />
-          
-          {/* Mission Title on Cover */}
-          <View style={styles.coverContent}>
-            <Text style={styles.coverTitle}>Missions</Text>
-            <Text style={styles.coverSubtitle}>Complete quests to earn rewards!</Text>
-          </View>
+      <View style={styles.sectionPadding}>
+        <View style={styles.panelOuter}>
+          <View style={styles.panelMiddle}>
+            <View style={styles.panelInner}>
+              {/* Landscape Cover Image with Summary overlaid */}
+              <View style={styles.coverContainer}>
+                <ImageBackground
+                  source={require('./Mission Image/Mission.jpeg')}
+                  style={styles.coverBackground}
+                  resizeMode="cover"
+                >
+                  <LinearGradient
+                    colors={['rgba(0, 0, 0, 0.1)', 'transparent', 'rgba(0, 0, 0, 0.6)']}
+                    style={styles.coverOverlay}
+                  />
+                  
+                  {/* Mission Title on Cover */}
+                  <View style={styles.coverContent}>
+                    <Text style={styles.coverTitle}>Missions</Text>
+                    <Text style={styles.coverSubtitle}>Complete quests to earn rewards!</Text>
+                  </View>
 
-          {/* Summary Header - Positioned at bottom of cover */}
-           <View style={styles.summaryWrapper}>
-            <View style={styles.summaryContainer}>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryNumber}>{summary.totalActive || 0}</Text>
-                <Text style={styles.summaryLabel}>Active</Text>
+                  {/* Summary Header - Positioned at bottom of cover */}
+                  <View style={styles.summaryWrapper}>
+                    <View style={styles.summaryContainer}>
+                      <View style={styles.summaryItem}>
+                        <Text style={styles.summaryNumber}>{summary.totalActive || 0}</Text>
+                        <Text style={styles.summaryLabel}>Active</Text>
+                      </View>
+                      <View style={styles.summaryDivider} />
+                      <View style={styles.summaryItem}>
+                        <Text style={styles.summaryNumber}>{summary.totalCompleted || 0}</Text>
+                        <Text style={styles.summaryLabel}>Completed</Text>
+                      </View>
+                      <View style={styles.summaryDivider} />
+                      <View style={styles.summaryItem}>
+                        <Text style={styles.summaryNumber}>{summary.totalClaimed || 0}</Text>
+                        <Text style={styles.summaryLabel}>Claimed</Text>
+                      </View>
+                    </View>
+                  </View>
+                </ImageBackground>
               </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryNumber}>{summary.totalCompleted || 0}</Text>
-                <Text style={styles.summaryLabel}>Completed</Text>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryNumber}>{summary.totalClaimed || 0}</Text>
-                <Text style={styles.summaryLabel}>Claimed</Text>
-              </View>
+
+              {/* Main Content with LinearGradient Background */}
+              <LinearGradient
+                colors={['#0a192f', '#172b4a', '#0a192f']}
+                style={styles.contentContainer}
+              >
+                {/* Tabs */}
+                <View style={styles.tabsContainer}>
+                  <MissionTabButton 
+                    label="Daily" 
+                    count={summary.dailyCount || 0}
+                    isActive={activeTab === 'Daily'} 
+                    onPress={() => setActiveTab('Daily')}
+                  />
+                  <MissionTabButton 
+                    label="Weekly" 
+                    count={summary.weeklyCount || 0}
+                    isActive={activeTab === 'Weekly'} 
+                    onPress={() => setActiveTab('Weekly')}
+                  />
+                  <MissionTabButton 
+                    label="Monthly" 
+                    count={summary.monthlyCount || 0}
+                    isActive={activeTab === 'Monthly'} 
+                    onPress={() => setActiveTab('Monthly')}
+                  />
+                </View>
+
+                {/* Quest List */}
+                <ScrollView 
+                  style={styles.questsScrollView}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.questsContent}
+                  removeClippedSubviews={true}
+                  scrollEventThrottle={20}
+                  decelerationRate="fast"
+                  overScrollMode="never"
+                  bounces={false}
+                  nestedScrollEnabled={true}
+                >
+                  {activeQuests.length === 0 ? (
+                    <View style={styles.emptyContainer}>
+                      <Text style={styles.emptyText}>No {activeTab.toLowerCase()} quests available</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.questsGrid}>
+                      {activeQuests.map((quest, index) => (
+                        <QuestCard
+                          key={quest.player_quest_id || index}
+                          quest={quest}
+                          onClaim={handleClaimReward}
+                          claiming={claiming && claimingQuestId === quest.player_quest_id}
+                        />
+                      ))}
+                    </View>
+                  )}
+                  
+                  <View />
+                </ScrollView>
+              </LinearGradient>
             </View>
           </View>
-        </ImageBackground>
-      </View>
-
-      {/* Main Content with LinearGradient Background */}
-      <LinearGradient
-        colors={['#0a192f', '#172b4a', '#0a192f']}
-        style={styles.contentContainer}
-      >
-        {/* Tabs */}
-        <View style={styles.tabsContainer}>
-          <MissionTabButton 
-            label="Daily" 
-            count={summary.dailyCount || 0}
-            isActive={activeTab === 'Daily'} 
-            onPress={() => setActiveTab('Daily')}
-          />
-          <MissionTabButton 
-            label="Weekly" 
-            count={summary.weeklyCount || 0}
-            isActive={activeTab === 'Weekly'} 
-            onPress={() => setActiveTab('Weekly')}
-          />
-          <MissionTabButton 
-            label="Monthly" 
-            count={summary.monthlyCount || 0}
-            isActive={activeTab === 'Monthly'} 
-            onPress={() => setActiveTab('Monthly')}
-          />
         </View>
-
-        {/* Quest List */}
-        <ScrollView 
-          style={styles.questsScrollView}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.questsContent}
-          removeClippedSubviews={true}
-          scrollEventThrottle={20}
-          decelerationRate="fast"
-          overScrollMode="never"
-          bounces={false}
-          nestedScrollEnabled={true}
-        >
-          {activeQuests.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No {activeTab.toLowerCase()} quests available</Text>
-            </View>
-          ) : (
-            <View style={styles.questsGrid}>
-              {activeQuests.map((quest, index) => (
-                <QuestCard
-                  key={quest.player_quest_id || index}
-                  quest={quest}
-                  onClaim={handleClaimReward}
-                  claiming={claiming && claimingQuestId === quest.player_quest_id}
-                />
-              ))}
-            </View>
-          )}
-          
-          <View/>
-        </ScrollView>
-      </LinearGradient>
+      </View>
 
       {/* Reward Modal - Add this at the end */}
       <RewardModal
@@ -207,6 +215,48 @@ const MissionSection = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#0a192f',
+  },
+  sectionPadding: {
+    flex: 1,
+    paddingHorizontal: gameScale(5),
+    paddingVertical: gameScale(20),
+  },
+  panelOuter: {
+    flex: 1,
+    borderRadius: gameScale(16),
+    borderWidth: gameScale(1),
+    borderTopColor: '#0d1f33',
+    borderLeftColor: '#0d1f33',
+    borderBottomColor: '#2d5a87',
+    borderRightColor: '#2d5a87',
+    backgroundColor: '#1e3a5f',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: gameScale(4) },
+    shadowOpacity: 0.35,
+    shadowRadius: gameScale(6),
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  panelMiddle: {
+    flex: 1,
+    borderRadius: gameScale(14),
+    borderWidth: gameScale(1),
+    borderTopColor: '#4a90d9',
+    borderLeftColor: '#4a90d9',
+    borderBottomColor: '#0a1929',
+    borderRightColor: '#0a1929',
+    backgroundColor: '#152d4a',
+    padding: gameScale(1),
+    overflow: 'hidden',
+  },
+  panelInner: {
+    flex: 1,
+    borderRadius: gameScale(12),
+    borderWidth: gameScale(1),
+    borderColor: 'rgba(74, 144, 217, 0.35)',
+    backgroundColor: '#0f2742',
+    overflow: 'hidden',
   },
   loadingContainer: {
     flex: 1,
@@ -261,7 +311,7 @@ const styles = StyleSheet.create({
   },
   coverContent: {
     position: 'absolute',
-    top: gameScale(15),
+    top: gameScale(25),
     left: gameScale(15),
   },
   coverTitle: {
@@ -326,20 +376,22 @@ const styles = StyleSheet.create({
   // Main Content Container
   contentContainer: {
     flex: 1,
-    paddingHorizontal: gameScale(10),
+    paddingHorizontal: gameScale(8),
+    paddingBottom: gameScale(8),
   },
   tabsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: gameScale(15),
-    marginBottom: gameScale(15),
+    marginTop: gameScale(12),
+    marginBottom: gameScale(12),
     gap: gameScale(8),
   },
   questsScrollView: {
     flex: 1,
   },
   questsContent: {
-    paddingBottom: gameScale(20),
+    paddingHorizontal: gameScale(2),
+    paddingBottom: gameScale(16),
   },
   questsGrid: {
     gap: gameScale(12),

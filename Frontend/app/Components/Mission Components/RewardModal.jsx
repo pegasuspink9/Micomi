@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Animated, Easing } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Animated, Easing, Image } from 'react-native';
 import { gameScale } from '../Responsiveness/gameResponsive';
 
 export const RewardModal = ({ visible, onClose, rewards }) => {
@@ -71,7 +71,11 @@ export const RewardModal = ({ visible, onClose, rewards }) => {
               <View style={modalStyles.rewardsContainer}>
                 <View style={modalStyles.rewardItem}>
                   <View style={modalStyles.iconContainer}>
-                    <Text style={modalStyles.rewardIcon}>⭐</Text>
+                    <Image
+                      source={require('../icons/points.png')}
+                      style={modalStyles.rewardIconImage}
+                      resizeMode="contain"
+                    />
                   </View>
                   <Text style={modalStyles.rewardLabel}>EXP</Text>
                   <Text style={modalStyles.rewardValue}>+{rewards?.exp || 0}</Text>
@@ -81,7 +85,11 @@ export const RewardModal = ({ visible, onClose, rewards }) => {
 
                 <View style={modalStyles.rewardItem}>
                   <View style={modalStyles.iconContainer}>
-                    <Text style={modalStyles.rewardIcon}>🪙</Text>
+                    <Image
+                      source={require('../icons/coins.png')}
+                      style={modalStyles.rewardIconImage}
+                      resizeMode="contain"
+                    />
                   </View>
                   <Text style={modalStyles.rewardLabel}>COINS</Text>
                   <Text style={modalStyles.rewardValue}>+{rewards?.coins || 0}</Text>
@@ -152,6 +160,10 @@ const modalStyles = StyleSheet.create({
   },
   rewardIcon: {
     fontSize: gameScale(35),
+  },
+  rewardIconImage: {
+    width: gameScale(54),
+    height: gameScale(54),
   },
   rewardLabel: {
     color: 'rgba(255,255,255,0.7)',

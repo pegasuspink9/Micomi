@@ -158,7 +158,7 @@ const AttributePanel = forwardRef(({
           { transform: [{ translateX: cardsSlideAnim }], opacity: cardsFadeAnim, zIndex: 10 }
         ]}
       >
-        {cardsData && cardsData.slice(0, 4).map((card, index) => ( 
+        {cardsData && [...cardsData].reverse().slice(0, 4).map((card, index) => ( 
           <SkillCard 
             key={`card-${index}`}
             card={card}

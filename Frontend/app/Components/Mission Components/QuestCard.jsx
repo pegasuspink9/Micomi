@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { gameScale } from '../Responsiveness/gameResponsive';
 import { questService } from '../../services/questService';
@@ -196,12 +196,20 @@ const QuestCard = ({ quest, onClaim, claiming = false }) => {
                   <Text style={styles.rewardTitle}>Rewards</Text>
                   <View style={styles.rewardRow}>
                     <View style={styles.rewardItem}>
-                      <Text style={styles.rewardIcon}>⭐</Text>
+                      <Image
+                        source={require('../icons/points.png')}
+                        style={styles.rewardIconImage}
+                        resizeMode="contain"
+                      />
                       <Text style={styles.rewardValue}>{reward_exp}</Text>
                     </View>
                     <View style={[styles.rewardDivider, { backgroundColor: borderColors.middleBorderTop }]} />
                     <View style={styles.rewardItem}>
-                      <Text style={styles.rewardIcon}>🪙</Text>
+                      <Image
+                        source={require('../icons/coins.png')}
+                        style={styles.rewardIconImage}
+                        resizeMode="contain"
+                      />
                       <Text style={styles.rewardValue}>{reward_coins}</Text>
                     </View>
                   </View>
@@ -359,6 +367,10 @@ const styles = StyleSheet.create({
   },
   rewardIcon: {
     fontSize: gameScale(12),
+  },
+  rewardIconImage: {
+    width: gameScale(18),
+    height: gameScale(18),
   },
   rewardValue: {
     color: '#FFD700',

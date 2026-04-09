@@ -42,7 +42,7 @@ export default function MapLandingPage() {
     }, {})
   ).current;
    
-  const handleGradientChange = (mapName) => {
+  const handleGradientChange = useCallback((mapName) => {
     if (mapName === currentMapName) return;
     
     const animations = BACKGROUND_KEYS.map((key) => {
@@ -55,7 +55,7 @@ export default function MapLandingPage() {
     
     Animated.parallel(animations).start();
     setCurrentMapName(mapName);
-  };
+  }, [currentMapName, fadeAnims]);
 
   return (
     <View style={styles.container}>
