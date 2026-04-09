@@ -1,97 +1,52 @@
 import { PrismaClient } from "@prisma/client";
-import { SocialProfileResponse } from "./social.types";
 import { getPlayerProfile } from "../Player/player.service";
+import { SocialProfileResponse } from "./social.types";
 
 const prisma = new PrismaClient() as any;
 
-const normalizeFriendPair = (firstPlayerId: number, secondPlayerId: number) => {
-  return firstPlayerId < secondPlayerId
-    ? [firstPlayerId, secondPlayerId]
-    : [secondPlayerId, firstPlayerId];
-};
+const normalizeFollowPair = (followerId: number, followingId: number) => ({
+  follower_id: followerId,
+  following_id: followingId,
+});
 
-const getFriendCount = async (playerId: number) => {
-  return prisma.friend.count({
-    where: {
-      OR: [{ player_one_id: playerId }, { player_two_id: playerId }],
-    },
+const getFollowersCount = async (playerId: number) => {
+  return prisma.follow.count({
+    where: { following_id: playerId },
   });
 };
 
-export const sendFriendRequest = async (senderId: number, playerId: number) => {
-  if (senderId === playerId) {
-    throw new Error("You cannot send a friend request to yourself.");
-  }
+const getFollowingCount = async (playerId: number) => {
+  return prisma.follow.count({
+    where: { follower_id: playerId },
+  });
+};
 
-  const receiver = await prisma.player.findUnique({
+const ensurePlayerExists = async (playerId: number) => {
+  const player = await prisma.player.findUnique({
     where: { player_id: playerId },
     select: { player_id: true },
   });
 
-  if (!receiver) {
+  if (!player) {
     throw new Error("Target player not found.");
   }
+};
 
-  const [playerOneId, playerTwoId] = normalizeFriendPair(senderId, playerId);
-  const existingFriendship = await prisma.friend.findUnique({
+const createFollow = async (followerId: number, followingId: number) => {
+  if (followerId === followingId) {
+    throw new Error("You cannot follow yourself.");
+  }
+
+  await ensurePlayerExists(followingId);
+
+  return prisma.follow.upsert({
     where: {
-      player_one_id_player_two_id: {
-        player_one_id: playerOneId,
-        player_two_id: playerTwoId,
-      },
+      follower_id_following_id: normalizeFollowPair(followerId, followingId),
     },
-  });
-
-  if (existingFriendship) {
-    throw new Error("You are already friends with this player.");
-  }
-
-  const [existingDirect, existingReverse] = await Promise.all([
-    prisma.friendRequest.findUnique({
-      where: {
-        sender_id_receiver_id: {
-          sender_id: senderId,
-          receiver_id: playerId,
-        },
-      },
-    }),
-    prisma.friendRequest.findUnique({
-      where: {
-        sender_id_receiver_id: {
-          sender_id: playerId,
-          receiver_id: senderId,
-        },
-      },
-    }),
-  ]);
-
-  if (existingDirect?.status === "pending") {
-    throw new Error("Friend request already sent.");
-  }
-
-  if (existingReverse?.status === "pending") {
-    throw new Error("This player has already sent you a friend request.");
-  }
-
-  return prisma.friendRequest.upsert({
-    where: {
-      sender_id_receiver_id: {
-        sender_id: senderId,
-        receiver_id: playerId,
-      },
-    },
-    create: {
-      sender_id: senderId,
-      receiver_id: playerId,
-      status: "pending",
-    },
-    update: {
-      status: "pending",
-      responded_at: null,
-      created_at: new Date(),
-    },
+    create: normalizeFollowPair(followerId, followingId),
+    update: {},
     include: {
-      sender: {
+      follower: {
         select: {
           player_id: true,
           username: true,
@@ -99,7 +54,7 @@ export const sendFriendRequest = async (senderId: number, playerId: number) => {
           player_avatar: true,
         },
       },
-      receiver: {
+      following: {
         select: {
           player_id: true,
           username: true,
@@ -111,117 +66,60 @@ export const sendFriendRequest = async (senderId: number, playerId: number) => {
   });
 };
 
-export const acceptFriendRequest = async (
-  requestId: number,
-  playerId: number,
+export const followPlayer = async (followerId: number, followingId: number) => {
+  return createFollow(followerId, followingId);
+};
+
+export const followBackPlayer = async (
+  followerId: number,
+  targetPlayerId: number,
 ) => {
-  const request = await prisma.friendRequest.findFirst({
+  const incomingFollow = await prisma.follow.findFirst({
     where: {
-      friend_request_id: requestId,
-      receiver_id: playerId,
-      status: "pending",
+      follower_id: targetPlayerId,
+      following_id: followerId,
     },
   });
 
-  if (!request) {
-    throw new Error("Friend request not found or already handled.");
+  if (!incomingFollow) {
+    throw new Error("This player is not following you yet.");
   }
 
-  const [playerOneId, playerTwoId] = normalizeFriendPair(
-    request.sender_id,
-    request.receiver_id,
-  );
-
-  return prisma.$transaction(async (tx: any) => {
-    const updatedRequest = await tx.friendRequest.update({
-      where: { friend_request_id: requestId },
-      data: {
-        status: "accepted",
-        responded_at: new Date(),
-      },
-    });
-
-    await tx.friend.upsert({
-      where: {
-        player_one_id_player_two_id: {
-          player_one_id: playerOneId,
-          player_two_id: playerTwoId,
-        },
-      },
-      create: {
-        player_one_id: playerOneId,
-        player_two_id: playerTwoId,
-      },
-      update: {},
-    });
-
-    return updatedRequest;
-  });
+  return createFollow(followerId, targetPlayerId);
 };
 
-export const declineFriendRequest = async (
-  requestId: number,
-  playerId: number,
+export const unfollowPlayer = async (
+  followerId: number,
+  followingId: number,
 ) => {
-  const request = await prisma.friendRequest.findFirst({
+  const follow = await prisma.follow.findUnique({
     where: {
-      friend_request_id: requestId,
-      receiver_id: playerId,
-      status: "pending",
+      follower_id_following_id: {
+        follower_id: followerId,
+        following_id: followingId,
+      },
     },
   });
 
-  if (!request) {
-    throw new Error("Friend request not found or already handled.");
+  if (!follow) {
+    throw new Error("Follow relationship not found.");
   }
 
-  return prisma.friendRequest.update({
-    where: { friend_request_id: requestId },
-    data: {
-      status: "declined",
-      responded_at: new Date(),
+  return prisma.follow.delete({
+    where: {
+      follower_id_following_id: {
+        follower_id: followerId,
+        following_id: followingId,
+      },
     },
   });
 };
 
-export const getIncomingFriendRequests = async (playerId: number) => {
-  return prisma.friendRequest.findMany({
-    where: {
-      receiver_id: playerId,
-      status: "pending",
-    },
+export const getFollowers = async (playerId: number) => {
+  const followers = await prisma.follow.findMany({
+    where: { following_id: playerId },
     include: {
-      sender: {
-        select: {
-          player_id: true,
-          player_name: true,
-          username: true,
-          player_avatar: true,
-          level: true,
-        },
-      },
-    },
-    orderBy: { created_at: "desc" },
-  });
-};
-
-export const getFriends = async (playerId: number) => {
-  const friendships = await prisma.friend.findMany({
-    where: {
-      OR: [{ player_one_id: playerId }, { player_two_id: playerId }],
-    },
-    include: {
-      playerOne: {
-        select: {
-          player_id: true,
-          player_name: true,
-          username: true,
-          player_avatar: true,
-          level: true,
-          last_active: true,
-        },
-      },
-      playerTwo: {
+      follower: {
         select: {
           player_id: true,
           player_name: true,
@@ -235,18 +133,36 @@ export const getFriends = async (playerId: number) => {
     orderBy: { created_at: "desc" },
   });
 
-  return friendships.map((friendship: any) => {
-    const friend =
-      friendship.player_one_id === playerId
-        ? friendship.playerTwo
-        : friendship.playerOne;
+  return followers.map((follow: any) => ({
+    follow_id: follow.follow_id,
+    created_at: follow.created_at,
+    player: follow.follower,
+  }));
+};
 
-    return {
-      friendship_id: friendship.friend_id,
-      became_friends_at: friendship.created_at,
-      friend,
-    };
+export const getFollowing = async (playerId: number) => {
+  const following = await prisma.follow.findMany({
+    where: { follower_id: playerId },
+    include: {
+      following: {
+        select: {
+          player_id: true,
+          player_name: true,
+          username: true,
+          player_avatar: true,
+          level: true,
+          last_active: true,
+        },
+      },
+    },
+    orderBy: { created_at: "desc" },
   });
+
+  return following.map((follow: any) => ({
+    follow_id: follow.follow_id,
+    created_at: follow.created_at,
+    player: follow.following,
+  }));
 };
 
 export const getPublicPlayerProfile = async (
@@ -268,41 +184,31 @@ export const getPublicPlayerProfile = async (
     };
   }
 
-  const [isFriend, outgoingPending, incomingPending] = await Promise.all([
-    prisma.friend.count({
+  const [viewerFollowsTarget, targetFollowsViewer] = await Promise.all([
+    prisma.follow.findFirst({
       where: {
-        OR: [
-          { player_one_id: viewerId, player_two_id: targetPlayerId },
-          { player_one_id: targetPlayerId, player_two_id: viewerId },
-        ],
+        follower_id: viewerId,
+        following_id: targetPlayerId,
       },
+      select: { follow_id: true },
     }),
-    prisma.friendRequest.findFirst({
+    prisma.follow.findFirst({
       where: {
-        sender_id: viewerId,
-        receiver_id: targetPlayerId,
-        status: "pending",
+        follower_id: targetPlayerId,
+        following_id: viewerId,
       },
-      select: { friend_request_id: true },
-    }),
-    prisma.friendRequest.findFirst({
-      where: {
-        sender_id: targetPlayerId,
-        receiver_id: viewerId,
-        status: "pending",
-      },
-      select: { friend_request_id: true },
+      select: { follow_id: true },
     }),
   ]);
 
   let relationStatus: SocialProfileResponse["relation_status"] = "none";
 
-  if (isFriend > 0) {
-    relationStatus = "friend";
-  } else if (outgoingPending) {
-    relationStatus = "outgoing_pending";
-  } else if (incomingPending) {
-    relationStatus = "incoming_pending";
+  if (viewerFollowsTarget && targetFollowsViewer) {
+    relationStatus = "mutual";
+  } else if (viewerFollowsTarget) {
+    relationStatus = "following";
+  } else if (targetFollowsViewer) {
+    relationStatus = "followed_by";
   }
 
   return {

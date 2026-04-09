@@ -8,38 +8,38 @@ import * as SocialController from "./social.controller";
 const router = Router();
 
 router.post(
-  "/friend-requests/:playerId",
+  "/follow/:playerId",
   authenticate,
   requirePlayer,
-  SocialController.sendFriendRequest,
+  SocialController.followPlayer,
 );
 
 router.get(
-  "/friend-requests/incoming",
+  "/followers",
   authenticate,
   requirePlayer,
-  SocialController.getIncomingFriendRequests,
+  SocialController.getFollowers,
 );
 
 router.post(
-  "/friend-requests/:requestId/accept",
+  "/follow-back/:playerId",
   authenticate,
   requirePlayer,
-  SocialController.acceptFriendRequest,
+  SocialController.followBackPlayer,
 );
 
-router.post(
-  "/friend-requests/:requestId/decline",
+router.delete(
+  "/follow/:playerId",
   authenticate,
   requirePlayer,
-  SocialController.declineFriendRequest,
+  SocialController.unfollowPlayer,
 );
 
 router.get(
-  "/friends",
+  "/following",
   authenticate,
   requirePlayer,
-  SocialController.getFriends,
+  SocialController.getFollowing,
 );
 
 router.get(

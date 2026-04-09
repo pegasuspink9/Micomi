@@ -10,98 +10,80 @@ const parseNumericParam = (value: string) => {
   return parsed;
 };
 
-export const sendFriendRequest = async (req: Request, res: Response) => {
+export const followPlayer = async (req: Request, res: Response) => {
   try {
     const senderId = (req as any).user.id;
     const playerId = parseNumericParam(req.params.playerId);
 
-    const request = await SocialService.sendFriendRequest(senderId, playerId);
+    const request = await SocialService.followPlayer(senderId, playerId);
 
-    return successResponse(
-      res,
-      request,
-      "Friend request sent successfully",
-      201,
-    );
+    return successResponse(res, request, "Player followed successfully", 201);
   } catch (error: any) {
     const status = error.message?.includes("Invalid numeric") ? 400 : 409;
     return errorResponse(
       res,
       error,
-      error.message || "Failed to send friend request",
+      error.message || "Failed to follow player",
       status,
     );
   }
 };
 
-export const acceptFriendRequest = async (req: Request, res: Response) => {
+export const followBackPlayer = async (req: Request, res: Response) => {
   try {
-    const receiverId = (req as any).user.id;
-    const requestId = parseNumericParam(req.params.requestId);
+    const followerId = (req as any).user.id;
+    const playerId = parseNumericParam(req.params.playerId);
 
-    const request = await SocialService.acceptFriendRequest(
-      requestId,
-      receiverId,
-    );
+    const request = await SocialService.followBackPlayer(followerId, playerId);
 
-    return successResponse(res, request, "Friend request accepted");
+    return successResponse(res, request, "Follow back completed");
   } catch (error: any) {
     return errorResponse(
       res,
       error,
-      error.message || "Failed to accept friend request",
+      error.message || "Failed to follow back",
       404,
     );
   }
 };
 
-export const declineFriendRequest = async (req: Request, res: Response) => {
+export const unfollowPlayer = async (req: Request, res: Response) => {
   try {
-    const receiverId = (req as any).user.id;
-    const requestId = parseNumericParam(req.params.requestId);
+    const followerId = (req as any).user.id;
+    const playerId = parseNumericParam(req.params.playerId);
 
-    const request = await SocialService.declineFriendRequest(
-      requestId,
-      receiverId,
-    );
+    const request = await SocialService.unfollowPlayer(followerId, playerId);
 
-    return successResponse(res, request, "Friend request declined");
+    return successResponse(res, request, "Unfollowed successfully");
   } catch (error: any) {
     return errorResponse(
       res,
       error,
-      error.message || "Failed to decline friend request",
+      error.message || "Failed to unfollow player",
       404,
     );
   }
 };
 
-export const getIncomingFriendRequests = async (
-  req: Request,
-  res: Response,
-) => {
+export const getFollowers = async (req: Request, res: Response) => {
   try {
     const playerId = (req as any).user.id;
-    const requests = await SocialService.getIncomingFriendRequests(playerId);
+    const followers = await SocialService.getFollowers(playerId);
 
-    return successResponse(res, requests, "Incoming friend requests fetched");
+    return successResponse(res, followers, "Followers fetched successfully");
   } catch (error) {
-    return errorResponse(
-      res,
-      error,
-      "Failed to fetch incoming friend requests",
-    );
+    return errorResponse(res, error, "Failed to fetch followers");
   }
 };
 
-export const getFriends = async (req: Request, res: Response) => {
+export const getFollowing = async (req: Request, res: Response) => {
   try {
     const playerId = (req as any).user.id;
-    const friends = await SocialService.getFriends(playerId);
+    const following = await SocialService.getFollowing(playerId);
 
-    return successResponse(res, friends, "Friends fetched successfully");
+    return successResponse(res, following, "Following fetched successfully");
   } catch (error) {
-    return errorResponse(res, error, "Failed to fetch friends");
+    return errorResponse(res, error, "Failed to fetch following");
   }
 };
 
