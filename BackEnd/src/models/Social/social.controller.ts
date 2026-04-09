@@ -67,7 +67,9 @@ export const unfollowPlayer = async (req: Request, res: Response) => {
 
 export const getFollowers = async (req: Request, res: Response) => {
   try {
-    const playerId = (req as any).user.id;
+    const playerId = req.params.playerId
+      ? parseNumericParam(req.params.playerId)
+      : (req as any).user.id;
     const followers = await SocialService.getFollowers(playerId);
 
     return successResponse(res, followers, "Followers fetched successfully");
@@ -78,7 +80,9 @@ export const getFollowers = async (req: Request, res: Response) => {
 
 export const getFollowing = async (req: Request, res: Response) => {
   try {
-    const playerId = (req as any).user.id;
+    const playerId = req.params.playerId
+      ? parseNumericParam(req.params.playerId)
+      : (req as any).user.id;
     const following = await SocialService.getFollowing(playerId);
 
     return successResponse(res, following, "Following fetched successfully");

@@ -48,6 +48,28 @@ export const socialService = {
     }
   },
 
+  getFollowersByPlayer: async (playerId) => {
+    try {
+      const response = await apiService.get(`/social/followers/${playerId}`);
+      const data = response?.success ? response.data : response?.data || [];
+      return normalizeRelationPlayers(data || []);
+    } catch (error) {
+      console.error(`Failed to fetch followers for player ${playerId}:`, error);
+      throw error;
+    }
+  },
+
+  getFollowingByPlayer: async (playerId) => {
+    try {
+      const response = await apiService.get(`/social/following/${playerId}`);
+      const data = response?.success ? response.data : response?.data || [];
+      return normalizeRelationPlayers(data || []);
+    } catch (error) {
+      console.error(`Failed to fetch following for player ${playerId}:`, error);
+      throw error;
+    }
+  },
+
   searchPlayers: async ({ username, page = 1, limit = 20 }) => {
     try {
       const query = encodeURIComponent(username || '');
@@ -118,6 +140,23 @@ export const socialService = {
       return response.data;
     } catch (error) {
       console.error(`Failed to fetch public profile ${playerId}:`, error);
+      throw error;
+    }
+  },
+
+  getRecommendations: async () => {
+    try {
+      const response = await apiService.get('/social/recommendations');
+      const data = response?.success ? response.data : response?.data || [];
+      return (data || []).map((player) => ({
+        player_id: player.player_id,
+        username: player.username || '',
+        player_name: player.player_name || 'Unknown',
+        player_avatar: player.player_avatar || null,
+        level: player.level || 1,
+      }));
+    } catch (error) {
+      console.error('Failed to fetch recommendations:', error);
       throw error;
     }
   },

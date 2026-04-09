@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { gameScale } from '../Components/Responsiveness/gameResponsive';
 import { useSocialHook } from '../hooks/useSocialHook';
 
@@ -19,7 +19,14 @@ const DEFAULT_AVATAR =
 
 export default function SocialConnectionsScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const socialService = useSocialHook();
+  const selectedPlayerId = Number(params?.playerId);
+  const isVisitMode = Number.isInteger(selectedPlayerId) && selectedPlayerId > 0;
+  const visitUsername =
+    typeof params?.username === 'string' && params.username.trim()
+      ? params.username.trim()
+      : null;
   const [activeTab, setActiveTab] = useState('following');
   const [following, setFollowing] = useState([]);
   const [followers, setFollowers] = useState([]);
@@ -35,8 +42,12 @@ export default function SocialConnectionsScreen() {
       setError(null);
 
       const [followingData, followersData] = await Promise.all([
-        socialService.getFollowing(),
-        socialService.getFollowers(),
+        isVisitMode
+          ? socialService.getFollowingByPlayer(selectedPlayerId)
+          : socialService.getFollowing(),
+        isVisitMode
+          ? socialService.getFollowersByPlayer(selectedPlayerId)
+          : socialService.getFollowers(),
       ]);
 
       setFollowing(followingData || []);
@@ -47,7 +58,7 @@ export default function SocialConnectionsScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [isVisitMode, selectedPlayerId, socialService]);
 
   useFocusEffect(
     useCallback(() => {
@@ -70,6 +81,10 @@ export default function SocialConnectionsScreen() {
     },
     [router]
   );
+
+  const headerTitle = isVisitMode
+    ? `${visitUsername || 'Player'} Friends`
+    : 'Friends';
 
   const renderItem = ({ item }) => {
     const avatarSource = { uri: item.playerAvatar || DEFAULT_AVATAR };
@@ -110,14 +125,19 @@ export default function SocialConnectionsScreen() {
             <Ionicons name="arrow-back" size={gameScale(20)} color="#fff" />
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>Friends</Text>
+          <Text style={styles.headerTitle}>{headerTitle}</Text>
 
           <TouchableOpacity
             style={styles.iconButton}
             onPress={() => router.push('/social/search')}
             activeOpacity={0.8}
+            disabled={isVisitMode}
           >
-            <Ionicons name="person-add" size={gameScale(20)} color="#fff" />
+            <Ionicons
+              name="person-add"
+              size={gameScale(20)}
+              color={isVisitMode ? 'rgba(255,255,255,0.4)' : '#fff'}
+            />
           </TouchableOpacity>
         </View>
 
@@ -168,7 +188,11 @@ export default function SocialConnectionsScreen() {
             ListEmptyComponent={
               <Text style={styles.emptyText}>
                 {activeTab === 'following'
-                  ? 'You are not following anyone yet.'
+                  ? isVisitMode
+                    ? 'This player is not following anyone yet.'
+                    : 'You are not following anyone yet.'
+                  : isVisitMode
+                  ? 'This player has no followers yet.'
                   : 'No followers yet.'}
               </Text>
             }

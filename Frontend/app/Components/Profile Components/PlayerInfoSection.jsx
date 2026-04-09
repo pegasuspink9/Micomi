@@ -500,12 +500,8 @@ const styles = StyleSheet.create({
   socialStatsCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
     borderRadius: gameScale(12),
-    paddingVertical: gameScale(8),
     paddingHorizontal: gameScale(10),
-    borderWidth: gameScale(1),
-    borderColor: 'rgba(255, 255, 255, 0.28)',
   },
   socialStatsItem: {
     minWidth: gameScale(54),
@@ -519,7 +515,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.55)',
   },
   socialStatsValue: {
-    fontSize: gameScale(14),
+    fontSize: gameScale(18),
     fontFamily: 'Grobold',
     color: '#FFFFFF',
     textShadowColor: 'rgba(0, 0, 0, 0.8)',

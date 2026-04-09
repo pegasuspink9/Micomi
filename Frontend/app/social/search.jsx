@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { gameScale } from '../Components/Responsiveness/gameResponsive';
 import { useSocialHook } from '../hooks/useSocialHook';
+import { useAuth } from '../hooks/useAuth';
 
 const DEFAULT_AVATAR =
   'https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif';
@@ -21,9 +22,14 @@ const DEFAULT_AVATAR =
 export default function SocialSearchScreen() {
   const router = useRouter();
   const socialService = useSocialHook();
+  const { user } = useAuth();
+  const currentUserId = Number(user?.player_id);
+
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState(null);
   const [actionPlayerId, setActionPlayerId] = useState(null);
@@ -41,12 +47,30 @@ export default function SocialSearchScreen() {
     } catch (err) {
       console.error('Failed to load relation sets:', err);
     }
-  }, []);
+  }, [socialService]);
+
+  const loadRecommendations = useCallback(async () => {
+    try {
+      setRecommendationsLoading(true);
+      const recommendationData = await socialService.getRecommendations();
+      // Filter out current user from recommendations just in case
+      const filtered = (recommendationData || []).filter(
+        (p) => Number(p.player_id) !== currentUserId
+      );
+      setRecommendations(filtered);
+    } catch (err) {
+      console.error('Failed to load recommendations:', err);
+      setRecommendations([]);
+    } finally {
+      setRecommendationsLoading(false);
+    }
+  }, [socialService, currentUserId]);
 
   useFocusEffect(
     useCallback(() => {
       loadRelations();
-    }, [loadRelations])
+      loadRecommendations();
+    }, [loadRelations, loadRecommendations])
   );
 
   const relationLookup = useMemo(() => {
@@ -55,6 +79,8 @@ export default function SocialSearchScreen() {
 
     return {
       getStatus(playerId) {
+        if (Number(playerId) === currentUserId) return 'self';
+        
         const isFollowing = followingSet.has(playerId);
         const isFollower = followerSet.has(playerId);
 
@@ -69,7 +95,7 @@ export default function SocialSearchScreen() {
         return 'none';
       },
     };
-  }, [followingIds, followerIds]);
+  }, [followingIds, followerIds, currentUserId]);
 
   const handleSearch = useCallback(async () => {
     const trimmed = query.trim();
@@ -86,8 +112,12 @@ export default function SocialSearchScreen() {
       setError(null);
 
       const data = await socialService.searchPlayers({ username: trimmed });
-      setResults(data.players || []);
-      setTotal(data.total || (data.players || []).length);
+      // Filter out current user from search results
+      const players = (data.players || []).filter(
+        (p) => Number(p.player_id) !== currentUserId
+      );
+      setResults(players);
+      setTotal(data.total || players.length);
     } catch (err) {
       setError(err.message || 'Search failed');
       setResults([]);
@@ -95,11 +125,12 @@ export default function SocialSearchScreen() {
     } finally {
       setLoading(false);
     }
-  }, [query]);
+  }, [query, socialService, currentUserId]);
 
   const handleAction = useCallback(
     async (playerId) => {
       const relation = relationLookup.getStatus(playerId);
+      if (relation === 'self') return;
 
       try {
         setActionPlayerId(playerId);
@@ -124,11 +155,15 @@ export default function SocialSearchScreen() {
         setActionPlayerId(null);
       }
     },
-    [relationLookup]
+    [relationLookup, socialService]
   );
 
   const getActionButtonMeta = (playerId) => {
     const relation = relationLookup.getStatus(playerId);
+
+    if (relation === 'self') {
+      return null;
+    }
 
     if (relation === 'following') {
       return {
@@ -175,18 +210,22 @@ export default function SocialSearchScreen() {
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.actionButton, buttonMeta.style]}
-          onPress={() => handleAction(item.player_id)}
-          disabled={actionPlayerId === item.player_id}
-          activeOpacity={0.85}
-        >
-          {actionPlayerId === item.player_id ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.actionButtonText}>{buttonMeta.text}</Text>
-          )}
-        </TouchableOpacity>
+        {buttonMeta ? (
+          <TouchableOpacity
+            style={[styles.actionButton, buttonMeta.style]}
+            onPress={() => handleAction(item.player_id)}
+            disabled={actionPlayerId === item.player_id}
+            activeOpacity={0.85}
+          >
+            {actionPlayerId === item.player_id ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.actionButtonText}>{buttonMeta.text}</Text>
+            )}
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.actionButtonPlaceholder} />
+        )}
       </View>
     );
   };
@@ -223,29 +262,39 @@ export default function SocialSearchScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.resultMetaRow}>
-          <Ionicons name="people" size={gameScale(16)} color="#D7F2FF" />
-          <Text style={styles.resultMetaText}>{total} players found</Text>
-        </View>
+        {query.trim() ? (
+          <View style={styles.resultMetaRow}>
+            <Ionicons name="people" size={gameScale(16)} color="#D7F2FF" />
+            <Text style={styles.resultMetaText}>{total} players found</Text>
+          </View>
+        ) : (
+          <View style={styles.resultMetaRow}>
+            <Ionicons name="sparkles" size={gameScale(16)} color="#D7F2FF" />
+            <Text style={styles.resultMetaText}>Friend recommendations</Text>
+          </View>
+        )}
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        {loading ? (
+        {loading || (!query.trim() && recommendationsLoading) ? (
           <View style={styles.centerContent}>
             <ActivityIndicator size="large" color="#fff" />
           </View>
         ) : (
           <FlatList
-            data={results}
+            data={query.trim() ? results : recommendations}
             keyExtractor={(item) => String(item.player_id)}
             renderItem={renderPlayer}
             contentContainerStyle={[
               styles.listContainer,
-              results.length === 0 && styles.emptyListContainer,
+              (query.trim() ? results.length === 0 : recommendations.length === 0) &&
+                styles.emptyListContainer,
             ]}
             ListEmptyComponent={
               <Text style={styles.emptyText}>
-                Search for players by username to add friends.
+                {query.trim()
+                  ? 'Search for players by username to add friends.'
+                  : 'No friend recommendations available yet.'}
               </Text>
             }
           />
@@ -424,5 +473,8 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: 'DynaPuff',
     fontSize: gameScale(10),
+  },
+  actionButtonPlaceholder: {
+    minWidth: gameScale(88),
   },
 });

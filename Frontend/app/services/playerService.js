@@ -115,6 +115,7 @@ export const playerService = {
         name: selectedCharacter?.character.character_name || "No Character",
         character_image_display: selectedCharacter?.character.character_image_display || "https://github.com/user-attachments/assets/eced9b8f-eae0-48f5-bc05-d8d5ce018529",
       },
+      playerId: apiData.player_id, 
       playerName: apiData.player_name,
       username: apiData.username, 
       selectedBadge: selectedBadge,

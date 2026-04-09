@@ -15,10 +15,15 @@ import StatsGridSection from '../Components/Profile Components/StatsGridSection'
 import InventorySection from '../Components/Profile Components/InventorySection';
 import { playerService } from '../services/playerService';
 import { useSocialHook } from '../hooks/useSocialHook';
+import { useAuth } from '../hooks/useAuth';
 
 
 const normalizeRelation = (relation) => {
   const raw = String(relation || '').toLowerCase();
+
+  if (raw === 'self') {
+    return 'self';
+  }
 
   if (raw === 'mutual' || raw === 'following') {
     return 'following';
@@ -35,6 +40,8 @@ export default function PublicPlayerProfileScreen() {
   const { playerId } = useLocalSearchParams();
   const router = useRouter();
   const socialService = useSocialHook();
+  const { user } = useAuth();
+  const currentUserId = Number(user?.player_id);
 
   const [playerData, setPlayerData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -42,6 +49,18 @@ export default function PublicPlayerProfileScreen() {
   const [inventoryTab, setInventoryTab] = useState('Badges');
   const [actionLoading, setActionLoading] = useState(false);
   const [relationStatus, setRelationStatus] = useState('none');
+
+  const handleOpenVisitedSocial = useCallback(() => {
+    if (!playerId) return;
+
+    router.push({
+      pathname: '/social',
+      params: {
+        playerId: String(playerId),
+        username: playerData?.username || '',
+      },
+    });
+  }, [playerId, playerData?.username, router]);
 
   const loadProfile = useCallback(async () => {
     if (!playerId) return;
@@ -69,12 +88,14 @@ export default function PublicPlayerProfileScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      // If visiting own profile via ID, redirect to tab profile if feasible,
+      // or just handle it as "self" relation.
       loadProfile();
     }, [loadProfile])
   );
 
   const handleRelationAction = useCallback(async () => {
-    if (!playerId) return;
+    if (!playerId || relationStatus === 'self') return;
 
     try {
       setActionLoading(true);
@@ -113,7 +134,9 @@ export default function PublicPlayerProfileScreen() {
   }, [playerId, relationStatus, socialService]);
 
   const relationButtonMeta =
-    relationStatus === 'following'
+    relationStatus === 'self'
+      ? null
+      : relationStatus === 'following'
       ? { label: 'Unfollow', style: styles.unfollowButton }
       : relationStatus === 'follower_only'
       ? { label: 'Follow back', style: styles.followBackButton }
@@ -166,7 +189,7 @@ export default function PublicPlayerProfileScreen() {
             onAvatarPress={() => {}}
             friendsCount={playerData.friendsCount}
             followerCount={playerData.followerCount}
-            onSocialPress={() => {}}
+            onSocialPress={handleOpenVisitedSocial}
             headerAction="back"
             onHeaderAction={() => router.back()}
           />
