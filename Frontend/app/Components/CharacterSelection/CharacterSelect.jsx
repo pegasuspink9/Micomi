@@ -205,6 +205,7 @@ export default function CharacterProfile() {
 
                 <View style={styles.characterContainer}>
                   <CharacterDisplay
+                    key={selectedHero}
                     currentHero={currentHero}
                     selectedHero={selectedHero}
                     isCharacterAnimating={isCharacterAnimating}

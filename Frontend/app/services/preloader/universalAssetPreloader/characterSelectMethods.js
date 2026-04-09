@@ -275,7 +275,7 @@ async downloadStaticCharacterSelectAssets(onProgress = null, onAssetComplete = n
     }
   },
 
-async areStaticCharacterSelectAssetsCached() {
+async areStaticCharacterSelectAssetsCached(onProgress = null) {
     const assets = this.getStaticCharacterSelectAssets();
 
     if (assets.length === 0) {
@@ -284,17 +284,21 @@ async areStaticCharacterSelectAssetsCached() {
 
     let availableCount = 0;
     const missingAssets = [];
+    const totalCount = assets.length;
 
-    for (const asset of assets) {
+    for (let i = 0; i < totalCount; i++) {
+      const asset = assets[i];
       let isAvailable = false;
 
       // Check memory cache
       const assetInfo = this.downloadedAssets.get(asset.url);
       if (assetInfo && assetInfo.localPath) {
         try {
-          const fileInfo = await FileSystem.getInfoAsync(assetInfo.localPath);
-          if (fileInfo.exists && fileInfo.size > 0) {
+          const validation = await this.validateCachedFile(assetInfo.localPath, asset.url, assetInfo.fileSize || 0);
+          if (validation.valid) {
             isAvailable = true;
+          } else {
+            this.downloadedAssets.delete(asset.url);
           }
         } catch (e) {
           // File check failed
@@ -305,14 +309,14 @@ async areStaticCharacterSelectAssetsCached() {
       if (!isAvailable) {
         const localPath = this.getLocalFilePath(asset.url, asset.category);
         try {
-          const fileInfo = await FileSystem.getInfoAsync(localPath);
-          if (fileInfo.exists && fileInfo.size > 0) {
+          const validation = await this.validateCachedFile(localPath, asset.url);
+          if (validation.valid) {
             this.downloadedAssets.set(asset.url, {
               localPath,
               category: asset.category,
               url: asset.url,
               downloadedAt: Date.now(),
-              fileSize: fileInfo.size
+              fileSize: validation.size
             });
             isAvailable = true;
           }
@@ -326,6 +330,10 @@ async areStaticCharacterSelectAssetsCached() {
       } else {
         missingAssets.push(asset);
       }
+
+      if (onProgress && (i % 5 === 0 || i === totalCount - 1)) {
+        onProgress({ available: availableCount, total: totalCount });
+      }
     }
 
     const cached = availableCount === assets.length;
@@ -337,9 +345,9 @@ async areStaticCharacterSelectAssetsCached() {
 
     return {
       cached,
-      total: assets.length,
+      total: totalCount,
       available: availableCount,
-      missing: assets.length - availableCount,
+      missing: totalCount - availableCount,
       missingAssets
     };
   }

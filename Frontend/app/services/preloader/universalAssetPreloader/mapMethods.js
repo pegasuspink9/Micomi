@@ -280,7 +280,7 @@ async downloadAllMapAssets(mapLevelData, onProgress = null, onAssetComplete = nu
       console.log(`🗺️ Map asset download completed: ${successCount}/${assets.length} in ${totalTime}ms`);
 
       return {
-        success: true,
+        success: successCount === assets.length,
         downloaded: successCount,
         total: assets.length,
         totalTime,
@@ -295,7 +295,7 @@ async downloadAllMapAssets(mapLevelData, onProgress = null, onAssetComplete = nu
     }
   },
 
-async areMapAssetsCached(mapLevelData) {
+async areMapAssetsCached(mapLevelData, onProgress = null) {
     const assets = this.extractAllAssetsFromMapData(mapLevelData);
 
     if (assets.length === 0) {
@@ -304,14 +304,19 @@ async areMapAssetsCached(mapLevelData) {
 
     let availableCount = 0;
     const missingAssets = [];
+    const totalCount = assets.length;
 
-    for (const asset of assets) {
+    for (let i = 0; i < totalCount; i++) {
+      const asset = assets[i];
       let isAvailable = false;
 
       //  FIX: Skip file:// URLs - they're already local
       if (asset.url.startsWith('file://') || asset.url.startsWith('/data/')) {
         isAvailable = true;
         availableCount++;
+        if (onProgress) {
+          onProgress({ available: availableCount, total: totalCount });
+        }
         continue;
       }
 
@@ -320,9 +325,11 @@ async areMapAssetsCached(mapLevelData) {
        
       if (assetInfo && assetInfo.localPath) {
         try {
-          const fileInfo = await FileSystem.getInfoAsync(assetInfo.localPath);
-          if (fileInfo.exists && fileInfo.size > 0) {
+          const validation = await this.validateCachedFile(assetInfo.localPath, asset.url, assetInfo.fileSize || 0);
+          if (validation.valid) {
             isAvailable = true;
+          } else {
+            this.downloadedAssets.delete(asset.url);
           }
         } catch (e) {
           // File check failed, continue to disk check
@@ -333,15 +340,15 @@ async areMapAssetsCached(mapLevelData) {
       if (!isAvailable) {
         const localPath = this.getLocalFilePath(asset.url, asset.category);
         try {
-          const fileInfo = await FileSystem.getInfoAsync(localPath);
-          if (fileInfo.exists && fileInfo.size > 0) {
+          const validation = await this.validateCachedFile(localPath, asset.url);
+          if (validation.valid) {
             // Found on disk - add to memory cache
             this.downloadedAssets.set(asset.url, {
               localPath,
               category: asset.category,
               url: asset.url,
               downloadedAt: Date.now(),
-              fileSize: fileInfo.size
+              fileSize: validation.size
             });
             isAvailable = true;
           }
@@ -354,6 +361,10 @@ async areMapAssetsCached(mapLevelData) {
         availableCount++;
       } else {
         missingAssets.push(asset);
+      }
+
+      if (onProgress && (i % 5 === 0 || i === totalCount - 1)) {
+        onProgress({ available: availableCount, total: totalCount });
       }
     }
 
@@ -530,7 +541,7 @@ async downloadMapThemeAssets(mapThemes, onProgress = null, onAssetComplete = nul
     }
   },
 
-async areMapThemeAssetsCached(mapThemes) {
+async areMapThemeAssetsCached(mapThemes, onProgress = null) {
     const assets = this.extractMapThemeAssets(mapThemes);
 
     if (assets.length === 0) {
@@ -539,17 +550,21 @@ async areMapThemeAssetsCached(mapThemes) {
 
     let availableCount = 0;
     const missingAssets = [];
+    const totalCount = assets.length;
 
-    for (const asset of assets) {
+    for (let i = 0; i < totalCount; i++) {
+      const asset = assets[i];
       let isAvailable = false;
 
       // Check memory cache
       const assetInfo = this.downloadedAssets.get(asset.url);
       if (assetInfo && assetInfo.localPath) {
         try {
-          const fileInfo = await FileSystem.getInfoAsync(assetInfo.localPath);
-          if (fileInfo.exists && fileInfo.size > 0) {
+          const validation = await this.validateCachedFile(assetInfo.localPath, asset.url, assetInfo.fileSize || 0);
+          if (validation.valid) {
             isAvailable = true;
+          } else {
+            this.downloadedAssets.delete(asset.url);
           }
         } catch (e) {
           // File check failed
@@ -560,14 +575,14 @@ async areMapThemeAssetsCached(mapThemes) {
       if (!isAvailable) {
         const localPath = this.getLocalFilePath(asset.url, asset.category);
         try {
-          const fileInfo = await FileSystem.getInfoAsync(localPath);
-          if (fileInfo.exists && fileInfo.size > 0) {
+          const validation = await this.validateCachedFile(localPath, asset.url);
+          if (validation.valid) {
             this.downloadedAssets.set(asset.url, {
               localPath,
               category: asset.category,
               url: asset.url,
               downloadedAt: Date.now(),
-              fileSize: fileInfo.size
+              fileSize: validation.size
             });
             isAvailable = true;
           }
@@ -581,6 +596,10 @@ async areMapThemeAssetsCached(mapThemes) {
       } else {
         missingAssets.push(asset);
       }
+
+      if (onProgress && (i % 5 === 0 || i === totalCount - 1)) {
+        onProgress({ available: availableCount, total: totalCount });
+      }
     }
 
     const cached = availableCount === assets.length;
@@ -592,9 +611,9 @@ async areMapThemeAssetsCached(mapThemes) {
 
     return {
       cached,
-      total: assets.length,
+      total: totalCount,
       available: availableCount,
-      missing: assets.length - availableCount,
+      missing: totalCount - availableCount,
       missingAssets
     };
   },

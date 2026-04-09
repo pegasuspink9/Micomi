@@ -28,14 +28,25 @@ const SkillCard = ({ card, index, isFlipped, onPress, styles }) => {
   });
 
   const itemTotalRowSpace = gameScale(43);
-  const centerOffset = (1.5 - index) * itemTotalRowSpace;
+  // Calculate center offset relative to the middle of a 4-card row
+  // Indices: 0, 1, 2, 3
+  // Middle point is between 1 and 2 (index 1.5)
+  // Adjusted offsets based on user request:
+  // Card 0 (index 0): needs extra -5 horizontal shift
+  // Card 3 (index 3): needs extra +5 horizontal shift (+ because (1.5 - 3) is negative)
+  // Card 2 (index 2): needs extra -2 horizontal shift
+  let centerOffset = (1.5 - index) * itemTotalRowSpace;
+  
+  if (index === 0) centerOffset -= 10;
+  if (index === 3) centerOffset += 15;
+  if (index === 2) centerOffset += 2;
   
   const translateXAnim = animValue.interpolate({
     inputRange: [0, 1],
     outputRange: [0, centerOffset], 
   });
 
-  const moveUpDistance = gameScale(-150); 
+  const moveUpDistance = gameScale(-180); 
   const translateYAnim = animValue.interpolate({
     inputRange: [0, 1],
     outputRange: [0, moveUpDistance], 
@@ -144,10 +155,10 @@ const AttributePanel = forwardRef(({
        <Animated.View
         style={[
           styles.cardsContainerRow,
-          { transform: [{ translateX: cardsSlideAnim }], opacity: cardsFadeAnim }
+          { transform: [{ translateX: cardsSlideAnim }], opacity: cardsFadeAnim, zIndex: 10 }
         ]}
       >
-        {cardsData && cardsData.slice().reverse().map((card, index) => ( 
+        {cardsData && cardsData.slice(0, 4).map((card, index) => ( 
           <SkillCard 
             key={`card-${index}`}
             card={card}

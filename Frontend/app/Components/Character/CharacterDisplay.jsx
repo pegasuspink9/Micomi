@@ -33,40 +33,56 @@ export default function CharacterDisplay({
   }, [styles.characterImage]);
 
   useEffect(() => {
+    // Stop all previous animations to prevent overlaps
     cancelAnimation(frameIndex);
     animationStarted.current = false;
     
+    // Reset values for a clean start
     imageOpacity.setValue(0);
     entranceOpacity.setValue(0);
     frameIndex.value = 0;
 
-    Animated.timing(entranceOpacity, {
+    // We keep a reference to stop these if the component unmounts quickly (during spam)
+    const entranceAnim = Animated.timing(entranceOpacity, {
       toValue: 1,
-      duration: 1000,
+      duration: 500, // Reduced from 1000 for snappier transitions
       useNativeDriver: true,
-    }).start(() => {
-      Animated.timing(imageOpacity, { 
-        toValue: 1, 
-        duration: 500, 
-        useNativeDriver: true 
-      }).start(() => {
+    });
+
+    const imageAnim = Animated.timing(imageOpacity, { 
+      toValue: 1, 
+      duration: 300, // Reduced from 500
+      useNativeDriver: true 
+    });
+
+    entranceAnim.start(({ finished }) => {
+      if (!finished) return;
+      
+      imageAnim.start(({ finished: imgFinished }) => {
+        if (!imgFinished) return;
+        
+        // Signal parent that entrance is done
         onAnimationFinish();
         
+        // Start the sprite animation loop
         if (!animationStarted.current) {
           animationStarted.current = true;
+          frameIndex.value = TOTAL_FRAMES - 1; // Start from last frame
           frameIndex.value = withRepeat(
-            withTiming(TOTAL_FRAMES - 1, {
+            withTiming(0, {
               duration: FRAME_DURATION * TOTAL_FRAMES,
               easing: Easing.linear,
             }),
             -1,
-            true
+            true // Reverse each repeat for ping-pong effect
           );
         }
       });
     });
 
     return () => {
+      entranceAnim.stop();
+      imageAnim.stop();
       cancelAnimation(frameIndex);
       animationStarted.current = false;
     };

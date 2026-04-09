@@ -126,7 +126,7 @@ const MAP_THEMES = {
     icons: {
        enemyButton: 'https://github.com/user-attachments/assets/e1c6bf35-b447-4061-a3d5-5fa5a0757af2',
       micomiButton: 'https://github.com/user-attachments/assets/46b4cc72-4ed7-4feb-b68f-7336cd9632a4',
-      shopButton: 'https://github.com/user-attachments/assets/275c192f-da04-4ee1-966e-a13c8635459f',
+      shopButton: '',
     },
     colors: {
       container: 'rgba(9, 202, 195, 0.77)'
@@ -179,9 +179,9 @@ const MAP_THEMES = {
     // ADD Computer-specific icons
     icons: {
        icons: {
-       enemyButton: 'https://github.com/user-attachments/assets/e1c6bf35-b447-4061-a3d5-5fa5a0757af2',
+      enemyButton: 'https://github.com/user-attachments/assets/e1c6bf35-b447-4061-a3d5-5fa5a0757af2',
       micomiButton: 'https://github.com/user-attachments/assets/46b4cc72-4ed7-4feb-b68f-7336cd9632a4',
-      shopButton: 'https://github.com/user-attachments/assets/275c192f-da04-4ee1-966e-a13c8635459f',
+      shopButton: '',
     },
     },
     colors: {

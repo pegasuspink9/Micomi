@@ -20,6 +20,7 @@ import { gameScale } from './Components/Responsiveness/gameResponsive';
 
 // Use 'screen' instead of 'window' to ensure it covers the bottom navigation bar area on Android
 const { width, height } = Dimensions.get('screen');
+const clamp01 = (value) => Math.max(0, Math.min(1, Number(value) || 0));
 
 const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
   const [downloadProgress, setDownloadProgress] = useState({
@@ -98,22 +99,131 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
     }
   }, [assetsReady, timerFinished, onComplete]);
 
+  const setStagedProgress = (stageStart, stageSpan, ratio, extra = {}) => {
+    const normalized = clamp01(ratio);
+    const nextProgress = clamp01(stageStart + (stageSpan * normalized));
+
+    setDownloadProgress(prev => ({
+      ...prev,
+      ...extra,
+      progress: Math.max(clamp01(prev.progress), nextProgress),
+    }));
+  };
+
+  const fillProgressToFull = async (durationMs = 500) => {
+    const frameMs = 16;
+    const steps = Math.max(1, Math.ceil(durationMs / frameMs));
+    const startProgress = clamp01(downloadProgress.progress);
+
+    if (startProgress >= 1) {
+      return;
+    }
+
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps;
+      const eased = 1 - Math.pow(1 - t, 2);
+      const next = clamp01(startProgress + ((1 - startProgress) * eased));
+
+      setDownloadProgress(prev => ({
+        ...prev,
+        isDownloading: true,
+        isComplete: false,
+        progress: Math.max(clamp01(prev.progress), next),
+      }));
+
+      await new Promise(resolve => setTimeout(resolve, frameMs));
+    }
+  };
+
+  const runFullVerification = async (preloadData, stageStart, stageSpan) => {
+    const section = stageSpan / 4;
+
+    const mapCheckPromise = preloadData
+      ? universalAssetPreloader.areMapAssetsCached(preloadData, (p) => {
+          const ratio = p.total > 0 ? p.available / p.total : 1;
+          setStagedProgress(stageStart + (section * 3), section, ratio, {
+            isDownloading: true,
+            isComplete: false,
+            mapName: 'Checking Game Assets',
+          });
+        })
+      : Promise.resolve({ cached: true, total: 0, available: 0, missing: 0, missingAssets: [] });
+
+    const [themesCacheStatus, charSelectCacheStatus, soundCacheStatus, mapCacheStatus] = await Promise.all([
+      universalAssetPreloader.areMapThemeAssetsCached(MAP_THEMES, (p) => {
+        const ratio = p.total > 0 ? p.available / p.total : 1;
+        setStagedProgress(stageStart, section, ratio, {
+          isDownloading: true,
+          isComplete: false,
+          mapName: 'Checking System Assets',
+        });
+      }),
+      universalAssetPreloader.areStaticCharacterSelectAssetsCached((p) => {
+        const ratio = p.total > 0 ? p.available / p.total : 1;
+        setStagedProgress(stageStart + section, section, ratio, {
+          isDownloading: true,
+          isComplete: false,
+          mapName: 'Checking System Assets',
+        });
+      }),
+      universalAssetPreloader.areStaticSoundAssetsCached((p) => {
+        const ratio = p.total > 0 ? p.available / p.total : 1;
+        setStagedProgress(stageStart + (section * 2), section, ratio, {
+          isDownloading: true,
+          isComplete: false,
+          mapName: 'Checking System Assets',
+        });
+      }),
+      mapCheckPromise,
+    ]);
+
+    const totalStaticMissing = themesCacheStatus.missing + charSelectCacheStatus.missing + soundCacheStatus.missing;
+
+    return {
+      themesCacheStatus,
+      charSelectCacheStatus,
+      soundCacheStatus,
+      mapCacheStatus,
+      totalStaticMissing,
+    };
+  };
+
   const autoPreloadAssets = async () => {
     try {
       console.log('🚀 MainLoading: Checking asset cache and updates...');
+
+      setDownloadProgress(prev => ({
+        ...prev,
+        isDownloading: true,
+        isComplete: false,
+        mapName: 'Preparing Cache',
+        progress: 0,
+      }));
       
       // Load existing cache into memory
       await universalAssetPreloader.loadAllCachedAssets();
+      setStagedProgress(0, 0.05, 1, {
+        isDownloading: true,
+        isComplete: false,
+        mapName: 'Preparing Cache',
+      });
       soundManager.clearUrlCache();
+
+      // Step 1: Fetch map preload data first so checks can include map assets
+      const preloadData = await mapService.getMapPreloadData();
+      if (!preloadData) {
+        console.warn('⚠️ MainLoading: preloadData unavailable, proceeding with static verification only.');
+      }
       
-      // Step 1: Check static resources
-      const [themesCacheStatus, charSelectCacheStatus, soundCacheStatus] = await Promise.all([
-        universalAssetPreloader.areMapThemeAssetsCached(MAP_THEMES),
-        universalAssetPreloader.areStaticCharacterSelectAssetsCached(),
-        universalAssetPreloader.areStaticSoundAssetsCached()
-      ]);
+      // Step 2: Verify all static + map assets before downloading
+      const {
+        themesCacheStatus,
+        charSelectCacheStatus,
+        soundCacheStatus,
+        mapCacheStatus,
+        totalStaticMissing,
+      } = await runFullVerification(preloadData, 0.05, 0.5);
       
-      const totalStaticMissing = themesCacheStatus.missing + charSelectCacheStatus.missing + soundCacheStatus.missing;
       const totalStaticAssets = themesCacheStatus.total + charSelectCacheStatus.total + soundCacheStatus.total;
 
       if (totalStaticMissing > 0) {
@@ -124,25 +234,25 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
           mapName: 'System Assets',
           loaded: 0,
           total: totalStaticAssets,
-          progress: 0,
+          progress: Math.max(clamp01(prev.progress), 0.55),
           successCount: themesCacheStatus.available + charSelectCacheStatus.available + soundCacheStatus.available
         }));
-
-        let downloadedSoFar = 0;
 
         // Download missing themes
         if (themesCacheStatus.missing > 0) {
           await universalAssetPreloader.downloadMapThemeAssets(
             MAP_THEMES,
             (progress) => {
-              setDownloadProgress(prev => ({
-                ...prev,
+              const ratio = progress.total > 0 ? (progress.loaded / progress.total) : 1;
+              setStagedProgress(0.55, 0.08, ratio, {
+                isDownloading: true,
+                isComplete: false,
+                mapName: 'System Assets',
                 loaded: progress.loaded,
                 total: totalStaticMissing,
-                progress: progress.loaded / totalStaticMissing * 0.4,
                 successCount: progress.successCount,
                 currentAsset: progress.currentAsset,
-              }));
+              });
             },
             (assetProgress) => {
               setCurrentAssetProgress({
@@ -155,21 +265,22 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
               });
             }
           );
-          downloadedSoFar += themesCacheStatus.missing;
         }
 
         // Download missing character assets
         if (charSelectCacheStatus.missing > 0) {
           await universalAssetPreloader.downloadStaticCharacterSelectAssets(
             (progress) => {
-              setDownloadProgress(prev => ({
-                ...prev,
-                loaded: downloadedSoFar + progress.loaded,
+              const ratio = progress.total > 0 ? (progress.loaded / progress.total) : 1;
+              setStagedProgress(0.63, 0.08, ratio, {
+                isDownloading: true,
+                isComplete: false,
+                mapName: 'System Assets',
+                loaded: progress.loaded,
                 total: totalStaticMissing,
-                progress: 0.4 + (progress.loaded / totalStaticMissing * 0.4),
                 successCount: themesCacheStatus.total + progress.successCount,
                 currentAsset: progress.currentAsset,
-              }));
+              });
             },
             (assetProgress) => {
               setCurrentAssetProgress({
@@ -182,54 +293,29 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
               });
             }
           );
-          downloadedSoFar += charSelectCacheStatus.missing;
         }
 
         // Download missing sounds
         if (soundCacheStatus.missing > 0) {
           await universalAssetPreloader.downloadStaticSoundAssets(
             (progress) => {
-              setDownloadProgress(prev => ({
-                ...prev,
-                loaded: downloadedSoFar + progress.loaded,
+              const ratio = progress.total > 0 ? (progress.loaded / progress.total) : 1;
+              setStagedProgress(0.71, 0.04, ratio, {
+                isDownloading: true,
+                isComplete: false,
+                mapName: 'System Assets',
+                loaded: progress.loaded,
                 total: totalStaticMissing,
-                progress: 0.8 + (progress.loaded / totalStaticMissing * 0.2),
                 successCount: themesCacheStatus.total + charSelectCacheStatus.total + progress.successCount,
                 currentAsset: progress.currentAsset,
-              }));
+              });
             }
           );
         }
         soundManager.clearUrlCache();
       }
-
-      // Step 2: Fetch and download Game Map Data from API
-      const preloadData = await mapService.getMapPreloadData();
-      if (!preloadData) {
-        setAssetsReady(true);
-        return;
-      }
-
-      const mapCacheStatus = await universalAssetPreloader.areMapAssetsCached(preloadData);
       
-      if (mapCacheStatus.cached && totalStaticMissing === 0) {
-        // Pre-load from cache into RAM for fast access
-        await Promise.all([
-          universalAssetPreloader.loadCachedAssets('game_animations'),
-          universalAssetPreloader.loadCachedAssets('game_images'),
-          universalAssetPreloader.loadCachedAssets('game_audio'),
-          universalAssetPreloader.loadCachedAssets('game_visuals'),
-          universalAssetPreloader.loadCachedAssets('map_theme_assets'),
-          universalAssetPreloader.loadCachedAssets('character_select_ui'),
-          universalAssetPreloader.loadCachedAssets('ui_videos'),
-          universalAssetPreloader.loadCachedAssets('static_sounds'),
-        ]);
-        soundManager.clearUrlCache();
-        setAssetsReady(true);
-        return;
-      }
-
-      if (!mapCacheStatus.cached) {
+      if (preloadData && !mapCacheStatus.cached) {
         setDownloadProgress(prev => ({
           ...prev,
           isDownloading: true,
@@ -237,21 +323,22 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
           mapName: 'Game Levels',
           loaded: 0,
           total: mapCacheStatus.total,
-          progress: 0,
+          progress: Math.max(clamp01(prev.progress), 0.75),
           successCount: mapCacheStatus.available
         }));
 
         await universalAssetPreloader.downloadAllMapAssets(
           preloadData,
           (progress) => {
-            setDownloadProgress(prev => ({
-              ...prev,
+            setStagedProgress(0.75, 0.2, progress.progress, {
+              isDownloading: true,
+              isComplete: false,
+              mapName: 'Game Levels',
               loaded: progress.loaded,
               total: progress.total,
-              progress: progress.progress,
               successCount: progress.successCount,
               currentAsset: progress.currentAsset,
-            }));
+            });
           },
           (assetProgress) => {
             setCurrentAssetProgress({
@@ -266,19 +353,70 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
         );
       }
 
-      // Step 3: Complete and save state
+      // Step 3: Re-verify to ensure no partial files slipped through
+      let finalVerification = await runFullVerification(preloadData, 0.95, 0.04);
+      const hasMissingAfterDownload = finalVerification.totalStaticMissing > 0 || !finalVerification.mapCacheStatus.cached;
+
+      if (hasMissingAfterDownload) {
+        console.warn('⚠️ MainLoading: Missing assets detected after first pass. Running one repair pass.');
+
+        if (finalVerification.themesCacheStatus.missing > 0) {
+          await universalAssetPreloader.downloadMapThemeAssets(MAP_THEMES);
+        }
+        if (finalVerification.charSelectCacheStatus.missing > 0) {
+          await universalAssetPreloader.downloadStaticCharacterSelectAssets();
+        }
+        if (finalVerification.soundCacheStatus.missing > 0) {
+          await universalAssetPreloader.downloadStaticSoundAssets();
+        }
+        if (preloadData && !finalVerification.mapCacheStatus.cached) {
+          await universalAssetPreloader.downloadAllMapAssets(preloadData);
+        }
+
+        finalVerification = await runFullVerification(preloadData, 0.97, 0.02);
+      }
+
+      if (preloadData && finalVerification.mapCacheStatus.cached && finalVerification.totalStaticMissing === 0) {
+        // Pre-load from cache into RAM for fast access
+        await Promise.all([
+          universalAssetPreloader.loadCachedAssets('game_animations'),
+          universalAssetPreloader.loadCachedAssets('game_images'),
+          universalAssetPreloader.loadCachedAssets('game_audio'),
+          universalAssetPreloader.loadCachedAssets('game_visuals'),
+          universalAssetPreloader.loadCachedAssets('map_theme_assets'),
+          universalAssetPreloader.loadCachedAssets('character_select_ui'),
+          universalAssetPreloader.loadCachedAssets('ui_videos'),
+          universalAssetPreloader.loadCachedAssets('static_sounds'),
+        ]);
+      }
+
+      soundManager.clearUrlCache();
+
+      // Step 4: Complete and save state
       await universalAssetPreloader.saveCacheInfoToStorage();
       soundManager.clearUrlCache();
+
+      await fillProgressToFull(550);
 
       setDownloadProgress(prev => ({
         ...prev,
         isDownloading: false,
         isComplete: true,
+        mapName: 'Ready',
+        progress: 1,
       }));
       setAssetsReady(true);
 
     } catch (error) {
       console.error('❌ Auto-preload failed on initial load:', error);
+      await fillProgressToFull(350);
+      setDownloadProgress(prev => ({
+        ...prev,
+        isDownloading: false,
+        isComplete: true,
+        mapName: 'Ready',
+        progress: 1,
+      }));
       setAssetsReady(true); // Proceed anyway to avoid bricking the app
     }
   };
@@ -323,8 +461,8 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
           </View>
 
           <Text style={[styles.statusText, !fontsLoaded && styles.fallbackFont]}>
-            {downloadProgress.isDownloading 
-              ? `Downloading ${downloadProgress.mapName}... ${uiPercent}%` 
+            {downloadProgress.isDownloading
+              ? `${downloadProgress.mapName || 'Preloading Game Data'}... ${uiPercent}%`
               : 'Preloading Game Data...'}
           </Text>
         </View>

@@ -33,26 +33,41 @@ getStaticSoundAssets() {
   return assets;
   },
 
-async areStaticSoundAssetsCached() {
+async areStaticSoundAssetsCached(onProgress = null) {
   const assets = this.getStaticSoundAssets();
   let available = 0;
   let missing = 0;
+  const totalCount = assets.length;
 
-  for (const asset of assets) {
+  for (let i = 0; i < totalCount; i++) {
+    const asset = assets[i];
     const localPath = this.getLocalFilePath(asset.url, asset.category);
-    const fileInfo = await FileSystem.getInfoAsync(localPath);
-    if (fileInfo.exists) {
+    const validation = await this.validateCachedFile(localPath, asset.url);
+    if (validation.valid) {
+      this.downloadedAssets.set(asset.url, {
+        localPath,
+        category: asset.category,
+        url: asset.url,
+        downloadedAt: Date.now(),
+        fileSize: validation.size,
+      });
       available++;
     } else {
+      this.downloadedAssets.delete(asset.url);
       missing++;
+    }
+
+    if (onProgress && (i % 5 === 0 || i === totalCount - 1)) {
+      onProgress({ available, total: totalCount });
     }
   }
 
   return {
-    total: assets.length,
+    total: totalCount,
     available,
     missing,
-    allCached: missing === 0
+    allCached: missing === 0,
+    cached: missing === 0
   };
   },
 

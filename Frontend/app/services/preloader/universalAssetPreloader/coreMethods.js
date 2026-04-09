@@ -128,6 +128,68 @@ getLocalFilePath(url, category = 'general') {
   return `${this.cacheDirectory}${category}/${finalFileName}`;
   },
 
+getMinimumValidFileSize(url = '') {
+  const lowerUrl = (url || '').toLowerCase().split('?')[0];
+
+  if (lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.mov') || lowerUrl.endsWith('.webm')) {
+    return 2048;
+  }
+
+  if (lowerUrl.endsWith('.mp3') || lowerUrl.endsWith('.wav') || lowerUrl.endsWith('.ogg') || lowerUrl.endsWith('.m4a')) {
+    return 512;
+  }
+
+  if (lowerUrl.endsWith('.json') || lowerUrl.includes('.lottie')) {
+    return 128;
+  }
+
+  if (this.isImageFile(lowerUrl)) {
+    return 256;
+  }
+
+  return 128;
+  },
+
+async validateCachedFile(localPath, url = '', expectedBytes = 0) {
+  try {
+    const fileInfo = await FileSystem.getInfoAsync(localPath);
+
+    if (!fileInfo.exists || !fileInfo.size || fileInfo.size <= 0) {
+      return { valid: false, reason: 'missing_or_empty', size: 0 };
+    }
+
+    const minimumBytes = this.getMinimumValidFileSize(url);
+    if (fileInfo.size < minimumBytes) {
+      await FileSystem.deleteAsync(localPath, { idempotent: true });
+      return {
+        valid: false,
+        reason: 'too_small',
+        size: fileInfo.size,
+        minimumBytes,
+      };
+    }
+
+    const numericExpected = Number(expectedBytes || 0);
+    if (Number.isFinite(numericExpected) && numericExpected > 0) {
+      // Allow a tiny margin for servers that report slightly different content-length values.
+      const lowerBound = Math.floor(numericExpected * 0.98);
+      if (fileInfo.size < lowerBound) {
+        await FileSystem.deleteAsync(localPath, { idempotent: true });
+        return {
+          valid: false,
+          reason: 'incomplete_download',
+          size: fileInfo.size,
+          expected: numericExpected,
+        };
+      }
+    }
+
+    return { valid: true, reason: 'ok', size: fileInfo.size };
+  } catch (error) {
+    return { valid: false, reason: 'stat_failed', error: error.message || 'unknown_error', size: 0 };
+  }
+  },
+
 async downloadSingleAsset(url, category = 'general', onProgress = null, retries = 2) {
     if (!url || typeof url !== 'string') {
       console.warn('⚠️ Invalid URL provided to downloadSingleAsset:', url);
@@ -159,15 +221,15 @@ async downloadSingleAsset(url, category = 'general', onProgress = null, retries 
       const localPath = this.getLocalFilePath(url, category);
       
       // Check if already downloaded and file exists
-      const fileInfo = await FileSystem.getInfoAsync(localPath);
-      if (fileInfo.exists && fileInfo.size > 0) {
+      const existingValidation = await this.validateCachedFile(localPath, url);
+      if (existingValidation.valid) {
         console.log(`📦 Asset already cached: ${url.slice(-50)}`);
         this.downloadedAssets.set(url, {
           localPath,
           category,
           url,
           downloadedAt: Date.now(),
-          fileSize: fileInfo.size
+          fileSize: existingValidation.size
         });
         return { success: true, localPath, cached: true, url, category };
       }
@@ -194,17 +256,25 @@ async downloadSingleAsset(url, category = 'general', onProgress = null, retries 
       const downloadTime = Date.now() - startTime;
 
       if (result && result.uri) {
+        const downloadedLocalPath = result.uri.replace('file://', '');
+        const expectedBytes = Number(result.headers?.['content-length'] || result.headers?.['Content-Length'] || 0);
+        const downloadedValidation = await this.validateCachedFile(downloadedLocalPath, url, expectedBytes);
+
+        if (!downloadedValidation.valid) {
+          throw new Error(`Downloaded file is invalid: ${downloadedValidation.reason}`);
+        }
+
         this.downloadedAssets.set(url, {
-          localPath: result.uri.replace('file://', ''),
+          localPath: downloadedLocalPath,
           category,
           url,
           downloadedAt: Date.now(),
           downloadTime,
-          fileSize: result.headers?.['content-length'] || 0
+          fileSize: downloadedValidation.size
         });
         
         console.log(` Asset downloaded in ${downloadTime}ms: ${url.slice(-50)}`);
-        return { success: true, localPath: result.uri.replace('file://', ''), downloadTime, url, category };
+        return { success: true, localPath: downloadedLocalPath, downloadTime, url, category };
       } else {
         throw new Error('Download failed - no result URI');
       }
