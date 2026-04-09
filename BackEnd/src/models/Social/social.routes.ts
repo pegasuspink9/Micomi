@@ -22,6 +22,13 @@ router.get(
   SocialController.getFollowers,
 );
 
+router.get(
+  "/followers/:playerId",
+  authenticate,
+  requirePlayer,
+  SocialController.getFollowers,
+);
+
 router.post(
   "/follow-back/:playerId",
   authenticate,
@@ -34,6 +41,13 @@ router.delete(
   authenticate,
   requirePlayer,
   SocialController.unfollowPlayer,
+);
+
+router.get(
+  "/following",
+  authenticate,
+  requirePlayer,
+  SocialController.getFollowing,
 );
 
 router.get(
