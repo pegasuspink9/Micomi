@@ -1,8 +1,8 @@
 import { prisma } from "../prisma/client";
 
-type MapName = "HTML" | "CSS" | "Computer" | "JavaScript";
+export type MapName = "HTML" | "CSS" | "Computer" | "JavaScript";
 
-const backgrounds: Record<MapName, string[]> = {
+export const backgrounds: Record<MapName, string[]> = {
   HTML: [
     `https://micomi-assets.me/Maps/Greenland/1.png`,
     `https://micomi-assets.me/Maps/Greenland/2.png`,
@@ -53,7 +53,16 @@ const backgrounds: Record<MapName, string[]> = {
   ],
 };
 
-const defaultBackground = `https://micomi-assets.me/Maps/Snowland/10.png`;
+export const defaultBackground = `https://micomi-assets.me/Maps/Snowland/10.png`;
+
+export const getRandomBackgroundForMap = (mapName: string): string => {
+  const key = mapName as MapName;
+  const bgList = backgrounds[key];
+  if (!bgList || bgList.length === 0) return defaultBackground;
+
+  const index = Math.floor(Math.random() * bgList.length);
+  return bgList[index] ?? defaultBackground;
+};
 
 export async function getBackgroundForLevel(
   mapName: string,

@@ -19,6 +19,14 @@ const parseAnswer = (value: unknown): string[] => {
   return value;
 };
 
+const parseChallengeId = (value: string | undefined): number => {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error("challengeId must be a valid positive number");
+  }
+  return parsed;
+};
+
 export const getDailyPreview = async (req: Request, res: Response) => {
   try {
     const playerId = (req as any).user.id as number;
@@ -91,11 +99,13 @@ export const submitAnswer = async (req: Request, res: Response) => {
   try {
     const playerId = (req as any).user.id as number;
     const matchId = parseMatchId(req.params.matchId);
+    const challengeId = parseChallengeId(req.params.challengeId);
     const answer = parseAnswer(req.body?.answer);
 
     const result = await PvpDailyService.submitAnswer(
       playerId,
       matchId,
+      challengeId,
       answer,
     );
 

@@ -63,6 +63,7 @@ export interface PvPMatchState {
   match_id: string;
   created_at: string;
   started_at: string;
+  current_round_started_at: string;
   status: "active" | "completed";
   players: [PvPDailyPlayerSnapshot, PvPDailyPlayerSnapshot];
   questions: DailyPvpQuestion[];
@@ -89,15 +90,46 @@ export interface PvpDailyPreviewResponse {
     description: string;
     topics_covered: string[];
     question_count: number;
-    difficulty: "hard";
-    boss_level_expected_output: Array<{
-      level_id: number;
-      level_number: number | null;
-      map_name: string;
-      boss_level_expected_output: unknown;
-    }>;
+    difficulty: "easy";
   };
   status: PlayerMatchmakingState;
+}
+
+export interface PvpMatchEntryLikeResponse {
+  level: {
+    level_id: number;
+    level_number: number | null;
+    level_type: string;
+    level_difficulty: string;
+    level_title: string | null;
+    content: string;
+  };
+  enemy: Record<string, unknown>;
+  character: Record<string, unknown>;
+  card: {
+    card_type: string | null;
+    character_attack_card: string | null;
+    character_damage_card: number | null;
+  };
+  currentChallenge: Record<string, unknown> | null;
+  energy: number;
+  timeToNextEnergyRestore: string | null;
+  correct_answer_length: number;
+  combat_background: string[];
+  question_type: string;
+  versus_background: string;
+  versus_audio: string;
+  gameplay_audio: string;
+  is_correct_audio: string | null;
+  enemy_attack_audio: string | null;
+  character_attack_audio: string | null;
+  character_hurt_audio: string | null;
+  enemy_hurt_audio: string | null;
+  death_audio: string | null;
+  is_victory_audio: string | null;
+  is_victory_image: string | null;
+  boss_skill_activated: boolean;
+  isEnemyFrozen: boolean;
 }
 
 export interface PvpDailyStatusResponse {
@@ -120,5 +152,50 @@ export interface PvpDailySubmitAnswerResult {
     | "correct_but_late"
     | "incorrect"
     | "round_already_resolved";
-  match: PvPMatchState;
+  isCorrect?: boolean;
+  attempts?: number;
+  fightResult?: Record<string, unknown> | null;
+  message?: string;
+  nextChallenge?: Record<string, unknown> | null;
+  audio?: string[];
+  completionRewards?: {
+    feedbackMessage?: string | null;
+    totalPointsEarned?: number;
+    totalExpPointsEarned?: number;
+    coinsEarned?: number;
+    isVictory?: boolean;
+    stars?: number;
+    playerOutputs?: string[] | null;
+  };
+  levelStatus?: {
+    isCompleted: boolean;
+    showFeedback: boolean;
+    playerHealth?: number;
+    enemyHealth?: number;
+    coinsEarned?: number;
+    totalPointsEarned?: number;
+    totalExpPointsEarned?: number;
+    playerOutputs?: string[];
+  };
+  nextLevel?: null;
+  energy?: number;
+  timeToNextEnergyRestore?: string | null;
+  correct_answer_length?: number;
+  combat_background?: string[];
+  question_type?: string;
+  is_bonus_round?: boolean;
+  card?: {
+    card_type: string | null;
+    character_attack_card: string | null;
+    character_damage_card: number | null;
+  };
+  gameplay_audio?: string;
+  is_correct_audio?: string | null;
+  enemy_attack_audio?: string | null;
+  character_attack_audio?: string | null;
+  character_hurt_audio?: string | null;
+  enemy_hurt_audio?: string | null;
+  death_audio?: string | null;
+  is_victory_audio?: string | null;
+  is_victory_image?: string | null;
 }

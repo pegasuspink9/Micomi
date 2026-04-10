@@ -1,4 +1,4 @@
-import { PrismaClient, PotionType } from "@prisma/client";
+import { Prisma, PrismaClient, PotionType } from "@prisma/client";
 import {
   DailyPvpQuestion,
   MatchmakingStatus,
@@ -9,11 +9,29 @@ import {
   PvPMatchState,
   PvPQuestionRoundState,
   PvpDailyPlayResponse,
+  PvpMatchEntryLikeResponse,
   PvpDailyPreviewResponse,
   PvpDailyStatusResponse,
   PvpDailySubmitAnswerResult,
 } from "./pvpDaily.types";
 import { getSocketServer } from "../../socket";
+import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
+import {
+  CORRECT_ANSWER_AUDIO,
+  getHeroAttackAudio,
+  getHeroHurtAudio,
+  getHeroSpecialSkillAssets,
+  getMapMediaAssets,
+  UNIVERSAL_ENEMY_HURT_AUDIO,
+} from "../../../helper/gameplayAssetsHelper";
+import { getCardForAttackType } from "../Combat/combat.service";
+import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
+import { formatTimer } from "../../../helper/dateTimeHelper";
+import * as EnergyService from "../Energy/energy.service";
+import {
+  DEFAULT_ENEMY_ATTACK_AUDIO,
+  ENEMY_ATTACK_SOUNDS,
+} from "../../../helper/enemyAttackSounds";
 
 const prisma = new PrismaClient();
 
@@ -37,6 +55,32 @@ const matchmakingByPlayer = new Map<number, PlayerMatchmakingState>();
 const queue = new Set<number>();
 const matches = new Map<string, PvPMatchState>();
 const dailyPreviewViewedByPlayer = new Map<number, string>();
+
+const VICTORY_AUDIO = "https://micomi-assets.me/Sounds/Final/Victory_Sound.wav";
+const DEFEAT_AUDIO = "https://micomi-assets.me/Sounds/Final/Defeat_Sound.wav";
+const VICTORY_IMAGES = [
+  "https://micomi-assets.me/Micomi%20Celebrating/micomiceleb1.png",
+  "https://micomi-assets.me/Micomi%20Celebrating/micomiceleb2.png",
+  "https://micomi-assets.me/Micomi%20Celebrating/micomiceleb3.png",
+];
+const DEFEAT_IMAGES = [
+  "https://micomi-assets.me/Micomi%20Celebrating/Failed1.png",
+  "https://micomi-assets.me/Micomi%20Celebrating/Failed2.png",
+  "https://micomi-assets.me/Micomi%20Celebrating/Failed3.png",
+];
+
+const randomFrom = (pool: string[]): string | null => {
+  if (pool.length === 0) return null;
+  return pool[Math.floor(Math.random() * pool.length)] ?? null;
+};
+
+const calculateStars = (mistakes: number, totalQuestions: number): number => {
+  if (mistakes <= 0) return 3;
+  if (totalQuestions <= 0) return 1;
+
+  const ratio = (mistakes / totalQuestions) * 100;
+  return ratio <= 20 ? 2 : 1;
+};
 
 const getNowIso = () => new Date().toISOString();
 
@@ -112,7 +156,7 @@ const reconcileMatchedState = (playerId: number) => {
   if (!state || state.status !== "already_matched" || !state.match_id) return;
 
   const match = matches.get(state.match_id);
-  if (!match || match.status === "completed") {
+  if (match?.status === "completed") {
     resetPlayerToIdle(playerId);
   }
 };
@@ -191,7 +235,7 @@ const buildQuestionPool = async (): Promise<DailyPvpQuestion[]> => {
   const challenges = await prisma.challenge.findMany({
     where: {
       level: {
-        level_difficulty: "hard",
+        level_difficulty: "easy",
       },
     },
     include: {
@@ -250,9 +294,9 @@ const buildQuestionPool = async (): Promise<DailyPvpQuestion[]> => {
   return questions;
 };
 
-const getAllHardTopics = async (): Promise<string[]> => {
+const getAllEasyTopics = async (): Promise<string[]> => {
   const levels = await prisma.level.findMany({
-    where: { level_difficulty: "hard" },
+    where: { level_difficulty: "easy" },
     include: { map: true },
   });
 
@@ -274,8 +318,189 @@ const getPreviewBossExpectedOutput = async (questions: DailyPvpQuestion[]) => {
       level_id: level.level_id,
       level_number: level.level_number,
       map_name: level.map.map_name,
-      boss_level_expected_output: level.boss_level_expected_output,
     }));
+};
+
+const getSelectedCharacterDetails = async (playerId: number) => {
+  const selected = await prisma.playerCharacter.findFirst({
+    where: { player_id: playerId, is_selected: true, is_purchased: true },
+    include: { character: true },
+  });
+  if (!selected) {
+    throw new Error("No selected character found");
+  }
+
+  return selected.character;
+};
+
+const resolveAttackTypeAndDamage = (
+  correctAnswerLength: number,
+  damageArray: number[],
+) => {
+  if (correctAnswerLength >= 8) {
+    return { attackType: "third_attack", damage: damageArray[2] ?? 0 };
+  }
+  if (correctAnswerLength >= 5) {
+    return { attackType: "second_attack", damage: damageArray[1] ?? 0 };
+  }
+  return { attackType: "basic_attack", damage: damageArray[0] ?? 0 };
+};
+
+const buildChallengeWithTimer = (
+  question: DailyPvpQuestion,
+  roundStartedAtIso: string,
+) => {
+  const elapsed = (Date.now() - new Date(roundStartedAtIso).getTime()) / 1000;
+  const timeRemaining = Math.max(0, CHALLENGE_TIME_LIMIT - elapsed);
+
+  return {
+    ...question,
+    timeLimit: CHALLENGE_TIME_LIMIT,
+    timeRemaining,
+    timer: formatTimer(timeRemaining),
+  };
+};
+
+const buildEntryLikePayload = async (
+  match: PvPMatchState,
+  viewerPlayerId: number,
+): Promise<PvpMatchEntryLikeResponse> => {
+  const viewerIndex = getPlayerIndex(match, viewerPlayerId);
+  if (viewerIndex === -1) {
+    throw new Error("You are not part of this match");
+  }
+
+  const opponentIndex = getOpponentIndex(viewerIndex);
+  const viewerSnapshot = match.players[viewerIndex];
+  const opponentSnapshot = match.players[opponentIndex];
+  const question = getRoundQuestion(match);
+
+  if (!question) {
+    throw new Error("No current challenge found");
+  }
+
+  const [viewerChar, opponentChar, level, energyStatus] = await Promise.all([
+    getSelectedCharacterDetails(viewerPlayerId),
+    getSelectedCharacterDetails(opponentSnapshot.player_id),
+    prisma.level.findUnique({
+      where: { level_id: question.level_id },
+      include: { map: true },
+    }),
+    EnergyService.getPlayerEnergyStatus(viewerPlayerId),
+  ]);
+
+  if (!level) {
+    throw new Error("Level not found for current challenge");
+  }
+
+  const viewerDamageArray = Array.isArray(viewerChar.character_damage)
+    ? (viewerChar.character_damage as number[])
+    : [viewerSnapshot.attack_damage];
+  const correctAnswerLength = question.correct_answer.length;
+  const { attackType, damage } = resolveAttackTypeAndDamage(
+    correctAnswerLength,
+    viewerDamageArray,
+  );
+  const cardInfo = getCardForAttackType(viewerChar.character_name, attackType);
+  const character_attack_audio = getHeroAttackAudio(
+    viewerChar.character_name,
+    attackType,
+  );
+  const character_hurt_audio = getHeroHurtAudio(viewerChar.character_name);
+  const enemyNameForAudio = String(opponentSnapshot.character_name);
+  const enemy_attack_audio =
+    ENEMY_ATTACK_SOUNDS[enemyNameForAudio]?.basic ?? DEFAULT_ENEMY_ATTACK_AUDIO;
+
+  const mapName = question.map_name || level.map.map_name;
+  const levelNumber = question.level_number ?? level.level_number;
+
+  const currentChallenge = buildChallengeWithTimer(
+    question,
+    match.current_round_started_at,
+  );
+  const combatBackground = [await getBackgroundForLevel(mapName, levelNumber)];
+  const mapAssets = getMapMediaAssets(mapName);
+
+  const viewerSS = getHeroSpecialSkillAssets(viewerChar.character_name);
+  const opponentSS = getHeroSpecialSkillAssets(opponentChar.character_name);
+
+  return {
+    level: {
+      level_id: level.level_id,
+      level_number: level.level_number,
+      level_type: "pvp_daily",
+      level_difficulty: String(level.level_difficulty),
+      level_title: level.level_title,
+      content: level.content,
+    },
+    enemy: {
+      player_id: opponentSnapshot.player_id,
+      player_name: opponentSnapshot.player_name,
+      enemy_id: opponentSnapshot.character_id,
+      enemy_name: opponentSnapshot.character_name,
+      enemy_health: opponentSnapshot.character_health,
+      enemy_idle: opponentChar.avatar_image,
+      enemy_run: opponentChar.character_run,
+      enemy_damage: opponentSnapshot.attack_damage,
+      enemy_attack: Array.isArray(opponentChar.character_attacks)
+        ? opponentChar.character_attacks[0]
+        : null,
+      enemy_hurt: opponentChar.character_hurt,
+      enemy_dies: opponentChar.character_dies,
+      enemy_avatar: opponentChar.character_avatar,
+      special_skill: {
+        special_skill_image: opponentSS.special_skill_image,
+        streak: 0,
+        special_skill_description: opponentSS.special_skill_description,
+        ss_type: null,
+      },
+    },
+    character: {
+      player_id: viewerSnapshot.player_id,
+      player_name: viewerSnapshot.player_name,
+      character_id: viewerSnapshot.character_id,
+      character_name: viewerSnapshot.character_name,
+      character_health: viewerSnapshot.character_health,
+      character_damage: viewerChar.character_damage,
+      character_idle: viewerChar.avatar_image,
+      character_run: viewerChar.character_run,
+      character_attack: viewerChar.character_attacks,
+      character_hurt: viewerChar.character_hurt,
+      character_dies: viewerChar.character_dies,
+      character_avatar: viewerChar.character_avatar,
+      character_is_range: viewerChar.is_range,
+      character_range_attack: viewerChar.range_attacks,
+      special_skill: {
+        special_skill_image: viewerSS.special_skill_image,
+        streak: 0,
+        special_skill_description: viewerSS.special_skill_description,
+      },
+    },
+    card: {
+      card_type: cardInfo.card_type,
+      character_attack_card: cardInfo.character_attack_card,
+      character_damage_card: damage,
+    },
+    currentChallenge,
+    energy: energyStatus.energy ?? 0,
+    timeToNextEnergyRestore: energyStatus.timeToNextRestore,
+    correct_answer_length: correctAnswerLength,
+    combat_background: combatBackground,
+    question_type: level.map.map_name,
+    versus_background: mapAssets.versus_background,
+    versus_audio: mapAssets.versus_audio,
+    gameplay_audio: mapAssets.gameplay_audio,
+    is_correct_audio: null,
+    enemy_attack_audio,
+    character_attack_audio,
+    character_hurt_audio,
+    enemy_hurt_audio: UNIVERSAL_ENEMY_HURT_AUDIO,
+    death_audio: null,
+    is_victory_audio: null,
+    is_victory_image: null,
+    boss_skill_activated: false,
+    isEnemyFrozen: false,
+  };
 };
 
 const getSelectedCharacterSnapshot = async (
@@ -351,6 +576,57 @@ const cloneMatchForResponse = (match: PvPMatchState): PvPMatchState => {
       ? { ...match.completion_stats }
       : null,
   };
+};
+
+const persistMatchProgress = async (match: PvPMatchState) => {
+  const payload = cloneMatchForResponse(
+    match,
+  ) as unknown as Prisma.InputJsonValue;
+
+  await prisma.playerVsPlayerProgress.upsert({
+    where: { match_id: match.match_id },
+    update: {
+      player_one_id: match.players[0].player_id,
+      player_two_id: match.players[1].player_id,
+      status: match.status,
+      payload,
+    },
+    create: {
+      match_id: match.match_id,
+      player_one_id: match.players[0].player_id,
+      player_two_id: match.players[1].player_id,
+      status: match.status,
+      payload,
+    },
+  });
+};
+
+const removeMatchProgress = async (matchId: string) => {
+  await prisma.playerVsPlayerProgress.deleteMany({
+    where: { match_id: matchId },
+  });
+};
+
+const getMatchFromMemoryOrDb = async (
+  matchId: string,
+): Promise<PvPMatchState | null> => {
+  const inMemory = matches.get(matchId);
+  if (inMemory) {
+    return inMemory;
+  }
+
+  const persisted = await prisma.playerVsPlayerProgress.findUnique({
+    where: { match_id: matchId },
+    select: { payload: true },
+  });
+
+  if (!persisted) {
+    return null;
+  }
+
+  const hydrated = persisted.payload as unknown as PvPMatchState;
+  matches.set(matchId, hydrated);
+  return hydrated;
 };
 
 const buildPublicMatchPayload = (match: PvPMatchState) => {
@@ -446,6 +722,9 @@ const completeMatch = async (
 
   const winner = match.players.find((p) => p.player_id === winnerPlayerId)!;
   const loser = match.players.find((p) => p.player_id === loserPlayerId)!;
+  const totalQuestions = match.questions.length;
+  const winnerMistakes = match.mistakes_by_player[winnerPlayerId] ?? 0;
+  const loserMistakes = match.mistakes_by_player[loserPlayerId] ?? 0;
 
   const winnerReward: PvPCompletionRewards = {
     ...WIN_REWARD,
@@ -472,17 +751,46 @@ const completeMatch = async (
     loser_player_id: loserPlayerId,
     winner_name: winner.player_name,
     loser_name: loser.player_name,
-    winner_mistakes: match.mistakes_by_player[winnerPlayerId] ?? 0,
-    loser_mistakes: match.mistakes_by_player[loserPlayerId] ?? 0,
-    total_questions: match.questions.length,
+    winner_mistakes: winnerMistakes,
+    loser_mistakes: loserMistakes,
+    total_questions: totalQuestions,
     resolved_questions: resolvedQuestions,
     reason,
-    message_for_winner: `You finished ${loser.player_name} with ${match.mistakes_by_player[winnerPlayerId] ?? 0} mistakes.`,
-    message_for_loser: `${winner.player_name} defeated you with ${match.mistakes_by_player[winnerPlayerId] ?? 0} mistakes.`,
+    message_for_winner: `You finished ${loser.player_name} with ${winnerMistakes} mistakes.`,
+    message_for_loser: `${winner.player_name} defeated you with ${winnerMistakes} mistakes.`,
   };
 
   match.completion_stats = stats;
+  await persistMatchProgress(match);
+
+  await prisma.playerVsPlayerResult.createMany({
+    data: [
+      {
+        match_id: match.match_id,
+        player_id: winner.player_id,
+        player_name: winner.player_name,
+        character_name: winner.character_name,
+        character_avatar: winner.character_avatar,
+        match_status: "win",
+        stars: calculateStars(winnerMistakes, totalQuestions),
+      },
+      {
+        match_id: match.match_id,
+        player_id: loser.player_id,
+        player_name: loser.player_name,
+        character_name: loser.character_name,
+        character_avatar: loser.character_avatar,
+        match_status: "loss",
+        stars: 0,
+      },
+    ],
+    skipDuplicates: true,
+  });
+
   emitMatchStateToPlayers(match, "pvp:match-completed");
+
+  matches.delete(match.match_id);
+  await removeMatchProgress(match.match_id);
 
   resetPlayerToIdle(winnerPlayerId);
   resetPlayerToIdle(loserPlayerId);
@@ -534,6 +842,7 @@ const maybeProgressRoundOrFinish = async (match: PvPMatchState) => {
   }
 
   match.current_round_index += 1;
+  match.current_round_started_at = getNowIso();
 };
 
 const tryCreatePair = async (): Promise<string | null> => {
@@ -587,7 +896,7 @@ const tryCreatePair = async (): Promise<string | null> => {
   if (questionPool.length === 0) {
     resetPlayerToIdle(playerA);
     resetPlayerToIdle(playerB);
-    throw new Error("No hard daily challenges are available for PvP");
+    throw new Error("No easy daily challenges are available for PvP");
   }
 
   const now = getNowIso();
@@ -597,6 +906,7 @@ const tryCreatePair = async (): Promise<string | null> => {
     match_id: matchId,
     created_at: now,
     started_at: now,
+    current_round_started_at: now,
     status: "active",
     players: [snapshotA, snapshotB],
     questions: questionPool,
@@ -617,6 +927,7 @@ const tryCreatePair = async (): Promise<string | null> => {
   };
 
   matches.set(matchId, match);
+  await persistMatchProgress(match);
   setPlayerState(playerA, "already_matched", matchId);
   setPlayerState(playerB, "already_matched", matchId);
   emitMatchStateToPlayers(match, "pvp:match-found");
@@ -651,8 +962,7 @@ export const getDailyPreview = async (
   playerId: number,
 ): Promise<PvpDailyPreviewResponse> => {
   const questions = await buildQuestionPool();
-  const topics = await getAllHardTopics();
-  const bossExpectedOutput = await getPreviewBossExpectedOutput(questions);
+  const topics = await getAllEasyTopics();
   const todaySeed = getDailySeed();
   dailyPreviewViewedByPlayer.set(playerId, todaySeed);
 
@@ -662,13 +972,12 @@ export const getDailyPreview = async (
   return {
     daily_seed: getDailySeed(),
     preview_task: {
-      title: "Daily PvP Boss Challenge",
+      title: "Daily PvP Easy Challenge",
       description:
-        "Race another player to solve hard boss-level questions spanning all unlocked game topics.",
+        "Race another player to solve easy questions spanning all unlocked game topics.",
       topics_covered: topics,
       question_count: questions.length,
-      difficulty: "hard",
-      boss_level_expected_output: bossExpectedOutput,
+      difficulty: "easy",
     },
     status: state,
   };
@@ -734,7 +1043,7 @@ export const getMatchmakingStatus = async (
 export const getMatchState = async (playerId: number, matchId: string) => {
   reconcileMatchedState(playerId);
 
-  const match = matches.get(matchId);
+  const match = await getMatchFromMemoryOrDb(matchId);
   if (!match) {
     throw new Error("Match not found");
   }
@@ -743,31 +1052,140 @@ export const getMatchState = async (playerId: number, matchId: string) => {
     throw new Error("You are not part of this match");
   }
 
-  const current = getRoundQuestion(match);
+  return buildEntryLikePayload(match, playerId);
+};
+
+const buildSubmitLikeResponse = async (
+  match: PvPMatchState,
+  playerId: number,
+  reason: PvpDailySubmitAnswerResult["reason"],
+  isCorrect: boolean,
+): Promise<PvpDailySubmitAnswerResult> => {
+  const entryLike = await buildEntryLikePayload(match, playerId);
+  const round = match.rounds[Math.max(0, match.current_round_index)] ?? null;
+  const attempts = round?.attempts_by_player[playerId] ?? 0;
+
+  const nextQuestion = match.questions[match.current_round_index] ?? null;
+  const nextChallenge = nextQuestion
+    ? buildChallengeWithTimer(nextQuestion, match.current_round_started_at)
+    : null;
+
+  const fightResult = {
+    status: match.status === "completed" ? "completed" : "in_progress",
+    enemy: entryLike.enemy,
+    character: entryLike.character,
+    timer: nextChallenge ? nextChallenge.timer : "00:00",
+    energy: entryLike.energy,
+    timeToNextEnergyRestore: entryLike.timeToNextEnergyRestore,
+    boss_skill_activated: false,
+  };
+
+  const submitMessage =
+    reason === "correct_and_first"
+      ? "Great timing! You landed the hit."
+      : reason === "correct_but_late"
+        ? "Correct answer, but opponent already claimed this round."
+        : reason === "round_already_resolved"
+          ? "Round already resolved."
+          : "That was tricky!";
+
+  const isCompleted = match.status === "completed";
+  const isVictory = isCompleted && match.winner_player_id === playerId;
+  const mistakes = match.mistakes_by_player[playerId] ?? 0;
+  const stars = isVictory
+    ? calculateStars(mistakes, match.questions.length)
+    : 0;
+
+  const completionRewards = isCompleted
+    ? {
+        feedbackMessage: isVictory
+          ? "Victory! You outplayed your opponent."
+          : "Defeat. Study this round and strike back.",
+        totalPointsEarned: match.rewards_by_player[playerId]?.points ?? 0,
+        totalExpPointsEarned: match.rewards_by_player[playerId]?.exp ?? 0,
+        coinsEarned: match.rewards_by_player[playerId]?.coins ?? 0,
+        isVictory,
+        stars,
+        playerOutputs: [],
+      }
+    : undefined;
 
   return {
-    ...cloneMatchForResponse(match),
-    current_question: current ? publicQuestion(current) : null,
+    is_correct: isCorrect,
+    accepted_for_attack: reason === "correct_and_first",
+    reason,
+    isCorrect,
+    attempts,
+    fightResult,
+    message: submitMessage,
+    nextChallenge,
+    audio: [],
+    completionRewards,
+    levelStatus: {
+      isCompleted,
+      showFeedback: isCompleted,
+      playerHealth: (entryLike.character as { character_health?: number })
+        .character_health,
+      enemyHealth: (entryLike.enemy as { enemy_health?: number }).enemy_health,
+      coinsEarned: isCompleted
+        ? (match.rewards_by_player[playerId]?.coins ?? 0)
+        : 0,
+      totalPointsEarned: isCompleted
+        ? (match.rewards_by_player[playerId]?.points ?? 0)
+        : 0,
+      totalExpPointsEarned: isCompleted
+        ? (match.rewards_by_player[playerId]?.exp ?? 0)
+        : 0,
+      playerOutputs: [],
+    },
+    nextLevel: null,
+    energy: entryLike.energy,
+    timeToNextEnergyRestore: entryLike.timeToNextEnergyRestore,
+    correct_answer_length: entryLike.correct_answer_length,
+    combat_background: entryLike.combat_background,
+    question_type: entryLike.question_type,
+    is_bonus_round: false,
+    card: entryLike.card,
+    gameplay_audio: entryLike.gameplay_audio,
+    is_correct_audio: isCorrect ? CORRECT_ANSWER_AUDIO : null,
+    enemy_attack_audio: entryLike.enemy_attack_audio,
+    character_attack_audio: entryLike.character_attack_audio,
+    character_hurt_audio: entryLike.character_hurt_audio,
+    enemy_hurt_audio: entryLike.enemy_hurt_audio,
+    death_audio: isCompleted
+      ? "https://micomi-assets.me/Sounds/Final/All%20Death.wav"
+      : null,
+    is_victory_audio: isCompleted
+      ? isVictory
+        ? VICTORY_AUDIO
+        : DEFEAT_AUDIO
+      : null,
+    is_victory_image: isCompleted
+      ? isVictory
+        ? randomFrom(VICTORY_IMAGES)
+        : randomFrom(DEFEAT_IMAGES)
+      : null,
   };
 };
 
 export const submitAnswer = async (
   playerId: number,
   matchId: string,
+  challengeId: number,
   answer: string[],
 ): Promise<PvpDailySubmitAnswerResult> => {
-  const match = matches.get(matchId);
+  const match = await getMatchFromMemoryOrDb(matchId);
   if (!match) {
     throw new Error("Match not found");
   }
 
   if (match.status === "completed") {
-    return {
-      is_correct: false,
-      accepted_for_attack: false,
-      reason: "round_already_resolved",
-      match: cloneMatchForResponse(match),
-    };
+    return buildSubmitLikeResponse(
+      match,
+      playerId,
+      "round_already_resolved",
+      false,
+    );
   }
 
   const playerIndex = getPlayerIndex(match, playerId);
@@ -782,6 +1200,12 @@ export const submitAnswer = async (
     throw new Error("Current round is invalid");
   }
 
+  if (question.challenge_id !== challengeId) {
+    throw new Error(
+      `Challenge mismatch. Expected ${question.challenge_id} for current round.`,
+    );
+  }
+
   const now = getNowIso();
 
   if (!round.first_submission_by_player_id) {
@@ -793,12 +1217,12 @@ export const submitAnswer = async (
     (round.attempts_by_player[playerId] ?? 0) + 1;
 
   if (round.resolved_by_player_id) {
-    return {
-      is_correct: false,
-      accepted_for_attack: false,
-      reason: "round_already_resolved",
-      match: cloneMatchForResponse(match),
-    };
+    return buildSubmitLikeResponse(
+      match,
+      playerId,
+      "round_already_resolved",
+      false,
+    );
   }
 
   const normalizedGiven = answer.map((item) => item.trim());
@@ -812,13 +1236,9 @@ export const submitAnswer = async (
       (match.mistakes_by_player[playerId] ?? 0) + 1;
 
     emitMatchStateToPlayers(match, "pvp:match-update");
+    await persistMatchProgress(match);
 
-    return {
-      is_correct: false,
-      accepted_for_attack: false,
-      reason: "incorrect",
-      match: cloneMatchForResponse(match),
-    };
+    return buildSubmitLikeResponse(match, playerId, "incorrect", false);
   }
 
   const isFirstCorrect = round.resolved_by_player_id === null;
@@ -837,25 +1257,18 @@ export const submitAnswer = async (
     );
 
     await maybeProgressRoundOrFinish(match);
+    if (match.status === "active") {
+      await persistMatchProgress(match);
+    }
 
     if (match.status === "active") {
       emitMatchStateToPlayers(match, "pvp:match-update");
     }
 
-    return {
-      is_correct: true,
-      accepted_for_attack: true,
-      reason: "correct_and_first",
-      match: cloneMatchForResponse(match),
-    };
+    return buildSubmitLikeResponse(match, playerId, "correct_and_first", true);
   }
 
-  return {
-    is_correct: true,
-    accepted_for_attack: false,
-    reason: "correct_but_late",
-    match: cloneMatchForResponse(match),
-  };
+  return buildSubmitLikeResponse(match, playerId, "correct_but_late", true);
 };
 
 export const cancelMatchmaking = async (

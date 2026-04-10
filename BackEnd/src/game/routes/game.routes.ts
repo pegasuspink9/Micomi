@@ -106,25 +106,25 @@ router.get(
 
 // Daily PvP routes
 router.get(
-  "/pvp/daily/preview",
+  "/pvp/daily/match/preview",
   authenticate,
   requirePlayer,
   PvPDailyController.getDailyPreview,
 );
 router.post(
-  "/pvp/daily/play",
+  "/pvp/daily/match/play",
   authenticate,
   requirePlayer,
   PvPDailyController.playDailyPvp,
 );
 router.get(
-  "/pvp/daily/status",
+  "/pvp/daily/match/status",
   authenticate,
   requirePlayer,
   PvPDailyController.getMatchmakingStatus,
 );
 router.post(
-  "/pvp/daily/cancel",
+  "/pvp/daily/match/cancel",
   authenticate,
   requirePlayer,
   PvPDailyController.cancelMatchmaking,
@@ -136,7 +136,7 @@ router.get(
   PvPDailyController.getMatchState,
 );
 router.post(
-  "/pvp/daily/match/:matchId/answer",
+  "/pvp/daily/match/submit-answer/:matchId/:challengeId",
   authenticate,
   requirePlayer,
   PvPDailyController.submitAnswer,
