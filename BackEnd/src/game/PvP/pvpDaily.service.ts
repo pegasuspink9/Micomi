@@ -22,21 +22,17 @@ import {
   getHeroHurtAudio,
   getHeroSpecialSkillAssets,
   getMapMediaAssets,
-  UNIVERSAL_ENEMY_HURT_AUDIO,
 } from "../../../helper/gameplayAssetsHelper";
 import { getCardForAttackType } from "../Combat/combat.service";
 import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
 import { formatTimer } from "../../../helper/dateTimeHelper";
 import * as EnergyService from "../Energy/energy.service";
-import {
-  DEFAULT_ENEMY_ATTACK_AUDIO,
-  ENEMY_ATTACK_SOUNDS,
-} from "../../../helper/enemyAttackSounds";
 
 const prisma = new PrismaClient();
 
 const DEFAULT_QUESTION_COUNT = 7;
 const MATCHMAKING_TIMEOUT_MS = 2 * 60 * 1000;
+const MATCH_COMPLETION_CLEANUP_MS = 90 * 1000;
 const DEFAULT_FALLBACK_ATTACK_DAMAGE = 12;
 const WIN_REWARD: PvPCompletionRewards = {
   coins: 60,
@@ -54,6 +50,7 @@ const LOSS_REWARD: PvPCompletionRewards = {
 const matchmakingByPlayer = new Map<number, PlayerMatchmakingState>();
 const queue = new Set<number>();
 const matches = new Map<string, PvPMatchState>();
+const matchCleanupTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const dailyPreviewViewedByPlayer = new Map<number, string>();
 
 const VICTORY_AUDIO = "https://micomi-assets.me/Sounds/Final/Victory_Sound.wav";
@@ -72,6 +69,32 @@ const DEFEAT_IMAGES = [
 const randomFrom = (pool: string[]): string | null => {
   if (pool.length === 0) return null;
   return pool[Math.floor(Math.random() * pool.length)] ?? null;
+};
+
+const clamp = (value: number, min: number, max: number): number => {
+  return Math.min(max, Math.max(min, value));
+};
+
+const calculateBalancedMatchHealth = (
+  playerSnapshot: PvPDailyPlayerSnapshot,
+  opponentSnapshot: PvPDailyPlayerSnapshot,
+  questionCount: number,
+): number => {
+  const averageAttack = Math.max(
+    10,
+    Math.round(
+      (playerSnapshot.attack_damage + opponentSnapshot.attack_damage) / 2,
+    ),
+  );
+  const targetHitsToFinish = clamp(Math.ceil(questionCount * 0.75), 3, 6);
+  const roundBasedHealth = averageAttack * targetHitsToFinish;
+  const characterHealthPressure = Math.round(
+    (playerSnapshot.character_max_health +
+      opponentSnapshot.character_max_health) *
+      0.15,
+  );
+
+  return Math.max(roundBasedHealth, characterHealthPressure, averageAttack * 3);
 };
 
 const calculateStars = (mistakes: number, totalQuestions: number): number => {
@@ -406,10 +429,12 @@ const buildEntryLikePayload = async (
     viewerChar.character_name,
     attackType,
   );
+  const enemy_attack_audio = getHeroAttackAudio(
+    opponentChar.character_name,
+    "basic_attack",
+  );
+  const enemy_hurt_audio = getHeroHurtAudio(opponentChar.character_name);
   const character_hurt_audio = getHeroHurtAudio(viewerChar.character_name);
-  const enemyNameForAudio = String(opponentSnapshot.character_name);
-  const enemy_attack_audio =
-    ENEMY_ATTACK_SOUNDS[enemyNameForAudio]?.basic ?? DEFAULT_ENEMY_ATTACK_AUDIO;
 
   const mapName = question.map_name || level.map.map_name;
   const levelNumber = question.level_number ?? level.level_number;
@@ -439,6 +464,7 @@ const buildEntryLikePayload = async (
       enemy_id: opponentSnapshot.character_id,
       enemy_name: opponentSnapshot.character_name,
       enemy_health: opponentSnapshot.character_health,
+      enemy_max_health: opponentSnapshot.character_max_health,
       enemy_idle: opponentChar.avatar_image,
       enemy_run: opponentChar.character_run,
       enemy_damage: opponentSnapshot.attack_damage,
@@ -461,6 +487,7 @@ const buildEntryLikePayload = async (
       character_id: viewerSnapshot.character_id,
       character_name: viewerSnapshot.character_name,
       character_health: viewerSnapshot.character_health,
+      character_max_health: viewerSnapshot.character_max_health,
       character_damage: viewerChar.character_damage,
       character_idle: viewerChar.avatar_image,
       character_run: viewerChar.character_run,
@@ -494,7 +521,7 @@ const buildEntryLikePayload = async (
     enemy_attack_audio,
     character_attack_audio,
     character_hurt_audio,
-    enemy_hurt_audio: UNIVERSAL_ENEMY_HURT_AUDIO,
+    enemy_hurt_audio,
     death_audio: null,
     is_victory_audio: null,
     is_victory_image: null,
@@ -605,6 +632,21 @@ const removeMatchProgress = async (matchId: string) => {
   await prisma.playerVsPlayerProgress.deleteMany({
     where: { match_id: matchId },
   });
+};
+
+const scheduleMatchCleanup = (matchId: string) => {
+  const existingTimer = matchCleanupTimers.get(matchId);
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+  }
+
+  const timer = setTimeout(async () => {
+    matches.delete(matchId);
+    await removeMatchProgress(matchId);
+    matchCleanupTimers.delete(matchId);
+  }, MATCH_COMPLETION_CLEANUP_MS);
+
+  matchCleanupTimers.set(matchId, timer);
 };
 
 const getMatchFromMemoryOrDb = async (
@@ -788,9 +830,7 @@ const completeMatch = async (
   });
 
   emitMatchStateToPlayers(match, "pvp:match-completed");
-
-  matches.delete(match.match_id);
-  await removeMatchProgress(match.match_id);
+  scheduleMatchCleanup(match.match_id);
 
   resetPlayerToIdle(winnerPlayerId);
   resetPlayerToIdle(loserPlayerId);
@@ -901,6 +941,19 @@ const tryCreatePair = async (): Promise<string | null> => {
 
   const now = getNowIso();
   const matchId = `pvp-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+  const balancedHealth = calculateBalancedMatchHealth(
+    snapshotA,
+    snapshotB,
+    questionPool.length,
+  );
+
+  const normalizeSnapshotHealth = (
+    snapshot: PvPDailyPlayerSnapshot,
+  ): PvPDailyPlayerSnapshot => ({
+    ...snapshot,
+    character_health: balancedHealth,
+    character_max_health: balancedHealth,
+  });
 
   const match: PvPMatchState = {
     match_id: matchId,
@@ -908,7 +961,10 @@ const tryCreatePair = async (): Promise<string | null> => {
     started_at: now,
     current_round_started_at: now,
     status: "active",
-    players: [snapshotA, snapshotB],
+    players: [
+      normalizeSnapshotHealth(snapshotA),
+      normalizeSnapshotHealth(snapshotB),
+    ],
     questions: questionPool,
     rounds: createRounds(questionPool),
     current_round_index: 0,
@@ -1064,6 +1120,8 @@ const buildSubmitLikeResponse = async (
   const entryLike = await buildEntryLikePayload(match, playerId);
   const round = match.rounds[Math.max(0, match.current_round_index)] ?? null;
   const attempts = round?.attempts_by_player[playerId] ?? 0;
+  const isCompleted = match.status === "completed";
+  const isVictory = isCompleted && match.winner_player_id === playerId;
 
   const nextQuestion = match.questions[match.current_round_index] ?? null;
   const nextChallenge = nextQuestion
@@ -1071,7 +1129,7 @@ const buildSubmitLikeResponse = async (
     : null;
 
   const fightResult = {
-    status: match.status === "completed" ? "completed" : "in_progress",
+    status: isCompleted ? (isVictory ? "won" : "lost") : "in_progress",
     enemy: entryLike.enemy,
     character: entryLike.character,
     timer: nextChallenge ? nextChallenge.timer : "00:00",
@@ -1089,8 +1147,6 @@ const buildSubmitLikeResponse = async (
           ? "Round already resolved."
           : "That was tricky!";
 
-  const isCompleted = match.status === "completed";
-  const isVictory = isCompleted && match.winner_player_id === playerId;
   const mistakes = match.mistakes_by_player[playerId] ?? 0;
   const stars = isVictory
     ? calculateStars(mistakes, match.questions.length)
@@ -1126,7 +1182,12 @@ const buildSubmitLikeResponse = async (
       showFeedback: isCompleted,
       playerHealth: (entryLike.character as { character_health?: number })
         .character_health,
+      playerMaxHealth: (
+        entryLike.character as { character_max_health?: number }
+      ).character_max_health,
       enemyHealth: (entryLike.enemy as { enemy_health?: number }).enemy_health,
+      enemyMaxHealth: (entryLike.enemy as { enemy_max_health?: number })
+        .enemy_max_health,
       coinsEarned: isCompleted
         ? (match.rewards_by_player[playerId]?.coins ?? 0)
         : 0,

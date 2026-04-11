@@ -171,7 +171,9 @@ export interface PvpDailySubmitAnswerResult {
     isCompleted: boolean;
     showFeedback: boolean;
     playerHealth?: number;
+    playerMaxHealth?: number;
     enemyHealth?: number;
+    enemyMaxHealth?: number;
     coinsEarned?: number;
     totalPointsEarned?: number;
     totalExpPointsEarned?: number;
