@@ -75,6 +75,9 @@ export interface PvPMatchState {
   finisher_bonus_coins_by_player: Record<number, number>;
   rewards_by_player: Record<number, PvPCompletionRewards>;
   completion_stats: PvPCompletionStats | null;
+  last_attack_by_player_id: number | null;
+  last_attack_type: string | null;
+  last_attack_damage: number;
 }
 
 export interface PlayerMatchmakingState {
@@ -166,6 +169,14 @@ export interface PvpDailySubmitAnswerResult {
     isVictory?: boolean;
     stars?: number;
     playerOutputs?: string[] | null;
+  };
+  level?: {
+    level_id: number;
+    level_number: number | null;
+    level_type: string;
+    level_difficulty: string;
+    level_title: string | null;
+    content: string;
   };
   levelStatus?: {
     isCompleted: boolean;

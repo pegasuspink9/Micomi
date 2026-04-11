@@ -467,7 +467,7 @@ const buildEntryLikePayload = async (
       enemy_max_health: opponentSnapshot.character_max_health,
       enemy_idle: opponentChar.avatar_image,
       enemy_run: opponentChar.character_run,
-      enemy_damage: opponentSnapshot.attack_damage,
+      enemy_damage: opponentChar.character_damage,
       enemy_attack: Array.isArray(opponentChar.character_attacks)
         ? opponentChar.character_attacks[0]
         : null,
@@ -602,6 +602,9 @@ const cloneMatchForResponse = (match: PvPMatchState): PvPMatchState => {
     completion_stats: match.completion_stats
       ? { ...match.completion_stats }
       : null,
+    last_attack_by_player_id: match.last_attack_by_player_id,
+    last_attack_type: match.last_attack_type,
+    last_attack_damage: match.last_attack_damage,
   };
 };
 
@@ -980,6 +983,9 @@ const tryCreatePair = async (): Promise<string | null> => {
     },
     rewards_by_player: {},
     completion_stats: null,
+    last_attack_by_player_id: null,
+    last_attack_type: null,
+    last_attack_damage: 0,
   };
 
   matches.set(matchId, match);
@@ -1108,6 +1114,15 @@ export const getMatchState = async (playerId: number, matchId: string) => {
     throw new Error("You are not part of this match");
   }
 
+  if (match.status === "completed") {
+    return buildSubmitLikeResponse(
+      match,
+      playerId,
+      "round_already_resolved",
+      false,
+    );
+  }
+
   return buildEntryLikePayload(match, playerId);
 };
 
@@ -1116,6 +1131,10 @@ const buildSubmitLikeResponse = async (
   playerId: number,
   reason: PvpDailySubmitAnswerResult["reason"],
   isCorrect: boolean,
+  attackMeta?: {
+    attackType: string;
+    damage: number;
+  },
 ): Promise<PvpDailySubmitAnswerResult> => {
   const entryLike = await buildEntryLikePayload(match, playerId);
   const round = match.rounds[Math.max(0, match.current_round_index)] ?? null;
@@ -1124,17 +1143,49 @@ const buildSubmitLikeResponse = async (
   const isVictory = isCompleted && match.winner_player_id === playerId;
 
   const nextQuestion = match.questions[match.current_round_index] ?? null;
-  const nextChallenge = nextQuestion
-    ? buildChallengeWithTimer(nextQuestion, match.current_round_started_at)
-    : null;
+  const nextChallenge =
+    !isCompleted && nextQuestion
+      ? buildChallengeWithTimer(nextQuestion, match.current_round_started_at)
+      : null;
+
+  const resolvedAttack =
+    attackMeta ??
+    (match.last_attack_by_player_id
+      ? {
+          attackType: match.last_attack_type ?? "basic_attack",
+          damage: match.last_attack_damage,
+        }
+      : null);
+
+  const isViewerLastAttacker =
+    !!resolvedAttack && match.last_attack_by_player_id === playerId;
+
+  const characterForFightResult = {
+    ...(entryLike.character as Record<string, unknown>),
+    character_damage: resolvedAttack
+      ? isViewerLastAttacker
+        ? resolvedAttack.damage
+        : 0
+      : 0,
+  };
+  const enemyForFightResult = {
+    ...(entryLike.enemy as Record<string, unknown>),
+    enemy_damage: resolvedAttack
+      ? isViewerLastAttacker
+        ? 0
+        : resolvedAttack.damage
+      : 0,
+  };
 
   const fightResult = {
     status: isCompleted ? (isVictory ? "won" : "lost") : "in_progress",
-    enemy: entryLike.enemy,
-    character: entryLike.character,
+    enemy: enemyForFightResult,
+    character: characterForFightResult,
     timer: nextChallenge ? nextChallenge.timer : "00:00",
     energy: entryLike.energy,
     timeToNextEnergyRestore: entryLike.timeToNextEnergyRestore,
+    attackType: resolvedAttack?.attackType ?? null,
+    damage: resolvedAttack?.damage ?? null,
     boss_skill_activated: false,
   };
 
@@ -1177,6 +1228,7 @@ const buildSubmitLikeResponse = async (
     nextChallenge,
     audio: [],
     completionRewards,
+    level: entryLike.level,
     levelStatus: {
       isCompleted,
       showFeedback: isCompleted,
@@ -1226,7 +1278,7 @@ const buildSubmitLikeResponse = async (
         ? randomFrom(VICTORY_IMAGES)
         : randomFrom(DEFEAT_IMAGES)
       : null,
-  };
+  } as PvpDailySubmitAnswerResult;
 };
 
 export const submitAnswer = async (
@@ -1311,10 +1363,28 @@ export const submitAnswer = async (
     const opponentIndex = getOpponentIndex(playerIndex);
     const attacker = match.players[playerIndex];
     const opponent = match.players[opponentIndex];
+    const attackerCharacter = await getSelectedCharacterDetails(playerId);
+    const attackerDamageArray = Array.isArray(
+      attackerCharacter.character_damage,
+    )
+      ? (attackerCharacter.character_damage as number[])
+      : [attacker.attack_damage];
+    const attackResolution = resolveAttackTypeAndDamage(
+      question.correct_answer.length,
+      attackerDamageArray,
+    );
+    const appliedDamage =
+      attackResolution.damage > 0
+        ? attackResolution.damage
+        : attacker.attack_damage;
+
+    match.last_attack_by_player_id = playerId;
+    match.last_attack_type = attackResolution.attackType;
+    match.last_attack_damage = appliedDamage;
 
     opponent.character_health = Math.max(
       0,
-      opponent.character_health - attacker.attack_damage,
+      opponent.character_health - appliedDamage,
     );
 
     await maybeProgressRoundOrFinish(match);
@@ -1326,7 +1396,10 @@ export const submitAnswer = async (
       emitMatchStateToPlayers(match, "pvp:match-update");
     }
 
-    return buildSubmitLikeResponse(match, playerId, "correct_and_first", true);
+    return buildSubmitLikeResponse(match, playerId, "correct_and_first", true, {
+      attackType: attackResolution.attackType,
+      damage: appliedDamage,
+    });
   }
 
   return buildSubmitLikeResponse(match, playerId, "correct_but_late", true);
