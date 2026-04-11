@@ -30,7 +30,6 @@ import * as EnergyService from "../Energy/energy.service";
 
 const prisma = new PrismaClient();
 
-const DEFAULT_QUESTION_COUNT = 7;
 const MATCHMAKING_TIMEOUT_MS = 2 * 60 * 1000;
 const MATCH_COMPLETION_CLEANUP_MS = 90 * 1000;
 const DEFAULT_FALLBACK_ATTACK_DAMAGE = 12;
@@ -60,6 +59,7 @@ const VICTORY_IMAGES = [
   "https://micomi-assets.me/Micomi%20Celebrating/micomiceleb2.png",
   "https://micomi-assets.me/Micomi%20Celebrating/micomiceleb3.png",
 ];
+const WRONG_ANSWER_AUDIO = "https://micomi-assets.me/Sounds/Final/Wrong_2.wav";
 const DEFEAT_IMAGES = [
   "https://micomi-assets.me/Micomi%20Celebrating/Failed1.png",
   "https://micomi-assets.me/Micomi%20Celebrating/Failed2.png",
@@ -69,32 +69,6 @@ const DEFEAT_IMAGES = [
 const randomFrom = (pool: string[]): string | null => {
   if (pool.length === 0) return null;
   return pool[Math.floor(Math.random() * pool.length)] ?? null;
-};
-
-const clamp = (value: number, min: number, max: number): number => {
-  return Math.min(max, Math.max(min, value));
-};
-
-const calculateBalancedMatchHealth = (
-  playerSnapshot: PvPDailyPlayerSnapshot,
-  opponentSnapshot: PvPDailyPlayerSnapshot,
-  questionCount: number,
-): number => {
-  const averageAttack = Math.max(
-    10,
-    Math.round(
-      (playerSnapshot.attack_damage + opponentSnapshot.attack_damage) / 2,
-    ),
-  );
-  const targetHitsToFinish = clamp(Math.ceil(questionCount * 0.75), 3, 6);
-  const roundBasedHealth = averageAttack * targetHitsToFinish;
-  const characterHealthPressure = Math.round(
-    (playerSnapshot.character_max_health +
-      opponentSnapshot.character_max_health) *
-      0.15,
-  );
-
-  return Math.max(roundBasedHealth, characterHealthPressure, averageAttack * 3);
 };
 
 const calculateStars = (mistakes: number, totalQuestions: number): number => {
@@ -236,7 +210,6 @@ const buildSpreadIndices = (total: number, targetCount: number): number[] => {
 
   const chosen = new Set<number>();
 
-  // Always include earliest and latest challenge to cover progression edges.
   chosen.add(0);
   chosen.add(total - 1);
 
@@ -281,10 +254,9 @@ const buildQuestionPool = async (): Promise<DailyPvpQuestion[]> => {
     return [];
   }
 
-  const questionCount = Math.min(DEFAULT_QUESTION_COUNT, sorted.length);
+  const questionCount = sorted.length;
   const baseIndices = buildSpreadIndices(sorted.length, questionCount);
 
-  // Rotate spread positions daily so the same progression coverage still feels fresh.
   const rotation = deterministicHash(dailySeed) % baseIndices.length;
   const rotatedIndices = baseIndices
     .slice(rotation)
@@ -367,6 +339,19 @@ const resolveAttackTypeAndDamage = (
     return { attackType: "second_attack", damage: damageArray[1] ?? 0 };
   }
   return { attackType: "basic_attack", damage: damageArray[0] ?? 0 };
+};
+
+const getAttackIndexByType = (attackType: string | null): number => {
+  if (attackType === "second_attack") return 1;
+  if (attackType === "third_attack") return 2;
+  if (attackType === "special_attack") return 3;
+  return 0;
+};
+
+const getArrayItemOrNull = (value: unknown, index: number): string | null => {
+  if (!Array.isArray(value)) return null;
+  const item = value[index] ?? value[0] ?? null;
+  return typeof item === "string" ? item : null;
 };
 
 const buildChallengeWithTimer = (
@@ -605,6 +590,9 @@ const cloneMatchForResponse = (match: PvPMatchState): PvPMatchState => {
     last_attack_by_player_id: match.last_attack_by_player_id,
     last_attack_type: match.last_attack_type,
     last_attack_damage: match.last_attack_damage,
+    pending_wrong_challenge_by_player: {
+      ...match.pending_wrong_challenge_by_player,
+    },
   };
 };
 
@@ -698,6 +686,20 @@ const getRoundQuestion = (match: PvPMatchState): DailyPvpQuestion | null => {
   if (match.current_round_index < 0) return null;
   if (match.current_round_index >= match.questions.length) return null;
   return match.questions[match.current_round_index];
+};
+
+const getQuestionByChallengeId = (
+  match: PvPMatchState,
+  challengeId: number,
+): DailyPvpQuestion | null => {
+  return match.questions.find((q) => q.challenge_id === challengeId) ?? null;
+};
+
+const getRoundByChallengeId = (
+  match: PvPMatchState,
+  challengeId: number,
+): PvPQuestionRoundState | null => {
+  return match.rounds.find((r) => r.challenge_id === challengeId) ?? null;
 };
 
 const getPlayerIndex = (match: PvPMatchState, playerId: number): number => {
@@ -845,7 +847,6 @@ const maybeProgressRoundOrFinish = async (match: PvPMatchState) => {
     const winnerPlayerId = alive[0];
 
     if (match.current_round_index < match.questions.length - 1) {
-      // Finisher bonus even when there are still questions left.
       match.finisher_bonus_coins_by_player[winnerPlayerId] =
         (match.finisher_bonus_coins_by_player[winnerPlayerId] ?? 0) + 15;
     }
@@ -855,7 +856,6 @@ const maybeProgressRoundOrFinish = async (match: PvPMatchState) => {
   }
 
   if (alive.length === 0) {
-    // Rare tie by simultaneous zero HP, winner defaults to fewer mistakes.
     const p1 = match.players[0].player_id;
     const p2 = match.players[1].player_id;
     const p1Mistakes = match.mistakes_by_player[p1] ?? 0;
@@ -866,25 +866,14 @@ const maybeProgressRoundOrFinish = async (match: PvPMatchState) => {
   }
 
   if (match.current_round_index >= match.questions.length - 1) {
-    const p1 = match.players[0].player_id;
-    const p2 = match.players[1].player_id;
-    const p1Hp = match.players[0].character_health;
-    const p2Hp = match.players[1].character_health;
-
-    let winnerPlayerId: number;
-    if (p1Hp === p2Hp) {
-      const p1Mistakes = match.mistakes_by_player[p1] ?? 0;
-      const p2Mistakes = match.mistakes_by_player[p2] ?? 0;
-      winnerPlayerId = p1Mistakes <= p2Mistakes ? p1 : p2;
-    } else {
-      winnerPlayerId = p1Hp > p2Hp ? p1 : p2;
+    match.current_round_index = 0;
+    match.rounds = createRounds(match.questions);
+    for (const player of match.players) {
+      match.pending_wrong_challenge_by_player[player.player_id] = null;
     }
-
-    await completeMatch(match, winnerPlayerId, "all_questions_resolved");
-    return;
+  } else {
+    match.current_round_index += 1;
   }
-
-  match.current_round_index += 1;
   match.current_round_started_at = getNowIso();
 };
 
@@ -944,19 +933,6 @@ const tryCreatePair = async (): Promise<string | null> => {
 
   const now = getNowIso();
   const matchId = `pvp-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
-  const balancedHealth = calculateBalancedMatchHealth(
-    snapshotA,
-    snapshotB,
-    questionPool.length,
-  );
-
-  const normalizeSnapshotHealth = (
-    snapshot: PvPDailyPlayerSnapshot,
-  ): PvPDailyPlayerSnapshot => ({
-    ...snapshot,
-    character_health: balancedHealth,
-    character_max_health: balancedHealth,
-  });
 
   const match: PvPMatchState = {
     match_id: matchId,
@@ -964,10 +940,7 @@ const tryCreatePair = async (): Promise<string | null> => {
     started_at: now,
     current_round_started_at: now,
     status: "active",
-    players: [
-      normalizeSnapshotHealth(snapshotA),
-      normalizeSnapshotHealth(snapshotB),
-    ],
+    players: [snapshotA, snapshotB],
     questions: questionPool,
     rounds: createRounds(questionPool),
     current_round_index: 0,
@@ -986,6 +959,10 @@ const tryCreatePair = async (): Promise<string | null> => {
     last_attack_by_player_id: null,
     last_attack_type: null,
     last_attack_damage: 0,
+    pending_wrong_challenge_by_player: {
+      [playerA]: null,
+      [playerB]: null,
+    },
   };
 
   matches.set(matchId, match);
@@ -1038,7 +1015,6 @@ export const getDailyPreview = async (
       description:
         "Race another player to solve easy questions spanning all unlocked game topics.",
       topics_covered: topics,
-      question_count: questions.length,
       difficulty: "easy",
     },
     status: state,
@@ -1123,6 +1099,15 @@ export const getMatchState = async (playerId: number, matchId: string) => {
     );
   }
 
+  if (match.last_attack_by_player_id !== null) {
+    return buildSubmitLikeResponse(
+      match,
+      playerId,
+      "round_already_resolved",
+      false,
+    );
+  }
+
   return buildEntryLikePayload(match, playerId);
 };
 
@@ -1143,45 +1128,137 @@ const buildSubmitLikeResponse = async (
   const isVictory = isCompleted && match.winner_player_id === playerId;
 
   const nextQuestion = match.questions[match.current_round_index] ?? null;
-  const nextChallenge =
+  const currentRoundChallenge =
     !isCompleted && nextQuestion
       ? buildChallengeWithTimer(nextQuestion, match.current_round_started_at)
       : null;
+  const shouldExposeNextChallenge =
+    !isCompleted &&
+    (reason === "correct_and_first" ||
+      (reason === "round_already_resolved" &&
+        match.last_attack_by_player_id !== null));
+  const shouldRepeatCurrentChallenge = !isCompleted && reason === "incorrect";
+  const nextChallenge =
+    shouldExposeNextChallenge || shouldRepeatCurrentChallenge
+      ? currentRoundChallenge
+      : null;
+  const isWrongRetryState = reason === "incorrect";
 
-  const resolvedAttack =
-    attackMeta ??
-    (match.last_attack_by_player_id
-      ? {
-          attackType: match.last_attack_type ?? "basic_attack",
-          damage: match.last_attack_damage,
-        }
-      : null);
+  const resolvedAttack = isWrongRetryState
+    ? null
+    : (attackMeta ??
+      (match.last_attack_by_player_id
+        ? {
+            attackType: match.last_attack_type ?? "basic_attack",
+            damage: match.last_attack_damage,
+          }
+        : null));
 
   const isViewerLastAttacker =
     !!resolvedAttack && match.last_attack_by_player_id === playerId;
 
+  const resolvedAttackType = resolvedAttack?.attackType ?? null;
+  const resolvedAttackIndex = getAttackIndexByType(resolvedAttackType);
+
+  const viewerCharacter = entryLike.character as Record<string, unknown>;
+  const opponentEnemy = entryLike.enemy as Record<string, unknown>;
+
+  const viewerAttackAsset = getArrayItemOrNull(
+    viewerCharacter.character_attack,
+    resolvedAttackIndex,
+  );
+  const viewerRangeAttackAsset = getArrayItemOrNull(
+    viewerCharacter.character_range_attack,
+    resolvedAttackIndex,
+  );
+
+  const characterShowsAttack = !!resolvedAttack && isViewerLastAttacker;
+  const enemyShowsAttack = !!resolvedAttack && !isViewerLastAttacker;
+  const isCharacterDead = Number(viewerCharacter.character_health ?? 0) <= 0;
+
   const characterForFightResult = {
-    ...(entryLike.character as Record<string, unknown>),
+    player_id: viewerCharacter.player_id,
+    player_name: viewerCharacter.player_name,
+    character_id: viewerCharacter.character_id,
+    character_name: viewerCharacter.character_name,
+    character_idle: viewerCharacter.character_idle,
+    character_run:
+      isWrongRetryState || enemyShowsAttack || isCharacterDead
+        ? null
+        : viewerCharacter.character_run,
+    character_attack_type: characterShowsAttack ? resolvedAttackType : null,
+    character_attack: characterShowsAttack ? viewerAttackAsset : null,
+    character_range_attack:
+      characterShowsAttack && viewerCharacter.character_is_range
+        ? viewerRangeAttackAsset
+        : null,
+    character_hurt: enemyShowsAttack ? viewerCharacter.character_hurt : null,
+    character_dies: isCharacterDead ? viewerCharacter.character_dies : null,
     character_damage: resolvedAttack
       ? isViewerLastAttacker
         ? resolvedAttack.damage
         : 0
       : 0,
+    character_health: viewerCharacter.character_health,
+    character_max_health: viewerCharacter.character_max_health,
+    character_avatar: viewerCharacter.character_avatar,
+    character_is_range: viewerCharacter.character_is_range,
+    special_skill: viewerCharacter.special_skill,
+    character_current_state: characterShowsAttack
+      ? "attacking"
+      : enemyShowsAttack
+        ? "hurt"
+        : null,
+    character_attack_overlay: null,
+    character_reaction: characterShowsAttack
+      ? "Great timing!"
+      : enemyShowsAttack
+        ? "I need to recover!"
+        : null,
   };
+
   const enemyForFightResult = {
-    ...(entryLike.enemy as Record<string, unknown>),
+    player_id: opponentEnemy.player_id,
+    player_name: opponentEnemy.player_name,
+    enemy_id: opponentEnemy.enemy_id,
+    enemy_name: opponentEnemy.enemy_name,
+    enemy_idle: opponentEnemy.enemy_idle,
+    enemy_run: enemyShowsAttack ? opponentEnemy.enemy_run : null,
+    enemy_attack_type: enemyShowsAttack ? resolvedAttackType : null,
+    enemy_attack: enemyShowsAttack ? opponentEnemy.enemy_attack : null,
+    enemy_hurt: characterShowsAttack ? opponentEnemy.enemy_hurt : null,
+    enemy_dies:
+      Number(opponentEnemy.enemy_health ?? 0) <= 0
+        ? opponentEnemy.enemy_dies
+        : null,
     enemy_damage: resolvedAttack
       ? isViewerLastAttacker
         ? 0
         : resolvedAttack.damage
       : 0,
+    enemy_health: opponentEnemy.enemy_health,
+    enemy_max_health: opponentEnemy.enemy_max_health,
+    enemy_avatar: opponentEnemy.enemy_avatar,
+    special_skill: opponentEnemy.special_skill,
+    enemy_current_state: enemyShowsAttack
+      ? "attacking"
+      : characterShowsAttack
+        ? "hurt"
+        : null,
+    enemy_attack_overlay: null,
+    enemy_hit_reaction: null,
+    enemy_reaction: characterShowsAttack
+      ? "That smarts!"
+      : enemyShowsAttack
+        ? "Counterattack!"
+        : null,
   };
 
   const fightResult = {
     status: isCompleted ? (isVictory ? "won" : "lost") : "in_progress",
     enemy: enemyForFightResult,
     character: characterForFightResult,
-    timer: nextChallenge ? nextChallenge.timer : "00:00",
+    timer: currentRoundChallenge ? currentRoundChallenge.timer : "00:00",
     energy: entryLike.energy,
     timeToNextEnergyRestore: entryLike.timeToNextEnergyRestore,
     attackType: resolvedAttack?.attackType ?? null,
@@ -1260,11 +1337,15 @@ const buildSubmitLikeResponse = async (
     is_bonus_round: false,
     card: entryLike.card,
     gameplay_audio: entryLike.gameplay_audio,
-    is_correct_audio: isCorrect ? CORRECT_ANSWER_AUDIO : null,
-    enemy_attack_audio: entryLike.enemy_attack_audio,
-    character_attack_audio: entryLike.character_attack_audio,
-    character_hurt_audio: entryLike.character_hurt_audio,
-    enemy_hurt_audio: entryLike.enemy_hurt_audio,
+    is_correct_audio: isCorrect ? CORRECT_ANSWER_AUDIO : WRONG_ANSWER_AUDIO,
+    enemy_attack_audio: isWrongRetryState ? null : entryLike.enemy_attack_audio,
+    character_attack_audio: isWrongRetryState
+      ? null
+      : entryLike.character_attack_audio,
+    character_hurt_audio: isWrongRetryState
+      ? null
+      : entryLike.character_hurt_audio,
+    enemy_hurt_audio: isWrongRetryState ? null : entryLike.enemy_hurt_audio,
     death_audio: isCompleted
       ? "https://micomi-assets.me/Sounds/Final/All%20Death.wav"
       : null,

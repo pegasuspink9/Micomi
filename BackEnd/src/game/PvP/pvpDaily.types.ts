@@ -78,6 +78,7 @@ export interface PvPMatchState {
   last_attack_by_player_id: number | null;
   last_attack_type: string | null;
   last_attack_damage: number;
+  pending_wrong_challenge_by_player: Record<number, number | null>;
 }
 
 export interface PlayerMatchmakingState {
@@ -92,7 +93,6 @@ export interface PvpDailyPreviewResponse {
     title: string;
     description: string;
     topics_covered: string[];
-    question_count: number;
     difficulty: "easy";
   };
   status: PlayerMatchmakingState;
