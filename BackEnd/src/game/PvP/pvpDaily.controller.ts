@@ -1,0 +1,144 @@
+import { Request, Response } from "express";
+import { errorResponse, successResponse } from "../../../utils/response";
+import * as PvpDailyService from "./pvpDaily.service";
+
+const parseMatchId = (value: string | undefined): string => {
+  if (!value || typeof value !== "string" || value.trim().length === 0) {
+    throw new Error("matchId is required");
+  }
+  return value.trim();
+};
+
+const parseAnswer = (value: unknown): string[] => {
+  if (
+    !Array.isArray(value) ||
+    !value.every((entry) => typeof entry === "string")
+  ) {
+    throw new Error("answer must be an array of strings");
+  }
+  return value;
+};
+
+const parseChallengeId = (value: string | undefined): number => {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error("challengeId must be a valid positive number");
+  }
+  return parsed;
+};
+
+export const getDailyPreview = async (req: Request, res: Response) => {
+  try {
+    const playerId = (req as any).user.id as number;
+    const result = await PvpDailyService.getDailyPreview(playerId);
+    return successResponse(res, result, "Daily PvP preview loaded");
+  } catch (error) {
+    return errorResponse(
+      res,
+      error,
+      (error as Error).message || "Failed to load PvP preview",
+      400,
+    );
+  }
+};
+
+export const playDailyPvp = async (req: Request, res: Response) => {
+  try {
+    const playerId = (req as any).user.id as number;
+    const result = await PvpDailyService.enterFindingMatch(playerId);
+
+    const message = result.match_found
+      ? "Opponent found. Match is ready"
+      : "Searching for opponent";
+
+    return successResponse(res, result, message);
+  } catch (error) {
+    return errorResponse(
+      res,
+      error,
+      (error as Error).message || "Failed to start matchmaking",
+      400,
+    );
+  }
+};
+
+export const getMatchmakingStatus = async (req: Request, res: Response) => {
+  try {
+    const playerId = (req as any).user.id as number;
+    const result = await PvpDailyService.getMatchmakingStatus(playerId);
+
+    const message = result.match_found ? "Match found" : "Still finding match";
+
+    return successResponse(res, result, message);
+  } catch (error) {
+    return errorResponse(
+      res,
+      error,
+      (error as Error).message || "Failed to get matchmaking status",
+      400,
+    );
+  }
+};
+
+export const getMatchState = async (req: Request, res: Response) => {
+  try {
+    const playerId = (req as any).user.id as number;
+    const matchId = parseMatchId(req.params.matchId);
+
+    const result = await PvpDailyService.getMatchState(playerId, matchId);
+    return successResponse(res, result, "Match state loaded");
+  } catch (error) {
+    const message = (error as Error).message || "Failed to get match state";
+    const status = message.includes("not found") ? 404 : 400;
+
+    return errorResponse(res, error, message, status);
+  }
+};
+
+export const submitAnswer = async (req: Request, res: Response) => {
+  try {
+    const playerId = (req as any).user.id as number;
+    const matchId = parseMatchId(req.params.matchId);
+    const challengeId = parseChallengeId(req.params.challengeId);
+    const answer = parseAnswer(req.body?.answer);
+
+    const result = await PvpDailyService.submitAnswer(
+      playerId,
+      matchId,
+      challengeId,
+      answer,
+    );
+
+    let message = "Answer submitted";
+    if (result.reason === "correct_and_first") {
+      message = "Correct answer first. Attack triggered";
+    } else if (result.reason === "correct_but_late") {
+      message = "Correct, but opponent already resolved this question";
+    } else if (result.reason === "incorrect") {
+      message = "Incorrect answer. You can try again";
+    } else if (result.reason === "round_already_resolved") {
+      message = "Round already resolved";
+    }
+
+    return successResponse(res, result, message);
+  } catch (error) {
+    const message = (error as Error).message || "Failed to submit answer";
+    const status = message.includes("not found") ? 404 : 400;
+    return errorResponse(res, error, message, status);
+  }
+};
+
+export const cancelMatchmaking = async (req: Request, res: Response) => {
+  try {
+    const playerId = (req as any).user.id as number;
+    const result = await PvpDailyService.cancelMatchmaking(playerId);
+    return successResponse(res, result, "Matchmaking cancelled");
+  } catch (error) {
+    return errorResponse(
+      res,
+      error,
+      (error as Error).message || "Failed to cancel matchmaking",
+      400,
+    );
+  }
+};

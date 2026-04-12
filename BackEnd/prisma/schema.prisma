@@ -137,10 +137,47 @@ model Player {
   ownedCharacters    PlayerCharacter[]
   ownedPotions       PlayerPotion[]
   playerProgress     PlayerProgress[]
+  pvpProgressAsP1    PlayerVsPlayerProgress[] @relation("PvpProgressP1")
+  pvpProgressAsP2    PlayerVsPlayerProgress[] @relation("PvpProgressP2")
+  pvpResults         PlayerVsPlayerResult[]
   playerQuests       PlayerQuest[]
 
   @@index([email])
   @@index([total_points])
+}
+
+model PlayerVsPlayerProgress {
+  progress_id    Int      @id @default(autoincrement())
+  match_id       String   @unique
+  player_one_id  Int
+  player_two_id  Int
+  status         String   @default("active")
+  payload        Json
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  playerOne      Player   @relation("PvpProgressP1", fields: [player_one_id], references: [player_id], onDelete: Cascade)
+  playerTwo      Player   @relation("PvpProgressP2", fields: [player_two_id], references: [player_id], onDelete: Cascade)
+
+  @@index([player_one_id])
+  @@index([player_two_id])
+  @@index([status])
+}
+
+model PlayerVsPlayerResult {
+  result_id         Int      @id @default(autoincrement())
+  match_id          String
+  player_id         Int
+  player_name       String
+  character_name    String
+  character_avatar  String?
+  match_status      String
+  stars             Int      @default(0)
+  created_at        DateTime @default(now())
+  player            Player   @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
+
+  @@unique([match_id, player_id])
+  @@index([player_id])
+  @@index([match_status])
 }
 
 model Follow {
