@@ -91,7 +91,14 @@ export const pvpService = {
   },
 
   cancelDailyMatch: async () => {
-    const response = await apiService.post('/game/pvp/daily/match/cancel', {});
+    let response = null;
+
+    try {
+      response = await apiService.post('/game/pvp/daily/cancel', {});
+    } catch (primaryError) {
+      response = await apiService.post('/game/pvp/daily/match/cancel', {});
+    }
+
     if (!response?.success) {
       throw new Error(response?.message || 'Failed to cancel matchmaking');
     }

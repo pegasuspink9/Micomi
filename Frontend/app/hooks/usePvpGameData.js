@@ -58,6 +58,97 @@ const buildSyncStateSignature = (state) => {
   ].join('||');
 };
 
+const mergeFightAttributes = (baseState, sourceState) => {
+  if (!baseState || !sourceState) {
+    return baseState;
+  }
+
+  const fightResult = sourceState?.submissionResult?.fightResult || sourceState?.fightResult || null;
+  if (!fightResult) {
+    return baseState;
+  }
+
+  const nextState = {
+    ...baseState,
+    selectedCharacter: { ...(baseState.selectedCharacter || {}) },
+    enemy: { ...(baseState.enemy || {}) },
+    avatar: { ...(baseState.avatar || {}) },
+  };
+
+  const character = fightResult.character || {};
+  const enemy = fightResult.enemy || {};
+
+  if (character.character_health !== undefined) {
+    nextState.selectedCharacter.current_health = character.character_health;
+  }
+
+  if (character.special_skill) {
+    nextState.selectedCharacter.special_skill = character.special_skill;
+  }
+
+  if (character.character_max_health !== undefined && character.character_max_health !== null) {
+    nextState.selectedCharacter.max_health = character.character_max_health;
+    nextState.selectedCharacter.character_max_health = character.character_max_health;
+  }
+
+  if (character.character_attack_overlay !== undefined) {
+    nextState.selectedCharacter.character_attack_overlay = character.character_attack_overlay;
+  }
+
+  if (character.character_current_state !== undefined) {
+    nextState.selectedCharacter.character_current_state = character.character_current_state;
+  }
+
+  if (enemy.enemy_attack_overlay !== undefined) {
+    nextState.enemy.enemy_attack_overlay = enemy.enemy_attack_overlay;
+  }
+
+  if (enemy.enemy_current_state !== undefined) {
+    nextState.enemy.enemy_current_state = enemy.enemy_current_state;
+  }
+
+  if (enemy.enemy_attack_type !== undefined) {
+    nextState.enemy.enemy_attack_type = enemy.enemy_attack_type;
+  }
+
+  if (enemy.enemy_health !== undefined) {
+    nextState.enemy.enemy_health = enemy.enemy_health;
+  }
+
+  if (enemy.special_skill) {
+    nextState.enemy.special_skill = enemy.special_skill;
+  }
+
+  if (enemy.enemy_max_health !== undefined && enemy.enemy_max_health !== null) {
+    nextState.enemy.enemy_max_health = enemy.enemy_max_health;
+  }
+
+  if (fightResult.energy !== undefined) {
+    nextState.energy = fightResult.energy;
+  }
+
+  if (character.character_avatar) {
+    nextState.avatar.player = character.character_avatar;
+  }
+
+  if (enemy.enemy_avatar) {
+    nextState.avatar.enemy = enemy.enemy_avatar;
+  }
+
+  const combatBackground =
+    fightResult.combat_background || sourceState.combat_background || sourceState.combatBackground;
+  if (combatBackground) {
+    nextState.combat_background = combatBackground;
+  }
+
+  const gameplayAudio = fightResult.gameplay_audio || sourceState.gameplay_audio;
+  if (gameplayAudio) {
+    nextState.gameplay_audio = gameplayAudio;
+  }
+
+  return nextState;
+};
+
 export const usePvpGameData = (matchId, options = {}) => {
   const { disabled = false } = options;
 
@@ -93,13 +184,17 @@ export const usePvpGameData = (matchId, options = {}) => {
   const [liveSync, setLiveSync] = useState(makeDefaultLiveSync());
 
   const pendingSubmissionRef = useRef(null);
+  const submitInFlightRef = useRef(false);
   const animationTimeoutRef = useRef(null);
+  const submissionStartedAtRef = useRef(0);
+  const instantProceedRef = useRef(false);
   const lastProcessedSubmissionRef = useRef(null);
   const matchPollRef = useRef(null);
   const autoProceedTimeoutRef = useRef(null);
   const autoProceedIntervalRef = useRef(null);
 
   const currentChallengeIdRef = useRef(null);
+  const clearedSubmissionChallengeIdRef = useRef(null);
   const canProceedRef = useRef(false);
   const waitingRef = useRef(false);
 
@@ -354,16 +449,21 @@ export const usePvpGameData = (matchId, options = {}) => {
       }
 
       setGameStateIfChanged((prev) => {
-        const nextState = toResponseDrivenState(prev, unifiedState, {
+        const responseState = toResponseDrivenState(prev, unifiedState, {
           submissionResult: unifiedState?.submissionResult ?? null,
           nextChallengeData: null,
         });
+        const nextState = mergeFightAttributes(responseState, unifiedState);
 
         currentChallengeIdRef.current = nextState.currentChallenge?.id || null;
+        if (!nextState?.submissionResult) {
+          clearedSubmissionChallengeIdRef.current = nextState.currentChallenge?.id || null;
+        }
         return nextState;
       });
 
       setCanProceed(false);
+      instantProceedRef.current = false;
       setSyncConnected({ pendingRemoteProceed: false }, { touch: true });
       return unifiedState;
     } catch (fetchError) {
@@ -385,20 +485,39 @@ export const usePvpGameData = (matchId, options = {}) => {
   ]);
 
   const handleAnimationComplete = useCallback(() => {
-    setWaitingForAnimation(false);
-
     if (animationTimeoutRef.current) {
       clearTimeout(animationTimeoutRef.current);
       animationTimeoutRef.current = null;
     }
 
     const pendingData = pendingSubmissionRef.current;
-    if (!pendingData) return;
+    if (!pendingData) {
+      setWaitingForAnimation(false);
+      return;
+    }
+
+    const minimumDisplayMs = AUTO_PROCEED_SECONDS * 1000;
+    const elapsedMs = submissionStartedAtRef.current
+      ? Date.now() - submissionStartedAtRef.current
+      : minimumDisplayMs;
+
+    if (elapsedMs < minimumDisplayMs) {
+      const remainingMs = minimumDisplayMs - elapsedMs;
+      animationTimeoutRef.current = setTimeout(() => {
+        handleAnimationComplete();
+      }, remainingMs);
+      return;
+    }
+
+    setWaitingForAnimation(false);
 
     const submission = pendingData.submissionResult || {};
     const reason = submission.reason;
     const fightStatus = submission.fightResult?.status;
     const nextChallenge = pendingData.currentChallenge;
+    const hasDifferentNextChallenge = Boolean(
+      nextChallenge?.id && currentChallengeIdRef.current && nextChallenge.id !== currentChallengeIdRef.current
+    );
 
     const submissionId = `${nextChallenge?.id || 'none'}-${fightStatus || 'na'}-${reason || 'none'}-${submission.acceptedForAttack ?? submission.accepted_for_attack ?? 'na'}`;
     if (lastProcessedSubmissionRef.current === submissionId) {
@@ -418,22 +537,32 @@ export const usePvpGameData = (matchId, options = {}) => {
 
     if (fightStatus === 'won' || fightStatus === 'lost') {
       setCanProceed(false);
-      setGameState((prev) => ({
-        ...mergeBattleState(prev),
-        nextChallengeData: null,
-      }));
+      instantProceedRef.current = false;
+      setGameStateIfChanged((prev) => {
+        const merged = {
+          ...mergeBattleState(prev),
+          nextChallengeData: null,
+        };
+
+        return mergeFightAttributes(merged, pendingData);
+      });
       pendingSubmissionRef.current = null;
       lastProcessedSubmissionRef.current = submissionId;
       setSyncConnected({ pendingRemoteProceed: false });
       return;
     }
 
-    if (reason === 'incorrect') {
+    if (reason === 'incorrect' && !hasDifferentNextChallenge) {
       setCanProceed(false);
-      setGameState((prev) => ({
-        ...mergeBattleState(prev),
-        nextChallengeData: null,
-      }));
+      instantProceedRef.current = false;
+      setGameStateIfChanged((prev) => {
+        const merged = {
+          ...mergeBattleState(prev),
+          nextChallengeData: null,
+        };
+
+        return mergeFightAttributes(merged, pendingData);
+      });
       pendingSubmissionRef.current = null;
       lastProcessedSubmissionRef.current = submissionId;
       return;
@@ -441,10 +570,15 @@ export const usePvpGameData = (matchId, options = {}) => {
 
     if (!nextChallenge?.id) {
       setCanProceed(false);
-      setGameState((prev) => ({
-        ...mergeBattleState(prev),
-        nextChallengeData: null,
-      }));
+      instantProceedRef.current = false;
+      setGameStateIfChanged((prev) => {
+        const merged = {
+          ...mergeBattleState(prev),
+          nextChallengeData: null,
+        };
+
+        return mergeFightAttributes(merged, pendingData);
+      });
       pendingSubmissionRef.current = null;
       lastProcessedSubmissionRef.current = submissionId;
       return;
@@ -455,33 +589,44 @@ export const usePvpGameData = (matchId, options = {}) => {
       reason === 'round_already_resolved' ||
       submission.acceptedForAttack === true ||
       submission.accepted_for_attack === true ||
-      submission.isCorrect === true;
+      submission.isCorrect === true ||
+      hasDifferentNextChallenge;
 
     if (shouldProceed) {
       setCanProceed(true);
-      setGameState((prev) => ({
-        ...mergeBattleState(prev),
-        nextChallengeData: {
-          ...nextChallenge,
-          card: pendingData.card || prev.card || null,
-          selectedCharacter: pendingData.selectedCharacter || prev.selectedCharacter,
-          enemy: pendingData.enemy || prev.enemy,
-          avatar: pendingData.avatar || prev.avatar,
-          level: pendingData.level || prev.level,
-        },
-      }));
+      instantProceedRef.current = true;
+      setGameStateIfChanged((prev) => {
+        const merged = {
+          ...mergeBattleState(prev),
+          nextChallengeData: {
+            ...nextChallenge,
+            card: pendingData.card || prev.card || null,
+            selectedCharacter: pendingData.selectedCharacter || prev.selectedCharacter,
+            enemy: pendingData.enemy || prev.enemy,
+            avatar: pendingData.avatar || prev.avatar,
+            level: pendingData.level || prev.level,
+          },
+        };
+
+        return mergeFightAttributes(merged, pendingData);
+      });
       setSyncConnected({ pendingRemoteProceed: false });
     } else {
       setCanProceed(false);
-      setGameState((prev) => ({
-        ...mergeBattleState(prev),
-        nextChallengeData: null,
-      }));
+      instantProceedRef.current = false;
+      setGameStateIfChanged((prev) => {
+        const merged = {
+          ...mergeBattleState(prev),
+          nextChallengeData: null,
+        };
+
+        return mergeFightAttributes(merged, pendingData);
+      });
     }
 
     pendingSubmissionRef.current = null;
     lastProcessedSubmissionRef.current = submissionId;
-  }, [setSyncConnected]);
+  }, [setGameStateIfChanged, setSyncConnected]);
 
   const submitAnswer = useCallback(async (selectedAnswers) => {
     if (disabled) {
@@ -496,7 +641,15 @@ export const usePvpGameData = (matchId, options = {}) => {
       return { success: false, error: 'Animation in progress' };
     }
 
+    if (submitInFlightRef.current) {
+      return { success: false, error: 'Submission already in progress' };
+    }
+
     try {
+      submitInFlightRef.current = true;
+      submissionStartedAtRef.current = Date.now();
+      clearedSubmissionChallengeIdRef.current = null;
+      instantProceedRef.current = false;
       setSubmitting(true);
       setError(null);
       stopAutoProceed();
@@ -533,16 +686,31 @@ export const usePvpGameData = (matchId, options = {}) => {
       pendingSubmissionRef.current = updatedState;
       setWaitingForAnimation(true);
 
-      setGameStateIfChanged((prev) => ({
-        ...prev,
-        submissionResult: updatedState.submissionResult,
-        selectedCharacter: updatedState.selectedCharacter || prev.selectedCharacter,
-        enemy: updatedState.enemy || prev.enemy,
-        avatar: updatedState.avatar || prev.avatar,
-        level: updatedState.level || prev.level,
-        currentChallenge: updatedState.currentChallenge || prev.currentChallenge,
-        card: updatedState.card || prev.card || null,
-      }));
+      setGameStateIfChanged((prev) => {
+        const responseChallenge = updatedState.currentChallenge || null;
+        const merged = {
+          ...prev,
+          submissionResult: updatedState.submissionResult,
+          selectedCharacter: updatedState.selectedCharacter || prev.selectedCharacter,
+          enemy: updatedState.enemy || prev.enemy,
+          avatar: updatedState.avatar || prev.avatar,
+          level: updatedState.level || prev.level,
+          currentChallenge: prev.currentChallenge || responseChallenge,
+          nextChallengeData: responseChallenge
+            ? {
+                ...responseChallenge,
+                card: updatedState.card || prev.card || null,
+                selectedCharacter: updatedState.selectedCharacter || prev.selectedCharacter,
+                enemy: updatedState.enemy || prev.enemy,
+                avatar: updatedState.avatar || prev.avatar,
+                level: updatedState.level || prev.level,
+              }
+            : prev.nextChallengeData || null,
+          card: updatedState.card || prev.card || null,
+        };
+
+        return mergeFightAttributes(merged, updatedState);
+      });
 
       animationTimeoutRef.current = setTimeout(() => {
         handleAnimationComplete();
@@ -559,6 +727,7 @@ export const usePvpGameData = (matchId, options = {}) => {
       setWaitingForAnimation(false);
       return { success: false, error: submitError.message || 'Failed to submit answer' };
     } finally {
+      submitInFlightRef.current = false;
       setSubmitting(false);
     }
   }, [
@@ -575,6 +744,7 @@ export const usePvpGameData = (matchId, options = {}) => {
       return;
     }
 
+    instantProceedRef.current = false;
     stopAutoProceed();
     setCanProceed(false);
     setSyncConnected({ pendingRemoteProceed: false }, { touch: true });
@@ -586,6 +756,7 @@ export const usePvpGameData = (matchId, options = {}) => {
       }
 
       currentChallengeIdRef.current = nextChallenge.id;
+      clearedSubmissionChallengeIdRef.current = nextChallenge.id;
 
       return {
         ...prev,
@@ -624,6 +795,76 @@ export const usePvpGameData = (matchId, options = {}) => {
       const remoteChallengeId = normalized.currentChallenge?.id || null;
       const localChallengeId = currentChallengeIdRef.current;
       const remoteFightStatus = normalized.submissionResult?.fightResult?.status;
+      const shouldSuppressStaleSubmission =
+        !waitingRef.current &&
+        !canProceedRef.current &&
+        !!remoteChallengeId &&
+        !!clearedSubmissionChallengeIdRef.current &&
+        remoteChallengeId === clearedSubmissionChallengeIdRef.current;
+
+      if (
+        waitingRef.current &&
+        remoteChallengeId &&
+        localChallengeId &&
+        remoteChallengeId !== localChallengeId
+      ) {
+        clearedSubmissionChallengeIdRef.current = null;
+        setGameStateIfChanged((prev) => {
+          const stagedNextChallenge = normalized.currentChallenge
+            ? {
+                ...normalized.currentChallenge,
+                card: normalized.card || prev.card || null,
+                selectedCharacter: normalized.selectedCharacter || prev.selectedCharacter,
+                enemy: normalized.enemy || prev.enemy,
+                avatar: normalized.avatar || prev.avatar,
+                level: normalized.level || prev.level,
+              }
+            : prev.nextChallengeData || null;
+
+          const merged = {
+            ...prev,
+            submissionResult: normalized.submissionResult || prev.submissionResult,
+            nextChallengeData: stagedNextChallenge,
+          };
+
+          return mergeFightAttributes(merged, normalized);
+        });
+
+        if (pendingSubmissionRef.current) {
+          const pendingResult = pendingSubmissionRef.current.submissionResult || {};
+          const alreadyProceedable =
+            pendingResult.reason === 'correct_and_first' ||
+            pendingResult.reason === 'round_already_resolved' ||
+            pendingResult.acceptedForAttack === true ||
+            pendingResult.accepted_for_attack === true ||
+            pendingResult.isCorrect === true;
+
+          if (!alreadyProceedable) {
+            pendingSubmissionRef.current = {
+              ...pendingSubmissionRef.current,
+              submissionResult:
+                normalized.submissionResult || {
+                  ...pendingResult,
+                  reason: 'round_already_resolved',
+                  acceptedForAttack: true,
+                  isCorrect: false,
+                  message:
+                    pendingResult.message || 'Round resolved. Proceed to the next challenge.',
+                },
+              currentChallenge: normalized.currentChallenge || pendingSubmissionRef.current.currentChallenge,
+              card: normalized.card || pendingSubmissionRef.current.card,
+              selectedCharacter:
+                normalized.selectedCharacter || pendingSubmissionRef.current.selectedCharacter,
+              enemy: normalized.enemy || pendingSubmissionRef.current.enemy,
+              avatar: normalized.avatar || pendingSubmissionRef.current.avatar,
+              level: normalized.level || pendingSubmissionRef.current.level,
+            };
+          }
+        }
+
+        setSyncConnected({ pendingRemoteProceed: true }, { touch: true });
+        return;
+      }
 
       // Keep local POST-response visuals stable while submission animation is running.
       if (waitingRef.current && remoteChallengeId && localChallengeId && remoteChallengeId === localChallengeId) {
@@ -636,12 +877,15 @@ export const usePvpGameData = (matchId, options = {}) => {
       ) {
         stopAutoProceed();
         setCanProceed(false);
-        setGameStateIfChanged((prev) => ({
-          ...toResponseDrivenState(prev, normalized, {
+        instantProceedRef.current = false;
+        setGameStateIfChanged((prev) => {
+          const merged = toResponseDrivenState(prev, normalized, {
             submissionResult: normalized.submissionResult || prev.submissionResult,
             nextChallengeData: null,
-          }),
-        }));
+          });
+
+          return mergeFightAttributes(merged, normalized);
+        });
         currentChallengeIdRef.current = remoteChallengeId || localChallengeId;
         return;
       }
@@ -649,11 +893,13 @@ export const usePvpGameData = (matchId, options = {}) => {
       if (!remoteChallengeId || !localChallengeId) {
         if (remoteChallengeId && !localChallengeId) {
           currentChallengeIdRef.current = remoteChallengeId;
-          setGameStateIfChanged((prev) => ({
-            ...toResponseDrivenState(prev, normalized, {
+          setGameStateIfChanged((prev) => {
+            const merged = toResponseDrivenState(prev, normalized, {
               submissionResult: normalized.submissionResult || prev.submissionResult,
-            }),
-          }));
+            });
+
+            return mergeFightAttributes(merged, normalized);
+          });
         }
         return;
       }
@@ -663,9 +909,11 @@ export const usePvpGameData = (matchId, options = {}) => {
         !canProceedRef.current &&
         !waitingRef.current
       ) {
+        clearedSubmissionChallengeIdRef.current = null;
         setCanProceed(true);
-        setGameStateIfChanged((prev) => ({
-          ...toResponseDrivenState(prev, normalized, {
+        instantProceedRef.current = false;
+        setGameStateIfChanged((prev) => {
+          const merged = toResponseDrivenState(prev, normalized, {
             submissionResult:
               normalized.submissionResult || {
                 isCorrect: false,
@@ -683,18 +931,24 @@ export const usePvpGameData = (matchId, options = {}) => {
                   level: normalized.level || prev.level,
                 }
               : null,
-          }),
-        }));
+          });
+
+          return mergeFightAttributes(merged, normalized);
+        });
         setSyncConnected({ pendingRemoteProceed: true }, { touch: true });
         return;
       }
 
-      setGameStateIfChanged((prev) => ({
-        ...toResponseDrivenState(prev, normalized, {
-          submissionResult: normalized.submissionResult || prev.submissionResult,
+      setGameStateIfChanged((prev) => {
+        const merged = toResponseDrivenState(prev, normalized, {
+          submissionResult: shouldSuppressStaleSubmission
+            ? prev.submissionResult ?? null
+            : normalized.submissionResult || prev.submissionResult,
           nextChallengeData: prev.nextChallengeData || null,
-        }),
-      }));
+        });
+
+        return mergeFightAttributes(merged, normalized);
+      });
     } catch (syncError) {
       console.error('PvP sync error:', syncError);
       setSyncReconnecting();
@@ -794,12 +1048,16 @@ export const usePvpGameData = (matchId, options = {}) => {
       }
 
       setGameStateIfChanged((prev) => {
-        const nextState = toResponseDrivenState(prev, cachedState, {
+        const responseState = toResponseDrivenState(prev, cachedState, {
           submissionResult: cachedState?.submissionResult ?? null,
           nextChallengeData: cachedState?.nextChallengeData || null,
         });
+        const nextState = mergeFightAttributes(responseState, cachedState);
 
         currentChallengeIdRef.current = nextState.currentChallenge?.id || null;
+        if (!nextState?.submissionResult) {
+          clearedSubmissionChallengeIdRef.current = nextState.currentChallenge?.id || null;
+        }
         return nextState;
       });
     };
@@ -858,21 +1116,28 @@ export const usePvpGameData = (matchId, options = {}) => {
       return;
     }
 
-    setAutoProceedCountdown(AUTO_PROCEED_SECONDS);
+    const shouldProceedInstantly = instantProceedRef.current;
+    const delaySeconds = shouldProceedInstantly ? 0 : AUTO_PROCEED_SECONDS;
 
-    autoProceedIntervalRef.current = setInterval(() => {
-      setAutoProceedCountdown((prev) => {
-        if (typeof prev !== 'number') {
-          return AUTO_PROCEED_SECONDS;
-        }
+    if (delaySeconds > 0) {
+      setAutoProceedCountdown(delaySeconds);
 
-        return prev > 1 ? prev - 1 : 1;
-      });
-    }, 1000);
+      autoProceedIntervalRef.current = setInterval(() => {
+        setAutoProceedCountdown((prev) => {
+          if (typeof prev !== 'number') {
+            return delaySeconds;
+          }
+
+          return prev > 1 ? prev - 1 : 1;
+        });
+      }, 1000);
+    } else {
+      setAutoProceedCountdown(null);
+    }
 
     autoProceedTimeoutRef.current = setTimeout(() => {
       handleProceed();
-    }, AUTO_PROCEED_SECONDS * 1000);
+    }, delaySeconds * 1000);
 
     return () => {
       stopAutoProceed();
