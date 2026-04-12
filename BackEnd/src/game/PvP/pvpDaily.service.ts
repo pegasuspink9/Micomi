@@ -1378,8 +1378,7 @@ export const submitAnswer = async (
 ): Promise<PvpDailySubmitAnswerResult> => {
   const nowMs = Date.now();
   const lastSubmitAt = submitAnswerCooldownByPlayer.get(playerId) ?? 0;
-  const cooldownRemaining =
-    SUBMIT_ANSWER_COOLDOWN_MS - (nowMs - lastSubmitAt);
+  const cooldownRemaining = SUBMIT_ANSWER_COOLDOWN_MS - (nowMs - lastSubmitAt);
 
   if (cooldownRemaining > 0) {
     throw new Error(
