@@ -12,7 +12,8 @@ const SpriteAnimator = ({
   columns = 6,
   rows = 4,
   duration = 1000, 
-  startAnimation = false
+  startAnimation = false,
+  flipX = false,
 }) => {
   const frameIndex = useSharedValue(0);
   const totalFrames = columns * rows;
@@ -44,7 +45,12 @@ const SpriteAnimator = ({
   }
 
   return (
-    <View style={{ width: frameWidth, height: frameHeight, overflow: 'hidden' }}>
+    <View
+      style={[
+        { width: frameWidth, height: frameHeight, overflow: 'hidden' },
+        flipX && { transform: [{ scaleX: -1 }] },
+      ]}
+    >
       <Reanimated.View style={[
         animatedStyle,
         { width: frameWidth * columns, height: frameHeight * rows }
@@ -68,7 +74,8 @@ const CombatVSModal = ({
   enemy = null,
   versusBackground = null,
   versusAudio = null,
-  duration = 4000
+  duration = 4000,
+  isPvpMode = false,
 }) => {
 
   const [isBackgroundLoaded, setIsBackgroundLoaded] = useState(false);
@@ -224,6 +231,36 @@ const CombatVSModal = ({
     return null;
   }, [enemy]);
 
+  const heroDisplayHealth = useMemo(() => {
+    return (
+      selectedCharacter?.character_max_health ??
+      selectedCharacter?.max_health ??
+      selectedCharacter?.current_health ??
+      selectedCharacter?.character_health ??
+      0
+    );
+  }, [selectedCharacter]);
+
+  const heroDisplayDamage = useMemo(() => {
+    const damage = selectedCharacter?.character_damage;
+    if (Array.isArray(damage) && damage.length > 0) {
+      return `${Math.min(...damage)}-${Math.max(...damage)}`;
+    }
+    return damage ?? 0;
+  }, [selectedCharacter]);
+
+  const enemyDisplayHealth = useMemo(() => {
+    return enemy?.enemy_max_health ?? enemy?.enemy_health ?? 0;
+  }, [enemy]);
+
+  const enemyDisplayDamage = useMemo(() => {
+    const damage = enemy?.enemy_damage;
+    if (Array.isArray(damage) && damage.length > 0) {
+      return `${Math.min(...damage)}-${Math.max(...damage)}`;
+    }
+    return damage ?? 0;
+  }, [enemy]);
+
 
   return (
      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000 }} pointerEvents="box-none">
@@ -274,12 +311,8 @@ const CombatVSModal = ({
                 
                 <View style={styles.statsContainer}>
                   <Text style={styles.roleLabel}>HERO</Text>
-                  <Text style={styles.statsText}>HP: {selectedCharacter.max_health}</Text>
-                  <Text style={styles.statsText}>
-                    DMG: {Array.isArray(selectedCharacter.character_damage) 
-                      ? `${Math.min(...selectedCharacter.character_damage)}-${Math.max(...selectedCharacter.character_damage)}`
-                      : selectedCharacter.character_damage}
-                  </Text>
+                  <Text style={styles.statsText}>HP: {heroDisplayHealth}</Text>
+                  <Text style={styles.statsText}>DMG: {heroDisplayDamage}</Text>
                 </View>
               </View>
             </View>
@@ -305,11 +338,12 @@ const CombatVSModal = ({
                     frameWidth={styles.enemyAvatar.width}
                     frameHeight={styles.enemyAvatar.height}
                     startAnimation={playEnemySpriteAnimation}
+                    flipX={isPvpMode}
                   />
                 ) : (
                   <Image 
                     source={{ uri: enemy.enemy_avatar }}
-                    style={styles.enemyAvatar}
+                    style={[styles.enemyAvatar, isPvpMode && styles.enemyFacingLeft]}
                     resizeMode="contain" 
                   />
                 )}
@@ -331,8 +365,8 @@ const CombatVSModal = ({
               </View>
 
               <View style={styles.enemyStatsContainer}>
-                <Text style={styles.statsText}>HP: {enemy.enemy_health}</Text>
-                <Text style={styles.statsText}>DMG: {enemy.enemy_damage}</Text>
+                <Text style={styles.statsText}>HP: {enemyDisplayHealth}</Text>
+                <Text style={styles.statsText}>DMG: {enemyDisplayDamage}</Text>
               </View>
             </View>
           </Animated.View>
@@ -408,6 +442,9 @@ const styles = StyleSheet.create({
    enemyAvatar: {
     width: gameScale(600), 
     height: gameScale(600)
+  },
+  enemyFacingLeft: {
+    transform: [{ scaleX: -1 }],
   },
   avatarGlow: {
     position: 'absolute',

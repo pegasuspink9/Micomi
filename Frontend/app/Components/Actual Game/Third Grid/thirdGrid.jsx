@@ -43,6 +43,8 @@ const ThirdGrid = ({
   cardDisplaySequence,
   canProceed = false,
   onProceed = null,
+  isAutoProceed = false,
+  autoProceedCountdown = null,
   isLevelComplete = false,
   showRunButton = true,
   onRetry = null,
@@ -193,6 +195,8 @@ const ThirdGrid = ({
     }
   }, [dynamicHeight, setThirdGridHeight]);
 
+  const isManualProceedMode = canProceed && !isLevelComplete && !isAutoProceed;
+  const isAutoProceedMode = canProceed && !isLevelComplete && isAutoProceed;
 
   // Helper variable to decide if content should be shown at all
   const showContent = !canProceed && !isLevelComplete;
@@ -205,7 +209,9 @@ const ThirdGrid = ({
       mainHeight={dynamicHeight}
       cardImageUrl={cardImageUrl}
       showCardInGrid={cardDisplaySequence === 'grid'}
-      isProceedMode={canProceed && !isLevelComplete}
+      isProceedMode={isManualProceedMode}
+      isAutoProceedMode={isAutoProceedMode}
+      autoProceedCountdown={autoProceedCountdown}
       onProceed={onProceed}
       cardDamage={cardDamage}
       isLevelComplete={isLevelComplete} 
@@ -338,6 +344,8 @@ export default React.memo(ThirdGrid, (prev, next) => {
       prev.submitting === next.submitting &&
       prev.currentQuestionIndex === next.currentQuestionIndex &&
       prev.canProceed === next.canProceed &&
+      prev.isAutoProceed === next.isAutoProceed &&
+      prev.autoProceedCountdown === next.autoProceedCountdown &&
       prev.showRunButton === next.showRunButton &&
       prev.isInRunMode === next.isInRunMode &&
       prev.selectedBlankIndex === next.selectedBlankIndex &&

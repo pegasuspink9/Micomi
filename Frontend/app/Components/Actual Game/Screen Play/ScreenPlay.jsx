@@ -29,7 +29,8 @@ const ScreenPlay = ({
   isMessageVisible,
   messageText,
   onPausePress = null,
-  setBorderColor
+  setBorderColor,
+  isPvpMode = false,
 }) => {
   const [attackingEnemies] = useState(new Set());
   const [totalCoins, setTotalCoins] = useState(0);
@@ -156,18 +157,25 @@ const ScreenPlay = ({
     gameState.submissionResult?.fightResult?.character?.character_health
     ?? gameState.submissionResult?.levelStatus?.playerHealth
     ?? gameState.selectedCharacter?.current_health
+    ?? gameState.selectedCharacter?.character_health
+    ?? 0
   ), [gameState]);
 
   const playerMaxHealth = useMemo(() => (
     gameState.submissionResult?.fightResult?.character?.character_max_health
+    ?? gameState.submissionResult?.levelStatus?.playerMaxHealth
     ?? gameState.selectedCharacter?.max_health
-  ), [gameState]);
+    ?? gameState.selectedCharacter?.character_max_health
+    ?? playerHealth
+  ), [gameState, playerHealth]);
 
   const enemyHealth = useMemo(() => (
     gameState.submissionResult?.fightResult?.enemy?.enemy_health ??
     gameState.submissionResult?.levelStatus?.enemyHealth ??
+    gameState.submissionResult?.levelStatus?.enemy_health ??
     gameState.enemy?.enemy_health ??
-    gameState.enemy?.enemy_max_health
+    gameState.enemy?.enemy_max_health ??
+    0
   ), [gameState]);
 
   const enemyMaxHealth = useMemo(() => (
@@ -175,13 +183,24 @@ const ScreenPlay = ({
     gameState.submissionResult?.levelStatus?.enemyMaxHealth ??
     gameState.submissionResult?.levelStatus?.enemy_max_health ??
     gameState.enemy?.enemy_max_health ??
-    gameState.enemy?.enemy_health 
+    gameState.enemy?.enemy_health ??
+    enemyHealth
+  ), [gameState, enemyHealth]);
+
+
+  const playerAvatar = useMemo(() => (
+    gameState.submissionResult?.fightResult?.character?.character_avatar ??
+    gameState.selectedCharacter?.character_avatar ??
+    gameState.avatar?.player ??
+    null
   ), [gameState]);
 
-
-  const playerAvatar = useMemo(() => gameState.avatar?.player, [gameState.avatar?.player]);
-
-  const enemyAvatar = useMemo(() => gameState.avatar?.enemy, [gameState.avatar?.enemy]);
+  const enemyAvatar = useMemo(() => (
+    gameState.submissionResult?.fightResult?.enemy?.enemy_avatar ??
+    gameState.enemy?.enemy_avatar ??
+    gameState.avatar?.enemy ??
+    null
+  ), [gameState]);
 
   const enemyAttackType = useMemo(() => 
     gameState.submissionResult?.fightResult?.enemy?.enemy_attack_type ?? 
@@ -810,6 +829,7 @@ useEffect(() => {
               enemyCurrentState={enemyCurrentState}
               reactionText={activeEnemyReaction}
               hurtAudioUrl={gameState.submissionResult?.enemyHurtAudio}
+              matchCharacterStyle={isPvpMode}
             />
           );
         })}
@@ -857,6 +877,7 @@ useEffect(() => {
           position="right"
           avatarUrl={enemyAvatar}
           isEnemy={true}
+          flipEnemyAvatar={isPvpMode}
           borderColor="#ffffffff"
           startDelay={600}     
           trigger={submissionSeq}
@@ -921,10 +942,16 @@ useEffect(() => {
 
 
 export default React.memo(ScreenPlay, (prevProps, nextProps) => {
+  if (prevProps.isPvpMode || nextProps.isPvpMode) {
+    return false;
+  }
+
   return (
     prevProps.gameState?.submissionResult?.isCorrect === nextProps.gameState?.submissionResult?.isCorrect &&
     prevProps.gameState?.selectedCharacter?.current_health === nextProps.gameState?.selectedCharacter?.current_health &&
+    prevProps.gameState?.selectedCharacter?.max_health === nextProps.gameState?.selectedCharacter?.max_health &&
     prevProps.gameState?.enemy?.enemy_health === nextProps.gameState?.enemy?.enemy_health &&
+    prevProps.gameState?.enemy?.enemy_max_health === nextProps.gameState?.enemy?.enemy_max_health &&
     (prevProps.gameState?.submissionResult?.fightResult?.enemy?.enemy_attack_type === 
      nextProps.gameState?.submissionResult?.fightResult?.enemy?.enemy_attack_type) &&
     (prevProps.gameState?.enemy?.enemy_attack_type === 
@@ -937,6 +964,7 @@ export default React.memo(ScreenPlay, (prevProps, nextProps) => {
     prevProps.messageText === nextProps.messageText && 
     prevProps.onSubmissionAnimationComplete === nextProps.onSubmissionAnimationComplete &&
     prevProps.gameState?.avatar?.player === nextProps.gameState?.avatar?.player &&
-    prevProps.gameState?.avatar?.enemy === nextProps.gameState?.avatar?.enemy
+    prevProps.gameState?.avatar?.enemy === nextProps.gameState?.avatar?.enemy &&
+    prevProps.isPvpMode === nextProps.isPvpMode
   );
 });

@@ -16,6 +16,8 @@ const GridContainer = ({
   cardImageUrl, 
   showCardInGrid = false,
   isProceedMode = false,
+  isAutoProceedMode = false,
+  autoProceedCountdown = null,
   onProceed = null,
   isLevelComplete = false,
   showRunButton = true, 
@@ -66,7 +68,7 @@ const GridContainer = ({
   useEffect(() => {
     const url = cardImageUrl;
 
-    if (isProceedMode || isLevelComplete) {
+    if (isProceedMode || isAutoProceedMode || isLevelComplete) {
       setImageSource(null);
       setPreviousUrl(null);
       dropAnim.setValue(-500);
@@ -105,7 +107,7 @@ const GridContainer = ({
       dropAnim.setValue(-500);
       opacityAnim.setValue(0);
     }
-  }, [cardImageUrl, showCardInGrid, isProceedMode, isLevelComplete]);
+  }, [cardImageUrl, showCardInGrid, isProceedMode, isAutoProceedMode, isLevelComplete]);
 
   const animatedStyle = {
     transform: [
@@ -143,10 +145,10 @@ const GridContainer = ({
       <View style={[
         styles.thirdGrid, 
         { height: mainHeight },
-        isProceedMode && styles.thirdGridProceed
+        (isProceedMode || isAutoProceedMode) && styles.thirdGridProceed
       ]}>
       
-          {imageSource && showCardInGrid && !isProceedMode && (
+          {imageSource && showCardInGrid && !isProceedMode && !isAutoProceedMode && (
           <Animated.View style={[styles.cardImageInGrid, animatedStyle]}>
             <Image
               source={imageSource}
@@ -163,7 +165,7 @@ const GridContainer = ({
           </Animated.View>
         )}
 
-        {loading && showCardInGrid && !isProceedMode && (
+        {loading && showCardInGrid && !isProceedMode && !isAutoProceedMode && (
           <ActivityIndicator 
             size="large" 
             color="#ffffff" 
@@ -171,7 +173,7 @@ const GridContainer = ({
           />
         )}
         
-        {!isProceedMode && !isLevelComplete && (
+        {!isProceedMode && !isAutoProceedMode && !isLevelComplete && (
           <View style={styles.simpleFrame}>
           </View>
         )}
@@ -179,17 +181,17 @@ const GridContainer = ({
         
          <View style={[
           styles.outerFrame,
-          (isProceedMode || isLevelComplete) && styles.outerFrameProceed,
+          (isProceedMode || isAutoProceedMode || isLevelComplete) && styles.outerFrameProceed,
           isSpecialAttack && styles.outerFrameSpecialAttack 
         ]}>
           <View style={[
             styles.innerContent,
-            (isProceedMode || isLevelComplete) && styles.innerContentProceed,
+            (isProceedMode || isAutoProceedMode || isLevelComplete) && styles.innerContentProceed,
             isSpecialAttack && styles.innerContentSpecialAttack
           ]}>
              <View style={[
               styles.innerBorder,
-              (isProceedMode || isLevelComplete) && styles.innerBorderProceed,
+              (isProceedMode || isAutoProceedMode || isLevelComplete) && styles.innerBorderProceed,
               isSpecialAttack && styles.innerBorderSpecialAttack
             ]}>
               <View style={styles.backlightOverlay} />
@@ -220,6 +222,15 @@ const GridContainer = ({
                 </View>
               ) : isLevelComplete && !showRunButton ? (
                 null
+              ) : isAutoProceedMode ? (
+                <View style={styles.autoProceedContainer}>
+                  <Text style={styles.autoProceedTitle}>Syncing Players</Text>
+                  <Text style={styles.autoProceedSubtitle}>
+                    {typeof autoProceedCountdown === 'number'
+                      ? `Next challenge in ${autoProceedCountdown}s`
+                      : 'Preparing next challenge...'}
+                  </Text>
+                </View>
               ) : isProceedMode ? (
                 <View style={styles.proceedButtonFrame}>
                   <Pressable
@@ -660,6 +671,28 @@ const styles = StyleSheet.create({
     textShadowRadius: scale(2),
     zIndex: 1,
     position: 'absolute'
+  },
+
+  autoProceedContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: scale(14),
+  },
+
+  autoProceedTitle: {
+    color: '#d5ecff',
+    fontSize: scale(16),
+    fontFamily: 'Grobold',
+    textAlign: 'center',
+  },
+
+  autoProceedSubtitle: {
+    marginTop: scale(6),
+    color: '#ffffff',
+    fontSize: scale(13),
+    fontFamily: 'DynaPuff',
+    textAlign: 'center',
   },
 
   // COMPLETION BUTTONS STYLES - Reuse proceed button styles

@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { gameService } from '../services/gameService';
 
-export const useGameData = (initialLevelId) => {
+export const useGameData = (initialLevelId, options = {}) => {
+  const { disabled = false } = options;
     const [gameState, setGameState] = useState({
     level: {},
     enemy: {},
@@ -58,6 +59,12 @@ export const useGameData = (initialLevelId) => {
   }, []);
 
   const fetchGameData = async () => {
+
+    if (disabled) {
+      setLoading(false);
+      setAnimationsLoading(false);
+      return;
+    }
 
     const targetLevelId = currentLevelId || initialLevelId;
     
@@ -135,6 +142,10 @@ export const useGameData = (initialLevelId) => {
   
   
   const submitAnswer = async (selectedAnswers) => {
+     if (disabled) {
+      return { success: false, error: 'Game data hook is disabled' };
+    }
+
      if (!gameState?.currentChallenge || !currentLevelId) {
       console.error('Missing required data for submission');
       return { success: false, error: 'Missing required data' };
@@ -589,12 +600,18 @@ export const useGameData = (initialLevelId) => {
   }, []);
 
     useEffect(() => {
+    if (disabled) {
+      setLoading(false);
+      setAnimationsLoading(false);
+      return;
+    }
+
     if (skipNextFetchRef.current) {
       skipNextFetchRef.current = false;
       return;
     }
     fetchGameData();
-  }, [currentLevelId]);
+  }, [currentLevelId, disabled]);
 
 
   const clearSelectedPotion = useCallback(() => {
@@ -607,6 +624,10 @@ export const useGameData = (initialLevelId) => {
 
 
   const refetchGameData = () => {
+    if (disabled) {
+      return;
+    }
+
     pendingSubmissionRef.current = null;
     setWaitingForAnimation(false);
     setAnimationsLoading(true);

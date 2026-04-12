@@ -36,6 +36,7 @@ const EnemyCharacter = ({
   enemyCurrentState = null,
   reactionText = null,
   hurtAudioUrl = null,
+  matchCharacterStyle = false,
 }) => {
   // ========== Shared Animation Values ==========
   const frameIndex = useSharedValue(0);
@@ -128,6 +129,10 @@ const EnemyCharacter = ({
 
 
     const bossLayout = useMemo(() => {
+    if (matchCharacterStyle) {
+      return {};
+    }
+
     const baseBossStyle = { right: gameScale(-30) };
 
     if (effectiveEnemyName === 'Boss Darco') {
@@ -144,7 +149,7 @@ const EnemyCharacter = ({
     }
 
     return {};
-  }, [effectiveEnemyName]);
+  }, [effectiveEnemyName, matchCharacterStyle]);
 
 
 
@@ -152,6 +157,10 @@ const EnemyCharacter = ({
 
   // ========== Animation Configuration ==========
    const SPRITE_SIZE = useMemo(() => {
+    if (matchCharacterStyle) {
+      return gameScale(128);
+    }
+
     if (effectiveEnemyName === 'Boss Darco') {
       return gameScale(190); 
     }
@@ -164,7 +173,7 @@ const EnemyCharacter = ({
     return gameScale(150);
 
     
-  }, [effectiveEnemyName]);
+  }, [effectiveEnemyName, matchCharacterStyle]);
   
   const SPRITE_COLUMNS = 6;
   const SPRITE_ROWS = 4;
@@ -685,6 +694,7 @@ const EnemyCharacter = ({
     <Animated.View 
       style={[ 
         styles.enemyContainer, 
+        matchCharacterStyle && styles.enemyContainerCharacterStyle,
         bossLayout, 
         containerStyle, 
         isFront && styles.front,
@@ -706,7 +716,13 @@ const EnemyCharacter = ({
       )}
       
       {attackOverlayUrl && (
-        <Animated.View style={[styles.attackOverlay, overlayAnimatedStyle]}>
+        <Animated.View
+          style={[
+            styles.attackOverlay,
+            overlayAnimatedStyle,
+            matchCharacterStyle && styles.flipHorizontal,
+          ]}
+        >
           <View style={styles.overlaySpriteContainer}>
             <Animated.View style={[
               styles.overlaySpriteSheet, 
@@ -723,7 +739,13 @@ const EnemyCharacter = ({
         </Animated.View>
       )}
 
-      <View style={[styles.spriteContainer, { width: SPRITE_SIZE, height: SPRITE_SIZE, zIndex: 10 }]}>
+      <View
+        style={[
+          styles.spriteContainer,
+          { width: SPRITE_SIZE, height: SPRITE_SIZE, zIndex: 10 },
+          matchCharacterStyle && styles.flipHorizontal,
+        ]}
+      >
         <Animated.View style={[ styles.spriteSheet, animatedStyle, { width: SPRITE_SIZE * SPRITE_COLUMNS, height: SPRITE_SIZE * SPRITE_ROWS }]} >
           {currentAnimationUrl ? (
             <Image
@@ -775,6 +797,10 @@ const styles = StyleSheet.create({
     top: gameScale(125),
     justifyContent: 'flex-start',
     alignItems: 'center',
+  },
+  enemyContainerCharacterStyle: {
+    right: gameScale(-10),
+    top: gameScale(130),
   },
   reactionContainer: {
     position: 'absolute',
@@ -847,6 +873,9 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  flipHorizontal: {
+    transform: [{ scaleX: -1 }],
+  },
   front: {
     zIndex: 9999,
   },
@@ -888,6 +917,7 @@ export default React.memo(EnemyCharacter, (prev, next) => {
     prev.index === next.index &&      
     prev.attackOverlayUrl === next.attackOverlayUrl && 
     prev.enemyCurrentState === next.enemyCurrentState &&
-    prev.characterAnimations === next.characterAnimations
+    prev.characterAnimations === next.characterAnimations &&
+    prev.matchCharacterStyle === next.matchCharacterStyle
   );
 });

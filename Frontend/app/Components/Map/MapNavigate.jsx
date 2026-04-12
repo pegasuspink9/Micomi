@@ -16,7 +16,9 @@ import {
 import * as NavigationBar from 'expo-navigation-bar';
 import LottieView from 'lottie-react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMapData } from '../../hooks/useMapData'; 
+import { usePvpMatchmaking } from '../../hooks/usePvpMatchmaking';
 import { MAP_THEMES, DEFAULT_THEME } from '../RoadMap/MapLevel/MapDatas/mapData'; 
 import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
 import { mapService } from '../../services/mapService';
@@ -36,6 +38,7 @@ const LEVEL_SELECTOR_IMAGES = {
 export default function MapNavigate({ onMapChange }) {
   const [currentMapIndex, setCurrentMapIndex] = useState(0);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [isPvpModalVisible, setIsPvpModalVisible] = useState(false);
   const router = useRouter();
 
 
@@ -75,7 +78,30 @@ export default function MapNavigate({ onMapChange }) {
   const hasAutoPreloaded = useRef(false);
   const [assetsReady, setAssetsReady] = useState(false);
 
-  const { maps, loading, error, refetch } = useMapData();
+  const { maps, loading, error: mapError, refetch } = useMapData();
+
+  const {
+    preview,
+    status: pvpStatus,
+    loadingPreview,
+    startingMatch,
+    findingMatch,
+    matchedMatchId,
+    error: pvpError,
+    loadPreview,
+    startMatchmaking,
+    cancelMatchmaking,
+    clearMatchReadyState,
+    clearError: clearPvpError,
+  } = usePvpMatchmaking();
+
+  const hasResumableMatch = Boolean(
+    pvpStatus?.matchId &&
+      (pvpStatus?.matchFound ||
+        ['matched', 'already_matched', 'in_progress', 'round_in_progress', 'active'].includes(
+          String(pvpStatus?.status || '').toLowerCase()
+        ))
+  );
 
   // Add safety check for current map
   const currentMap = maps[currentMapIndex];
@@ -534,6 +560,83 @@ export default function MapNavigate({ onMapChange }) {
     });
   };
 
+  const navigateToPvpMatch = useCallback((targetMatchId) => {
+    if (!targetMatchId) return;
+
+    setIsNavigating(true);
+    setTimeout(() => {
+      router.push({
+        pathname: '/GamePlay',
+        params: {
+          mode: 'pvp',
+          matchId: String(targetMatchId),
+        },
+      });
+    }, 280);
+  }, [router]);
+
+  const handleOpenPvpModal = useCallback(() => {
+    clearMatchReadyState();
+    setIsPvpModalVisible(true);
+    clearPvpError();
+    loadPreview();
+  }, [clearMatchReadyState, clearPvpError, loadPreview]);
+
+  const handleClosePvpModal = useCallback(async () => {
+    if (findingMatch) {
+      try {
+        await cancelMatchmaking({ silent: true });
+      } catch (cancelError) {
+        console.error('Failed to cancel PvP matchmaking:', cancelError);
+      }
+    }
+
+    clearMatchReadyState();
+    setIsPvpModalVisible(false);
+  }, [cancelMatchmaking, clearMatchReadyState, findingMatch]);
+
+  const handleStartPvpMatch = useCallback(async () => {
+    try {
+      const latestPreview = await loadPreview();
+      const latestStatus = latestPreview?.status || pvpStatus || null;
+      const latestStatusValue = String(latestStatus?.status || '').toLowerCase();
+
+      const latestHasResumableMatch = Boolean(
+        latestStatus?.matchId &&
+          (latestStatus?.matchFound ||
+            ['matched', 'already_matched', 'in_progress', 'round_in_progress', 'active'].includes(
+              latestStatusValue
+            ))
+      );
+
+      if (latestHasResumableMatch && latestStatus?.matchId) {
+        setIsPvpModalVisible(false);
+        navigateToPvpMatch(latestStatus.matchId);
+        return;
+      }
+
+      await startMatchmaking();
+    } catch (startError) {
+      console.error('Failed to start PvP matchmaking:', startError);
+    }
+  }, [loadPreview, navigateToPvpMatch, pvpStatus, startMatchmaking]);
+
+  const handleCancelPvpSearch = useCallback(async () => {
+    try {
+      await cancelMatchmaking();
+    } catch (cancelError) {
+      console.error('Failed to cancel PvP matchmaking:', cancelError);
+    }
+  }, [cancelMatchmaking]);
+
+  useEffect(() => {
+    if (!matchedMatchId) return;
+
+    setIsPvpModalVisible(false);
+    navigateToPvpMatch(matchedMatchId);
+    clearMatchReadyState();
+  }, [clearMatchReadyState, matchedMatchId, navigateToPvpMatch]);
+
   // Close download modal manually
   const handleDownloadModalClose = () => {
     if (!downloadProgress.isDownloading) {
@@ -545,11 +648,11 @@ export default function MapNavigate({ onMapChange }) {
  
 
   // Error state with no maps available
-  if (error && maps.length === 0) {
+  if (mapError && maps.length === 0) {
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>Failed to load maps</Text>
-        <Text style={styles.errorSubText}>{error}</Text>
+        <Text style={styles.errorSubText}>{mapError}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={refetch}>
           <Text style={styles.retryText}>Retry</Text>
         </TouchableOpacity>
@@ -583,13 +686,22 @@ export default function MapNavigate({ onMapChange }) {
      <StatusBar hidden={true} translucent={true} backgroundColor="transparent" /> 
       <View style={styles.scrollContent}>
         {/* Show error banner if there was an error but we have data */}
-        {error && maps.length > 0 && (
+        {mapError && maps.length > 0 && (
           <View style={styles.errorBanner}>
             <Text style={styles.errorBannerText}>
               Backend connection issue - Some features may be limited
             </Text>
           </View>
         )}
+
+        <TouchableOpacity
+          style={styles.pvpEntryButton}
+          activeOpacity={0.9}
+          onPress={handleOpenPvpModal}
+        >
+          <MaterialCommunityIcons name="sword-cross" size={24} color="#E8F5FF" />
+          <Text style={styles.pvpEntryButtonText}>PvP</Text>
+        </TouchableOpacity>
 
 
         <View style={styles.islandsContainer}>
@@ -686,6 +798,111 @@ export default function MapNavigate({ onMapChange }) {
         </View>
         <MiniQuestPreview />
       </View>
+
+      <Modal
+        visible={isPvpModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleClosePvpModal}
+      >
+        <View style={styles.pvpModalOverlay}>
+          <View style={styles.pvpModalContainer}>
+            <Text style={styles.pvpModalTitle}>Daily PvP Match</Text>
+
+            {loadingPreview ? (
+              <View style={styles.pvpLoadingRow}>
+                <ActivityIndicator color="#BFE2FF" size="small" />
+                <Text style={styles.pvpLoadingText}>Loading daily preview...</Text>
+              </View>
+            ) : (
+              <>
+                <View style={styles.pvpInfoBlock}>
+                  <Text style={styles.pvpInfoLabel}>Challenge</Text>
+                  <Text style={styles.pvpInfoValue}>
+                    {preview?.previewTask?.title || 'Daily PvP Challenge'}
+                  </Text>
+                </View>
+
+                <View style={styles.pvpInfoBlock}>
+                  <Text style={styles.pvpInfoLabel}>Description</Text>
+                  <Text style={styles.pvpInfoValueMuted}>
+                    {preview?.previewTask?.description || 'Race another player to solve the daily challenge first.'}
+                  </Text>
+                </View>
+
+                <View style={styles.pvpInlineStats}>
+                  <View style={styles.pvpStatPill}>
+                    <Text style={styles.pvpStatLabel}>Difficulty</Text>
+                    <Text style={styles.pvpStatValue}>
+                      {String(preview?.previewTask?.difficulty || 'unknown').toUpperCase()}
+                    </Text>
+                  </View>
+
+                  <View style={styles.pvpStatPill}>
+                    <Text style={styles.pvpStatLabel}>Status</Text>
+                    <Text style={styles.pvpStatValue}>
+                      {String(pvpStatus?.status || 'idle').replace('_', ' ')}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.pvpInfoBlock}>
+                  <Text style={styles.pvpInfoLabel}>Topics</Text>
+                  <Text style={styles.pvpInfoValueMuted}>
+                    {(preview?.previewTask?.topicsCovered || []).length > 0
+                      ? preview.previewTask.topicsCovered.join(', ')
+                      : 'No topics loaded'}
+                  </Text>
+                </View>
+              </>
+            )}
+
+            {pvpError ? <Text style={styles.pvpErrorText}>{pvpError}</Text> : null}
+
+            <View style={styles.pvpButtonRow}>
+              <TouchableOpacity
+                style={[styles.pvpActionButton, styles.pvpCloseButton]}
+                onPress={handleClosePvpModal}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.pvpActionButtonText}>Close</Text>
+              </TouchableOpacity>
+
+              {findingMatch ? (
+                <TouchableOpacity
+                  style={[styles.pvpActionButton, styles.pvpCancelButton]}
+                  onPress={handleCancelPvpSearch}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.pvpActionButtonText}>Cancel Search</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.pvpActionButton, styles.pvpPlayButton]}
+                  onPress={handleStartPvpMatch}
+                  activeOpacity={0.85}
+                  disabled={startingMatch || loadingPreview}
+                >
+                  {startingMatch ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <Text style={styles.pvpActionButtonText}>
+                      {hasResumableMatch ? 'Continue' : 'Play'}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {findingMatch ? (
+              <View style={styles.findingMatchRow}>
+                <ActivityIndicator color="#90E0FF" size="small" />
+                <Text style={styles.findingMatchText}>Finding match...</Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={isMapInfoVisible} transparent={true} animationType="fade" onRequestClose={() => setIsMapInfoVisible(false)}>
         <View style={styles.mapModalOverlay}>
@@ -867,6 +1084,165 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     fontFamily: 'FunkySign',
+  },
+  pvpEntryButton: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 14 : 20,
+    right: 16,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(16, 36, 72, 0.88)',
+    borderWidth: 2,
+    borderColor: '#58B5FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 120,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 10,
+  },
+  pvpEntryButtonText: {
+    color: '#E8F5FF',
+    fontSize: 12,
+    fontFamily: 'Grobold',
+    marginTop: 2,
+  },
+  pvpModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  pvpModalContainer: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: '#102347',
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#4C9AE6',
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    elevation: 22,
+  },
+  pvpModalTitle: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontFamily: 'Grobold',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  pvpLoadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+  },
+  pvpLoadingText: {
+    color: '#DCEEFF',
+    fontSize: 13,
+    fontFamily: 'DynaPuff',
+  },
+  pvpInfoBlock: {
+    marginBottom: 10,
+  },
+  pvpInfoLabel: {
+    color: '#7BC5FF',
+    fontSize: 11,
+    fontFamily: 'Grobold',
+    marginBottom: 2,
+    textTransform: 'uppercase',
+  },
+  pvpInfoValue: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: 'Grobold',
+  },
+  pvpInfoValueMuted: {
+    color: '#E0EEFF',
+    fontSize: 12,
+    fontFamily: 'DynaPuff',
+    lineHeight: 18,
+  },
+  pvpInlineStats: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
+  pvpStatPill: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(125, 188, 255, 0.6)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  pvpStatLabel: {
+    color: '#7BC5FF',
+    fontSize: 10,
+    fontFamily: 'Grobold',
+  },
+  pvpStatValue: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: 'DynaPuff',
+    marginTop: 2,
+  },
+  pvpErrorText: {
+    color: '#FFB6B6',
+    fontSize: 12,
+    fontFamily: 'DynaPuff',
+    marginBottom: 8,
+  },
+  pvpButtonRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 6,
+  },
+  pvpActionButton: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  pvpCloseButton: {
+    backgroundColor: '#8A3344',
+    borderColor: '#C15F71',
+  },
+  pvpPlayButton: {
+    backgroundColor: '#0B7DA7',
+    borderColor: '#65BFF2',
+  },
+  pvpCancelButton: {
+    backgroundColor: '#5E3C93',
+    borderColor: '#8F6BC8',
+  },
+  pvpActionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontFamily: 'Grobold',
+  },
+  findingMatchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 10,
+  },
+  findingMatchText: {
+    color: '#90E0FF',
+    fontSize: 12,
+    fontFamily: 'DynaPuff',
   },
   mapModalOverlay: {
     flex: 1,

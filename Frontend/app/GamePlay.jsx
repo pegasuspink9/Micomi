@@ -6,6 +6,7 @@ import GameQuestions from '../app/Components/Actual Game/GameQuestions/GameQuest
 import ThirdGrid from '../app/Components/Actual Game/Third Grid/thirdGrid';
 import Card from '../app/Components/Actual Game/Card/Card';
 import { useGameData } from './hooks/useGameData';
+import { usePvpGameData } from './hooks/usePvpGameData';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import CombatVSModal from './Components/Actual Game/Game Display Entrance/GameDisplayEntrance';
 import GameOverModal from './Components/GameOver And Win/GameOver';
@@ -22,7 +23,10 @@ export default function GamePlay() {
   const params = useLocalSearchParams();
   
   // Parse parameters from Expo Router
-  const levelId = parseInt(params.levelId);
+  const rawLevelId = Number.parseInt(params.levelId, 10);
+  const levelId = Number.isFinite(rawLevelId) ? rawLevelId : null;
+  const matchId = typeof params.matchId === 'string' ? params.matchId : null;
+  const isPvpMode = params.mode === 'pvp' || Boolean(matchId);
   const levelData = params.levelData ? JSON.parse(params.levelData) : null;
 
   const [thirdGridHeight, setThirdGridHeight] = useState(gameScale(844 * 0.10));
@@ -36,11 +40,10 @@ export default function GamePlay() {
 
   const [showDialogue, setShowDialogue] = useState(false);
 
-
-  const dialogueData = useMemo(() => gameState?.dialogue, [gameState?.dialogue]);
-
   console.log('🎮 GamePlay component mounted with:', { 
     levelId, 
+    matchId,
+    mode: isPvpMode ? 'pvp' : 'pve',
     levelData: levelData ? 'Loaded' : 'None',
     rawParams: params
   });
@@ -74,10 +77,18 @@ export default function GamePlay() {
   const hasShownVSModalRef = useRef(false);
   const lastSubmissionKey = useRef(null); 
   const lastPlayedAudioKey = useRef(null);
+  const messageDelayTimeoutRef = useRef(null);
 
   const levelCompletionTimeoutRef = useRef(null);
+  const vsWatchdogTimeoutRef = useRef(null);
+  const pvpFallbackRetryCountRef = useRef(0);
 
-  const { 
+  const pveGameData = useGameData(levelId, { disabled: isPvpMode });
+  const pvpGameData = usePvpGameData(matchId, { disabled: !isPvpMode });
+
+  const activeGameData = isPvpMode ? pvpGameData : pveGameData;
+
+  const {
     gameState,   
     loading, 
     error, 
@@ -94,6 +105,7 @@ export default function GamePlay() {
     individualAnimationProgress,
     canProceed,
     handleProceed,
+    autoProceedCountdown = null,
 
     potions,
     selectedPotion,
@@ -102,7 +114,10 @@ export default function GamePlay() {
     usePotion,
     selectPotion,
     clearSelectedPotion,
-  } = useGameData(levelId);
+    liveSync = null,
+  } = activeGameData;
+
+  const dialogueData = useMemo(() => gameState?.dialogue, [gameState?.dialogue]);
 
    useEffect(() => {
     const bgmUrl = gameState?.gameplay_audio;
@@ -115,6 +130,28 @@ export default function GamePlay() {
   const currentChallenge = gameState?.currentChallenge;
   const submissionResult = gameState?.submissionResult;
   const [characterRunState, setCharacterRunState] = useState(false);
+
+  const canRenderVsModal = useMemo(() => {
+    return Boolean(
+      gameState?.selectedCharacter?.character_name &&
+      gameState?.enemy?.enemy_name &&
+      gameState?.versus_background
+    );
+  }, [gameState?.selectedCharacter?.character_name, gameState?.enemy?.enemy_name, gameState?.versus_background]);
+
+  useEffect(() => {
+    if (!isPvpMode) {
+      return;
+    }
+
+    // Continue flow should always replay VS intro before gameplay.
+    hasShownVSModalRef.current = false;
+    hasFinishedMicomic.current = true;
+    setShowMicomic(false);
+    setShowVSModal(false);
+    setShowGameplay(false);
+    setShowDialogue(false);
+  }, [isPvpMode, matchId]);
   
   //  Get character attack card from gameState
   const characterAttackCard = gameState?.card?.character_attack_card;
@@ -165,14 +202,31 @@ export default function GamePlay() {
   useEffect(() => {
     const submission = gameState?.submissionResult;
 
+    if (messageDelayTimeoutRef.current) {
+      clearTimeout(messageDelayTimeoutRef.current);
+      messageDelayTimeoutRef.current = null;
+    }
+
     // If there's no submission or message, ensure the message is hidden.
     if (!submission || !submission.message) {
       setIsMessageVisible(false);
       return;
     }
 
+    const audioUrl = submission.audio?.[0] || '';
+
     // Create a unique key for the submission event to prevent re-triggering on re-renders.
-    const submissionKey = `${submission?.message}-${submission?.fightResult?.timer}-${submission?.audio?.[0]}`
+    const submissionKey = [
+      currentChallenge?.id || 'none',
+      submission?.reason || 'none',
+      submission?.acceptedForAttack ?? submission?.accepted_for_attack ?? 'na',
+      submission?.isCorrect ?? submission?.is_correct ?? 'na',
+      submission?.fightResult?.status || 'none',
+      submission?.fightResult?.character?.character_health ?? 'na',
+      submission?.fightResult?.enemy?.enemy_health ?? 'na',
+      submission?.message || '',
+      audioUrl,
+    ].join('|');
 
     // If we've already processed this exact submission, do nothing.
     if (lastSubmissionKey.current === submissionKey) {
@@ -192,13 +246,11 @@ export default function GamePlay() {
       setIsMessageVisible(true);
     }; 
 
-    const audioUrl = submission.audio?.[0];
-
     // Hide any previous message before starting the new sequence.
     setIsMessageVisible(false);
     
     // Use a short timeout to allow the UI to register the "hide" before we "show" again.
-     setTimeout(() => {
+    messageDelayTimeoutRef.current = setTimeout(() => {
       if (audioUrl) {
         console.log('🔊 Sync: Playing sound, message will show on playback start.');
         soundManager.playSequentialMessage([audioUrl], showMessage);
@@ -206,9 +258,17 @@ export default function GamePlay() {
         console.log('💬 Sync: No sound, showing message immediately.');
         showMessage(); // If no sound, trigger the message directly.
       }
+      messageDelayTimeoutRef.current = null;
     }, 1000);
 
-  }, [gameState?.submissionResult]);
+    return () => {
+      if (messageDelayTimeoutRef.current) {
+        clearTimeout(messageDelayTimeoutRef.current);
+        messageDelayTimeoutRef.current = null;
+      }
+    };
+
+  }, [gameState?.submissionResult, currentChallenge?.id]);
 
 
 
@@ -283,24 +343,98 @@ export default function GamePlay() {
   }, [currentChallenge?.id, maxAnswers, gameState?.attemptId]);   
 
   useEffect(() => {
-    if (currentChallenge && !loading && !animationsLoading && !hasShownVSModalRef.current) {
-      
-      // Check if this level has comic lessons and we haven't shown them yet
-      const hasLessons = gameState?.lessons?.lessons?.length > 0;
-
-      if (hasLessons && !hasFinishedMicomic.current) {
-        console.log('📖 Level has lessons, showing Micomic first');
-        setShowMicomic(true);
-        setShowVSModal(false);
-        setShowGameplay(false);
-      } else {
-        console.log('⚔️ No lessons or already seen, showing VS modal');
-        setShowVSModal(true);
-        setShowGameplay(false);
-        hasShownVSModalRef.current = true;
-      }
+    if (!currentChallenge || loading || animationsLoading || hasShownVSModalRef.current) {
+      return;
     }
-  }, [currentChallenge?.id, loading, animationsLoading, gameState?.lessons]);
+
+    if (isPvpMode) {
+      console.log('⚔️ PvP continue flow - showing VS modal before gameplay');
+      setShowMicomic(false);
+      setShowGameplay(false);
+      setShowVSModal(true);
+      hasShownVSModalRef.current = true;
+      return;
+    }
+
+    // Check if this level has comic lessons and we haven't shown them yet
+    const hasLessons = gameState?.lessons?.lessons?.length > 0;
+
+    if (hasLessons && !hasFinishedMicomic.current) {
+      console.log('📖 Level has lessons, showing Micomic first');
+      setShowMicomic(true);
+      setShowVSModal(false);
+      setShowGameplay(false);
+    } else {
+      console.log('⚔️ No lessons or already seen, showing VS modal');
+      setShowVSModal(true);
+      setShowGameplay(false);
+      hasShownVSModalRef.current = true;
+    }
+  }, [isPvpMode, currentChallenge?.id, loading, animationsLoading, gameState?.lessons]);
+
+  useEffect(() => {
+    if (
+      !isPvpMode ||
+      !currentChallenge ||
+      loading ||
+      animationsLoading ||
+      showVSModal ||
+      showGameplay ||
+      !hasShownVSModalRef.current
+    ) {
+      return;
+    }
+
+    // Safety net: if resumed flow falls into no-screen state, replay VS modal.
+    setShowVSModal(true);
+  }, [isPvpMode, currentChallenge?.id, loading, animationsLoading, showVSModal, showGameplay]);
+
+  useEffect(() => {
+    if (!showVSModal) {
+      if (vsWatchdogTimeoutRef.current) {
+        clearTimeout(vsWatchdogTimeoutRef.current);
+        vsWatchdogTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    if (vsWatchdogTimeoutRef.current) {
+      clearTimeout(vsWatchdogTimeoutRef.current);
+    }
+
+    // If VS never completes (e.g., missing/failed background), continue to gameplay.
+    vsWatchdogTimeoutRef.current = setTimeout(() => {
+      setShowVSModal(false);
+      setShowGameplay(true);
+    }, 7000);
+
+    return () => {
+      if (vsWatchdogTimeoutRef.current) {
+        clearTimeout(vsWatchdogTimeoutRef.current);
+        vsWatchdogTimeoutRef.current = null;
+      }
+    };
+  }, [showVSModal]);
+
+  useEffect(() => {
+    if (!isPvpMode || loading || animationsLoading || currentChallenge || error) {
+      pvpFallbackRetryCountRef.current = 0;
+      return;
+    }
+
+    if (pvpFallbackRetryCountRef.current >= 3) {
+      return;
+    }
+
+    const retryTimer = setTimeout(() => {
+      pvpFallbackRetryCountRef.current += 1;
+      refetchGameData();
+    }, 1200);
+
+    return () => {
+      clearTimeout(retryTimer);
+    };
+  }, [isPvpMode, loading, animationsLoading, currentChallenge, error, refetchGameData]);
 
   const handleMicomicComplete = useCallback(() => {
     console.log('📖 Micomic finished, transitioning to VS Modal');
@@ -563,15 +697,23 @@ export default function GamePlay() {
     
 
     try{
-      await retryLevel();
+      if (isPvpMode) {
+        await refetchGameData();
+      } else {
+        await retryLevel();
+      }
     } catch (error) {
       console.error('❌ Failed to retry level:', error);
     } finally {
       setIsRetrying(false);
     }
-  }, [retryLevel]);
+  }, [isPvpMode, refetchGameData, retryLevel]);
 
   const handleNextLevel = useCallback(async () => {
+    if (isPvpMode) {
+      return;
+    }
+
     const nextLevelId = gameState?.submissionResult?.nextLevel?.level_id;
     
     if (!nextLevelId) {
@@ -603,9 +745,9 @@ export default function GamePlay() {
     } finally {
       setIsLoadingNextLevel(false);
     }
-  }, [gameState?.submissionResult?.nextLevel?.level_id, enterNextLevel]);
+  }, [isPvpMode, gameState?.submissionResult?.nextLevel?.level_id, enterNextLevel]);
 
-  const handleHome = useCallback(() => {
+  const handleHome = useCallback(async () => {
     console.log('🏠 Going home...');
     
     if (gameOverTimeoutRef.current) {
@@ -628,6 +770,7 @@ export default function GamePlay() {
     setShowRunButton(true);
     hasTriggeredGameOver.current = false;
     hasTriggeredLevelCompletion.current = false;
+
     router.back();
   }, [router]);
 
@@ -646,6 +789,12 @@ export default function GamePlay() {
         clearTimeout(gameOverTimeoutRef.current);
         gameOverTimeoutRef.current = null;
       }
+
+      if (vsWatchdogTimeoutRef.current) {
+        clearTimeout(vsWatchdogTimeoutRef.current);
+        vsWatchdogTimeoutRef.current = null;
+      }
+
      soundManager.stopAllSounds();
     };
   }, []);
@@ -689,8 +838,9 @@ export default function GamePlay() {
     return blankIndex;
   }, [currentChallenge?.question]);
 
-  const handleExitGame = useCallback(() => {
+  const handleExitGame = useCallback(async () => {
     console.log('🚪 Exiting game...');
+
     router.back();
   }, [router]);
 
@@ -703,6 +853,12 @@ export default function GamePlay() {
 
   // COMBINED LOADING STATE: Used to trigger the MainLoading entrance/exit
   const showLoadingScreen = loading || animationsLoading || isLoadingNextLevel || isRetrying;
+  const showPvpSyncFallback =
+    isPvpMode &&
+    !showLoadingScreen &&
+    !showMicomic &&
+    (!showVSModal || (showVSModal && !canRenderVsModal)) &&
+    !showGameplay;
 
   // Extract the specific loading text/progress bars to a variable
   // We will render this ON TOP of the MainLoading doors
@@ -803,6 +959,7 @@ export default function GamePlay() {
       )}
 
       {showVSModal && (
+        canRenderVsModal ? (
           <CombatVSModal
             visible={showVSModal}
             onComplete={handleVSComplete}
@@ -810,7 +967,15 @@ export default function GamePlay() {
             enemy={gameState?.enemy}
             versusBackground={gameState?.versus_background}
             versusAudio={gameState?.versus_audio}
+            isPvpMode={isPvpMode}
           />
+        ) : (
+          <View style={[styles.container, styles.centerContent]}>
+            <ActivityIndicator size="large" color="#9fd8ff" />
+            <Text style={styles.pvpFallbackTitle}>Preparing Combat VS</Text>
+            <Text style={styles.pvpFallbackSubtitle}>Loading latest match visuals...</Text>
+          </View>
+        )
       )}
 
       {showGameplay && (
@@ -818,8 +983,23 @@ export default function GamePlay() {
         source={require('./gamebackgroundmain.png')}
         style={styles.container}
       >
-        {currentChallenge && (
+        {currentChallenge ? (
           <View style={styles.gameLayoutContainer}>
+            {isPvpMode ? (
+              <View style={styles.liveSyncBadge}>
+                <Text style={styles.liveSyncTitle}>
+                  {liveSync?.connection === 'connected' ? 'LIVE SYNC' : 'SYNCING'}
+                </Text>
+                <Text style={styles.liveSyncSubtitle}>
+                  {liveSync?.pendingRemoteProceed
+                    ? 'Round updated by opponent'
+                    : liveSync?.lastSyncedAt
+                    ? 'Match data aligned'
+                    : 'Waiting for server updates'}
+                </Text>
+              </View>
+            ) : null}
+
             <View style={styles.screenPlayContainer}>
               <ScreenPlay 
                 gameState={gameState}
@@ -837,13 +1017,13 @@ export default function GamePlay() {
                 messageText={messageText}
                 onPausePress={handlePausePress}
                 setBorderColor={setBorderColor}
+                isPvpMode={isPvpMode}
               />
             </View>
 
-          
-              <GameQuestions 
-                currentQuestion={currentChallenge}
-                selectedAnswers={selectedAnswers}
+            <GameQuestions 
+              currentQuestion={currentChallenge}
+              selectedAnswers={selectedAnswers}
                 getBlankIndex={getBlankIndex}
                 onTabChange={handleGameTabChange}
                 activeTab={activeGameTab}
@@ -852,63 +1032,64 @@ export default function GamePlay() {
                 isAnswerCorrect={gameState?.submissionResult?.isCorrect}
                 canProceed={canProceed}
                 submissionResult={gameState?.submissionResult}
-              />
-
-             <View 
-            style={[
-              styles.thirdGridContainer, 
-              { 
-                height: thirdGridHeight,
-                display: shouldHideThirdGrid ? 'none' : 'flex',
-              }
-            ]}
-             >
-            <ThirdGrid 
-              currentQuestion={currentChallenge}
-              selectedAnswers={selectedAnswers}
-              setSelectedAnswers={memoizedSetSelectedAnswers}
-              currentQuestionIndex={0}
-              setCurrentQuestionIndex={() => {}}
-              setBorderColor={setBorderColor}
-              setCorrectAnswerRef={setCorrectAnswerRef}
-              getBlankIndex={getBlankIndex}
-              challengeData={currentChallenge}
-              gameState={gameState}
-              submitAnswer={submitAnswer}
-              submitting={submitting}
-              selectedBlankIndex={selectedBlankIndex} 
-              potions={potions}
-              selectedPotion={selectedPotion}
-              onPotionPress={handlePotionPress}
-              loadingPotions={loadingPotions}
-              usingPotion={usingPotion}
-              setThirdGridHeight={setThirdGridHeight}
-              usePotion={usePotion}
-              cardImageUrl={characterAttackCard}
-              cardDamage={characterDamageCard}
-              cardDisplaySequence={cardDisplaySequence}
-              canProceed={canProceed}
-              onProceed={handleProceed}
-              isLevelComplete={showLevelCompletion}
-              showRunButton={showRunButton}
-              onCharacterRun={handleCharacterRun}
-              onHome={handleHome}
-              onRetry={handleRetry}
-              onNextLevel={handleNextLevel}
-              hasNextLevel={!!gameState?.submissionResult?.nextLevel}
-              fadeOutAnim={fadeOutAnim}
-              isInRunMode={isInRunMode}
-              setSelectedBlankIndex={setSelectedBlankIndex}
-              options={memoizedOptions}
-              // REMOVED: isVisible prop is no longer needed here
             />
-          </View>
 
-           <DialogueOverlay 
-             visible={showDialogue}
-             dialogueData={gameState?.dialogue}
-             onComplete={handleDialogueComplete}
-           />
+            <View 
+              style={[
+                styles.thirdGridContainer, 
+                { 
+                  height: thirdGridHeight,
+                  display: shouldHideThirdGrid ? 'none' : 'flex',
+                }
+              ]}
+            >
+              <ThirdGrid 
+                currentQuestion={currentChallenge}
+                selectedAnswers={selectedAnswers}
+                setSelectedAnswers={memoizedSetSelectedAnswers}
+                currentQuestionIndex={0}
+                setCurrentQuestionIndex={() => {}}
+                setBorderColor={setBorderColor}
+                setCorrectAnswerRef={setCorrectAnswerRef}
+                getBlankIndex={getBlankIndex}
+                challengeData={currentChallenge}
+                gameState={gameState}
+                submitAnswer={submitAnswer}
+                submitting={submitting}
+                selectedBlankIndex={selectedBlankIndex} 
+                potions={potions}
+                selectedPotion={selectedPotion}
+                onPotionPress={handlePotionPress}
+                loadingPotions={loadingPotions}
+                usingPotion={usingPotion}
+                setThirdGridHeight={setThirdGridHeight}
+                usePotion={usePotion}
+                cardImageUrl={characterAttackCard}
+                cardDamage={characterDamageCard}
+                cardDisplaySequence={cardDisplaySequence}
+                canProceed={canProceed}
+                onProceed={handleProceed}
+                isAutoProceed={isPvpMode}
+                autoProceedCountdown={isPvpMode ? autoProceedCountdown : null}
+                isLevelComplete={showLevelCompletion}
+                showRunButton={showRunButton}
+                onCharacterRun={handleCharacterRun}
+                onHome={handleHome}
+                onRetry={handleRetry}
+                onNextLevel={handleNextLevel}
+                hasNextLevel={!isPvpMode && !!gameState?.submissionResult?.nextLevel}
+                fadeOutAnim={fadeOutAnim}
+                isInRunMode={isInRunMode}
+                setSelectedBlankIndex={setSelectedBlankIndex}
+                options={memoizedOptions}
+              />
+            </View>
+
+            <DialogueOverlay 
+              visible={showDialogue}
+              dialogueData={gameState?.dialogue}
+              onComplete={handleDialogueComplete}
+            />
            
 
 
@@ -931,15 +1112,29 @@ export default function GamePlay() {
               onHome={handleHome}
               onNextLevel={handleNextLevel}
               completionRewards={completionRewards}
-              nextLevel={!!gameState?.submissionResult?.nextLevel}
+              nextLevel={!isPvpMode && !!gameState?.submissionResult?.nextLevel}
               isLoading={isLoadingNextLevel}
               victoryAudioUrl={gameState?.submissionResult?.is_victory_audio}
               victoryImageUrl={gameState?.submissionResult?.is_victory_image} 
           />
         
           </View>
+        ) : (
+          <View style={styles.pvpFallbackContainer}>
+            <ActivityIndicator size="large" color="#9fd8ff" />
+            <Text style={styles.pvpFallbackTitle}>Syncing Match State</Text>
+            <Text style={styles.pvpFallbackSubtitle}>Loading latest challenge from server...</Text>
+          </View>
         )}
       </ImageBackground>
+      )}
+
+      {showPvpSyncFallback && (
+        <View style={[styles.container, styles.centerContent]}>
+          <ActivityIndicator size="large" color="#9fd8ff" />
+          <Text style={styles.pvpFallbackTitle}>Reconnecting Match</Text>
+          <Text style={styles.pvpFallbackSubtitle}>Preparing Combat VS and challenge state...</Text>
+        </View>
       )}
 
       <Card
@@ -981,6 +1176,59 @@ const styles = StyleSheet.create({
 
   screenPlayContainer: {
     height: gameScale(844 * 0.38), 
+  },
+
+  liveSyncBadge: {
+    position: 'absolute',
+    top: gameScale(10),
+    right: gameScale(12),
+    zIndex: 1500,
+    backgroundColor: 'rgba(8, 22, 44, 0.82)',
+    borderWidth: gameScale(1),
+    borderColor: 'rgba(112, 186, 255, 0.75)',
+    borderRadius: gameScale(10),
+    paddingVertical: gameScale(6),
+    paddingHorizontal: gameScale(10),
+    maxWidth: gameScale(190),
+  },
+
+  liveSyncTitle: {
+    color: '#BFE2FF',
+    fontSize: gameScale(10),
+    fontFamily: 'Grobold',
+    textAlign: 'center',
+  },
+
+  liveSyncSubtitle: {
+    marginTop: gameScale(2),
+    color: '#FFFFFF',
+    fontSize: gameScale(9),
+    fontFamily: 'DynaPuff',
+    textAlign: 'center',
+  },
+
+  pvpFallbackContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(6, 16, 34, 0.72)',
+    paddingHorizontal: gameScale(20),
+  },
+
+  pvpFallbackTitle: {
+    marginTop: gameScale(12),
+    color: '#E8F6FF',
+    fontSize: gameScale(16),
+    fontFamily: 'Grobold',
+    textAlign: 'center',
+  },
+
+  pvpFallbackSubtitle: {
+    marginTop: gameScale(6),
+    color: '#CDE9FF',
+    fontSize: gameScale(12),
+    fontFamily: 'DynaPuff',
+    textAlign: 'center',
   },
 
   gameQuestionsContainer: {

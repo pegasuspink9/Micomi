@@ -14,7 +14,8 @@ const Life = ({
   avatarUrl = null,
   isEnemy = false,
   startDelay = 0,
-  trigger = 0
+  trigger = 0,
+  flipEnemyAvatar = false,
 }) => {
   const effectiveMax = Math.max(0, Math.floor(maxHealth));
   
@@ -34,6 +35,17 @@ const Life = ({
   const getAvatarUrl = () => {
     return avatarUrl;
   };
+
+  const enemyAvatarImageStyle =
+    isEnemy && position === 'right'
+      ? {
+          width: gameScale(85),
+          marginTop: gameScale(-10),
+          transform: flipEnemyAvatar
+            ? [{ scaleX: -1 }]
+            : [{ translateX: gameScale(-20) }],
+        }
+      : null;
 
   // 3-Layer border colors - Blue for player, Red for enemy
   const getBorderColors = () => {
@@ -245,11 +257,7 @@ const Life = ({
                     source={{ uri: getAvatarUrl() }}
                     style={[
                       styles.avatarImage,
-                      isEnemy && position === 'right' && { 
-                        transform: [{ translateX: gameScale(-20) }],
-                        width: gameScale(85),
-                        marginTop: gameScale(-10),  // Adjust margin top as needed (positive values move it down)
-                      }
+                      enemyAvatarImageStyle
                     ]}
                     resizeMode="cover"
                   />
