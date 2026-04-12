@@ -123,7 +123,11 @@ export const submitAnswer = async (req: Request, res: Response) => {
     return successResponse(res, result, message);
   } catch (error) {
     const message = (error as Error).message || "Failed to submit answer";
-    const status = message.includes("not found") ? 404 : 400;
+    const status = message.includes("not found")
+      ? 404
+      : message.includes("Please wait")
+        ? 429
+        : 400;
     return errorResponse(res, error, message, status);
   }
 };

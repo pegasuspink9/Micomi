@@ -27,11 +27,13 @@ import { getCardForAttackType } from "../Combat/combat.service";
 import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
 import { formatTimer } from "../../../helper/dateTimeHelper";
 import * as EnergyService from "../Energy/energy.service";
+import { generateMotivationalMessage } from "../Challenges/challenges.service";
 
 const prisma = new PrismaClient();
 
 const MATCHMAKING_TIMEOUT_MS = 2 * 60 * 1000;
 const MATCH_COMPLETION_CLEANUP_MS = 90 * 1000;
+const SUBMIT_ANSWER_COOLDOWN_MS = 5 * 1000;
 const DEFAULT_FALLBACK_ATTACK_DAMAGE = 12;
 const WIN_REWARD: PvPCompletionRewards = {
   coins: 60,
@@ -51,6 +53,7 @@ const queue = new Set<number>();
 const matches = new Map<string, PvPMatchState>();
 const matchCleanupTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const dailyPreviewViewedByPlayer = new Map<number, string>();
+const submitAnswerCooldownByPlayer = new Map<number, number>();
 
 const VICTORY_AUDIO = "https://micomi-assets.me/Sounds/Final/Victory_Sound.wav";
 const DEFEAT_AUDIO = "https://micomi-assets.me/Sounds/Final/Defeat_Sound.wav";
@@ -1282,9 +1285,14 @@ const buildSubmitLikeResponse = async (
 
   const completionRewards = isCompleted
     ? {
-        feedbackMessage: isVictory
-          ? "Victory! You outplayed your opponent."
-          : "Defeat. Study this round and strike back.",
+        feedbackMessage: generateMotivationalMessage(
+          false,
+          mistakes,
+          match.questions.length,
+          false,
+          isVictory,
+          entryLike.level.level_number ?? null,
+        ),
         totalPointsEarned: match.rewards_by_player[playerId]?.points ?? 0,
         totalExpPointsEarned: match.rewards_by_player[playerId]?.exp ?? 0,
         coinsEarned: match.rewards_by_player[playerId]?.coins ?? 0,
@@ -1368,6 +1376,19 @@ export const submitAnswer = async (
   challengeId: number,
   answer: string[],
 ): Promise<PvpDailySubmitAnswerResult> => {
+  const nowMs = Date.now();
+  const lastSubmitAt = submitAnswerCooldownByPlayer.get(playerId) ?? 0;
+  const cooldownRemaining =
+    SUBMIT_ANSWER_COOLDOWN_MS - (nowMs - lastSubmitAt);
+
+  if (cooldownRemaining > 0) {
+    throw new Error(
+      `Please wait ${Math.ceil(cooldownRemaining / 1000)} seconds before submitting again.`,
+    );
+  }
+
+  submitAnswerCooldownByPlayer.set(playerId, nowMs);
+
   const match = await getMatchFromMemoryOrDb(matchId);
   if (!match) {
     throw new Error("Match not found");

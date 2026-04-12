@@ -552,7 +552,7 @@ const buildChallengeWithTimer = (
     : null,
 });
 
-const generateMotivationalMessage = (
+export const generateMotivationalMessage = (
   wasFirstCompletion: boolean,
   wrongChallengesCount: number,
   totalChallenges: number,
