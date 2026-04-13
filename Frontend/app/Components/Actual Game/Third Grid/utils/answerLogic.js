@@ -207,6 +207,16 @@ export const createCheckAnswerHandler = (
           // Access the submission result from the updated game state
           const updatedGameState = result.updatedGameState;
           const submissionResult = updatedGameState?.submissionResult;
+
+          if (!submissionResult) {
+            console.log('⏳ Submit accepted. Waiting for authoritative match sync response.');
+            return;
+          }
+
+          if (typeof submissionResult.isCorrect !== 'boolean') {
+            console.log('⏳ Submission result is pending authoritative correctness update.');
+            return;
+          }
           
           if (submissionResult) {
             const isCorrect = submissionResult.isCorrect || false;
@@ -260,9 +270,6 @@ export const createCheckAnswerHandler = (
             if (setCorrectAnswerRef && setCorrectAnswerRef.current) {
               setCorrectAnswerRef.current(isCorrect);
             }
-          } else {
-            console.error('❌ No submission result found in updated game state');
-            setBorderColor('incorrect');
           }
         } else {
           // Handle submission error

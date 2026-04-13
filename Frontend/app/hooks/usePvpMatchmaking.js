@@ -87,7 +87,7 @@ export const usePvpMatchmaking = () => {
 
     try {
       const payload = await pvpService.getDailyMatchState(storedMatchId);
-      const unifiedState = pvpService.extractUnifiedGameState(payload, false);
+      const unifiedState = pvpService.extractAuthoritativeMatchState(payload);
 
       const fightStatus = unifiedState?.submissionResult?.fightResult?.status || null;
       const hasChallenge = Boolean(unifiedState?.currentChallenge?.id);

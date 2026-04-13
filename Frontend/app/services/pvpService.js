@@ -57,6 +57,23 @@ const normalizeMatchPayload = (payload = {}) => {
   return root;
 };
 
+const normalizeAuthoritativeMatchStatePayload = (payload = {}) => {
+  const normalized = normalizeMatchPayload(payload);
+  const data = { ...(normalized?.data || {}) };
+
+  // For GET match-state display, prefer currentChallenge as the source of truth.
+  if (data.currentChallenge) {
+    data.nextChallenge = data.currentChallenge;
+  } else if (data.nextChallenge && !data.currentChallenge) {
+    data.currentChallenge = data.nextChallenge;
+  }
+
+  return {
+    ...normalized,
+    data,
+  };
+};
+
 export const pvpService = {
   getDailyMatchPreview: async () => {
     const response = await apiService.get('/game/pvp/daily/match/preview');
@@ -136,6 +153,11 @@ export const pvpService = {
   extractUnifiedGameState: (payload, isSubmission = false) => {
     const normalized = normalizeMatchPayload(payload);
     return gameService.extractUnifiedGameState(normalized, isSubmission);
+  },
+
+  extractAuthoritativeMatchState: (payload) => {
+    const normalized = normalizeAuthoritativeMatchStatePayload(payload);
+    return gameService.extractUnifiedGameState(normalized, true);
   },
 
   normalizeMatchStatus,
