@@ -53,6 +53,7 @@ const ScreenPlay = ({
   const enemyFadeCompleteRef = useRef(false);
   const animationCompleteNotifiedRef = useRef(false); 
   const lastProcessedSubmissionIdRef = useRef(null); 
+  const pvpAnimationTimeoutsRef = useRef([]);
 
 
 
@@ -317,6 +318,8 @@ const ScreenPlay = ({
       if (enemyRunTimeoutsRef.current.idle) clearTimeout(enemyRunTimeoutsRef.current.idle);
       if (enemyRunTimeoutsRef.current.run) clearTimeout(enemyRunTimeoutsRef.current.run);
       if (enemyRunTimeoutsRef.current.complete) clearTimeout(enemyRunTimeoutsRef.current.complete);
+      pvpAnimationTimeoutsRef.current.forEach(clearTimeout);
+      pvpAnimationTimeoutsRef.current = [];
       enemyRunTimeoutsRef.current = {};
     };
   }, []);
@@ -638,16 +641,79 @@ useEffect(() => {
  
   const submission = gameState.submissionResult;
    const submissionKey = submission && submission.fightResult ? 
-    `${submission.isCorrect}-${submission.message}-${submission.fightResult.timer}` 
+    [
+      gameState?.currentChallenge?.id ?? 'none',
+      submission?.reason ?? 'none',
+      submission?.acceptedForAttack ?? submission?.accepted_for_attack ?? 'na',
+      submission?.isCorrect ?? 'na',
+      submission?.fightResult?.status ?? 'na',
+      submission?.fightResult?.character?.character_health ?? 'na',
+      submission?.fightResult?.character?.character_current_state ?? 'na',
+      submission?.fightResult?.enemy?.enemy_health ?? 'na',
+      submission?.fightResult?.enemy?.enemy_current_state ?? 'na',
+    ].join('|')
     : null;
 
    if (submission && submission.isPotionUsage) {
     console.log('🧪 Potion usage detected - skipping animations');
     return;
   }
+
+  if (isPvpMode && submission && !submission.fightResult) {
+    console.log('⏳ PvP waiting for authoritative fightResult before animating');
+    return;
+  }
   
   if (submission && lastSubmissionKeyRef.current !== submissionKey) {
     lastSubmissionKeyRef.current = submissionKey;
+
+    if (isPvpMode) {
+      pvpAnimationTimeoutsRef.current.forEach(clearTimeout);
+      pvpAnimationTimeoutsRef.current = [];
+
+      const cState = submission.fightResult?.character?.character_current_state || 'idle';
+      const eState = submission.fightResult?.enemy?.enemy_current_state || 'idle';
+
+      const mapState = (state) => {
+        const normalizedState = String(state || 'idle').toLowerCase();
+        if (normalizedState === 'attacking' || normalizedState === 'attack') return 'attack';
+        if (normalizedState === 'hurt') return 'hurt';
+        if (normalizedState === 'dead' || normalizedState === 'dying' || normalizedState === 'dies') return 'dies';
+        return 'idle'; 
+      };
+
+      const finalCharAnim = mapState(cState);
+      const finalEnemyAnim = mapState(eState);
+      
+      console.log(`⚔️ PvP Mode Sync: Character -> ${finalCharAnim}, Enemy -> ${finalEnemyAnim}`);
+      
+      const charHurtDelay = (finalEnemyAnim === 'attack' && finalCharAnim === 'hurt') ? 800 : 0;
+      const enemyHurtDelay = (finalCharAnim === 'attack' && finalEnemyAnim === 'hurt') ? 800 : 0;
+
+      if (charHurtDelay > 0) {
+        setCharacterAnimationState('idle'); 
+        const timeoutId = setTimeout(() => setCharacterAnimationState(finalCharAnim), charHurtDelay);
+        pvpAnimationTimeoutsRef.current.push(timeoutId);
+      } else {
+        setCharacterAnimationState(finalCharAnim);
+      }
+
+      if (enemyHurtDelay > 0) {
+        setEnemyAnimationStates(prev => prev.map(() => 'idle'));
+        const timeoutId = setTimeout(() => setEnemyAnimationStates(prev => prev.map(() => finalEnemyAnim)), enemyHurtDelay);
+        pvpAnimationTimeoutsRef.current.push(timeoutId);
+      } else {
+        setEnemyAnimationStates(prev => prev.map(() => finalEnemyAnim));
+      }
+
+      if (finalCharAnim !== 'idle' || finalEnemyAnim !== 'idle') {
+        setIsPlayingSubmissionAnimation(true);
+      } else {
+        setIsPlayingSubmissionAnimation(false);
+      }
+      
+      return;
+    }
 
     if (submission.isCorrect === true) {
       //  Check if character has attack URL before attacking
@@ -750,7 +816,7 @@ useEffect(() => {
     setEnemyAnimationStates(enemies.map(() => 'idle'));
     lastSubmissionKeyRef.current = null;
   }
-}, [gameState.submissionResult, playerHealth, isPlayingSubmissionAnimation, enemies, characterAnimationState, gameState.selectedCharacter, characterAnimations.character_attack]);
+}, [gameState.submissionResult, gameState?.currentChallenge?.id, playerHealth, isPlayingSubmissionAnimation, enemies, characterAnimationState, gameState.selectedCharacter, characterAnimations.character_attack, isPvpMode]);
 
   useEffect(() => {
     if (__DEV__ && Math.random() < 0.1) { 
@@ -778,8 +844,34 @@ useEffect(() => {
       character_hurt: action?.enemy_hurt ?? base?.enemy_hurt,
       character_run: action?.enemy_run ?? base?.enemy_run,
       character_dies: action?.enemy_dies ?? base?.enemy_dies,
+      enemy_idle: action?.enemy_idle ?? base?.enemy_idle,
+      enemy_attack: action?.enemy_attack ?? base?.enemy_attack,
+      enemy_hurt: action?.enemy_hurt ?? base?.enemy_hurt,
+      enemy_run: action?.enemy_run ?? base?.enemy_run,
+      enemy_dies: action?.enemy_dies ?? base?.enemy_dies,
     };
   }, [gameState.submissionResult?.fightResult?.enemy, gameState.enemy]);
+
+  const enemyAnimationTriggerKey = useMemo(() => {
+    const submission = gameState?.submissionResult;
+    const fightResult = submission?.fightResult;
+
+    if (!fightResult) {
+      return `idle-${gameState?.currentChallenge?.id ?? 'none'}`;
+    }
+
+    return [
+      gameState?.currentChallenge?.id ?? 'none',
+      submission?.reason ?? 'none',
+      submission?.acceptedForAttack ?? submission?.accepted_for_attack ?? 'na',
+      fightResult?.status ?? 'na',
+      fightResult?.character?.character_health ?? 'na',
+      fightResult?.character?.character_current_state ?? 'na',
+      fightResult?.enemy?.enemy_health ?? 'na',
+      fightResult?.enemy?.enemy_current_state ?? 'na',
+    ].join('|');
+  }, [gameState?.currentChallenge?.id, gameState?.submissionResult]);
+
   return (
     <GameContainer borderColor={borderColor}   setBorderColor={setBorderColor}>
       <GameBackground 
@@ -830,6 +922,7 @@ useEffect(() => {
               reactionText={activeEnemyReaction}
               hurtAudioUrl={gameState.submissionResult?.enemyHurtAudio}
               matchCharacterStyle={isPvpMode}
+              animationTriggerKey={enemyAnimationTriggerKey}
             />
           );
         })}

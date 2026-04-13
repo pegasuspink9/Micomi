@@ -74,6 +74,201 @@ const normalizeAuthoritativeMatchStatePayload = (payload = {}) => {
   };
 };
 
+const hasAuthoritativeSubmissionData = (data = {}) => {
+  return Boolean(
+    data.fightResult ||
+      typeof data.isCorrect === 'boolean' ||
+      typeof data.is_correct === 'boolean' ||
+      typeof data.acceptedForAttack === 'boolean' ||
+      typeof data.accepted_for_attack === 'boolean' ||
+      typeof data.reason === 'string' ||
+      typeof data.message === 'string'
+  );
+};
+
+const mergeAuthoritativeCombatState = (displayState, combatState, rawData = {}) => {
+  if (!displayState) {
+    return combatState;
+  }
+
+  if (!combatState) {
+    return displayState;
+  }
+
+  const fightResult = combatState?.submissionResult?.fightResult || rawData?.fightResult || null;
+  const fightCharacter = fightResult?.character || {};
+  const fightEnemy = fightResult?.enemy || {};
+
+  const hasSubmissionData = hasAuthoritativeSubmissionData(rawData);
+  const hasExplicitCorrectness =
+    typeof rawData.isCorrect === 'boolean' || typeof rawData.is_correct === 'boolean';
+  const hasExplicitAcceptedForAttack =
+    typeof rawData.acceptedForAttack === 'boolean' ||
+    typeof rawData.accepted_for_attack === 'boolean';
+
+  const submissionResult = hasSubmissionData
+    ? {
+        ...(combatState.submissionResult || {}),
+        isCorrect: hasExplicitCorrectness
+          ? combatState?.submissionResult?.isCorrect
+          : null,
+        acceptedForAttack: hasExplicitAcceptedForAttack
+          ? combatState?.submissionResult?.acceptedForAttack
+          : null,
+      }
+    : null;
+
+  // Keep explicit null values from the server; only fallback when a key is truly missing.
+  const pick = (value, fallback) => (value !== undefined ? value : fallback);
+
+  return {
+    ...displayState,
+    submissionResult,
+    selectedCharacter: {
+      ...(displayState.selectedCharacter || {}),
+      ...(combatState.selectedCharacter || {}),
+      character_id:
+        pick(fightCharacter.character_id, combatState?.selectedCharacter?.character_id) ??
+        displayState?.selectedCharacter?.character_id,
+      character_name:
+        pick(fightCharacter.character_name, combatState?.selectedCharacter?.character_name) ??
+        displayState?.selectedCharacter?.character_name,
+      character_idle:
+        pick(fightCharacter.character_idle, combatState?.selectedCharacter?.character_idle) ??
+        displayState?.selectedCharacter?.character_idle,
+      character_run:
+        pick(fightCharacter.character_run, combatState?.selectedCharacter?.character_run) ??
+        displayState?.selectedCharacter?.character_run,
+      character_attack_type:
+        pick(fightCharacter.character_attack_type, combatState?.selectedCharacter?.character_attack_type) ??
+        displayState?.selectedCharacter?.character_attack_type,
+      character_attack:
+        pick(fightCharacter.character_attack, combatState?.selectedCharacter?.character_attack) ??
+        displayState?.selectedCharacter?.character_attack,
+      character_range_attack:
+        pick(
+          fightCharacter.character_range_attack,
+          combatState?.selectedCharacter?.character_range_attack
+        ) ?? displayState?.selectedCharacter?.character_range_attack,
+      character_hurt:
+        pick(fightCharacter.character_hurt, combatState?.selectedCharacter?.character_hurt) ??
+        displayState?.selectedCharacter?.character_hurt,
+      character_dies:
+        pick(fightCharacter.character_dies, combatState?.selectedCharacter?.character_dies) ??
+        displayState?.selectedCharacter?.character_dies,
+      character_damage:
+        pick(fightCharacter.character_damage, combatState?.selectedCharacter?.character_damage) ??
+        displayState?.selectedCharacter?.character_damage,
+      character_is_range:
+        pick(fightCharacter.character_is_range, combatState?.selectedCharacter?.character_is_range) ??
+        displayState?.selectedCharacter?.character_is_range,
+      current_health:
+        fightCharacter.character_health ??
+        combatState?.selectedCharacter?.current_health ??
+        displayState?.selectedCharacter?.current_health,
+      max_health:
+        fightCharacter.character_max_health ??
+        combatState?.selectedCharacter?.max_health ??
+        displayState?.selectedCharacter?.max_health,
+      character_max_health:
+        fightCharacter.character_max_health ??
+        combatState?.selectedCharacter?.character_max_health ??
+        displayState?.selectedCharacter?.character_max_health,
+      character_current_state:
+        fightCharacter.character_current_state ??
+        combatState?.selectedCharacter?.character_current_state ??
+        displayState?.selectedCharacter?.character_current_state,
+      character_attack_overlay:
+        fightCharacter.character_attack_overlay ??
+        combatState?.selectedCharacter?.character_attack_overlay ??
+        displayState?.selectedCharacter?.character_attack_overlay,
+      special_skill:
+        fightCharacter.special_skill ||
+        combatState?.selectedCharacter?.special_skill ||
+        displayState?.selectedCharacter?.special_skill,
+      character_reaction:
+        pick(fightCharacter.character_reaction, combatState?.selectedCharacter?.character_reaction) ??
+        displayState?.selectedCharacter?.character_reaction,
+      character_avatar:
+        fightCharacter.character_avatar ||
+        combatState?.selectedCharacter?.character_avatar ||
+        displayState?.selectedCharacter?.character_avatar,
+    },
+    enemy: {
+      ...(displayState.enemy || {}),
+      ...(combatState.enemy || {}),
+      enemy_id:
+        pick(fightEnemy.enemy_id, combatState?.enemy?.enemy_id) ?? displayState?.enemy?.enemy_id,
+      enemy_name:
+        pick(fightEnemy.enemy_name, combatState?.enemy?.enemy_name) ?? displayState?.enemy?.enemy_name,
+      enemy_idle:
+        pick(fightEnemy.enemy_idle, combatState?.enemy?.enemy_idle) ?? displayState?.enemy?.enemy_idle,
+      enemy_run:
+        pick(fightEnemy.enemy_run, combatState?.enemy?.enemy_run) ?? displayState?.enemy?.enemy_run,
+      enemy_attack:
+        pick(fightEnemy.enemy_attack, combatState?.enemy?.enemy_attack) ??
+        displayState?.enemy?.enemy_attack,
+      enemy_hurt:
+        pick(fightEnemy.enemy_hurt, combatState?.enemy?.enemy_hurt) ?? displayState?.enemy?.enemy_hurt,
+      enemy_dies:
+        pick(fightEnemy.enemy_dies, combatState?.enemy?.enemy_dies) ?? displayState?.enemy?.enemy_dies,
+      enemy_damage:
+        pick(fightEnemy.enemy_damage, combatState?.enemy?.enemy_damage) ??
+        displayState?.enemy?.enemy_damage,
+      enemy_health:
+        fightEnemy.enemy_health ??
+        combatState?.enemy?.enemy_health ??
+        displayState?.enemy?.enemy_health,
+      enemy_max_health:
+        fightEnemy.enemy_max_health ??
+        combatState?.enemy?.enemy_max_health ??
+        displayState?.enemy?.enemy_max_health,
+      enemy_current_state:
+        fightEnemy.enemy_current_state ??
+        combatState?.enemy?.enemy_current_state ??
+        displayState?.enemy?.enemy_current_state,
+      enemy_attack_overlay:
+        fightEnemy.enemy_attack_overlay ??
+        combatState?.enemy?.enemy_attack_overlay ??
+        displayState?.enemy?.enemy_attack_overlay,
+      enemy_attack_type:
+        fightEnemy.enemy_attack_type ??
+        combatState?.enemy?.enemy_attack_type ??
+        displayState?.enemy?.enemy_attack_type,
+      special_skill:
+        fightEnemy.special_skill ||
+        combatState?.enemy?.special_skill ||
+        displayState?.enemy?.special_skill,
+      enemy_reaction:
+        pick(fightEnemy.enemy_reaction, combatState?.enemy?.enemy_reaction) ??
+        displayState?.enemy?.enemy_reaction,
+      enemy_avatar:
+        fightEnemy.enemy_avatar ||
+        combatState?.enemy?.enemy_avatar ||
+        displayState?.enemy?.enemy_avatar,
+    },
+    avatar: {
+      ...(displayState.avatar || {}),
+      ...(combatState.avatar || {}),
+      player:
+        fightCharacter.character_avatar ||
+        combatState?.avatar?.player ||
+        displayState?.avatar?.player ||
+        null,
+      enemy:
+        fightEnemy.enemy_avatar || combatState?.avatar?.enemy || displayState?.avatar?.enemy || null,
+    },
+    energy: fightResult?.energy ?? combatState?.energy ?? displayState?.energy,
+    timeToNextEnergyRestore:
+      fightResult?.timeToNextEnergyRestore ??
+      combatState?.timeToNextEnergyRestore ??
+      displayState?.timeToNextEnergyRestore,
+    combat_background: combatState?.combat_background || displayState?.combat_background || null,
+    gameplay_audio: combatState?.gameplay_audio || displayState?.gameplay_audio || null,
+    card: displayState?.card || combatState?.card || null,
+  };
+};
+
 export const pvpService = {
   getDailyMatchPreview: async () => {
     const response = await apiService.get('/game/pvp/daily/match/preview');
@@ -132,7 +327,7 @@ export const pvpService = {
       throw new Error(response?.message || 'Failed to load match state');
     }
 
-    return normalizeMatchPayload(response);
+    return normalizeAuthoritativeMatchStatePayload(response);
   },
 
   submitDailyMatchAnswer: async (matchId, challengeId, selectedAnswers) => {
@@ -157,7 +352,11 @@ export const pvpService = {
 
   extractAuthoritativeMatchState: (payload) => {
     const normalized = normalizeAuthoritativeMatchStatePayload(payload);
-    return gameService.extractUnifiedGameState(normalized, true);
+
+    const displayState = gameService.extractUnifiedGameState(normalized, false);
+    const combatState = gameService.extractUnifiedGameState(normalized, true);
+
+    return mergeAuthoritativeCombatState(displayState, combatState, normalized?.data || {});
   },
 
   normalizeMatchStatus,

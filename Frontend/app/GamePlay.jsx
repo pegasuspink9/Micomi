@@ -131,6 +131,28 @@ export default function GamePlay() {
   const submissionResult = gameState?.submissionResult;
   const [characterRunState, setCharacterRunState] = useState(false);
 
+  useEffect(() => {
+    if (!isPvpMode) {
+      return;
+    }
+
+    const resolvedIsCorrect =
+      typeof submissionResult?.isCorrect === 'boolean'
+        ? submissionResult.isCorrect
+        : typeof submissionResult?.is_correct === 'boolean'
+          ? submissionResult.is_correct
+          : null;
+
+    if (resolvedIsCorrect !== null) {
+      setBorderColor(resolvedIsCorrect ? 'correct' : 'incorrect');
+      return;
+    }
+
+    if (!submissionResult) {
+      setBorderColor('white');
+    }
+  }, [isPvpMode, submissionResult?.isCorrect, submissionResult?.is_correct, submissionResult]);
+
   const canRenderVsModal = useMemo(() => {
     return Boolean(
       gameState?.selectedCharacter?.character_name &&
@@ -1069,8 +1091,8 @@ export default function GamePlay() {
                 cardDisplaySequence={cardDisplaySequence}
                 canProceed={canProceed}
                 onProceed={handleProceed}
-                isAutoProceed={isPvpMode}
-                autoProceedCountdown={isPvpMode ? autoProceedCountdown : null}
+                isAutoProceed={false}
+                autoProceedCountdown={null}
                 isLevelComplete={showLevelCompletion}
                 showRunButton={showRunButton}
                 onCharacterRun={handleCharacterRun}

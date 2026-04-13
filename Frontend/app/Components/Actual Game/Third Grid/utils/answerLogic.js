@@ -221,10 +221,10 @@ export const createCheckAnswerHandler = (
           if (submissionResult) {
             const isCorrect = submissionResult.isCorrect || false;
             const correctAudioUrl = submissionResult.isCorrectAudio;
+
+            setBorderColor(isCorrect ? 'correct' : 'incorrect');
             
             const onSoundStart = () => {
-              setBorderColor(isCorrect ? 'correct' : 'incorrect');
-
               if (!isCorrect) {
                 console.log('📳 VIBRATION ATTEMPTED - If your phone settings are correct, it should vibrate now.');
                 Vibration.vibrate();

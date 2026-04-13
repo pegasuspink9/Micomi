@@ -210,17 +210,28 @@ const EnemyCharacter = ({
     return universalAssetPreloader.getCachedAssetPath(url);
   }, []);
 
+  const normalizedAnimations = useMemo(() => {
+    const pick = (...values) => values.find((value) => value !== undefined && value !== null);
+
+    return {
+      idle: pick(characterAnimations.character_idle, characterAnimations.enemy_idle, characterAnimations.idle),
+      run: pick(characterAnimations.character_run, characterAnimations.enemy_run, characterAnimations.run),
+      attack: pick(characterAnimations.character_attack, characterAnimations.enemy_attack, characterAnimations.attack),
+      hurt: pick(characterAnimations.character_hurt, characterAnimations.enemy_hurt, characterAnimations.hurt),
+      dies: pick(characterAnimations.character_dies, characterAnimations.enemy_dies, characterAnimations.dies),
+    };
+  }, [characterAnimations]);
+
 
   // ========== State Management ==========
   const initialUrl = useMemo(() => {
     const candidates = [
-      resolveCachedUrl(characterAnimations.character_idle),
-      resolveCachedUrl(characterAnimations.idle),
+      resolveCachedUrl(normalizedAnimations.idle),
       resolveCachedUrl(enemy?.enemy_idle),
       resolveCachedUrl(enemy?.idle),
     ].filter(url => url && typeof url === 'string');
     return candidates[0] || '';
-  }, [enemy, characterAnimations, resolveCachedUrl]);
+  }, [enemy, normalizedAnimations, resolveCachedUrl]);
 
   const onAnimationCompleteRef = useRef(onAnimationComplete);
   
@@ -229,56 +240,52 @@ const EnemyCharacter = ({
   }, [onAnimationComplete]);
 
   const animationConfig = useMemo(() => {
-    const attackUrl = Array.isArray(characterAnimations.character_attack)
-      ? characterAnimations.character_attack.filter(url => url && typeof url === 'string')[0]
-      : characterAnimations.character_attack;
+    const attackUrl = Array.isArray(normalizedAnimations.attack)
+      ? normalizedAnimations.attack.filter(url => url && typeof url === 'string')[0]
+      : normalizedAnimations.attack;
 
     const configs = {
       idle: {
-        url: resolveCachedUrl(characterAnimations.character_idle || characterAnimations.idle),
+        url: resolveCachedUrl(normalizedAnimations.idle),
         shouldLoop: true,
         isCompound: false,
       },
       attack: {
-        runUrl: resolveCachedUrl(characterAnimations.character_run || characterAnimations.run),
+        runUrl: resolveCachedUrl(normalizedAnimations.run),
         attackUrl: resolveCachedUrl(attackUrl),
         shouldLoop: false,
         isCompound: true,
       },
       hurt: {
-        url: resolveCachedUrl(characterAnimations.character_hurt || characterAnimations.hurt),
+        url: resolveCachedUrl(normalizedAnimations.hurt),
         shouldLoop: isBonusRound && fightStatus !== 'won',
         isCompound: false,
       },
       run: {
-        url: resolveCachedUrl(characterAnimations.character_run || characterAnimations.run),
+        url: resolveCachedUrl(normalizedAnimations.run),
         shouldLoop: true,
         isCompound: false,
       },
       dies: {
-        url: resolveCachedUrl(characterAnimations.character_dies || characterAnimations.dies),
+        url: resolveCachedUrl(normalizedAnimations.dies),
         shouldLoop: false,
         isCompound: false,
       },
     };
     return configs[currentState] || configs.idle;
-  }, [currentState, characterAnimations, isBonusRound, fightStatus, resolveCachedUrl]);
+  }, [currentState, normalizedAnimations, isBonusRound, fightStatus, resolveCachedUrl]);
 
   // FIX: Pre-check ALL animation URLs on mount to populate memory cache
   const allAnimationUrls = useMemo(() => {
     const urls = [];
-    if (characterAnimations.character_idle) urls.push(resolveCachedUrl(characterAnimations.character_idle));
-    if (characterAnimations.idle) urls.push(resolveCachedUrl(characterAnimations.idle));
-    if (characterAnimations.character_run) urls.push(resolveCachedUrl(characterAnimations.character_run));
-    if (characterAnimations.run) urls.push(resolveCachedUrl(characterAnimations.run));
-    if (characterAnimations.character_hurt) urls.push(resolveCachedUrl(characterAnimations.character_hurt));
-    if (characterAnimations.hurt) urls.push(resolveCachedUrl(characterAnimations.hurt));
-    if (characterAnimations.character_dies) urls.push(resolveCachedUrl(characterAnimations.character_dies));
-    if (characterAnimations.dies) urls.push(resolveCachedUrl(characterAnimations.dies));
-    if (Array.isArray(characterAnimations.character_attack)) {
-      characterAnimations.character_attack.filter(Boolean).forEach(url => urls.push(resolveCachedUrl(url)));
-    } else if (characterAnimations.character_attack) {
-      urls.push(resolveCachedUrl(characterAnimations.character_attack));
+    if (normalizedAnimations.idle) urls.push(resolveCachedUrl(normalizedAnimations.idle));
+    if (normalizedAnimations.run) urls.push(resolveCachedUrl(normalizedAnimations.run));
+    if (normalizedAnimations.hurt) urls.push(resolveCachedUrl(normalizedAnimations.hurt));
+    if (normalizedAnimations.dies) urls.push(resolveCachedUrl(normalizedAnimations.dies));
+    if (Array.isArray(normalizedAnimations.attack)) {
+      normalizedAnimations.attack.filter(Boolean).forEach(url => urls.push(resolveCachedUrl(url)));
+    } else if (normalizedAnimations.attack) {
+      urls.push(resolveCachedUrl(normalizedAnimations.attack));
     }
     // Also include enemy-specific URLs
     if (enemy?.enemy_idle) urls.push(resolveCachedUrl(enemy.enemy_idle));
@@ -287,7 +294,7 @@ const EnemyCharacter = ({
     if (enemy?.enemy_hurt) urls.push(resolveCachedUrl(enemy.enemy_hurt));
     if (enemy?.enemy_dies) urls.push(resolveCachedUrl(enemy.enemy_dies));
     return urls.filter(url => url && typeof url === 'string');
-  }, [characterAnimations, enemy, resolveCachedUrl]);
+  }, [normalizedAnimations, enemy, resolveCachedUrl]);
 
   // FIX: Check if ALL animations are cached (for immediate playback)
   const allAnimationsCached = useMemo(() => {

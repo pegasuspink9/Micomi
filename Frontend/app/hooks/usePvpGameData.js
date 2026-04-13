@@ -78,6 +78,50 @@ const mergeFightAttributes = (baseState, sourceState) => {
   const character = fightResult.character || {};
   const enemy = fightResult.enemy || {};
 
+  if (character.character_id !== undefined) {
+    nextState.selectedCharacter.character_id = character.character_id;
+  }
+
+  if (character.character_name !== undefined) {
+    nextState.selectedCharacter.character_name = character.character_name;
+  }
+
+  if (character.character_idle !== undefined) {
+    nextState.selectedCharacter.character_idle = character.character_idle;
+  }
+
+  if (character.character_run !== undefined) {
+    nextState.selectedCharacter.character_run = character.character_run;
+  }
+
+  if (character.character_attack_type !== undefined) {
+    nextState.selectedCharacter.character_attack_type = character.character_attack_type;
+  }
+
+  if (character.character_attack !== undefined) {
+    nextState.selectedCharacter.character_attack = character.character_attack;
+  }
+
+  if (character.character_range_attack !== undefined) {
+    nextState.selectedCharacter.character_range_attack = character.character_range_attack;
+  }
+
+  if (character.character_hurt !== undefined) {
+    nextState.selectedCharacter.character_hurt = character.character_hurt;
+  }
+
+  if (character.character_dies !== undefined) {
+    nextState.selectedCharacter.character_dies = character.character_dies;
+  }
+
+  if (character.character_damage !== undefined) {
+    nextState.selectedCharacter.character_damage = character.character_damage;
+  }
+
+  if (character.character_is_range !== undefined) {
+    nextState.selectedCharacter.character_is_range = character.character_is_range;
+  }
+
   if (character.character_health !== undefined) {
     nextState.selectedCharacter.current_health = character.character_health;
   }
@@ -99,12 +143,52 @@ const mergeFightAttributes = (baseState, sourceState) => {
     nextState.selectedCharacter.character_current_state = character.character_current_state;
   }
 
+  if (character.character_reaction !== undefined) {
+    nextState.selectedCharacter.character_reaction = character.character_reaction;
+  }
+
+  if (enemy.enemy_id !== undefined) {
+    nextState.enemy.enemy_id = enemy.enemy_id;
+  }
+
+  if (enemy.enemy_name !== undefined) {
+    nextState.enemy.enemy_name = enemy.enemy_name;
+  }
+
+  if (enemy.enemy_idle !== undefined) {
+    nextState.enemy.enemy_idle = enemy.enemy_idle;
+  }
+
+  if (enemy.enemy_run !== undefined) {
+    nextState.enemy.enemy_run = enemy.enemy_run;
+  }
+
+  if (enemy.enemy_attack !== undefined) {
+    nextState.enemy.enemy_attack = enemy.enemy_attack;
+  }
+
+  if (enemy.enemy_hurt !== undefined) {
+    nextState.enemy.enemy_hurt = enemy.enemy_hurt;
+  }
+
+  if (enemy.enemy_dies !== undefined) {
+    nextState.enemy.enemy_dies = enemy.enemy_dies;
+  }
+
+  if (enemy.enemy_damage !== undefined) {
+    nextState.enemy.enemy_damage = enemy.enemy_damage;
+  }
+
   if (enemy.enemy_attack_overlay !== undefined) {
     nextState.enemy.enemy_attack_overlay = enemy.enemy_attack_overlay;
   }
 
   if (enemy.enemy_current_state !== undefined) {
     nextState.enemy.enemy_current_state = enemy.enemy_current_state;
+  }
+
+  if (enemy.enemy_reaction !== undefined) {
+    nextState.enemy.enemy_reaction = enemy.enemy_reaction;
   }
 
   if (enemy.enemy_attack_type !== undefined) {
@@ -175,9 +259,15 @@ const buildCombatStateSignature = (state) => {
     return 'none';
   }
 
+  const submission = state.submissionResult || {};
+
   return [
     toStableValue(state.currentChallenge?.id),
-    toStableValue(state.submissionResult?.fightResult?.status),
+    toStableValue(submission?.fightResult?.status),
+    toStableValue(submission?.reason),
+    toStableValue(submission?.isCorrect),
+    toStableValue(submission?.acceptedForAttack ?? submission?.accepted_for_attack),
+    toStableValue(submission?.message),
     toStableValue(readCharacterHealth(state)),
     toStableValue(readEnemyHealth(state)),
     toStableValue(readCharacterState(state)),
@@ -249,6 +339,7 @@ export const usePvpGameData = (matchId, options = {}) => {
   const autoProceedIntervalRef = useRef(null);
 
   const currentChallengeIdRef = useRef(null);
+  const completedChallengeIdsRef = useRef(new Set());
   const canProceedRef = useRef(false);
   const waitingRef = useRef(false);
   const submitBaselineCombatSignatureRef = useRef(null);
@@ -270,6 +361,11 @@ export const usePvpGameData = (matchId, options = {}) => {
     activeMatchIdRef.current = normalizedMatchId;
     setActiveMatchId((prev) => (prev === normalizedMatchId ? prev : normalizedMatchId));
   }, [matchId]);
+
+  useEffect(() => {
+    completedChallengeIdsRef.current = new Set();
+    lastProcessedSubmissionRef.current = null;
+  }, [activeMatchId]);
 
   const stopPolling = useCallback(() => {
     if (matchPollRef.current) {
@@ -665,7 +761,8 @@ export const usePvpGameData = (matchId, options = {}) => {
 
     if (shouldProceed) {
       setCanProceed(true);
-      instantProceedRef.current = true;
+      // PvP should mirror PvE flow: show Proceed and wait for manual tap.
+      instantProceedRef.current = false;
       setGameStateIfChanged((prev) => {
         const merged = {
           ...mergeBattleState(prev),
@@ -707,7 +804,7 @@ export const usePvpGameData = (matchId, options = {}) => {
     localChallengeId,
     baselineCombatSignature
   ) => {
-    const maxAttempts = 4;
+    const maxAttempts = 8;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       const payload = await pvpService.getDailyMatchState(resolvedMatchId);
@@ -719,7 +816,7 @@ export const usePvpGameData = (matchId, options = {}) => {
         }
 
         await new Promise((resolve) => {
-          setTimeout(resolve, 250);
+          setTimeout(resolve, 300);
         });
         continue;
       }
@@ -739,7 +836,7 @@ export const usePvpGameData = (matchId, options = {}) => {
       }
 
       await new Promise((resolve) => {
-        setTimeout(resolve, 250);
+        setTimeout(resolve, 300);
       });
     }
 
@@ -792,17 +889,24 @@ export const usePvpGameData = (matchId, options = {}) => {
       submitBaselineCombatSignatureRef.current = buildCombatStateSignature(latestMatchState);
       submitAwaitingDeltaRef.current = true;
 
-      const payload = await pvpService.submitDailyMatchAnswer(
+      const postResponse = await pvpService.submitDailyMatchAnswer(
         latestMatchId,
         latestChallengeId,
         selectedAnswers
       );
-
-      if (!payload) {
-        throw new Error('Failed to submit PvP answer');
-      }
-
-      const submitResponseState = pvpService.extractUnifiedGameState(payload, true);
+      
+      const postData = postResponse?.data || postResponse;
+      const postIsCorrectRaw =
+        typeof postData?.isCorrect === 'boolean'
+          ? postData.isCorrect
+          : typeof postData?.is_correct === 'boolean'
+            ? postData.is_correct
+            : null;
+      const submitIndicator = {
+        isCorrect: postIsCorrectRaw,
+        message: postData?.message ?? '',
+        isCorrectAudio: postData?.isCorrectAudio ?? postData?.is_correct_audio ?? null,
+      };
 
       setWaitingForAnimation(true);
       waitingRef.current = true;
@@ -821,7 +925,9 @@ export const usePvpGameData = (matchId, options = {}) => {
         submitExpectedChallengeIdRef.current = null;
         return {
           success: true,
-          updatedGameState: submitResponseState,
+          updatedGameState: {
+            submissionResult: submitIndicator,
+          },
           waitingForAnimation: false,
           awaitingAuthoritativeSync: true,
         };
@@ -872,7 +978,9 @@ export const usePvpGameData = (matchId, options = {}) => {
 
       return {
         success: true,
-        updatedGameState: authoritativeState,
+        updatedGameState: {
+          submissionResult: submitIndicator,
+        },
         waitingForAnimation: true,
       };
     } catch (submitError) {
@@ -915,6 +1023,9 @@ export const usePvpGameData = (matchId, options = {}) => {
         return prev;
       }
 
+      if (prev.currentChallenge?.id) {
+        completedChallengeIdsRef.current.add(prev.currentChallenge.id);
+      }
       currentChallengeIdRef.current = nextChallenge.id;
 
       return {
@@ -953,6 +1064,16 @@ export const usePvpGameData = (matchId, options = {}) => {
 
       const remoteChallengeId = normalized.currentChallenge?.id || null;
       const localChallengeId = currentChallengeIdRef.current;
+
+      if (
+        remoteChallengeId &&
+        localChallengeId &&
+        remoteChallengeId !== localChallengeId &&
+        completedChallengeIdsRef.current.has(remoteChallengeId)
+      ) {
+        return; // Ignore stale server responses for older challenges
+      }
+
       const remoteFightStatus = normalized.submissionResult?.fightResult?.status;
       const hasPendingSubmitDelta = hasAuthoritativeDelta({
         incomingState: normalized,
@@ -1063,14 +1184,20 @@ export const usePvpGameData = (matchId, options = {}) => {
 
       if (
         remoteChallengeId !== localChallengeId &&
-        !canProceedRef.current &&
         !waitingRef.current
       ) {
+        // Stage remote challenge first and keep currentChallenge stable until delayed proceed runs.
         setCanProceed(true);
         instantProceedRef.current = false;
         setGameStateIfChanged((prev) => {
-          const merged = toResponseDrivenState(prev, normalized, {
-            submissionResult: normalized.submissionResult ?? null,
+          const merged = {
+            ...prev,
+            submissionResult: normalized.submissionResult ?? prev.submissionResult ?? null,
+            selectedCharacter: normalized.selectedCharacter || prev.selectedCharacter,
+            enemy: normalized.enemy || prev.enemy,
+            avatar: normalized.avatar || prev.avatar,
+            level: normalized.level || prev.level,
+            card: normalized.card || prev.card || null,
             nextChallengeData: normalized.currentChallenge
               ? {
                   ...normalized.currentChallenge,
@@ -1080,8 +1207,8 @@ export const usePvpGameData = (matchId, options = {}) => {
                   avatar: normalized.avatar || prev.avatar,
                   level: normalized.level || prev.level,
                 }
-              : null,
-          });
+              : prev.nextChallengeData || null,
+          };
 
           return mergeFightAttributes(merged, normalized);
         });
@@ -1277,24 +1404,18 @@ export const usePvpGameData = (matchId, options = {}) => {
       return;
     }
 
-    const shouldProceedInstantly = instantProceedRef.current;
-    const delaySeconds = shouldProceedInstantly ? 0 : AUTO_PROCEED_SECONDS;
+    const delaySeconds = AUTO_PROCEED_SECONDS;
+    setAutoProceedCountdown(delaySeconds);
 
-    if (delaySeconds > 0) {
-      setAutoProceedCountdown(delaySeconds);
+    autoProceedIntervalRef.current = setInterval(() => {
+      setAutoProceedCountdown((prev) => {
+        if (typeof prev !== 'number') {
+          return delaySeconds;
+        }
 
-      autoProceedIntervalRef.current = setInterval(() => {
-        setAutoProceedCountdown((prev) => {
-          if (typeof prev !== 'number') {
-            return delaySeconds;
-          }
-
-          return prev > 1 ? prev - 1 : 1;
-        });
-      }, 1000);
-    } else {
-      setAutoProceedCountdown(null);
-    }
+        return prev > 1 ? prev - 1 : 1;
+      });
+    }, 1000);
 
     autoProceedTimeoutRef.current = setTimeout(() => {
       handleProceed();
