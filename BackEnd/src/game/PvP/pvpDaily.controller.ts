@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { errorResponse, successResponse } from "../../../utils/response";
 import * as PvpDailyService from "./pvpDaily.service";
+import { PvpChallengeTopic } from "./pvpDaily.types";
 
 const parseMatchId = (value: string | undefined): string => {
   if (!value || typeof value !== "string" || value.trim().length === 0) {
@@ -25,6 +26,26 @@ const parseChallengeId = (value: string | undefined): number => {
     throw new Error("challengeId must be a valid positive number");
   }
   return parsed;
+};
+
+const parseTopic = (value: unknown): PvpChallengeTopic => {
+  if (typeof value !== "string") {
+    throw new Error("topic is required");
+  }
+
+  const normalized = value.trim();
+  const allowedTopics: PvpChallengeTopic[] = [
+    "HTML",
+    "CSS",
+    "JavaScript",
+    "Computer",
+  ];
+
+  if (!allowedTopics.includes(normalized as PvpChallengeTopic)) {
+    throw new Error("topic must be one of: HTML, CSS, JavaScript, Computer");
+  }
+
+  return normalized as PvpChallengeTopic;
 };
 
 export const getDailyPreview = async (req: Request, res: Response) => {
@@ -57,6 +78,27 @@ export const playDailyPvp = async (req: Request, res: Response) => {
       res,
       error,
       (error as Error).message || "Failed to start matchmaking",
+      400,
+    );
+  }
+};
+
+export const setMatchTopic = async (req: Request, res: Response) => {
+  try {
+    const playerId = (req as any).user.id as number;
+    const topic = parseTopic(req.body?.topic);
+    const result = await PvpDailyService.setMatchTopic(playerId, topic);
+
+    return successResponse(
+      res,
+      result,
+      `PvP topic set to ${topic}. You can now start matchmaking.`,
+    );
+  } catch (error) {
+    return errorResponse(
+      res,
+      error,
+      (error as Error).message || "Failed to set PvP topic",
       400,
     );
   }

@@ -112,6 +112,12 @@ router.get(
   PvPDailyController.getDailyPreview,
 );
 router.post(
+  "/pvp/daily/match/topic",
+  authenticate,
+  requirePlayer,
+  PvPDailyController.setMatchTopic,
+);
+router.post(
   "/pvp/daily/match/play",
   authenticate,
   requirePlayer,

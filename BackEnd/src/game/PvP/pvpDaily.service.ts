@@ -3,6 +3,7 @@ import {
   DailyPvpQuestion,
   MatchmakingStatus,
   PlayerMatchmakingState,
+  PvpChallengeTopic,
   PvPCompletionRewards,
   PvPCompletionStats,
   PvPDailyPlayerSnapshot,
@@ -28,6 +29,7 @@ import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
 import { formatTimer } from "../../../helper/dateTimeHelper";
 import * as EnergyService from "../Energy/energy.service";
 import { generateMotivationalMessage } from "../Challenges/challenges.service";
+import { generatePvpChallengeWithGemini } from "./pvpChallengeGenerator.service";
 
 const prisma = new PrismaClient();
 
@@ -48,12 +50,29 @@ const LOSS_REWARD: PvPCompletionRewards = {
   potion: null,
 };
 
+const PVP_TOPICS: PvpChallengeTopic[] = [
+  "HTML",
+  "CSS",
+  "JavaScript",
+  "Computer",
+];
+const QUESTIONS_PER_MATCH = 5;
+const MATCH_DIFFICULTY = "Easy";
+const PVP_POOL_TARGET_ACTIVE = 20;
+const PVP_BACKGROUND_GENERATE_BATCH = 5;
+const PVP_BACKGROUND_GENERATE_TICK_MS = 15 * 1000;
+
 const matchmakingByPlayer = new Map<number, PlayerMatchmakingState>();
-const queue = new Set<number>();
+const queueByTopic = new Map<PvpChallengeTopic, Set<number>>();
+const playerTopicById = new Map<number, PvpChallengeTopic>();
 const matches = new Map<string, PvPMatchState>();
 const matchCleanupTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const dailyPreviewViewedByPlayer = new Map<number, string>();
 const submitAnswerCooldownByPlayer = new Map<number, number>();
+const topicGenerationIntervals = new Map<
+  PvpChallengeTopic,
+  ReturnType<typeof setInterval>
+>();
 
 const VICTORY_AUDIO = "https://micomi-assets.me/Sounds/Final/Victory_Sound.wav";
 const DEFEAT_AUDIO = "https://micomi-assets.me/Sounds/Final/Defeat_Sound.wav";
@@ -110,12 +129,102 @@ const deterministicHash = (value: string): number => {
   return Math.abs(hash);
 };
 
+const getTodayBounds = () => {
+  const now = new Date();
+  const start = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+  return { start, end };
+};
+
+const hasActiveTopicMatch = (topic: PvpChallengeTopic): boolean => {
+  for (const match of matches.values()) {
+    if (match.status === "active" && match.topic === topic) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const topUpTopicChallenges = async (
+  topic: PvpChallengeTopic,
+  amount: number,
+): Promise<number> => {
+  let generated = 0;
+  let attempts = 0;
+  const maxAttempts = Math.max(3, amount * 3);
+
+  while (generated < amount && attempts < maxAttempts) {
+    attempts += 1;
+    try {
+      await generatePvpChallengeWithGemini(topic, MATCH_DIFFICULTY, {
+        maxAttempts: 3,
+        duplicateLookback: 80,
+      });
+      generated += 1;
+    } catch {
+      // 10 second delay on failure before trying again to avoid hammering API
+      await new Promise((res) => setTimeout(res, 10000));
+    }
+  }
+
+  return generated;
+};
+
+const stopTopicGenerator = (topic: PvpChallengeTopic) => {
+  const interval = topicGenerationIntervals.get(topic);
+  if (!interval) return;
+  clearInterval(interval);
+  topicGenerationIntervals.delete(topic);
+};
+
+const startTopicGenerator = (topic: PvpChallengeTopic) => {
+  if (topicGenerationIntervals.has(topic)) return;
+
+  const tick = async () => {
+    if (!hasActiveTopicMatch(topic)) {
+      stopTopicGenerator(topic);
+      return;
+    }
+
+    const { start, end } = getTodayBounds();
+
+    const currentCount = await prisma.pVPChallenge.count({
+      where: {
+        topic,
+        difficulty: MATCH_DIFFICULTY,
+        created_at: { gte: start, lt: end },
+      },
+    });
+
+    if (currentCount >= PVP_POOL_TARGET_ACTIVE) return;
+
+    const toGenerate = Math.min(
+      PVP_BACKGROUND_GENERATE_BATCH,
+      PVP_POOL_TARGET_ACTIVE - currentCount,
+    );
+    if (toGenerate <= 0) return;
+
+    await topUpTopicChallenges(topic, toGenerate);
+  };
+
+  const interval = setInterval(() => {
+    void tick();
+  }, PVP_BACKGROUND_GENERATE_TICK_MS);
+
+  topicGenerationIntervals.set(topic, interval);
+  void tick();
+};
+
 const getOrCreatePlayerState = (playerId: number): PlayerMatchmakingState => {
   const existing = matchmakingByPlayer.get(playerId);
   if (existing) return existing;
 
   const state: PlayerMatchmakingState = {
     status: "idle",
+    selected_topic: playerTopicById.get(playerId) ?? null,
     match_id: null,
     updated_at: getNowIso(),
   };
@@ -123,8 +232,24 @@ const getOrCreatePlayerState = (playerId: number): PlayerMatchmakingState => {
   return state;
 };
 
+const getQueueForTopic = (topic: PvpChallengeTopic): Set<number> => {
+  const existing = queueByTopic.get(topic);
+  if (existing) return existing;
+  const created = new Set<number>();
+  queueByTopic.set(topic, created);
+  return created;
+};
+
 const clearPlayerFromQueue = (playerId: number) => {
-  queue.delete(playerId);
+  const selectedTopic = playerTopicById.get(playerId);
+  if (selectedTopic) {
+    getQueueForTopic(selectedTopic).delete(playerId);
+    return;
+  }
+
+  for (const players of queueByTopic.values()) {
+    players.delete(playerId);
+  }
 };
 
 const resetPlayerToIdle = (playerId: number) => {
@@ -139,6 +264,7 @@ const setPlayerState = (
 ) => {
   const state = {
     status,
+    selected_topic: playerTopicById.get(playerId) ?? null,
     match_id: matchId,
     updated_at: getNowIso(),
   };
@@ -169,7 +295,7 @@ const resetToIdleIfTimedOut = (playerId: number) => {
   const updatedAt = new Date(state.updated_at).getTime();
   const now = Date.now();
   if (Number.isFinite(updatedAt) && now - updatedAt > MATCHMAKING_TIMEOUT_MS) {
-    queue.delete(playerId);
+    clearPlayerFromQueue(playerId);
     setPlayerState(playerId, "idle", null);
   }
 };
@@ -179,10 +305,9 @@ const randomInt = (maxExclusive: number) => {
   return Math.floor(Math.random() * maxExclusive);
 };
 
-const pickRandomPair = (): [number, number] | null => {
-  const candidates = Array.from(queue.values());
+const pickRandomPair = (topic: PvpChallengeTopic): [number, number] | null => {
+  const candidates = Array.from(getQueueForTopic(topic).values());
   if (candidates.length < 2) return null;
-
   const firstIdx = randomInt(candidates.length);
   const first = candidates[firstIdx];
   candidates.splice(firstIdx, 1);
@@ -229,94 +354,87 @@ const buildSpreadIndices = (total: number, targetCount: number): number[] => {
     .slice(0, targetCount);
 };
 
-const buildQuestionPool = async (): Promise<DailyPvpQuestion[]> => {
-  const dailySeed = getDailySeed();
-  const challenges = await prisma.challenge.findMany({
+const buildQuestionPool = async (
+  topic: PvpChallengeTopic,
+): Promise<DailyPvpQuestion[]> => {
+  const { start, end } = getTodayBounds();
+
+  const minNeeded = QUESTIONS_PER_MATCH;
+  const existingCount = await prisma.pVPChallenge.count({
     where: {
-      level: {
-        level_difficulty: "easy",
-      },
-    },
-    include: {
-      level: {
-        include: {
-          map: true,
-        },
-      },
+      topic,
+      difficulty: MATCH_DIFFICULTY,
+      created_at: { gte: start, lt: end },
     },
   });
 
-  const sorted = challenges.slice().sort((a, b) => {
-    const levelDiff =
-      Number(a.level.level_number ?? 0) - Number(b.level.level_number ?? 0);
-    if (levelDiff !== 0) return levelDiff;
-    return a.challenge_id - b.challenge_id;
-  });
-
-  if (sorted.length === 0) {
-    return [];
+  if (existingCount < minNeeded) {
+    await topUpTopicChallenges(topic, minNeeded - existingCount);
   }
 
-  const questionCount = sorted.length;
-  const baseIndices = buildSpreadIndices(sorted.length, questionCount);
+  const updatedCount = await prisma.pVPChallenge.count({
+    where: {
+      topic,
+      difficulty: MATCH_DIFFICULTY,
+      created_at: { gte: start, lt: end },
+    },
+  });
 
-  const rotation = deterministicHash(dailySeed) % baseIndices.length;
+  if (updatedCount < minNeeded) {
+    throw new Error(
+      `Unable to generate enough ${topic} PvP challenges right now. Please try again.`,
+    );
+  }
+
+  const challenges = await prisma.pVPChallenge.findMany({
+    where: {
+      topic,
+      difficulty: MATCH_DIFFICULTY,
+      created_at: { gte: start, lt: end },
+    },
+    orderBy: { created_at: "desc" },
+    take: Math.max(PVP_POOL_TARGET_ACTIVE, QUESTIONS_PER_MATCH * 2),
+  });
+
+  if (challenges.length < minNeeded) {
+    throw new Error(
+      `Insufficient ${topic} PvP challenges available for matchmaking.`,
+    );
+  }
+
+  startTopicGenerator(topic);
+
+  const dailySeed = getDailySeed();
+  const questionCount = Math.min(QUESTIONS_PER_MATCH, challenges.length);
+  const baseIndices = buildSpreadIndices(challenges.length, questionCount);
+  const rotation =
+    deterministicHash(`${topic}-${dailySeed}`) % baseIndices.length;
   const rotatedIndices = baseIndices
     .slice(rotation)
     .concat(baseIndices.slice(0, rotation));
 
-  const questions: DailyPvpQuestion[] = [];
+  return rotatedIndices.map((idx) => {
+    const current = challenges[idx];
 
-  for (const idx of rotatedIndices) {
-    const current = sorted[idx];
-    const correctAnswer = normalizeToStringArray(
-      current.correct_answer as unknown,
-    );
-    const options = normalizeToStringArray(current.options as unknown);
-
-    questions.push({
-      challenge_id: current.challenge_id,
-      level_id: current.level_id,
-      level_number: current.level.level_number,
-      map_name: current.level.map.map_name,
-      level_title: current.level.level_title,
-      challenge_type: current.challenge_type,
-      title: current.title,
-      description: current.description,
+    return {
+      challenge_id: current.pvp_challenge_id,
+      topic,
+      level_id: 0,
+      level_number: null,
+      map_name: topic,
+      level_title: `${topic} PvP Arena`,
+      challenge_type: "fill in the blank",
+      title: `${topic} PvP Challenge`,
+      description: `Fast ${topic} challenge generated for PvP matchmaking.`,
       question: current.question,
-      options,
-      correct_answer: correctAnswer,
-    });
-  }
-
-  return questions;
+      options: normalizeToStringArray(current.options as unknown),
+      correct_answer: normalizeToStringArray(current.correct_answer as unknown),
+    };
+  });
 };
 
-const getAllEasyTopics = async (): Promise<string[]> => {
-  const levels = await prisma.level.findMany({
-    where: { level_difficulty: "easy" },
-    include: { map: true },
-  });
-
-  return Array.from(new Set(levels.map((level) => level.map.map_name))).sort();
-};
-
-const getPreviewBossExpectedOutput = async (questions: DailyPvpQuestion[]) => {
-  const uniqueLevelIds = Array.from(new Set(questions.map((q) => q.level_id)));
-  if (uniqueLevelIds.length === 0) return [];
-
-  const levels = await prisma.level.findMany({
-    where: { level_id: { in: uniqueLevelIds } },
-    include: { map: true },
-  });
-
-  return levels
-    .sort((a, b) => Number(a.level_number ?? 0) - Number(b.level_number ?? 0))
-    .map((level) => ({
-      level_id: level.level_id,
-      level_number: level.level_number,
-      map_name: level.map.map_name,
-    }));
+const getAllEasyTopics = async (): Promise<PvpChallengeTopic[]> => {
+  return [...PVP_TOPICS];
 };
 
 const getSelectedCharacterDetails = async (playerId: number) => {
@@ -390,19 +508,11 @@ const buildEntryLikePayload = async (
     throw new Error("No current challenge found");
   }
 
-  const [viewerChar, opponentChar, level, energyStatus] = await Promise.all([
+  const [viewerChar, opponentChar, energyStatus] = await Promise.all([
     getSelectedCharacterDetails(viewerPlayerId),
     getSelectedCharacterDetails(opponentSnapshot.player_id),
-    prisma.level.findUnique({
-      where: { level_id: question.level_id },
-      include: { map: true },
-    }),
     EnergyService.getPlayerEnergyStatus(viewerPlayerId),
   ]);
-
-  if (!level) {
-    throw new Error("Level not found for current challenge");
-  }
 
   const viewerDamageArray = Array.isArray(viewerChar.character_damage)
     ? (viewerChar.character_damage as number[])
@@ -424,8 +534,8 @@ const buildEntryLikePayload = async (
   const enemy_hurt_audio = getHeroHurtAudio(opponentChar.character_name);
   const character_hurt_audio = getHeroHurtAudio(viewerChar.character_name);
 
-  const mapName = question.map_name || level.map.map_name;
-  const levelNumber = question.level_number ?? level.level_number;
+  const mapName = question.map_name || question.topic;
+  const levelNumber = question.level_number ?? 1;
 
   const currentChallenge = buildChallengeWithTimer(
     question,
@@ -439,12 +549,12 @@ const buildEntryLikePayload = async (
 
   return {
     level: {
-      level_id: level.level_id,
-      level_number: level.level_number,
+      level_id: 0,
+      level_number: null,
       level_type: "pvp_daily",
-      level_difficulty: String(level.level_difficulty),
-      level_title: level.level_title,
-      content: level.content,
+      level_difficulty: "easy",
+      level_title: `${question.topic} PvP Arena`,
+      content: `Dynamic PvP ${question.topic} challenge`,
     },
     enemy: {
       player_id: opponentSnapshot.player_id,
@@ -501,7 +611,7 @@ const buildEntryLikePayload = async (
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
     correct_answer_length: correctAnswerLength,
     combat_background: combatBackground,
-    question_type: level.map.map_name,
+    question_type: question.topic,
     versus_background: mapAssets.versus_background,
     versus_audio: mapAssets.versus_audio,
     gameplay_audio: mapAssets.gameplay_audio,
@@ -840,6 +950,10 @@ const completeMatch = async (
   emitMatchStateToPlayers(match, "pvp:match-completed");
   scheduleMatchCleanup(match.match_id);
 
+  if (!hasActiveTopicMatch(match.topic)) {
+    stopTopicGenerator(match.topic);
+  }
+
   resetPlayerToIdle(winnerPlayerId);
   resetPlayerToIdle(loserPlayerId);
 };
@@ -880,8 +994,10 @@ const maybeProgressRoundOrFinish = async (match: PvPMatchState) => {
   match.current_round_started_at = getNowIso();
 };
 
-const tryCreatePair = async (): Promise<string | null> => {
-  const pair = pickRandomPair();
+const tryCreatePair = async (
+  topic: PvpChallengeTopic,
+): Promise<string | null> => {
+  const pair = pickRandomPair(topic);
   if (!pair) return null;
 
   const [playerA, playerB] = pair;
@@ -892,7 +1008,7 @@ const tryCreatePair = async (): Promise<string | null> => {
     await Promise.allSettled([
       getSelectedCharacterSnapshot(playerA),
       getSelectedCharacterSnapshot(playerB),
-      buildQuestionPool(),
+      buildQuestionPool(topic),
     ]);
 
   if (
@@ -903,35 +1019,37 @@ const tryCreatePair = async (): Promise<string | null> => {
       resetPlayerToIdle(playerA);
     } else {
       setPlayerState(playerA, "finding_match", null);
-      queue.add(playerA);
+      getQueueForTopic(topic).add(playerA);
     }
 
     if (snapshotBResult.status !== "fulfilled") {
       resetPlayerToIdle(playerB);
     } else {
       setPlayerState(playerB, "finding_match", null);
-      queue.add(playerB);
+      getQueueForTopic(topic).add(playerB);
     }
 
     return null;
   }
 
   if (questions.status !== "fulfilled") {
-    setPlayerState(playerA, "finding_match", null);
-    setPlayerState(playerB, "finding_match", null);
-    queue.add(playerA);
-    queue.add(playerB);
-    return null;
+    resetPlayerToIdle(playerA);
+    resetPlayerToIdle(playerB);
+    throw new Error(
+      "Challenge generation failed for this topic. Please try play again.",
+    );
   }
 
   const snapshotA = snapshotAResult.value;
   const snapshotB = snapshotBResult.value;
   const questionPool = questions.value;
 
-  if (questionPool.length === 0) {
+  if (questionPool.length < QUESTIONS_PER_MATCH) {
     resetPlayerToIdle(playerA);
     resetPlayerToIdle(playerB);
-    throw new Error("No easy daily challenges are available for PvP");
+    throw new Error(
+      "Not enough generated PvP challenges yet. Please retry in a moment.",
+    );
   }
 
   const now = getNowIso();
@@ -939,6 +1057,7 @@ const tryCreatePair = async (): Promise<string | null> => {
 
   const match: PvPMatchState = {
     match_id: matchId,
+    topic,
     created_at: now,
     started_at: now,
     current_round_started_at: now,
@@ -978,16 +1097,23 @@ const tryCreatePair = async (): Promise<string | null> => {
 };
 
 const pairWaitingPlayers = async () => {
-  let guard = queue.size + 2;
-  while (queue.size >= 2 && guard > 0) {
-    await tryCreatePair();
-    guard -= 1;
+  const topicsWithQueues = Array.from(queueByTopic.entries()).filter(
+    ([, players]) => players.size >= 2,
+  );
+
+  for (const [topic, players] of topicsWithQueues) {
+    let guard = players.size + 2;
+    while (players.size >= 2 && guard > 0) {
+      await tryCreatePair(topic);
+      guard -= 1;
+    }
   }
 };
 
 const publicQuestion = (question: DailyPvpQuestion) => {
   return {
     challenge_id: question.challenge_id,
+    topic: question.topic,
     level_id: question.level_id,
     level_number: question.level_number,
     map_name: question.map_name,
@@ -1000,10 +1126,40 @@ const publicQuestion = (question: DailyPvpQuestion) => {
   };
 };
 
+export const setMatchTopic = async (
+  playerId: number,
+  topic: PvpChallengeTopic,
+): Promise<PvpDailyStatusResponse> => {
+  if (!PVP_TOPICS.includes(topic)) {
+    throw new Error("Invalid topic selected for PvP");
+  }
+
+  const state = getOrCreatePlayerState(playerId);
+  if (state.status === "already_matched") {
+    throw new Error("Cannot change topic while already matched");
+  }
+
+  clearPlayerFromQueue(playerId);
+  playerTopicById.set(playerId, topic);
+
+  if (state.status === "finding_match") {
+    getQueueForTopic(topic).add(playerId);
+  }
+
+  setPlayerState(playerId, state.status, state.match_id);
+
+  const updatedState = getOrCreatePlayerState(playerId);
+  return {
+    status: updatedState,
+    match_found:
+      updatedState.status === "already_matched" && !!updatedState.match_id,
+    match_id: updatedState.match_id,
+  };
+};
+
 export const getDailyPreview = async (
   playerId: number,
 ): Promise<PvpDailyPreviewResponse> => {
-  const questions = await buildQuestionPool();
   const topics = await getAllEasyTopics();
   const todaySeed = getDailySeed();
   dailyPreviewViewedByPlayer.set(playerId, todaySeed);
@@ -1014,11 +1170,10 @@ export const getDailyPreview = async (
   return {
     daily_seed: getDailySeed(),
     preview_task: {
-      title: "Daily PvP Easy Challenge",
+      title: "Topic-based PvP Challenge",
       description:
-        "Race another player to solve easy questions spanning all unlocked game topics.",
+        "Choose one topic, then race another player to solve PvP challenges.",
       topics_covered: topics,
-      difficulty: "easy",
     },
     status: state,
   };
@@ -1040,6 +1195,12 @@ export const enterFindingMatch = async (
 
   const state = getOrCreatePlayerState(playerId);
 
+  if (!state.selected_topic) {
+    throw new Error(
+      "Choose a PvP topic first before clicking play. Allowed topics: HTML, CSS, JavaScript, Computer.",
+    );
+  }
+
   if (state.status === "already_matched" && state.match_id) {
     return {
       status: state,
@@ -1049,7 +1210,7 @@ export const enterFindingMatch = async (
   }
 
   setPlayerState(playerId, "finding_match", null);
-  queue.add(playerId);
+  getQueueForTopic(state.selected_topic).add(playerId);
 
   await pairWaitingPlayers();
 
@@ -1069,7 +1230,11 @@ export const getMatchmakingStatus = async (
 
   let state = getOrCreatePlayerState(playerId);
 
-  if (state.status === "finding_match" && queue.size >= 2) {
+  const hasTopicQueueReady = Array.from(queueByTopic.values()).some(
+    (players) => players.size >= 2,
+  );
+
+  if (state.status === "finding_match" && hasTopicQueueReady) {
     await pairWaitingPlayers();
     state = getOrCreatePlayerState(playerId);
   }
@@ -1102,7 +1267,12 @@ export const getMatchState = async (playerId: number, matchId: string) => {
     );
   }
 
-  if (match.last_attack_by_player_id !== null) {
+  const currentRound = match.rounds[match.current_round_index] ?? null;
+
+  const hasAttemptsInCurrentRound =
+    (currentRound?.attempts_by_player[playerId] ?? 0) > 0;
+
+  if (match.last_attack_by_player_id !== null && !hasAttemptsInCurrentRound) {
     return buildSubmitLikeResponse(
       match,
       playerId,
@@ -1111,7 +1281,7 @@ export const getMatchState = async (playerId: number, matchId: string) => {
     );
   }
 
-  return buildEntryLikePayload(match, playerId);
+  return buildSubmitLikeResponse(match, playerId, "ongoing", false);
 };
 
 const buildSubmitLikeResponse = async (
@@ -1139,13 +1309,14 @@ const buildSubmitLikeResponse = async (
     !isCompleted &&
     (reason === "correct_and_first" ||
       (reason === "round_already_resolved" &&
-        match.last_attack_by_player_id !== null));
+        match.last_attack_by_player_id !== null) ||
+      reason === "ongoing");
   const shouldRepeatCurrentChallenge = !isCompleted && reason === "incorrect";
   const nextChallenge =
     shouldExposeNextChallenge || shouldRepeatCurrentChallenge
       ? currentRoundChallenge
       : null;
-  const isWrongRetryState = reason === "incorrect";
+  const isWrongRetryState = reason === "incorrect" || reason === "ongoing";
 
   const resolvedAttack = isWrongRetryState
     ? null
@@ -1276,7 +1447,9 @@ const buildSubmitLikeResponse = async (
         ? "Correct answer, but opponent already claimed this round."
         : reason === "round_already_resolved"
           ? "Round already resolved."
-          : "That was tricky!";
+          : reason === "ongoing"
+            ? "Match is ongoing."
+            : "That was tricky!";
 
   const mistakes = match.mistakes_by_player[playerId] ?? 0;
   const stars = isVictory
@@ -1345,7 +1518,12 @@ const buildSubmitLikeResponse = async (
     is_bonus_round: false,
     card: entryLike.card,
     gameplay_audio: entryLike.gameplay_audio,
-    is_correct_audio: isCorrect ? CORRECT_ANSWER_AUDIO : WRONG_ANSWER_AUDIO,
+    is_correct_audio:
+      reason === "ongoing"
+        ? null
+        : isCorrect
+          ? CORRECT_ANSWER_AUDIO
+          : WRONG_ANSWER_AUDIO,
     enemy_attack_audio: isWrongRetryState ? null : entryLike.enemy_attack_audio,
     character_attack_audio: isWrongRetryState
       ? null

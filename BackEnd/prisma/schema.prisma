@@ -92,6 +92,24 @@ model Challenge {
   level                Level   @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
 }
 
+model PVPChallenge {
+  pvp_challenge_id Int      @id @default(autoincrement())
+  topic            String
+  difficulty       String   @default("Easy")
+  points_reward    Int      @default(0)
+  coins_reward     Int      @default(0)
+  correct_answer   Json     @default("[]")
+  options          Json?    @default("[]")
+  question         String?
+  css_file         String?
+  html_file        String?
+  dedupe_signature String?  @unique
+  created_at       DateTime @default(now())
+
+  @@index([topic, difficulty])
+  @@index([created_at])
+}
+
 model Enemy {
   enemy_id          Int     @id @default(autoincrement())
   enemy_name        String
