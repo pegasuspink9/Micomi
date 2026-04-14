@@ -19,6 +19,11 @@ import { getSocketServer } from "../../socket";
 import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 import {
   CORRECT_ANSWER_AUDIO,
+  WRONG_ANSWER_AUDIO,
+  VICTORY_AUDIO,
+  DEFEAT_AUDIO,
+  VICTORY_IMAGES,
+  DEFEAT_IMAGES,
   getHeroAttackAudio,
   getHeroHurtAudio,
   getHeroSpecialSkillAssets,
@@ -73,20 +78,6 @@ const topicGenerationIntervals = new Map<
   PvpChallengeTopic,
   ReturnType<typeof setInterval>
 >();
-
-const VICTORY_AUDIO = "https://micomi-assets.me/Sounds/Final/Victory_Sound.wav";
-const DEFEAT_AUDIO = "https://micomi-assets.me/Sounds/Final/Defeat_Sound.wav";
-const VICTORY_IMAGES = [
-  "https://micomi-assets.me/Micomi%20Celebrating/micomiceleb1.png",
-  "https://micomi-assets.me/Micomi%20Celebrating/micomiceleb2.png",
-  "https://micomi-assets.me/Micomi%20Celebrating/micomiceleb3.png",
-];
-const WRONG_ANSWER_AUDIO = "https://micomi-assets.me/Sounds/Final/Wrong_2.wav";
-const DEFEAT_IMAGES = [
-  "https://micomi-assets.me/Micomi%20Celebrating/Failed1.png",
-  "https://micomi-assets.me/Micomi%20Celebrating/Failed2.png",
-  "https://micomi-assets.me/Micomi%20Celebrating/Failed3.png",
-];
 
 const randomFrom = (pool: string[]): string | null => {
   if (pool.length === 0) return null;
