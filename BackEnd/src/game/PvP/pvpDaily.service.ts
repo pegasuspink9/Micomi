@@ -1272,6 +1272,18 @@ export const getMatchState = async (playerId: number, matchId: string) => {
   const hasAttemptsInCurrentRound =
     (currentRound?.attempts_by_player[playerId] ?? 0) > 0;
 
+  const hasAnyAttemptsAcrossPlayers = Object.values(
+    currentRound?.attempts_by_player ?? {},
+  ).some((attempts) => attempts > 0);
+
+  if (
+    match.current_round_index === 0 &&
+    match.last_attack_by_player_id === null &&
+    !hasAnyAttemptsAcrossPlayers
+  ) {
+    return buildEntryLikePayload(match, playerId);
+  }
+
   if (match.last_attack_by_player_id !== null && !hasAttemptsInCurrentRound) {
     return buildSubmitLikeResponse(
       match,
