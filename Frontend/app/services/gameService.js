@@ -205,7 +205,12 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
     };
 
     // Extract challenge data
-    const challengeSource = isSubmission ? responseData.nextChallenge || data.nextChallenge : responseData.currentChallenge || data.currentChallenge;
+    const challengeSource = isSubmission
+      ? responseData.nextChallenge || data.nextChallenge || responseData.currentChallenge || data.currentChallenge
+      : responseData.currentChallenge || data.currentChallenge;
+    const challengeId = challengeSource
+      ? challengeSource.challenge_id ?? challengeSource.challengeId ?? challengeSource.id ?? null
+      : null;
 
     const questionType = data.question_type || 
                         responseData.question_type || 
@@ -213,7 +218,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
                         responseData.fightResult?.question_type || 
                         null;
 
-    if (challengeSource) {
+    if (challengeSource && challengeId !== null && challengeId !== undefined && challengeId !== '') {
       let options = [];
       if (Array.isArray(challengeSource.options)) {
         options = challengeSource.options.filter(option => 
@@ -235,7 +240,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
       }
 
       gameState.currentChallenge = {
-        id: challengeSource.challenge_id,
+        id: String(challengeId),
         question: challengeSource.question,
         options: options,
         correctAnswer: correctAnswer,
@@ -278,8 +283,20 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
       }
 
       gameState.submissionResult = {
-        isCorrect: data.isCorrect,
-        message: data.message,
+        isCorrect:
+          typeof data.isCorrect === 'boolean'
+            ? data.isCorrect
+            : typeof data.is_correct === 'boolean'
+              ? data.is_correct
+              : false,
+        reason: data.reason || responseData.reason || null,
+        acceptedForAttack:
+          typeof data.acceptedForAttack === 'boolean'
+            ? data.acceptedForAttack
+            : typeof data.accepted_for_attack === 'boolean'
+              ? data.accepted_for_attack
+              : false,
+        message: data.message || responseData.message,
         // levelStatus: levelStatus, <--- REMOVED DUPLICATE KEY
         nextLevel: responseData.nextLevel || data.nextLevel || null,
         completionRewards: responseData.completionRewards || data.completionRewards || null,

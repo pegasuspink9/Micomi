@@ -29,13 +29,47 @@ const normalizePreview = (payload = {}) => {
   };
 };
 
+const resolveChallengeId = (challenge) => {
+  if (!challenge || typeof challenge !== 'object') {
+    return null;
+  }
+
+  const rawId = challenge.challenge_id ?? challenge.challengeId ?? challenge.id ?? null;
+  if (rawId === null || rawId === undefined || rawId === '') {
+    return null;
+  }
+
+  return String(rawId);
+};
+
 const normalizeMatchPayload = (payload = {}) => {
   const root = { ...(payload || {}) };
   const data = { ...(payload?.data || payload || {}) };
 
-  // Fallback only when currentChallenge is truly missing.
-  if (!data.currentChallenge && data.nextChallenge) {
+  const currentChallengeId = resolveChallengeId(data.currentChallenge);
+
+  // Fallback when currentChallenge is missing OR has no usable ID.
+  if (
+    (!data.currentChallenge || !currentChallengeId) &&
+    data.nextChallenge
+  ) {
     data.currentChallenge = data.nextChallenge;
+  }
+
+  const normalizedCurrentChallengeId = resolveChallengeId(data.currentChallenge);
+  if (data.currentChallenge && normalizedCurrentChallengeId) {
+    data.currentChallenge = {
+      ...data.currentChallenge,
+      id: normalizedCurrentChallengeId,
+    };
+  }
+
+  const normalizedNextChallengeId = resolveChallengeId(data.nextChallenge);
+  if (data.nextChallenge && normalizedNextChallengeId) {
+    data.nextChallenge = {
+      ...data.nextChallenge,
+      id: normalizedNextChallengeId,
+    };
   }
 
   if (typeof data.isCorrect === 'undefined' && typeof data.is_correct === 'boolean') {
@@ -320,11 +354,22 @@ export const pvpService = {
 
   extractAuthoritativeMatchState: (payload) => {
     const normalized = normalizeAuthoritativeMatchStatePayload(payload);
+    const normalizedData = normalized?.data || {};
 
     const displayState = gameService.extractUnifiedGameState(normalized, false);
     const combatState = gameService.extractUnifiedGameState(normalized, true);
+    const nextChallenge = normalizedData.nextChallenge
+      ? {
+          ...normalizedData.nextChallenge,
+          id: resolveChallengeId(normalizedData.nextChallenge),
+        }
+      : null;
 
-    return mergeAuthoritativeCombatState(displayState, combatState, normalized?.data || {});
+    return {
+      ...mergeAuthoritativeCombatState(displayState, combatState, normalizedData),
+      nextChallenge,
+      nextChallengeData: nextChallenge,
+    };
   },
 
   normalizeMatchStatus,

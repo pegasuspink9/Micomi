@@ -6,10 +6,23 @@ const PVP_MATCH_CACHE_PREFIX = 'pvp_match_cache:';
 const PVP_ACTIVE_MATCH_ID_KEY = 'pvp_active_match_id';
 const AUTO_PROCEED_SECONDS = 5;
 
-// Helper to reliably extract the challenge ID whether the API sends "challenge_id" or "id"
+const normalizeChallengeId = (value) => {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  return String(value);
+};
+
+// Helper to reliably extract the challenge ID regardless of API field shape.
 const getChallengeId = (challenge) => {
-  if (!challenge) return null;
-  return challenge.challenge_id ?? challenge.id ?? null;
+  if (!challenge || typeof challenge !== 'object') {
+    return null;
+  }
+
+  return normalizeChallengeId(
+    challenge.challenge_id ?? challenge.challengeId ?? challenge.id ?? null
+  );
 };
 
 const makeDefaultLiveSync = () => ({
@@ -64,18 +77,23 @@ const buildFightVisualSignature = (submission) => {
   const character = fightResult.character || {};
   const enemy = fightResult.enemy || {};
 
+  // Keep this signature visual-only; reaction copy can vary between sync payloads.
   return [
     toStableValue(fightResult.status),
     toStableValue(character.character_health),
     toStableValue(character.character_current_state),
     toStableValue(character.character_damage),
-    toStableValue(character.character_reaction),
     toStableValue(enemy.enemy_health),
     toStableValue(enemy.enemy_current_state),
     toStableValue(enemy.enemy_damage),
-    toStableValue(enemy.enemy_reaction),
   ].join('|');
 };
+
+const stripSubmissionPayload = (state) => ({
+  ...state,
+  submissionResult: null,
+  fightResult: null,
+});
 
 const buildSyncStateSignature = (state) => {
   if (!state) {
@@ -317,7 +335,13 @@ const hasAuthoritativeDelta = ({ incomingState, baselineSignature, expectedChall
   }
 
   const incomingChallengeId = getChallengeId(incomingState.currentChallenge);
-  if (expectedChallengeId && incomingChallengeId && incomingChallengeId !== expectedChallengeId) {
+  const normalizedExpectedChallengeId = normalizeChallengeId(expectedChallengeId);
+
+  if (
+    normalizedExpectedChallengeId &&
+    incomingChallengeId &&
+    incomingChallengeId !== normalizedExpectedChallengeId
+  ) {
     return true;
   }
 
@@ -380,6 +404,7 @@ export const usePvpGameData = (matchId, options = {}) => {
   const submitExpectedChallengeIdRef = useRef(null);
   const submitAwaitingDeltaRef = useRef(false);
   const proceedReplayGuardRef = useRef(makeProceedReplayGuard());
+  const renderedSubmissionByChallengeRef = useRef(new Map());
 
   useEffect(() => {
     canProceedRef.current = canProceed;
@@ -401,6 +426,7 @@ export const usePvpGameData = (matchId, options = {}) => {
     completedChallengeIdsRef.current = new Set();
     lastProcessedSubmissionRef.current = null;
     proceedReplayGuardRef.current = makeProceedReplayGuard();
+    renderedSubmissionByChallengeRef.current = new Map();
   }, [activeMatchId]);
 
   const stopPolling = useCallback(() => {
@@ -525,8 +551,10 @@ export const usePvpGameData = (matchId, options = {}) => {
     }
 
     const incomingChallengeId = getChallengeId(incomingState.currentChallenge);
-    if (!incomingChallengeId || incomingChallengeId !== guard.challengeId) {
-      if (incomingChallengeId && incomingChallengeId !== guard.challengeId) {
+    const guardedChallengeId = normalizeChallengeId(guard.challengeId);
+
+    if (!incomingChallengeId || incomingChallengeId !== guardedChallengeId) {
+      if (incomingChallengeId && incomingChallengeId !== guardedChallengeId) {
         proceedReplayGuardRef.current = makeProceedReplayGuard();
       }
       return incomingState;
@@ -536,23 +564,54 @@ export const usePvpGameData = (matchId, options = {}) => {
     const incomingVisualSignature = buildFightVisualSignature(incomingState.submissionResult);
 
     if (incomingSubmissionSignature === 'none') {
-      proceedReplayGuardRef.current = makeProceedReplayGuard();
       return incomingState;
     }
 
-    // If the visual combat result hasn't changed, suppress it to prevent replay
-    if (
+    const shouldBlockBySubmission =
+      guard.blockedSubmissionSignature &&
+      incomingSubmissionSignature === guard.blockedSubmissionSignature;
+    const shouldBlockByVisual =
       guard.blockedVisualSignature &&
-      incomingVisualSignature === guard.blockedVisualSignature
-    ) {
-      return {
-        ...incomingState,
-        submissionResult: null,
-        fightResult: null, 
-      };
+      incomingVisualSignature === guard.blockedVisualSignature;
+
+    if (shouldBlockBySubmission || shouldBlockByVisual) {
+      return stripSubmissionPayload(incomingState);
     }
 
     proceedReplayGuardRef.current = makeProceedReplayGuard();
+    return incomingState;
+  }, []);
+
+  const suppressAlreadyRenderedSubmissionForChallenge = useCallback((incomingState) => {
+    if (!incomingState) {
+      return incomingState;
+    }
+
+    const challengeId = getChallengeId(incomingState.currentChallenge);
+    const submissionSignature = buildSubmissionSignature(incomingState.submissionResult);
+
+    if (!challengeId || submissionSignature === 'none') {
+      return incomingState;
+    }
+
+    const visualSignature = buildFightVisualSignature(incomingState.submissionResult);
+    const signatureKey = `${submissionSignature}::${visualSignature}`;
+    const cache = renderedSubmissionByChallengeRef.current;
+    const lastRendered = cache.get(challengeId);
+
+    if (lastRendered === signatureKey) {
+      return stripSubmissionPayload(incomingState);
+    }
+
+    cache.set(challengeId, signatureKey);
+
+    if (cache.size > 40) {
+      const oldestChallengeId = cache.keys().next().value;
+      if (oldestChallengeId) {
+        cache.delete(oldestChallengeId);
+      }
+    }
+
     return incomingState;
   }, []);
 
@@ -677,8 +736,9 @@ export const usePvpGameData = (matchId, options = {}) => {
       setError(null);
       await setResolvedMatchId(latestMatchId);
       const payload = await pvpService.getDailyMatchState(latestMatchId);
-      const unifiedState = suppressReplayForProceededChallenge(
-        pvpService.extractAuthoritativeMatchState(payload)
+      const extractedState = pvpService.extractAuthoritativeMatchState(payload);
+      const unifiedState = suppressAlreadyRenderedSubmissionForChallenge(
+        suppressReplayForProceededChallenge(extractedState)
       );
 
       if (!unifiedState) {
@@ -760,9 +820,15 @@ export const usePvpGameData = (matchId, options = {}) => {
     const serverNextChallenge = pendingData.nextChallenge || pendingData.nextChallengeData;
     
     let targetNextChallenge = null;
-    if (serverNextChallenge && getChallengeId(serverNextChallenge) !== currentChallengeIdRef.current) {
+    if (
+      serverNextChallenge &&
+      getChallengeId(serverNextChallenge) !== normalizeChallengeId(currentChallengeIdRef.current)
+    ) {
         targetNextChallenge = serverNextChallenge;
-    } else if (serverCurrentChallenge && getChallengeId(serverCurrentChallenge) !== currentChallengeIdRef.current) {
+    } else if (
+      serverCurrentChallenge &&
+      getChallengeId(serverCurrentChallenge) !== normalizeChallengeId(currentChallengeIdRef.current)
+    ) {
         targetNextChallenge = serverCurrentChallenge;
     }
 
@@ -986,7 +1052,9 @@ export const usePvpGameData = (matchId, options = {}) => {
       }
 
       submitAwaitingDeltaRef.current = false;
-      pendingSubmissionRef.current = authoritativeState;
+      pendingSubmissionRef.current = suppressAlreadyRenderedSubmissionForChallenge(
+        suppressReplayForProceededChallenge(authoritativeState)
+      );
 
       // Extract new target challenge (if any)
       const authCurrentChallengeId = getChallengeId(authoritativeState.currentChallenge);
@@ -1133,7 +1201,7 @@ export const usePvpGameData = (matchId, options = {}) => {
 
       const remoteCurrentChallengeId = getChallengeId(normalized.currentChallenge);
       const remoteNextChallengeId = getChallengeId(normalized.nextChallenge || normalized.nextChallengeData);
-      const localChallengeId = currentChallengeIdRef.current;
+      const localChallengeId = normalizeChallengeId(currentChallengeIdRef.current);
 
       if (
         remoteCurrentChallengeId &&
@@ -1205,7 +1273,9 @@ export const usePvpGameData = (matchId, options = {}) => {
         return;
       }
 
-      const syncedState = suppressReplayForProceededChallenge(normalized);
+      const syncedState = suppressAlreadyRenderedSubmissionForChallenge(
+        suppressReplayForProceededChallenge(normalized)
+      );
       const remoteFightStatus = syncedState.submissionResult?.fightResult?.status;
 
       if (
@@ -1289,6 +1359,7 @@ export const usePvpGameData = (matchId, options = {}) => {
     setResolvedMatchId,
     setSyncConnected,
     stopAutoProceed,
+    suppressAlreadyRenderedSubmissionForChallenge,
     suppressReplayForProceededChallenge,
     toResponseDrivenState,
   ]);
