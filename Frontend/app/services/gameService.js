@@ -278,19 +278,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
       }
 
       gameState.submissionResult = {
-        isCorrect:
-          typeof data.isCorrect === 'boolean'
-            ? data.isCorrect
-            : typeof data.is_correct === 'boolean'
-            ? data.is_correct
-            : false,
-        reason: data.reason || responseData.reason || null,
-        acceptedForAttack:
-          typeof data.acceptedForAttack === 'boolean'
-            ? data.acceptedForAttack
-            : typeof data.accepted_for_attack === 'boolean'
-            ? data.accepted_for_attack
-            : false,
+        isCorrect: data.isCorrect,
         message: data.message,
         // levelStatus: levelStatus, <--- REMOVED DUPLICATE KEY
         nextLevel: responseData.nextLevel || data.nextLevel || null,
