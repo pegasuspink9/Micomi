@@ -13,6 +13,11 @@ const makeDefaultLiveSync = () => ({
   pendingRemoteProceed: false,
 });
 
+const makeProceedReplayGuard = () => ({
+  challengeId: null,
+  blockedSubmissionSignature: null,
+});
+
 const toStableValue = (value) => {
   if (value === null || value === undefined) {
     return '';
@@ -345,6 +350,7 @@ export const usePvpGameData = (matchId, options = {}) => {
   const submitBaselineCombatSignatureRef = useRef(null);
   const submitExpectedChallengeIdRef = useRef(null);
   const submitAwaitingDeltaRef = useRef(false);
+  const proceedReplayGuardRef = useRef(makeProceedReplayGuard());
 
   useEffect(() => {
     canProceedRef.current = canProceed;
@@ -365,6 +371,7 @@ export const usePvpGameData = (matchId, options = {}) => {
   useEffect(() => {
     completedChallengeIdsRef.current = new Set();
     lastProcessedSubmissionRef.current = null;
+    proceedReplayGuardRef.current = makeProceedReplayGuard();
   }, [activeMatchId]);
 
   const stopPolling = useCallback(() => {
@@ -472,6 +479,50 @@ export const usePvpGameData = (matchId, options = {}) => {
           ? overrides.nextChallengeData
           : prevState?.nextChallengeData || null,
     };
+  }, []);
+
+  const resetProceedReplayGuard = useCallback(() => {
+    proceedReplayGuardRef.current = makeProceedReplayGuard();
+  }, []);
+
+  const suppressReplayForProceededChallenge = useCallback((incomingState) => {
+    if (!incomingState) {
+      return incomingState;
+    }
+
+    const guard = proceedReplayGuardRef.current;
+    if (!guard?.challengeId) {
+      return incomingState;
+    }
+
+    const incomingChallengeId = incomingState.currentChallenge?.id || null;
+    if (!incomingChallengeId || incomingChallengeId !== guard.challengeId) {
+      if (incomingChallengeId && incomingChallengeId !== guard.challengeId) {
+        proceedReplayGuardRef.current = makeProceedReplayGuard();
+      }
+      return incomingState;
+    }
+
+    const incomingSubmissionSignature = buildSubmissionSignature(incomingState.submissionResult);
+
+    if (incomingSubmissionSignature === 'none') {
+      proceedReplayGuardRef.current = makeProceedReplayGuard();
+      return incomingState;
+    }
+
+    if (
+      guard.blockedSubmissionSignature &&
+      incomingSubmissionSignature === guard.blockedSubmissionSignature
+    ) {
+      return {
+        ...incomingState,
+        submissionResult: null,
+      };
+    }
+
+    // A fresh, different submission arrived for this challenge; stop suppressing.
+    proceedReplayGuardRef.current = makeProceedReplayGuard();
+    return incomingState;
   }, []);
 
   const loadCachedMatchState = useCallback(async (targetMatchId) => {
@@ -595,7 +646,9 @@ export const usePvpGameData = (matchId, options = {}) => {
       setError(null);
       await setResolvedMatchId(latestMatchId);
       const payload = await pvpService.getDailyMatchState(latestMatchId);
-      const unifiedState = pvpService.extractAuthoritativeMatchState(payload);
+      const unifiedState = suppressReplayForProceededChallenge(
+        pvpService.extractAuthoritativeMatchState(payload)
+      );
 
       if (!unifiedState) {
         throw new Error('Failed to parse PvP match data');
@@ -634,6 +687,7 @@ export const usePvpGameData = (matchId, options = {}) => {
     setSyncReconnecting,
     setResolvedMatchId,
     setSyncConnected,
+    suppressReplayForProceededChallenge,
     toResponseDrivenState,
   ]);
 
@@ -864,6 +918,7 @@ export const usePvpGameData = (matchId, options = {}) => {
       submitInFlightRef.current = true;
       submissionStartedAtRef.current = Date.now();
       instantProceedRef.current = false;
+      resetProceedReplayGuard();
       setSubmitting(true);
       setError(null);
       stopAutoProceed();
@@ -1000,6 +1055,7 @@ export const usePvpGameData = (matchId, options = {}) => {
     disabled,
     getAuthoritativeStateAfterSubmit,
     handleAnimationComplete,
+    resetProceedReplayGuard,
     resolveLatestMatchId,
     setGameStateIfChanged,
     setResolvedMatchId,
@@ -1022,6 +1078,13 @@ export const usePvpGameData = (matchId, options = {}) => {
       if (!nextChallenge) {
         return prev;
       }
+
+      const blockedSubmissionSignature = buildSubmissionSignature(prev.submissionResult);
+      proceedReplayGuardRef.current = {
+        challengeId: nextChallenge.id || null,
+        blockedSubmissionSignature:
+          blockedSubmissionSignature === 'none' ? null : blockedSubmissionSignature,
+      };
 
       if (prev.currentChallenge?.id) {
         completedChallengeIdsRef.current.add(prev.currentChallenge.id);
@@ -1074,7 +1137,6 @@ export const usePvpGameData = (matchId, options = {}) => {
         return; // Ignore stale server responses for older challenges
       }
 
-      const remoteFightStatus = normalized.submissionResult?.fightResult?.status;
       const hasPendingSubmitDelta = hasAuthoritativeDelta({
         incomingState: normalized,
         baselineSignature: submitBaselineCombatSignatureRef.current,
@@ -1149,6 +1211,9 @@ export const usePvpGameData = (matchId, options = {}) => {
         return;
       }
 
+      const syncedState = suppressReplayForProceededChallenge(normalized);
+      const remoteFightStatus = syncedState.submissionResult?.fightResult?.status;
+
       if (
         (remoteFightStatus === 'won' || remoteFightStatus === 'lost') &&
         !waitingRef.current
@@ -1157,12 +1222,12 @@ export const usePvpGameData = (matchId, options = {}) => {
         setCanProceed(false);
         instantProceedRef.current = false;
         setGameStateIfChanged((prev) => {
-          const merged = toResponseDrivenState(prev, normalized, {
-            submissionResult: normalized.submissionResult ?? null,
+          const merged = toResponseDrivenState(prev, syncedState, {
+            submissionResult: syncedState.submissionResult ?? null,
             nextChallengeData: null,
           });
 
-          return mergeFightAttributes(merged, normalized);
+          return mergeFightAttributes(merged, syncedState);
         });
         currentChallengeIdRef.current = remoteChallengeId || localChallengeId;
         return;
@@ -1172,11 +1237,11 @@ export const usePvpGameData = (matchId, options = {}) => {
         if (remoteChallengeId && !localChallengeId) {
           currentChallengeIdRef.current = remoteChallengeId;
           setGameStateIfChanged((prev) => {
-            const merged = toResponseDrivenState(prev, normalized, {
-              submissionResult: normalized.submissionResult ?? null,
+            const merged = toResponseDrivenState(prev, syncedState, {
+              submissionResult: syncedState.submissionResult ?? null,
             });
 
-            return mergeFightAttributes(merged, normalized);
+            return mergeFightAttributes(merged, syncedState);
           });
         }
         return;
@@ -1192,25 +1257,25 @@ export const usePvpGameData = (matchId, options = {}) => {
         setGameStateIfChanged((prev) => {
           const merged = {
             ...prev,
-            submissionResult: normalized.submissionResult ?? null,
-            selectedCharacter: normalized.selectedCharacter || prev.selectedCharacter,
-            enemy: normalized.enemy || prev.enemy,
-            avatar: normalized.avatar || prev.avatar,
-            level: normalized.level || prev.level,
-            card: normalized.card || prev.card || null,
-            nextChallengeData: normalized.currentChallenge
+            submissionResult: syncedState.submissionResult ?? null,
+            selectedCharacter: syncedState.selectedCharacter || prev.selectedCharacter,
+            enemy: syncedState.enemy || prev.enemy,
+            avatar: syncedState.avatar || prev.avatar,
+            level: syncedState.level || prev.level,
+            card: syncedState.card || prev.card || null,
+            nextChallengeData: syncedState.currentChallenge
               ? {
-                  ...normalized.currentChallenge,
-                  card: normalized.card || prev.card || null,
-                  selectedCharacter: normalized.selectedCharacter || prev.selectedCharacter,
-                  enemy: normalized.enemy || prev.enemy,
-                  avatar: normalized.avatar || prev.avatar,
-                  level: normalized.level || prev.level,
+                  ...syncedState.currentChallenge,
+                  card: syncedState.card || prev.card || null,
+                  selectedCharacter: syncedState.selectedCharacter || prev.selectedCharacter,
+                  enemy: syncedState.enemy || prev.enemy,
+                  avatar: syncedState.avatar || prev.avatar,
+                  level: syncedState.level || prev.level,
                 }
               : prev.nextChallengeData || null,
           };
 
-          return mergeFightAttributes(merged, normalized);
+          return mergeFightAttributes(merged, syncedState);
         });
         setSyncConnected({ pendingRemoteProceed: true }, { touch: true });
         return;
@@ -1218,9 +1283,9 @@ export const usePvpGameData = (matchId, options = {}) => {
 
       setGameStateIfChanged((prev) => {
         const prevChallengeId = prev.currentChallenge?.id || null;
-        const nextChallengeId = normalized.currentChallenge?.id || null;
+        const nextChallengeId = syncedState.currentChallenge?.id || null;
         const prevCombatSignature = buildCombatStateSignature(prev);
-        const nextCombatSignature = buildCombatStateSignature(normalized);
+        const nextCombatSignature = buildCombatStateSignature(syncedState);
 
         if (
           prevChallengeId === nextChallengeId &&
@@ -1229,12 +1294,12 @@ export const usePvpGameData = (matchId, options = {}) => {
           return prev;
         }
 
-        const merged = toResponseDrivenState(prev, normalized, {
-          submissionResult: normalized.submissionResult ?? null,
+        const merged = toResponseDrivenState(prev, syncedState, {
+          submissionResult: syncedState.submissionResult ?? null,
           nextChallengeData: prev.nextChallengeData || null,
         });
 
-        return mergeFightAttributes(merged, normalized);
+        return mergeFightAttributes(merged, syncedState);
       });
     } catch (syncError) {
       console.error('PvP sync error:', syncError);
@@ -1248,6 +1313,7 @@ export const usePvpGameData = (matchId, options = {}) => {
     setResolvedMatchId,
     setSyncConnected,
     stopAutoProceed,
+    suppressReplayForProceededChallenge,
     toResponseDrivenState,
   ]);
 
