@@ -33,13 +33,9 @@ const normalizeMatchPayload = (payload = {}) => {
   const root = { ...(payload || {}) };
   const data = { ...(payload?.data || payload || {}) };
 
-  // Match status APIs may return nextChallenge instead of currentChallenge after a resolved round.
+  // Fallback only when currentChallenge is truly missing.
   if (!data.currentChallenge && data.nextChallenge) {
     data.currentChallenge = data.nextChallenge;
-  }
-
-  if (!data.nextChallenge && data.currentChallenge) {
-    data.nextChallenge = data.currentChallenge;
   }
 
   if (typeof data.isCorrect === 'undefined' && typeof data.is_correct === 'boolean') {
@@ -58,20 +54,8 @@ const normalizeMatchPayload = (payload = {}) => {
 };
 
 const normalizeAuthoritativeMatchStatePayload = (payload = {}) => {
-  const normalized = normalizeMatchPayload(payload);
-  const data = { ...(normalized?.data || {}) };
-
-  // For GET match-state display, prefer currentChallenge as the source of truth.
-  if (data.currentChallenge) {
-    data.nextChallenge = data.currentChallenge;
-  } else if (data.nextChallenge && !data.currentChallenge) {
-    data.currentChallenge = data.nextChallenge;
-  }
-
-  return {
-    ...normalized,
-    data,
-  };
+  // Keep authoritative match-state payload as close to server response as possible.
+  return normalizeMatchPayload(payload);
 };
 
 const hasAuthoritativeSubmissionData = (data = {}) => {
@@ -100,23 +84,7 @@ const mergeAuthoritativeCombatState = (displayState, combatState, rawData = {}) 
   const fightEnemy = fightResult?.enemy || {};
 
   const hasSubmissionData = hasAuthoritativeSubmissionData(rawData);
-  const hasExplicitCorrectness =
-    typeof rawData.isCorrect === 'boolean' || typeof rawData.is_correct === 'boolean';
-  const hasExplicitAcceptedForAttack =
-    typeof rawData.acceptedForAttack === 'boolean' ||
-    typeof rawData.accepted_for_attack === 'boolean';
-
-  const submissionResult = hasSubmissionData
-    ? {
-        ...(combatState.submissionResult || {}),
-        isCorrect: hasExplicitCorrectness
-          ? combatState?.submissionResult?.isCorrect
-          : null,
-        acceptedForAttack: hasExplicitAcceptedForAttack
-          ? combatState?.submissionResult?.acceptedForAttack
-          : null,
-      }
-    : null;
+  const submissionResult = hasSubmissionData ? (combatState.submissionResult || null) : null;
 
   // Keep explicit null values from the server; only fallback when a key is truly missing.
   const pick = (value, fallback) => (value !== undefined ? value : fallback);

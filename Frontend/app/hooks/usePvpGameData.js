@@ -466,7 +466,7 @@ export const usePvpGameData = (matchId, options = {}) => {
       submissionResult:
         typeof overrides.submissionResult !== 'undefined'
           ? overrides.submissionResult
-          : incomingState?.submissionResult ?? prevState?.submissionResult ?? null,
+          : incomingState?.submissionResult ?? null,
       nextChallengeData:
         typeof overrides.nextChallengeData !== 'undefined'
           ? overrides.nextChallengeData
@@ -1192,7 +1192,7 @@ export const usePvpGameData = (matchId, options = {}) => {
         setGameStateIfChanged((prev) => {
           const merged = {
             ...prev,
-            submissionResult: normalized.submissionResult ?? prev.submissionResult ?? null,
+            submissionResult: normalized.submissionResult ?? null,
             selectedCharacter: normalized.selectedCharacter || prev.selectedCharacter,
             enemy: normalized.enemy || prev.enemy,
             avatar: normalized.avatar || prev.avatar,
@@ -1404,27 +1404,13 @@ export const usePvpGameData = (matchId, options = {}) => {
       return;
     }
 
-    const delaySeconds = AUTO_PROCEED_SECONDS;
-    setAutoProceedCountdown(delaySeconds);
-
-    autoProceedIntervalRef.current = setInterval(() => {
-      setAutoProceedCountdown((prev) => {
-        if (typeof prev !== 'number') {
-          return delaySeconds;
-        }
-
-        return prev > 1 ? prev - 1 : 1;
-      });
-    }, 1000);
-
-    autoProceedTimeoutRef.current = setTimeout(() => {
-      handleProceed();
-    }, delaySeconds * 1000);
+    // Manual proceed only in PvP for now to avoid duplicate/retrigger transitions.
+    setAutoProceedCountdown(null);
 
     return () => {
       stopAutoProceed();
     };
-  }, [canProceed, disabled, handleProceed, stopAutoProceed]);
+  }, [canProceed, disabled, stopAutoProceed]);
 
   useEffect(() => {
     return () => {
