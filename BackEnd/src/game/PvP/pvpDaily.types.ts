@@ -1,7 +1,9 @@
 export type MatchmakingStatus = "idle" | "finding_match" | "already_matched";
+export type PvpChallengeTopic = "HTML" | "CSS" | "JavaScript" | "Computer";
 
 export interface DailyPvpQuestion {
   challenge_id: number;
+  topic: PvpChallengeTopic;
   level_id: number;
   level_number: number | null;
   map_name: string;
@@ -61,6 +63,7 @@ export interface PvPCompletionStats {
 
 export interface PvPMatchState {
   match_id: string;
+  topic: PvpChallengeTopic;
   created_at: string;
   started_at: string;
   current_round_started_at: string;
@@ -83,6 +86,7 @@ export interface PvPMatchState {
 
 export interface PlayerMatchmakingState {
   status: MatchmakingStatus;
+  selected_topic: PvpChallengeTopic | null;
   match_id: string | null;
   updated_at: string;
 }
@@ -92,8 +96,7 @@ export interface PvpDailyPreviewResponse {
   preview_task: {
     title: string;
     description: string;
-    topics_covered: string[];
-    difficulty: "easy";
+    topics_covered: PvpChallengeTopic[];
   };
   status: PlayerMatchmakingState;
 }
@@ -154,7 +157,8 @@ export interface PvpDailySubmitAnswerResult {
     | "correct_and_first"
     | "correct_but_late"
     | "incorrect"
-    | "round_already_resolved";
+    | "round_already_resolved"
+    | "ongoing";
   isCorrect?: boolean;
   attempts?: number;
   fightResult?: Record<string, unknown> | null;

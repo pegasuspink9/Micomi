@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import express from "express";
 import cookieParser from "cookie-parser";
 import { setupCronJobs } from "../helper/cronJobs";
+import { ensureDailyPvpChallenges } from "./game/PvP/pvpChallengeGenerator.service";
 import {
   checkAndGenerateMissingQuestsForAllPlayers,
   cleanupExpiredQuestsForAllPlayers,
@@ -99,6 +100,17 @@ server.listen(PORT, async () => {
       );
       await checkAndGenerateMissingQuestsForAllPlayers();
       console.log("[✅ Quest Service] Quest initialization complete\n");
+
+      console.log("[⏳ PvP Service] Ensuring today's PvP challenge pool...");
+      const pvpSeedResult = await ensureDailyPvpChallenges({
+        perTopicTarget: 12,
+        difficulty: "Easy",
+      });
+      console.log(
+        "[✅ PvP Service] Today's PvP pool ready:",
+        pvpSeedResult,
+        "\n",
+      );
 
       console.log(
         "[⏳ Quest Service] Running initial cleanup of expired quests...",
