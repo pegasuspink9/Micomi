@@ -522,6 +522,14 @@ const buildEntryLikePayload = async (
     correctAnswerLength,
     viewerDamageArray,
   );
+  const opponentDamageArray = Array.isArray(opponentChar.character_damage)
+    ? (opponentChar.character_damage as number[])
+    : [opponentSnapshot.attack_damage];
+  const { attackType: opponentAttackType } = resolveAttackTypeAndDamage(
+    correctAnswerLength,
+    opponentDamageArray,
+  );
+
   const cardInfo = getCardForAttackType(viewerChar.character_name, attackType);
   const character_attack_audio = getHeroAttackAudio(
     viewerChar.character_name,
@@ -529,7 +537,7 @@ const buildEntryLikePayload = async (
   );
   const enemy_attack_audio = getHeroAttackAudio(
     opponentChar.character_name,
-    "basic_attack",
+    opponentAttackType,
   );
   const enemy_hurt_audio = getHeroHurtAudio(opponentChar.character_name);
   const character_hurt_audio = getHeroHurtAudio(viewerChar.character_name);
@@ -566,9 +574,7 @@ const buildEntryLikePayload = async (
       enemy_idle: opponentChar.avatar_image,
       enemy_run: opponentChar.character_run,
       enemy_damage: opponentChar.character_damage,
-      enemy_attack: Array.isArray(opponentChar.character_attacks)
-        ? opponentChar.character_attacks[0]
-        : null,
+      enemy_attack: opponentChar.character_attacks,
       enemy_hurt: opponentChar.character_hurt,
       enemy_dies: opponentChar.character_dies,
       enemy_avatar: opponentChar.character_avatar,
@@ -1258,12 +1264,14 @@ export const getMatchState = async (playerId: number, matchId: string) => {
     throw new Error("You are not part of this match");
   }
 
+  const wasLastAttacker = match.last_attack_by_player_id === playerId;
+
   if (match.status === "completed") {
     return buildSubmitLikeResponse(
       match,
       playerId,
       "round_already_resolved",
-      false,
+      wasLastAttacker,
     );
   }
 
@@ -1289,7 +1297,7 @@ export const getMatchState = async (playerId: number, matchId: string) => {
       match,
       playerId,
       "round_already_resolved",
-      false,
+      wasLastAttacker, // <-- Changed from hardcoded false
     );
   }
 
@@ -1358,6 +1366,11 @@ const buildSubmitLikeResponse = async (
     resolvedAttackIndex,
   );
 
+  const opponentAttackAsset = getArrayItemOrNull(
+    opponentEnemy.enemy_attack,
+    resolvedAttackIndex,
+  );
+
   const characterShowsAttack = !!resolvedAttack && isViewerLastAttacker;
   const enemyShowsAttack = !!resolvedAttack && !isViewerLastAttacker;
   const isCharacterDead = Number(viewerCharacter.character_health ?? 0) <= 0;
@@ -1411,7 +1424,7 @@ const buildSubmitLikeResponse = async (
     enemy_idle: opponentEnemy.enemy_idle,
     enemy_run: enemyShowsAttack ? opponentEnemy.enemy_run : null,
     enemy_attack_type: enemyShowsAttack ? resolvedAttackType : null,
-    enemy_attack: enemyShowsAttack ? opponentEnemy.enemy_attack : null,
+    enemy_attack: enemyShowsAttack ? opponentAttackAsset : null,
     enemy_hurt: characterShowsAttack ? opponentEnemy.enemy_hurt : null,
     enemy_dies:
       Number(opponentEnemy.enemy_health ?? 0) <= 0
