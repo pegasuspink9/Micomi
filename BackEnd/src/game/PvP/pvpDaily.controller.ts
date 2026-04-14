@@ -188,3 +188,19 @@ export const cancelMatchmaking = async (req: Request, res: Response) => {
     );
   }
 };
+
+export const surrenderMatch = async (req: Request, res: Response) => {
+  try {
+    const playerId = (req as any).user.id as number;
+    const matchId = parseMatchId(req.params.matchId);
+
+    const result = await PvpDailyService.surrenderMatch(playerId, matchId);
+    
+    return successResponse(res, result, "You have surrendered. Match ended.");
+  } catch (error) {
+    const message = (error as Error).message || "Failed to surrender match";
+    const status = message.includes("not found") ? 404 : 400;
+    
+    return errorResponse(res, error, message, status);
+  }
+};

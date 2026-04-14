@@ -1563,7 +1563,7 @@ const buildSubmitLikeResponse = async (
     card: entryLike.card,
     gameplay_audio: entryLike.gameplay_audio,
     is_correct_audio:
-      reason === "ongoing"
+      reason === "ongoing" || reason === "round_already_resolved"
         ? null
         : isCorrect
           ? CORRECT_ANSWER_AUDIO
@@ -1735,4 +1735,46 @@ export const cancelMatchmaking = async (
     match_found: false,
     match_id: null,
   };
+};
+
+export const surrenderMatch = async (
+  playerId: number,
+  matchId: string,
+): Promise<PvpDailySubmitAnswerResult> => {
+  const match = await getMatchFromMemoryOrDb(matchId);
+  if (!match) {
+    throw new Error("Match not found");
+  }
+
+  if (match.status === "completed") {
+    return buildSubmitLikeResponse(
+      match,
+      playerId,
+      "round_already_resolved",
+      false,
+    );
+  }
+
+  const playerIndex = getPlayerIndex(match, playerId);
+  if (playerIndex === -1) {
+    throw new Error("You are not part of this match");
+  }
+
+  const opponentIndex = getOpponentIndex(playerIndex);
+  const opponent = match.players[opponentIndex];
+
+  match.last_attack_by_player_id = opponent.player_id;
+  match.last_attack_type = "special_attack";
+  match.last_attack_damage = match.players[playerIndex].character_health;
+
+  match.players[playerIndex].character_health = 0;
+
+  await completeMatch(match, opponent.player_id, "knockout");
+
+  return buildSubmitLikeResponse(
+    match,
+    playerId,
+    "round_already_resolved",
+    false,
+  );
 };
