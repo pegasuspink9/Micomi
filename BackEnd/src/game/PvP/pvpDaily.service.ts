@@ -1375,6 +1375,25 @@ const buildSubmitLikeResponse = async (
   const enemyShowsAttack = !!resolvedAttack && !isViewerLastAttacker;
   const isCharacterDead = Number(viewerCharacter.character_health ?? 0) <= 0;
 
+  const viewerCharName = String(viewerCharacter.character_name || "");
+  const opponentCharName = String(opponentEnemy.enemy_name || "");
+
+  const final_character_attack_audio = characterShowsAttack
+    ? getHeroAttackAudio(viewerCharName, resolvedAttackType ?? "basic_attack")
+    : null;
+
+  const final_enemy_hurt_audio = characterShowsAttack
+    ? getHeroHurtAudio(opponentCharName)
+    : null;
+
+  const final_enemy_attack_audio = enemyShowsAttack
+    ? getHeroAttackAudio(opponentCharName, resolvedAttackType ?? "basic_attack")
+    : null;
+
+  const final_character_hurt_audio = enemyShowsAttack
+    ? getHeroHurtAudio(viewerCharName)
+    : null;
+
   const characterForFightResult = {
     player_id: viewerCharacter.player_id,
     player_name: viewerCharacter.player_name,
@@ -1549,14 +1568,10 @@ const buildSubmitLikeResponse = async (
         : isCorrect
           ? CORRECT_ANSWER_AUDIO
           : WRONG_ANSWER_AUDIO,
-    enemy_attack_audio: isWrongRetryState ? null : entryLike.enemy_attack_audio,
-    character_attack_audio: isWrongRetryState
-      ? null
-      : entryLike.character_attack_audio,
-    character_hurt_audio: isWrongRetryState
-      ? null
-      : entryLike.character_hurt_audio,
-    enemy_hurt_audio: isWrongRetryState ? null : entryLike.enemy_hurt_audio,
+    enemy_attack_audio: final_enemy_attack_audio,
+    character_attack_audio: final_character_attack_audio,
+    character_hurt_audio: final_character_hurt_audio,
+    enemy_hurt_audio: final_enemy_hurt_audio,
     death_audio: isCompleted
       ? "https://micomi-assets.me/Sounds/Final/All%20Death.wav"
       : null,
