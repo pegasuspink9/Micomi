@@ -75,6 +75,7 @@ export default function GamePlay() {
   const hasTriggeredGameOver = useRef(false);
   const hasTriggeredLevelCompletion = useRef(false);
   const hasShownVSModalRef = useRef(false);
+  const lastPvpCardChallengeIdRef = useRef(null);
   const lastSubmissionKey = useRef(null); 
   const lastPlayedAudioKey = useRef(null);
   const messageDelayTimeoutRef = useRef(null);
@@ -168,6 +169,7 @@ export default function GamePlay() {
 
     // Continue flow should always replay VS intro before gameplay.
     hasShownVSModalRef.current = false;
+    lastPvpCardChallengeIdRef.current = null;
     hasFinishedMicomic.current = true;
     setShowMicomic(false);
     setShowVSModal(false);
@@ -199,27 +201,59 @@ export default function GamePlay() {
 
   //  SINGLE effect to handle card display on image change
   useEffect(() => {
+    const currentChallengeId =
+      currentChallenge?.id === null || currentChallenge?.id === undefined
+        ? null
+        : String(currentChallenge.id);
+
     console.log('📸 Checking card display:', {
       currentCard: characterAttackCard,
       previousCard: previousImageUrl,
-      currentChallengeId: currentChallenge?.id,
+      currentChallengeId,
       showGameplay: showGameplay,
+      canProceed,
+      isPvpMode,
     });
 
-    // Card should display when we have a valid card image that's different from previous
-    if (
-      characterAttackCard && 
-      showGameplay && 
-      !showVSModal &&
-      !showDialogue &&
-      characterAttackCard !== previousImageUrl
-    ) {
+    if (!characterAttackCard || !showGameplay || showVSModal || showDialogue) {
+      return;
+    }
+
+    if (isPvpMode) {
+      if (!currentChallengeId || canProceed) {
+        return;
+      }
+
+      // PvP rule: only show the card modal once after the challenge actually advances.
+      if (lastPvpCardChallengeIdRef.current === currentChallengeId) {
+        return;
+      }
+
+      console.log('📸 PvP challenge advanced - showing card for new challenge id');
+      setCardDisplaySequence('modal');
+      setShowAttackCard(true);
+      setPreviousImageUrl(characterAttackCard);
+      lastPvpCardChallengeIdRef.current = currentChallengeId;
+      return;
+    }
+
+    // PvE rule: display when a new card image arrives.
+    if (characterAttackCard !== previousImageUrl) {
       console.log('📸 NEW CARD DETECTED - Showing card');
       setCardDisplaySequence('modal');
       setShowAttackCard(true);
       setPreviousImageUrl(characterAttackCard);
     }
-  }, [characterAttackCard, showGameplay, showVSModal, showDialogue]);
+  }, [
+    canProceed,
+    characterAttackCard,
+    currentChallenge?.id,
+    isPvpMode,
+    previousImageUrl,
+    showDialogue,
+    showGameplay,
+    showVSModal,
+  ]);
 
   useEffect(() => {
     const submission = gameState?.submissionResult;
@@ -1091,8 +1125,8 @@ export default function GamePlay() {
                 cardDisplaySequence={cardDisplaySequence}
                 canProceed={canProceed}
                 onProceed={handleProceed}
-                isAutoProceed={false}
-                autoProceedCountdown={null}
+                isAutoProceed={isPvpMode && canProceed}
+                autoProceedCountdown={isPvpMode ? autoProceedCountdown : null}
                 isLevelComplete={showLevelCompletion}
                 showRunButton={showRunButton}
                 onCharacterRun={handleCharacterRun}

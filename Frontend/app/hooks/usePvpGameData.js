@@ -1137,6 +1137,7 @@ export const usePvpGameData = (matchId, options = {}) => {
       return;
     }
 
+    canProceedRef.current = false;
     instantProceedRef.current = false;
     stopAutoProceed();
     setCanProceed(false);
@@ -1515,12 +1516,28 @@ export const usePvpGameData = (matchId, options = {}) => {
       return;
     }
 
-    setAutoProceedCountdown(null);
+    const countdownStartedAt = Date.now();
+    setAutoProceedCountdown(AUTO_PROCEED_SECONDS);
+
+    const updateCountdown = () => {
+      const elapsedSeconds = Math.floor((Date.now() - countdownStartedAt) / 1000);
+      const remainingSeconds = Math.max(AUTO_PROCEED_SECONDS - elapsedSeconds, 0);
+
+      setAutoProceedCountdown((prev) => (prev === remainingSeconds ? prev : remainingSeconds));
+
+      if (remainingSeconds <= 0) {
+        stopAutoProceed();
+        handleProceed();
+      }
+    };
+
+    updateCountdown();
+    autoProceedIntervalRef.current = setInterval(updateCountdown, 250);
 
     return () => {
       stopAutoProceed();
     };
-  }, [canProceed, disabled, stopAutoProceed]);
+  }, [canProceed, disabled, handleProceed, stopAutoProceed]);
 
   useEffect(() => {
     return () => {
