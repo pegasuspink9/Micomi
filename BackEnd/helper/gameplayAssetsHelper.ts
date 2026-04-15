@@ -4,7 +4,10 @@ export const VERSUS_AUDIO =
   "https://micomi-assets.me/Sounds/Final/Versus%20Sound%20Effect%20Final.wav";
 
 export const CORRECT_ANSWER_AUDIO =
-  "https://res.cloudinary.com/dxszgkdcp/video/upload/v1752458878/sounds/correctsound_h1m6bw.wav";
+  "https://micomi-assets.me/Sounds/Final/Correct.wav";
+
+export const WRONG_ANSWER_AUDIO =
+  "https://micomi-assets.me/Sounds/Final/Wrong_2.wav";
 
 export const UNIVERSAL_ENEMY_HURT_AUDIO =
   "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/enemies%20universal%20hurt%20sfx.mp3";
@@ -146,3 +149,18 @@ export const getHeroAttackAudio = (
 export const getHeroHurtAudio = (characterName: string): string | null => {
   return HERO_HURT_AUDIO_MAP[characterName] ?? null;
 };
+
+export const VICTORY_AUDIO =
+  "https://micomi-assets.me/Sounds/Final/Victory_Sound.wav";
+export const DEFEAT_AUDIO =
+  "https://micomi-assets.me/Sounds/Final/Defeat_Sound.wav";
+export const VICTORY_IMAGES = [
+  "https://micomi-assets.me/Micomi%20Celebrating/micomiceleb1.png",
+  "https://micomi-assets.me/Micomi%20Celebrating/micomiceleb2.png",
+  "https://micomi-assets.me/Micomi%20Celebrating/micomiceleb3.png",
+];
+export const DEFEAT_IMAGES = [
+  "https://micomi-assets.me/Micomi%20Celebrating/Failed1.png",
+  "https://micomi-assets.me/Micomi%20Celebrating/Failed2.png",
+  "https://micomi-assets.me/Micomi%20Celebrating/Failed3.png",
+];

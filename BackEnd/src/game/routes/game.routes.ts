@@ -135,6 +135,12 @@ router.post(
   requirePlayer,
   PvPDailyController.cancelMatchmaking,
 );
+router.post(
+  "/pvp/daily/match/:matchId/surrender",
+  authenticate,
+  requirePlayer,
+  PvPDailyController.surrenderMatch,
+);
 router.get(
   "/pvp/daily/match/:matchId",
   authenticate,

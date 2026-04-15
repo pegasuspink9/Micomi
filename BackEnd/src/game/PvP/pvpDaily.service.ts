@@ -19,6 +19,11 @@ import { getSocketServer } from "../../socket";
 import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 import {
   CORRECT_ANSWER_AUDIO,
+  WRONG_ANSWER_AUDIO,
+  VICTORY_AUDIO,
+  DEFEAT_AUDIO,
+  VICTORY_IMAGES,
+  DEFEAT_IMAGES,
   getHeroAttackAudio,
   getHeroHurtAudio,
   getHeroSpecialSkillAssets,
@@ -73,20 +78,6 @@ const topicGenerationIntervals = new Map<
   PvpChallengeTopic,
   ReturnType<typeof setInterval>
 >();
-
-const VICTORY_AUDIO = "https://micomi-assets.me/Sounds/Final/Victory_Sound.wav";
-const DEFEAT_AUDIO = "https://micomi-assets.me/Sounds/Final/Defeat_Sound.wav";
-const VICTORY_IMAGES = [
-  "https://micomi-assets.me/Micomi%20Celebrating/micomiceleb1.png",
-  "https://micomi-assets.me/Micomi%20Celebrating/micomiceleb2.png",
-  "https://micomi-assets.me/Micomi%20Celebrating/micomiceleb3.png",
-];
-const WRONG_ANSWER_AUDIO = "https://micomi-assets.me/Sounds/Final/Wrong_2.wav";
-const DEFEAT_IMAGES = [
-  "https://micomi-assets.me/Micomi%20Celebrating/Failed1.png",
-  "https://micomi-assets.me/Micomi%20Celebrating/Failed2.png",
-  "https://micomi-assets.me/Micomi%20Celebrating/Failed3.png",
-];
 
 const randomFrom = (pool: string[]): string | null => {
   if (pool.length === 0) return null;
@@ -685,6 +676,15 @@ const createRounds = (
   }));
 };
 
+const markChallengesAsUsedInMatch = async (challengeIds: number[]) => {
+  if (challengeIds.length === 0) return;
+
+  await prisma.pVPChallenge.updateMany({
+    where: { pvp_challenge_id: { in: challengeIds } },
+    data: { last_used_in_match_at: new Date() },
+  });
+};
+
 const cloneMatchForResponse = (match: PvPMatchState): PvPMatchState => {
   return {
     ...match,
@@ -1095,6 +1095,19 @@ const tryCreatePair = async (
 
   matches.set(matchId, match);
   await persistMatchProgress(match);
+
+  try {
+    await markChallengesAsUsedInMatch(
+      questionPool.map((question) => question.challenge_id),
+    );
+  } catch (error) {
+    console.warn(
+      "[PvP Service] Failed to mark challenge usage for match:",
+      matchId,
+      error,
+    );
+  }
+
   setPlayerState(playerA, "already_matched", matchId);
   setPlayerState(playerB, "already_matched", matchId);
   emitMatchStateToPlayers(match, "pvp:match-found");
@@ -1563,7 +1576,7 @@ const buildSubmitLikeResponse = async (
     card: entryLike.card,
     gameplay_audio: entryLike.gameplay_audio,
     is_correct_audio:
-      reason === "ongoing"
+      reason === "ongoing" || reason === "round_already_resolved"
         ? null
         : isCorrect
           ? CORRECT_ANSWER_AUDIO
@@ -1735,4 +1748,46 @@ export const cancelMatchmaking = async (
     match_found: false,
     match_id: null,
   };
+};
+
+export const surrenderMatch = async (
+  playerId: number,
+  matchId: string,
+): Promise<PvpDailySubmitAnswerResult> => {
+  const match = await getMatchFromMemoryOrDb(matchId);
+  if (!match) {
+    throw new Error("Match not found");
+  }
+
+  if (match.status === "completed") {
+    return buildSubmitLikeResponse(
+      match,
+      playerId,
+      "round_already_resolved",
+      false,
+    );
+  }
+
+  const playerIndex = getPlayerIndex(match, playerId);
+  if (playerIndex === -1) {
+    throw new Error("You are not part of this match");
+  }
+
+  const opponentIndex = getOpponentIndex(playerIndex);
+  const opponent = match.players[opponentIndex];
+
+  match.last_attack_by_player_id = opponent.player_id;
+  match.last_attack_type = "special_attack";
+  match.last_attack_damage = match.players[playerIndex].character_health;
+
+  match.players[playerIndex].character_health = 0;
+
+  await completeMatch(match, opponent.player_id, "knockout");
+
+  return buildSubmitLikeResponse(
+    match,
+    playerId,
+    "round_already_resolved",
+    false,
+  );
 };

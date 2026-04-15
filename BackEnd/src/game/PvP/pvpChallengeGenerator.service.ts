@@ -44,7 +44,8 @@ const DEFAULT_DAILY_TOPIC_POOL = 12;
 
 // --- GLOBAL MUTEX FOR GEMINI RATE LIMITING ---
 let geminiMutex = Promise.resolve();
-const GEMINI_API_DELAY_MS = 5000;
+// INCREASED TO 8000ms: Ensures max ~7.5 requests per minute (Free tier limit is 15 RPM)
+const GEMINI_API_DELAY_MS = 8000;
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -89,45 +90,70 @@ const normalizeInteger = (value: string | undefined, fallback: number) => {
   return Math.floor(numeric);
 };
 
-const parseGeminiApiKeys = (): string[] => {
+const formatAxiosError = (error: unknown): string => {
+  const response = (error as any)?.response;
+  const status = response?.status;
+  const code = response?.data?.error?.status ?? response?.data?.error?.code;
+  const message =
+    response?.data?.error?.message ??
+    (error as Error)?.message ??
+    "Unknown Gemini API error";
+  const retryAfter = response?.headers?.["retry-after"];
+
+  return [
+    `status=${status ?? "n/a"}`,
+    code ? `code=${code}` : null,
+    retryAfter ? `retry_after=${retryAfter}` : null,
+    `message=${message}`,
+  ]
+    .filter(Boolean)
+    .join(" | ");
+};
+
+export const parseGeminiApiKeys = (): string[] => {
   const raw = process.env.GEMINI_API_KEY;
   if (!raw) return [];
   return raw
     .split(",")
     .map((token) => token.trim().replace(/^"|"$/g, "").replace(/^'|'$/g, ""))
-    .filter((token) => token.length > 0);
+    .filter((token) => token.length > 0)
+    .reverse();
 };
 
 const getGeminiModels = (): string[] => {
   const preferred = process.env.GEMINI_MODEL?.trim();
-  const fallback = [
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-1.5-flash",
-    "gemini-1.5-flash-8b",
-  ];
+  const fallback = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
   if (!preferred) return fallback;
   return [preferred, ...fallback.filter((model) => model !== preferred)];
 };
 
 const shouldTryNextKey = (error: unknown): boolean => {
   const status = (error as any)?.response?.status;
-  return status === 400 || status === 401 || status === 403 || status === 429;
+  const rotateOn429 = normalizeBoolean(process.env.GEMINI_ROTATE_ON_429, true);
+
+  return (
+    status === 400 ||
+    status === 401 ||
+    status === 403 ||
+    (status === 429 && rotateOn429) ||
+    status >= 500
+  );
 };
 
-const generateWithGeminiKey = async (
+const generateWithGeminiKey = async <T>(
   apiKey: string,
   prompt: string,
-): Promise<GeneratedPvpChallenge> => {
+): Promise<T> => {
   const models = getGeminiModels();
   let lastError: unknown = null;
 
   for (const model of models) {
     try {
-      console.log(`[Gemini API] Requesting ${model}...`);
-
-      const response = await synchronizedGeminiCall(() =>
-        axios.post(
+      const response = await synchronizedGeminiCall(() => {
+        console.log(
+          `[Gemini API] Requesting ${model} (Key ending in ...${apiKey.slice(-4)})`,
+        );
+        return axios.post(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
           {
             contents: [{ parts: [{ text: prompt }] }],
@@ -136,9 +162,9 @@ const generateWithGeminiKey = async (
               responseMimeType: "application/json",
             },
           },
-          { headers: { "Content-Type": "application/json" }, timeout: 15000 },
-        ),
-      );
+          { headers: { "Content-Type": "application/json" }, timeout: 20000 },
+        );
+      });
 
       const rawText =
         response.data?.candidates?.[0]?.content?.parts
@@ -147,20 +173,21 @@ const generateWithGeminiKey = async (
       if (!rawText.trim()) throw new Error("Gemini returned an empty response");
 
       const jsonText = extractJsonObject(rawText);
-      return JSON.parse(jsonText) as GeneratedPvpChallenge;
+      return JSON.parse(jsonText) as T;
     } catch (error) {
       lastError = error;
       const status = (error as any)?.response?.status;
 
-      if (status === 404 || status === 503) {
+      if (status === 404 || status === 503 || status === 500) {
         console.warn(
           `[Gemini API] Model ${model} unavailable (Status ${status}). Trying next model...`,
         );
         continue;
       }
-
       if (status === 429) {
-        console.warn(`[Gemini API] Rate limit hit (429) on model ${model}.`);
+        console.warn(
+          `[Gemini API] Rate limit hit (429) on model ${model}. ${formatAxiosError(error)}`,
+        );
         throw error;
       }
       throw error;
@@ -168,6 +195,41 @@ const generateWithGeminiKey = async (
   }
 
   throw lastError ?? new Error("No compatible Gemini model endpoint found");
+};
+
+const executeGeminiPromptWithKeyRotation = async <T>(
+  prompt: string,
+): Promise<T> => {
+  const apiKeys = parseGeminiApiKeys();
+  if (apiKeys.length === 0) throw new Error("GEMINI_API_KEY is not configured");
+
+  let parsed: T | null = null;
+  let lastError: unknown = null;
+
+  for (const key of apiKeys) {
+    try {
+      parsed = await generateWithGeminiKey<T>(key, prompt);
+      return parsed;
+    } catch (error) {
+      lastError = error;
+      const status = (error as any)?.response?.status;
+      if (!shouldTryNextKey(error)) {
+        if (status === 429)
+          console.warn(
+            `[Gemini API] 429 appears to be quota-limited for this project/account. Stopping key rotation. ${formatAxiosError(error)}`,
+          );
+        break;
+      }
+      console.warn(
+        `[Gemini API] Error encountered. Rotating API Key... ${formatAxiosError(error)}`,
+      );
+    }
+  }
+
+  throw (
+    lastError ??
+    new Error("Failed to generate content with Gemini across all keys.")
+  );
 };
 
 const extractJsonObject = (rawText: string): string => {
@@ -255,6 +317,69 @@ const validateChallengeShape = (
     throw new Error("Generated payload is not a JSON object");
   const payload = value as Record<string, unknown>;
 
+  // --- AUTO-FIXER & NORMALIZATION ---
+  if (typeof payload.question === "string") {
+    // 1. Strip out conversational markdown (```css, ```html)
+    let rawQuestion = payload.question
+      .replace(/```[a-z0-9]*\n?/gi, "")
+      .replace(/```\n?/g, "")
+      .trim();
+
+    // 2. Extract AI's inline tags e.g., [[answer]]
+    const bracketRegex = /\[\[(.*?)\]\]/g;
+    const extractedAnswers: string[] = [];
+    let match;
+
+    while ((match = bracketRegex.exec(rawQuestion)) !== null) {
+      extractedAnswers.push(match[1].trim());
+    }
+
+    // 3. If tags exist, completely bypass LLM counting errors by auto-building the arrays
+    if (extractedAnswers.length > 0) {
+      // Perfectly sync the correct answers
+      payload.correct_answer = extractedAnswers;
+      // Convert the brackets back into underscores for the frontend
+      payload.question = rawQuestion.replace(/\[\[(.*?)\]\]/g, "_");
+
+      let currentOptions = Array.isArray(payload.options)
+        ? payload.options
+        : [];
+
+      if (extractedAnswers.length >= 5) {
+        // Rule: >= 5 items, options are strictly shuffled correct answers
+        payload.options = [...extractedAnswers].sort(() => Math.random() - 0.5);
+      } else {
+        // Rule: < 5 items, grab the AI's distractors and force exactly 5 options
+        const correctSet = new Set(extractedAnswers);
+        const validDistractors = currentOptions.filter(
+          (opt): opt is string =>
+            typeof opt === "string" && !correctSet.has(opt),
+        );
+
+        let finalOptions = [...extractedAnswers, ...validDistractors];
+
+        // Pad if the AI didn't provide enough distractors
+        while (finalOptions.length < 5) {
+          finalOptions.push(
+            validDistractors.length > 0
+              ? validDistractors[
+                  Math.floor(Math.random() * validDistractors.length)
+                ]
+              : "distractor",
+          );
+        }
+        // Trim if the AI provided too many
+        if (finalOptions.length > 5) finalOptions = finalOptions.slice(0, 5);
+
+        payload.options = finalOptions.sort(() => Math.random() - 0.5);
+      }
+    } else {
+      // Fallback if AI used underscores anyway
+      payload.question = rawQuestion.replace(/_+/g, "_");
+    }
+  }
+  // --- END AUTO-FIXER ---
+
   const pointsReward = Number(payload.points_reward);
   const coinsReward = Number(payload.coins_reward);
 
@@ -281,9 +406,19 @@ const validateChallengeShape = (
   const correctAnswer = payload.correct_answer;
   const options = payload.options;
 
-  // Ensure options has at least 5 distractor items TOTAL
-  if (options.length < 5)
-    throw new Error("options must have a minimum of 5 strings in total");
+  if (correctAnswer.length >= 5) {
+    if (options.length !== correctAnswer.length) {
+      throw new Error(
+        `Because correct_answer has >= 5 items, 'options' must match it exactly in length. Found ${options.length} options instead of ${correctAnswer.length}.`,
+      );
+    }
+  } else {
+    if (options.length < 5) {
+      throw new Error(
+        `Because correct_answer has < 5 items, 'options' must have a minimum of 5 strings in total (including distractors).`,
+      );
+    }
+  }
 
   if (
     typeof payload.question !== "string" ||
@@ -318,14 +453,12 @@ const validateChallengeShape = (
   if (category === "Computer" && (htmlFile !== null || cssFile !== null))
     throw new Error("Computer category must keep html_file and css_file null");
 
-  const normalizedQuestion = payload.question.replace(/_+/g, "_");
-
   return {
     points_reward: pointsReward,
     coins_reward: coinsReward,
     correct_answer: correctAnswer,
     options,
-    question: normalizedQuestion,
+    question: payload.question,
     css_file: cssFile,
     html_file: htmlFile,
   };
@@ -335,142 +468,103 @@ export const buildGeminiPvpPrompt = (
   category: PvpChallengeCategory,
   difficulty: PvpChallengeDifficulty,
   recentQuestions: string[] = [],
+  curriculumReference: string = "",
 ): string => {
   const antiDupSection =
     recentQuestions.length === 0
       ? ""
-      : `\n=== DUPLICATION GUARD ===\nAvoid generating a challenge that is semantically similar to any of these recent prompts:\n${recentQuestions
-          .slice(0, 8)
-          .map((q, idx) => `${idx + 1}. ${q.replace(/\n/g, " ").slice(0, 220)}`)
+      : `\n=== DUPLICATION GUARD ===\nAvoid generating challenges semantically similar to:\n${recentQuestions
+          .slice(0, 10)
+          .map((q, idx) => `${idx + 1}. ${q.replace(/\n/g, " ").slice(0, 150)}`)
           .join("\n")}\n`;
-
-  let exampleJson = "";
-  if (category === "HTML") {
-    exampleJson = `{
-      "points_reward": 10,
-      "coins_reward": 2,
-      "correct_answer": ["h1", "h1"],
-      "options": ["h1", "p", "div", "section", "h1", "p"],
-      "question": "<!DOCTYPE html>\\n<html>\\n  <head>\\n    <title>My Page</title>\\n  </head>\\n  <body>\\n    <_>Hello Welcome to Micomi!</_>\\n  </body>\\n</html>\\n",
-      "css_file": null,
-      "html_file": null
-    }`;
-  } else if (category === "CSS") {
-    exampleJson = `{
-      "points_reward": 10,
-      "coins_reward": 2,
-      "correct_answer": ["max", "height", "auto", "radius", "box", "rgba", "transition", "hover", "scale", "center"],
-      "options": ["max", "height", "auto", "radius", "box", "rgba", "transition", "hover", "scale", "center"],
-      "question": ".banner-img {\\n    _-width: 100%;\\n    _: _;\\n}\\n\\n.rounded-img {\\n    border-_: 12px;\\n}\\n\\n.shadow-img {\\n    _-shadow: 0 4px 15px _(0, 0, 0, 0.5);\\n}\\n\\n.hover-img {\\n    _: transform 0.3s ease; \\n}\\n\\n.hover-img:_ {\\n    transform: _(1.05); \\n    cursor: pointer;\\n}\\n\\n.banner-container {\\n    padding: 20px;\\n    text-align: _;\\n    background-color: #0b0d17;\\n    color: white;\\n}",
-      "css_file": null,
-      "html_file": "<!DOCTYPE html>\\n<html>\\n<head>\\n    <title>Interstellar Voyager</title>\\n    <link rel=\\"stylesheet\\" href=\\"style.css\\">\\n</head>\\n<body>\\n    <div class=\\"banner-container\\">\\n        <img src=\\"https://images-assets.nasa.gov/image/PIA01384/PIA01384~medium.jpg\\" \\n             class=\\"banner-img shadow-img rounded-img hover-img\\" \\n             alt=\\"The ringed planet Saturn\\">\\n        \\n        <div class=\\"banner-content\\">\\n            <h2 class=\\"banner-title\\">Beyond the Kuiper Belt</h2>\\n            <p class=\\"banner-caption\\">Witness the majesty of the Gas Giants</p>\\n            \\n            <a href=\\"#explore\\" class=\\"fancy-button\\">\\n                🪐 LAUNCH MISSION\\n            </a>\\n        </div>\\n    </div>\\n</body>\\n</html>"
-    }`;
-  } else if (category === "JavaScript") {
-    exampleJson = `{
-      "points_reward": 10,
-      "coins_reward": 2,
-      "correct_answer": ["let", "innerHTML"],
-      "options": ["innerHTML", "let", "const", "var", "textContext", "getElementById"],
-      "question": "function greetUser() {\\n _ characterName = \\"Leon the Brave\\";\\n let role = \\"Guardian of the North\\";\\n \\n let message = \\"Welcome, \\" + characterName + \\". Your role is: \\" + role;\\n \\n document.getElementById(\\"outputArea\\")._ = message;\\n}",
-      "css_file": ".character-card {\\n background: #f0faff;\\n border: 2px solid #b3e5fc;\\n padding: 20px;\\n border-radius: 12px;\\n text-align: center;\\n box-shadow: 0 4px 10px rgba(0,0,0,0.05);\\n max-width: 300px;\\n margin: 20px auto;\\n}\\n#outputArea {\\n font-weight: bold;\\n color: #0288d1;\\n margin: 15px 0;\\n}",
-      "html_file": "<!DOCTYPE html>\\n<html>\\n<head>\\n<title>Snowland Log</title>\\n<link rel=\\"stylesheet\\" href=\\"style.css\\">\\n</head>\\n<body>\\n <div class=\\"character-card\\">\\n <h2>Expedition Member</h2>\\n <div id=\\"outputArea\\">Waiting for identification...</div>\\n <button onclick=\\"greetUser()\\">Identify Hero</button>\\n </div>\\n <script src=\\"script.js\\"></script>\\n</body>\\n</html>"
-    }`;
-  } else if (category === "Computer") {
-    exampleJson = `{
-      "points_reward": 10,
-      "coins_reward": 2,
-      "correct_answer": ["G", "P", "U"],
-      "options": ["P", "U", "G", "A", "R", "M", "S", "U", "P"],
-      "question": "Which component improves graphics and gaming performance? _ _ _",
-      "css_file": null,
-      "html_file": null
-    }`;
-  }
-
   return `You are an expert technical curriculum designer for a competitive PvP coding game.
-Your task is to generate a "fill-in-the-blank" style challenge in strictly valid JSON format.
+Your task is to generate exactly 1 "fill-in-the-blank" style challenge.
 
 GENERATE 1 CHALLENGE FOR:
 - Category: ${category}
 - Difficulty: ${difficulty}
 
-=== SCHEMA AND OUTPUT RULES ===
-You must return a single valid JSON object matching this exact structure. Do not include markdown code fences.
+${curriculumReference}
 
+=== SCHEMA AND OUTPUT RULES ===
+You must return strictly valid JSON matching this schema:
 {
-  "points_reward": <integer based on difficulty: Easy=10, Medium=20, Hard=30>,
-  "coins_reward": <integer based on difficulty: Easy=2, Medium=5, Hard=10>,
-  "correct_answer": [<array of strings>],
-  "options": [<array of strings>],
-  "question": "<string containing the challenge code/text with blanks>",
-  "css_file": <string or null>,
-  "html_file": <string or null>
+  "points_reward": ${DIFFICULTY_REWARDS[difficulty].points},
+  "coins_reward": ${DIFFICULTY_REWARDS[difficulty].coins},
+  "correct_answer": ["200", "100", "center"],
+  "options": ["200", "100", "center", "50", "left"],
+  "question": ".box {\\n  width: [[200]]px;\\n  height: [[100]]px;\\n  text-align: [[center]];\\n}",
+  "css_file": null,
+  "html_file": null
 }
 
-=== FILL-IN-THE-BLANK RULES ===
-1. You must use a single underscore "_" to represent a blank space. Do NOT use multiple underscores for a single blank (use "_", not "___").
-2. CRITICAL: The exact number of "_" in the "question" string MUST perfectly match the number of items in the "correct_answer" array. The answers must be in the exact order they appear in the text.
-3. The "options" array must contain all items from "correct_answer" and be shuffled. There must be a minimum of 5 options total. If the answer array has less than 5 items, create distractor strings to make it 5+ strings in total.
-4. Properly escape all strings (e.g., use \\n for newlines, and escape quotes like \\").
-
-=== CATEGORY SPECIFIC RULES ===
-Depending on the Category, populate the fields as follows:
-
-If Category is "HTML":
-- "question": MUST contain a COMPLETE, full HTML document (<!DOCTYPE html><html><head>...</head><body>...</body></html>) with "_" blanks inside tags, attributes, or text. Do NOT just output short snippets.
-- "html_file" and "css_file" MUST both be null.
-
-If Category is "CSS":
-- "question": Contains full CSS code blocks with "_" blanks (blank out properties, values, or selectors).
-- "html_file": MUST contain a COMPLETE, visually interesting HTML document (<!DOCTYPE html>...) that relies on and gives context to the CSS.
-- "css_file" MUST be null.
-
-If Category is "JavaScript":
-- "question": Contains JavaScript code with "_" blanks (blank out keywords, DOM methods, or variables).
-- "html_file": MUST contain a COMPLETE, working HTML document providing context.
-- "css_file": MUST contain basic valid CSS styling for the HTML.
-
-If Category is "Computer":
-- "question": Contains a trivia sentence about computer hardware/software with "_" blanks. IF THE ANSWER IS AN ACRONYM (like GPU, RAM, CPU), YOU MUST USE SEPARATE BLANKS FOR EACH LETTER separated by a space (e.g., "_ _ _" for GPU).
-- "html_file" and "css_file" MUST both be null.
-
-=== STRICT EXAMPLES TO FOLLOW ===
-Your output for a ${category} challenge MUST look exactly like this standard format:
-${exampleJson}
+=== FILL-IN-THE-BLANK RULES (CRITICAL) ===
+1. DO NOT USE UNDERSCORES. Instead, you MUST wrap the hidden parts of the code in double square brackets: [[ ]].
+   - Example: function [[add]](a, b) { return a [[+]] b; }
+2. The "correct_answer" array MUST contain the exact words you wrapped in [[ ]] in the same order.
+3. ***DYNAMIC OPTIONS RULE***:
+   - If your "correct_answer" array contains LESS THAN 5 ITEMS: "options" MUST contain all correct answers PLUS enough realistic distractors to equal exactly 5 items total.
+   - If your "correct_answer" array contains 5 OR MORE ITEMS: "options" MUST contain ONLY the exact items from "correct_answer".
+4. If Category="HTML" or "Computer", files must be null. If "JavaScript", require html and css files. If "CSS", require html_file.
+5. ***PURE CODE ONLY***: The "question" field MUST contain ONLY pure, raw, compilable code. DO NOT include any conversational text, instructions (e.g., "Fill in the blanks..."), or markdown code block syntax (like \`\`\`css).
 
 ${antiDupSection}
 
 Generate the JSON object now.`;
 };
 
-const generateAndValidateWithKeys = async (
-  prompt: string,
-  apiKeys: string[],
-): Promise<GeneratedPvpChallenge> => {
-  let parsed: GeneratedPvpChallenge | null = null;
-  let lastError: unknown = null;
+export const buildGeminiBatchedPrompt = (
+  category: PvpChallengeCategory,
+  difficulty: PvpChallengeDifficulty,
+  batchSize: number = 5,
+  recentQuestions: string[] = [],
+  curriculumReference: string = "",
+): string => {
+  const antiDupSection =
+    recentQuestions.length === 0
+      ? ""
+      : `\n=== DUPLICATION GUARD ===\nAvoid generating challenges semantically similar to:\n${recentQuestions
+          .slice(0, 10)
+          .map((q, idx) => `${idx + 1}. ${q.replace(/\n/g, " ").slice(0, 150)}`)
+          .join("\n")}\n`;
+  return `You are an expert technical curriculum designer for a competitive PvP coding game.
+Your task is to generate exactly ${batchSize} "fill-in-the-blank" style challenges.
 
-  for (const key of apiKeys) {
-    try {
-      parsed = await generateWithGeminiKey(key, prompt);
-      lastError = null;
-      break;
-    } catch (error) {
-      lastError = error;
-      if (!shouldTryNextKey(error)) break;
+GENERATE ${batchSize} CHALLENGES FOR:
+- Category: ${category}
+- Difficulty: ${difficulty}
 
-      const status = (error as any)?.response?.status;
-      if (status === 429 && apiKeys.length > 1) {
-        console.warn("[Gemini API] 429 hit. Rotating API Key...");
-      }
+${curriculumReference}
+
+=== SCHEMA AND OUTPUT RULES ===
+You must return strictly valid JSON. Return an object with a "challenges" array.
+{
+  "challenges": [
+    {
+      "points_reward": ${DIFFICULTY_REWARDS[difficulty].points},
+      "coins_reward": ${DIFFICULTY_REWARDS[difficulty].coins},
+      "correct_answer": ["const", "add", "+"],
+      "options": ["const", "let", "add", "subtract", "+", "-"],
+      "question": "[[const]] [[add]] = (a, b) => a [[+]] b;",
+      "css_file": null,
+      "html_file": null
     }
-  }
+  ]
+}
 
-  if (lastError || parsed === null)
-    throw (
-      lastError ?? new Error("Failed to generate a PvP challenge with Gemini")
-    );
-  return parsed;
+=== FILL-IN-THE-BLANK RULES (CRITICAL) ===
+1. DO NOT USE UNDERSCORES. Instead, you MUST wrap the hidden parts of the code in double square brackets: [[ ]].
+   - Example: function [[add]](a, b) { return a [[+]] b; }
+2. The "correct_answer" array MUST contain the exact words you wrapped in [[ ]] in the same order.
+3. ***DYNAMIC OPTIONS RULE***:
+   - If your "correct_answer" array contains LESS THAN 5 ITEMS: "options" MUST contain all correct answers PLUS enough realistic distractors to equal exactly 5 items total.
+   - If your "correct_answer" array contains 5 OR MORE ITEMS: "options" MUST contain ONLY the exact items from "correct_answer".
+4. If Category="HTML" or "Computer", files must be null. If "JavaScript", require html and css files. If "CSS", require html_file.
+5. ***PURE CODE ONLY***: The "question" field MUST contain ONLY pure, raw, compilable code. DO NOT include any conversational text, instructions (e.g., "Fill in the blanks..."), or markdown code block syntax (like \`\`\`css).
+
+${antiDupSection}
+
+Generate the JSON object with the array of ${batchSize} challenges now.`;
 };
 
 export const generatePvpChallengeWithGemini = async (
@@ -478,40 +572,49 @@ export const generatePvpChallengeWithGemini = async (
   difficulty: PvpChallengeDifficulty,
   options?: { maxAttempts?: number; duplicateLookback?: number },
 ) => {
-  const apiKeys = parseGeminiApiKeys();
-  if (apiKeys.length === 0) throw new Error("GEMINI_API_KEY is not configured");
-
   const maxAttempts = Math.max(
     1,
     options?.maxAttempts ?? MAX_GENERATION_ATTEMPTS,
   );
-  const duplicateLookback = Math.max(
-    5,
-    options?.duplicateLookback ?? RECENT_QUESTIONS_LOOKBACK,
-  );
   let lastError: unknown = null;
+
+  const existingCurriculumPool = await prisma.challenge.findMany({
+    where: { level: { map: { map_name: category } }, question: { not: null } },
+    select: { question: true, correct_answer: true },
+    take: 100,
+  });
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
+      let curriculumReference = "";
+      if (existingCurriculumPool.length > 0) {
+        const randomRef =
+          existingCurriculumPool[
+            Math.floor(Math.random() * existingCurriculumPool.length)
+          ];
+        curriculumReference = `=== CURRICULUM REFERENCE ===\nBase your new challenge on the concepts taught in this existing challenge from our database:\n- Original Question Text: ${JSON.stringify(randomRef.question)}\n- Original Correct Answers: ${JSON.stringify(randomRef.correct_answer)}`;
+      }
+
       const recentQuestions = await getRecentQuestions(
         category,
         difficulty,
-        duplicateLookback,
+        options?.duplicateLookback ?? RECENT_QUESTIONS_LOOKBACK,
       );
       const prompt = buildGeminiPvpPrompt(
         category,
         difficulty,
         recentQuestions,
+        curriculumReference,
       );
 
-      const parsed = await generateAndValidateWithKeys(prompt, apiKeys);
+      const parsed =
+        await executeGeminiPromptWithKeyRotation<GeneratedPvpChallenge>(prompt);
       const validated = validateChallengeShape(category, difficulty, parsed);
 
-      if (isNearDuplicateQuestion(validated.question, recentQuestions)) {
+      if (isNearDuplicateQuestion(validated.question, recentQuestions))
         throw new Error(
           `Generated question is too similar to existing ${category} challenges`,
         );
-      }
 
       const dedupeSignature = buildDedupeSignature(validated.question);
       const created = await prisma.pVPChallenge.create({
@@ -529,114 +632,118 @@ export const generatePvpChallengeWithGemini = async (
         },
       });
 
-      return { category, difficulty, attempt, prompt, challenge: created };
+      return { category, difficulty, attempt, challenge: created };
     } catch (error) {
       lastError = error;
-      const status = (error as any)?.response?.status;
-
-      if ((error as any)?.code === "P2002") {
+      if ((error as any)?.code === "P2002")
         console.warn(
-          `[Gemini API] Duplicate detected on attempt ${attempt}. Retrying...`,
+          `[Gemini API] Duplicate detected in DB on attempt ${attempt}. Retrying...`,
         );
-      } else {
+      else
         console.warn(
-          `[Gemini API] Error on attempt ${attempt}: ${(error as Error).message}`,
+          `[Gemini API] Attempt ${attempt} failed: ${(error as Error).message}`,
         );
-      }
-
-      if (status === 429) {
-        console.warn(
-          `[Gemini API] Quota exhausted! Sleeping for 30 SECONDS before retry...`,
-        );
-        await delay(30000);
-      }
     }
   }
 
-  const suffix =
-    lastError instanceof Error ? ` Last error: ${lastError.message}` : "";
   throw new Error(
-    `Failed to generate a unique PvP challenge after ${maxAttempts} attempts.${suffix}`,
+    `Failed to generate a unique PvP challenge after ${maxAttempts} attempts. ${lastError instanceof Error ? lastError.message : ""}`,
   );
 };
 
-export const getPvpChallenges = async (limit = 50) => {
-  const safeLimit = Math.max(1, Math.min(200, Math.floor(limit)));
-  return prisma.pVPChallenge.findMany({
-    orderBy: { pvp_challenge_id: "desc" },
-    take: safeLimit,
+export const generateBatchedPvpChallenges = async (
+  category: PvpChallengeCategory,
+  difficulty: PvpChallengeDifficulty,
+  batchSize: number = 5,
+) => {
+  const maxAttempts = 3;
+  let lastError: unknown = null;
+
+  const existingCurriculumPool = await prisma.challenge.findMany({
+    where: { level: { map: { map_name: category } }, question: { not: null } },
+    select: { question: true, correct_answer: true },
+    take: 50,
   });
-};
 
-export const autoGeneratePvpChallengesTopUp = async (options?: {
-  targetPoolSize?: number;
-  maxCreatePerRun?: number;
-  topic?: PvpChallengeCategory;
-  difficulty?: PvpChallengeDifficulty;
-}) => {
-  const targetPoolSize = Math.max(1, options?.targetPoolSize ?? 60);
-  const maxCreatePerRun = Math.max(1, options?.maxCreatePerRun ?? 20);
-
-  const currentCount = await prisma.pVPChallenge.count();
-  if (currentCount >= targetPoolSize) {
-    return {
-      skipped: true,
-      reason: "pool_target_met",
-      currentCount,
-      targetPoolSize,
-      generated: 0,
-      failed: 0,
-    };
-  }
-
-  const toGenerate = Math.min(targetPoolSize - currentCount, maxCreatePerRun);
-  let generated = 0;
-  let failed = 0;
-  const errors: string[] = [];
-
-  for (let i = 0; i < toGenerate; i++) {
-    const category =
-      options?.topic ??
-      ALL_CATEGORIES[(currentCount + i) % ALL_CATEGORIES.length];
-    const difficulty =
-      options?.difficulty ??
-      DIFFICULTY_ROTATION[(currentCount + i) % DIFFICULTY_ROTATION.length];
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      await generatePvpChallengeWithGemini(category, difficulty);
-      generated += 1;
+      let curriculumReference = "";
+      if (existingCurriculumPool.length > 0) {
+        const randomRef =
+          existingCurriculumPool[
+            Math.floor(Math.random() * existingCurriculumPool.length)
+          ];
+        curriculumReference = `=== CURRICULUM REFERENCE ===\nBase at least one challenge on this concept:\nQuestion: ${JSON.stringify(randomRef.question)}\nAnswers: ${JSON.stringify(randomRef.correct_answer)}`;
+      }
+
+      const recentQuestions = await getRecentQuestions(
+        category,
+        difficulty,
+        40,
+      );
+      const prompt = buildGeminiBatchedPrompt(
+        category,
+        difficulty,
+        batchSize,
+        recentQuestions,
+        curriculumReference,
+      );
+
+      const parsedData = await executeGeminiPromptWithKeyRotation<{
+        challenges: unknown[];
+      }>(prompt);
+
+      if (!parsedData.challenges || !Array.isArray(parsedData.challenges))
+        throw new Error("Invalid format: missing 'challenges' array");
+
+      const validChallengesToInsert = [];
+      for (const item of parsedData.challenges) {
+        try {
+          const validated = validateChallengeShape(category, difficulty, item);
+          if (!isNearDuplicateQuestion(validated.question, recentQuestions)) {
+            validChallengesToInsert.push({
+              topic: category,
+              difficulty,
+              points_reward: validated.points_reward,
+              coins_reward: validated.coins_reward,
+              correct_answer: validated.correct_answer,
+              options: validated.options,
+              question: validated.question,
+              css_file: validated.css_file,
+              html_file: validated.html_file,
+              dedupe_signature:
+                buildDedupeSignature(validated.question) || null,
+            });
+          }
+        } catch (validationErr) {
+          console.warn(
+            "Skipping 1 challenge in batch due to validation error:",
+            (validationErr as Error).message,
+          );
+        }
+      }
+
+      if (validChallengesToInsert.length > 0) {
+        const created = await prisma.pVPChallenge.createMany({
+          data: validChallengesToInsert,
+          skipDuplicates: true,
+        });
+        console.log(
+          `Successfully generated and saved ${created.count} ${category} challenges!`,
+        );
+        return created;
+      } else {
+        throw new Error("All generated challenges were duplicates or invalid.");
+      }
     } catch (error) {
-      failed += 1;
-      const message = (error as Error).message || "Unknown Gemini error";
-      errors.push(`[${category}/${difficulty}] ${message}`);
-      await delay(15000);
+      lastError = error;
+      console.warn(
+        `[Gemini API] Batch Attempt ${attempt} failed: ${(error as Error).message}`,
+      );
     }
   }
 
-  return {
-    skipped: false,
-    currentCount,
-    targetPoolSize,
-    attempted: toGenerate,
-    generated,
-    failed,
-    errors,
-  };
-};
-
-export const runAutoPvpChallengeGenerationFromEnv = async () => {
-  const enabled = normalizeBoolean(process.env.PVP_AUTO_GENERATE_ENABLED, true);
-  if (!enabled) return { skipped: true, reason: "auto_generation_disabled" };
-
-  const targetPoolSize = normalizeInteger(
-    process.env.PVP_AUTO_GENERATE_TARGET_POOL,
-    60,
-  );
-  const maxCreatePerRun = normalizeInteger(
-    process.env.PVP_AUTO_GENERATE_MAX_PER_RUN,
-    20,
-  );
-
-  return autoGeneratePvpChallengesTopUp({ targetPoolSize, maxCreatePerRun });
+  throw lastError ?? new Error("Failed to generate batch after max attempts");
 };
 
 export const getTodayPvpChallengeCount = async (options?: {
@@ -656,7 +763,10 @@ export const getTodayPvpChallengeCount = async (options?: {
 export const cleanupOldPvpChallenges = async () => {
   const { start } = getUtcDayBounds();
   const deleted = await prisma.pVPChallenge.deleteMany({
-    where: { created_at: { lt: start } },
+    where: {
+      created_at: { lt: start },
+      last_used_in_match_at: null,
+    },
   });
   return deleted.count;
 };
@@ -666,37 +776,21 @@ export const ensureDailyPvpChallenges = async (options?: {
   difficulty?: PvpChallengeDifficulty;
   forceResetToday?: boolean;
 }) => {
-  const apiKeys = parseGeminiApiKeys();
-  if (apiKeys.length === 0)
-    throw new Error("GEMINI_API_KEY is not configured for PvP daily seeding");
-
   const perTopicTarget = Math.max(
     5,
     options?.perTopicTarget ?? DEFAULT_DAILY_TOPIC_POOL,
   );
   const difficulty = options?.difficulty ?? "Easy";
 
-  if (options?.forceResetToday) {
-    await prisma.pVPChallenge.deleteMany({});
-  } else {
-    await cleanupOldPvpChallenges();
-  }
+  if (options?.forceResetToday) await prisma.pVPChallenge.deleteMany({});
+  else await cleanupOldPvpChallenges();
 
-  const summary: Array<{
-    topic: PvpChallengeCategory;
-    existing: number;
-    generated: number;
-    final: number;
-    missingAfter: number;
-    lastError: string | null;
-    target: number;
-  }> = [];
+  const summary: any[] = [];
 
   for (const topic of ALL_CATEGORIES) {
     const existing = await getTodayPvpChallengeCount({ topic, difficulty });
     const missing = Math.max(0, perTopicTarget - existing);
     let generated = 0;
-    let lastError: string | null = null;
 
     console.log(
       `[Daily PvP] Topic: ${topic} | Difficulty: ${difficulty} | Existing: ${existing} | Missing: ${missing}`,
@@ -711,15 +805,7 @@ export const ensureDailyPvpChallenges = async (options?: {
         });
         generated += 1;
       } catch (error) {
-        lastError =
-          error instanceof Error
-            ? error.message
-            : "Unknown Gemini generation error";
-        console.error(`  -> Failed generation: ${lastError}`);
-        console.log(
-          "  -> Sleeping for 15 seconds before proceeding to next challenge...",
-        );
-        await delay(15000);
+        console.error(`  -> Failed generation: ${(error as Error).message}`);
       }
     }
 
@@ -730,8 +816,6 @@ export const ensureDailyPvpChallenges = async (options?: {
       generated,
       final,
       missingAfter: Math.max(0, perTopicTarget - final),
-      lastError,
-      target: perTopicTarget,
     });
   }
 
