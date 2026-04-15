@@ -8,11 +8,13 @@ export const usePvpMatchmaking = () => {
   const [preview, setPreview] = useState(null);
   const [status, setStatus] = useState({
     status: 'idle',
+    selectedTopic: null,
     matchId: null,
     matchFound: false,
     updatedAt: null,
   });
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [settingTopic, setSettingTopic] = useState(false);
   const [startingMatch, setStartingMatch] = useState(false);
   const [findingMatch, setFindingMatch] = useState(false);
   const [matchedMatchId, setMatchedMatchId] = useState(null);
@@ -96,6 +98,7 @@ export const usePvpMatchmaking = () => {
       if (hasChallenge && !isFinished) {
         const resumeStatus = {
           status: 'in_progress',
+          selectedTopic: unifiedState?.currentChallenge?.topic || null,
           matchId: storedMatchId,
           matchFound: true,
           updatedAt: Date.now(),
@@ -173,7 +176,70 @@ export const usePvpMatchmaking = () => {
     }
   }, [applyStatus, hydrateResumableMatchFromStorage, stopStatusPolling]);
 
-  const startMatchmaking = useCallback(async () => {
+  const setMatchTopic = useCallback(async (topic) => {
+    const normalizedTopic = typeof topic === 'string' ? topic.trim() : '';
+
+    if (!normalizedTopic) {
+      const topicError = 'Please choose a topic first';
+      setError(topicError);
+      throw new Error(topicError);
+    }
+
+    try {
+      setSettingTopic(true);
+      setError(null);
+      hasStartedSearchRef.current = false;
+      stopStatusPolling();
+      setFindingMatch(false);
+      setMatchedMatchId(null);
+
+      const response = await pvpService.setDailyMatchTopic(normalizedTopic);
+      applyStatus(response.status, { allowAutoMatch: false });
+
+      setPreview((prev) => {
+        if (!prev) {
+          return prev;
+        }
+
+        const existingTopics = Array.isArray(prev?.previewTask?.topicsCovered)
+          ? prev.previewTask.topicsCovered
+          : [];
+
+        const nextTopics = existingTopics.includes(normalizedTopic)
+          ? existingTopics
+          : [...existingTopics, normalizedTopic];
+
+        return {
+          ...prev,
+          previewTask: {
+            ...(prev.previewTask || {}),
+            topicsCovered: nextTopics,
+          },
+          status: response.status,
+        };
+      });
+
+      return response.status;
+    } catch (topicError) {
+      setError(topicError.message || 'Failed to set PvP topic');
+      throw topicError;
+    } finally {
+      setSettingTopic(false);
+    }
+  }, [applyStatus, stopStatusPolling]);
+
+  const startMatchmaking = useCallback(async (selectedTopicOverride = null) => {
+    const selectedTopic =
+      typeof selectedTopicOverride === 'string' && selectedTopicOverride.trim()
+        ? selectedTopicOverride.trim()
+        : status?.selectedTopic;
+
+    if (!selectedTopic) {
+      const topicError = 'Please choose a topic first';
+      setError(topicError);
+      throw new Error(topicError);
+    }
+
     try {
       setStartingMatch(true);
       setError(null);
@@ -181,21 +247,28 @@ export const usePvpMatchmaking = () => {
       hasStartedSearchRef.current = true;
 
       const response = await pvpService.playDailyMatch();
-      applyStatus(response.status);
+      const nextStatus = response?.status?.selectedTopic
+        ? response.status
+        : {
+            ...response.status,
+            selectedTopic,
+          };
 
-      if (response.status.status === 'finding_match' && !response.status.matchFound) {
+      applyStatus(nextStatus);
+
+      if (nextStatus.status === 'finding_match' && !nextStatus.matchFound) {
         setFindingMatch(true);
         beginStatusPolling();
       }
 
-      return response.status;
+      return nextStatus;
     } catch (playError) {
       setError(playError.message || 'Failed to start matchmaking');
       throw playError;
     } finally {
       setStartingMatch(false);
     }
-  }, [applyStatus, beginStatusPolling]);
+  }, [applyStatus, beginStatusPolling, status?.selectedTopic]);
 
   const cancelMatchmaking = useCallback(async ({ silent = false } = {}) => {
     try {
@@ -237,11 +310,13 @@ export const usePvpMatchmaking = () => {
     preview,
     status,
     loadingPreview,
+    settingTopic,
     startingMatch,
     findingMatch,
     matchedMatchId,
     error,
     loadPreview,
+    setMatchTopic,
     startMatchmaking,
     cancelMatchmaking,
     clearMatchReadyState,

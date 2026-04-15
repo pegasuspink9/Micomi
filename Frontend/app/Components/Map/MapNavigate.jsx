@@ -84,16 +84,23 @@ export default function MapNavigate({ onMapChange }) {
     preview,
     status: pvpStatus,
     loadingPreview,
+    settingTopic,
     startingMatch,
     findingMatch,
     matchedMatchId,
     error: pvpError,
     loadPreview,
+    setMatchTopic,
     startMatchmaking,
     cancelMatchmaking,
     clearMatchReadyState,
     clearError: clearPvpError,
   } = usePvpMatchmaking();
+
+  const pvpTopics = Array.isArray(preview?.previewTask?.topicsCovered)
+    ? preview.previewTask.topicsCovered
+    : [];
+  const selectedPvpTopic = pvpStatus?.selectedTopic || null;
 
   const hasResumableMatch = Boolean(
     pvpStatus?.matchId &&
@@ -600,6 +607,7 @@ export default function MapNavigate({ onMapChange }) {
       const latestPreview = await loadPreview();
       const latestStatus = latestPreview?.status || pvpStatus || null;
       const latestStatusValue = String(latestStatus?.status || '').toLowerCase();
+      const latestSelectedTopic = latestStatus?.selectedTopic || selectedPvpTopic || null;
 
       const latestHasResumableMatch = Boolean(
         latestStatus?.matchId &&
@@ -615,11 +623,19 @@ export default function MapNavigate({ onMapChange }) {
         return;
       }
 
-      await startMatchmaking();
+      await startMatchmaking(latestSelectedTopic);
     } catch (startError) {
       console.error('Failed to start PvP matchmaking:', startError);
     }
-  }, [loadPreview, navigateToPvpMatch, pvpStatus, startMatchmaking]);
+  }, [loadPreview, navigateToPvpMatch, pvpStatus, selectedPvpTopic, startMatchmaking]);
+
+  const handleSetPvpTopic = useCallback(async (topic) => {
+    try {
+      await setMatchTopic(topic);
+    } catch (topicError) {
+      console.error('Failed to set PvP topic:', topicError);
+    }
+  }, [setMatchTopic]);
 
   const handleCancelPvpSearch = useCallback(async () => {
     try {
@@ -848,10 +864,44 @@ export default function MapNavigate({ onMapChange }) {
 
                 <View style={styles.pvpInfoBlock}>
                   <Text style={styles.pvpInfoLabel}>Topics</Text>
-                  <Text style={styles.pvpInfoValueMuted}>
-                    {(preview?.previewTask?.topicsCovered || []).length > 0
-                      ? preview.previewTask.topicsCovered.join(', ')
-                      : 'No topics loaded'}
+                  {pvpTopics.length > 0 ? (
+                    <View style={styles.pvpTopicsGrid}>
+                      {pvpTopics.map((topic) => {
+                        const isSelected = selectedPvpTopic === topic;
+
+                        return (
+                          <TouchableOpacity
+                            key={topic}
+                            style={[
+                              styles.pvpTopicChip,
+                              isSelected && styles.pvpTopicChipSelected,
+                            ]}
+                            onPress={() => {
+                              handleSetPvpTopic(topic);
+                            }}
+                            activeOpacity={0.85}
+                            disabled={loadingPreview || settingTopic || startingMatch || findingMatch}
+                          >
+                            <Text
+                              style={[
+                                styles.pvpTopicChipText,
+                                isSelected && styles.pvpTopicChipTextSelected,
+                              ]}
+                            >
+                              {topic}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  ) : (
+                    <Text style={styles.pvpInfoValueMuted}>No topics loaded</Text>
+                  )}
+
+                  <Text style={styles.pvpTopicHint}>
+                    {selectedPvpTopic
+                      ? `Selected topic: ${selectedPvpTopic}`
+                      : 'Select one topic before starting matchmaking.'}
                   </Text>
                 </View>
               </>
@@ -881,13 +931,22 @@ export default function MapNavigate({ onMapChange }) {
                   style={[styles.pvpActionButton, styles.pvpPlayButton]}
                   onPress={handleStartPvpMatch}
                   activeOpacity={0.85}
-                  disabled={startingMatch || loadingPreview}
+                  disabled={
+                    startingMatch ||
+                    settingTopic ||
+                    loadingPreview ||
+                    (!hasResumableMatch && !selectedPvpTopic)
+                  }
                 >
-                  {startingMatch ? (
+                  {startingMatch || settingTopic ? (
                     <ActivityIndicator color="#FFFFFF" size="small" />
                   ) : (
                     <Text style={styles.pvpActionButtonText}>
-                      {hasResumableMatch ? 'Continue' : 'Play'}
+                      {hasResumableMatch
+                        ? 'Continue'
+                        : selectedPvpTopic
+                          ? 'Play'
+                          : 'Choose Topic'}
                     </Text>
                   )}
                 </TouchableOpacity>
@@ -1170,6 +1229,39 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'DynaPuff',
     lineHeight: 18,
+  },
+  pvpTopicsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  pvpTopicChip: {
+    borderWidth: 1,
+    borderColor: 'rgba(125, 188, 255, 0.65)',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  pvpTopicChipSelected: {
+    backgroundColor: 'rgba(55, 145, 232, 0.30)',
+    borderColor: '#8FD1FF',
+  },
+  pvpTopicChipText: {
+    color: '#E9F6FF',
+    fontSize: 12,
+    fontFamily: 'Grobold',
+  },
+  pvpTopicChipTextSelected: {
+    color: '#FFFFFF',
+  },
+  pvpTopicHint: {
+    marginTop: 8,
+    color: '#CFEAFF',
+    fontSize: 11,
+    fontFamily: 'DynaPuff',
+    lineHeight: 16,
   },
   pvpInlineStats: {
     flexDirection: 'row',

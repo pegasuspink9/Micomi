@@ -3,26 +3,83 @@ import { gameService } from './gameService';
 
 const normalizeMatchStatus = (payload = {}) => {
   const data = payload?.data || payload || {};
-  const status = data.status || {};
-  const matchId = data.match_id || status.match_id || null;
+  const statusField = data.status;
+  const status =
+    statusField && typeof statusField === 'object'
+      ? statusField
+      : payload?.status && typeof payload.status === 'object'
+        ? payload.status
+        : {};
+
+  const statusValue =
+    typeof statusField === 'string'
+      ? statusField
+      : typeof status.status === 'string'
+        ? status.status
+        : 'idle';
+
+  const selectedTopicRaw =
+    status.selected_topic ??
+    status.selectedTopic ??
+    data.selected_topic ??
+    data.selectedTopic ??
+    null;
+
+  const matchIdRaw =
+    data.match_id ??
+    data.matchId ??
+    status.match_id ??
+    status.matchId ??
+    null;
+
+  const matchFoundValue =
+    data.match_found ??
+    data.matchFound ??
+    status.match_found ??
+    status.matchFound ??
+    null;
+
+  const matchId =
+    matchIdRaw === null || matchIdRaw === undefined || matchIdRaw === ''
+      ? null
+      : String(matchIdRaw);
+
+  const selectedTopic =
+    selectedTopicRaw === null || selectedTopicRaw === undefined || selectedTopicRaw === ''
+      ? null
+      : String(selectedTopicRaw);
 
   return {
-    status: status.status || 'idle',
+    status: statusValue || 'idle',
+    selectedTopic,
     matchId,
-    matchFound: Boolean(data.match_found || matchId),
-    updatedAt: status.updated_at || null,
+    matchFound:
+      typeof matchFoundValue === 'boolean' ? matchFoundValue : Boolean(matchId),
+    updatedAt:
+      status.updated_at ??
+      status.updatedAt ??
+      data.updated_at ??
+      data.updatedAt ??
+      null,
   };
 };
 
 const normalizePreview = (payload = {}) => {
   const data = payload?.data || payload || {};
+  const topicsCoveredRaw =
+    data.preview_task?.topics_covered ?? data.preview_task?.topicsCovered ?? [];
+  const topicsCovered = Array.isArray(topicsCoveredRaw)
+    ? topicsCoveredRaw
+        .map((topic) => (topic === null || topic === undefined ? '' : String(topic).trim()))
+        .filter(Boolean)
+    : [];
 
   return {
     dailySeed: data.daily_seed || null,
     previewTask: {
       title: data.preview_task?.title || 'Daily PvP Challenge',
       description: data.preview_task?.description || 'Queue up and race an opponent in the daily challenge.',
-      topicsCovered: data.preview_task?.topics_covered || [],
+      topicsCovered,
       difficulty: data.preview_task?.difficulty || 'unknown',
     },
     status: normalizeMatchStatus(data),
@@ -284,6 +341,27 @@ export const pvpService = {
     const response = await apiService.post('/game/pvp/daily/match/play', {});
     if (!response?.success) {
       throw new Error(response?.message || 'Failed to start matchmaking');
+    }
+
+    return {
+      status: normalizeMatchStatus(response),
+      raw: response,
+    };
+  },
+
+  setDailyMatchTopic: async (topic) => {
+    const normalizedTopic = typeof topic === 'string' ? topic.trim() : '';
+
+    if (!normalizedTopic) {
+      throw new Error('Topic is required');
+    }
+
+    const response = await apiService.post('/game/pvp/daily/match/topic', {
+      topic: normalizedTopic,
+    });
+
+    if (!response?.success) {
+      throw new Error(response?.message || 'Failed to set PvP topic');
     }
 
     return {
