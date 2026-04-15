@@ -1303,7 +1303,7 @@ export const submitChallengeService = async (
   let audioResponse: string[] = [];
   let appliedDamage = 0;
   let character_attack_audio: string | null = null;
-  let character_run_audio: string | null = null;
+  let character_idle_audio: string | null = null;
   let character_hurt_audio: string | null = null;
 
   if (isCorrect) {
@@ -1339,23 +1339,23 @@ export const submitChallengeService = async (
     //character run sound
     switch (character.character_name) {
       case "Gino":
-        character_run_audio =
+        character_idle_audio =
           "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Gino_Run.wav";
         break;
       case "ShiShi":
-        character_run_audio =
+        character_idle_audio =
           "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Shishi_Run.wav";
         break;
       case "Ryron":
-        character_run_audio =
+        character_idle_audio =
           "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Ryron_Run.wav";
         break;
       case "Leon":
-        character_run_audio =
+        character_idle_audio =
           "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Leon_Run.wav";
         break;
       default:
-        character_run_audio = null;
+        character_idle_audio = null;
         break;
     }
 
@@ -2096,7 +2096,7 @@ export const submitChallengeService = async (
     is_correct_audio,
     enemy_attack_audio,
     character_attack_audio,
-    character_run_audio,
+    character_idle_audio,
     character_hurt_audio,
     enemy_hurt_audio,
     death_audio,

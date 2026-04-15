@@ -132,9 +132,9 @@ export interface PvpMatchEntryLikeResponse {
   gameplay_audio: string;
   is_correct_audio: string | null;
   enemy_attack_audio: string | null;
-  enemy_run_audio: string | null;
+  enemy_idle_audio: string | null;
   character_attack_audio: string | null;
-  character_run_audio: string | null;
+  character_idle_audio: string | null;
   character_hurt_audio: string | null;
   enemy_hurt_audio: string | null;
   death_audio: string | null;
@@ -215,9 +215,9 @@ export interface PvpDailySubmitAnswerResult {
   gameplay_audio?: string;
   is_correct_audio?: string | null;
   enemy_attack_audio?: string | null;
-  enemy_run_audio?: string | null;
+  enemy_idle_audio?: string | null;
   character_attack_audio?: string | null;
-  character_run_audio?: string | null;
+  character_idle_audio?: string | null;
   character_hurt_audio?: string | null;
   enemy_hurt_audio?: string | null;
   death_audio?: string | null;

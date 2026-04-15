@@ -150,7 +150,7 @@ export const getHeroHurtAudio = (characterName: string): string | null => {
   return HERO_HURT_AUDIO_MAP[characterName] ?? null;
 };
 
-export const getHeroRunAudio = (characterName: string): string | null => {
+export const getHeroIdleAudio = (characterName: string): string | null => {
   return HERO_RUN_AUDIO_MAP[characterName] ?? null;
 };
 

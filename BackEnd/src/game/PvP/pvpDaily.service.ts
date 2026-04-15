@@ -28,7 +28,7 @@ import {
   getHeroHurtAudio,
   getHeroSpecialSkillAssets,
   getMapMediaAssets,
-  getHeroRunAudio,
+  getHeroIdleAudio,
 } from "../../../helper/gameplayAssetsHelper";
 import { getCardForAttackType } from "../Combat/combat.service";
 import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
@@ -301,16 +301,33 @@ const buildQuestionPool = async (
     (challenge) => !encountered.has(challenge.challenge_id),
   );
 
-  if (availableChallenges.length < QUESTIONS_PER_MATCH) {
+  if (challenges.length < QUESTIONS_PER_MATCH) {
     throw new Error(
-      `Not enough unseen ${topic} easy challenges for this match.`,
+      `Not enough ${topic} easy challenges in Challenge table for this match.`,
     );
   }
 
-  const randomizedChallenges = shuffleArray([...availableChallenges]).slice(
-    0,
-    QUESTIONS_PER_MATCH,
-  );
+  let randomizedChallenges: typeof challenges;
+
+  if (availableChallenges.length >= QUESTIONS_PER_MATCH) {
+    randomizedChallenges = shuffleArray([...availableChallenges]).slice(
+      0,
+      QUESTIONS_PER_MATCH,
+    );
+  } else {
+    const seenChallenges = challenges.filter((challenge) =>
+      encountered.has(challenge.challenge_id),
+    );
+
+    const unseenShuffled = shuffleArray([...availableChallenges]);
+    const neededFallbackCount = QUESTIONS_PER_MATCH - unseenShuffled.length;
+    const seenFallback = shuffleArray([...seenChallenges]).slice(
+      0,
+      neededFallbackCount,
+    );
+
+    randomizedChallenges = shuffleArray([...unseenShuffled, ...seenFallback]);
+  }
 
   return randomizedChallenges.map((current) => {
     return {
@@ -459,12 +476,12 @@ const buildEntryLikePayload = async (
     viewerChar.character_name,
     attackType,
   );
-  const character_run_audio = getHeroRunAudio(viewerChar.character_name);
+  const character_idle_audio = getHeroIdleAudio(viewerChar.character_name);
   const enemy_attack_audio = getHeroAttackAudio(
     opponentChar.character_name,
     opponentAttackType,
   );
-  const enemy_run_audio = getHeroRunAudio(opponentChar.character_name);
+  const enemy_idle_audio = getHeroIdleAudio(opponentChar.character_name);
   const enemy_hurt_audio = getHeroHurtAudio(opponentChar.character_name);
   const character_hurt_audio = getHeroHurtAudio(viewerChar.character_name);
 
@@ -551,9 +568,9 @@ const buildEntryLikePayload = async (
     is_correct_audio: null,
     enemy_attack_audio,
     character_attack_audio,
-    character_run_audio,
+    character_idle_audio,
     character_hurt_audio,
-    enemy_run_audio,
+    enemy_idle_audio,
     enemy_hurt_audio,
     death_audio: null,
     is_victory_audio: null,
@@ -1388,8 +1405,8 @@ const buildSubmitLikeResponse = async (
     ? getHeroAttackAudio(viewerCharName, resolvedAttackType ?? "basic_attack")
     : null;
 
-  const final_character_run_audio = characterShowsAttack
-    ? getHeroRunAudio(viewerCharName)
+  const final_character_idle_audio = characterShowsAttack
+    ? getHeroIdleAudio(viewerCharName)
     : null;
 
   const final_enemy_hurt_audio = characterShowsAttack
@@ -1400,8 +1417,8 @@ const buildSubmitLikeResponse = async (
     ? getHeroAttackAudio(opponentCharName, resolvedAttackType ?? "basic_attack")
     : null;
 
-  const final_enemy_run_audio = enemyShowsAttack
-    ? getHeroRunAudio(opponentCharName)
+  const final_enemy_idle_audio = enemyShowsAttack
+    ? getHeroIdleAudio(opponentCharName)
     : null;
 
   const final_character_hurt_audio = enemyShowsAttack
@@ -1600,9 +1617,9 @@ const buildSubmitLikeResponse = async (
           ? CORRECT_ANSWER_AUDIO
           : WRONG_ANSWER_AUDIO,
     enemy_attack_audio: final_enemy_attack_audio,
-    enemy_run_audio: final_enemy_run_audio,
+    enemy_idle_audio: final_enemy_idle_audio,
     character_attack_audio: final_character_attack_audio,
-    character_run_audio: final_character_run_audio,
+    character_idle_audio: final_character_idle_audio,
     character_hurt_audio: final_character_hurt_audio,
     enemy_hurt_audio: final_enemy_hurt_audio,
     death_audio: isCompleted
