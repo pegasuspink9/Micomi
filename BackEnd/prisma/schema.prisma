@@ -105,9 +105,11 @@ model PVPChallenge {
   html_file        String?
   dedupe_signature String?  @unique
   created_at       DateTime @default(now())
+  last_used_in_match_at DateTime?
 
   @@index([topic, difficulty])
   @@index([created_at])
+  @@index([last_used_in_match_at])
 }
 
 model Enemy {

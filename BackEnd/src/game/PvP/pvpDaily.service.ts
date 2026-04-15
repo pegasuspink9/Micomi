@@ -676,6 +676,15 @@ const createRounds = (
   }));
 };
 
+const markChallengesAsUsedInMatch = async (challengeIds: number[]) => {
+  if (challengeIds.length === 0) return;
+
+  await prisma.pVPChallenge.updateMany({
+    where: { pvp_challenge_id: { in: challengeIds } },
+    data: { last_used_in_match_at: new Date() },
+  });
+};
+
 const cloneMatchForResponse = (match: PvPMatchState): PvPMatchState => {
   return {
     ...match,
@@ -1086,6 +1095,19 @@ const tryCreatePair = async (
 
   matches.set(matchId, match);
   await persistMatchProgress(match);
+
+  try {
+    await markChallengesAsUsedInMatch(
+      questionPool.map((question) => question.challenge_id),
+    );
+  } catch (error) {
+    console.warn(
+      "[PvP Service] Failed to mark challenge usage for match:",
+      matchId,
+      error,
+    );
+  }
+
   setPlayerState(playerA, "already_matched", matchId);
   setPlayerState(playerB, "already_matched", matchId);
   emitMatchStateToPlayers(match, "pvp:match-found");
