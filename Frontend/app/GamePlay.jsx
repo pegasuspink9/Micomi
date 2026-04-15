@@ -130,6 +130,17 @@ export default function GamePlay() {
 
   const currentChallenge = gameState?.currentChallenge;
   const submissionResult = gameState?.submissionResult;
+  const resolvedSubmissionIsCorrect = useMemo(() => {
+    if (typeof submissionResult?.isCorrect === 'boolean') {
+      return submissionResult.isCorrect;
+    }
+
+    if (typeof submissionResult?.is_correct === 'boolean') {
+      return submissionResult.is_correct;
+    }
+
+    return null;
+  }, [submissionResult?.isCorrect, submissionResult?.is_correct]);
   const [characterRunState, setCharacterRunState] = useState(false);
 
   useEffect(() => {
@@ -137,22 +148,15 @@ export default function GamePlay() {
       return;
     }
 
-    const resolvedIsCorrect =
-      typeof submissionResult?.isCorrect === 'boolean'
-        ? submissionResult.isCorrect
-        : typeof submissionResult?.is_correct === 'boolean'
-          ? submissionResult.is_correct
-          : null;
-
-    if (resolvedIsCorrect !== null) {
-      setBorderColor(resolvedIsCorrect ? 'correct' : 'incorrect');
+    if (resolvedSubmissionIsCorrect !== null) {
+      setBorderColor(resolvedSubmissionIsCorrect ? 'correct' : 'incorrect');
       return;
     }
 
     if (!submissionResult) {
       setBorderColor('white');
     }
-  }, [isPvpMode, submissionResult?.isCorrect, submissionResult?.is_correct, submissionResult]);
+  }, [isPvpMode, resolvedSubmissionIsCorrect, submissionResult]);
 
   const canRenderVsModal = useMemo(() => {
     return Boolean(
@@ -1127,6 +1131,12 @@ export default function GamePlay() {
                 onProceed={handleProceed}
                 isAutoProceed={isPvpMode && canProceed}
                 autoProceedCountdown={isPvpMode ? autoProceedCountdown : null}
+                forceAutoProceedUi={
+                  isPvpMode &&
+                  resolvedSubmissionIsCorrect === true &&
+                  waitingForAnimation &&
+                  !canProceed
+                }
                 isLevelComplete={showLevelCompletion}
                 showRunButton={showRunButton}
                 onCharacterRun={handleCharacterRun}

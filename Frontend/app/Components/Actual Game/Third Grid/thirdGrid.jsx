@@ -45,6 +45,7 @@ const ThirdGrid = ({
   onProceed = null,
   isAutoProceed = false,
   autoProceedCountdown = null,
+  forceAutoProceedUi = false,
   isLevelComplete = false,
   showRunButton = true,
   onRetry = null,
@@ -182,12 +183,18 @@ const ThirdGrid = ({
     setContentHeight(height + gameScale(20)); 
   }, []);
 
+  const isManualProceedMode = canProceed && !isLevelComplete && !isAutoProceed;
+  const isAutoProceedMode =
+    !isLevelComplete &&
+    (Boolean(forceAutoProceedUi) || (canProceed && isAutoProceed));
+  const shouldShowProceedState = isManualProceedMode || isAutoProceedMode;
+
   const dynamicHeight = useMemo(() => {
-    if (canProceed || isLevelComplete) {
+    if (shouldShowProceedState || isLevelComplete) {
       return gameScale(BASE_HEIGHT * 0.12);
     }
     return contentHeight > 0 ? contentHeight : 'auto';
-  }, [canProceed, isLevelComplete, contentHeight]);
+  }, [contentHeight, isLevelComplete, shouldShowProceedState]);
 
   useEffect(() => {
     if (setThirdGridHeight) {
@@ -195,17 +202,14 @@ const ThirdGrid = ({
     }
   }, [dynamicHeight, setThirdGridHeight]);
 
-  const isManualProceedMode = canProceed && !isLevelComplete && !isAutoProceed;
-  const isAutoProceedMode = canProceed && !isLevelComplete && isAutoProceed;
-
   // Helper variable to decide if content should be shown at all
-  const showContent = !canProceed && !isLevelComplete;
+  const showContent = !shouldShowProceedState && !isLevelComplete;
 
 
   
   return (
     <GridContainer
-      key={`grid-v2-${currentQuestion?.id}-${canProceed}`}
+      key={`grid-v2-${currentQuestion?.id}-${shouldShowProceedState}-${isAutoProceedMode}`}
       mainHeight={dynamicHeight}
       cardImageUrl={cardImageUrl}
       showCardInGrid={cardDisplaySequence === 'grid'}
@@ -226,7 +230,7 @@ const ThirdGrid = ({
       isSpecialAttack={isSpecialAttack}
       lowerChildren={
         <View style={styles.overlayButtons} pointerEvents="box-none">
-          {canProceed ? (
+          {shouldShowProceedState ? (
             <View />
           ) : (
             <>
@@ -346,6 +350,7 @@ export default React.memo(ThirdGrid, (prev, next) => {
       prev.canProceed === next.canProceed &&
       prev.isAutoProceed === next.isAutoProceed &&
       prev.autoProceedCountdown === next.autoProceedCountdown &&
+      prev.forceAutoProceedUi === next.forceAutoProceedUi &&
       prev.showRunButton === next.showRunButton &&
       prev.isInRunMode === next.isInRunMode &&
       prev.selectedBlankIndex === next.selectedBlankIndex &&
