@@ -288,4 +288,10 @@ export const audioLinks = [
   "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/ice%20land/King%20Feanaly%20hurt%20sfx.mp3",
   "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/Boss%20Hurt%20SFX/ice%20land/Lord%20Cryo-Scythe%20Broodlord%20hurt%20sfx.mp3",
   "https://micomi-assets.me/Sounds/In%20Game/Enemies%20SFX/enemies%20universal%20hurt%20sfx.mp3",
+
+  //character run audio
+  "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Gino_Run.wav",
+  "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Shishi_Run.wav",
+  "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Ryron_Run.wav",
+  "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Leon_Run.wav",
 ];

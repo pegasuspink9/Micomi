@@ -150,6 +150,10 @@ export const getHeroHurtAudio = (characterName: string): string | null => {
   return HERO_HURT_AUDIO_MAP[characterName] ?? null;
 };
 
+export const getHeroIdleAudio = (characterName: string): string | null => {
+  return HERO_RUN_AUDIO_MAP[characterName] ?? null;
+};
+
 export const VICTORY_AUDIO =
   "https://micomi-assets.me/Sounds/Final/Victory_Sound.wav";
 export const DEFEAT_AUDIO =
@@ -164,3 +168,11 @@ export const DEFEAT_IMAGES = [
   "https://micomi-assets.me/Micomi%20Celebrating/Failed2.png",
   "https://micomi-assets.me/Micomi%20Celebrating/Failed3.png",
 ];
+
+const HERO_RUN_AUDIO_MAP: Record<string, string> = {
+  Gino: "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Gino_Run.wav",
+  ShiShi:
+    "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Shishi_Run.wav",
+  Ryron: "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Ryron_Run.wav",
+  Leon: "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Leon_Run.wav",
+};

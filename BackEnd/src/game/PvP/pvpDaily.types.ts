@@ -82,6 +82,10 @@ export interface PvPMatchState {
   last_attack_type: string | null;
   last_attack_damage: number;
   pending_wrong_challenge_by_player: Record<number, number | null>;
+  consecutive_corrects_by_player: Record<number, number>;
+  has_freeze_effect_by_player: Record<number, boolean>;
+  has_strong_effect_by_player: Record<number, boolean>;
+  has_ryron_reveal_by_player: Record<number, boolean>;
 }
 
 export interface PlayerMatchmakingState {
@@ -128,7 +132,9 @@ export interface PvpMatchEntryLikeResponse {
   gameplay_audio: string;
   is_correct_audio: string | null;
   enemy_attack_audio: string | null;
+  enemy_idle_audio: string | null;
   character_attack_audio: string | null;
+  character_idle_audio: string | null;
   character_hurt_audio: string | null;
   enemy_hurt_audio: string | null;
   death_audio: string | null;
@@ -209,7 +215,9 @@ export interface PvpDailySubmitAnswerResult {
   gameplay_audio?: string;
   is_correct_audio?: string | null;
   enemy_attack_audio?: string | null;
+  enemy_idle_audio?: string | null;
   character_attack_audio?: string | null;
+  character_idle_audio?: string | null;
   character_hurt_audio?: string | null;
   enemy_hurt_audio?: string | null;
   death_audio?: string | null;

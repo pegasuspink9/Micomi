@@ -5,10 +5,6 @@ import { PrismaClient } from "@prisma/client";
 
 import { setupCronJobs } from "../helper/cronJobs";
 import {
-  ensureDailyPvpChallenges,
-  generateBatchedPvpChallenges,
-} from "./game/PvP/pvpChallengeGenerator.service";
-import {
   checkAndGenerateMissingQuestsForAllPlayers,
   cleanupExpiredQuestsForAllPlayers,
 } from "./models/Quest/periodicQuests.service";
@@ -44,8 +40,6 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 setSocketServer(io);
-
-const prisma = new PrismaClient();
 
 app.use(express.json());
 app.use(cookieParser());
@@ -109,70 +103,11 @@ server.listen(PORT, async () => {
       await checkAndGenerateMissingQuestsForAllPlayers();
       console.log("[✅ Quest Service] Quest initialization complete\n");
 
-      console.log("[⏳ PvP Service] Ensuring today's PvP challenge pool...");
-      const pvpSeedResult = await ensureDailyPvpChallenges({
-        perTopicTarget: 12,
-        difficulty: "Easy",
-      });
-      console.log(
-        "[✅ PvP Service] Today's PvP pool ready:",
-        pvpSeedResult,
-        "\n",
-      );
-
       console.log(
         "[⏳ Quest Service] Running initial cleanup of expired quests...",
       );
       await cleanupExpiredQuestsForAllPlayers();
       console.log("[✅ Quest Service] Initial cleanup complete\n");
-
-      setInterval(
-        async () => {
-          console.log("[⏳ PvP Service] Running scheduled batch generation...");
-          const categories: ("HTML" | "CSS" | "JavaScript" | "Computer")[] = [
-            "HTML",
-            "CSS",
-            "JavaScript",
-            "Computer",
-          ];
-          const TARGET_POOL = 50;
-
-          for (const category of categories) {
-            try {
-              const currentCount = await prisma.pVPChallenge.count({
-                where: { topic: category, difficulty: "Easy" },
-              });
-
-              if (currentCount < TARGET_POOL) {
-                const batchesNeeded = Math.ceil(
-                  (TARGET_POOL - currentCount) / 5,
-                );
-                console.log(
-                  `[PvP Service] Need ~${batchesNeeded * 5} more challenges for ${category}. Generating...`,
-                );
-
-                for (let i = 0; i < batchesNeeded; i++) {
-                  await generateBatchedPvpChallenges(category, "Easy", 5);
-                  await new Promise((res) => setTimeout(res, 5000));
-                }
-              }
-            } catch (error) {
-              console.error(
-                `[❌ PvP Service] Error generating batch for ${category}:`,
-                error,
-              );
-            }
-          }
-          console.log(
-            "[✅ PvP Service] Scheduled batch generation complete.\n",
-          );
-        },
-        4 * 60 * 60 * 1000,
-      );
-
-      console.log(
-        "[✅ PvP Service] Scheduled background generator registered (every 4 hours)\n",
-      );
 
       console.log(
         "[✅ Quest Service] Scheduled cleanup registered (every 6 hours)\n",
