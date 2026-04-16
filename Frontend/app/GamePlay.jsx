@@ -1089,7 +1089,7 @@ export default function GamePlay() {
                 activeTab={activeGameTab}
                 selectedBlankIndex={selectedBlankIndex}
                 onBlankPress={handleBlankSelect} 
-                isAnswerCorrect={gameState?.submissionResult?.isCorrect}
+                isAnswerCorrect={resolvedSubmissionIsCorrect}
                 canProceed={canProceed}
                 submissionResult={gameState?.submissionResult}
             />
@@ -1148,6 +1148,7 @@ export default function GamePlay() {
                 isInRunMode={isInRunMode}
                 setSelectedBlankIndex={setSelectedBlankIndex}
                 options={memoizedOptions}
+                isPvpMode={isPvpMode}
               />
             </View>
 

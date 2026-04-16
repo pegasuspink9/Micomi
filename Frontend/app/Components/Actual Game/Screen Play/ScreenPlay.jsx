@@ -534,7 +534,8 @@ const ScreenPlay = ({
     const attackerAttackAudio = attackerIsCharacter ? characterAttackAudio : enemyAttackAudio;
 
     const attackSoundStartDelayMs = attackerIsCharacter ? 1000 : 500;
-    const firstIdleDelayMs = attackSoundStartDelayMs + (attackerAttackAudio ? 900 : 120);
+    const idlePreDelayMs = 2000;
+    const firstIdleDelayMs = attackSoundStartDelayMs + (attackerAttackAudio ? 900 : 120) + idlePreDelayMs;
     const secondIdleDelayMs = firstIdleDelayMs + (firstIdleAudio ? 1000 : 0);
 
     if (firstIdleAudio) {

@@ -160,6 +160,7 @@ const CodeEditor = ({
           <View style={styles.outputContainer}>
             <ExpectedOutput 
               currentQuestion={currentQuestion}
+              submissionResult={submissionResult}
               style={styles.tabOutput}
             />
           </View>

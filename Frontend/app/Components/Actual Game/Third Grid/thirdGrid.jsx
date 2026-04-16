@@ -4,6 +4,7 @@ import GridContainer from './components/GridContainer';
 import AnswerGrid from './components/AnswerGrid';
 import GameButton from './components/GameButtons';
 import PotionGrid from './components/Potions/Potions';
+import PvpChatInputBox from './components/Potions/PvpChatInputBox';
 import { gameScale, BASE_HEIGHT } from '../../Responsiveness/gameResponsive';
 import { soundManager } from '../Sounds/UniversalSoundManager';
 
@@ -55,7 +56,8 @@ const ThirdGrid = ({
   onCharacterRun = null, 
   fadeOutAnim = null,
   isInRunMode = false,
-  setSelectedBlankIndex
+  setSelectedBlankIndex,
+  isPvpMode = false,
 }) => {
 
   if (!currentQuestion) {
@@ -127,6 +129,14 @@ const ThirdGrid = ({
     soundManager.playGameButtonTapSound();
     setShowPotions(!showPotions);
   }, [showPotions]);
+
+  const centerButtonTitle = useMemo(() => {
+    if (isPvpMode) {
+      return showPotions ? 'Answers' : 'Chat';
+    }
+
+    return showPotions ? 'Keyboard' : 'Potions';
+  }, [isPvpMode, showPotions]);
 
   const runButtonTitle = useMemo(() => {
     if (usingPotion) return "Using...";
@@ -242,7 +252,7 @@ const ThirdGrid = ({
                 disabled={runButtonDisabled}
               />
               <GameButton 
-                title={showPotions ? "Keyboard" : "Potions"}
+                title={centerButtonTitle}
                 position="center"
                 variant="secondary"
                 onPress={togglePotions}
@@ -271,14 +281,18 @@ const ThirdGrid = ({
           <>
             {/* POTIONS VIEW */}
             <View style={{ display: showPotions ? 'flex' : 'none', width: '100%' }}>
-              <PotionGrid 
-                potions={potions}
-                onPotionPress={onPotionPress} 
-                selectedPotion={selectedPotion} 
-                loadingPotions={loadingPotions}
-                potionUsed={potionUsed} 
-                currentQuestionId={currentQuestion.id} 
-              />
+              {isPvpMode ? (
+                <PvpChatInputBox disabled={submitting || usingPotion} />
+              ) : (
+                <PotionGrid 
+                  potions={potions}
+                  onPotionPress={onPotionPress} 
+                  selectedPotion={selectedPotion} 
+                  loadingPotions={loadingPotions}
+                  potionUsed={potionUsed} 
+                  currentQuestionId={currentQuestion.id} 
+                />
+              )}
             </View>
 
             {/* ANSWERS VIEW */}
@@ -358,6 +372,7 @@ export default React.memo(ThirdGrid, (prev, next) => {
       prev.isLevelComplete === next.isLevelComplete &&
       prev.cardImageUrl === next.cardImageUrl &&
       prev.cardDamage === next.cardDamage &&
-      prev.cardDisplaySequence === next.cardDisplaySequence
+      prev.cardDisplaySequence === next.cardDisplaySequence &&
+      prev.isPvpMode === next.isPvpMode
     );
 });

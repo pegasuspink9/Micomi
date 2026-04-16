@@ -7,12 +7,39 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const ExpectedOutput = ({ 
   currentQuestion, 
+  submissionResult = null,
 }) => {
   const [htmlOutput, setHtmlOutput] = useState('');
 
+  const resolvedCorrectAnswers = useMemo(() => {
+    const submissionAnswers = submissionResult?.correctAnswer ?? submissionResult?.correct_answer;
+    const challengeAnswers = currentQuestion?.correctAnswer ?? currentQuestion?.correct_answer;
+    const rawAnswers = submissionAnswers ?? challengeAnswers ?? [];
+    const normalizedAnswers = Array.isArray(rawAnswers)
+      ? rawAnswers
+      : rawAnswers !== null && rawAnswers !== undefined
+        ? [rawAnswers]
+        : [];
+
+    return normalizedAnswers
+      .map((answer) => {
+        if (typeof answer === 'number' && Array.isArray(currentQuestion?.options)) {
+          const optionValue = currentQuestion.options[answer];
+          return typeof optionValue === 'string' ? optionValue : String(answer);
+        }
+
+        if (answer === null || answer === undefined) {
+          return '';
+        }
+
+        return String(answer);
+      })
+      .filter((answer) => answer.length > 0);
+  }, [currentQuestion?.correctAnswer, currentQuestion?.correct_answer, currentQuestion?.options, submissionResult?.correctAnswer, submissionResult?.correct_answer]);
+
     const generateHtmlOutput = useCallback(() => {
-    return generateCombinedHtml(currentQuestion, currentQuestion.correctAnswer);
-  }, [currentQuestion]);
+    return generateCombinedHtml(currentQuestion, resolvedCorrectAnswers);
+  }, [currentQuestion, resolvedCorrectAnswers]);
 
   // Update the HTML output whenever the question changes
   useEffect(() => {
@@ -28,7 +55,7 @@ const ExpectedOutput = ({
     <View style={styles.container}>
       <View style={styles.webviewContainer}>
         <WebView
-          key={`expected-${currentQuestion?.id}`}
+          key={`expected-${currentQuestion?.id}-${resolvedCorrectAnswers.join('|')}`}
           source={{ html: htmlOutput, baseUrl: '' }}
           style={styles.webview}
           scalesPageToFit={false}

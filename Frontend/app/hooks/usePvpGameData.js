@@ -4,7 +4,7 @@ import { pvpService } from '../services/pvpService';
 
 const PVP_MATCH_CACHE_PREFIX = 'pvp_match_cache:';
 const PVP_ACTIVE_MATCH_ID_KEY = 'pvp_active_match_id';
-const AUTO_PROCEED_SECONDS = 5;
+const AUTO_PROCEED_SECONDS = 10;
 
 const normalizeChallengeId = (value) => {
   if (value === null || value === undefined || value === '') {
@@ -906,7 +906,7 @@ export const usePvpGameData = (matchId, options = {}) => {
 
     if (shouldProceed) {
       if (isCorrectSubmission === true) {
-        // PvP correct answers should move immediately after the first 5-second countdown.
+        // PvP correct answers should move immediately after the first countdown window.
         canProceedRef.current = false;
         setCanProceed(false);
         instantProceedRef.current = false;
@@ -1181,7 +1181,7 @@ export const usePvpGameData = (matchId, options = {}) => {
 
       animationTimeoutRef.current = setTimeout(() => {
         handleAnimationComplete();
-      }, 5000);
+      }, AUTO_PROCEED_SECONDS * 1000);
 
       return {
         success: true,
