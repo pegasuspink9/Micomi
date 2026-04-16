@@ -16,7 +16,6 @@ import {
   PvpDailySubmitAnswerResult,
 } from "./pvpDaily.types";
 import { getSocketServer } from "../../socket";
-import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 import {
   CORRECT_ANSWER_AUDIO,
   WRONG_ANSWER_AUDIO,
@@ -69,6 +68,34 @@ const playerTopicById = new Map<number, PvpChallengeTopic>();
 const matches = new Map<string, PvPMatchState>();
 const matchCleanupTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const dailyPreviewViewedByPlayer = new Map<number, string>();
+const gameplayFeedbackCache = new Map<string, { text: string; audio: string[] }>();
+
+const buildGameplayFeedbackKey = (
+  matchId: string,
+  playerId: number,
+  phase: string,
+) => `${matchId}:${playerId}:${phase}`;
+
+const getCachedGameplayFeedback = async (
+  key: string,
+  producer: () => Promise<{ text: string; audio: string[] }>,
+) => {
+  const cached = gameplayFeedbackCache.get(key);
+  if (cached) return cached;
+
+  const created = await producer();
+  gameplayFeedbackCache.set(key, created);
+  return created;
+};
+
+const clearGameplayFeedbackForMatch = (matchId: string) => {
+  const prefix = `${matchId}:`;
+  for (const key of gameplayFeedbackCache.keys()) {
+    if (key.startsWith(prefix)) {
+      gameplayFeedbackCache.delete(key);
+    }
+  }
+};
 
 const randomFrom = (pool: string[]): string | null => {
   if (pool.length === 0) return null;
@@ -343,6 +370,8 @@ const buildQuestionPool = async (
       question: current.question,
       options: normalizeToStringArray(current.options as unknown),
       correct_answer: normalizeToStringArray(current.correct_answer as unknown),
+      html_file: current.html_file ?? null,
+      css_file: current.css_file ?? null,
     };
   });
 };
@@ -482,21 +511,40 @@ const buildEntryLikePayload = async (
     opponentAttackType,
   );
   const enemy_idle_audio = getHeroIdleAudio(opponentChar.character_name);
-  const enemy_hurt_audio = getHeroHurtAudio(opponentChar.character_name);
-  const character_hurt_audio = getHeroHurtAudio(viewerChar.character_name);
 
   const mapName = question.map_name || question.topic;
-  const levelNumber = question.level_number ?? 1;
 
   const currentChallenge = buildChallengeWithTimer(
     question,
     match.current_round_started_at,
   );
-  const combatBackground = [await getBackgroundForLevel(mapName, levelNumber)];
+
   const mapAssets = getMapMediaAssets(mapName);
+  const combatBackground = [mapAssets.versus_background];
 
   const viewerSS = getHeroSpecialSkillAssets(viewerChar.character_name);
   const opponentSS = getHeroSpecialSkillAssets(opponentChar.character_name);
+  const elapsed =
+    (Date.now() - new Date(match.current_round_started_at).getTime()) / 1000;
+  const entryFeedbackKey = buildGameplayFeedbackKey(
+    match.match_id,
+    viewerPlayerId,
+    `entry:r${match.current_round_index}`,
+  );
+  const { text: entryMessage, audio: entryAudio } =
+    await getCachedGameplayFeedback(entryFeedbackKey, () =>
+      generateDynamicMessage(
+        true,
+        false,
+        match.consecutive_corrects_by_player[viewerPlayerId] ?? 0,
+        viewerSnapshot.character_health,
+        viewerSnapshot.character_max_health,
+        elapsed,
+        opponentSnapshot.character_name,
+        opponentSnapshot.character_health,
+        false,
+      ),
+    );
 
   return {
     level: {
@@ -569,14 +617,16 @@ const buildEntryLikePayload = async (
     enemy_attack_audio,
     character_attack_audio,
     character_idle_audio,
-    character_hurt_audio,
+    character_hurt_audio: null,
     enemy_idle_audio,
-    enemy_hurt_audio,
+    enemy_hurt_audio: null,
     death_audio: null,
     is_victory_audio: null,
     is_victory_image: null,
     boss_skill_activated: false,
     isEnemyFrozen: false,
+    message: entryMessage,
+    audio: entryAudio,
   };
 };
 
@@ -748,6 +798,7 @@ const scheduleMatchCleanup = (matchId: string) => {
   const timer = setTimeout(async () => {
     matches.delete(matchId);
     await removeMatchProgress(matchId);
+    clearGameplayFeedbackForMatch(matchId);
     matchCleanupTimers.delete(matchId);
   }, MATCH_COMPLETION_CLEANUP_MS);
 
@@ -1152,6 +1203,8 @@ const publicQuestion = (question: DailyPvpQuestion) => {
     description: question.description,
     question: question.question,
     options: question.options,
+    html_file: question.html_file,
+    css_file: question.css_file,
   };
 };
 
@@ -1522,21 +1575,46 @@ const buildSubmitLikeResponse = async (
             : "That was tricky!";
   let submitAudio: string[] = [];
 
-  if (
+  const shouldGenerateDynamicMessage =
     reason === "correct_and_first" ||
     reason === "correct_but_late" ||
-    reason === "incorrect"
-  ) {
-    const { text, audio } = await generateDynamicMessage(
-      reason !== "incorrect",
-      false,
-      match.consecutive_corrects_by_player[playerId] ?? 0,
-      Number(viewerCharacter.character_health ?? 0),
-      Number(viewerCharacter.character_max_health ?? 0),
-      elapsed,
-      opponentCharName,
-      Number(opponentEnemy.enemy_health ?? 0),
-      false,
+    reason === "incorrect" ||
+    reason === "round_already_resolved" ||
+    reason === "ongoing";
+
+  if (shouldGenerateDynamicMessage) {
+    const toneIsCorrect =
+      reason === "incorrect"
+        ? false
+        : reason === "round_already_resolved" || reason === "ongoing"
+          ? isViewerLastAttacker
+          : true;
+
+    const feedbackPhase = [
+      reason,
+      `r${match.current_round_index}`,
+      `atk${match.last_attack_by_player_id ?? "none"}`,
+      `tone${toneIsCorrect ? "correct" : "wrong"}`,
+      `status${match.status}`,
+    ].join(":");
+    const feedbackKey = buildGameplayFeedbackKey(
+      match.match_id,
+      playerId,
+      feedbackPhase,
+    );
+
+    const { text, audio } = await getCachedGameplayFeedback(feedbackKey, () =>
+      generateDynamicMessage(
+        toneIsCorrect,
+        false,
+        match.consecutive_corrects_by_player[playerId] ?? 0,
+        Number(viewerCharacter.character_health ?? 0),
+        Number(viewerCharacter.character_max_health ?? 0),
+        elapsed,
+        opponentCharName,
+        Number(opponentEnemy.enemy_health ?? 0),
+        false,
+      ),
     );
 
     submitMessage = text;

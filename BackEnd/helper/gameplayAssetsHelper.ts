@@ -1,5 +1,3 @@
-import { getRandomBackgroundForMap } from "./combatBackgroundHelper";
-
 export const VERSUS_AUDIO =
   "https://micomi-assets.me/Sounds/Final/Versus%20Sound%20Effect%20Final.wav";
 
@@ -31,6 +29,13 @@ const MAP_MEDIA: Record<
   Computer: {
     gameplay_audio: "https://micomi-assets.me/Sounds/Final/Autumnland.mp3",
   },
+};
+
+const MAP_BACKGROUNDS: Record<string, string> = {
+  HTML: "https://micomi-assets.me/Maps/Greenland/1.png",
+  CSS: "https://micomi-assets.me/Maps/Lavaland/1.png",
+  Computer: "https://micomi-assets.me/Maps/Autumnland/1.png",
+  JavaScript: "https://micomi-assets.me/Maps/Snowland/1.png",
 };
 
 const HERO_SS_MAP: Record<
@@ -113,16 +118,18 @@ const HERO_HURT_AUDIO_MAP: Record<string, string> = {
 
 export const getMapMediaAssets = (mapName: string) => {
   const media = MAP_MEDIA[mapName];
+  const background = MAP_BACKGROUNDS[mapName] || MAP_BACKGROUNDS["HTML"];
+
   if (!media) {
     return {
-      versus_background: getRandomBackgroundForMap(mapName),
+      versus_background: background,
       versus_audio: VERSUS_AUDIO,
       gameplay_audio: "",
     };
   }
 
   return {
-    versus_background: getRandomBackgroundForMap(mapName),
+    versus_background: background,
     versus_audio: VERSUS_AUDIO,
     gameplay_audio: media.gameplay_audio,
   };
@@ -151,7 +158,7 @@ export const getHeroHurtAudio = (characterName: string): string | null => {
 };
 
 export const getHeroIdleAudio = (characterName: string): string | null => {
-  return HERO_RUN_AUDIO_MAP[characterName] ?? null;
+  return HERO_IDLE_AUDIO_MAP[characterName] ?? null;
 };
 
 export const VICTORY_AUDIO =
@@ -169,10 +176,10 @@ export const DEFEAT_IMAGES = [
   "https://micomi-assets.me/Micomi%20Celebrating/Failed3.png",
 ];
 
-const HERO_RUN_AUDIO_MAP: Record<string, string> = {
+const HERO_IDLE_AUDIO_MAP: Record<string, string> = {
   Gino: "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Gino_Run.wav",
   ShiShi:
     "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Shishi_Run.wav",
   Ryron: "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Ryron_Run.wav",
-  Leon: "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Leon_Run.wav",
+  Leon: "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Leon_Roar.wav",
 };

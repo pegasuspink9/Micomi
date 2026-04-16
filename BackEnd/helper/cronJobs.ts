@@ -4,40 +4,8 @@ import {
   cleanupExpiredQuests,
 } from "../src/models/Quest/periodicQuests.service";
 import { QuestPeriod } from "@prisma/client";
-import { ensureDailyPvpChallenges } from "../src/game/PvP/pvpChallengeGenerator.service";
 
 export function setupCronJobs() {
-  cron.schedule("0 0 * * *", async () => {
-    console.log("\n" + "=".repeat(60));
-    console.log("DAILY PVP CHALLENGE RESET - Starting");
-    console.log("=".repeat(60));
-
-    try {
-      const result = await ensureDailyPvpChallenges({
-        perTopicTarget: 12,
-        difficulty: "Easy",
-        forceResetToday: true,
-      });
-
-      console.log("Daily PvP challenge reset completed:", result);
-      console.log("=".repeat(60) + "\n");
-    } catch (error) {
-      console.error("DAILY PVP CHALLENGE RESET - Failed:", error);
-    }
-  });
-
-  cron.schedule("*/15 * * * *", async () => {
-    try {
-      const result = await ensureDailyPvpChallenges({
-        perTopicTarget: 12,
-        difficulty: "Easy",
-      });
-      console.log("[PVP Cron] Pool refill check completed:", result);
-    } catch (error) {
-      console.error("[PVP Cron] Pool refill check failed:", error);
-    }
-  });
-
   cron.schedule("1 0 * * *", async () => {
     console.log("\n" + "=".repeat(60));
     console.log("DAILY QUEST GENERATION - Starting");

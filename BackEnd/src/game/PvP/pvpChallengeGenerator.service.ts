@@ -41,6 +41,13 @@ const MAX_GENERATION_ATTEMPTS = 5;
 const DUPLICATE_SIMILARITY_THRESHOLD = 0.84;
 const RECENT_QUESTIONS_LOOKBACK = 60;
 const DEFAULT_DAILY_TOPIC_POOL = 12;
+const AI_PVP_CHALLENGE_GENERATION_ENABLED = false;
+
+const assertAiPvpGenerationEnabled = (): void => {
+  if (!AI_PVP_CHALLENGE_GENERATION_ENABLED) {
+    throw new Error("AI PvP challenge generation is disabled");
+  }
+};
 
 // --- GLOBAL MUTEX FOR GEMINI RATE LIMITING ---
 let geminiMutex = Promise.resolve();
@@ -572,6 +579,8 @@ export const generatePvpChallengeWithGemini = async (
   difficulty: PvpChallengeDifficulty,
   options?: { maxAttempts?: number; duplicateLookback?: number },
 ) => {
+  assertAiPvpGenerationEnabled();
+
   const maxAttempts = Math.max(
     1,
     options?.maxAttempts ?? MAX_GENERATION_ATTEMPTS,
@@ -656,6 +665,8 @@ export const generateBatchedPvpChallenges = async (
   difficulty: PvpChallengeDifficulty,
   batchSize: number = 5,
 ) => {
+  assertAiPvpGenerationEnabled();
+
   const maxAttempts = 3;
   let lastError: unknown = null;
 
@@ -776,6 +787,8 @@ export const ensureDailyPvpChallenges = async (options?: {
   difficulty?: PvpChallengeDifficulty;
   forceResetToday?: boolean;
 }) => {
+  assertAiPvpGenerationEnabled();
+
   const perTopicTarget = Math.max(
     5,
     options?.perTopicTarget ?? DEFAULT_DAILY_TOPIC_POOL,

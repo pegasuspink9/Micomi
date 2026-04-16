@@ -14,6 +14,8 @@ export interface DailyPvpQuestion {
   question: string | null;
   options: string[];
   correct_answer: string[];
+  html_file: string | null;
+  css_file: string | null;
 }
 
 export interface PvPDailyPlayerSnapshot {
@@ -142,6 +144,8 @@ export interface PvpMatchEntryLikeResponse {
   is_victory_image: string | null;
   boss_skill_activated: boolean;
   isEnemyFrozen: boolean;
+  message: string;
+  audio: string[];
 }
 
 export interface PvpDailyStatusResponse {
