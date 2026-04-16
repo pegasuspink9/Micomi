@@ -54,6 +54,13 @@ const ScreenPlay = ({
   const animationCompleteNotifiedRef = useRef(false); 
   const lastProcessedSubmissionIdRef = useRef(null); 
   const pvpAnimationTimeoutsRef = useRef([]);
+  const idleAudioTimeoutsRef = useRef([]);
+  const lastIdleAudioSequenceKeyRef = useRef(null);
+
+  const clearIdleAudioTimeouts = useCallback(() => {
+    idleAudioTimeoutsRef.current.forEach(clearTimeout);
+    idleAudioTimeoutsRef.current = [];
+  }, []);
 
 
 
@@ -321,8 +328,9 @@ const ScreenPlay = ({
       pvpAnimationTimeoutsRef.current.forEach(clearTimeout);
       pvpAnimationTimeoutsRef.current = [];
       enemyRunTimeoutsRef.current = {};
+      clearIdleAudioTimeouts();
     };
-  }, []);
+  }, [clearIdleAudioTimeouts]);
 
   // ✅ NEW CALLBACK: When the BonusRoundModal finishes its hide animation
   const handleBonusModalHide = useCallback(() => {
@@ -458,6 +466,91 @@ const ScreenPlay = ({
       soundManager.playCachedSound(potionAudio, 'ui', 1.0);
     }
   }, [gameState.submissionResult?.use_potion_audio]);
+
+  useEffect(() => {
+    const submission = gameState?.submissionResult;
+
+    if (!submission || submission?.isPotionUsage) {
+      return;
+    }
+
+    const fightResult = submission?.fightResult;
+    if (!fightResult) {
+      return;
+    }
+
+    const isCorrect =
+      typeof submission?.isCorrect === 'boolean'
+        ? submission.isCorrect
+        : typeof submission?.is_correct === 'boolean'
+          ? submission.is_correct
+          : null;
+
+    const acceptedForAttack =
+      typeof submission?.acceptedForAttack === 'boolean'
+        ? submission.acceptedForAttack
+        : typeof submission?.accepted_for_attack === 'boolean'
+          ? submission.accepted_for_attack
+          : null;
+
+    const attackerIsCharacter =
+      isCorrect === true || (isCorrect === null && acceptedForAttack === true);
+    const attackerIsEnemy =
+      isCorrect === false || (isCorrect === null && acceptedForAttack === false);
+
+    if (!attackerIsCharacter && !attackerIsEnemy) {
+      return;
+    }
+
+    const submissionAudioKey = [
+      gameState?.currentChallenge?.id ?? 'none',
+      submission?.reason ?? 'none',
+      submission?.acceptedForAttack ?? submission?.accepted_for_attack ?? 'na',
+      submission?.isCorrect ?? submission?.is_correct ?? 'na',
+      fightResult?.status ?? 'na',
+      fightResult?.character?.character_health ?? 'na',
+      fightResult?.enemy?.enemy_health ?? 'na',
+      submission?.characterAttackAudio ?? submission?.character_attack_audio ?? 'none',
+      submission?.enemyAttackAudio ?? submission?.enemy_attack_audio ?? 'none',
+      submission?.characterIdleAudio ?? submission?.character_idle_audio ?? 'none',
+      submission?.enemyIdleAudio ?? submission?.enemy_idle_audio ?? 'none',
+    ].join('|');
+
+    if (lastIdleAudioSequenceKeyRef.current === submissionAudioKey) {
+      return;
+    }
+
+    lastIdleAudioSequenceKeyRef.current = submissionAudioKey;
+    clearIdleAudioTimeouts();
+
+    const characterAttackAudio =
+      submission?.characterAttackAudio ?? submission?.character_attack_audio ?? null;
+    const enemyAttackAudio = submission?.enemyAttackAudio ?? submission?.enemy_attack_audio ?? null;
+    const characterIdleAudio = submission?.characterIdleAudio ?? submission?.character_idle_audio ?? null;
+    const enemyIdleAudio = submission?.enemyIdleAudio ?? submission?.enemy_idle_audio ?? null;
+
+    const firstIdleAudio = attackerIsCharacter ? characterIdleAudio : enemyIdleAudio;
+    const secondIdleAudio = attackerIsCharacter ? enemyIdleAudio : characterIdleAudio;
+    const attackerAttackAudio = attackerIsCharacter ? characterAttackAudio : enemyAttackAudio;
+
+    const attackSoundStartDelayMs = attackerIsCharacter ? 1000 : 500;
+    const firstIdleDelayMs = attackSoundStartDelayMs + (attackerAttackAudio ? 900 : 120);
+    const secondIdleDelayMs = firstIdleDelayMs + (firstIdleAudio ? 1000 : 0);
+
+    if (firstIdleAudio) {
+      const firstTimeout = setTimeout(() => {
+        soundManager.playCachedSound(firstIdleAudio, 'idle', 1.0);
+      }, firstIdleDelayMs);
+      idleAudioTimeoutsRef.current.push(firstTimeout);
+    }
+
+    if (secondIdleAudio) {
+      const secondTimeout = setTimeout(() => {
+        soundManager.playCachedSound(secondIdleAudio, 'idle', 1.0);
+      }, secondIdleDelayMs);
+      idleAudioTimeoutsRef.current.push(secondTimeout);
+    }
+  }, [clearIdleAudioTimeouts, gameState?.currentChallenge?.id, gameState?.submissionResult]);
 
   useEffect(() => {
   const submission = gameState.submissionResult;

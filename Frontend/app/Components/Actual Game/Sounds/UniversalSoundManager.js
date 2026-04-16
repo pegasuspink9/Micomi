@@ -11,6 +11,7 @@ class UniversalSoundManager {
       message: null,
       ui: null,
       combat: null,
+      idle: null,
       button: null,
       bgm: null,
       versus: null,

@@ -201,6 +201,8 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
       versus_background: data.versus_background || responseData.versus_background || null,
       versus_audio: data.versus_audio || responseData.versus_audio || null,
       audioLinks: data.audioLinks || responseData.audioLinks || [],
+      character_idle_audio: data.character_idle_audio || responseData.character_idle_audio || null,
+      enemy_idle_audio: data.enemy_idle_audio || responseData.enemy_idle_audio || null,
       gameplay_audio: data.gameplay_audio || responseData.gameplay_audio || null, 
     };
 
@@ -305,6 +307,8 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         isCorrectAudio: data.is_correct_audio || responseData.is_correct_audio || null,
         enemyAttackAudio: data.enemy_attack_audio || responseData.enemy_attack_audio || null,
         characterAttackAudio: data.character_attack_audio || responseData.character_attack_audio || null,
+        characterIdleAudio: data.character_idle_audio || responseData.character_idle_audio || null,
+        enemyIdleAudio: data.enemy_idle_audio || responseData.enemy_idle_audio || null,
         enemyHurtAudio: data.enemy_hurt_audio || responseData.enemy_hurt_audio || null,
         characterHurtAudio: data.character_hurt_audio || responseData.character_hurt_audio || null,
         gameplay_audio: data.gameplay_audio || responseData.gameplay_audio || null,

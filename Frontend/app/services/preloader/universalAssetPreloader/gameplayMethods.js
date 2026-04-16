@@ -146,6 +146,19 @@ extractAudioAssets(levelData) {
       });
     }
 
+    if (levelData && levelData.character_attack_audio && typeof levelData.character_attack_audio === 'string' && this.isAudioFile(levelData.character_attack_audio)) {
+      assets.push({ url: levelData.character_attack_audio, name: 'character_attack_audio', type: 'audio', category: 'game_audio' });
+    }
+    if (levelData && levelData.enemy_attack_audio && typeof levelData.enemy_attack_audio === 'string' && this.isAudioFile(levelData.enemy_attack_audio)) {
+      assets.push({ url: levelData.enemy_attack_audio, name: 'enemy_attack_audio', type: 'audio', category: 'game_audio' });
+    }
+    if (levelData && levelData.character_idle_audio && typeof levelData.character_idle_audio === 'string' && this.isAudioFile(levelData.character_idle_audio)) {
+      assets.push({ url: levelData.character_idle_audio, name: 'character_idle_audio', type: 'audio', category: 'game_audio' });
+    }
+    if (levelData && levelData.enemy_idle_audio && typeof levelData.enemy_idle_audio === 'string' && this.isAudioFile(levelData.enemy_idle_audio)) {
+      assets.push({ url: levelData.enemy_idle_audio, name: 'enemy_idle_audio', type: 'audio', category: 'game_audio' });
+    }
+
     if (levelData && levelData.character_hurt_audio && typeof levelData.character_hurt_audio === 'string' && this.isAudioFile(levelData.character_hurt_audio)) {
       assets.push({ url: levelData.character_hurt_audio, name: 'character_hurt_audio', type: 'audio', category: 'game_audio' });
     }
@@ -665,6 +678,12 @@ transformGameStateWithCache(gameState) {
     if (transformedGameState.character_attack_audio) {
       transformedGameState.character_attack_audio = this.getCachedAssetPath(transformedGameState.character_attack_audio);
     }
+    if (transformedGameState.character_idle_audio) {
+      transformedGameState.character_idle_audio = this.getCachedAssetPath(transformedGameState.character_idle_audio);
+    }
+    if (transformedGameState.enemy_idle_audio) {
+      transformedGameState.enemy_idle_audio = this.getCachedAssetPath(transformedGameState.enemy_idle_audio);
+    }
 
      if (transformedGameState.gameplay_audio) {
       transformedGameState.gameplay_audio = this.getCachedAssetPath(transformedGameState.gameplay_audio);
@@ -738,6 +757,25 @@ transformGameStateWithCache(gameState) {
       }
       if (sub.character_attack_audio) {
         sub.character_attack_audio = this.getCachedAssetPath(sub.character_attack_audio);
+      }
+      if (sub.character_idle_audio) {
+        sub.character_idle_audio = this.getCachedAssetPath(sub.character_idle_audio);
+      }
+      if (sub.enemy_idle_audio) {
+        sub.enemy_idle_audio = this.getCachedAssetPath(sub.enemy_idle_audio);
+      }
+
+      if (sub.characterAttackAudio) {
+        sub.characterAttackAudio = this.getCachedAssetPath(sub.characterAttackAudio);
+      }
+      if (sub.enemyAttackAudio) {
+        sub.enemyAttackAudio = this.getCachedAssetPath(sub.enemyAttackAudio);
+      }
+      if (sub.characterIdleAudio) {
+        sub.characterIdleAudio = this.getCachedAssetPath(sub.characterIdleAudio);
+      }
+      if (sub.enemyIdleAudio) {
+        sub.enemyIdleAudio = this.getCachedAssetPath(sub.enemyIdleAudio);
       }
 
       if (sub.character_hurt_audio) {

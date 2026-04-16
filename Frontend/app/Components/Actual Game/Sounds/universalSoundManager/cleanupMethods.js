@@ -3,6 +3,7 @@ export const cleanupMethods = {
     await this._stopMessageSound();
     await this._playSimpleSound('ui', null, null);
     await this._playSimpleSound('combat', null, null);
+    await this._playSimpleSound('idle', null, null);
     await this._playSimpleSound('button', null, null);
     await this._playSimpleSound('victory', null, null);
     await this._playSimpleSound('defeat', null, null);

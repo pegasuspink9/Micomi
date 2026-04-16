@@ -101,6 +101,8 @@ extractAllAssetsFromMapData(mapLevelData) {
       
       addAsset(level.enemy_attack_audio, `level_${levelIndex}_enemy_attack_audio`, 'audio', 'game_audio');
       addAsset(level.character_attack_audio, `level_${levelIndex}_character_attack_audio`, 'audio', 'game_audio');
+      addAsset(level.character_idle_audio, `level_${levelIndex}_character_idle_audio`, 'audio', 'game_audio');
+      addAsset(level.enemy_idle_audio, `level_${levelIndex}_enemy_idle_audio`, 'audio', 'game_audio');
       addAsset(level.enemy_hurt_audio, `level_${levelIndex}_enemy_hurt_audio`, 'audio', 'game_audio');
       addAsset(level.character_hurt_audio, `level_${levelIndex}_character_hurt_audio`, 'audio', 'game_audio');
       addAsset(level.is_correct_audio, `level_${levelIndex}_is_correct_audio`, 'audio', 'game_audio');

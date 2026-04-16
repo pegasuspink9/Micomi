@@ -1102,6 +1102,11 @@ export const usePvpGameData = (matchId, options = {}) => {
         isCorrect: postIsCorrectRaw,
         message: postData?.message ?? '',
         isCorrectAudio: postData?.isCorrectAudio ?? postData?.is_correct_audio ?? null,
+        characterAttackAudio:
+          postData?.characterAttackAudio ?? postData?.character_attack_audio ?? null,
+        enemyAttackAudio: postData?.enemyAttackAudio ?? postData?.enemy_attack_audio ?? null,
+        characterIdleAudio: postData?.characterIdleAudio ?? postData?.character_idle_audio ?? null,
+        enemyIdleAudio: postData?.enemyIdleAudio ?? postData?.enemy_idle_audio ?? null,
       };
 
       setWaitingForAnimation(true);
