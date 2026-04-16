@@ -25,6 +25,22 @@ const getChallengeId = (challenge) => {
   );
 };
 
+const getSubmissionIsCorrect = (submission) => {
+  if (!submission || typeof submission !== 'object') {
+    return null;
+  }
+
+  if (typeof submission.isCorrect === 'boolean') {
+    return submission.isCorrect;
+  }
+
+  if (typeof submission.is_correct === 'boolean') {
+    return submission.is_correct;
+  }
+
+  return null;
+};
+
 const makeDefaultLiveSync = () => ({
   connection: 'idle',
   isPolling: false,
@@ -812,6 +828,7 @@ export const usePvpGameData = (matchId, options = {}) => {
     waitingRef.current = false;
 
     const submission = pendingData.submissionResult || {};
+    const isCorrectSubmission = getSubmissionIsCorrect(submission);
     const reason = submission.reason;
     const fightStatus = submission.fightResult?.status;
     
@@ -876,26 +893,82 @@ export const usePvpGameData = (matchId, options = {}) => {
 
     // STRICT FIX: We ONLY allow the "Proceed" button if we actually have a NEW challenge to transition into.
     const shouldProceed = hasDifferentNextChallenge;
+    const stagedNextChallenge = shouldProceed
+      ? {
+          ...targetNextChallenge,
+          card: pendingData.card || null,
+          selectedCharacter: pendingData.selectedCharacter || null,
+          enemy: pendingData.enemy || null,
+          avatar: pendingData.avatar || null,
+          level: pendingData.level || null,
+        }
+      : null;
 
     if (shouldProceed) {
-      setCanProceed(true);
-      instantProceedRef.current = false;
-      setGameStateIfChanged((prev) => {
-        const merged = {
-          ...mergeBattleState(prev),
-          nextChallengeData: {
-            ...targetNextChallenge,
-            card: pendingData.card || prev.card || null,
-            selectedCharacter: pendingData.selectedCharacter || prev.selectedCharacter,
-            enemy: pendingData.enemy || prev.enemy,
-            avatar: pendingData.avatar || prev.avatar,
-            level: pendingData.level || prev.level,
-          },
-        };
+      if (isCorrectSubmission === true) {
+        // PvP correct answers should move immediately after the first 5-second countdown.
+        canProceedRef.current = false;
+        setCanProceed(false);
+        instantProceedRef.current = false;
+        setGameState((prev) => {
+          const nextChallenge = stagedNextChallenge || prev.nextChallengeData;
 
-        return mergeFightAttributes(merged, pendingData);
-      });
-      setSyncConnected({ pendingRemoteProceed: false });
+          if (!nextChallenge) {
+            return prev;
+          }
+
+          const blockedSubmissionSignature = buildSubmissionSignature(prev.submissionResult);
+          const blockedVisualSignature = buildFightVisualSignature(prev.submissionResult);
+
+          proceedReplayGuardRef.current = {
+            challengeId: getChallengeId(nextChallenge),
+            blockedSubmissionSignature:
+              blockedSubmissionSignature === 'none' ? null : blockedSubmissionSignature,
+            blockedVisualSignature:
+              blockedVisualSignature === 'none' ? null : blockedVisualSignature,
+          };
+
+          const prevChallengeId = getChallengeId(prev.currentChallenge);
+          if (prevChallengeId) {
+            completedChallengeIdsRef.current.add(prevChallengeId);
+          }
+
+          currentChallengeIdRef.current = getChallengeId(nextChallenge);
+
+          return {
+            ...prev,
+            currentChallenge: nextChallenge,
+            card: nextChallenge.card || prev.card,
+            selectedCharacter: nextChallenge.selectedCharacter || prev.selectedCharacter,
+            enemy: nextChallenge.enemy || prev.enemy,
+            avatar: nextChallenge.avatar || prev.avatar,
+            level: nextChallenge.level || prev.level,
+            attemptId: (prev.attemptId || 0) + 1,
+            submissionResult: null,
+            nextChallengeData: null,
+          };
+        });
+        setSyncConnected({ pendingRemoteProceed: false }, { touch: true });
+      } else {
+        setCanProceed(true);
+        instantProceedRef.current = false;
+        setGameStateIfChanged((prev) => {
+          const merged = {
+            ...mergeBattleState(prev),
+            nextChallengeData: {
+              ...targetNextChallenge,
+              card: pendingData.card || prev.card || null,
+              selectedCharacter: pendingData.selectedCharacter || prev.selectedCharacter,
+              enemy: pendingData.enemy || prev.enemy,
+              avatar: pendingData.avatar || prev.avatar,
+              level: pendingData.level || prev.level,
+            },
+          };
+
+          return mergeFightAttributes(merged, pendingData);
+        });
+        setSyncConnected({ pendingRemoteProceed: false });
+      }
     } else {
       setCanProceed(false);
       instantProceedRef.current = false;
@@ -969,12 +1042,17 @@ export const usePvpGameData = (matchId, options = {}) => {
       return { success: false, error: 'No answer selected' };
     }
 
-    if (waitingRef.current) {
-      return { success: false, error: 'Animation in progress' };
-    }
-
+    // PvP specific behavior: allow submission if the user is spamming
+    // or if the animation is still playing, as long as it's not a true network in-flight request.
     if (submitInFlightRef.current) {
-      return { success: false, error: 'Submission already in progress' };
+      return {
+        success: true,
+        updatedGameState: {
+          submissionResult: gameState?.submissionResult || null,
+        },
+        waitingForAnimation: true,
+        ignoredDuplicateSubmission: true,
+      };
     }
 
     try {
@@ -1122,6 +1200,7 @@ export const usePvpGameData = (matchId, options = {}) => {
     }
   }, [
     disabled,
+    gameState?.submissionResult,
     getAuthoritativeStateAfterSubmit,
     handleAnimationComplete,
     resetProceedReplayGuard,
@@ -1512,7 +1591,9 @@ export const usePvpGameData = (matchId, options = {}) => {
 
   useEffect(() => {
     if (disabled || !canProceed) {
-      stopAutoProceed();
+      if (!waitingForAnimation) {
+        stopAutoProceed();
+      }
       return;
     }
 
@@ -1537,7 +1618,35 @@ export const usePvpGameData = (matchId, options = {}) => {
     return () => {
       stopAutoProceed();
     };
-  }, [canProceed, disabled, handleProceed, stopAutoProceed]);
+  }, [canProceed, disabled, handleProceed, stopAutoProceed, waitingForAnimation]);
+
+  useEffect(() => {
+    if (disabled || !waitingForAnimation || canProceed) {
+      return;
+    }
+
+    const countdownStartedAt = submissionStartedAtRef.current || Date.now();
+    setAutoProceedCountdown(AUTO_PROCEED_SECONDS);
+
+    const updateCountdown = () => {
+      const elapsedSeconds = Math.floor((Date.now() - countdownStartedAt) / 1000);
+      const remainingSeconds = Math.max(AUTO_PROCEED_SECONDS - elapsedSeconds, 0);
+
+      setAutoProceedCountdown((prev) => (prev === remainingSeconds ? prev : remainingSeconds));
+
+      if (remainingSeconds <= 0 && autoProceedIntervalRef.current) {
+        clearInterval(autoProceedIntervalRef.current);
+        autoProceedIntervalRef.current = null;
+      }
+    };
+
+    updateCountdown();
+    autoProceedIntervalRef.current = setInterval(updateCountdown, 250);
+
+    return () => {
+      stopAutoProceed();
+    };
+  }, [canProceed, disabled, stopAutoProceed, waitingForAnimation]);
 
   useEffect(() => {
     return () => {
