@@ -88,6 +88,7 @@ export interface PvPMatchState {
   has_freeze_effect_by_player: Record<number, boolean>;
   has_strong_effect_by_player: Record<number, boolean>;
   has_ryron_reveal_by_player: Record<number, boolean>;
+  messages_by_player: Record<number, string | null>;
 }
 
 export interface PlayerMatchmakingState {
@@ -158,6 +159,12 @@ export interface PvpDailyPlayResponse {
   status: PlayerMatchmakingState;
   match_found: boolean;
   match_id: string | null;
+}
+
+export interface PvpDailyInGameMessageResponse {
+  match_id: string;
+  character_reaction: string | null;
+  enemy_reaction: string | null;
 }
 
 export interface PvpDailySubmitAnswerResult {

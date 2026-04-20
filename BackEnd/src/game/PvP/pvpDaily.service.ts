@@ -41,6 +41,7 @@ const prisma = new PrismaClient();
 const MATCHMAKING_TIMEOUT_MS = 2 * 60 * 1000;
 const MATCH_COMPLETION_CLEANUP_MS = 90 * 1000;
 const DEFAULT_FALLBACK_ATTACK_DAMAGE = 12;
+const MAX_IN_GAME_MESSAGE_LENGTH = 160;
 const WIN_REWARD: PvPCompletionRewards = {
   coins: 60,
   points: 120,
@@ -441,6 +442,19 @@ const getArrayItemOrNull = (value: unknown, index: number): string | null => {
   return typeof item === "string" ? item : null;
 };
 
+const normalizeInGameMessage = (value: string): string => {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    throw new Error("message must not be empty");
+  }
+  if (normalized.length > MAX_IN_GAME_MESSAGE_LENGTH) {
+    throw new Error(
+      `message must be at most ${MAX_IN_GAME_MESSAGE_LENGTH} characters`,
+    );
+  }
+  return normalized;
+};
+
 const buildChallengeWithTimer = (
   question: DailyPvpQuestion,
   roundStartedAtIso: string,
@@ -468,6 +482,9 @@ const buildEntryLikePayload = async (
   const opponentIndex = getOpponentIndex(viewerIndex);
   const viewerSnapshot = match.players[viewerIndex];
   const opponentSnapshot = match.players[opponentIndex];
+  const viewerReaction = match.messages_by_player[viewerSnapshot.player_id] ?? null;
+  const opponentReaction =
+    match.messages_by_player[opponentSnapshot.player_id] ?? null;
   const question = getRoundQuestion(match);
 
   if (!question) {
@@ -569,6 +586,7 @@ const buildEntryLikePayload = async (
       enemy_hurt: opponentChar.character_hurt,
       enemy_dies: opponentChar.character_dies,
       enemy_avatar: opponentChar.character_avatar,
+      enemy_reaction: opponentReaction,
       special_skill: {
         special_skill_image: opponentSS.special_skill_image,
         streak:
@@ -593,6 +611,7 @@ const buildEntryLikePayload = async (
       character_avatar: viewerChar.character_avatar,
       character_is_range: viewerChar.is_range,
       character_range_attack: viewerChar.range_attacks,
+      character_reaction: viewerReaction,
       special_skill: {
         special_skill_image: viewerSS.special_skill_image,
         streak: match.consecutive_corrects_by_player[viewerPlayerId] ?? 0,
@@ -723,6 +742,13 @@ const ensureMatchRuntimeState = (match: PvPMatchState) => {
     if (match.has_ryron_reveal_by_player[playerId] === undefined) {
       match.has_ryron_reveal_by_player[playerId] = false;
     }
+
+    if (!match.messages_by_player) {
+      match.messages_by_player = {};
+    }
+    if (match.messages_by_player[playerId] === undefined) {
+      match.messages_by_player[playerId] = null;
+    }
   }
 };
 
@@ -757,6 +783,7 @@ const cloneMatchForResponse = (match: PvPMatchState): PvPMatchState => {
     has_freeze_effect_by_player: { ...match.has_freeze_effect_by_player },
     has_strong_effect_by_player: { ...match.has_strong_effect_by_player },
     has_ryron_reveal_by_player: { ...match.has_ryron_reveal_by_player },
+    messages_by_player: { ...match.messages_by_player },
   };
 };
 
@@ -1164,6 +1191,10 @@ const tryCreatePair = async (
       [playerA]: false,
       [playerB]: false,
     },
+    messages_by_player: {
+      [playerA]: null,
+      [playerB]: null,
+    },
   };
 
   matches.set(matchId, match);
@@ -1432,6 +1463,12 @@ const buildSubmitLikeResponse = async (
 
   const viewerCharacter = entryLike.character as Record<string, unknown>;
   const opponentEnemy = entryLike.enemy as Record<string, unknown>;
+  const viewerReaction =
+    match.messages_by_player[playerId] ??
+    ((viewerCharacter.character_reaction as string | null | undefined) ?? null);
+  const opponentReaction =
+    match.messages_by_player[Number(opponentEnemy.player_id)] ??
+    ((opponentEnemy.enemy_reaction as string | null | undefined) ?? null);
 
   const viewerAttackAsset = getArrayItemOrNull(
     viewerCharacter.character_attack,
@@ -1512,7 +1549,7 @@ const buildSubmitLikeResponse = async (
         ? "hurt"
         : null,
     character_attack_overlay: null,
-    character_reaction: null,
+    character_reaction: viewerReaction,
   };
 
   const enemyForFightResult = {
@@ -1545,7 +1582,7 @@ const buildSubmitLikeResponse = async (
         : null,
     enemy_attack_overlay: null,
     enemy_hit_reaction: null,
-    enemy_reaction: null,
+    enemy_reaction: opponentReaction,
   };
 
   const fightResult = {
@@ -1897,6 +1934,39 @@ export const submitAnswer = async (
   emitMatchStateToPlayers(match, "pvp:match-update");
 
   return buildSubmitLikeResponse(match, playerId, "correct_but_late", true);
+};
+
+export const setInGameMessage = async (
+  playerId: number,
+  matchId: string,
+  message: string,
+) => {
+  const match = await getMatchFromMemoryOrDb(matchId);
+  if (!match) {
+    throw new Error("Match not found");
+  }
+
+  const playerIndex = getPlayerIndex(match, playerId);
+  if (playerIndex === -1) {
+    throw new Error("You are not part of this match");
+  }
+
+  const opponentIndex = getOpponentIndex(playerIndex);
+  const opponentPlayerId = match.players[opponentIndex].player_id;
+  const normalizedMessage = normalizeInGameMessage(message);
+
+  match.messages_by_player[playerId] = normalizedMessage;
+
+  await persistMatchProgress(match);
+  if (match.status === "active") {
+    emitMatchStateToPlayers(match, "pvp:match-update");
+  }
+
+  return {
+    match_id: match.match_id,
+    character_reaction: match.messages_by_player[playerId] ?? null,
+    enemy_reaction: match.messages_by_player[opponentPlayerId] ?? null,
+  };
 };
 
 export const cancelMatchmaking = async (
