@@ -1,5 +1,51 @@
 import { getMessagePool } from "./messageCache";
 
+const seenMessageIdsBySignature = new Map<string, Set<number>>();
+const lastMessageIdBySignature = new Map<string, number>();
+
+const buildSignature = (category: string, tags: string[]) =>
+  `${category}|${[...tags].sort().join(",")}`;
+
+const pickMessageFromPool = (
+  pool: Array<{
+    id?: number;
+    textTemplate?: string | null;
+    audioUrl?: string | null;
+  }>,
+  signature: string,
+) => {
+  if (pool.length === 0) return null;
+
+  const seen = seenMessageIdsBySignature.get(signature) ?? new Set<number>();
+  let candidates = pool.filter(
+    (msg) => typeof msg.id === "number" && !seen.has(msg.id),
+  );
+
+  if (candidates.length === 0) {
+    seen.clear();
+    candidates = [...pool];
+  }
+
+  const lastId = lastMessageIdBySignature.get(signature);
+  if (candidates.length > 1 && typeof lastId === "number") {
+    const withoutLast = candidates.filter((msg) => msg.id !== lastId);
+    if (withoutLast.length > 0) {
+      candidates = withoutLast;
+    }
+  }
+
+  const selected =
+    candidates[Math.floor(Math.random() * candidates.length)] ?? null;
+
+  if (selected && typeof selected.id === "number") {
+    seen.add(selected.id);
+    seenMessageIdsBySignature.set(signature, seen);
+    lastMessageIdBySignature.set(signature, selected.id);
+  }
+
+  return selected;
+};
+
 export const generateDynamicMessage = async (
   isCorrect: boolean,
   hintUsed: boolean,
@@ -57,6 +103,7 @@ export const generateDynamicMessage = async (
   }
 
   const pool = await getMessagePool(category, tags);
+  const signature = buildSignature(category, tags);
 
   if (!pool || pool.length === 0) {
     console.error(
@@ -70,7 +117,7 @@ export const generateDynamicMessage = async (
     };
   }
 
-  const msg = pool[Math.floor(Math.random() * pool.length)];
+  const msg = pickMessageFromPool(pool, signature);
 
   if (!msg || !msg.textTemplate) {
     console.error(
