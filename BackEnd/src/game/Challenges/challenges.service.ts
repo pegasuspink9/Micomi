@@ -34,6 +34,37 @@ import {
 } from "../../../helper/enemyAttackSounds";
 
 const prisma = new PrismaClient();
+const challengeGameplayFeedbackCache = new Map<
+  string,
+  { text: string; audio: string[] }
+>();
+const CHALLENGE_FEEDBACK_CACHE_LIMIT = 1000;
+
+const buildChallengeFeedbackKey = (
+  progressId: number,
+  challengeId: number,
+  phase: string,
+) => `${progressId}:${challengeId}:${phase}`;
+
+const getCachedChallengeGameplayFeedback = async (
+  key: string,
+  producer: () => Promise<{ text: string; audio: string[] }>,
+) => {
+  const cached = challengeGameplayFeedbackCache.get(key);
+  if (cached) return cached;
+
+  const created = await producer();
+
+  if (challengeGameplayFeedbackCache.size >= CHALLENGE_FEEDBACK_CACHE_LIMIT) {
+    const oldestKey = challengeGameplayFeedbackCache.keys().next().value;
+    if (oldestKey) {
+      challengeGameplayFeedbackCache.delete(oldestKey);
+    }
+  }
+
+  challengeGameplayFeedbackCache.set(key, created);
+  return created;
+};
 
 type ChallengeDTO = Omit<Challenge, never> & {
   answer?: string[];
@@ -1449,18 +1480,34 @@ export const submitChallengeService = async (
       }
     }
 
-    const { text, audio } = await generateDynamicMessage(
-      true,
-      hintUsed,
-      updatedProgress.consecutive_corrects ?? 0,
-      fightResult.character_health ?? character.health,
-      character.health,
-      elapsed,
-      enemy.enemy_name,
-      fightResult.enemyHealth ??
-        fightResult.enemy?.enemy_health ??
-        currentProgress.enemy_hp,
-      false,
+    const feedbackKey = buildChallengeFeedbackKey(
+      currentProgress.progress_id,
+      challengeId,
+      [
+        "correct",
+        `a${updatedProgress.attempts ?? 0}`,
+        `streak${updatedProgress.consecutive_corrects ?? 0}`,
+        `hint${hintUsed ? 1 : 0}`,
+        "bonus0",
+      ].join(":"),
+    );
+
+    const { text, audio } = await getCachedChallengeGameplayFeedback(
+      feedbackKey,
+      () =>
+        generateDynamicMessage(
+          true,
+          hintUsed,
+          updatedProgress.consecutive_corrects ?? 0,
+          fightResult.character_health ?? character.health,
+          character.health,
+          elapsed,
+          enemy.enemy_name,
+          fightResult.enemyHealth ??
+            fightResult.enemy?.enemy_health ??
+            currentProgress.enemy_hp,
+          false,
+        ),
     );
     message = text;
     audioResponse = audio;
@@ -1522,20 +1569,39 @@ export const submitChallengeService = async (
       fightResult.character.character_damage = 0;
     }
 
-    const { text, audio } = await generateDynamicMessage(
-      false,
-      false,
-      0,
-      fightResult.charHealth ??
-        fightResult.character?.character_health ??
-        currentProgress.player_hp,
-      character.health,
-      elapsed,
-      enemy.enemy_name,
-      fightResult.enemyHealth ??
-        fightResult.enemy?.enemy_health ??
-        currentProgress.enemy_hp,
-      false,
+    const feedbackKey = buildChallengeFeedbackKey(
+      currentProgress.progress_id,
+      challengeId,
+      [
+        "wrong",
+        `a${updatedProgress.attempts ?? 0}`,
+        `hp${
+          fightResult.charHealth ??
+          fightResult.character?.character_health ??
+          currentProgress.player_hp
+        }`,
+        "bonus0",
+      ].join(":"),
+    );
+
+    const { text, audio } = await getCachedChallengeGameplayFeedback(
+      feedbackKey,
+      () =>
+        generateDynamicMessage(
+          false,
+          false,
+          0,
+          fightResult.charHealth ??
+            fightResult.character?.character_health ??
+            currentProgress.player_hp,
+          character.health,
+          elapsed,
+          enemy.enemy_name,
+          fightResult.enemyHealth ??
+            fightResult.enemy?.enemy_health ??
+            currentProgress.enemy_hp,
+          false,
+        ),
     );
 
     message = text;
@@ -2002,18 +2068,34 @@ export const submitChallengeService = async (
   }
 
   if (isBonusRound) {
-    const { text, audio } = await generateDynamicMessage(
-      isCorrect,
-      hintUsed,
-      updatedProgress.consecutive_corrects ?? 0,
-      fightResult.character_health ?? character.health,
-      character.health,
-      elapsed,
-      enemy.enemy_name,
-      fightResult.enemyHealth ??
-        fightResult.enemy?.enemy_health ??
-        currentProgress.enemy_hp,
-      true,
+    const feedbackKey = buildChallengeFeedbackKey(
+      currentProgress.progress_id,
+      challengeId,
+      [
+        "bonus",
+        isCorrect ? "correct" : "wrong",
+        `a${updatedProgress.attempts ?? 0}`,
+        `streak${updatedProgress.consecutive_corrects ?? 0}`,
+        `hint${hintUsed ? 1 : 0}`,
+      ].join(":"),
+    );
+
+    const { text, audio } = await getCachedChallengeGameplayFeedback(
+      feedbackKey,
+      () =>
+        generateDynamicMessage(
+          isCorrect,
+          hintUsed,
+          updatedProgress.consecutive_corrects ?? 0,
+          fightResult.character_health ?? character.health,
+          character.health,
+          elapsed,
+          enemy.enemy_name,
+          fightResult.enemyHealth ??
+            fightResult.enemy?.enemy_health ??
+            currentProgress.enemy_hp,
+          true,
+        ),
     );
     message = text;
     audioResponse = audio;
