@@ -1352,7 +1352,7 @@ export const submitChallengeService = async (
         break;
       case "Leon":
         character_idle_audio =
-          "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Leon_Run.wav";
+          "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Leon_Roar.wav";
         break;
       default:
         character_idle_audio = null;

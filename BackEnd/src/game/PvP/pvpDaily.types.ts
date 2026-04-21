@@ -14,6 +14,8 @@ export interface DailyPvpQuestion {
   question: string | null;
   options: string[];
   correct_answer: string[];
+  html_file: string | null;
+  css_file: string | null;
 }
 
 export interface PvPDailyPlayerSnapshot {
@@ -86,6 +88,7 @@ export interface PvPMatchState {
   has_freeze_effect_by_player: Record<number, boolean>;
   has_strong_effect_by_player: Record<number, boolean>;
   has_ryron_reveal_by_player: Record<number, boolean>;
+  messages_by_player: Record<number, string | null>;
 }
 
 export interface PlayerMatchmakingState {
@@ -142,6 +145,8 @@ export interface PvpMatchEntryLikeResponse {
   is_victory_image: string | null;
   boss_skill_activated: boolean;
   isEnemyFrozen: boolean;
+  message: string;
+  audio: string[];
 }
 
 export interface PvpDailyStatusResponse {
@@ -154,6 +159,12 @@ export interface PvpDailyPlayResponse {
   status: PlayerMatchmakingState;
   match_found: boolean;
   match_id: string | null;
+}
+
+export interface PvpDailyInGameMessageResponse {
+  match_id: string;
+  character_reaction: string | null;
+  enemy_reaction: string | null;
 }
 
 export interface PvpDailySubmitAnswerResult {

@@ -20,6 +20,13 @@ const parseAnswer = (value: unknown): string[] => {
   return value;
 };
 
+const parseInGameMessage = (value: unknown): string => {
+  if (typeof value !== "string") {
+    throw new Error("message is required");
+  }
+  return value;
+};
+
 const parseChallengeId = (value: string | undefined): number => {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) {
@@ -170,6 +177,26 @@ export const submitAnswer = async (req: Request, res: Response) => {
       : message.includes("Please wait")
         ? 429
         : 400;
+    return errorResponse(res, error, message, status);
+  }
+};
+
+export const setInGameMessage = async (req: Request, res: Response) => {
+  try {
+    const playerId = (req as any).user.id as number;
+    const matchId = parseMatchId(req.params.matchId);
+    const message = parseInGameMessage(req.body?.message);
+
+    const result = await PvpDailyService.setInGameMessage(
+      playerId,
+      matchId,
+      message,
+    );
+
+    return successResponse(res, result, "In-game message updated");
+  } catch (error) {
+    const message = (error as Error).message || "Failed to update in-game message";
+    const status = message.includes("not found") ? 404 : 400;
     return errorResponse(res, error, message, status);
   }
 };

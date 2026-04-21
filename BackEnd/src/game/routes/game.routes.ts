@@ -148,6 +148,12 @@ router.get(
   PvPDailyController.getMatchState,
 );
 router.post(
+  "/pvp/daily/match/:matchId/message",
+  authenticate,
+  requirePlayer,
+  PvPDailyController.setInGameMessage,
+);
+router.post(
   "/pvp/daily/match/submit-answer/:matchId/:challengeId",
   authenticate,
   requirePlayer,

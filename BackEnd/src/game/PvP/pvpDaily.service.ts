@@ -16,7 +16,6 @@ import {
   PvpDailySubmitAnswerResult,
 } from "./pvpDaily.types";
 import { getSocketServer } from "../../socket";
-import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 import {
   CORRECT_ANSWER_AUDIO,
   WRONG_ANSWER_AUDIO,
@@ -42,6 +41,7 @@ const prisma = new PrismaClient();
 const MATCHMAKING_TIMEOUT_MS = 2 * 60 * 1000;
 const MATCH_COMPLETION_CLEANUP_MS = 90 * 1000;
 const DEFAULT_FALLBACK_ATTACK_DAMAGE = 12;
+const MAX_IN_GAME_MESSAGE_LENGTH = 160;
 const WIN_REWARD: PvPCompletionRewards = {
   coins: 60,
   points: 120,
@@ -69,6 +69,34 @@ const playerTopicById = new Map<number, PvpChallengeTopic>();
 const matches = new Map<string, PvPMatchState>();
 const matchCleanupTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const dailyPreviewViewedByPlayer = new Map<number, string>();
+const gameplayFeedbackCache = new Map<string, { text: string; audio: string[] }>();
+
+const buildGameplayFeedbackKey = (
+  matchId: string,
+  playerId: number,
+  phase: string,
+) => `${matchId}:${playerId}:${phase}`;
+
+const getCachedGameplayFeedback = async (
+  key: string,
+  producer: () => Promise<{ text: string; audio: string[] }>,
+) => {
+  const cached = gameplayFeedbackCache.get(key);
+  if (cached) return cached;
+
+  const created = await producer();
+  gameplayFeedbackCache.set(key, created);
+  return created;
+};
+
+const clearGameplayFeedbackForMatch = (matchId: string) => {
+  const prefix = `${matchId}:`;
+  for (const key of gameplayFeedbackCache.keys()) {
+    if (key.startsWith(prefix)) {
+      gameplayFeedbackCache.delete(key);
+    }
+  }
+};
 
 const randomFrom = (pool: string[]): string | null => {
   if (pool.length === 0) return null;
@@ -343,6 +371,8 @@ const buildQuestionPool = async (
       question: current.question,
       options: normalizeToStringArray(current.options as unknown),
       correct_answer: normalizeToStringArray(current.correct_answer as unknown),
+      html_file: current.html_file ?? null,
+      css_file: current.css_file ?? null,
     };
   });
 };
@@ -412,6 +442,19 @@ const getArrayItemOrNull = (value: unknown, index: number): string | null => {
   return typeof item === "string" ? item : null;
 };
 
+const normalizeInGameMessage = (value: string): string => {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    throw new Error("message must not be empty");
+  }
+  if (normalized.length > MAX_IN_GAME_MESSAGE_LENGTH) {
+    throw new Error(
+      `message must be at most ${MAX_IN_GAME_MESSAGE_LENGTH} characters`,
+    );
+  }
+  return normalized;
+};
+
 const buildChallengeWithTimer = (
   question: DailyPvpQuestion,
   roundStartedAtIso: string,
@@ -439,6 +482,9 @@ const buildEntryLikePayload = async (
   const opponentIndex = getOpponentIndex(viewerIndex);
   const viewerSnapshot = match.players[viewerIndex];
   const opponentSnapshot = match.players[opponentIndex];
+  const viewerReaction = match.messages_by_player[viewerSnapshot.player_id] ?? null;
+  const opponentReaction =
+    match.messages_by_player[opponentSnapshot.player_id] ?? null;
   const question = getRoundQuestion(match);
 
   if (!question) {
@@ -482,21 +528,40 @@ const buildEntryLikePayload = async (
     opponentAttackType,
   );
   const enemy_idle_audio = getHeroIdleAudio(opponentChar.character_name);
-  const enemy_hurt_audio = getHeroHurtAudio(opponentChar.character_name);
-  const character_hurt_audio = getHeroHurtAudio(viewerChar.character_name);
 
   const mapName = question.map_name || question.topic;
-  const levelNumber = question.level_number ?? 1;
 
   const currentChallenge = buildChallengeWithTimer(
     question,
     match.current_round_started_at,
   );
-  const combatBackground = [await getBackgroundForLevel(mapName, levelNumber)];
+
   const mapAssets = getMapMediaAssets(mapName);
+  const combatBackground = [mapAssets.versus_background];
 
   const viewerSS = getHeroSpecialSkillAssets(viewerChar.character_name);
   const opponentSS = getHeroSpecialSkillAssets(opponentChar.character_name);
+  const elapsed =
+    (Date.now() - new Date(match.current_round_started_at).getTime()) / 1000;
+  const entryFeedbackKey = buildGameplayFeedbackKey(
+    match.match_id,
+    viewerPlayerId,
+    `entry:r${match.current_round_index}`,
+  );
+  const { text: entryMessage, audio: entryAudio } =
+    await getCachedGameplayFeedback(entryFeedbackKey, () =>
+      generateDynamicMessage(
+        true,
+        false,
+        match.consecutive_corrects_by_player[viewerPlayerId] ?? 0,
+        viewerSnapshot.character_health,
+        viewerSnapshot.character_max_health,
+        elapsed,
+        opponentSnapshot.character_name,
+        opponentSnapshot.character_health,
+        false,
+      ),
+    );
 
   return {
     level: {
@@ -521,6 +586,7 @@ const buildEntryLikePayload = async (
       enemy_hurt: opponentChar.character_hurt,
       enemy_dies: opponentChar.character_dies,
       enemy_avatar: opponentChar.character_avatar,
+      enemy_reaction: opponentReaction,
       special_skill: {
         special_skill_image: opponentSS.special_skill_image,
         streak:
@@ -545,6 +611,7 @@ const buildEntryLikePayload = async (
       character_avatar: viewerChar.character_avatar,
       character_is_range: viewerChar.is_range,
       character_range_attack: viewerChar.range_attacks,
+      character_reaction: viewerReaction,
       special_skill: {
         special_skill_image: viewerSS.special_skill_image,
         streak: match.consecutive_corrects_by_player[viewerPlayerId] ?? 0,
@@ -569,14 +636,16 @@ const buildEntryLikePayload = async (
     enemy_attack_audio,
     character_attack_audio,
     character_idle_audio,
-    character_hurt_audio,
+    character_hurt_audio: null,
     enemy_idle_audio,
-    enemy_hurt_audio,
+    enemy_hurt_audio: null,
     death_audio: null,
     is_victory_audio: null,
     is_victory_image: null,
     boss_skill_activated: false,
     isEnemyFrozen: false,
+    message: entryMessage,
+    audio: entryAudio,
   };
 };
 
@@ -673,6 +742,13 @@ const ensureMatchRuntimeState = (match: PvPMatchState) => {
     if (match.has_ryron_reveal_by_player[playerId] === undefined) {
       match.has_ryron_reveal_by_player[playerId] = false;
     }
+
+    if (!match.messages_by_player) {
+      match.messages_by_player = {};
+    }
+    if (match.messages_by_player[playerId] === undefined) {
+      match.messages_by_player[playerId] = null;
+    }
   }
 };
 
@@ -707,6 +783,7 @@ const cloneMatchForResponse = (match: PvPMatchState): PvPMatchState => {
     has_freeze_effect_by_player: { ...match.has_freeze_effect_by_player },
     has_strong_effect_by_player: { ...match.has_strong_effect_by_player },
     has_ryron_reveal_by_player: { ...match.has_ryron_reveal_by_player },
+    messages_by_player: { ...match.messages_by_player },
   };
 };
 
@@ -748,6 +825,7 @@ const scheduleMatchCleanup = (matchId: string) => {
   const timer = setTimeout(async () => {
     matches.delete(matchId);
     await removeMatchProgress(matchId);
+    clearGameplayFeedbackForMatch(matchId);
     matchCleanupTimers.delete(matchId);
   }, MATCH_COMPLETION_CLEANUP_MS);
 
@@ -1113,6 +1191,10 @@ const tryCreatePair = async (
       [playerA]: false,
       [playerB]: false,
     },
+    messages_by_player: {
+      [playerA]: null,
+      [playerB]: null,
+    },
   };
 
   matches.set(matchId, match);
@@ -1152,6 +1234,8 @@ const publicQuestion = (question: DailyPvpQuestion) => {
     description: question.description,
     question: question.question,
     options: question.options,
+    html_file: question.html_file,
+    css_file: question.css_file,
   };
 };
 
@@ -1379,6 +1463,12 @@ const buildSubmitLikeResponse = async (
 
   const viewerCharacter = entryLike.character as Record<string, unknown>;
   const opponentEnemy = entryLike.enemy as Record<string, unknown>;
+  const viewerReaction =
+    match.messages_by_player[playerId] ??
+    ((viewerCharacter.character_reaction as string | null | undefined) ?? null);
+  const opponentReaction =
+    match.messages_by_player[Number(opponentEnemy.player_id)] ??
+    ((opponentEnemy.enemy_reaction as string | null | undefined) ?? null);
 
   const viewerAttackAsset = getArrayItemOrNull(
     viewerCharacter.character_attack,
@@ -1459,7 +1549,7 @@ const buildSubmitLikeResponse = async (
         ? "hurt"
         : null,
     character_attack_overlay: null,
-    character_reaction: null,
+    character_reaction: viewerReaction,
   };
 
   const enemyForFightResult = {
@@ -1492,7 +1582,7 @@ const buildSubmitLikeResponse = async (
         : null,
     enemy_attack_overlay: null,
     enemy_hit_reaction: null,
-    enemy_reaction: null,
+    enemy_reaction: opponentReaction,
   };
 
   const fightResult = {
@@ -1522,21 +1612,46 @@ const buildSubmitLikeResponse = async (
             : "That was tricky!";
   let submitAudio: string[] = [];
 
-  if (
+  const shouldGenerateDynamicMessage =
     reason === "correct_and_first" ||
     reason === "correct_but_late" ||
-    reason === "incorrect"
-  ) {
-    const { text, audio } = await generateDynamicMessage(
-      reason !== "incorrect",
-      false,
-      match.consecutive_corrects_by_player[playerId] ?? 0,
-      Number(viewerCharacter.character_health ?? 0),
-      Number(viewerCharacter.character_max_health ?? 0),
-      elapsed,
-      opponentCharName,
-      Number(opponentEnemy.enemy_health ?? 0),
-      false,
+    reason === "incorrect" ||
+    reason === "round_already_resolved" ||
+    reason === "ongoing";
+
+  if (shouldGenerateDynamicMessage) {
+    const toneIsCorrect =
+      reason === "incorrect"
+        ? false
+        : reason === "round_already_resolved" || reason === "ongoing"
+          ? isViewerLastAttacker
+          : true;
+
+    const feedbackPhase = [
+      reason,
+      `r${match.current_round_index}`,
+      `atk${match.last_attack_by_player_id ?? "none"}`,
+      `tone${toneIsCorrect ? "correct" : "wrong"}`,
+      `status${match.status}`,
+    ].join(":");
+    const feedbackKey = buildGameplayFeedbackKey(
+      match.match_id,
+      playerId,
+      feedbackPhase,
+    );
+
+    const { text, audio } = await getCachedGameplayFeedback(feedbackKey, () =>
+      generateDynamicMessage(
+        toneIsCorrect,
+        false,
+        match.consecutive_corrects_by_player[playerId] ?? 0,
+        Number(viewerCharacter.character_health ?? 0),
+        Number(viewerCharacter.character_max_health ?? 0),
+        elapsed,
+        opponentCharName,
+        Number(opponentEnemy.enemy_health ?? 0),
+        false,
+      ),
     );
 
     submitMessage = text;
@@ -1819,6 +1934,39 @@ export const submitAnswer = async (
   emitMatchStateToPlayers(match, "pvp:match-update");
 
   return buildSubmitLikeResponse(match, playerId, "correct_but_late", true);
+};
+
+export const setInGameMessage = async (
+  playerId: number,
+  matchId: string,
+  message: string,
+) => {
+  const match = await getMatchFromMemoryOrDb(matchId);
+  if (!match) {
+    throw new Error("Match not found");
+  }
+
+  const playerIndex = getPlayerIndex(match, playerId);
+  if (playerIndex === -1) {
+    throw new Error("You are not part of this match");
+  }
+
+  const opponentIndex = getOpponentIndex(playerIndex);
+  const opponentPlayerId = match.players[opponentIndex].player_id;
+  const normalizedMessage = normalizeInGameMessage(message);
+
+  match.messages_by_player[playerId] = normalizedMessage;
+
+  await persistMatchProgress(match);
+  if (match.status === "active") {
+    emitMatchStateToPlayers(match, "pvp:match-update");
+  }
+
+  return {
+    match_id: match.match_id,
+    character_reaction: match.messages_by_player[playerId] ?? null,
+    enemy_reaction: match.messages_by_player[opponentPlayerId] ?? null,
+  };
 };
 
 export const cancelMatchmaking = async (
