@@ -298,4 +298,5 @@ export const audioLinks = [
   //enemy idle audio
   "https://micomi-assets.me/Enemy%20idle%20sound/GreenLand/Antristotle.wav",
   "https://micomi-assets.me/Enemy%20idle%20sound/GreenLand/Beertolomy.wav",
+  "https://micomi-assets.me/Enemy%20idle%20sound/GreenLand/Draco.wav"
 ];
