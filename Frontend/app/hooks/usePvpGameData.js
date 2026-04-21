@@ -5,6 +5,7 @@ import { pvpService } from '../services/pvpService';
 const PVP_MATCH_CACHE_PREFIX = 'pvp_match_cache:';
 const PVP_ACTIVE_MATCH_ID_KEY = 'pvp_active_match_id';
 const AUTO_PROCEED_SECONDS = 10;
+const MATCH_SYNC_INTERVAL_MS = 500;
 
 const normalizeChallengeId = (value) => {
   if (value === null || value === undefined || value === '') {
@@ -121,6 +122,8 @@ const buildSyncStateSignature = (state) => {
     toStableValue(getChallengeId(state.nextChallengeData)),
     toStableValue(state.selectedCharacter?.current_health ?? state.selectedCharacter?.character_health),
     toStableValue(state.enemy?.enemy_health),
+    toStableValue(state.selectedCharacter?.character_reaction),
+    toStableValue(state.enemy?.enemy_reaction),
     toStableValue(state.card?.character_attack_card),
     buildSubmissionSignature(state.submissionResult),
   ].join('||');
@@ -340,6 +343,14 @@ const buildCombatStateSignature = (state) => {
     toStableValue(readEnemyHealth(state)),
     toStableValue(readCharacterState(state)),
     toStableValue(readEnemyState(state)),
+    toStableValue(
+      submission?.fightResult?.character?.character_reaction ??
+      state?.selectedCharacter?.character_reaction
+    ),
+    toStableValue(
+      submission?.fightResult?.enemy?.enemy_reaction ??
+      state?.enemy?.enemy_reaction
+    ),
     toStableValue(state.energy),
     toStableValue(state.card?.character_attack_card),
   ].join('||');
@@ -388,6 +399,8 @@ export const usePvpGameData = (matchId, options = {}) => {
   const [animationsLoading, setAnimationsLoading] = useState(!disabled);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [sendingPvpMessage, setSendingPvpMessage] = useState(false);
+  const [chatReactionEvent, setChatReactionEvent] = useState(0);
   const [waitingForAnimation, setWaitingForAnimation] = useState(false);
   const [canProceed, setCanProceed] = useState(false);
   const [autoProceedCountdown, setAutoProceedCountdown] = useState(null);
@@ -443,6 +456,7 @@ export const usePvpGameData = (matchId, options = {}) => {
     lastProcessedSubmissionRef.current = null;
     proceedReplayGuardRef.current = makeProceedReplayGuard();
     renderedSubmissionByChallengeRef.current = new Map();
+    setChatReactionEvent(0);
   }, [activeMatchId]);
 
   const stopPolling = useCallback(() => {
@@ -726,6 +740,83 @@ export const usePvpGameData = (matchId, options = {}) => {
       return next;
     });
   }, []);
+
+  const bumpChatReactionEvent = useCallback(() => {
+    setChatReactionEvent((prev) => prev + 1);
+  }, []);
+
+  const applyReactionPayload = useCallback((reactionPayload, options = {}) => {
+    const { forceReplay = false } = options;
+
+    if (!reactionPayload || typeof reactionPayload !== 'object') {
+      return false;
+    }
+
+    const hasCharacterReaction =
+      Object.prototype.hasOwnProperty.call(reactionPayload, 'character_reaction') ||
+      Object.prototype.hasOwnProperty.call(reactionPayload, 'characterReaction');
+    const hasEnemyReaction =
+      Object.prototype.hasOwnProperty.call(reactionPayload, 'enemy_reaction') ||
+      Object.prototype.hasOwnProperty.call(reactionPayload, 'enemyReaction');
+
+    if (!hasCharacterReaction && !hasEnemyReaction) {
+      return false;
+    }
+
+    const nextCharacterReaction =
+      reactionPayload.character_reaction ?? reactionPayload.characterReaction ?? null;
+    const nextEnemyReaction =
+      reactionPayload.enemy_reaction ?? reactionPayload.enemyReaction ?? null;
+
+    let didUpdate = false;
+
+    setGameState((prev) => {
+      const prevCharacterReaction = prev?.selectedCharacter?.character_reaction ?? null;
+      const prevEnemyReaction = prev?.enemy?.enemy_reaction ?? null;
+
+      const resolvedCharacterReaction = hasCharacterReaction
+        ? nextCharacterReaction
+        : prevCharacterReaction;
+      const resolvedEnemyReaction = hasEnemyReaction
+        ? nextEnemyReaction
+        : prevEnemyReaction;
+
+      if (
+        resolvedCharacterReaction === prevCharacterReaction &&
+        resolvedEnemyReaction === prevEnemyReaction
+      ) {
+        return prev;
+      }
+
+      didUpdate = true;
+
+      return {
+        ...prev,
+        selectedCharacter: {
+          ...(prev.selectedCharacter || {}),
+          ...(hasCharacterReaction
+            ? {
+                character_reaction: resolvedCharacterReaction,
+              }
+            : {}),
+        },
+        enemy: {
+          ...(prev.enemy || {}),
+          ...(hasEnemyReaction
+            ? {
+                enemy_reaction: resolvedEnemyReaction,
+              }
+            : {}),
+        },
+      };
+    });
+
+    if (forceReplay || didUpdate) {
+      bumpChatReactionEvent();
+    }
+
+    return didUpdate;
+  }, [bumpChatReactionEvent]);
 
   const fetchMatchState = useCallback(async ({ silent = false, resolvedMatchId = null } = {}) => {
     if (disabled) {
@@ -1449,6 +1540,90 @@ export const usePvpGameData = (matchId, options = {}) => {
     toResponseDrivenState,
   ]);
 
+  const sendPvpMatchMessage = useCallback(async (rawMessage) => {
+    if (disabled) {
+      return { success: false, error: 'PvP mode is disabled' };
+    }
+
+    const normalizedMessage = typeof rawMessage === 'string' ? rawMessage.trim() : '';
+    if (!normalizedMessage) {
+      return { success: false, error: 'Message is required' };
+    }
+
+    if (sendingPvpMessage) {
+      return { success: false, error: 'Message is already sending' };
+    }
+
+    try {
+      setSendingPvpMessage(true);
+
+      const resolvedMatchId = await resolveLatestMatchId({ forceRefresh: false });
+      if (!resolvedMatchId) {
+        throw new Error('Missing match ID');
+      }
+
+      await setResolvedMatchId(resolvedMatchId);
+
+      const postResponse = await pvpService.sendDailyMatchMessage(
+        resolvedMatchId,
+        normalizedMessage
+      );
+
+      // Optimistically apply reaction payload so bubbles appear instantly.
+      applyReactionPayload(postResponse?.data || {}, { forceReplay: true });
+
+      // Pull authoritative state immediately instead of waiting for poll interval.
+      try {
+        const payload = await pvpService.getDailyMatchState(resolvedMatchId);
+        const normalized = pvpService.extractAuthoritativeMatchState(payload);
+
+        if (normalized) {
+          const syncedState = suppressAlreadyRenderedSubmissionForChallenge(
+            suppressReplayForProceededChallenge(normalized)
+          );
+
+          setGameStateIfChanged((prev) => {
+            const merged = toResponseDrivenState(prev, syncedState, {
+              submissionResult: syncedState.submissionResult ?? prev.submissionResult ?? null,
+              nextChallengeData: prev.nextChallengeData || null,
+            });
+
+            return mergeFightAttributes(merged, syncedState);
+          });
+
+          setSyncConnected();
+        }
+      } catch (syncError) {
+        console.warn('Failed to immediately sync match state after chat message:', syncError);
+      }
+
+      return {
+        success: true,
+        data: postResponse?.data || null,
+      };
+    } catch (messageError) {
+      const errorMessage = messageError?.message || 'Failed to send PvP message';
+
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    } finally {
+      setSendingPvpMessage(false);
+    }
+  }, [
+    applyReactionPayload,
+    disabled,
+    resolveLatestMatchId,
+    sendingPvpMessage,
+    setGameStateIfChanged,
+    setResolvedMatchId,
+    setSyncConnected,
+    suppressAlreadyRenderedSubmissionForChallenge,
+    suppressReplayForProceededChallenge,
+    toResponseDrivenState,
+  ]);
+
   const retryLevel = useCallback(async () => {
     await fetchMatchState();
   }, [fetchMatchState]);
@@ -1583,7 +1758,7 @@ export const usePvpGameData = (matchId, options = {}) => {
       stopPolling();
       matchPollRef.current = setInterval(() => {
         syncMatchState();
-      }, 1500);
+      }, MATCH_SYNC_INTERVAL_MS);
     };
 
     startPolling();
@@ -1673,6 +1848,7 @@ export const usePvpGameData = (matchId, options = {}) => {
     loading,
     error,
     submitting,
+    sendingPvpMessage,
     waitingForAnimation,
     canProceed,
     autoProceedCountdown,
@@ -1685,6 +1861,7 @@ export const usePvpGameData = (matchId, options = {}) => {
     enterNextLevel,
     refetchGameData,
     submitAnswer,
+    sendPvpMatchMessage,
     onAnimationComplete: handleAnimationComplete,
     handleProceed,
 
@@ -1697,6 +1874,8 @@ export const usePvpGameData = (matchId, options = {}) => {
     clearSelectedPotion,
     fetchPotions: async () => [],
 
+    resolvedMatchId: activeMatchId,
+    chatReactionEvent,
     liveSync,
   };
 };

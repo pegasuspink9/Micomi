@@ -31,6 +31,7 @@ const ScreenPlay = ({
   onPausePress = null,
   setBorderColor,
   isPvpMode = false,
+  pvpReactionEvent = 0,
 }) => {
   const [attackingEnemies] = useState(new Set());
   const [totalCoins, setTotalCoins] = useState(0);
@@ -92,54 +93,156 @@ const ScreenPlay = ({
 
   const [activeCharReaction, setActiveCharReaction] = useState(null);
   const [activeEnemyReaction, setActiveEnemyReaction] = useState(null);
+  const lastLiveReactionSignatureRef = useRef(null);
+  const lastSubmissionReactionSignatureRef = useRef(null);
 
   useEffect(() => {
-    const charReaction = gameState.submissionResult?.fightResult?.character?.character_reaction;
-    const enemyReaction = gameState.submissionResult?.fightResult?.enemy?.enemy_reaction;
-    const isCorrect = gameState.submissionResult?.isCorrect;
+    const submissionCharReaction =
+      gameState.submissionResult?.fightResult?.character?.character_reaction;
+    const submissionEnemyReaction =
+      gameState.submissionResult?.fightResult?.enemy?.enemy_reaction;
 
-    // Reset states immediately on new submission result
+    const liveCharReaction = gameState.selectedCharacter?.character_reaction ?? null;
+    const liveEnemyReaction = gameState.enemy?.enemy_reaction ?? null;
+
+    const hasSubmissionReaction = Boolean(submissionCharReaction || submissionEnemyReaction);
+    const hasLiveReaction = Boolean(liveCharReaction || liveEnemyReaction);
+    const submissionReactionSignature = hasSubmissionReaction
+      ? [
+          gameState.currentChallenge?.id ?? 'none',
+          gameState.submissionResult?.reason ?? 'none',
+          gameState.submissionResult?.acceptedForAttack ??
+            gameState.submissionResult?.accepted_for_attack ??
+            'na',
+          gameState.submissionResult?.isCorrect ?? gameState.submissionResult?.is_correct ?? 'na',
+          submissionCharReaction || '',
+          submissionEnemyReaction || '',
+        ].join('|')
+      : null;
+
+    // Reset before replaying so identical text can show again.
     setActiveCharReaction(null);
     setActiveEnemyReaction(null);
 
-    if (!charReaction && !enemyReaction) return;
+    const sequenceTimeouts = [];
 
-    let sequenceTimeouts = [];
+    if (
+      hasSubmissionReaction &&
+      submissionReactionSignature !== lastSubmissionReactionSignatureRef.current
+    ) {
+      lastSubmissionReactionSignatureRef.current = submissionReactionSignature;
 
-    // "entrance delay display 4 seconds" 
-    const startTimeout = setTimeout(() => {
-      /**
-       * Sequential Order Logic:
-       * Correct: Character -> Enemy
-       * Wrong:   Enemy -> Character
-       */
-      const firstText = isCorrect ? charReaction : enemyReaction;
-      const secondText = isCorrect ? enemyReaction : charReaction;
-      
-      const setFirst = isCorrect ? setActiveCharReaction : setActiveEnemyReaction;
-      const setSecond = isCorrect ? setActiveEnemyReaction : setActiveCharReaction;
+      const isCorrect =
+        typeof gameState.submissionResult?.isCorrect === 'boolean'
+          ? gameState.submissionResult.isCorrect
+          : typeof gameState.submissionResult?.is_correct === 'boolean'
+            ? gameState.submissionResult.is_correct
+            : true;
 
-      // STEP 1: Display the first reactor
-      if (firstText) setFirst(firstText);
+      const startTimeout = setTimeout(() => {
+        const firstText = isCorrect ? submissionCharReaction : submissionEnemyReaction;
+        const secondText = isCorrect ? submissionEnemyReaction : submissionCharReaction;
 
-      // STEP 2: After 1 second, hide first and show second
-      const step2Timeout = setTimeout(() => {
-        setFirst(null);
-        if (secondText) setSecond(secondText);
+        const setFirst = isCorrect ? setActiveCharReaction : setActiveEnemyReaction;
+        const setSecond = isCorrect ? setActiveEnemyReaction : setActiveCharReaction;
 
-        const step3Timeout = setTimeout(() => {
-          setSecond(null);
+        if (firstText) {
+          setFirst(firstText);
+        }
+
+        const step2Timeout = setTimeout(() => {
+          setFirst(null);
+
+          if (secondText) {
+            setSecond(secondText);
+          }
+
+          const step3Timeout = setTimeout(() => {
+            setSecond(null);
+          }, 5000);
+
+          sequenceTimeouts.push(step3Timeout);
         }, 5000);
-        sequenceTimeouts.push(step3Timeout);
-      }, 5000);
-      sequenceTimeouts.push(step2Timeout);
-    }, 4000);
+
+        sequenceTimeouts.push(step2Timeout);
+      }, 4000);
+
+      sequenceTimeouts.push(startTimeout);
+
+      return () => {
+        sequenceTimeouts.forEach(clearTimeout);
+      };
+    }
+
+    if (!hasSubmissionReaction) {
+      lastSubmissionReactionSignatureRef.current = null;
+    }
+
+    if (!isPvpMode || !hasLiveReaction) {
+      lastLiveReactionSignatureRef.current = null;
+      return undefined;
+    }
+
+    const liveSignature = [
+      liveCharReaction || '',
+      liveEnemyReaction || '',
+      String(pvpReactionEvent),
+    ].join('|');
+
+    if (lastLiveReactionSignatureRef.current === liveSignature) {
+      return undefined;
+    }
+    lastLiveReactionSignatureRef.current = liveSignature;
+
+    const liveQueue = [];
+    if (liveCharReaction) {
+      liveQueue.push({ side: 'character', text: liveCharReaction });
+    }
+    if (liveEnemyReaction) {
+      liveQueue.push({ side: 'enemy', text: liveEnemyReaction });
+    }
+
+    const playLiveReaction = (index) => {
+      if (index >= liveQueue.length) {
+        return;
+      }
+
+      const item = liveQueue[index];
+      const showReaction = item.side === 'character' ? setActiveCharReaction : setActiveEnemyReaction;
+      const clearReaction = item.side === 'character' ? setActiveCharReaction : setActiveEnemyReaction;
+
+      showReaction(item.text);
+
+      const hideTimeout = setTimeout(() => {
+        clearReaction(null);
+
+        if (index + 1 < liveQueue.length) {
+          const nextTimeout = setTimeout(() => {
+            playLiveReaction(index + 1);
+          }, 160);
+          sequenceTimeouts.push(nextTimeout);
+        }
+      }, 2600);
+
+      sequenceTimeouts.push(hideTimeout);
+    };
+
+    const startLiveTimeout = setTimeout(() => {
+      playLiveReaction(0);
+    }, 80);
+
+    sequenceTimeouts.push(startLiveTimeout);
 
     return () => {
-      clearTimeout(startTimeout);
       sequenceTimeouts.forEach(clearTimeout);
     };
-  }, [gameState.submissionResult]);
+  }, [
+    gameState.submissionResult,
+    gameState.selectedCharacter?.character_reaction,
+    gameState.enemy?.enemy_reaction,
+    isPvpMode,
+    pvpReactionEvent,
+  ]);
 
 
   const enemies = useMemo(() => {

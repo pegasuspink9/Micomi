@@ -1,5 +1,6 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -11,60 +12,131 @@ import {
 import { gameScale } from '../../../../Responsiveness/gameResponsive';
 import { soundManager } from '../../../Sounds/UniversalSoundManager';
 
-const PvpChatInputBox = ({ disabled = false }) => {
+const PvpChatInputBox = ({
+  matchId = null,
+  disabled = false,
+  sending = false,
+  onSendMessage = null,
+  onInputActivityChange = null,
+}) => {
   const [message, setMessage] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
+      setIsKeyboardVisible(true);
+    });
+
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      setIsKeyboardVisible(false);
+      setIsFocused(false);
+      inputRef.current?.blur();
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
+  const isInputActive = isFocused || isKeyboardVisible;
+
+  useEffect(() => {
+    if (typeof onInputActivityChange === 'function') {
+      onInputActivityChange(isInputActive);
+    }
+  }, [isInputActive, onInputActivityChange]);
 
   const canSend = useMemo(() => {
-    return !disabled && message.trim().length > 0;
-  }, [disabled, message]);
+    return !disabled && !sending && message.trim().length > 0;
+  }, [disabled, message, sending]);
 
-  const handleSend = useCallback(() => {
+  const handleSend = useCallback(async () => {
     if (!canSend) {
       return;
     }
 
+    if (typeof onSendMessage !== 'function') {
+      return;
+    }
+
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage) {
+      return;
+    }
+
     soundManager.playGameButtonTapSound();
-    console.log('PvP chat input placeholder:', message.trim());
+    const result = await onSendMessage(trimmedMessage);
+
+    if (result?.success === false) {
+      console.warn('Failed to send PvP chat message:', result?.error || 'Unknown error');
+      return;
+    }
+
     setMessage('');
-  }, [canSend, message]);
+  }, [canSend, message, onSendMessage]);
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.wrapper}
-    >
-      <View style={[styles.inputRow, disabled && styles.inputRowDisabled]}>
-        <TextInput
-          value={message}
-          onChangeText={setMessage}
-          editable={!disabled}
-          placeholder="Type a message..."
-          placeholderTextColor="rgba(194, 225, 255, 0.65)"
-          style={styles.input}
-          returnKeyType="send"
-          onSubmitEditing={handleSend}
-          blurOnSubmit={false}
-        />
+    <View style={[styles.host, isKeyboardVisible && styles.hostKeyboardVisible]} pointerEvents="box-none">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.wrapper}
+        pointerEvents="box-none"
+      >
+        <View style={[styles.inputRow, disabled && styles.inputRowDisabled]}>
+          <TextInput
+            ref={inputRef}
+            value={message}
+            onChangeText={setMessage}
+            maxLength={50} 
+            editable={!disabled}
+            placeholder="Type a message..."
+            placeholderTextColor="rgba(194, 225, 255, 0.65)"
+            style={styles.input}
+            returnKeyType="send"
+            onSubmitEditing={handleSend}
+            blurOnSubmit={false}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            autoCorrect={false}
+            autoCapitalize="sentences"
+          />
 
-        <Pressable
-          onPress={handleSend}
-          disabled={!canSend}
-          style={({ pressed }) => [
-            styles.sendButton,
-            !canSend && styles.sendButtonDisabled,
-            pressed && canSend ? styles.sendButtonPressed : null,
-          ]}
-        >
-          <Text style={styles.sendButtonText}>Send</Text>
-        </Pressable>
-      </View>
+          <Pressable
+            onPress={handleSend}
+            disabled={!canSend || typeof onSendMessage !== 'function'}
+            style={({ pressed }) => [
+              styles.sendButton,
+              (!canSend || typeof onSendMessage !== 'function') && styles.sendButtonDisabled,
+              pressed && canSend ? styles.sendButtonPressed : null,
+            ]}
+          >
+            <Text style={styles.sendButtonText}>{sending ? '...' : 'Send'}</Text>
+          </Pressable>
+        </View>
 
-      <Text style={styles.hintText}>PvP chat keyboard placeholder (logic coming soon)</Text>
-    </KeyboardAvoidingView>
+        <Text style={styles.hintText} accessible={false}>
+          {matchId
+            ? 'PvP live chat sends reaction bubbles in real time'
+            : 'Waiting for match sync...'}
+        </Text>
+      </KeyboardAvoidingView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  host: {
+    width: '100%',
+    minHeight: gameScale(82),
+    justifyContent: 'center'
+  },
+  hostKeyboardVisible: {
+    marginBottom: gameScale(30), 
+  },
   wrapper: {
     width: '100%',
     justifyContent: 'center',
@@ -144,8 +216,7 @@ const styles = StyleSheet.create({
   },
 
   hintText: {
-    marginTop: gameScale(6),
-    color: '#9fd5ff',
+    opacity: 0,
     fontFamily: 'DynaPuff',
     fontSize: gameScale(9),
     textAlign: 'center',

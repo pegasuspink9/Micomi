@@ -58,6 +58,9 @@ const ThirdGrid = ({
   isInRunMode = false,
   setSelectedBlankIndex,
   isPvpMode = false,
+  pvpMatchId = null,
+  onSendPvpMessage = null,
+  sendingPvpMessage = false,
 }) => {
 
   if (!currentQuestion) {
@@ -124,6 +127,13 @@ const ThirdGrid = ({
   const [showPotions, setShowPotions] = useState(false);
   const [runDisabled, setRunDisabled] = useState(false);
   const [potionUsed, setPotionUsed] = useState(false);
+  const [isPvpChatActive, setIsPvpChatActive] = useState(false);
+
+  useEffect(() => {
+    if (!showPotions || !isPvpMode) {
+      setIsPvpChatActive(false);
+    }
+  }, [isPvpMode, showPotions]);
   
   const togglePotions = useCallback(() => {
     soundManager.playGameButtonTapSound();
@@ -214,6 +224,7 @@ const ThirdGrid = ({
 
   // Helper variable to decide if content should be shown at all
   const showContent = !shouldShowProceedState && !isLevelComplete;
+  const shouldDisableOverlayButtons = isPvpMode && showPotions && isPvpChatActive;
 
 
   
@@ -239,7 +250,10 @@ const ThirdGrid = ({
       isInRunMode={isInRunMode}
       isSpecialAttack={isSpecialAttack}
       lowerChildren={
-        <View style={styles.overlayButtons} pointerEvents="box-none">
+        <View
+          style={styles.overlayButtons}
+          pointerEvents={shouldDisableOverlayButtons ? 'none' : 'box-none'}
+        >
           {shouldShowProceedState ? (
             <View />
           ) : (
@@ -282,7 +296,13 @@ const ThirdGrid = ({
             {/* POTIONS VIEW */}
             <View style={{ display: showPotions ? 'flex' : 'none', width: '100%' }}>
               {isPvpMode ? (
-                <PvpChatInputBox disabled={submitting || usingPotion} />
+                <PvpChatInputBox
+                  matchId={pvpMatchId}
+                  disabled={submitting || usingPotion || sendingPvpMessage}
+                  sending={sendingPvpMessage}
+                  onSendMessage={onSendPvpMessage}
+                  onInputActivityChange={setIsPvpChatActive}
+                />
               ) : (
                 <PotionGrid 
                   potions={potions}
@@ -373,6 +393,8 @@ export default React.memo(ThirdGrid, (prev, next) => {
       prev.cardImageUrl === next.cardImageUrl &&
       prev.cardDamage === next.cardDamage &&
       prev.cardDisplaySequence === next.cardDisplaySequence &&
-      prev.isPvpMode === next.isPvpMode
+      prev.isPvpMode === next.isPvpMode &&
+      prev.pvpMatchId === next.pvpMatchId &&
+      prev.sendingPvpMessage === next.sendingPvpMessage
     );
 });

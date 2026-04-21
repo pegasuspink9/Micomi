@@ -94,10 +94,12 @@ export default function GamePlay() {
     loading, 
     error, 
     submitting,
+    sendingPvpMessage = false,
     refetchGameData,
     retryLevel,
     enterNextLevel, 
     submitAnswer,
+    sendPvpMatchMessage = async () => ({ success: false, error: 'PvP chat is unavailable' }),
     waitingForAnimation, 
     onAnimationComplete,
     animationsLoading, 
@@ -116,6 +118,8 @@ export default function GamePlay() {
     selectPotion,
     clearSelectedPotion,
     liveSync = null,
+    resolvedMatchId = null,
+    chatReactionEvent = 0,
   } = activeGameData;
 
   const dialogueData = useMemo(() => gameState?.dialogue, [gameState?.dialogue]);
@@ -1045,20 +1049,7 @@ export default function GamePlay() {
       >
         {currentChallenge ? (
           <View style={styles.gameLayoutContainer}>
-            {isPvpMode ? (
-              <View style={styles.liveSyncBadge}>
-                <Text style={styles.liveSyncTitle}>
-                  {liveSync?.connection === 'connected' ? 'LIVE SYNC' : 'SYNCING'}
-                </Text>
-                <Text style={styles.liveSyncSubtitle}>
-                  {liveSync?.pendingRemoteProceed
-                    ? 'Round updated by opponent'
-                    : liveSync?.lastSyncedAt
-                    ? 'Match data aligned'
-                    : 'Waiting for server updates'}
-                </Text>
-              </View>
-            ) : null}
+            {isPvpMode ? null : null}
 
             <View style={styles.screenPlayContainer}>
               <ScreenPlay 
@@ -1078,6 +1069,7 @@ export default function GamePlay() {
                 onPausePress={handlePausePress}
                 setBorderColor={setBorderColor}
                 isPvpMode={isPvpMode}
+                pvpReactionEvent={chatReactionEvent}
               />
             </View>
 
@@ -1149,6 +1141,9 @@ export default function GamePlay() {
                 setSelectedBlankIndex={setSelectedBlankIndex}
                 options={memoizedOptions}
                 isPvpMode={isPvpMode}
+                pvpMatchId={resolvedMatchId || matchId || null}
+                onSendPvpMessage={sendPvpMatchMessage}
+                sendingPvpMessage={sendingPvpMessage}
               />
             </View>
 
@@ -1243,35 +1238,6 @@ const styles = StyleSheet.create({
 
   screenPlayContainer: {
     height: gameScale(844 * 0.38), 
-  },
-
-  liveSyncBadge: {
-    position: 'absolute',
-    top: gameScale(10),
-    right: gameScale(12),
-    zIndex: 1500,
-    backgroundColor: 'rgba(8, 22, 44, 0.82)',
-    borderWidth: gameScale(1),
-    borderColor: 'rgba(112, 186, 255, 0.75)',
-    borderRadius: gameScale(10),
-    paddingVertical: gameScale(6),
-    paddingHorizontal: gameScale(10),
-    maxWidth: gameScale(190),
-  },
-
-  liveSyncTitle: {
-    color: '#BFE2FF',
-    fontSize: gameScale(10),
-    fontFamily: 'Grobold',
-    textAlign: 'center',
-  },
-
-  liveSyncSubtitle: {
-    marginTop: gameScale(2),
-    color: '#FFFFFF',
-    fontSize: gameScale(9),
-    fontFamily: 'DynaPuff',
-    textAlign: 'center',
   },
 
   pvpFallbackContainer: {

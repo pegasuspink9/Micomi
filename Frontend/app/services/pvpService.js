@@ -425,6 +425,45 @@ export const pvpService = {
     return normalizeMatchPayload(response);
   },
 
+  sendDailyMatchMessage: async (matchId, message) => {
+    const normalizedMatchId =
+      matchId === null || matchId === undefined || matchId === ''
+        ? null
+        : String(matchId);
+    const normalizedMessage = typeof message === 'string' ? message.trim() : '';
+
+    if (!normalizedMatchId) {
+      throw new Error('Missing match ID');
+    }
+
+    if (!normalizedMessage) {
+      throw new Error('Message is required');
+    }
+
+    const response = await apiService.post(
+      `/game/pvp/daily/match/${normalizedMatchId}/message`,
+      {
+        message: normalizedMessage,
+      }
+    );
+
+    if (!response?.success) {
+      throw new Error(response?.message || 'Failed to send PvP message');
+    }
+
+    return {
+      ...response,
+      data: {
+        ...(response?.data || {}),
+        match_id: response?.data?.match_id || normalizedMatchId,
+        character_reaction:
+          response?.data?.character_reaction ?? response?.data?.characterReaction ?? null,
+        enemy_reaction:
+          response?.data?.enemy_reaction ?? response?.data?.enemyReaction ?? null,
+      },
+    };
+  },
+
   extractUnifiedGameState: (payload, isSubmission = false) => {
     const normalized = normalizeMatchPayload(payload);
     return gameService.extractUnifiedGameState(normalized, isSubmission);
