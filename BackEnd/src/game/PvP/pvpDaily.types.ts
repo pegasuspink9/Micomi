@@ -79,6 +79,11 @@ export interface PvPCompletionStats {
   loser_rank: PvPPlayerRankSnapshot;
 }
 
+export interface PvpInGameMessageEntry {
+  id: number;
+  text: string;
+}
+
 export interface PvPMatchState {
   match_id: string;
   topic: PvpChallengeTopic;
@@ -104,7 +109,8 @@ export interface PvPMatchState {
   has_freeze_effect_by_player: Record<number, boolean>;
   has_strong_effect_by_player: Record<number, boolean>;
   has_ryron_reveal_by_player: Record<number, boolean>;
-  messages_by_player: Record<number, string | null>;
+  message_sequence: number;
+  messages_by_player: Record<number, PvpInGameMessageEntry | null>;
 }
 
 export interface PlayerMatchmakingState {

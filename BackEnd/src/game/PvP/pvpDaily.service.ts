@@ -14,6 +14,7 @@ import {
   PvpDailyPreviewResponse,
   PvpDailyStatusResponse,
   PvpDailySubmitAnswerResult,
+  PvpInGameMessageEntry,
 } from "./pvpDaily.types";
 import { getSocketServer } from "../../socket";
 import {
@@ -70,7 +71,43 @@ const playerTopicById = new Map<number, PvpChallengeTopic>();
 const matches = new Map<string, PvPMatchState>();
 const matchCleanupTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const dailyPreviewViewedByPlayer = new Map<number, string>();
-const gameplayFeedbackCache = new Map<string, { text: string; audio: string[] }>();
+const gameplayFeedbackCache = new Map<
+  string,
+  { text: string; audio: string[] }
+>();
+
+const formatInGameReaction = (
+  entry: PvpInGameMessageEntry | null | undefined,
+): string | null => {
+  if (!entry) return null;
+  return `${entry.id} - ${entry.text}`;
+};
+
+const normalizeStoredReaction = (
+  raw: unknown,
+): PvpInGameMessageEntry | null => {
+  if (!raw) return null;
+
+  if (typeof raw === "string") {
+    const normalized = normalizeInGameMessage(raw);
+    return { id: 0, text: normalized };
+  }
+
+  if (typeof raw === "object") {
+    const candidate = raw as { id?: unknown; text?: unknown };
+    const id = Number(candidate.id);
+    const text =
+      typeof candidate.text === "string"
+        ? normalizeInGameMessage(candidate.text)
+        : null;
+
+    if (Number.isInteger(id) && id >= 0 && text) {
+      return { id, text };
+    }
+  }
+
+  return null;
+};
 
 const buildGameplayFeedbackKey = (
   matchId: string,
@@ -293,7 +330,9 @@ const generateDynamicPvpOptions = (
 
   let fwdIdx = currentIndex + 1;
   while (options.length < targetCount && fwdIdx < allChallenges.length) {
-    const nextAnswers = normalizeToStringArray(allChallenges[fwdIdx].correct_answer);
+    const nextAnswers = normalizeToStringArray(
+      allChallenges[fwdIdx].correct_answer,
+    );
     for (const ans of nextAnswers) {
       if (options.length < targetCount) {
         options.push(ans);
@@ -304,7 +343,9 @@ const generateDynamicPvpOptions = (
 
   let bwdIdx = currentIndex - 1;
   while (options.length < targetCount && bwdIdx >= 0) {
-    const prevAnswers = normalizeToStringArray(allChallenges[bwdIdx].correct_answer);
+    const prevAnswers = normalizeToStringArray(
+      allChallenges[bwdIdx].correct_answer,
+    );
     for (const ans of prevAnswers) {
       if (options.length < targetCount) {
         options.push(ans);
@@ -537,9 +578,12 @@ const buildEntryLikePayload = async (
   const opponentIndex = getOpponentIndex(viewerIndex);
   const viewerSnapshot = match.players[viewerIndex];
   const opponentSnapshot = match.players[opponentIndex];
-  const viewerReaction = match.messages_by_player[viewerSnapshot.player_id] ?? null;
-  const opponentReaction =
-    match.messages_by_player[opponentSnapshot.player_id] ?? null;
+  const viewerReaction = formatInGameReaction(
+    match.messages_by_player[viewerSnapshot.player_id],
+  );
+  const opponentReaction = formatInGameReaction(
+    match.messages_by_player[opponentSnapshot.player_id],
+  );
   const question = getRoundQuestion(match);
 
   if (!question) {
@@ -756,6 +800,10 @@ const createRounds = (
 };
 
 const ensureMatchRuntimeState = (match: PvPMatchState) => {
+  if (!Number.isInteger((match as any).message_sequence)) {
+    (match as any).message_sequence = 0;
+  }
+
   for (const player of match.players) {
     const playerId = player.player_id;
 
@@ -801,6 +849,16 @@ const ensureMatchRuntimeState = (match: PvPMatchState) => {
     if (!match.messages_by_player) {
       match.messages_by_player = {};
     }
+
+    const normalized = normalizeStoredReaction(
+      match.messages_by_player[playerId],
+    );
+    match.messages_by_player[playerId] = normalized;
+
+    if (normalized && normalized.id > match.message_sequence) {
+      match.message_sequence = normalized.id;
+    }
+
     if (match.messages_by_player[playerId] === undefined) {
       match.messages_by_player[playerId] = null;
     }
@@ -1255,6 +1313,7 @@ const tryCreatePair = async (
       [playerA]: false,
       [playerB]: false,
     },
+    message_sequence: 0,
     messages_by_player: {
       [playerA]: null,
       [playerB]: null,
@@ -1528,11 +1587,15 @@ const buildSubmitLikeResponse = async (
   const viewerCharacter = entryLike.character as Record<string, unknown>;
   const opponentEnemy = entryLike.enemy as Record<string, unknown>;
   const viewerReaction =
-    match.messages_by_player[playerId] ??
-    ((viewerCharacter.character_reaction as string | null | undefined) ?? null);
+    formatInGameReaction(match.messages_by_player[playerId]) ??
+    (viewerCharacter.character_reaction as string | null | undefined) ??
+    null;
   const opponentReaction =
-    match.messages_by_player[Number(opponentEnemy.player_id)] ??
-    ((opponentEnemy.enemy_reaction as string | null | undefined) ?? null);
+    formatInGameReaction(
+      match.messages_by_player[Number(opponentEnemy.player_id)],
+    ) ??
+    (opponentEnemy.enemy_reaction as string | null | undefined) ??
+    null;
 
   const viewerAttackAsset = getArrayItemOrNull(
     viewerCharacter.character_attack,
@@ -2023,7 +2086,13 @@ export const setInGameMessage = async (
   const opponentPlayerId = match.players[opponentIndex].player_id;
   const normalizedMessage = normalizeInGameMessage(message);
 
-  match.messages_by_player[playerId] = normalizedMessage;
+  const nextId = (match.message_sequence ?? 0) + 1;
+  match.message_sequence = nextId;
+
+  match.messages_by_player[playerId] = {
+    id: nextId,
+    text: normalizedMessage,
+  };
 
   await persistMatchProgress(match);
   if (match.status === "active") {
@@ -2032,8 +2101,12 @@ export const setInGameMessage = async (
 
   return {
     match_id: match.match_id,
-    character_reaction: match.messages_by_player[playerId] ?? null,
-    enemy_reaction: match.messages_by_player[opponentPlayerId] ?? null,
+    character_reaction: formatInGameReaction(
+      match.messages_by_player[playerId],
+    ),
+    enemy_reaction: formatInGameReaction(
+      match.messages_by_player[opponentPlayerId],
+    ),
   };
 };
 
