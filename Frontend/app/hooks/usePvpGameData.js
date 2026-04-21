@@ -15,7 +15,6 @@ const normalizeChallengeId = (value) => {
   return String(value);
 };
 
-// Helper to reliably extract the challenge ID regardless of API field shape.
 const getChallengeId = (challenge) => {
   if (!challenge || typeof challenge !== 'object') {
     return null;

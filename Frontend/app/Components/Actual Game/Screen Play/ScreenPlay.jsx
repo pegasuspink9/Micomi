@@ -95,6 +95,51 @@ const ScreenPlay = ({
   const [activeEnemyReaction, setActiveEnemyReaction] = useState(null);
   const lastLiveReactionSignatureRef = useRef(null);
   const lastSubmissionReactionSignatureRef = useRef(null);
+  const pvpSeenReactionIdentifiersRef = useRef(new Set());
+  const pvpMaxSeenReactionNumericIdRef = useRef(null);
+
+  const parsePvpReactionToken = useCallback((rawReaction) => {
+    if (rawReaction === null || rawReaction === undefined) {
+      return null;
+    }
+
+    const rawText = String(rawReaction).trim();
+    if (!rawText) {
+      return null;
+    }
+
+    // Supported inputs: "-2-Hi", "-2- Hi", "- 2 - Hi".
+    const identifierMatch = rawText.match(/^\s*-\s*([^-]+?)\s*-\s*(.*)$/);
+    if (!identifierMatch) {
+      return {
+        text: rawText,
+        identifier: null,
+        numericIdentifier: null,
+      };
+    }
+
+    const identifier = identifierMatch[1]?.trim() || null;
+    const payloadText = identifierMatch[2]?.trim() || rawText;
+    const numericIdentifier = Number.parseInt(identifier || '', 10);
+
+    return {
+      text: payloadText,
+      identifier,
+      numericIdentifier: Number.isFinite(numericIdentifier) ? numericIdentifier : null,
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isPvpMode) {
+      pvpSeenReactionIdentifiersRef.current = new Set();
+      pvpMaxSeenReactionNumericIdRef.current = null;
+      return;
+    }
+
+    // Reset per challenge so repeated IDs in new rounds are still displayable.
+    pvpSeenReactionIdentifiersRef.current = new Set();
+    pvpMaxSeenReactionNumericIdRef.current = null;
+  }, [isPvpMode, gameState.currentChallenge?.id]);
 
   useEffect(() => {
     const submissionCharReaction =
@@ -105,80 +150,85 @@ const ScreenPlay = ({
     const liveCharReaction = gameState.selectedCharacter?.character_reaction ?? null;
     const liveEnemyReaction = gameState.enemy?.enemy_reaction ?? null;
 
-    const hasSubmissionReaction = Boolean(submissionCharReaction || submissionEnemyReaction);
-    const hasLiveReaction = Boolean(liveCharReaction || liveEnemyReaction);
-    const submissionReactionSignature = hasSubmissionReaction
-      ? [
-          gameState.currentChallenge?.id ?? 'none',
-          gameState.submissionResult?.reason ?? 'none',
-          gameState.submissionResult?.acceptedForAttack ??
-            gameState.submissionResult?.accepted_for_attack ??
-            'na',
-          gameState.submissionResult?.isCorrect ?? gameState.submissionResult?.is_correct ?? 'na',
-          submissionCharReaction || '',
-          submissionEnemyReaction || '',
-        ].join('|')
-      : null;
-
-    // Reset before replaying so identical text can show again.
-    setActiveCharReaction(null);
-    setActiveEnemyReaction(null);
-
     const sequenceTimeouts = [];
+    if (!isPvpMode) {
+      const hasSubmissionReaction = Boolean(submissionCharReaction || submissionEnemyReaction);
+      const submissionReactionSignature = hasSubmissionReaction
+        ? [
+            gameState.currentChallenge?.id ?? 'none',
+            gameState.submissionResult?.reason ?? 'none',
+            gameState.submissionResult?.acceptedForAttack ??
+              gameState.submissionResult?.accepted_for_attack ??
+              'na',
+            gameState.submissionResult?.isCorrect ?? gameState.submissionResult?.is_correct ?? 'na',
+            submissionCharReaction || '',
+            submissionEnemyReaction || '',
+          ].join('|')
+        : null;
 
-    if (
-      hasSubmissionReaction &&
-      submissionReactionSignature !== lastSubmissionReactionSignatureRef.current
-    ) {
-      lastSubmissionReactionSignatureRef.current = submissionReactionSignature;
+      // Reset before replaying so identical text can show again in PvE.
+      setActiveCharReaction(null);
+      setActiveEnemyReaction(null);
 
-      const isCorrect =
-        typeof gameState.submissionResult?.isCorrect === 'boolean'
-          ? gameState.submissionResult.isCorrect
-          : typeof gameState.submissionResult?.is_correct === 'boolean'
-            ? gameState.submissionResult.is_correct
-            : true;
+      if (
+        hasSubmissionReaction &&
+        submissionReactionSignature !== lastSubmissionReactionSignatureRef.current
+      ) {
+        lastSubmissionReactionSignatureRef.current = submissionReactionSignature;
 
-      const startTimeout = setTimeout(() => {
-        const firstText = isCorrect ? submissionCharReaction : submissionEnemyReaction;
-        const secondText = isCorrect ? submissionEnemyReaction : submissionCharReaction;
+        const isCorrect =
+          typeof gameState.submissionResult?.isCorrect === 'boolean'
+            ? gameState.submissionResult.isCorrect
+            : typeof gameState.submissionResult?.is_correct === 'boolean'
+              ? gameState.submissionResult.is_correct
+              : true;
 
-        const setFirst = isCorrect ? setActiveCharReaction : setActiveEnemyReaction;
-        const setSecond = isCorrect ? setActiveEnemyReaction : setActiveCharReaction;
+        const startTimeout = setTimeout(() => {
+          const firstText = isCorrect ? submissionCharReaction : submissionEnemyReaction;
+          const secondText = isCorrect ? submissionEnemyReaction : submissionCharReaction;
 
-        if (firstText) {
-          setFirst(firstText);
-        }
+          const setFirst = isCorrect ? setActiveCharReaction : setActiveEnemyReaction;
+          const setSecond = isCorrect ? setActiveEnemyReaction : setActiveCharReaction;
 
-        const step2Timeout = setTimeout(() => {
-          setFirst(null);
-
-          if (secondText) {
-            setSecond(secondText);
+          if (firstText) {
+            setFirst(firstText);
           }
 
-          const step3Timeout = setTimeout(() => {
-            setSecond(null);
+          const step2Timeout = setTimeout(() => {
+            setFirst(null);
+
+            if (secondText) {
+              setSecond(secondText);
+            }
+
+            const step3Timeout = setTimeout(() => {
+              setSecond(null);
+            }, 5000);
+
+            sequenceTimeouts.push(step3Timeout);
           }, 5000);
 
-          sequenceTimeouts.push(step3Timeout);
-        }, 5000);
+          sequenceTimeouts.push(step2Timeout);
+        }, 4000);
 
-        sequenceTimeouts.push(step2Timeout);
-      }, 4000);
+        sequenceTimeouts.push(startTimeout);
 
-      sequenceTimeouts.push(startTimeout);
+        return () => {
+          sequenceTimeouts.forEach(clearTimeout);
+        };
+      }
 
-      return () => {
-        sequenceTimeouts.forEach(clearTimeout);
-      };
+      if (!hasSubmissionReaction) {
+        lastSubmissionReactionSignatureRef.current = null;
+      }
+
+      lastLiveReactionSignatureRef.current = null;
+      return undefined;
     }
 
-    if (!hasSubmissionReaction) {
-      lastSubmissionReactionSignatureRef.current = null;
-    }
-
-    if (!isPvpMode || !hasLiveReaction) {
+    // PvP path: identifier-driven reactions, not correctness-driven sequencing.
+    const hasLiveReaction = Boolean(liveCharReaction || liveEnemyReaction);
+    if (!hasLiveReaction) {
       lastLiveReactionSignatureRef.current = null;
       return undefined;
     }
@@ -194,12 +244,67 @@ const ScreenPlay = ({
     }
     lastLiveReactionSignatureRef.current = liveSignature;
 
-    const liveQueue = [];
-    if (liveCharReaction) {
-      liveQueue.push({ side: 'character', text: liveCharReaction });
-    }
-    if (liveEnemyReaction) {
-      liveQueue.push({ side: 'enemy', text: liveEnemyReaction });
+    const seenIdentifiers = pvpSeenReactionIdentifiersRef.current;
+
+    const rawQueue = [
+      { side: 'character', rawText: liveCharReaction, orderHint: 0 },
+      { side: 'enemy', rawText: liveEnemyReaction, orderHint: 1 },
+    ];
+
+    const liveQueue = rawQueue
+      .map((item) => {
+        const parsed = parsePvpReactionToken(item.rawText);
+        if (!parsed || !parsed.text) {
+          return null;
+        }
+
+        return {
+          ...item,
+          text: parsed.text,
+          identifier: parsed.identifier,
+          numericIdentifier: parsed.numericIdentifier,
+        };
+      })
+      .filter(Boolean)
+      .filter((item) => {
+        if (!item.identifier) {
+          return true;
+        }
+
+        const identifierKey = String(item.identifier);
+        if (seenIdentifiers.has(identifierKey)) {
+          return false;
+        }
+
+        if (
+          item.numericIdentifier !== null &&
+          pvpMaxSeenReactionNumericIdRef.current !== null &&
+          item.numericIdentifier <= pvpMaxSeenReactionNumericIdRef.current
+        ) {
+          return false;
+        }
+
+        seenIdentifiers.add(identifierKey);
+        if (item.numericIdentifier !== null) {
+          const nextMax =
+            pvpMaxSeenReactionNumericIdRef.current === null
+              ? item.numericIdentifier
+              : Math.max(pvpMaxSeenReactionNumericIdRef.current, item.numericIdentifier);
+          pvpMaxSeenReactionNumericIdRef.current = nextMax;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        if (a.numericIdentifier !== null && b.numericIdentifier !== null) {
+          return a.numericIdentifier - b.numericIdentifier;
+        }
+
+        return a.orderHint - b.orderHint;
+      });
+
+    if (!liveQueue.length) {
+      return undefined;
     }
 
     const playLiveReaction = (index) => {
@@ -237,10 +342,12 @@ const ScreenPlay = ({
       sequenceTimeouts.forEach(clearTimeout);
     };
   }, [
+    gameState.currentChallenge?.id,
     gameState.submissionResult,
     gameState.selectedCharacter?.character_reaction,
     gameState.enemy?.enemy_reaction,
     isPvpMode,
+    parsePvpReactionToken,
     pvpReactionEvent,
   ]);
 
