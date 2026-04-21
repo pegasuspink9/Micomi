@@ -98,10 +98,22 @@ router.get(
   LeaderboardController.getLeaderboard,
 );
 router.get(
+  "/leaderboard/pvp",
+  authenticate,
+  requirePlayer,
+  LeaderboardController.getPvpLeaderboard,
+);
+router.get(
   "/player-rank",
   authenticate,
   requirePlayer,
   LeaderboardController.getPlayerRank,
+);
+router.get(
+  "/player-rank/pvp",
+  authenticate,
+  requirePlayer,
+  LeaderboardController.getPvpPlayerRank,
 );
 
 // Daily PvP routes

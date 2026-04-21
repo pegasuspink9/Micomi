@@ -19,6 +19,7 @@ import {
   generatePeriodicQuests,
   forceGenerateQuestsForPlayer,
 } from "../Quest/periodicQuests.service";
+import { getRankProgressByPoints } from "../../game/PvP/pvpRank.service";
 
 const prisma = new PrismaClient();
 
@@ -200,6 +201,9 @@ export const getPlayerProfile = async (player_id: number) => {
       current_streak: true,
       exp_points: true,
       level: true,
+      player_rank_points: true,
+      player_rank_name: true,
+      player_rank_image: true,
       player_avatar: true,
       ownedCharacters: {
         where: { is_selected: true },
@@ -322,6 +326,8 @@ export const getPlayerProfile = async (player_id: number) => {
     );
   }
 
+  const rankProgress = getRankProgressByPoints(player.player_rank_points ?? 0);
+
   return {
     player_id: player.player_id,
     player_name: player.player_name,
@@ -331,6 +337,14 @@ export const getPlayerProfile = async (player_id: number) => {
     current_streak: player.current_streak,
     exp_points: player.exp_points,
     player_level: calculatedLevel,
+    player_rank_name: player.player_rank_name,
+    player_rank_image: player.player_rank_image,
+    player_rank_progress: {
+      player_current_points: rankProgress.rank_progress_current,
+      player_required_points: rankProgress.rank_progress_required,
+      player_next_rank_name: rankProgress.next_rank_name,
+      player_next_rank_image: rankProgress.next_rank_image,
+    },
     followers_count: followersCount,
     following_count: followingCount,
     max_level_exp: maxLevelExp,

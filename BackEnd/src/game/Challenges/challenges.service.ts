@@ -27,6 +27,7 @@ import {
   CHARACTER_COMPUTER_WRONG_REACTIONS,
   ENEMY_COMPUTER_CORRECT_REACTIONS,
 } from "../../../helper/reactionLinesHelper";
+import { getEnemyIdleAudio } from "../../../helper/enemyIdleSoundHelper";
 import {
   ENEMY_ATTACK_SOUNDS,
   DEFAULT_ENEMY_ATTACK_AUDIO,
@@ -1305,6 +1306,7 @@ export const submitChallengeService = async (
   let character_attack_audio: string | null = null;
   let character_idle_audio: string | null = null;
   let character_hurt_audio: string | null = null;
+  let enemy_idle_audio: string | null = null;
 
   if (isCorrect) {
     const baselineState = await CombatService.getCurrentFightState(
@@ -1336,7 +1338,7 @@ export const submitChallengeService = async (
       `- Character damage displayed on correct answer (doubled if active): ${fightResult.character.character_damage}, applied: ${appliedDamage}`,
     );
 
-    //character run sound
+    //character idle sound
     switch (character.character_name) {
       case "Gino":
         character_idle_audio =
@@ -1498,6 +1500,8 @@ export const submitChallengeService = async (
       character_hurt_audio =
         "https://micomi-assets.me/Sounds/In%20Game/Hero%20SFX/Leon%20hurt%20sfx%20final.mp3";
     }
+
+    enemy_idle_audio = getEnemyIdleAudio(enemy.enemy_name);
 
     if (hadFreezeThisTurn) {
       fightResult.character.character_health =
@@ -2059,6 +2063,7 @@ export const submitChallengeService = async (
     enemy_attack_audio = null;
     enemy_hurt_audio = null;
     character_hurt_audio = null;
+    enemy_idle_audio = null;
     console.log("- Freeze effect active: Muting all enemy audio responses.");
   }
 
@@ -2095,6 +2100,7 @@ export const submitChallengeService = async (
     },
     is_correct_audio,
     enemy_attack_audio,
+    enemy_idle_audio,
     character_attack_audio,
     character_idle_audio,
     character_hurt_audio,

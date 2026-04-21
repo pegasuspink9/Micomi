@@ -294,4 +294,8 @@ export const audioLinks = [
   "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Shishi_Run.wav",
   "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Ryron_Run.wav",
   "https://micomi-assets.me/Sounds/In%20Game/Hero%20Runs/Leon_Roar.wav",
+
+  //enemy idle audio
+  "https://micomi-assets.me/Enemy%20idle%20sound/GreenLand/Antristotle.wav",
+  "https://micomi-assets.me/Enemy%20idle%20sound/GreenLand/Beertolomy.wav",
 ];

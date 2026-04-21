@@ -1,7 +1,6 @@
 import dotenv from "dotenv";
 import express from "express";
 import cookieParser from "cookie-parser";
-import { PrismaClient } from "@prisma/client";
 
 import { setupCronJobs } from "../helper/cronJobs";
 import {

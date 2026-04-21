@@ -51,3 +51,42 @@ export const getPlayerRank = async (req: Request, res: Response) => {
     return errorResponse(res, error, "Failed to fetch player rank", 500);
   }
 };
+
+export const getPvpLeaderboard = async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string, 10) || 50;
+    const currentPlayerId = (req as any).user.id;
+
+    const [topPlayers, currentUserRank] = await Promise.all([
+      LeaderboardService.getPvpLeaderboard(limit),
+      LeaderboardService.getPvpPlayerRank(currentPlayerId),
+    ]);
+
+    const result = {
+      leaderboard: topPlayers,
+      currentUser: currentUserRank,
+    };
+
+    return successResponse(
+      res,
+      result,
+      "PvP leaderboard fetched successfully",
+      200,
+    );
+  } catch (error) {
+    return errorResponse(res, error, "Failed to fetch PvP leaderboard", 500);
+  }
+};
+
+export const getPvpPlayerRank = async (req: Request, res: Response) => {
+  try {
+    const playerId = (req as any).user.id;
+    const entry = await LeaderboardService.getPvpPlayerRank(playerId);
+
+    if (!entry) return res.status(404).json({ error: "Player not found" });
+
+    return successResponse(res, entry, "PvP player rank fetched", 200);
+  } catch (error) {
+    return errorResponse(res, error, "Failed to fetch PvP player rank", 500);
+  }
+};
