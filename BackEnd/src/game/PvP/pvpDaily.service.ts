@@ -37,6 +37,7 @@ import * as EnergyService from "../Energy/energy.service";
 import { generateMotivationalMessage } from "../Challenges/challenges.service";
 import { generateDynamicMessage } from "../../../helper/gamePlayMessageHelper";
 import { applyPvpRankResult } from "./pvpRank.service";
+import { generateWrongAnswerGuide } from "../../../helper/aiHelper";
 
 const prisma = new PrismaClient();
 
@@ -469,6 +470,7 @@ const buildQuestionPool = async (
       correct_answer: normalizeToStringArray(current.correct_answer as unknown),
       html_file: current.html_file ?? null,
       css_file: current.css_file ?? null,
+      guide: undefined,
     };
   });
 };
@@ -1543,6 +1545,7 @@ const buildSubmitLikeResponse = async (
     attackType: string;
     damage: number;
   },
+  aiGuide?: string,
 ): Promise<PvpDailySubmitAnswerResult> => {
   const entryLike = await buildEntryLikePayload(match, playerId);
   const round = match.rounds[Math.max(0, match.current_round_index)] ?? null;
@@ -1562,10 +1565,16 @@ const buildSubmitLikeResponse = async (
         match.last_attack_by_player_id !== null) ||
       reason === "ongoing");
   const shouldRepeatCurrentChallenge = !isCompleted && reason === "incorrect";
-  const nextChallenge =
+
+  let nextChallenge =
     shouldExposeNextChallenge || shouldRepeatCurrentChallenge
       ? currentRoundChallenge
       : null;
+
+  if (nextChallenge && aiGuide) {
+    nextChallenge = { ...nextChallenge, guide: aiGuide };
+  }
+
   const isWrongRetryState = reason === "incorrect" || reason === "ongoing";
 
   const resolvedAttack = isWrongRetryState
@@ -1963,7 +1972,21 @@ export const submitAnswer = async (
     emitMatchStateToPlayers(match, "pvp:match-update");
     await persistMatchProgress(match);
 
-    return buildSubmitLikeResponse(match, playerId, "incorrect", false);
+    const aiGuide = await generateWrongAnswerGuide(
+      question.topic,
+      question.question || "",
+      normalizedGiven,
+      normalizedCorrect,
+    );
+
+    return buildSubmitLikeResponse(
+      match,
+      playerId,
+      "incorrect",
+      false,
+      undefined,
+      aiGuide,
+    );
   }
 
   const isFirstCorrect = round.resolved_by_player_id === null;

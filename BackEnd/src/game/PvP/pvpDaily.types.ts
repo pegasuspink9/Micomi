@@ -12,6 +12,7 @@ export interface DailyPvpQuestion {
   title: string;
   description: string;
   question: string | null;
+  guide?: string | null;
   options: string[];
   correct_answer: string[];
   html_file: string | null;
