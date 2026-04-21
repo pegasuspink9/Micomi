@@ -80,7 +80,7 @@ const formatInGameReaction = (
   entry: PvpInGameMessageEntry | null | undefined,
 ): string | null => {
   if (!entry) return null;
-  return `${entry.id} - ${entry.text}`;
+  return `-${entry.id}-${entry.text}`;
 };
 
 const normalizeStoredReaction = (
