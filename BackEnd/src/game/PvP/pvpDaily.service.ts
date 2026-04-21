@@ -35,6 +35,7 @@ import { formatTimer } from "../../../helper/dateTimeHelper";
 import * as EnergyService from "../Energy/energy.service";
 import { generateMotivationalMessage } from "../Challenges/challenges.service";
 import { generateDynamicMessage } from "../../../helper/gamePlayMessageHelper";
+import { applyPvpRankResult } from "./pvpRank.service";
 
 const prisma = new PrismaClient();
 
@@ -261,6 +262,60 @@ const shuffleArray = <T>(array: T[]): T[] => {
   return array;
 };
 
+const generateDynamicPvpOptions = (
+  currentChallenge: {
+    challenge_id: number;
+    correct_answer: unknown;
+  },
+  allChallenges: Array<{
+    challenge_id: number;
+    correct_answer: unknown;
+  }>,
+): string[] => {
+  const currentCorrectAnswers = normalizeToStringArray(
+    currentChallenge.correct_answer,
+  );
+
+  if (currentCorrectAnswers.length >= 5) {
+    return shuffleArray([...currentCorrectAnswers]);
+  }
+
+  const options = [...currentCorrectAnswers];
+  const targetCount = 5;
+
+  const currentIndex = allChallenges.findIndex(
+    (c) => c.challenge_id === currentChallenge.challenge_id,
+  );
+
+  if (currentIndex === -1) {
+    return shuffleArray(options);
+  }
+
+  let fwdIdx = currentIndex + 1;
+  while (options.length < targetCount && fwdIdx < allChallenges.length) {
+    const nextAnswers = normalizeToStringArray(allChallenges[fwdIdx].correct_answer);
+    for (const ans of nextAnswers) {
+      if (options.length < targetCount) {
+        options.push(ans);
+      }
+    }
+    fwdIdx++;
+  }
+
+  let bwdIdx = currentIndex - 1;
+  while (options.length < targetCount && bwdIdx >= 0) {
+    const prevAnswers = normalizeToStringArray(allChallenges[bwdIdx].correct_answer);
+    for (const ans of prevAnswers) {
+      if (options.length < targetCount) {
+        options.push(ans);
+      }
+    }
+    bwdIdx--;
+  }
+
+  return shuffleArray(options);
+};
+
 const getEncounteredChallengeIds = async (
   playerIds: number[],
 ): Promise<Set<number>> => {
@@ -369,7 +424,7 @@ const buildQuestionPool = async (
       title: current.title,
       description: current.description,
       question: current.question,
-      options: normalizeToStringArray(current.options as unknown),
+      options: generateDynamicPvpOptions(current, challenges),
       correct_answer: normalizeToStringArray(current.correct_answer as unknown),
       html_file: current.html_file ?? null,
       css_file: current.css_file ?? null,
@@ -983,6 +1038,13 @@ const completeMatch = async (
     applyRewards(loserPlayerId, loserReward),
   ]);
 
+  const rankUpdate = await applyPvpRankResult(prisma, {
+    winnerPlayerId,
+    loserPlayerId,
+    winnerMistakes,
+    loserMistakes,
+  });
+
   const resolvedQuestions = match.rounds.filter(
     (r) => r.resolved_by_player_id !== null,
   ).length;
@@ -999,6 +1061,8 @@ const completeMatch = async (
     reason,
     message_for_winner: `You finished ${loser.player_name} with ${winnerMistakes} mistakes.`,
     message_for_loser: `${winner.player_name} defeated you with ${winnerMistakes} mistakes.`,
+    winner_rank: rankUpdate.winner,
+    loser_rank: rankUpdate.loser,
   };
 
   match.completion_stats = stats;
@@ -1679,6 +1743,10 @@ const buildSubmitLikeResponse = async (
         isVictory,
         stars,
         playerOutputs: [],
+        rankProgress:
+          match.completion_stats?.winner_player_id === playerId
+            ? match.completion_stats?.winner_rank
+            : match.completion_stats?.loser_rank,
       }
     : undefined;
 

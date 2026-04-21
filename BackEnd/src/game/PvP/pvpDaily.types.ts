@@ -49,6 +49,20 @@ export interface PvPCompletionRewards {
   } | null;
 }
 
+export interface PvPPlayerRankSnapshot {
+  player_id: number;
+  delta: number;
+  before_points: number;
+  player_rank_name: string;
+  player_rank_image: string;
+  player_rank_points: number;
+  rank_legacy_name: string;
+  rank_progress_current: number;
+  rank_progress_required: number;
+  next_rank_name: string | null;
+  next_rank_image: string | null;
+}
+
 export interface PvPCompletionStats {
   winner_player_id: number;
   loser_player_id: number;
@@ -61,6 +75,8 @@ export interface PvPCompletionStats {
   reason: "all_questions_resolved" | "knockout";
   message_for_winner: string;
   message_for_loser: string;
+  winner_rank: PvPPlayerRankSnapshot;
+  loser_rank: PvPPlayerRankSnapshot;
 }
 
 export interface PvPMatchState {
@@ -190,6 +206,7 @@ export interface PvpDailySubmitAnswerResult {
     isVictory?: boolean;
     stars?: number;
     playerOutputs?: string[] | null;
+    rankProgress?: PvPPlayerRankSnapshot;
   };
   level?: {
     level_id: number;
