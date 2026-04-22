@@ -15,6 +15,7 @@ import {
   PvpDailyStatusResponse,
   PvpDailySubmitAnswerResult,
   PvpInGameMessageEntry,
+  PvpMatchHistoryEntry,
 } from "./pvpDaily.types";
 import { getSocketServer } from "../../socket";
 import {
@@ -2215,4 +2216,87 @@ export const surrenderMatch = async (
     "round_already_resolved",
     false,
   );
+};
+
+export const getPlayerMatchHistory = async (
+  playerId: number,
+): Promise<PvpMatchHistoryEntry[]> => {
+  const results = await prisma.playerVsPlayerResult.findMany({
+    where: { player_id: playerId },
+    include: {
+      player: {
+        select: { player_avatar: true },
+      },
+    },
+    orderBy: { created_at: "desc" },
+    take: 50,
+  });
+
+  if (results.length === 0) {
+    return [];
+  }
+
+  const matchIds = results.map((r) => r.match_id);
+
+  const opponents = await prisma.playerVsPlayerResult.findMany({
+    where: {
+      match_id: { in: matchIds },
+      player_id: { not: playerId },
+    },
+    include: {
+      player: {
+        select: { player_avatar: true },
+      },
+    },
+  });
+
+  const opponentMap = new Map<string, (typeof opponents)[0]>();
+  for (const opp of opponents) {
+    opponentMap.set(opp.match_id, opp);
+  }
+
+  return results.map((result) => {
+    const opponent = opponentMap.get(result.match_id);
+    const isWin = result.match_status === "win";
+
+    const characterPoints = isWin ? WIN_REWARD.points : LOSS_REWARD.points;
+    const characterCoins = isWin ? WIN_REWARD.coins : LOSS_REWARD.coins;
+
+    const enemyPoints = opponent
+      ? isWin
+        ? LOSS_REWARD.points
+        : WIN_REWARD.points
+      : 0;
+    const enemyCoins = opponent
+      ? isWin
+        ? LOSS_REWARD.coins
+        : WIN_REWARD.coins
+      : 0;
+
+    return {
+      match_id: result.match_id,
+      match_status: result.match_status,
+      date: result.created_at.toISOString(),
+      character: {
+        player_id: result.player_id,
+        player_name: result.player_name,
+        player_avatar: result.player.player_avatar ?? null,
+        character_name: result.character_name,
+        character_avatar: result.character_avatar ?? null,
+        points: characterPoints,
+        coins: characterCoins,
+      },
+      enemy: opponent
+        ? {
+            player_id: opponent.player_id,
+            player_name: opponent.player_name,
+            player_avatar: opponent.player?.player_avatar ?? null,
+            enemy_name: opponent.character_name,
+            enemy_avatar: opponent.character_avatar ?? null,
+            points: enemyPoints,
+            coins: enemyCoins,
+          }
+        : null,
+    };
+  });
 };

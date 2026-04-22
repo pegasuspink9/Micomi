@@ -261,3 +261,31 @@ export interface PvpDailySubmitAnswerResult {
   is_victory_audio?: string | null;
   is_victory_image?: string | null;
 }
+
+export interface PvpMatchHistoryCharacter {
+  player_id: number;
+  player_name: string;
+  player_avatar: string | null;
+  character_name: string;
+  character_avatar: string | null;
+  points: number;
+  coins: number;
+}
+
+export interface PvpMatchHistoryEnemy {
+  player_id: number;
+  player_name: string;
+  player_avatar: string | null;
+  enemy_name: string;
+  enemy_avatar: string | null;
+  points: number;
+  coins: number;
+}
+
+export interface PvpMatchHistoryEntry {
+  match_id: string;
+  match_status: string;
+  date: string;
+  character: PvpMatchHistoryCharacter;
+  enemy: PvpMatchHistoryEnemy | null;
+}

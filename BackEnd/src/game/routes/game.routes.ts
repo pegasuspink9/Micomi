@@ -136,6 +136,12 @@ router.post(
   PvPDailyController.playDailyPvp,
 );
 router.get(
+  "/pvp/daily/match/history",
+  authenticate,
+  requirePlayer,
+  PvPDailyController.getMatchHistory,
+);
+router.get(
   "/pvp/daily/match/status",
   authenticate,
   requirePlayer,
