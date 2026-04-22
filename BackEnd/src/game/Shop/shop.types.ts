@@ -31,7 +31,6 @@ export interface FightResult {
     character_is_range?: boolean;
     character_attack_pose?: string | null;
   };
-  timer: string;
   energy: number;
   timeToNextEnergyRestore: string | null;
 }
@@ -55,8 +54,7 @@ export interface CompletionRewards {
   playerOutputs?: string[] | null;
 }
 
-export interface SubmitChallengeControllerResult
-  extends SubmitChallengeServiceResult {
+export interface SubmitChallengeControllerResult extends SubmitChallengeServiceResult {
   levelStatus?: LevelStatus;
   completionRewards?: CompletionRewards;
   nextLevel?: {

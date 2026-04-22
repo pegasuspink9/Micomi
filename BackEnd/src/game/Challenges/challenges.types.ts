@@ -33,7 +33,6 @@ export interface FightResult {
     character_attack_pose?: string | null;
     character_reaction?: string | null;
   };
-  timer: string;
   energy: number;
   timeToNextEnergyRestore: string | null;
 }

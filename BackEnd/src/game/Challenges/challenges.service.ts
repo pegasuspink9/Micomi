@@ -2,10 +2,8 @@ import { PrismaClient, Challenge, QuestType } from "@prisma/client";
 import * as LevelService from "../Levels/levels.service";
 import * as CombatService from "../Combat/combat.service";
 import * as EnergyService from "../Energy/energy.service";
-import { formatTimer } from "../../../helper/dateTimeHelper";
 import { updateQuestProgress } from "../../game/Quests/quests.service";
 import { updateProgressForChallenge } from "../Combat/special_attack.helper";
-import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
 import { generateDynamicMessage } from "../../../helper/gamePlayMessageHelper";
 import { getBaseEnemyHp } from "../Combat/combat.service";
 import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
@@ -34,37 +32,6 @@ import {
 } from "../../../helper/enemyAttackSounds";
 
 const prisma = new PrismaClient();
-const challengeGameplayFeedbackCache = new Map<
-  string,
-  { text: string; audio: string[] }
->();
-const CHALLENGE_FEEDBACK_CACHE_LIMIT = 1000;
-
-const buildChallengeFeedbackKey = (
-  progressId: number,
-  challengeId: number,
-  phase: string,
-) => `${progressId}:${challengeId}:${phase}`;
-
-const getCachedChallengeGameplayFeedback = async (
-  key: string,
-  producer: () => Promise<{ text: string; audio: string[] }>,
-) => {
-  const cached = challengeGameplayFeedbackCache.get(key);
-  if (cached) return cached;
-
-  const created = await producer();
-
-  if (challengeGameplayFeedbackCache.size >= CHALLENGE_FEEDBACK_CACHE_LIMIT) {
-    const oldestKey = challengeGameplayFeedbackCache.keys().next().value;
-    if (oldestKey) {
-      challengeGameplayFeedbackCache.delete(oldestKey);
-    }
-  }
-
-  challengeGameplayFeedbackCache.set(key, created);
-  return created;
-};
 
 type ChallengeDTO = Omit<Challenge, never> & {
   answer?: string[];
@@ -510,9 +477,6 @@ const formatErrorContext = (
   return { lineDisplay, answerDisplay };
 };
 
-const isTimedChallengeType = (type: string) =>
-  ["multiple choice", "fill in the blank"].includes(type);
-
 function shuffleArray<T>(array: T[]): T[] {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -567,22 +531,6 @@ export const generateDynamicOptions = (
 
   return shuffleArray(options);
 };
-
-const buildChallengeWithTimer = (
-  challenge: Challenge,
-  timeRemaining: number,
-) => ({
-  ...challenge,
-  timeLimit: isTimedChallengeType(challenge.challenge_type)
-    ? CHALLENGE_TIME_LIMIT
-    : 0,
-  timeRemaining: isTimedChallengeType(challenge.challenge_type)
-    ? timeRemaining
-    : 0,
-  timer: isTimedChallengeType(challenge.challenge_type)
-    ? formatTimer(timeRemaining)
-    : null,
-});
 
 export const generateMotivationalMessage = (
   wasFirstCompletion: boolean,
@@ -1480,34 +1428,18 @@ export const submitChallengeService = async (
       }
     }
 
-    const feedbackKey = buildChallengeFeedbackKey(
-      currentProgress.progress_id,
-      challengeId,
-      [
-        "correct",
-        `a${updatedProgress.attempts ?? 0}`,
-        `streak${updatedProgress.consecutive_corrects ?? 0}`,
-        `hint${hintUsed ? 1 : 0}`,
-        "bonus0",
-      ].join(":"),
-    );
-
-    const { text, audio } = await getCachedChallengeGameplayFeedback(
-      feedbackKey,
-      () =>
-        generateDynamicMessage(
-          true,
-          hintUsed,
-          updatedProgress.consecutive_corrects ?? 0,
-          fightResult.character_health ?? character.health,
-          character.health,
-          elapsed,
-          enemy.enemy_name,
-          fightResult.enemyHealth ??
-            fightResult.enemy?.enemy_health ??
-            currentProgress.enemy_hp,
-          false,
-        ),
+    const { text, audio } = await generateDynamicMessage(
+      true,
+      hintUsed,
+      updatedProgress.consecutive_corrects ?? 0,
+      fightResult.character_health ?? character.health,
+      character.health,
+      elapsed,
+      enemy.enemy_name,
+      fightResult.enemyHealth ??
+        fightResult.enemy?.enemy_health ??
+        currentProgress.enemy_hp,
+      false,
     );
     message = text;
     audioResponse = audio;
@@ -1569,39 +1501,20 @@ export const submitChallengeService = async (
       fightResult.character.character_damage = 0;
     }
 
-    const feedbackKey = buildChallengeFeedbackKey(
-      currentProgress.progress_id,
-      challengeId,
-      [
-        "wrong",
-        `a${updatedProgress.attempts ?? 0}`,
-        `hp${
-          fightResult.charHealth ??
-          fightResult.character?.character_health ??
-          currentProgress.player_hp
-        }`,
-        "bonus0",
-      ].join(":"),
-    );
-
-    const { text, audio } = await getCachedChallengeGameplayFeedback(
-      feedbackKey,
-      () =>
-        generateDynamicMessage(
-          false,
-          false,
-          0,
-          fightResult.charHealth ??
-            fightResult.character?.character_health ??
-            currentProgress.player_hp,
-          character.health,
-          elapsed,
-          enemy.enemy_name,
-          fightResult.enemyHealth ??
-            fightResult.enemy?.enemy_health ??
-            currentProgress.enemy_hp,
-          false,
-        ),
+    const { text, audio } = await generateDynamicMessage(
+      false,
+      false,
+      0,
+      fightResult.charHealth ??
+        fightResult.character?.character_health ??
+        currentProgress.player_hp,
+      character.health,
+      elapsed,
+      enemy.enemy_name,
+      fightResult.enemyHealth ??
+        fightResult.enemy?.enemy_health ??
+        currentProgress.enemy_hp,
+      false,
     );
 
     message = text;
@@ -2068,34 +1981,18 @@ export const submitChallengeService = async (
   }
 
   if (isBonusRound) {
-    const feedbackKey = buildChallengeFeedbackKey(
-      currentProgress.progress_id,
-      challengeId,
-      [
-        "bonus",
-        isCorrect ? "correct" : "wrong",
-        `a${updatedProgress.attempts ?? 0}`,
-        `streak${updatedProgress.consecutive_corrects ?? 0}`,
-        `hint${hintUsed ? 1 : 0}`,
-      ].join(":"),
-    );
-
-    const { text, audio } = await getCachedChallengeGameplayFeedback(
-      feedbackKey,
-      () =>
-        generateDynamicMessage(
-          isCorrect,
-          hintUsed,
-          updatedProgress.consecutive_corrects ?? 0,
-          fightResult.character_health ?? character.health,
-          character.health,
-          elapsed,
-          enemy.enemy_name,
-          fightResult.enemyHealth ??
-            fightResult.enemy?.enemy_health ??
-            currentProgress.enemy_hp,
-          true,
-        ),
+    const { text, audio } = await generateDynamicMessage(
+      isCorrect,
+      hintUsed,
+      updatedProgress.consecutive_corrects ?? 0,
+      fightResult.character_health ?? character.health,
+      character.health,
+      elapsed,
+      enemy.enemy_name,
+      fightResult.enemyHealth ??
+        fightResult.enemy?.enemy_health ??
+        currentProgress.enemy_hp,
+      true,
     );
     message = text;
     audioResponse = audio;
@@ -2306,7 +2203,7 @@ const getNextChallengeEasy = async (progress: any) => {
     }
   }
 
-  return wrapWithTimer(progress, nextChallenge, level);
+  return prepareChallenge(progress, nextChallenge, level);
 };
 
 const getNextChallengeHard = async (progress: any) => {
@@ -2390,7 +2287,7 @@ const getNextChallengeHard = async (progress: any) => {
     }
   }
 
-  return wrapWithTimer(progress, nextChallenge, level);
+  return prepareChallenge(progress, nextChallenge, level);
 };
 
 function getNextWrongChallenge(
@@ -2460,7 +2357,7 @@ export const overrideChallengeGuide = async (
   return challenge;
 };
 
-const wrapWithTimer = async (
+const prepareChallenge = async (
   progress: any,
   challenge: Challenge | null,
   level: any,
@@ -2539,12 +2436,8 @@ const wrapWithTimer = async (
           `- Ryron's Passive Applied: All blanks revealed for challenge ${challenge.challenge_id}`,
         );
 
-        const timeRemaining = CHALLENGE_TIME_LIMIT;
         return {
-          nextChallenge: buildChallengeWithTimer(
-            modifiedChallenge,
-            timeRemaining,
-          ),
+          nextChallenge: modifiedChallenge,
         };
       }
     } else {
@@ -2624,13 +2517,7 @@ const wrapWithTimer = async (
         "- Permutation SS applied: letters within options shuffled for display and mapping stored",
       );
 
-      const challengeStart = new Date();
-      const timeRemaining = CHALLENGE_TIME_LIMIT;
-      const builtChallenge = buildChallengeWithTimer(
-        modifiedChallenge,
-        timeRemaining,
-      );
-      return { nextChallenge: builtChallenge };
+      return { nextChallenge: modifiedChallenge };
     }
   } else if (
     progress.has_only_blanks_ss &&
@@ -2663,10 +2550,7 @@ const wrapWithTimer = async (
     }
   }
 
-  const challengeStart = new Date(progress.challenge_start_time ?? Date.now());
-  const elapsed = (Date.now() - challengeStart.getTime()) / 1000;
-  const timeRemaining = Math.max(0, CHALLENGE_TIME_LIMIT - elapsed);
-
+  // Update challenge start time so the elapsed time tracking is reset for the new challenge
   await prisma.playerProgress.update({
     where: {
       player_id_level_id: {
@@ -2677,12 +2561,7 @@ const wrapWithTimer = async (
     data: { challenge_start_time: new Date() },
   });
 
-  const builtChallenge = buildChallengeWithTimer(
-    modifiedChallenge,
-    timeRemaining,
-  );
-
   return {
-    nextChallenge: builtChallenge,
+    nextChallenge: modifiedChallenge,
   };
 };
