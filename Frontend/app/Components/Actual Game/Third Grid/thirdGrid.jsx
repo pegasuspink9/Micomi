@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { View, StyleSheet, Text, Animated } from 'react-native';
 import GridContainer from './components/GridContainer';
 import AnswerGrid from './components/AnswerGrid';
 import GameButton from './components/GameButtons';
@@ -16,6 +16,8 @@ import {
   checkAnswer,
   setBorderColor
 } from './utils/answerLogic';
+
+const CHALLENGE_TIMER_FALLBACK_SECONDS = 60;
 
 const ThirdGrid = ({ 
   currentQuestion, 
@@ -61,6 +63,7 @@ const ThirdGrid = ({
   pvpMatchId = null,
   onSendPvpMessage = null,
   sendingPvpMessage = false,
+  pvpChallengeCountdown = null,
 }) => {
 
   if (!currentQuestion) {
@@ -208,6 +211,18 @@ const ThirdGrid = ({
     !isLevelComplete &&
     (Boolean(forceAutoProceedUi) || (canProceed && isAutoProceed));
   const shouldShowProceedState = isManualProceedMode || isAutoProceedMode;
+  const hasActivePvpTimer =
+    typeof pvpChallengeCountdown === 'number' && Number.isFinite(pvpChallengeCountdown);
+  const formattedPvpTimer = useMemo(() => {
+    const countdown = hasActivePvpTimer
+      ? Math.max(0, pvpChallengeCountdown)
+      : CHALLENGE_TIMER_FALLBACK_SECONDS;
+
+    const minutes = Math.floor(countdown / 60);
+    const seconds = countdown % 60;
+
+    return `${minutes}:${String(seconds).padStart(2, '0')}`;
+  }, [hasActivePvpTimer, pvpChallengeCountdown]);
 
   const dynamicHeight = useMemo(() => {
     if (shouldShowProceedState || isLevelComplete) {
@@ -226,6 +241,32 @@ const ThirdGrid = ({
   const showContent = !shouldShowProceedState && !isLevelComplete;
   const shouldDisableOverlayButtons = isPvpMode && showPotions && isPvpChatActive;
 
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const isCrtiticalTime = isPvpMode && hasActivePvpTimer && pvpChallengeCountdown <= 10;
+
+  useEffect(() => {
+    let pulse;
+    if (isCrtiticalTime) {
+      pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.05,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulse.start();
+    } else {
+      pulseAnim.setValue(1);
+    }
+    return () => pulse?.stop();
+  }, [isCrtiticalTime]);
 
   
   return (
@@ -249,6 +290,23 @@ const ThirdGrid = ({
       fadeOutAnim={fadeOutAnim}
       isInRunMode={isInRunMode}
       isSpecialAttack={isSpecialAttack}
+      pvpTimerComponent={
+        isPvpMode && hasActivePvpTimer ? (
+          <View style={styles.pvpTimerFrame}>
+            <View style={styles.pvpTimerInner}>
+              <Animated.Text 
+                style={[
+                  styles.pvpTimerValue,
+                  isCrtiticalTime && styles.pvpTimerValueCritical,
+                  { transform: [{ scale: pulseAnim }] }
+                ]}
+              >
+                {formattedPvpTimer}
+              </Animated.Text>
+            </View>
+          </View>
+        ) : null
+      }
       lowerChildren={
         <View
           style={styles.overlayButtons}
@@ -350,6 +408,54 @@ const styles = StyleSheet.create({
     top: 0,
     zIndex: 10,
     justifyContent: 'center', 
+  },
+  pvpTimerFrame: {
+    alignSelf: 'flex-start',
+    borderRadius: gameScale(10),
+    backgroundColor: '#b4bdc6ff',
+    borderTopWidth: gameScale(2),
+    borderTopColor: '#2c5282',
+    borderLeftWidth: gameScale(2),
+    borderLeftColor: '#2c5282',
+    borderBottomWidth: gameScale(3),
+    borderBottomColor: '#2c5282',
+    borderRightWidth: gameScale(3),
+    borderRightColor: '#2c5282',
+    minWidth: gameScale(78),
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: gameScale(4),
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: gameScale(6),
+    elevation: gameScale(8),
+  },
+  pvpTimerInner: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: gameScale(8),
+    backgroundColor: '#052a53ff',
+    paddingVertical: gameScale(4),
+    paddingHorizontal: gameScale(8),
+    borderWidth: gameScale(1),
+    borderColor: 'rgba(135, 206, 235, 0.45)',
+  },
+  pvpTimerLabel: {
+    color: 'rgba(194, 225, 255, 0.85)',
+    fontSize: gameScale(8),
+    fontFamily: 'DynaPuff',
+    textAlign: 'center',
+  },
+  pvpTimerValue: {
+    marginTop: gameScale(1),
+    color: '#ffffff',
+    fontSize: gameScale(12),
+    fontFamily: 'DynaPuff',
+    textAlign: 'center',
+  },
+  pvpTimerValueCritical: {
+    color: '#ff4444',
   }
 });
 
@@ -395,6 +501,7 @@ export default React.memo(ThirdGrid, (prev, next) => {
       prev.cardDisplaySequence === next.cardDisplaySequence &&
       prev.isPvpMode === next.isPvpMode &&
       prev.pvpMatchId === next.pvpMatchId &&
-      prev.sendingPvpMessage === next.sendingPvpMessage
+      prev.sendingPvpMessage === next.sendingPvpMessage &&
+      prev.pvpChallengeCountdown === next.pvpChallengeCountdown
     );
 });

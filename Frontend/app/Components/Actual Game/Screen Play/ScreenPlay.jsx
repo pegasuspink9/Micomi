@@ -432,6 +432,12 @@ const ScreenPlay = ({
            '';
   }, [gameState.submissionResult, gameState.selectedCharacter]);
 
+  const characterPlayerName = useMemo(() => {
+    return gameState.submissionResult?.fightResult?.character?.player_name ??
+      gameState.selectedCharacter?.player_name ??
+      null;
+  }, [gameState.submissionResult, gameState.selectedCharacter]);
+
    const characterAttackType = useMemo(() => 
     gameState.submissionResult?.fightResult?.character?.character_attack_type || 
     gameState.selectedCharacter?.character_attack_type,
@@ -442,6 +448,12 @@ const ScreenPlay = ({
     return gameState.submissionResult?.fightResult?.enemy?.enemy_name ?? 
            gameState.enemy?.enemy_name ??
             'Enemy';
+  }, [gameState.submissionResult, gameState.enemy]);
+
+  const enemyPlayerName = useMemo(() => {
+    return gameState.submissionResult?.fightResult?.enemy?.player_name ??
+      gameState.enemy?.player_name ??
+      null;
   }, [gameState.submissionResult, gameState.enemy]);
 
   const characterSpecialSkill = useMemo(() => {
@@ -1232,6 +1244,27 @@ useEffect(() => {
         })}
 
       <FadeOutWrapper fadeOutAnim={fadeOutAnim} isInRunMode={isInRunMode}>
+        {isPvpMode && Boolean(characterPlayerName) && (
+          <Text
+            numberOfLines={1}
+            style={{
+              position: 'absolute',
+              top: gameScale(-4),
+              left: gameScale(42),
+              maxWidth: gameScale(120),
+              color: '#f8fcff',
+              fontSize: gameScale(10),
+              fontFamily: 'DynaPuff',
+              textShadowColor: 'rgba(0, 0, 0, 0.7)',
+              textShadowOffset: { width: gameScale(1), height: gameScale(1) },
+              textShadowRadius: gameScale(2),
+              zIndex: 50,
+            }}
+          >
+            {characterPlayerName}
+          </Text>
+        )}
+
         <Life 
           health={playerHealth}
           maxHealth={playerMaxHealth}
@@ -1264,6 +1297,28 @@ useEffect(() => {
 
 
       <FadeOutWrapper fadeOutAnim={fadeOutAnim} isInRunMode={isInRunMode}>
+        {isPvpMode && Boolean(enemyPlayerName) && (
+          <Text
+            numberOfLines={1}
+            style={{
+              position: 'absolute',
+              top: gameScale(-4),
+              right: gameScale(42),
+              maxWidth: gameScale(120),
+              color: '#f8fcff',
+              fontSize: gameScale(10),
+              fontFamily: 'DynaPuff',
+              textAlign: 'right',
+              textShadowColor: 'rgba(0, 0, 0, 0.7)',
+              textShadowOffset: { width: gameScale(1), height: gameScale(1) },
+              textShadowRadius: gameScale(2),
+              zIndex: 50,
+            }}
+          >
+            {enemyPlayerName}
+          </Text>
+        )}
+
         <Life 
           health={enemyHealth}
           maxHealth={enemyMaxHealth}
@@ -1314,13 +1369,15 @@ useEffect(() => {
         visible={isMessageVisible}
       />
 
-      <FadeOutWrapper fadeOutAnim={fadeOutAnim} isInRunMode={isInRunMode} style={{zIndex: -1}}>
-        <Coin 
-          coins={totalCoins}
-          onCoinsChange={(newCoins) => console.log(`Total coins display updated: ${newCoins}`)}
-          animated={true}
-        />
-      </FadeOutWrapper>
+      {!isPvpMode && (
+        <FadeOutWrapper fadeOutAnim={fadeOutAnim} isInRunMode={isInRunMode} style={{zIndex: -1}}>
+          <Coin 
+            coins={totalCoins}
+            onCoinsChange={(newCoins) => console.log(`Total coins display updated: ${newCoins}`)}
+            animated={true}
+          />
+        </FadeOutWrapper>
+      )}
         
       {/* ✅ NEW: Render the BonusRoundModal component */}
       <BonusRoundModal 

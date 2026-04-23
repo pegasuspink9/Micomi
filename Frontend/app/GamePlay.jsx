@@ -109,6 +109,7 @@ export default function GamePlay() {
     canProceed,
     handleProceed,
     autoProceedCountdown = null,
+    challengeStallCountdown = null,
 
     potions,
     selectedPotion,
@@ -120,6 +121,7 @@ export default function GamePlay() {
     liveSync = null,
     resolvedMatchId = null,
     chatReactionEvent = 0,
+    surrenderMatch = async () => ({ success: false, error: 'PvP surrender is unavailable' }),
   } = activeGameData;
 
   const dialogueData = useMemo(() => gameState?.dialogue, [gameState?.dialogue]);
@@ -134,6 +136,23 @@ export default function GamePlay() {
 
   const currentChallenge = gameState?.currentChallenge;
   const submissionResult = gameState?.submissionResult;
+  const hasTerminalPvpResult = useMemo(() => {
+    const status = gameState?.submissionResult?.fightResult?.status;
+    return status === 'won' || status === 'lost';
+  }, [gameState?.submissionResult?.fightResult?.status]);
+
+  const surrenderPvpOnExit = useCallback(async (reason = 'manual_exit') => {
+    if (!isPvpMode || hasTerminalPvpResult) {
+      return;
+    }
+
+    try {
+      await surrenderMatch({ reason });
+    } catch (surrenderError) {
+      console.warn('Failed to surrender PvP match on exit:', surrenderError);
+    }
+  }, [hasTerminalPvpResult, isPvpMode, surrenderMatch]);
+
   const resolvedSubmissionIsCorrect = useMemo(() => {
     if (typeof submissionResult?.isCorrect === 'boolean') {
       return submissionResult.isCorrect;
@@ -813,6 +832,8 @@ export default function GamePlay() {
 
   const handleHome = useCallback(async () => {
     console.log('🏠 Going home...');
+
+    await surrenderPvpOnExit('pause_or_home_exit');
     
     if (gameOverTimeoutRef.current) {
       clearTimeout(gameOverTimeoutRef.current);
@@ -836,7 +857,7 @@ export default function GamePlay() {
     hasTriggeredLevelCompletion.current = false;
 
     router.back();
-  }, [router]);
+  }, [router, surrenderPvpOnExit]);
 
     useEffect(() => {
     return () => {
@@ -905,8 +926,10 @@ export default function GamePlay() {
   const handleExitGame = useCallback(async () => {
     console.log('🚪 Exiting game...');
 
+    await surrenderPvpOnExit('explicit_exit');
+
     router.back();
-  }, [router]);
+  }, [router, surrenderPvpOnExit]);
 
   const memoizedSetSelectedAnswers = useCallback((answers) => {
     setSelectedAnswers(answers);
@@ -1123,6 +1146,7 @@ export default function GamePlay() {
                 onProceed={handleProceed}
                 isAutoProceed={isPvpMode && canProceed}
                 autoProceedCountdown={isPvpMode ? autoProceedCountdown : null}
+                pvpChallengeCountdown={isPvpMode ? challengeStallCountdown : null}
                 forceAutoProceedUi={
                   isPvpMode &&
                   resolvedSubmissionIsCorrect === true &&

@@ -186,6 +186,12 @@ const mergeAuthoritativeCombatState = (displayState, combatState, rawData = {}) 
     selectedCharacter: {
       ...(displayState.selectedCharacter || {}),
       ...(combatState.selectedCharacter || {}),
+      player_id:
+        pick(fightCharacter.player_id, combatState?.selectedCharacter?.player_id) ??
+        displayState?.selectedCharacter?.player_id,
+      player_name:
+        pick(fightCharacter.player_name, combatState?.selectedCharacter?.player_name) ??
+        displayState?.selectedCharacter?.player_name,
       character_id:
         pick(fightCharacter.character_id, combatState?.selectedCharacter?.character_id) ??
         displayState?.selectedCharacter?.character_id,
@@ -256,6 +262,11 @@ const mergeAuthoritativeCombatState = (displayState, combatState, rawData = {}) 
     enemy: {
       ...(displayState.enemy || {}),
       ...(combatState.enemy || {}),
+      player_id:
+        pick(fightEnemy.player_id, combatState?.enemy?.player_id) ?? displayState?.enemy?.player_id,
+      player_name:
+        pick(fightEnemy.player_name, combatState?.enemy?.player_name) ??
+        displayState?.enemy?.player_name,
       enemy_id:
         pick(fightEnemy.enemy_id, combatState?.enemy?.enemy_id) ?? displayState?.enemy?.enemy_id,
       enemy_name:
@@ -420,6 +431,28 @@ export const pvpService = {
 
     if (!response?.success) {
       throw new Error(response?.message || 'Failed to submit PvP answer');
+    }
+
+    return normalizeMatchPayload(response);
+  },
+
+  surrenderDailyMatch: async (matchId) => {
+    const normalizedMatchId =
+      matchId === null || matchId === undefined || matchId === ''
+        ? null
+        : String(matchId);
+
+    if (!normalizedMatchId) {
+      throw new Error('Missing match ID');
+    }
+
+    const response = await apiService.post(
+      `/game/pvp/daily/match/${normalizedMatchId}/surrender`,
+      {}
+    );
+
+    if (!response?.success) {
+      throw new Error(response?.message || 'Failed to surrender PvP match');
     }
 
     return normalizeMatchPayload(response);

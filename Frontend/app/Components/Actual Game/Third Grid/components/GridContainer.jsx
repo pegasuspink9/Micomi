@@ -30,6 +30,7 @@ const GridContainer = ({
   fadeOutAnim = null,
   isSpecialAttack = false,
   cardDamage = null,
+  pvpTimerComponent = null,
 }) => {
   const [imageSource, setImageSource] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -116,6 +117,13 @@ const GridContainer = ({
     opacity: opacityAnim,
   };
 
+  const formattedAutoProceedCountdown =
+    typeof autoProceedCountdown === 'number' && Number.isFinite(autoProceedCountdown)
+      ? `${Math.floor(Math.max(0, autoProceedCountdown) / 60)}:${String(
+          Math.max(0, autoProceedCountdown) % 60
+        ).padStart(2, '0')}`
+      : null;
+
     const CrackEffect = () => (
     <View style={styles.crackOverlay} pointerEvents="none">
       {/* Top Left Crack */}
@@ -178,6 +186,12 @@ const GridContainer = ({
           </View>
         )}
         
+        {pvpTimerComponent && !isProceedMode && !isAutoProceedMode && !isLevelComplete && (
+          <View style={styles.pvpTimerSimpleFrameWrapper}>
+            {pvpTimerComponent}
+          </View>
+        )}
+        
         
          <View style={[
           styles.outerFrame,
@@ -226,8 +240,8 @@ const GridContainer = ({
                 <View style={styles.autoProceedContainer}>
                   <Text style={styles.autoProceedTitle}>Syncing Players</Text>
                   <Text style={styles.autoProceedSubtitle}>
-                    {typeof autoProceedCountdown === 'number'
-                      ? `Next challenge in ${autoProceedCountdown}s`
+                    {formattedAutoProceedCountdown
+                      ? `Next challenge in ${formattedAutoProceedCountdown}`
                       : 'Preparing next challenge...'}
                   </Text>
                 </View>
@@ -992,6 +1006,12 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: RESPONSIVE.borderRadius.xs,
     borderBottomRightRadius: RESPONSIVE.borderRadius.xs,
     pointerEvents: 'none',
+  },
+
+  pvpTimerSimpleFrameWrapper: {
+    position: 'absolute',
+    top: gameScale(-25),
+    left: gameScale(8),
   },
 });
 

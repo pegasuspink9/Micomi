@@ -5,6 +5,7 @@ import { pvpService } from '../services/pvpService';
 const PVP_MATCH_CACHE_PREFIX = 'pvp_match_cache:';
 const PVP_ACTIVE_MATCH_ID_KEY = 'pvp_active_match_id';
 const AUTO_PROCEED_SECONDS = 10;
+const CHALLENGE_STALL_SECONDS = 60;
 const MATCH_SYNC_INTERVAL_MS = 500;
 
 const normalizeChallengeId = (value) => {
@@ -148,6 +149,14 @@ const mergeFightAttributes = (baseState, sourceState) => {
   const character = fightResult.character || {};
   const enemy = fightResult.enemy || {};
 
+  if (character.player_id !== undefined) {
+    nextState.selectedCharacter.player_id = character.player_id;
+  }
+
+  if (character.player_name !== undefined) {
+    nextState.selectedCharacter.player_name = character.player_name;
+  }
+
   if (character.character_id !== undefined) {
     nextState.selectedCharacter.character_id = character.character_id;
   }
@@ -219,6 +228,14 @@ const mergeFightAttributes = (baseState, sourceState) => {
 
   if (enemy.enemy_id !== undefined) {
     nextState.enemy.enemy_id = enemy.enemy_id;
+  }
+
+  if (enemy.player_id !== undefined) {
+    nextState.enemy.player_id = enemy.player_id;
+  }
+
+  if (enemy.player_name !== undefined) {
+    nextState.enemy.player_name = enemy.player_name;
   }
 
   if (enemy.enemy_name !== undefined) {
@@ -403,6 +420,7 @@ export const usePvpGameData = (matchId, options = {}) => {
   const [waitingForAnimation, setWaitingForAnimation] = useState(false);
   const [canProceed, setCanProceed] = useState(false);
   const [autoProceedCountdown, setAutoProceedCountdown] = useState(null);
+  const [challengeStallCountdown, setChallengeStallCountdown] = useState(CHALLENGE_STALL_SECONDS);
 
   const [potions] = useState([]);
   const [selectedPotion] = useState(null);
@@ -423,6 +441,9 @@ export const usePvpGameData = (matchId, options = {}) => {
   const matchPollRef = useRef(null);
   const autoProceedTimeoutRef = useRef(null);
   const autoProceedIntervalRef = useRef(null);
+  const challengeStallIntervalRef = useRef(null);
+  const challengeStallHandledRef = useRef(null);
+  const surrenderInFlightRef = useRef(false);
 
   const currentChallengeIdRef = useRef(null);
   const completedChallengeIdsRef = useRef(new Set());
@@ -455,7 +476,9 @@ export const usePvpGameData = (matchId, options = {}) => {
     lastProcessedSubmissionRef.current = null;
     proceedReplayGuardRef.current = makeProceedReplayGuard();
     renderedSubmissionByChallengeRef.current = new Map();
+    challengeStallHandledRef.current = null;
     setChatReactionEvent(0);
+    setChallengeStallCountdown(CHALLENGE_STALL_SECONDS);
   }, [activeMatchId]);
 
   const stopPolling = useCallback(() => {
@@ -477,6 +500,13 @@ export const usePvpGameData = (matchId, options = {}) => {
     }
 
     setAutoProceedCountdown(null);
+  }, []);
+
+  const stopChallengeStallTimer = useCallback(() => {
+    if (challengeStallIntervalRef.current) {
+      clearInterval(challengeStallIntervalRef.current);
+      challengeStallIntervalRef.current = null;
+    }
   }, []);
 
   const getCacheKeyForMatch = useCallback((targetMatchId) => {
@@ -1623,6 +1653,82 @@ export const usePvpGameData = (matchId, options = {}) => {
     toResponseDrivenState,
   ]);
 
+  const surrenderMatch = useCallback(async (options = {}) => {
+    const { reason = 'manual_exit' } = options;
+
+    if (disabled) {
+      return { success: false, error: 'PvP mode is disabled' };
+    }
+
+    if (surrenderInFlightRef.current) {
+      return { success: false, error: 'Surrender already in progress' };
+    }
+
+    surrenderInFlightRef.current = true;
+
+    try {
+      stopAutoProceed();
+      setCanProceed(false);
+      setWaitingForAnimation(false);
+      waitingRef.current = false;
+      pendingSubmissionRef.current = null;
+      submitAwaitingDeltaRef.current = false;
+      submitBaselineCombatSignatureRef.current = null;
+      submitExpectedChallengeIdRef.current = null;
+
+      const resolvedMatchId =
+        activeMatchIdRef.current || (await resolveLatestMatchId({ forceRefresh: false }));
+
+      if (!resolvedMatchId) {
+        throw new Error('Missing match ID');
+      }
+
+      await setResolvedMatchId(resolvedMatchId);
+      await pvpService.surrenderDailyMatch(resolvedMatchId);
+
+      // Use GET-authoritative state for display after surrender.
+      const payload = await pvpService.getDailyMatchState(resolvedMatchId);
+      const authoritativeState = pvpService.extractAuthoritativeMatchState(payload);
+
+      if (authoritativeState) {
+        setGameStateIfChanged((prev) => {
+          const merged = toResponseDrivenState(prev, authoritativeState, {
+            submissionResult: authoritativeState?.submissionResult ?? null,
+            nextChallengeData: null,
+          });
+
+          return mergeFightAttributes(merged, authoritativeState);
+        });
+
+        currentChallengeIdRef.current = getChallengeId(authoritativeState.currentChallenge);
+        setSyncConnected({ pendingRemoteProceed: false }, { touch: true });
+      }
+
+      return {
+        success: true,
+        reason,
+      };
+    } catch (surrenderError) {
+      const message = surrenderError?.message || 'Failed to surrender PvP match';
+      setError(message);
+
+      return {
+        success: false,
+        error: message,
+      };
+    } finally {
+      surrenderInFlightRef.current = false;
+    }
+  }, [
+    disabled,
+    resolveLatestMatchId,
+    setGameStateIfChanged,
+    setResolvedMatchId,
+    setSyncConnected,
+    stopAutoProceed,
+    toResponseDrivenState,
+  ]);
+
   const retryLevel = useCallback(async () => {
     await fetchMatchState();
   }, [fetchMatchState]);
@@ -1678,6 +1784,7 @@ export const usePvpGameData = (matchId, options = {}) => {
       if (disabled) {
         stopPolling();
         stopAutoProceed();
+        stopChallengeStallTimer();
         setLoading(false);
         setAnimationsLoading(false);
         setLiveSync(makeDefaultLiveSync());
@@ -1733,6 +1840,7 @@ export const usePvpGameData = (matchId, options = {}) => {
     setGameStateIfChanged,
     setResolvedMatchId,
     stopAutoProceed,
+    stopChallengeStallTimer,
     stopPolling,
     toResponseDrivenState,
   ]);
@@ -1767,6 +1875,78 @@ export const usePvpGameData = (matchId, options = {}) => {
       stopPolling();
     };
   }, [activeMatchId, disabled, resolveLatestMatchId, stopPolling, syncMatchState]);
+
+  useEffect(() => {
+    if (disabled) {
+      stopChallengeStallTimer();
+      return;
+    }
+
+    const challengeId = getChallengeId(gameState?.currentChallenge);
+    const fightStatus = gameState?.submissionResult?.fightResult?.status;
+    const isTerminalStatus = fightStatus === 'won' || fightStatus === 'lost';
+
+    if (!challengeId || isTerminalStatus) {
+      stopChallengeStallTimer();
+      setChallengeStallCountdown(null);
+      return;
+    }
+
+    const timerStartedAt = Date.now();
+    setChallengeStallCountdown(CHALLENGE_STALL_SECONDS);
+    stopChallengeStallTimer();
+
+    const runTimeoutAction = async () => {
+      try {
+        await syncMatchState();
+
+        // Timeout should advance challenge only; surrender is manual via exit actions.
+        canProceedRef.current = true;
+        setTimeout(() => {
+          handleProceed();
+        }, 120);
+      } catch (timeoutError) {
+        console.warn('Failed to resolve stalled PvP challenge:', timeoutError);
+        challengeStallHandledRef.current = null;
+      }
+    };
+
+    const updateCountdown = () => {
+      const elapsedSeconds = Math.floor((Date.now() - timerStartedAt) / 1000);
+      const remainingSeconds = Math.max(CHALLENGE_STALL_SECONDS - elapsedSeconds, 0);
+
+      setChallengeStallCountdown((prev) =>
+        prev === remainingSeconds ? prev : remainingSeconds
+      );
+
+      if (remainingSeconds > 0) {
+        return;
+      }
+
+      stopChallengeStallTimer();
+
+      if (challengeStallHandledRef.current === challengeId) {
+        return;
+      }
+
+      challengeStallHandledRef.current = challengeId;
+      runTimeoutAction();
+    };
+
+    updateCountdown();
+    challengeStallIntervalRef.current = setInterval(updateCountdown, 250);
+
+    return () => {
+      stopChallengeStallTimer();
+    };
+  }, [
+    disabled,
+    gameState?.currentChallenge?.id,
+    gameState?.submissionResult?.fightResult?.status,
+    handleProceed,
+    stopChallengeStallTimer,
+    syncMatchState,
+  ]);
 
   useEffect(() => {
     if (disabled || !canProceed) {
@@ -1831,13 +2011,14 @@ export const usePvpGameData = (matchId, options = {}) => {
     return () => {
       stopPolling();
       stopAutoProceed();
+      stopChallengeStallTimer();
 
       if (animationTimeoutRef.current) {
         clearTimeout(animationTimeoutRef.current);
         animationTimeoutRef.current = null;
       }
     };
-  }, [stopAutoProceed, stopPolling]);
+  }, [stopAutoProceed, stopChallengeStallTimer, stopPolling]);
 
   return {
     gameState,
@@ -1851,6 +2032,7 @@ export const usePvpGameData = (matchId, options = {}) => {
     waitingForAnimation,
     canProceed,
     autoProceedCountdown,
+    challengeStallCountdown,
 
     animationsLoading,
     downloadProgress,
@@ -1861,6 +2043,7 @@ export const usePvpGameData = (matchId, options = {}) => {
     refetchGameData,
     submitAnswer,
     sendPvpMatchMessage,
+    surrenderMatch,
     onAnimationComplete: handleAnimationComplete,
     handleProceed,
 
