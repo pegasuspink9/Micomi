@@ -8,8 +8,8 @@ import {
   View,
   ImageBackground,
   ActivityIndicator,
-  Modal,
   Animated,
+  Modal,
   Platform,
   StatusBar
 } from 'react-native';
@@ -18,7 +18,6 @@ import LottieView from 'lottie-react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMapData } from '../../hooks/useMapData'; 
-import { usePvpMatchmaking } from '../../hooks/usePvpMatchmaking';
 import { MAP_THEMES, DEFAULT_THEME } from '../RoadMap/MapLevel/MapDatas/mapData'; 
 import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
 import { mapService } from '../../services/mapService';
@@ -38,7 +37,6 @@ const LEVEL_SELECTOR_IMAGES = {
 export default function MapNavigate({ onMapChange }) {
   const [currentMapIndex, setCurrentMapIndex] = useState(0);
   const [isNavigating, setIsNavigating] = useState(false);
-  const [isPvpModalVisible, setIsPvpModalVisible] = useState(false);
   const router = useRouter();
 
 
@@ -79,36 +77,6 @@ export default function MapNavigate({ onMapChange }) {
   const [assetsReady, setAssetsReady] = useState(false);
 
   const { maps, loading, error: mapError, refetch } = useMapData();
-
-  const {
-    preview,
-    status: pvpStatus,
-    loadingPreview,
-    settingTopic,
-    startingMatch,
-    findingMatch,
-    matchedMatchId,
-    error: pvpError,
-    loadPreview,
-    setMatchTopic,
-    startMatchmaking,
-    cancelMatchmaking,
-    clearMatchReadyState,
-    clearError: clearPvpError,
-  } = usePvpMatchmaking();
-
-  const pvpTopics = Array.isArray(preview?.previewTask?.topicsCovered)
-    ? preview.previewTask.topicsCovered
-    : [];
-  const selectedPvpTopic = pvpStatus?.selectedTopic || null;
-
-  const hasResumableMatch = Boolean(
-    pvpStatus?.matchId &&
-      (pvpStatus?.matchFound ||
-        ['matched', 'already_matched', 'in_progress', 'round_in_progress', 'active'].includes(
-          String(pvpStatus?.status || '').toLowerCase()
-        ))
-  );
 
   // Add safety check for current map
   const currentMap = maps[currentMapIndex];
@@ -567,91 +535,9 @@ export default function MapNavigate({ onMapChange }) {
     });
   };
 
-  const navigateToPvpMatch = useCallback((targetMatchId) => {
-    if (!targetMatchId) return;
-
-    setIsNavigating(true);
-    setTimeout(() => {
-      router.push({
-        pathname: '/GamePlay',
-        params: {
-          mode: 'pvp',
-          matchId: String(targetMatchId),
-        },
-      });
-    }, 280);
-  }, [router]);
-
   const handleOpenPvpModal = useCallback(() => {
-    clearMatchReadyState();
-    setIsPvpModalVisible(true);
-    clearPvpError();
-    loadPreview();
-  }, [clearMatchReadyState, clearPvpError, loadPreview]);
-
-  const handleClosePvpModal = useCallback(async () => {
-    if (findingMatch) {
-      try {
-        await cancelMatchmaking({ silent: true });
-      } catch (cancelError) {
-        console.error('Failed to cancel PvP matchmaking:', cancelError);
-      }
-    }
-
-    clearMatchReadyState();
-    setIsPvpModalVisible(false);
-  }, [cancelMatchmaking, clearMatchReadyState, findingMatch]);
-
-  const handleStartPvpMatch = useCallback(async () => {
-    try {
-      const latestPreview = await loadPreview();
-      const latestStatus = latestPreview?.status || pvpStatus || null;
-      const latestStatusValue = String(latestStatus?.status || '').toLowerCase();
-      const latestSelectedTopic = latestStatus?.selectedTopic || selectedPvpTopic || null;
-
-      const latestHasResumableMatch = Boolean(
-        latestStatus?.matchId &&
-          (latestStatus?.matchFound ||
-            ['matched', 'already_matched', 'in_progress', 'round_in_progress', 'active'].includes(
-              latestStatusValue
-            ))
-      );
-
-      if (latestHasResumableMatch && latestStatus?.matchId) {
-        setIsPvpModalVisible(false);
-        navigateToPvpMatch(latestStatus.matchId);
-        return;
-      }
-
-      await startMatchmaking(latestSelectedTopic);
-    } catch (startError) {
-      console.error('Failed to start PvP matchmaking:', startError);
-    }
-  }, [loadPreview, navigateToPvpMatch, pvpStatus, selectedPvpTopic, startMatchmaking]);
-
-  const handleSetPvpTopic = useCallback(async (topic) => {
-    try {
-      await setMatchTopic(topic);
-    } catch (topicError) {
-      console.error('Failed to set PvP topic:', topicError);
-    }
-  }, [setMatchTopic]);
-
-  const handleCancelPvpSearch = useCallback(async () => {
-    try {
-      await cancelMatchmaking();
-    } catch (cancelError) {
-      console.error('Failed to cancel PvP matchmaking:', cancelError);
-    }
-  }, [cancelMatchmaking]);
-
-  useEffect(() => {
-    if (!matchedMatchId) return;
-
-    setIsPvpModalVisible(false);
-    navigateToPvpMatch(matchedMatchId);
-    clearMatchReadyState();
-  }, [clearMatchReadyState, matchedMatchId, navigateToPvpMatch]);
+    router.push('/Components/PVP');
+  }, [router]);
 
   // Close download modal manually
   const handleDownloadModalClose = () => {
@@ -814,154 +700,6 @@ export default function MapNavigate({ onMapChange }) {
         </View>
         <MiniQuestPreview />
       </View>
-
-      <Modal
-        visible={isPvpModalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={handleClosePvpModal}
-      >
-        <View style={styles.pvpModalOverlay}>
-          <View style={styles.pvpModalContainer}>
-            <Text style={styles.pvpModalTitle}>Daily PvP Match</Text>
-
-            {loadingPreview ? (
-              <View style={styles.pvpLoadingRow}>
-                <ActivityIndicator color="#BFE2FF" size="small" />
-                <Text style={styles.pvpLoadingText}>Loading daily preview...</Text>
-              </View>
-            ) : (
-              <>
-                <View style={styles.pvpInfoBlock}>
-                  <Text style={styles.pvpInfoLabel}>Challenge</Text>
-                  <Text style={styles.pvpInfoValue}>
-                    {preview?.previewTask?.title || 'Daily PvP Challenge'}
-                  </Text>
-                </View>
-
-                <View style={styles.pvpInfoBlock}>
-                  <Text style={styles.pvpInfoLabel}>Description</Text>
-                  <Text style={styles.pvpInfoValueMuted}>
-                    {preview?.previewTask?.description || 'Race another player to solve the daily challenge first.'}
-                  </Text>
-                </View>
-
-                <View style={styles.pvpInlineStats}>
-                  <View style={styles.pvpStatPill}>
-                    <Text style={styles.pvpStatLabel}>Difficulty</Text>
-                    <Text style={styles.pvpStatValue}>
-                      {String(preview?.previewTask?.difficulty || 'unknown').toUpperCase()}
-                    </Text>
-                  </View>
-
-                  <View style={styles.pvpStatPill}>
-                    <Text style={styles.pvpStatLabel}>Status</Text>
-                    <Text style={styles.pvpStatValue}>
-                      {String(pvpStatus?.status || 'idle').replace('_', ' ')}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.pvpInfoBlock}>
-                  <Text style={styles.pvpInfoLabel}>Topics</Text>
-                  {pvpTopics.length > 0 ? (
-                    <View style={styles.pvpTopicsGrid}>
-                      {pvpTopics.map((topic) => {
-                        const isSelected = selectedPvpTopic === topic;
-
-                        return (
-                          <TouchableOpacity
-                            key={topic}
-                            style={[
-                              styles.pvpTopicChip,
-                              isSelected && styles.pvpTopicChipSelected,
-                            ]}
-                            onPress={() => {
-                              handleSetPvpTopic(topic);
-                            }}
-                            activeOpacity={0.85}
-                            disabled={loadingPreview || settingTopic || startingMatch || findingMatch}
-                          >
-                            <Text
-                              style={[
-                                styles.pvpTopicChipText,
-                                isSelected && styles.pvpTopicChipTextSelected,
-                              ]}
-                            >
-                              {topic}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  ) : (
-                    <Text style={styles.pvpInfoValueMuted}>No topics loaded</Text>
-                  )}
-
-                  <Text style={styles.pvpTopicHint}>
-                    {selectedPvpTopic
-                      ? `Selected topic: ${selectedPvpTopic}`
-                      : 'Select one topic before starting matchmaking.'}
-                  </Text>
-                </View>
-              </>
-            )}
-
-            {pvpError ? <Text style={styles.pvpErrorText}>{pvpError}</Text> : null}
-
-            <View style={styles.pvpButtonRow}>
-              <TouchableOpacity
-                style={[styles.pvpActionButton, styles.pvpCloseButton]}
-                onPress={handleClosePvpModal}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.pvpActionButtonText}>Close</Text>
-              </TouchableOpacity>
-
-              {findingMatch ? (
-                <TouchableOpacity
-                  style={[styles.pvpActionButton, styles.pvpCancelButton]}
-                  onPress={handleCancelPvpSearch}
-                  activeOpacity={0.85}
-                >
-                  <Text style={styles.pvpActionButtonText}>Cancel Search</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={[styles.pvpActionButton, styles.pvpPlayButton]}
-                  onPress={handleStartPvpMatch}
-                  activeOpacity={0.85}
-                  disabled={
-                    startingMatch ||
-                    settingTopic ||
-                    loadingPreview ||
-                    (!hasResumableMatch && !selectedPvpTopic)
-                  }
-                >
-                  {startingMatch || settingTopic ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
-                  ) : (
-                    <Text style={styles.pvpActionButtonText}>
-                      {hasResumableMatch
-                        ? 'Continue'
-                        : selectedPvpTopic
-                          ? 'Play'
-                          : 'Choose Topic'}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {findingMatch ? (
-              <View style={styles.findingMatchRow}>
-                <ActivityIndicator color="#90E0FF" size="small" />
-                <Text style={styles.findingMatchText}>Finding match...</Text>
-              </View>
-            ) : null}
-          </View>
-        </View>
-      </Modal>
 
       <Modal visible={isMapInfoVisible} transparent={true} animationType="fade" onRequestClose={() => setIsMapInfoVisible(false)}>
         <View style={styles.mapModalOverlay}>

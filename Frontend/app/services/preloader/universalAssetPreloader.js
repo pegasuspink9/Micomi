@@ -9,6 +9,7 @@ import { profileMethods } from './universalAssetPreloader/profileMethods';
 import { shopMethods } from './universalAssetPreloader/shopMethods';
 import { characterMethods } from './universalAssetPreloader/characterMethods';
 import { videoMethods } from './universalAssetPreloader/videoMethods';
+import { pvpMethods } from './universalAssetPreloader/pvpMethods';
 
 class UniversalAssetPreloader {
   constructor() {
@@ -32,7 +33,8 @@ Object.assign(
   profileMethods,
   shopMethods,
   characterMethods,
-  videoMethods
+  videoMethods,
+  pvpMethods
 );
 
 export const universalAssetPreloader = new UniversalAssetPreloader();

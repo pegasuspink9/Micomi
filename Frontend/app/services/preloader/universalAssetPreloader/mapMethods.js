@@ -147,6 +147,9 @@ extractAllAssetsFromMapData(mapLevelData) {
     const staticShopAssets = this.getStaticPotionShopAssets();
     staticShopAssets.forEach(asset => addAsset(asset.url, asset.name, asset.type, asset.category));
 
+    const staticPvpAssets = this.getStaticPvpAssets();
+    staticPvpAssets.forEach(asset => addAsset(asset.url, asset.name, asset.type, asset.category));
+
 
     
 
