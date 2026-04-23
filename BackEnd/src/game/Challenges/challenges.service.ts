@@ -5,6 +5,7 @@ import * as EnergyService from "../Energy/energy.service";
 import { updateQuestProgress } from "../../game/Quests/quests.service";
 import { updateProgressForChallenge } from "../Combat/special_attack.helper";
 import { generateDynamicMessage } from "../../../helper/gamePlayMessageHelper";
+import { generateWrongAnswerGuide } from "../../../helper/aiHelper";
 import { getBaseEnemyHp } from "../Combat/combat.service";
 import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 import {
@@ -1567,7 +1568,21 @@ export const submitChallengeService = async (
   }
 
   const next = await getNextChallengeService(playerId, levelId);
-  const nextChallenge = next.nextChallenge;
+  let nextChallenge = next.nextChallenge;
+
+  if (!isCorrect && nextChallenge) {
+    const aiGuide = await generateWrongAnswerGuide(
+      level.map.map_name,
+      challenge.question || "",
+      finalAnswer,
+      effectiveCorrectAnswer,
+    );
+
+    nextChallenge = {
+      ...(nextChallenge as Record<string, unknown>),
+      guide: aiGuide,
+    };
+  }
 
   const nextCorrectAnswerLength = nextChallenge
     ? Array.isArray(nextChallenge.correct_answer)
