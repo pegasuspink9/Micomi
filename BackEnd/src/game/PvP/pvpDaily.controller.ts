@@ -231,3 +231,19 @@ export const surrenderMatch = async (req: Request, res: Response) => {
     return errorResponse(res, error, message, status);
   }
 };
+
+export const getMatchHistory = async (req: Request, res: Response) => {
+  try {
+    const playerId = (req as any).user.id as number;
+    const result = await PvpDailyService.getPlayerMatchHistory(playerId);
+
+    return successResponse(res, result, "Match history loaded successfully");
+  } catch (error) {
+    return errorResponse(
+      res,
+      error,
+      (error as Error).message || "Failed to load match history",
+      400,
+    );
+  }
+};

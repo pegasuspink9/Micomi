@@ -3,7 +3,6 @@ import { BattleStatus, PotionType, QuestType } from "@prisma/client";
 import * as EnergyService from "../Energy/energy.service";
 import * as LevelService from "../Levels/levels.service";
 import { updateQuestProgress } from "../Quests/quests.service";
-import { formatTimer } from "../../../helper/dateTimeHelper";
 import { grantRewards } from "../../../utils/grantRewards";
 import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 
@@ -603,7 +602,6 @@ export async function getCurrentFightState(
       character_current_state,
       character_attack_overlay,
     },
-    timer: "00:00",
     energy: energyStatus.energy,
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
     combat_background: combatBackground,
@@ -1589,7 +1587,6 @@ export async function fightEnemy(
       character_current_state,
       character_attack_overlay,
     },
-    timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,
     boss_skill_activated: progress?.boss_skill_activated || false,
@@ -2710,7 +2707,6 @@ export async function fightBossEnemy(
       character_current_state,
       character_attack_overlay,
     },
-    timer: formatTimer(Math.max(0, Math.floor(elapsedSeconds))),
     energy: updatedEnergyStatus.energy,
     timeToNextEnergyRestore: updatedEnergyStatus.timeToNextRestore,
     boss_skill_activated: progress?.boss_skill_activated || false,

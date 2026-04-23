@@ -12,6 +12,7 @@ export interface DailyPvpQuestion {
   title: string;
   description: string;
   question: string | null;
+  guide?: string | null;
   options: string[];
   correct_answer: string[];
   html_file: string | null;
@@ -154,6 +155,7 @@ export interface PvpMatchEntryLikeResponse {
   question_type: string;
   versus_background: string;
   versus_audio: string;
+  timer: string;
   gameplay_audio: string;
   is_correct_audio: string | null;
   enemy_attack_audio: string | null;
@@ -246,6 +248,7 @@ export interface PvpDailySubmitAnswerResult {
     character_attack_card: string | null;
     character_damage_card: number | null;
   };
+  timer?: string | null;
   gameplay_audio?: string;
   is_correct_audio?: string | null;
   enemy_attack_audio?: string | null;
@@ -257,4 +260,32 @@ export interface PvpDailySubmitAnswerResult {
   death_audio?: string | null;
   is_victory_audio?: string | null;
   is_victory_image?: string | null;
+}
+
+export interface PvpMatchHistoryCharacter {
+  player_id: number;
+  player_name: string;
+  player_avatar: string | null;
+  character_name: string;
+  character_avatar: string | null;
+  points: number;
+  coins: number;
+}
+
+export interface PvpMatchHistoryEnemy {
+  player_id: number;
+  player_name: string;
+  player_avatar: string | null;
+  enemy_name: string;
+  enemy_avatar: string | null;
+  points: number;
+  coins: number;
+}
+
+export interface PvpMatchHistoryEntry {
+  match_id: string;
+  match_status: string;
+  date: string;
+  character: PvpMatchHistoryCharacter;
+  enemy: PvpMatchHistoryEnemy | null;
 }

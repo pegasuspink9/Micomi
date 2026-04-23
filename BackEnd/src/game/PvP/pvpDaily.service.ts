@@ -15,6 +15,7 @@ import {
   PvpDailyStatusResponse,
   PvpDailySubmitAnswerResult,
   PvpInGameMessageEntry,
+  PvpMatchHistoryEntry,
 } from "./pvpDaily.types";
 import { getSocketServer } from "../../socket";
 import {
@@ -31,17 +32,18 @@ import {
   getHeroIdleAudio,
 } from "../../../helper/gameplayAssetsHelper";
 import { getCardForAttackType } from "../Combat/combat.service";
-import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
 import { formatTimer } from "../../../helper/dateTimeHelper";
 import * as EnergyService from "../Energy/energy.service";
 import { generateMotivationalMessage } from "../Challenges/challenges.service";
 import { generateDynamicMessage } from "../../../helper/gamePlayMessageHelper";
 import { applyPvpRankResult } from "./pvpRank.service";
+import { generateWrongAnswerGuide } from "../../../helper/aiHelper";
 
 const prisma = new PrismaClient();
 
 const MATCHMAKING_TIMEOUT_MS = 2 * 60 * 1000;
 const MATCH_COMPLETION_CLEANUP_MS = 90 * 1000;
+const PVP_CHALLENGE_TIME_LIMIT_SECONDS = 5 * 60;
 const DEFAULT_FALLBACK_ATTACK_DAMAGE = 12;
 const MAX_IN_GAME_MESSAGE_LENGTH = 160;
 const WIN_REWARD: PvPCompletionRewards = {
@@ -469,6 +471,7 @@ const buildQuestionPool = async (
       correct_answer: normalizeToStringArray(current.correct_answer as unknown),
       html_file: current.html_file ?? null,
       css_file: current.css_file ?? null,
+      guide: undefined,
     };
   });
 };
@@ -551,19 +554,10 @@ const normalizeInGameMessage = (value: string): string => {
   return normalized;
 };
 
-const buildChallengeWithTimer = (
-  question: DailyPvpQuestion,
-  roundStartedAtIso: string,
-) => {
+const getRoundTimerString = (roundStartedAtIso: string): string => {
   const elapsed = (Date.now() - new Date(roundStartedAtIso).getTime()) / 1000;
-  const timeRemaining = Math.max(0, CHALLENGE_TIME_LIMIT - elapsed);
-
-  return {
-    ...question,
-    timeLimit: CHALLENGE_TIME_LIMIT,
-    timeRemaining,
-    timer: formatTimer(timeRemaining),
-  };
+  const timeRemaining = Math.max(0, PVP_CHALLENGE_TIME_LIMIT_SECONDS - elapsed);
+  return formatTimer(timeRemaining);
 };
 
 const buildEntryLikePayload = async (
@@ -630,10 +624,8 @@ const buildEntryLikePayload = async (
 
   const mapName = question.map_name || question.topic;
 
-  const currentChallenge = buildChallengeWithTimer(
-    question,
-    match.current_round_started_at,
-  );
+  const currentChallenge = { ...question };
+  const rootTimerString = getRoundTimerString(match.current_round_started_at);
 
   const mapAssets = getMapMediaAssets(mapName);
   const combatBackground = [mapAssets.versus_background];
@@ -730,6 +722,7 @@ const buildEntryLikePayload = async (
     question_type: question.topic,
     versus_background: mapAssets.versus_background,
     versus_audio: mapAssets.versus_audio,
+    timer: rootTimerString,
     gameplay_audio: mapAssets.gameplay_audio,
     is_correct_audio: null,
     enemy_attack_audio,
@@ -972,10 +965,11 @@ const getMatchFromMemoryOrDb = async (
 const buildPublicMatchPayload = (match: PvPMatchState) => {
   const snapshot = cloneMatchForResponse(match);
   const current = getRoundQuestion(snapshot);
+  const isActive = current && snapshot.status === "active";
 
   return {
     ...snapshot,
-    current_question: current ? publicQuestion(current) : null,
+    current_question: isActive ? publicQuestion(current) : null,
   };
 };
 
@@ -1204,6 +1198,40 @@ const maybeProgressRoundOrFinish = async (match: PvPMatchState) => {
     match.current_round_index += 1;
   }
   match.current_round_started_at = getNowIso();
+};
+
+const getRoundRemainingSeconds = (match: PvPMatchState): number => {
+  const elapsed =
+    (Date.now() - new Date(match.current_round_started_at).getTime()) / 1000;
+  return Math.max(0, PVP_CHALLENGE_TIME_LIMIT_SECONDS - elapsed);
+};
+
+const resolveExpiredRoundIfNeeded = async (
+  match: PvPMatchState,
+): Promise<boolean> => {
+  if (match.status !== "active") return false;
+
+  const currentRound = match.rounds[match.current_round_index] ?? null;
+  if (!currentRound) return false;
+  if (currentRound.resolved_by_player_id !== null) return false;
+
+  if (getRoundRemainingSeconds(match) > 0) {
+    return false;
+  }
+
+  // Round timeout means no attack should be replayed while moving to the next challenge.
+  match.last_attack_by_player_id = null;
+  match.last_attack_type = null;
+  match.last_attack_damage = 0;
+
+  await maybeProgressRoundOrFinish(match);
+
+  if (match.status === "active") {
+    await persistMatchProgress(match);
+    emitMatchStateToPlayers(match, "pvp:match-update");
+  }
+
+  return true;
 };
 
 const tryCreatePair = async (
@@ -1494,6 +1522,8 @@ export const getMatchState = async (playerId: number, matchId: string) => {
     throw new Error("You are not part of this match");
   }
 
+  await resolveExpiredRoundIfNeeded(match);
+
   const wasLastAttacker = match.last_attack_by_player_id === playerId;
 
   if (match.status === "completed") {
@@ -1527,7 +1557,7 @@ export const getMatchState = async (playerId: number, matchId: string) => {
       match,
       playerId,
       "round_already_resolved",
-      wasLastAttacker, // <-- Changed from hardcoded false
+      wasLastAttacker,
     );
   }
 
@@ -1543,6 +1573,7 @@ const buildSubmitLikeResponse = async (
     attackType: string;
     damage: number;
   },
+  aiGuide?: string,
 ): Promise<PvpDailySubmitAnswerResult> => {
   const entryLike = await buildEntryLikePayload(match, playerId);
   const round = match.rounds[Math.max(0, match.current_round_index)] ?? null;
@@ -1552,9 +1583,11 @@ const buildSubmitLikeResponse = async (
 
   const nextQuestion = match.questions[match.current_round_index] ?? null;
   const currentRoundChallenge =
-    !isCompleted && nextQuestion
-      ? buildChallengeWithTimer(nextQuestion, match.current_round_started_at)
-      : null;
+    !isCompleted && nextQuestion ? { ...nextQuestion } : null;
+
+  const rootTimerString = !isCompleted
+    ? getRoundTimerString(match.current_round_started_at)
+    : "00:00";
   const shouldExposeNextChallenge =
     !isCompleted &&
     (reason === "correct_and_first" ||
@@ -1562,10 +1595,16 @@ const buildSubmitLikeResponse = async (
         match.last_attack_by_player_id !== null) ||
       reason === "ongoing");
   const shouldRepeatCurrentChallenge = !isCompleted && reason === "incorrect";
-  const nextChallenge =
+
+  let nextChallenge =
     shouldExposeNextChallenge || shouldRepeatCurrentChallenge
       ? currentRoundChallenge
       : null;
+
+  if (nextChallenge && aiGuide) {
+    nextChallenge = { ...nextChallenge, guide: aiGuide };
+  }
+
   const isWrongRetryState = reason === "incorrect" || reason === "ongoing";
 
   const resolvedAttack = isWrongRetryState
@@ -1716,7 +1755,6 @@ const buildSubmitLikeResponse = async (
     status: isCompleted ? (isVictory ? "won" : "lost") : "in_progress",
     enemy: enemyForFightResult,
     character: characterForFightResult,
-    timer: currentRoundChallenge ? currentRoundChallenge.timer : "00:00",
     energy: entryLike.energy,
     timeToNextEnergyRestore: entryLike.timeToNextEnergyRestore,
     attackType: resolvedAttack?.attackType ?? null,
@@ -1855,6 +1893,7 @@ const buildSubmitLikeResponse = async (
     question_type: entryLike.question_type,
     is_bonus_round: false,
     card: entryLike.card,
+    timer: rootTimerString,
     gameplay_audio: entryLike.gameplay_audio,
     is_correct_audio:
       reason === "ongoing" || reason === "round_already_resolved"
@@ -1895,6 +1934,13 @@ export const submitAnswer = async (
     throw new Error("Match not found");
   }
 
+  const playerIndex = getPlayerIndex(match, playerId);
+  if (playerIndex === -1) {
+    throw new Error("You are not part of this match");
+  }
+
+  await resolveExpiredRoundIfNeeded(match);
+
   if (match.status === "completed") {
     return buildSubmitLikeResponse(
       match,
@@ -1902,11 +1948,6 @@ export const submitAnswer = async (
       "round_already_resolved",
       false,
     );
-  }
-
-  const playerIndex = getPlayerIndex(match, playerId);
-  if (playerIndex === -1) {
-    throw new Error("You are not part of this match");
   }
 
   const round = match.rounds[match.current_round_index];
@@ -1917,9 +1958,7 @@ export const submitAnswer = async (
   }
 
   if (question.challenge_id !== challengeId) {
-    throw new Error(
-      `Challenge mismatch. Expected ${question.challenge_id} for current round.`,
-    );
+    return buildSubmitLikeResponse(match, playerId, "ongoing", false);
   }
 
   const now = getNowIso();
@@ -1963,7 +2002,21 @@ export const submitAnswer = async (
     emitMatchStateToPlayers(match, "pvp:match-update");
     await persistMatchProgress(match);
 
-    return buildSubmitLikeResponse(match, playerId, "incorrect", false);
+    const aiGuide = await generateWrongAnswerGuide(
+      question.topic,
+      question.question || "",
+      normalizedGiven,
+      normalizedCorrect,
+    );
+
+    return buildSubmitLikeResponse(
+      match,
+      playerId,
+      "incorrect",
+      false,
+      undefined,
+      aiGuide,
+    );
   }
 
   const isFirstCorrect = round.resolved_by_player_id === null;
@@ -2163,4 +2216,87 @@ export const surrenderMatch = async (
     "round_already_resolved",
     false,
   );
+};
+
+export const getPlayerMatchHistory = async (
+  playerId: number,
+): Promise<PvpMatchHistoryEntry[]> => {
+  const results = await prisma.playerVsPlayerResult.findMany({
+    where: { player_id: playerId },
+    include: {
+      player: {
+        select: { player_avatar: true },
+      },
+    },
+    orderBy: { created_at: "desc" },
+    take: 50,
+  });
+
+  if (results.length === 0) {
+    return [];
+  }
+
+  const matchIds = results.map((r) => r.match_id);
+
+  const opponents = await prisma.playerVsPlayerResult.findMany({
+    where: {
+      match_id: { in: matchIds },
+      player_id: { not: playerId },
+    },
+    include: {
+      player: {
+        select: { player_avatar: true },
+      },
+    },
+  });
+
+  const opponentMap = new Map<string, (typeof opponents)[0]>();
+  for (const opp of opponents) {
+    opponentMap.set(opp.match_id, opp);
+  }
+
+  return results.map((result) => {
+    const opponent = opponentMap.get(result.match_id);
+    const isWin = result.match_status === "win";
+
+    const characterPoints = isWin ? WIN_REWARD.points : LOSS_REWARD.points;
+    const characterCoins = isWin ? WIN_REWARD.coins : LOSS_REWARD.coins;
+
+    const enemyPoints = opponent
+      ? isWin
+        ? LOSS_REWARD.points
+        : WIN_REWARD.points
+      : 0;
+    const enemyCoins = opponent
+      ? isWin
+        ? LOSS_REWARD.coins
+        : WIN_REWARD.coins
+      : 0;
+
+    return {
+      match_id: result.match_id,
+      match_status: result.match_status,
+      date: result.created_at.toISOString(),
+      character: {
+        player_id: result.player_id,
+        player_name: result.player_name,
+        player_avatar: result.player.player_avatar ?? null,
+        character_name: result.character_name,
+        character_avatar: result.character_avatar ?? null,
+        points: characterPoints,
+        coins: characterCoins,
+      },
+      enemy: opponent
+        ? {
+            player_id: opponent.player_id,
+            player_name: opponent.player_name,
+            player_avatar: opponent.player?.player_avatar ?? null,
+            enemy_name: opponent.character_name,
+            enemy_avatar: opponent.character_avatar ?? null,
+            points: enemyPoints,
+            coins: enemyCoins,
+          }
+        : null,
+    };
+  });
 };

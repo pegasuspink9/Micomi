@@ -10,9 +10,7 @@ import {
 } from "@prisma/client";
 import { ChallengeDTO } from "./levels.types";
 import * as EnergyService from "../Energy/energy.service";
-import { formatTimer } from "../../../helper/dateTimeHelper";
 import { getBaseEnemyHp } from "../Combat/combat.service";
-import { CHALLENGE_TIME_LIMIT } from "../../../helper/timeSetter";
 import { updateQuestProgress } from "../Quests/quests.service";
 import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 import { getCardForAttackType } from "../Combat/combat.service";
@@ -755,24 +753,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
   console.log("- VERIFIED enemy_hp in DB:", verification?.enemy_hp);
   console.log("- VERIFIED player_hp in DB:", verification?.player_hp);
 
-  const challengesWithTimer: ChallengeDTO[] = level.challenges.map(
-    (ch: Challenge) => {
-      let timeLimit = 0;
-      if (
-        level.level_difficulty === "easy" &&
-        ["multiple choice", "fill in the blank"].includes(ch.challenge_type)
-      ) {
-        timeLimit = CHALLENGE_TIME_LIMIT;
-      }
-
-      return {
-        ...ch,
-        timer: formatTimer(timeLimit),
-      };
-    },
-  );
-
-  let firstChallenge = challengesWithTimer[0] ?? null;
+  let firstChallenge = (level.challenges[0] as unknown as ChallengeDTO) ?? null;
 
   if (firstChallenge && level.challenges) {
     firstChallenge = (await overrideChallengeGuide(
