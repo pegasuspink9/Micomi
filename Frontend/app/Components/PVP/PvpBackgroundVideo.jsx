@@ -36,7 +36,6 @@ const styles = StyleSheet.create({
   },
   videoOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(34, 68, 105, 0.29)',
   },
 });
 

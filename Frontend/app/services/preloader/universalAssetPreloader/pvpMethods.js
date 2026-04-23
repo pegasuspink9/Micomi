@@ -21,6 +21,41 @@ export const pvpMethods = {
       'ui_videos'
     );
 
+    addAsset(
+      'https://micomi-assets.me/Pvp%20Assets/Landing%20Image/PvP%20Logo.png',
+      'pvp_logo_image',
+      'image',
+      'ui_images'
+    );
+
+    addAsset(
+      'https://micomi-assets.me/Pvp%20Assets/Languages/HTML.png',
+      'pvp_topic_html',
+      'image',
+      'ui_images'
+    );
+
+    addAsset(
+      'https://micomi-assets.me/Pvp%20Assets/Languages/CSSS.png',
+      'pvp_topic_css',
+      'image',
+      'ui_images'
+    );
+
+    addAsset(
+      'https://micomi-assets.me/Pvp%20Assets/Languages/Computer.png',
+      'pvp_topic_javascript',
+      'image',
+      'ui_images'
+    );
+
+    addAsset(
+      'https://micomi-assets.me/Pvp%20Assets/Languages/JavaScript.png',
+      'pvp_topic_computer',
+      'image',
+      'ui_images'
+    );
+
     console.log(`📦 Extracted ${assets.length} static PVP assets`);
     return assets;
   },

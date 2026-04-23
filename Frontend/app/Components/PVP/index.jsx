@@ -1,14 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Image,
   StyleSheet,
-  Text,
-  TouchableOpacity,
   View,
   Platform,
   StatusBar,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePvpMatchmaking } from '../../hooks/usePvpMatchmaking';
 import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
 import { gameScale } from '../Responsiveness/gameResponsive';
@@ -16,10 +14,16 @@ import { gameScale } from '../Responsiveness/gameResponsive';
 // Import child components
 import PvpBackgroundVideo from './PvpBackgroundVideo';
 import PvpSelectionContent from './PvpSelectionContent';
+import MainLoading from '../Actual Game/Loading/MainLoading';
+import BackButton from '../Actual Game/Back/BackButton';
+
+const PVP_LOGO = 'https://micomi-assets.me/Pvp%20Assets/Landing%20Image/PvP%20Logo.png';
 
 export default function PvpLobbyPage() {
   const router = useRouter();
   const [currentTopicIndex, setCurrentTopicIndex] = useState(0);
+  const [matchmakingSeconds, setMatchmakingSeconds] = useState(0);
+  const [entryLoadingVisible, setEntryLoadingVisible] = useState(false);
 
   // --- Logic and State Hooks ---
   const {
@@ -56,12 +60,23 @@ export default function PvpLobbyPage() {
   const currentTopic = pvpTopics[currentTopicIndex] || null;
 
   const primaryButtonLabel = useMemo(() => {
-    if (findingMatch) return 'Finding Match...';
+    if (findingMatch) return 'Matching';
     if (startingMatch || settingTopic) return 'Preparing...';
-    if (hasResumableMatch) return 'Matched - Continue';
-    if (currentTopic) return `Play ${currentTopic}`;
+    if (hasResumableMatch) return 'Continue';
+    if (currentTopic) return currentTopic;
     return 'Choose Topic';
   }, [currentTopic, findingMatch, hasResumableMatch, settingTopic, startingMatch]);
+
+  const matchmakingTimerLabel = useMemo(() => {
+    const minutes = Math.floor(matchmakingSeconds / 60);
+    const seconds = matchmakingSeconds % 60;
+    return `${minutes}:${String(seconds).padStart(2, '0')}`;
+  }, [matchmakingSeconds]);
+
+  const pvpLogoSource = useMemo(() => {
+    const cachedPath = universalAssetPreloader.getCachedAssetPath(PVP_LOGO);
+    return { uri: cachedPath || PVP_LOGO };
+  }, []);
 
   // --- Navigation Helpers ---
   const navigateToPvpMatch = useCallback(
@@ -82,12 +97,24 @@ export default function PvpLobbyPage() {
   // --- Effects ---
   useFocusEffect(
     useCallback(() => {
+      setEntryLoadingVisible(true);
+      const loadingTimeoutId = setTimeout(() => {
+        setEntryLoadingVisible(false);
+      }, 700);
+
       clearMatchReadyState();
       clearPvpError();
       loadPreview();
-      universalAssetPreloader.loadCachedAssets('ui_videos').catch((error) => {
+      Promise.all([
+        universalAssetPreloader.loadCachedAssets('ui_videos'),
+        universalAssetPreloader.loadCachedAssets('ui_images'),
+      ]).catch((error) => {
         console.warn('Failed to load cached UI videos for PvP page:', error);
       });
+
+      return () => {
+        clearTimeout(loadingTimeoutId);
+      };
     }, [clearMatchReadyState, clearPvpError, loadPreview])
   );
 
@@ -116,6 +143,22 @@ export default function PvpLobbyPage() {
     navigateToPvpMatch(matchedMatchId);
     clearMatchReadyState();
   }, [clearMatchReadyState, matchedMatchId, navigateToPvpMatch]);
+
+  useEffect(() => {
+    if (!findingMatch) {
+      setMatchmakingSeconds(0);
+      return;
+    }
+
+    setMatchmakingSeconds(0);
+    const intervalId = setInterval(() => {
+      setMatchmakingSeconds((prev) => prev + 1);
+    }, 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [findingMatch]);
 
   // --- Event Handlers ---
 
@@ -192,6 +235,15 @@ export default function PvpLobbyPage() {
     }
   }, [cancelMatchmaking]);
 
+  const handleToggleMatch = useCallback(async () => {
+    if (findingMatch) {
+      await handleCancelPvpSearch();
+      return;
+    }
+
+    await handleStartPvpMatch();
+  }, [findingMatch, handleCancelPvpSearch, handleStartPvpMatch]);
+
   // --- Render ---
   return (
     <View style={styles.screen}>
@@ -199,10 +251,15 @@ export default function PvpLobbyPage() {
 
       {/* Header Area (kept in parent as it's global navigation) */}
       <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.backButton} onPress={handleClose} activeOpacity={0.85}>
-          <MaterialCommunityIcons name="arrow-left" size={gameScale(24)} color="#E8F5FF" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Daily PvP Match</Text>
+        <BackButton
+          onPress={handleClose}
+          width={gameScale(78)}
+          height={gameScale(78)}
+          containerStyle={styles.backButtonContainer}
+        />
+        <View style={styles.logoWrap}>
+          <Image source={pvpLogoSource} style={styles.titleLogo} resizeMode="contain" />
+        </View>
         <View style={styles.backButtonSpacer} />
       </View>
 
@@ -213,16 +270,19 @@ export default function PvpLobbyPage() {
         startingMatch={startingMatch}
         settingTopic={settingTopic}
         hasResumableMatch={hasResumableMatch}
+        pvpTopics={pvpTopics}
+        currentTopicIndex={currentTopicIndex}
         currentTopic={currentTopic}
         pvpTopicsLength={pvpTopics.length}
         pvpError={pvpError}
         primaryButtonLabel={primaryButtonLabel}
+        matchmakingTimerLabel={matchmakingTimerLabel}
         onPreviousTopic={handlePreviousTopic}
         onNextTopic={handleNextTopic}
-        onStartPvpMatch={handleStartPvpMatch}
-        onClose={handleClose}
-        onCancelPvpSearch={handleCancelPvpSearch}
+        onToggleMatch={handleToggleMatch}
       />
+
+      <MainLoading visible={entryLoadingVisible} />
     </View>
   );
 }
@@ -240,25 +300,29 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + gameScale(12) : gameScale(18),
     paddingHorizontal: gameScale(14),
   },
-  backButton: {
-    width: gameScale(40),
-    height: gameScale(40),
-    borderRadius: gameScale(20),
+  backButtonContainer: {
+    position: 'relative',
+    top: gameScale(-49),
+    left: gameScale(-5),
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(18, 50, 98, 0.9)',
-    borderWidth: gameScale(1),
-    borderColor: '#5AAEEE',
   },
   backButtonSpacer: {
-    width: gameScale(40),
-    height: gameScale(40),
+    width: gameScale(78),
+    height: gameScale(78),
   },
-  title: {
+  logoWrap: {
     flex: 1,
-    textAlign: 'center',
-    color: '#FFFFFF',
-    fontSize: gameScale(24),
-    fontFamily: 'Grobold',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: gameScale(150),
+    bottom: 0,
+  },
+  titleLogo: {
+    width: gameScale(250),
+    height: gameScale(250),
   },
 });

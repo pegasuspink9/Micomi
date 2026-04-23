@@ -637,7 +637,6 @@ export default function MapNavigate({ onMapChange }) {
                   }
                 ]}
               >
-                {/* 🚀 FIX: Made the physical Island image clickable to open the Modal */}
                 <TouchableOpacity
                   activeOpacity={0.9}
                   style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}
