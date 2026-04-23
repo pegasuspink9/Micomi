@@ -17,7 +17,7 @@ import {
   setBorderColor
 } from './utils/answerLogic';
 
-const CHALLENGE_TIMER_FALLBACK_SECONDS = 60;
+const CHALLENGE_TIMER_FALLBACK_SECONDS = 300;
 
 const ThirdGrid = ({ 
   currentQuestion, 
@@ -242,7 +242,7 @@ const ThirdGrid = ({
   const shouldDisableOverlayButtons = isPvpMode && showPotions && isPvpChatActive;
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const isCrtiticalTime = isPvpMode && hasActivePvpTimer && pvpChallengeCountdown <= 10;
+  const isCrtiticalTime = isPvpMode && hasActivePvpTimer && pvpChallengeCountdown <= 30;
 
   useEffect(() => {
     let pulse;

@@ -5,7 +5,7 @@ import { pvpService } from '../services/pvpService';
 const PVP_MATCH_CACHE_PREFIX = 'pvp_match_cache:';
 const PVP_ACTIVE_MATCH_ID_KEY = 'pvp_active_match_id';
 const AUTO_PROCEED_SECONDS = 10;
-const CHALLENGE_STALL_SECONDS = 60;
+const CHALLENGE_STALL_SECONDS = 300;
 const MATCH_SYNC_INTERVAL_MS = 500;
 
 const normalizeChallengeId = (value) => {
