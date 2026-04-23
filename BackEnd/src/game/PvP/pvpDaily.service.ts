@@ -397,11 +397,62 @@ const getEncounteredChallengeIds = async (
   return encountered;
 };
 
+const getRecentlyActiveChallengeIds = async (
+  playerIds: number[],
+): Promise<Set<number>> => {
+  if (playerIds.length === 0) {
+    return new Set<number>();
+  }
+
+  const progressRows = await prisma.playerVsPlayerProgress.findMany({
+    where: {
+      status: "active",
+      OR: [
+        { player_one_id: { in: playerIds } },
+        { player_two_id: { in: playerIds } },
+      ],
+    },
+    select: { payload: true },
+  });
+
+  const recent = new Set<number>();
+
+  for (const row of progressRows) {
+    const payload = row.payload as Record<string, unknown>;
+    const questions = Array.isArray(payload?.questions)
+      ? payload.questions
+      : [];
+    const roundIndex = Number(payload?.current_round_index);
+
+    if (!Number.isInteger(roundIndex) || roundIndex < 0) {
+      continue;
+    }
+
+    const current = questions[roundIndex] as Record<string, unknown> | undefined;
+    const previous = questions[roundIndex - 1] as Record<string, unknown> | undefined;
+
+    const currentChallengeId = Number(current?.challenge_id);
+    if (Number.isFinite(currentChallengeId) && currentChallengeId > 0) {
+      recent.add(currentChallengeId);
+    }
+
+    const previousChallengeId = Number(previous?.challenge_id);
+    if (Number.isFinite(previousChallengeId) && previousChallengeId > 0) {
+      recent.add(previousChallengeId);
+    }
+  }
+
+  return recent;
+};
+
 const buildQuestionPool = async (
   topic: PvpChallengeTopic,
   playerIds: number[],
 ): Promise<DailyPvpQuestion[]> => {
-  const encountered = await getEncounteredChallengeIds(playerIds);
+  const [encountered, recentlyActive] = await Promise.all([
+    getEncounteredChallengeIds(playerIds),
+    getRecentlyActiveChallengeIds(playerIds),
+  ]);
 
   const challenges = await prisma.challenge.findMany({
     where: {
@@ -426,9 +477,9 @@ const buildQuestionPool = async (
     (challenge) => !encountered.has(challenge.challenge_id),
   );
 
-  if (challenges.length < QUESTIONS_PER_MATCH) {
+  if (challenges.length === 0) {
     throw new Error(
-      `Not enough ${topic} easy challenges in Challenge table for this match.`,
+      `No ${topic} easy challenges in Challenge table for this match.`,
     );
   }
 
@@ -440,18 +491,65 @@ const buildQuestionPool = async (
       QUESTIONS_PER_MATCH,
     );
   } else {
-    const seenChallenges = challenges.filter((challenge) =>
-      encountered.has(challenge.challenge_id),
-    );
-
     const unseenShuffled = shuffleArray([...availableChallenges]);
-    const neededFallbackCount = QUESTIONS_PER_MATCH - unseenShuffled.length;
-    const seenFallback = shuffleArray([...seenChallenges]).slice(
-      0,
-      neededFallbackCount,
+    const selectedById = new Set<number>(
+      unseenShuffled.map((challenge) => challenge.challenge_id),
+    );
+    const randomizedSelection = [...unseenShuffled];
+
+    const seenChallenges = shuffleArray(
+      challenges.filter((challenge) => encountered.has(challenge.challenge_id)),
     );
 
-    randomizedChallenges = shuffleArray([...unseenShuffled, ...seenFallback]);
+    const seenWithoutRecent = seenChallenges.filter(
+      (challenge) => !recentlyActive.has(challenge.challenge_id),
+    );
+
+    const seenWithRecent = seenChallenges.filter((challenge) =>
+      recentlyActive.has(challenge.challenge_id),
+    );
+
+    // Prefer previously seen challenges that are not from the most recent active rounds.
+    for (const challenge of [...seenWithoutRecent, ...seenWithRecent]) {
+      if (randomizedSelection.length >= QUESTIONS_PER_MATCH) {
+        break;
+      }
+
+      if (!selectedById.has(challenge.challenge_id)) {
+        randomizedSelection.push(challenge);
+        selectedById.add(challenge.challenge_id);
+      }
+    }
+
+    // If the topic has fewer unique challenges than required, loop with randomized repeats.
+    const fallbackPool = shuffleArray([...challenges]);
+    while (randomizedSelection.length < QUESTIONS_PER_MATCH) {
+      const randomChallenge =
+        fallbackPool[randomInt(fallbackPool.length)] ??
+        challenges[randomInt(challenges.length)];
+
+      if (!randomChallenge) {
+        break;
+      }
+
+      const lastPicked =
+        randomizedSelection[randomizedSelection.length - 1] ?? null;
+
+      if (
+        lastPicked &&
+        fallbackPool.length > 1 &&
+        lastPicked.challenge_id === randomChallenge.challenge_id
+      ) {
+        continue;
+      }
+
+      randomizedSelection.push(randomChallenge);
+    }
+
+    randomizedChallenges = shuffleArray(randomizedSelection).slice(
+      0,
+      QUESTIONS_PER_MATCH,
+    );
   }
 
   return randomizedChallenges.map((current) => {
