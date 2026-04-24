@@ -143,6 +143,8 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         currentLesson: data.currentLesson || responseData.currentLesson || null,
       
       enemy: {
+        player_id: data.enemy?.player_id || responseData.enemy?.player_id || null,
+        player_name: data.enemy?.player_name || responseData.enemy?.player_name || null,
         enemy_id: data.enemy?.enemy_id || responseData.enemy?.enemy_id || null,
         enemy_name: data.enemy?.enemy_name || responseData.enemy?.enemy_name || null,
         enemy_health: data.enemy?.enemy_health || responseData.enemy?.enemy_health || null,
@@ -167,6 +169,8 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
       },
       
       selectedCharacter: {
+        player_id: data.character?.player_id || responseData.character?.player_id || null,
+        player_name: data.character?.player_name || responseData.character?.player_name || null,
         character_id: data.character?.character_id || responseData.character?.character_id || null,
         character_name: data.character?.character_name || responseData.character?.character_name || null,
         current_health: data.character?.character_health || responseData.character?.character_health || null,

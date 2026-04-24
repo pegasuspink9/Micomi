@@ -2,9 +2,14 @@ import React, { useEffect, useRef, useState, useMemo} from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { gameScale, SCREEN } from '../../Responsiveness/gameResponsive';
 import { Image, ImageBackground } from 'expo-image';
+// 1. Add LinearGradient import
+import { LinearGradient } from 'expo-linear-gradient';
 import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 import { soundManager } from '../Sounds/UniversalSoundManager';
 
+const PVP_AVATAR_PLACEHOLDER = 'https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif';
+
+// ... (SpriteAnimator component remains the same) ...
 const SpriteAnimator = ({
   sourceUri,
   frameWidth,
@@ -15,6 +20,7 @@ const SpriteAnimator = ({
   startAnimation = false,
   flipX = false,
 }) => {
+  // ... (SpriteAnimator logic) ...
   const frameIndex = useSharedValue(0);
   const totalFrames = columns * rows;
 
@@ -66,8 +72,8 @@ const SpriteAnimator = ({
   );
 };
 
-
 const CombatVSModal = ({ 
+  // ... (props remain the same) ...
   visible = false, 
   onComplete = () => {},
   selectedCharacter = null,
@@ -77,7 +83,7 @@ const CombatVSModal = ({
   duration = 4000,
   isPvpMode = false,
 }) => {
-
+  // ... (all hooks and logic remain the same) ...
   const [isBackgroundLoaded, setIsBackgroundLoaded] = useState(false);
   const [playSpriteAnimation, setPlaySpriteAnimation] = useState(false);
   const [playEnemySpriteAnimation, setPlayEnemySpriteAnimation] = useState(false);
@@ -106,27 +112,22 @@ const CombatVSModal = ({
 
     useEffect(() => {
       visibleRef.current = visible;  
-      // ✅ MODIFIED: The main animation logic is updated here.
       if (visible && isBackgroundLoaded && !timerRef.current) {
         console.log('Setting timer for', duration);
         
-        // 1. Start the character slide-in animation first.
         Animated.timing(characterSlideAnim, {
           toValue: 0,
-          duration: 350, // Slightly longer for better effect
+          duration: 350,
           useNativeDriver: true,
         }).start(() => {
-          // 2. Once the slide-in is complete, trigger the sprite animation.
           console.log('Character slide complete. Triggering sprite animation.');
           setPlaySpriteAnimation(true);
 
-          // 3. Start the rest of the entrance animations (enemy slide-in and VS logo).
             Animated.timing(enemySlideAnim, {
             toValue: 0,
             duration: 300,
             useNativeDriver: true,
           }).start(() => {
-            // 4. Once the enemy slide-in is complete, trigger its sprite animation.
             console.log('Enemy slide complete. Triggering enemy sprite animation.');
             setPlayEnemySpriteAnimation(true);
           });
@@ -138,11 +139,9 @@ const CombatVSModal = ({
           }).start();
         });
 
-        //  Set timer for outro animation
         timerRef.current = setTimeout(() => {
           console.log('Starting outro animation');
           
-          // Outro animation - reverse sequence
           Animated.sequence([
             Animated.timing(vsScaleAnim, {
               toValue: 0,
@@ -201,7 +200,7 @@ const CombatVSModal = ({
     return null;
   }
 
-
+  // ... (data logging and useMemos remain the same) ...
   console.log('🎭 GameDisplayEntrance data:', {
     selectedCharacter: {
       name: selectedCharacter.character_name,
@@ -225,11 +224,14 @@ const CombatVSModal = ({
 }, [selectedCharacter]);
 
   const enemySpriteUrl = useMemo(() => {
+    if (isPvpMode && Array.isArray(enemy?.enemy_attack) && enemy.enemy_attack.length > 3) {
+      return enemy.enemy_attack[3];
+    }
     if (enemy?.enemy_attack && typeof enemy.enemy_attack === 'string') {
       return enemy.enemy_attack;
     }
     return null;
-  }, [enemy]);
+  }, [enemy, isPvpMode]);
 
   const heroDisplayHealth = useMemo(() => {
     return (
@@ -279,6 +281,7 @@ const CombatVSModal = ({
           {/* Character side - Top left */}
           <Animated.View style={[styles.characterSide, { transform: [{ translateX: characterSlideAnim }] }]}>
             <View style={styles.characterContainer}>
+              {/* ... (avatar frame remains the same) ... */}
               <View style={styles.avatarFrame}>
                 {characterSpriteUrl ? (
                   <SpriteAnimator
@@ -297,13 +300,13 @@ const CombatVSModal = ({
               </View>
 
               <View style={styles.nameContainer}>
+                {/* ... (name and stats remain the same) ... */}
                 <View>
-                  {/* ✅ FIXED: Added adjustsFontSizeToFit and numberOfLines */}
                   <Text 
                     style={[styles.characterName, styles.heroName]}
                     adjustsFontSizeToFit={true}
                     numberOfLines={1}
-                    minimumFontScale={0.5} // Don't let it get too tiny
+                    minimumFontScale={0.5} 
                   >
                     {selectedCharacter.character_name}
                   </Text>
@@ -313,12 +316,44 @@ const CombatVSModal = ({
                   <Text style={styles.roleLabel}>HERO</Text>
                   <Text style={styles.statsText}>HP: {heroDisplayHealth}</Text>
                   <Text style={styles.statsText}>DMG: {heroDisplayDamage}</Text>
+                  {isPvpMode ? (
+                    // 2. Updated playerInfoRow for character
+                    <View style={styles.playerInfoRow}>
+                      {/* Outer box for 3D border effect */}
+                      <View style={styles.playerInfoBorder}>
+                        {/* Inner box for slanted background */}
+                        <LinearGradient
+                          colors={['#1f637dff', '#0d6d76a3']} // Hero colors
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          style={styles.playerInfoSlantedBox}
+                        >
+                          {/* Content container to correct slant */}
+                          <View style={styles.playerInfoInner}>
+                            <Image
+                              source={{ uri: PVP_AVATAR_PLACEHOLDER }}
+                              style={styles.playerInfoAvatar}
+                              contentFit="cover"
+                            />
+                            <View style={styles.playerInfoTextColumn}>
+                              <Text style={[styles.playerInfoNameText, styles.heroPlayerInfoNameText]} numberOfLines={1}>
+                                {selectedCharacter?.player_name || 'Player'}
+                              </Text>
+                              <Text style={[styles.playerInfoRankText, styles.heroPlayerInfoRankText]} numberOfLines={1}>
+                                Rank: --
+                              </Text>
+                            </View>
+                          </View>
+                        </LinearGradient>
+                      </View>
+                    </View>
+                  ) : null}
                 </View>
               </View>
             </View>
           </Animated.View>
 
-          {/* VS Text */}
+          {/* VS Text (remains the same) */}
           <Animated.View style={[styles.vsContainer, { transform: [{ scale: vsScaleAnim }] }]}>
             <View style={styles.vsBackground}>
               <Image 
@@ -331,6 +366,7 @@ const CombatVSModal = ({
           {/* Enemy side - Bottom right */}
           <Animated.View style={[styles.enemySide, { transform: [{ translateX: enemySlideAnim }] }]}>
             <View style={styles.characterContainer}>
+              {/* ... (avatar frame remains the same) ... */}
               <View style={styles.avatarFrame}>
                 {enemySpriteUrl ? (
                   <SpriteAnimator
@@ -351,8 +387,8 @@ const CombatVSModal = ({
             </View>
               
             <View style={styles.enemyNameContainer}>
+              {/* ... (name and stats remain the same) ... */}
               <View>
-                {/* ✅ Optional: Applied same logic to enemy name for consistency */}
                 <Text 
                   style={[styles.characterName, styles.enemyName]}
                   adjustsFontSizeToFit={true}
@@ -367,6 +403,36 @@ const CombatVSModal = ({
               <View style={styles.enemyStatsContainer}>
                 <Text style={styles.statsText}>HP: {enemyDisplayHealth}</Text>
                 <Text style={styles.statsText}>DMG: {enemyDisplayDamage}</Text>
+                {isPvpMode ? (
+                  // 3. Updated playerInfoRow for enemy with swapped content
+                  <View style={[styles.playerInfoRow, styles.enemyPlayerInfoRow]}>
+                    <View style={[styles.playerInfoBorder, styles.enemyPlayerInfoBorder]}>
+                      <LinearGradient
+                        colors={['#8b3f3fff', '#6f3232ff']} // Enemy colors
+                        start={{ x: 1, y: 0 }} // Gradient reversed for enemy side
+                        end={{ x: 0, y: 0 }}
+                        style={[styles.playerInfoSlantedBox, styles.enemyPlayerInfoSlantedBox]}
+                      >
+                        <View style={[styles.playerInfoInner, styles.enemyPlayerInfoInner]}>
+                          {/* Swapped order: Text first, then Avatar */}
+                          <View style={[styles.playerInfoTextColumn, styles.enemyPlayerInfoTextColumn]}>
+                            <Text style={[styles.playerInfoNameText, styles.enemyPlayerInfoNameText]} numberOfLines={1}>
+                              {enemy?.player_name || 'Player'}
+                            </Text>
+                            <Text style={[styles.playerInfoRankText, styles.enemyPlayerInfoRankText]} numberOfLines={1}>
+                              Rank: --
+                            </Text>
+                          </View>
+                          <Image
+                            source={{ uri: PVP_AVATAR_PLACEHOLDER }}
+                            style={styles.playerInfoAvatar}
+                            contentFit="cover"
+                          />
+                        </View>
+                      </LinearGradient>
+                    </View>
+                  </View>
+                ) : null}
               </View>
             </View>
           </Animated.View>
@@ -380,6 +446,7 @@ const CombatVSModal = ({
 };
 
 const styles = StyleSheet.create({
+  // ... (existing styles) ...
    modalOverlay: {
     flex: 1,
     position: 'absolute',
@@ -485,7 +552,6 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(124, 169, 209, 1)',
     fontSize: gameScale(390 * 0.2),
     fontFamily: 'MusicVibes',
-    // ✅ ADDED: maxWidth ensures adjustsFontSizeToFit knows the boundary
     maxWidth: gameScale(390 * 0.8), 
   },
   enemyName: {  
@@ -518,6 +584,95 @@ const styles = StyleSheet.create({
     marginBottom: gameScale(2),
     marginRight: gameScale(390 * 0.02)
   },
+  // 4. Updated styles for the new player info box
+  playerInfoRow: {
+    marginTop: gameScale(8),
+  },
+  enemyPlayerInfoRow: {
+    alignItems: 'flex-end',
+  },
+  // Keep a compact themed card with depth while preserving readability.
+  playerInfoBorder: {
+    padding: gameScale(2),
+    backgroundColor: 'rgba(8, 16, 28, 0.88)',
+    borderRadius: gameScale(8),
+    borderWidth: gameScale(1),
+    borderColor: 'rgba(184, 231, 255, 0.45)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: gameScale(2) },
+    shadowOpacity: 0.35,
+    shadowRadius: gameScale(3),
+    elevation: 5,
+  },
+  enemyPlayerInfoBorder: {
+    borderColor: 'rgba(255, 204, 204, 0.45)',
+  },
+  playerInfoSlantedBox: {
+    borderRadius: gameScale(6),
+    paddingVertical: gameScale(4),
+    paddingHorizontal: gameScale(8),
+    borderWidth: gameScale(1),
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  enemyPlayerInfoSlantedBox: {
+    borderColor: 'rgba(255,255,255,0.16)',
+  },
+  playerInfoInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  enemyPlayerInfoInner: {
+    justifyContent: 'flex-end',
+  },
+  playerInfoAvatar: {
+    width: gameScale(30),
+    height: gameScale(30),
+    borderRadius: gameScale(15),
+    borderWidth: gameScale(1.5),
+    borderColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: 'rgba(12, 24, 38, 0.8)',
+  },
+  playerInfoTextColumn: {
+    justifyContent: 'center',
+    marginLeft: gameScale(8),
+  },
+  enemyPlayerInfoTextColumn: {
+    alignItems: 'flex-end',
+    marginLeft: 0,
+    marginRight: gameScale(8), // Add margin to the right instead
+  },
+  playerInfoNameText: {
+    color: '#ffffff',
+    fontSize: gameScale(11),
+    fontFamily: 'DynaPuff',
+    fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+    maxWidth: gameScale(110),
+  },
+  heroPlayerInfoNameText: {
+    color: '#e6f8ff',
+  },
+  enemyPlayerInfoNameText: {
+    color: '#ffe8e8',
+  },
+  playerInfoRankText: {
+    color: '#e0e0e0',
+    fontSize: gameScale(10),
+    fontFamily: 'DynaPuff',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+    maxWidth: gameScale(110),
+  },
+  heroPlayerInfoRankText: {
+    color: '#bfe8ff',
+  },
+  enemyPlayerInfoRankText: {
+    color: '#ffc7c7',
+  },
+  // ... (rest of the styles remain the same) ...
   vsImage: {
     width: gameScale(690),
     height: gameScale(602),
