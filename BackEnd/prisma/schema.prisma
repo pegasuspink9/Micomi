@@ -151,6 +151,8 @@ model Player {
   player_name        String
   current_streak     Int                      @default(0)
   longest_streak     Int                      @default(0)
+  daily_reward_day   Int                      @default(0)
+  daily_reward_last_claimed_at DateTime?
   google_id          String?                  @unique
   facebook_id        String?                  @unique
   player_avatar      String?
@@ -167,6 +169,7 @@ model Player {
 
   @@index([email])
   @@index([total_points])
+  @@index([daily_reward_last_claimed_at])
 }
 
 model PlayerVsPlayerProgress {
