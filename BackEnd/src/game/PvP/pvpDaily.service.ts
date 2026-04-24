@@ -60,6 +60,9 @@ const LOSS_REWARD: PvPCompletionRewards = {
   potion: null,
 };
 
+const FREEZE_OVERLAY =
+  "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png";
+
 const PVP_TOPICS: PvpChallengeTopic[] = [
   "HTML",
   "CSS",
@@ -760,6 +763,8 @@ const buildEntryLikePayload = async (
     enemy: {
       player_id: opponentSnapshot.player_id,
       player_name: opponentSnapshot.player_name,
+      player_username: opponentSnapshot.player_username,
+      player_rank_name: opponentSnapshot.player_rank_name,
       enemy_id: opponentSnapshot.character_id,
       enemy_name: opponentSnapshot.character_name,
       enemy_health: opponentSnapshot.character_health,
@@ -783,6 +788,8 @@ const buildEntryLikePayload = async (
     character: {
       player_id: viewerSnapshot.player_id,
       player_name: viewerSnapshot.player_name,
+      player_username: viewerSnapshot.player_username,
+      player_rank_name: viewerSnapshot.player_rank_name,
       character_id: viewerSnapshot.character_id,
       character_name: viewerSnapshot.character_name,
       character_health: viewerSnapshot.character_health,
@@ -829,7 +836,10 @@ const buildEntryLikePayload = async (
     is_victory_audio: null,
     is_victory_image: null,
     boss_skill_activated: false,
-    isEnemyFrozen: false,
+    isEnemyFrozen:
+      match.has_freeze_effect_by_player[opponentSnapshot.player_id] ?? false,
+    isCharacterFrozen:
+      match.has_freeze_effect_by_player[viewerPlayerId] ?? false,
     message: entryMessage,
     audio: entryAudio,
   };
@@ -863,6 +873,8 @@ const getSelectedCharacterSnapshot = async (
   return {
     player_id: player.player_id,
     player_name: player.player_name,
+    player_username: player.username,
+    player_rank_name: player.player_rank_name,
     level: player.level,
     character_id: selected.character_id,
     character_name: selected.character_name,
@@ -976,6 +988,9 @@ const cloneMatchForResponse = (match: PvPMatchState): PvPMatchState => {
     last_attack_by_player_id: match.last_attack_by_player_id,
     last_attack_type: match.last_attack_type,
     last_attack_damage: match.last_attack_damage,
+    ...((match as any).last_attack_was_frozen !== undefined
+      ? { last_attack_was_frozen: (match as any).last_attack_was_frozen }
+      : {}),
     pending_wrong_challenge_by_player: {
       ...match.pending_wrong_challenge_by_player,
     },
@@ -1693,6 +1708,7 @@ const buildSubmitLikeResponse = async (
   attackMeta?: {
     attackType: string;
     damage: number;
+    wasFrozen?: boolean;
   },
 ): Promise<PvpDailySubmitAnswerResult> => {
   const entryLike = await buildEntryLikePayload(match, playerId);
@@ -1724,6 +1740,10 @@ const buildSubmitLikeResponse = async (
 
   const isWrongRetryState = reason === "incorrect" || reason === "ongoing";
 
+  const wasFrozen = isWrongRetryState
+    ? false
+    : (attackMeta?.wasFrozen ?? (match as any).last_attack_was_frozen ?? false);
+
   const resolvedAttack = isWrongRetryState
     ? null
     : (attackMeta ??
@@ -1731,6 +1751,7 @@ const buildSubmitLikeResponse = async (
         ? {
             attackType: match.last_attack_type ?? "basic_attack",
             damage: match.last_attack_damage,
+            wasFrozen: (match as any).last_attack_was_frozen,
           }
         : null));
 
@@ -1774,29 +1795,34 @@ const buildSubmitLikeResponse = async (
   const viewerCharName = String(viewerCharacter.character_name || "");
   const opponentCharName = String(opponentEnemy.enemy_name || "");
 
-  const final_character_attack_audio = characterShowsAttack
-    ? getHeroAttackAudio(viewerCharName, resolvedAttackType ?? "basic_attack")
-    : null;
+  const final_character_attack_audio =
+    characterShowsAttack && !wasFrozen
+      ? getHeroAttackAudio(viewerCharName, resolvedAttackType ?? "basic_attack")
+      : null;
 
   const final_character_idle_audio = characterShowsAttack
     ? getHeroIdleAudio(viewerCharName)
     : null;
 
-  const final_enemy_hurt_audio = characterShowsAttack
-    ? getHeroHurtAudio(opponentCharName)
-    : null;
+  const final_enemy_hurt_audio =
+    characterShowsAttack && !wasFrozen
+      ? getHeroHurtAudio(opponentCharName)
+      : null;
 
-  const final_enemy_attack_audio = enemyShowsAttack
-    ? getHeroAttackAudio(opponentCharName, resolvedAttackType ?? "basic_attack")
-    : null;
+  const final_enemy_attack_audio =
+    enemyShowsAttack && !wasFrozen
+      ? getHeroAttackAudio(
+          opponentCharName,
+          resolvedAttackType ?? "basic_attack",
+        )
+      : null;
 
   const final_enemy_idle_audio = enemyShowsAttack
     ? getHeroIdleAudio(opponentCharName)
     : null;
 
-  const final_character_hurt_audio = enemyShowsAttack
-    ? getHeroHurtAudio(viewerCharName)
-    : null;
+  const final_character_hurt_audio =
+    enemyShowsAttack && !wasFrozen ? getHeroHurtAudio(viewerCharName) : null;
 
   const characterForFightResult = {
     player_id: viewerCharacter.player_id,
@@ -1805,16 +1831,21 @@ const buildSubmitLikeResponse = async (
     character_name: viewerCharacter.character_name,
     character_idle: viewerCharacter.character_idle,
     character_run:
-      isWrongRetryState || enemyShowsAttack || isCharacterDead
+      isWrongRetryState ||
+      enemyShowsAttack ||
+      isCharacterDead ||
+      (characterShowsAttack && wasFrozen)
         ? null
         : viewerCharacter.character_run,
     character_attack_type: characterShowsAttack ? resolvedAttackType : null,
-    character_attack: characterShowsAttack ? viewerAttackAsset : null,
+    character_attack:
+      characterShowsAttack && !wasFrozen ? viewerAttackAsset : null,
     character_range_attack:
-      characterShowsAttack && viewerCharacter.character_is_range
+      characterShowsAttack && viewerCharacter.character_is_range && !wasFrozen
         ? viewerRangeAttackAsset
         : null,
-    character_hurt: enemyShowsAttack ? viewerCharacter.character_hurt : null,
+    character_hurt:
+      enemyShowsAttack && !wasFrozen ? viewerCharacter.character_hurt : null,
     character_dies: isCharacterDead ? viewerCharacter.character_dies : null,
     character_damage: resolvedAttack
       ? isViewerLastAttacker
@@ -1827,11 +1858,16 @@ const buildSubmitLikeResponse = async (
     character_is_range: viewerCharacter.character_is_range,
     special_skill: viewerCharacter.special_skill,
     character_current_state: characterShowsAttack
-      ? "attacking"
+      ? wasFrozen
+        ? "Frozen"
+        : "attacking"
       : enemyShowsAttack
-        ? "hurt"
+        ? wasFrozen
+          ? null
+          : "hurt"
         : null,
-    character_attack_overlay: null,
+    character_attack_overlay:
+      characterShowsAttack && wasFrozen ? FREEZE_OVERLAY : null,
     character_reaction: viewerReaction,
   };
 
@@ -1841,10 +1877,11 @@ const buildSubmitLikeResponse = async (
     enemy_id: opponentEnemy.enemy_id,
     enemy_name: opponentEnemy.enemy_name,
     enemy_idle: opponentEnemy.enemy_idle,
-    enemy_run: enemyShowsAttack ? opponentEnemy.enemy_run : null,
+    enemy_run: enemyShowsAttack && !wasFrozen ? opponentEnemy.enemy_run : null,
     enemy_attack_type: enemyShowsAttack ? resolvedAttackType : null,
-    enemy_attack: enemyShowsAttack ? opponentAttackAsset : null,
-    enemy_hurt: characterShowsAttack ? opponentEnemy.enemy_hurt : null,
+    enemy_attack: enemyShowsAttack && !wasFrozen ? opponentAttackAsset : null,
+    enemy_hurt:
+      characterShowsAttack && !wasFrozen ? opponentEnemy.enemy_hurt : null,
     enemy_dies:
       Number(opponentEnemy.enemy_health ?? 0) <= 0
         ? opponentEnemy.enemy_dies
@@ -1859,11 +1896,15 @@ const buildSubmitLikeResponse = async (
     enemy_avatar: opponentEnemy.enemy_avatar,
     special_skill: opponentEnemy.special_skill,
     enemy_current_state: enemyShowsAttack
-      ? "attacking"
+      ? wasFrozen
+        ? "Frozen"
+        : "attacking"
       : characterShowsAttack
-        ? "hurt"
+        ? wasFrozen
+          ? null
+          : "hurt"
         : null,
-    enemy_attack_overlay: null,
+    enemy_attack_overlay: enemyShowsAttack && wasFrozen ? FREEZE_OVERLAY : null,
     enemy_hit_reaction: null,
     enemy_reaction: opponentReaction,
   };
@@ -1884,7 +1925,9 @@ const buildSubmitLikeResponse = async (
 
   let submitMessage =
     reason === "correct_and_first"
-      ? "Great timing! You landed the hit."
+      ? wasFrozen
+        ? "Frozen! Your attack was stopped by the opponent's Ice Shield."
+        : "Great timing! You landed the hit."
       : reason === "correct_but_late"
         ? "Correct answer, but opponent already claimed this round."
         : reason === "round_already_resolved"
@@ -2010,6 +2053,10 @@ const buildSubmitLikeResponse = async (
     question_type: entryLike.question_type,
     is_bonus_round: false,
     card: entryLike.card,
+    isEnemyFrozen:
+      match.has_freeze_effect_by_player[Number(opponentEnemy.player_id)] ??
+      false,
+    isCharacterFrozen: match.has_freeze_effect_by_player[playerId] ?? false,
     timer: rootTimerString,
     gameplay_audio: entryLike.gameplay_audio,
     is_correct_audio:
@@ -2182,6 +2229,7 @@ export const submitAnswer = async (
       tierResolution.damage > 0
         ? tierResolution.damage
         : attacker.attack_damage;
+    let wasFrozen = false;
 
     if (match.has_strong_effect_by_player[playerId]) {
       appliedDamage *= 2;
@@ -2191,11 +2239,13 @@ export const submitAnswer = async (
     if (match.has_freeze_effect_by_player[opponent.player_id]) {
       appliedDamage = 0;
       match.has_freeze_effect_by_player[opponent.player_id] = false;
+      wasFrozen = true;
     }
 
     match.last_attack_by_player_id = playerId;
     match.last_attack_type = attackType;
     match.last_attack_damage = appliedDamage;
+    (match as any).last_attack_was_frozen = wasFrozen;
 
     opponent.character_health = Math.max(
       0,
@@ -2214,6 +2264,7 @@ export const submitAnswer = async (
     return buildSubmitLikeResponse(match, playerId, "correct_and_first", true, {
       attackType,
       damage: appliedDamage,
+      wasFrozen,
     });
   }
 

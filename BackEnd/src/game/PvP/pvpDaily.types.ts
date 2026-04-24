@@ -21,6 +21,8 @@ export interface DailyPvpQuestion {
 export interface PvPDailyPlayerSnapshot {
   player_id: number;
   player_name: string;
+  player_username: string;
+  player_rank_name: string;
   level: number;
   character_id: number;
   character_name: string;
@@ -168,6 +170,7 @@ export interface PvpMatchEntryLikeResponse {
   is_victory_image: string | null;
   boss_skill_activated: boolean;
   isEnemyFrozen: boolean;
+  isCharacterFrozen: boolean;
   message: string;
   audio: string[];
 }
