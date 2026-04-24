@@ -53,7 +53,7 @@ const getInitialOpacity = (index, activeIndex, total) => {
   const nextIndex = (activeIndex + 1) % total;
 
   if (index === activeIndex) return 1;
-  if (index === prevIndex || index === nextIndex) return 0.65;
+  if (index === prevIndex || index === nextIndex) return 0;
   return 0;
 };
 
@@ -175,8 +175,6 @@ const PvpSelectionContent = ({
     <View style={styles.contentWrap}>
       {loadingPreview ? (
         <View style={styles.loadingRow}>
-          <ActivityIndicator color="#BFE2FF" size="small" />
-          <Text style={styles.loadingText}>Loading topics...</Text>
         </View>
       ) : (
         <>
@@ -264,7 +262,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: gameScale(14),
-    paddingBottom: gameScale(30),
+    paddingBottom: gameScale(130),
   },
   loadingRow: {
     flexDirection: 'row',
@@ -283,7 +281,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    marginBottom: gameScale(20),
   },
   levelSelector: {
     flexDirection: 'row',

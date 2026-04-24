@@ -16,6 +16,7 @@ import PvpBackgroundVideo from './PvpBackgroundVideo';
 import PvpSelectionContent from './PvpSelectionContent';
 import MainLoading from '../Actual Game/Loading/MainLoading';
 import BackButton from '../Actual Game/Back/BackButton';
+import MapHeader from '../Map/mapHeader';
 
 const PVP_LOGO = 'https://micomi-assets.me/Pvp%20Assets/Landing%20Image/PvP%20Logo.png';
 
@@ -248,6 +249,7 @@ export default function PvpLobbyPage() {
   return (
     <View style={styles.screen}>
       <PvpBackgroundVideo />
+      <MapHeader />
 
       {/* Header Area (kept in parent as it's global navigation) */}
       <View style={styles.headerRow}>
@@ -257,10 +259,11 @@ export default function PvpLobbyPage() {
           height={gameScale(78)}
           containerStyle={styles.backButtonContainer}
         />
-        <View style={styles.logoWrap}>
-          <Image source={pvpLogoSource} style={styles.titleLogo} resizeMode="contain" />
-        </View>
         <View style={styles.backButtonSpacer} />
+      </View>
+
+      <View style={styles.logoWrap} pointerEvents="none">
+        <Image source={pvpLogoSource} style={styles.titleLogo} resizeMode="contain" />
       </View>
 
       {/* Selection Content Area (Carousel and Buttons) */}
@@ -302,7 +305,7 @@ const styles = StyleSheet.create({
   },
   backButtonContainer: {
     position: 'relative',
-    top: gameScale(-49),
+    top: gameScale(-82),
     left: gameScale(-5),
     alignItems: 'center',
     justifyContent: 'center',
@@ -312,17 +315,14 @@ const styles = StyleSheet.create({
     height: gameScale(78),
   },
   logoWrap: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
-    justifyContent: 'center',
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: gameScale(150),
-    bottom: 0,
+    justifyContent: 'flex-start',
+    paddingTop: gameScale(72),
+    opacity: 0.9,
   },
   titleLogo: {
-    width: gameScale(250),
-    height: gameScale(250),
+    width: gameScale(210),
+    height: gameScale(210),
   },
 });
