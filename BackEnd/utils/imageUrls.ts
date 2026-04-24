@@ -337,6 +337,14 @@ export const imagesUrls = [
   "https://micomi-assets.me/Enemies/Greenland/Boss%20Darco/run_lkcbug.png",
   "https://micomi-assets.me/Enemies/Avatar/bossdarko_ppwb8u.png",
   "https://micomi-assets.me/Enemies/Greenland/Boss%20Darco/attack2.png",
+  //Boss Antcool
+  "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Antcool/idle.png",
+  "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Antcool/attack1.png",
+  "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Antcool/death.png",
+  "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Antcool/hurt.png",
+  "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Antcool/run.png",
+  "https://micomi-assets.me/Enemies/Avatar/Autumn%20Enemies%20Avatar/bossantcool.png",
+  "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Antcool/attack2.png",
 
   //Autumnland Enemies (no boss yet)
   //Barbalony
@@ -417,14 +425,6 @@ export const imagesUrls = [
   "https://micomi-assets.me/Enemies/Autumn%20Land/King%20San%20Pydero/run.png",
   "https://micomi-assets.me/Enemies/Avatar/Autumn%20Enemies%20Avatar/kingsanpydero.png",
   "https://micomi-assets.me/Enemies/Autumn%20Land/King%20San%20Pydero/attack2.png",
-  //Boss Antcool
-  "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Antcool/idle.png",
-  "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Antcool/attack1.png",
-  "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Antcool/death.png",
-  "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Antcool/hurt.png",
-  "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Antcool/run.png",
-  "https://micomi-assets.me/Enemies/Avatar/Autumn%20Enemies%20Avatar/bossantcool.png",
-  "https://micomi-assets.me/Enemies/Autumn%20Land/Boss%20Antcool/attack2.png",
 
   //Lavaland Enemies
   //Boss Scorcharach

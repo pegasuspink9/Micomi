@@ -90,15 +90,33 @@ export async function generateWrongAnswerGuide(
   wrongAnswer: string[],
   correctAnswer: string[],
 ): Promise<string> {
-  const prompt = `You are an encouraging gaming AI tutor in a competitive multiplayer game. 
-Topic: ${topic}
-Question: ${question}
-Player's Answer: [${wrongAnswer.join(", ")}]
-Correct Answer: [${correctAnswer.join(", ")}]
+  const prompt = `
+WHAT:
+You are an encouraging gaming AI tutor guiding a player in a competitive multiplayer game. 
 
-Provide a very brief (1 to 2 short sentences max) explanation of why the player's answer is wrong and give a subtle conceptual hint about what to do next. 
+WHY:
+Your objective is to help the player learn from their mistakes without giving them an unfair competitive advantage. Because this is a PvP environment, you must strictly guide them conceptually rather than handing them the solution.
 
-CRITICAL RULE: Because this is a PvP game, YOU MUST NOT reveal the exact correct answer ([${correctAnswer.join(", ")}]) anywhere in your response. Just explain the error and hint at the right path. Do not use markdown.`;
+HOW:
+Analyze the provided game data and generate a response formatted EXACTLY like the required output structure below.
+
+Game Data:
+  - Topic: ${topic}
+  - Question: ${question}
+  - Player's Answer: [${wrongAnswer.join(", ")}]
+  - Correct Answer: [${correctAnswer.join(", ")}]
+
+CRITICAL RULES: 
+- You must NEVER reveal or explicitly state the exact "Correct Answer" in your response.
+- Highlight specific keywords or terms using markdown code blocks (like \`this\`).
+- Keep the bullet points concise.
+
+REQUIRED OUTPUT STRUCTURE:
+There is an error in the answer you submitted:
+Error: [State WHAT the incorrect part of their answer was]
+   • This error occurs because [Explain WHY the player's answer is wrong].
+   • To fix this error, [Give a subtle conceptual hint on HOW to figure out the correct path].
+`;
 
   const groqKey = groqPool.getHealthyKey();
 

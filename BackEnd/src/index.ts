@@ -27,6 +27,7 @@ import { getAllPlayerProgress } from "../src/models/Player/playerProgress.servic
 import avatarRoutes from "./models/Avatar/avatar.routes";
 import moduleRoutes from "./models/Module/module.routes";
 import socialRoutes from "./models/Social/social.routes";
+import dailyRewardRoutes from "./models/DailyReward/dailyReward.routes";
 
 import testRoutes from "../middleware/testing.toutes";
 
@@ -72,6 +73,7 @@ app.use("/game", gameRoutes);
 app.use("/avatar", avatarRoutes);
 app.use("/module", moduleRoutes);
 app.use("/social", socialRoutes);
+app.use("/daily-reward", dailyRewardRoutes);
 
 //temporary
 app.get("/progress", getAllPlayerProgress);

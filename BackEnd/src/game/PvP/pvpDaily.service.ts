@@ -42,7 +42,9 @@ const prisma = new PrismaClient();
 
 const MATCHMAKING_TIMEOUT_MS = 2 * 60 * 1000;
 const MATCH_COMPLETION_CLEANUP_MS = 90 * 1000;
-const PVP_CHALLENGE_TIME_LIMIT_SECONDS = 5 * 60;
+const PVP_BASE_QUESTION_TIME_LIMIT_SECONDS = 40;
+const PVP_SECONDS_PER_BLANK = 8;
+const PVP_MAX_QUESTION_TIME_LIMIT_SECONDS = 120;
 const DEFAULT_FALLBACK_ATTACK_DAMAGE = 12;
 const MAX_IN_GAME_MESSAGE_LENGTH = 160;
 const WIN_REWARD: PvPCompletionRewards = {
@@ -397,11 +399,66 @@ const getEncounteredChallengeIds = async (
   return encountered;
 };
 
+const getRecentlyActiveChallengeIds = async (
+  playerIds: number[],
+): Promise<Set<number>> => {
+  if (playerIds.length === 0) {
+    return new Set<number>();
+  }
+
+  const progressRows = await prisma.playerVsPlayerProgress.findMany({
+    where: {
+      status: "active",
+      OR: [
+        { player_one_id: { in: playerIds } },
+        { player_two_id: { in: playerIds } },
+      ],
+    },
+    select: { payload: true },
+  });
+
+  const recent = new Set<number>();
+
+  for (const row of progressRows) {
+    const payload = row.payload as Record<string, unknown>;
+    const questions = Array.isArray(payload?.questions)
+      ? payload.questions
+      : [];
+    const roundIndex = Number(payload?.current_round_index);
+
+    if (!Number.isInteger(roundIndex) || roundIndex < 0) {
+      continue;
+    }
+
+    const current = questions[roundIndex] as
+      | Record<string, unknown>
+      | undefined;
+    const previous = questions[roundIndex - 1] as
+      | Record<string, unknown>
+      | undefined;
+
+    const currentChallengeId = Number(current?.challenge_id);
+    if (Number.isFinite(currentChallengeId) && currentChallengeId > 0) {
+      recent.add(currentChallengeId);
+    }
+
+    const previousChallengeId = Number(previous?.challenge_id);
+    if (Number.isFinite(previousChallengeId) && previousChallengeId > 0) {
+      recent.add(previousChallengeId);
+    }
+  }
+
+  return recent;
+};
+
 const buildQuestionPool = async (
   topic: PvpChallengeTopic,
   playerIds: number[],
 ): Promise<DailyPvpQuestion[]> => {
-  const encountered = await getEncounteredChallengeIds(playerIds);
+  const [encountered, recentlyActive] = await Promise.all([
+    getEncounteredChallengeIds(playerIds),
+    getRecentlyActiveChallengeIds(playerIds),
+  ]);
 
   const challenges = await prisma.challenge.findMany({
     where: {
@@ -422,52 +479,64 @@ const buildQuestionPool = async (
     orderBy: { challenge_id: "asc" },
   });
 
-  const availableChallenges = challenges.filter(
-    (challenge) => !encountered.has(challenge.challenge_id),
+  if (challenges.length === 0) {
+    throw new Error(
+      `No ${topic} easy challenges in Challenge table for this match.`,
+    );
+  }
+
+  const unseen = shuffleArray(
+    challenges.filter((c) => !encountered.has(c.challenge_id)),
+  );
+  const seenNotRecent = shuffleArray(
+    challenges.filter(
+      (c) =>
+        encountered.has(c.challenge_id) && !recentlyActive.has(c.challenge_id),
+    ),
+  );
+  const seenRecent = shuffleArray(
+    challenges.filter((c) => recentlyActive.has(c.challenge_id)),
   );
 
-  if (challenges.length < QUESTIONS_PER_MATCH) {
-    throw new Error(
-      `Not enough ${topic} easy challenges in Challenge table for this match.`,
-    );
+  const pullQueue = [...unseen, ...seenNotRecent, ...seenRecent];
+  const finalSelection: typeof challenges = [];
+
+  while (finalSelection.length < QUESTIONS_PER_MATCH && pullQueue.length > 0) {
+    finalSelection.push(pullQueue.shift()!);
   }
 
-  let randomizedChallenges: typeof challenges;
+  while (finalSelection.length < QUESTIONS_PER_MATCH) {
+    const lastPickedId =
+      finalSelection[finalSelection.length - 1]?.challenge_id;
 
-  if (availableChallenges.length >= QUESTIONS_PER_MATCH) {
-    randomizedChallenges = shuffleArray([...availableChallenges]).slice(
-      0,
-      QUESTIONS_PER_MATCH,
-    );
-  } else {
-    const seenChallenges = challenges.filter((challenge) =>
-      encountered.has(challenge.challenge_id),
-    );
+    const validOptions =
+      challenges.length > 1
+        ? challenges.filter((c) => c.challenge_id !== lastPickedId)
+        : challenges;
 
-    const unseenShuffled = shuffleArray([...availableChallenges]);
-    const neededFallbackCount = QUESTIONS_PER_MATCH - unseenShuffled.length;
-    const seenFallback = shuffleArray([...seenChallenges]).slice(
-      0,
-      neededFallbackCount,
-    );
-
-    randomizedChallenges = shuffleArray([...unseenShuffled, ...seenFallback]);
+    const randomNext =
+      validOptions[Math.floor(Math.random() * validOptions.length)];
+    finalSelection.push(randomNext);
   }
 
-  return randomizedChallenges.map((current) => {
+  if (challenges.length >= QUESTIONS_PER_MATCH) {
+    shuffleArray(finalSelection);
+  }
+
+  return finalSelection.map((current) => {
     return {
       challenge_id: current.challenge_id,
       topic,
       level_id: current.level_id,
-      level_number: current.level.level_number ?? null,
-      map_name: current.level.map.map_name,
-      level_title: current.level.level_title,
+      level_number: current.level?.level_number ?? null,
+      map_name: current.level?.map?.map_name ?? topic,
+      level_title: current.level?.level_title ?? "",
       challenge_type: current.challenge_type,
       title: current.title,
       description: current.description,
       question: current.question,
       options: generateDynamicPvpOptions(current, challenges),
-      correct_answer: normalizeToStringArray(current.correct_answer as unknown),
+      correct_answer: normalizeToStringArray(current.correct_answer),
       html_file: current.html_file ?? null,
       css_file: current.css_file ?? null,
     };
@@ -552,9 +621,32 @@ const normalizeInGameMessage = (value: string): string => {
   return normalized;
 };
 
-const getRoundTimerString = (roundStartedAtIso: string): string => {
+const countQuestionBlanks = (questionText: string): number => {
+  const characters = questionText.slice(0).split("");
+  return characters.reduce(
+    (count, character) => count + (character === "_" ? 1 : 0),
+    0,
+  );
+};
+
+const getQuestionTimeLimitSeconds = (
+  question: DailyPvpQuestion | null,
+): number => {
+  const questionText =
+    typeof question?.question === "string" ? question.question : "";
+  const blankCount = countQuestionBlanks(questionText);
+  const dynamicLimit =
+    PVP_BASE_QUESTION_TIME_LIMIT_SECONDS + blankCount * PVP_SECONDS_PER_BLANK;
+
+  return Math.min(dynamicLimit, PVP_MAX_QUESTION_TIME_LIMIT_SECONDS);
+};
+
+const getRoundTimerString = (
+  roundStartedAtIso: string,
+  roundTimeLimitSeconds: number,
+): string => {
   const elapsed = (Date.now() - new Date(roundStartedAtIso).getTime()) / 1000;
-  const timeRemaining = Math.max(0, PVP_CHALLENGE_TIME_LIMIT_SECONDS - elapsed);
+  const timeRemaining = Math.max(0, roundTimeLimitSeconds - elapsed);
   return formatTimer(timeRemaining);
 };
 
@@ -621,9 +713,13 @@ const buildEntryLikePayload = async (
   const enemy_idle_audio = getHeroIdleAudio(opponentChar.character_name);
 
   const mapName = question.map_name || question.topic;
+  const roundTimeLimitSeconds = getQuestionTimeLimitSeconds(question);
 
   const currentChallenge = { ...question };
-  const rootTimerString = getRoundTimerString(match.current_round_started_at);
+  const rootTimerString = getRoundTimerString(
+    match.current_round_started_at,
+    roundTimeLimitSeconds,
+  );
 
   const mapAssets = getMapMediaAssets(mapName);
   const combatBackground = [mapAssets.versus_background];
@@ -1151,18 +1247,19 @@ const completeMatch = async (
 
 const maybeProgressRoundOrFinish = async (match: PvPMatchState) => {
   const alive = getAlivePlayerIds(match);
+
+  // Condition 1: Only one player alive -> They Win
   if (alive.length === 1) {
     const winnerPlayerId = alive[0];
-
     if (match.current_round_index < match.questions.length - 1) {
       match.finisher_bonus_coins_by_player[winnerPlayerId] =
         (match.finisher_bonus_coins_by_player[winnerPlayerId] ?? 0) + 15;
     }
-
     await completeMatch(match, winnerPlayerId, "knockout");
     return;
   }
 
+  // Condition 2: Both players died at exactly the same time -> Tie Breaker
   if (alive.length === 0) {
     const p1 = match.players[0].player_id;
     const p2 = match.players[1].player_id;
@@ -1174,34 +1271,60 @@ const maybeProgressRoundOrFinish = async (match: PvPMatchState) => {
   }
 
   if (match.current_round_index >= match.questions.length - 1) {
-    const p1 = match.players[0];
-    const p2 = match.players[1];
-    const p1Mistakes = match.mistakes_by_player[p1.player_id] ?? 0;
-    const p2Mistakes = match.mistakes_by_player[p2.player_id] ?? 0;
+    const p1Id = match.players[0].player_id;
+    const p2Id = match.players[1].player_id;
 
-    let winnerPlayerId: number;
-    if (p1Mistakes !== p2Mistakes) {
-      winnerPlayerId = p1Mistakes < p2Mistakes ? p1.player_id : p2.player_id;
-    } else if (p1.character_health !== p2.character_health) {
-      winnerPlayerId =
-        p1.character_health > p2.character_health ? p1.player_id : p2.player_id;
+    const newQuestions = await buildQuestionPool(match.topic, [p1Id, p2Id]);
+
+    if (newQuestions.length > 0) {
+      if (
+        newQuestions[0].challenge_id ===
+        match.questions[match.questions.length - 1].challenge_id
+      ) {
+        if (newQuestions.length > 1) {
+          [newQuestions[0], newQuestions[1]] = [
+            newQuestions[1],
+            newQuestions[0],
+          ];
+        }
+      }
+
+      match.questions.push(...newQuestions);
+      match.rounds.push(...createRounds(newQuestions));
     } else {
-      winnerPlayerId =
-        p1.player_id <= p2.player_id ? p1.player_id : p2.player_id;
-    }
+      const p1 = match.players[0];
+      const p2 = match.players[1];
+      const p1Mistakes = match.mistakes_by_player[p1.player_id] ?? 0;
+      const p2Mistakes = match.mistakes_by_player[p2.player_id] ?? 0;
 
-    await completeMatch(match, winnerPlayerId, "all_questions_resolved");
-    return;
-  } else {
-    match.current_round_index += 1;
+      let winnerPlayerId: number;
+      if (p1Mistakes !== p2Mistakes) {
+        winnerPlayerId = p1Mistakes < p2Mistakes ? p1.player_id : p2.player_id;
+      } else if (p1.character_health !== p2.character_health) {
+        winnerPlayerId =
+          p1.character_health > p2.character_health
+            ? p1.player_id
+            : p2.player_id;
+      } else {
+        winnerPlayerId =
+          p1.player_id <= p2.player_id ? p1.player_id : p2.player_id;
+      }
+
+      await completeMatch(match, winnerPlayerId, "all_questions_resolved");
+      return;
+    }
   }
+
+  match.current_round_index += 1;
   match.current_round_started_at = getNowIso();
 };
 
 const getRoundRemainingSeconds = (match: PvPMatchState): number => {
+  const question = getRoundQuestion(match);
+  const roundTimeLimitSeconds = getQuestionTimeLimitSeconds(question);
   const elapsed =
     (Date.now() - new Date(match.current_round_started_at).getTime()) / 1000;
-  return Math.max(0, PVP_CHALLENGE_TIME_LIMIT_SECONDS - elapsed);
+  return Math.max(0, roundTimeLimitSeconds - elapsed);
 };
 
 const resolveExpiredRoundIfNeeded = async (
@@ -1581,9 +1704,10 @@ const buildSubmitLikeResponse = async (
   const nextQuestion = match.questions[match.current_round_index] ?? null;
   const currentRoundChallenge =
     !isCompleted && nextQuestion ? { ...nextQuestion } : null;
+  const roundTimeLimitSeconds = getQuestionTimeLimitSeconds(nextQuestion);
 
   const rootTimerString = !isCompleted
-    ? getRoundTimerString(match.current_round_started_at)
+    ? getRoundTimerString(match.current_round_started_at, roundTimeLimitSeconds)
     : "00:00";
   const shouldExposeNextChallenge =
     !isCompleted &&
