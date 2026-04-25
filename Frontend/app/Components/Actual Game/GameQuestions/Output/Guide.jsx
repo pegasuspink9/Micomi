@@ -197,7 +197,7 @@ const InteractiveEditor = ({ initialCode }) => {
   );
 };
 // --- MAIN GUIDE COMPONENT ---
-const Guide = ({ currentQuestion, isFullPageLesson = false }) => {
+const Guide = ({ currentQuestion, isFullPageLesson = false, guideOverride = null }) => {
 
   const renderStyledContent = (content) => {
     const parts = [];
@@ -433,7 +433,7 @@ const Guide = ({ currentQuestion, isFullPageLesson = false }) => {
       keyboardShouldPersistTaps="handled" 
     >
       <View style={styles.guideContent}>
-        {renderGuideContent(currentQuestion?.guide)}
+        {renderGuideContent(guideOverride ?? currentQuestion?.guide)}
       </View>
     </ScrollView>
   );

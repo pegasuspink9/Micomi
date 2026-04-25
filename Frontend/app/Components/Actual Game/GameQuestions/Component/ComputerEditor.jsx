@@ -14,7 +14,8 @@ const ComputerEditor = ({
   onTabChange,
   activeTab: externalActiveTab,
   isCorrect,
-  submissionResult
+  submissionResult,
+  reviewGuide = null,
 }) => {
   const [activeTab, setActiveTab] = useState('code');
   const [hasAnimated, setHasAnimated] = useState(false); 
@@ -58,7 +59,7 @@ const ComputerEditor = ({
   const renderTabContent = useCallback(() => {
     switch (activeTab) {
       case 'guide':
-         return <Guide currentQuestion={currentQuestion} />;
+         return <Guide currentQuestion={currentQuestion} guideOverride={reviewGuide} />;
 
       case 'code':
         return (
@@ -139,7 +140,7 @@ const ComputerEditor = ({
       <View style={styles.bookHeader}>
         <View style={styles.spineShadow} />
         <View style={styles.tabsContainer}>
-             {currentQuestion?.guide && submissionResult?.isCorrect === false && (
+             {Boolean(reviewGuide) && isCorrect === false && (
             <Pressable
               onPress={() => handleTabChange('guide')}
               style={[

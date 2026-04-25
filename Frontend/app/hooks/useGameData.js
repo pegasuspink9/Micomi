@@ -16,6 +16,7 @@ export const useGameData = (initialLevelId, options = {}) => {
   const [submitting, setSubmitting] = useState(false);
   const [waitingForAnimation, setWaitingForAnimation] = useState(false);
   const [canProceed, setCanProceed] = useState(false);
+  const [reviewGuide, setReviewGuide] = useState(null);
 
   //potions states
   const [potions, setPotions] = useState([]);
@@ -30,6 +31,7 @@ export const useGameData = (initialLevelId, options = {}) => {
   const pendingSubmissionRef = useRef(null);
   const animationTimeoutRef = useRef(null);
   const lastProcessedSubmissionRef = useRef(null);
+  const reviewGuideRequestRef = useRef(null);
 
   const [currentLevelId, setCurrentLevelId] = useState(initialLevelId);
   const skipNextFetchRef = useRef(false); 
@@ -63,6 +65,7 @@ export const useGameData = (initialLevelId, options = {}) => {
     if (disabled) {
       setLoading(false);
       setAnimationsLoading(false);
+      reviewGuideRequestRef.current = null;
       return;
     }
 
@@ -73,6 +76,7 @@ export const useGameData = (initialLevelId, options = {}) => {
       setError('Missing level ID');
       setLoading(false);
       setAnimationsLoading(false);
+      reviewGuideRequestRef.current = null;
       return;
     }
 
@@ -80,6 +84,8 @@ export const useGameData = (initialLevelId, options = {}) => {
       setLoading(true);
       setAnimationsLoading(true);
       setError(null);
+      setReviewGuide(null);
+      reviewGuideRequestRef.current = null;
       setDownloadProgress({ loaded: 0, total: 0, progress: 0, currentUrl: '' });
       setIndividualAnimationProgress({ url: '', progress: 0 });
       
@@ -160,6 +166,8 @@ export const useGameData = (initialLevelId, options = {}) => {
       setSubmitting(true);
       setError(null);
       setCanProceed(false);
+      setReviewGuide(null);
+      reviewGuideRequestRef.current = null;
       
       console.log(`Submitting answer for challenge ${gameState.currentChallenge.id}:`, selectedAnswers);
       
@@ -177,6 +185,30 @@ export const useGameData = (initialLevelId, options = {}) => {
       
       if (!updatedState) {
         throw new Error('Failed to extract updated game state from submission response');
+      }
+
+      const answeredChallengeId = gameState.currentChallenge.id;
+      const nextChallengeId = updatedState.currentChallenge?.id;
+      const guideChallengeId = nextChallengeId || answeredChallengeId;
+      const isWrongAnswer = updatedState.submissionResult?.isCorrect !== true;
+      if (isWrongAnswer) {
+        reviewGuideRequestRef.current = guideChallengeId;
+        gameService
+          .getChallengeGuide(currentLevelId, guideChallengeId)
+          .then((guideResponse) => {
+            if (reviewGuideRequestRef.current !== guideChallengeId) {
+              return;
+            }
+            const guideText = guideResponse?.guide?.trim();
+            setReviewGuide(guideText || null);
+          })
+          .catch((guideError) => {
+            if (reviewGuideRequestRef.current !== guideChallengeId) {
+              return;
+            }
+            console.warn('Failed to fetch wrong-answer review guide:', guideError?.message || guideError);
+            setReviewGuide(null);
+          });
       }
 
       console.log('Submission processed, starting animation sequence...');
@@ -405,6 +437,8 @@ export const useGameData = (initialLevelId, options = {}) => {
     console.log('Proceeding to next challenge:', nextChallengeData.id);
     
     setCanProceed(false);
+    setReviewGuide(null);
+    reviewGuideRequestRef.current = null;
     setGameState(prevState => ({
       ...prevState,
       currentChallenge: nextChallengeData,
@@ -429,6 +463,8 @@ export const useGameData = (initialLevelId, options = {}) => {
       setLoading(true);
       setAnimationsLoading(true);
       setError(null);
+      setReviewGuide(null);
+      reviewGuideRequestRef.current = null;
       
       //  FIXED: Ensure proceed flag is false
       setCanProceed(false);
@@ -488,6 +524,8 @@ export const useGameData = (initialLevelId, options = {}) => {
       setLoading(true);
       setError(null);
       setAnimationsLoading(true);
+      setReviewGuide(null);
+      reviewGuideRequestRef.current = null;
       setDownloadProgress({ loaded: 0, total: 0, progress: 0, currentUrl: '' });
       setIndividualAnimationProgress({ url: '', progress: 0 });
 
@@ -631,6 +669,8 @@ export const useGameData = (initialLevelId, options = {}) => {
     pendingSubmissionRef.current = null;
     setWaitingForAnimation(false);
     setAnimationsLoading(true);
+    setReviewGuide(null);
+    reviewGuideRequestRef.current = null;
     if (animationTimeoutRef.current) {
       clearTimeout(animationTimeoutRef.current);
       animationTimeoutRef.current = null;
@@ -649,6 +689,7 @@ export const useGameData = (initialLevelId, options = {}) => {
     submitting,
     waitingForAnimation,
     canProceed,
+    reviewGuide,
     
     animationsLoading,
     downloadProgress,       

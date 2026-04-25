@@ -107,6 +107,7 @@ export default function GamePlay() {
     downloadProgress,
     individualAnimationProgress,
     canProceed,
+    reviewGuide = null,
     handleProceed,
     autoProceedCountdown = null,
     challengeStallCountdown = null,
@@ -1157,6 +1158,7 @@ export default function GamePlay() {
                 isAnswerCorrect={resolvedSubmissionIsCorrect}
                 canProceed={canProceed}
                 submissionResult={gameState?.submissionResult}
+                reviewGuide={reviewGuide}
             />
 
             <View 

@@ -102,6 +102,28 @@ export const gameService = {
     }
   },
 
+  getChallengeGuide: async (levelId, challengeId) => {
+    try {
+      if (!levelId || !challengeId) {
+        throw new Error('Missing required parameters: levelId or challengeId');
+      }
+
+      const response = await apiService.get(`/game/submit-challenge/${levelId}/${challengeId}/guide`);
+
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to fetch challenge guide');
+      }
+
+      return {
+        success: true,
+        guide: response.data?.guide || '',
+      };
+    } catch (error) {
+      console.error('❌ Failed to fetch challenge guide:', error);
+      throw error;
+    }
+  },
+
   retryLevel: async (levelId, onAnimationProgress = null, onDownloadProgress = null) => {
     return gameService.enterLevel(levelId, onAnimationProgress, onDownloadProgress);
   },
