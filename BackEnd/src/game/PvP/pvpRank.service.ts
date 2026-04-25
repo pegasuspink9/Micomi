@@ -25,7 +25,7 @@ const RANK_TIERS: RankTier[] = [
     legacyName: "Warrior",
     minPoints: 0,
     maxPoints: 999,
-    image: "https://micomi-assets.me/Player%20Rank%20Tier%20Images/Warrior.png",
+    image: "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Pixel.png",
   },
   {
     rank_id: 2,
@@ -33,7 +33,7 @@ const RANK_TIERS: RankTier[] = [
     legacyName: "Elite",
     minPoints: 1000,
     maxPoints: 2399,
-    image: "https://micomi-assets.me/Player%20Rank%20Tier%20Images/Elite.png",
+    image: "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Byte.png",
   },
   {
     rank_id: 3,
@@ -41,7 +41,7 @@ const RANK_TIERS: RankTier[] = [
     legacyName: "Master",
     minPoints: 2400,
     maxPoints: 4299,
-    image: "https://micomi-assets.me/Player%20Rank%20Tier%20Images/Master.png",
+    image: "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Sprite.png",
   },
   {
     rank_id: 4,
@@ -49,8 +49,7 @@ const RANK_TIERS: RankTier[] = [
     legacyName: "Grandmaster",
     minPoints: 4300,
     maxPoints: 6799,
-    image:
-      "https://micomi-assets.me/Player%20Rank%20Tier%20Images/Grandmaster.png",
+    image: "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Widget.png",
   },
   {
     rank_id: 5,
@@ -58,7 +57,7 @@ const RANK_TIERS: RankTier[] = [
     legacyName: "Epic",
     minPoints: 6800,
     maxPoints: 9899,
-    image: "https://micomi-assets.me/Player%20Rank%20Tier%20Images/Epic.png",
+    image: "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Cipher.png",
   },
   {
     rank_id: 6,
@@ -66,7 +65,7 @@ const RANK_TIERS: RankTier[] = [
     legacyName: "Legend",
     minPoints: 9900,
     maxPoints: 13599,
-    image: "https://micomi-assets.me/Player%20Rank%20Tier%20Images/Legend.png",
+    image: "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Root.png",
   },
   {
     rank_id: 7,
@@ -74,7 +73,7 @@ const RANK_TIERS: RankTier[] = [
     legacyName: "Mythic",
     minPoints: 13600,
     maxPoints: null,
-    image: "https://micomi-assets.me/Player%20Rank%20Tier%20Images/Mythic.png",
+    image: "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Nexus.png",
   },
 ];
 

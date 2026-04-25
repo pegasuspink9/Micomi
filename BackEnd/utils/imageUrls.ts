@@ -734,11 +734,11 @@ export const imagesUrls = [
   "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Mandiblade/Mandiblade.png",
 
   //Rank Tiers Images Placeholders
-  "https://micomi-assets.me/Player%20Rank%20Tier%20Images/Warrior.png",
-  "https://micomi-assets.me/Player%20Rank%20Tier%20Images/Elite.png",
-  "https://micomi-assets.me/Player%20Rank%20Tier%20Images/Master.png",
-  "https://micomi-assets.me/Player%20Rank%20Tier%20Images/Grandmaster.png",
-  "https://micomi-assets.me/Player%20Rank%20Tier%20Images/Epic.png",
-  "https://micomi-assets.me/Player%20Rank%20Tier%20Images/Legend.png",
-  "https://micomi-assets.me/Player%20Rank%20Tier%20Images/Mythic.png",
+  "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Pixel.png",
+  "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Byte.png",
+  "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Cipher.png",
+  "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Nexus.png",
+  "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Root.png",
+  "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Sprite.png",
+  "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Widget.png",
 ];

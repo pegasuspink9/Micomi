@@ -90,32 +90,36 @@ export async function generateWrongAnswerGuide(
   wrongAnswer: string[],
   correctAnswer: string[],
 ): Promise<string> {
+  const playerAnswerText = wrongAnswer.join(", ");
+  const correctAnswerText = correctAnswer.join(", ");
+
   const prompt = `
 WHAT:
-You are an encouraging gaming AI tutor guiding a player in a competitive multiplayer game. 
+You are an encouraging gaming AI tutor guiding a player for a review. 
 
 WHY:
-Your objective is to help the player learn from their mistakes without giving them an unfair competitive advantage. Because this is a PvP environment, you must strictly guide them conceptually rather than handing them the solution.
+Your objective is to help the player learn from their mistakes by contrasting what they submitted with what the code/question is actually trying to achieve.
 
 HOW:
 Analyze the provided game data and generate a response formatted EXACTLY like the required output structure below.
 
 Game Data:
-  - Topic: ${topic}
-  - Question: ${question}
-  - Player's Answer: [${wrongAnswer.join(", ")}]
-  - Correct Answer: [${correctAnswer.join(", ")}]
+  - Topic: "${topic}"
+  - Question: "${question}"
+  - Player's Answer: "${playerAnswerText}"
+  - Correct Answer: "${correctAnswerText}"
 
 CRITICAL RULES: 
-- You must NEVER reveal or explicitly state the exact "Correct Answer" in your response.
+- You must NEVER reveal or explicitly state the exact "Correct Answer" ("${correctAnswerText}") in your response.
 - Highlight specific keywords or terms using markdown code blocks (like \`this\`).
 - Keep the bullet points concise.
+- Be highly context-aware: Compare the typical use-case of the player's answer against the actual goal of the question.
 
 REQUIRED OUTPUT STRUCTURE:
 There is an error in the answer you submitted:
-Error: [State WHAT the incorrect part of their answer was]
-   • This error occurs because [Explain WHY the player's answer is wrong].
-   • To fix this error, [Give a subtle conceptual hint on HOW to figure out the correct path].
+Error: You used \`${playerAnswerText}\`, which is incorrect in this context.
+   • This error occurs because \`${playerAnswerText}\` is typically used for [Explain what the player's answer actually does/is used for], but the goal here is to [Explain the intended behavior or purpose of the code based on the context of the question].
+   • To fix this error, [Give a subtle conceptual hint on the type of element, tag, or concept needed to achieve this goal, WITHOUT revealing the exact answer].
 `;
 
   const groqKey = groqPool.getHealthyKey();
