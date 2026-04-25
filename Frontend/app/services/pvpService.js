@@ -426,6 +426,15 @@ export const pvpService = {
     return normalizeAuthoritativeMatchStatePayload(response);
   },
 
+  getDailyMatchHistory: async () => {
+    const response = await apiService.get('/game/pvp/daily/match/history');
+    if (!response?.success) {
+      throw new Error(response?.message || 'Failed to load match history');
+    }
+
+    return Array.isArray(response?.data) ? response.data : [];
+  },
+
   submitDailyMatchAnswer: async (matchId, challengeId, selectedAnswers) => {
     const response = await apiService.post(
       `/game/pvp/daily/match/submit-answer/${matchId}/${challengeId}`,

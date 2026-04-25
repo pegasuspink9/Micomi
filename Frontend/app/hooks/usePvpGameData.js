@@ -1764,6 +1764,10 @@ export const usePvpGameData = (matchId, options = {}) => {
     };
   }, []);
 
+  const fetchMatchHistory = useCallback(async () => {
+    return pvpService.getDailyMatchHistory();
+  }, []);
+
   useEffect(() => {
     if (disabled) {
       return;
@@ -2052,6 +2056,7 @@ export const usePvpGameData = (matchId, options = {}) => {
     loadingPotions,
     usingPotion,
     usePotion,
+    fetchMatchHistory,
     selectPotion,
     clearSelectedPotion,
     fetchPotions: async () => [],

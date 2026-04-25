@@ -14,6 +14,8 @@ import { gameScale } from '../Responsiveness/gameResponsive';
 // Import child components
 import PvpBackgroundVideo from './PvpBackgroundVideo';
 import PvpSelectionContent from './PvpSelectionContent';
+import PvpRankPreview from './PvpRankPreview';
+import PvpMatchHistoryPreview from './PvpMatchHistoryPreview';
 import MainLoading from '../Actual Game/Loading/MainLoading';
 import BackButton from '../Actual Game/Back/BackButton';
 import MapHeader from '../Map/mapHeader';
@@ -285,6 +287,15 @@ export default function PvpLobbyPage() {
         onToggleMatch={handleToggleMatch}
       />
 
+      <View style={styles.bottomCardsRow}>
+        <View style={styles.bottomCardCol}>
+          <PvpRankPreview />
+        </View>
+        <View style={styles.bottomCardCol}>
+          <PvpMatchHistoryPreview />
+        </View>
+      </View>
+
       <MainLoading visible={entryLoadingVisible} />
     </View>
   );
@@ -324,5 +335,18 @@ const styles = StyleSheet.create({
   titleLogo: {
     width: gameScale(210),
     height: gameScale(210),
+  },
+  bottomCardsRow: {
+    position: 'absolute',
+    left: gameScale(12),
+    right: gameScale(12),
+    bottom: gameScale(26),
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: gameScale(10),
+    zIndex: 30,
+  },
+  bottomCardCol: {
+    flex: 1,
   },
 });
