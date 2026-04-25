@@ -21,6 +21,8 @@ export interface DailyPvpQuestion {
 export interface PvPDailyPlayerSnapshot {
   player_id: number;
   player_name: string;
+  player_username: string;
+  player_rank_name: string;
   level: number;
   character_id: number;
   character_name: string;
@@ -168,6 +170,7 @@ export interface PvpMatchEntryLikeResponse {
   is_victory_image: string | null;
   boss_skill_activated: boolean;
   isEnemyFrozen: boolean;
+  isCharacterFrozen: boolean;
   message: string;
   audio: string[];
 }
@@ -264,7 +267,9 @@ export interface PvpDailySubmitAnswerResult {
 export interface PvpMatchHistoryCharacter {
   player_id: number;
   player_name: string;
-  player_avatar: string | null;
+  player_avatar: string;
+  player_rank_name: string;
+  player_rank_image: string;
   character_name: string;
   character_avatar: string | null;
   points: number;
@@ -274,7 +279,9 @@ export interface PvpMatchHistoryCharacter {
 export interface PvpMatchHistoryEnemy {
   player_id: number;
   player_name: string;
-  player_avatar: string | null;
+  player_avatar: string;
+  player_rank_name: string;
+  player_rank_image: string;
   enemy_name: string;
   enemy_avatar: string | null;
   points: number;

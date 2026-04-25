@@ -23,7 +23,7 @@ import { getRankProgressByPoints } from "../../game/PvP/pvpRank.service";
 
 const prisma = new PrismaClient();
 
-const DEFAULT_AVATAR_URL =
+export const DEFAULT_AVATAR_URL =
   "https://micomi-assets.me/Player%20Avatars%20Final/Avatar_1.png";
 
 const BASE_EXP_REQUIREMENT = 100;
@@ -398,6 +398,7 @@ export const createPlayer = async (data: PlayerCreateInput) => {
       password: finalPassword,
       google_id: (data as any).google_id || null,
       facebook_id: (data as any).facebook_id || null,
+      player_avatar: DEFAULT_AVATAR_URL,
       created_at: new Date(),
       last_active: new Date(),
       days_logged_in: 0,

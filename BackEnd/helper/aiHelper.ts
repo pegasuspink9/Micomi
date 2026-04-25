@@ -134,7 +134,7 @@ Error: [State WHAT the incorrect part of their answer was]
           body: JSON.stringify({
             model: "llama-3.1-8b-instant",
             messages: [{ role: "user", content: prompt }],
-            max_tokens: 60,
+            max_tokens: 200,
           }),
         },
         3000,
@@ -168,6 +168,9 @@ Error: [State WHAT the incorrect part of their answer was]
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              maxOutputTokens: 200,
+            },
           }),
         },
         3500,
