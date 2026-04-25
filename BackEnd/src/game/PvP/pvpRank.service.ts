@@ -10,6 +10,7 @@ export type PvpRankName =
   | "Nexus";
 
 interface RankTier {
+  rank_id: number;
   name: PvpRankName;
   legacyName: string;
   minPoints: number;
@@ -19,6 +20,7 @@ interface RankTier {
 
 const RANK_TIERS: RankTier[] = [
   {
+    rank_id: 1,
     name: "Pixel",
     legacyName: "Warrior",
     minPoints: 0,
@@ -26,6 +28,7 @@ const RANK_TIERS: RankTier[] = [
     image: "https://micomi-assets.me/Player%20Rank%20Tier%20Images/Warrior.png",
   },
   {
+    rank_id: 2,
     name: "Byte",
     legacyName: "Elite",
     minPoints: 1000,
@@ -33,6 +36,7 @@ const RANK_TIERS: RankTier[] = [
     image: "https://micomi-assets.me/Player%20Rank%20Tier%20Images/Elite.png",
   },
   {
+    rank_id: 3,
     name: "Sprite",
     legacyName: "Master",
     minPoints: 2400,
@@ -40,6 +44,7 @@ const RANK_TIERS: RankTier[] = [
     image: "https://micomi-assets.me/Player%20Rank%20Tier%20Images/Master.png",
   },
   {
+    rank_id: 4,
     name: "Widget",
     legacyName: "Grandmaster",
     minPoints: 4300,
@@ -48,6 +53,7 @@ const RANK_TIERS: RankTier[] = [
       "https://micomi-assets.me/Player%20Rank%20Tier%20Images/Grandmaster.png",
   },
   {
+    rank_id: 5,
     name: "Cipher",
     legacyName: "Epic",
     minPoints: 6800,
@@ -55,6 +61,7 @@ const RANK_TIERS: RankTier[] = [
     image: "https://micomi-assets.me/Player%20Rank%20Tier%20Images/Epic.png",
   },
   {
+    rank_id: 6,
     name: "Root",
     legacyName: "Legend",
     minPoints: 9900,
@@ -62,6 +69,7 @@ const RANK_TIERS: RankTier[] = [
     image: "https://micomi-assets.me/Player%20Rank%20Tier%20Images/Legend.png",
   },
   {
+    rank_id: 7,
     name: "Nexus",
     legacyName: "Mythic",
     minPoints: 13600,
@@ -255,4 +263,15 @@ export const applyPvpRankResult = async (
       },
     };
   });
+};
+
+export const getAllRankTiers = () => {
+  return RANK_TIERS.map((tier) => ({
+    rank_id: tier.rank_id,
+    name: tier.name,
+    legacyName: tier.legacyName,
+    minPoints: tier.minPoints,
+    maxPoints: tier.maxPoints,
+    image: tier.image,
+  }));
 };
