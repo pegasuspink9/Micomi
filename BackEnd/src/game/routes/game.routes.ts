@@ -49,12 +49,12 @@ router.post(
   ChallengeController.submitChallenge,
 );
 
-// router.get(
-//   "/submit-challenge/:levelId/:challengeId/guide",
-//   authenticate,
-//   requirePlayer,
-//   ChallengeController.getChallengeGuide,
-// );
+router.get(
+  "/submit-challenge/:levelId/:challengeId/guide",
+  authenticate,
+  requirePlayer,
+  ChallengeController.getChallengeGuide,
+);
 
 //Shop routes
 router.get(
