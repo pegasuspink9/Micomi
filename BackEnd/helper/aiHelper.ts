@@ -90,8 +90,19 @@ export async function generateWrongAnswerGuide(
   wrongAnswer: string[],
   correctAnswer: string[],
 ): Promise<string> {
-  const playerAnswerText = wrongAnswer.join(", ");
-  const correctAnswerText = correctAnswer.join(", ");
+  const incorrectParts: string[] = [];
+  const intendedParts: string[] = [];
+
+  wrongAnswer.forEach((ans, index) => {
+    if (ans !== correctAnswer[index]) {
+      incorrectParts.push(ans);
+      intendedParts.push(correctAnswer[index] || "");
+    }
+  });
+
+  const specificWrongText = incorrectParts.join(", ");
+  const specificCorrectText = intendedParts.join(", ");
+  const fullPlayerAnswerText = wrongAnswer.join(", ");
 
   const prompt = `
 WHAT:
@@ -106,19 +117,20 @@ Analyze the provided game data and generate a response formatted EXACTLY like th
 Game Data:
   - Topic: "${topic}"
   - Question: "${question}"
-  - Player's Answer: "${playerAnswerText}"
-  - Correct Answer: "${correctAnswerText}"
+  - Player's Full Submission: "${fullPlayerAnswerText}"
+  - Specific Incorrect Part(s): "${specificWrongText}"
+  - Target Correct Part(s): "${specificCorrectText}"
 
 CRITICAL RULES: 
-- You must NEVER reveal or explicitly state the exact "Correct Answer" ("${correctAnswerText}") in your response.
+- You must NEVER reveal or explicitly state the exact "Target Correct Part" ("${specificCorrectText}") in your response.
 - Highlight specific keywords or terms using markdown code blocks (like \`this\`).
 - Keep the bullet points concise.
-- Be highly context-aware: Compare the typical use-case of the player's answer against the actual goal of the question.
+- Be highly context-aware: Compare the typical use-case of the specific incorrect part against the actual goal of the question.
 
 REQUIRED OUTPUT STRUCTURE:
 There is an error in the answer you submitted:
-Error: You used \`${playerAnswerText}\`, which is incorrect in this context.
-   • This error occurs because \`${playerAnswerText}\` is typically used for [Explain what the player's answer actually does/is used for], but the goal here is to [Explain the intended behavior or purpose of the code based on the context of the question].
+Error: You used \`${specificWrongText}\`, which is incorrect in this context.
+   • This error occurs because \`${specificWrongText}\` is typically used for [Explain what the incorrect part actually does/is used for], but the goal here is to [Explain the intended behavior or purpose of the code based on the context of the question].
    • To fix this error, [Give a subtle conceptual hint on the type of element, tag, or concept needed to achieve this goal, WITHOUT revealing the exact answer].
 `;
 
