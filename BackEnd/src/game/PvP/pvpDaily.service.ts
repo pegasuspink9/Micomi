@@ -37,6 +37,7 @@ import * as EnergyService from "../Energy/energy.service";
 import { generateMotivationalMessage } from "../Challenges/challenges.service";
 import { generateDynamicMessage } from "../../../helper/gamePlayMessageHelper";
 import { applyPvpRankResult } from "./pvpRank.service";
+import { DEFAULT_AVATAR_URL } from "../../models/Player/player.service";
 
 const prisma = new PrismaClient();
 
@@ -2379,7 +2380,11 @@ export const getPlayerMatchHistory = async (
     where: { player_id: playerId },
     include: {
       player: {
-        select: { player_avatar: true },
+        select: {
+          player_avatar: true,
+          player_rank_name: true,
+          player_rank_image: true,
+        },
       },
     },
     orderBy: { created_at: "desc" },
@@ -2399,7 +2404,11 @@ export const getPlayerMatchHistory = async (
     },
     include: {
       player: {
-        select: { player_avatar: true },
+        select: {
+          player_avatar: true,
+          player_rank_name: true,
+          player_rank_image: true,
+        },
       },
     },
   });
@@ -2434,7 +2443,9 @@ export const getPlayerMatchHistory = async (
       character: {
         player_id: result.player_id,
         player_name: result.player_name,
-        player_avatar: result.player.player_avatar ?? null,
+        player_avatar: result.player.player_avatar || DEFAULT_AVATAR_URL,
+        player_rank_name: result.player.player_rank_name,
+        player_rank_image: result.player.player_rank_image,
         character_name: result.character_name,
         character_avatar: result.character_avatar ?? null,
         points: characterPoints,
@@ -2444,7 +2455,9 @@ export const getPlayerMatchHistory = async (
         ? {
             player_id: opponent.player_id,
             player_name: opponent.player_name,
-            player_avatar: opponent.player?.player_avatar ?? null,
+            player_avatar: opponent.player?.player_avatar || DEFAULT_AVATAR_URL,
+            player_rank_name: opponent.player.player_rank_name,
+            player_rank_image: opponent.player.player_rank_image,
             enemy_name: opponent.character_name,
             enemy_avatar: opponent.character_avatar ?? null,
             points: enemyPoints,
