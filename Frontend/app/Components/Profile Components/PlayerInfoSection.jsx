@@ -10,6 +10,7 @@ const PlayerInfoSection = ({
   playerName,
   username,
   selectedBadge,
+  playerRankImage,
   playerLevel,
   expPoints,
   maxLevelExp,
@@ -52,6 +53,7 @@ const PlayerInfoSection = ({
 
   const defaultAvatarSource = { uri: 'https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif' };
   const currentAvatarSource = playerAvatar ? { uri: playerAvatar } : defaultAvatarSource;
+  const currentRankImageSource = playerRankImage ? { uri: playerRankImage } : null;
 
   const socialStatsContent = (
     <View style={styles.socialStatsCard}>
@@ -96,20 +98,36 @@ const PlayerInfoSection = ({
           </View>
           
           <View style={styles.playerInfoContent}>
-            <TouchableOpacity 
-              style={styles.playerAvatarContainer} 
-              onPress={onAvatarPress}
-              activeOpacity={0.7}
-            >
-              <View style={styles.playerAvatarOuterBorder}>
-                <View style={styles.playerAvatarInnerBorder}>
-                  <Image 
-                    source={currentAvatarSource} 
-                    style={styles.playerAvatarImage} 
-                  />
+            <View style={styles.avatarRow}>
+              <TouchableOpacity 
+                style={styles.playerAvatarContainer} 
+                onPress={onAvatarPress}
+                activeOpacity={0.7}
+              >
+                <View style={styles.playerAvatarOuterBorder}>
+                  <View style={styles.playerAvatarInnerBorder}>
+                    <Image 
+                      source={currentAvatarSource} 
+                      style={styles.playerAvatarImage} 
+                    />
+                  </View>
                 </View>
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+
+              {currentRankImageSource ? (
+                <View style={styles.playerRankContainer}>
+                  <View style={styles.playerRankOuterBorder}>
+                    <View style={styles.playerRankInnerBorder}>
+                      <Image
+                        source={currentRankImageSource}
+                        style={styles.playerRankImage}
+                      />
+                    </View>
+                  </View>
+                </View>
+              ) : null}
+            </View>
+
             <Text style={styles.username}>{username}</Text>
             
             <View style={styles.lifeContainer}>
@@ -182,15 +200,29 @@ const PlayerInfoSection = ({
           </View>
           
           <View style={styles.playerInfoContent}>
-            <View style={styles.playerAvatarContainer}>
-              <View style={styles.playerAvatarOuterBorder}>
-                <View style={styles.playerAvatarInnerBorder}>
-                  <Image 
-                    source={currentAvatarSource} 
-                    style={styles.playerAvatarImage} 
-                  />
+            <View style={styles.avatarRow}>
+              <View style={styles.playerAvatarContainer}>
+                <View style={styles.playerAvatarOuterBorder}>
+                  <View style={styles.playerAvatarInnerBorder}>
+                    <Image 
+                      source={currentAvatarSource} 
+                      style={styles.playerAvatarImage} 
+                    />
+                  </View>
                 </View>
               </View>
+              {currentRankImageSource ? (
+                <View style={styles.playerRankContainer}>
+                  <View style={styles.playerRankOuterBorder}>
+                    <View style={styles.playerRankInnerBorder}>
+                      <Image
+                        source={currentRankImageSource}
+                        style={styles.playerRankImage}
+                      />
+                    </View>
+                  </View>
+                </View>
+              ) : null}
             </View>
             <Text style={styles.username}>{username}</Text>
             
@@ -471,6 +503,27 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginBottom: gameScale(10),
     marginTop: gameScale(10),
+  },
+  avatarRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: gameScale(8),
+  },
+  playerRankContainer: {
+    alignSelf: 'flex-start',
+    marginTop: gameScale(10),
+    marginBottom: gameScale(10),
+    position: 'absolute',
+    left: gameScale(40),
+    bottom: gameScale(-16),
+    
+  },
+ 
+  playerRankImage: {
+    width: gameScale(100),
+    height: gameScale(100),
+    borderRadius: gameScale(5),
+    resizeMode: 'cover',
   },
   playerAvatarOuterBorder: {
     borderWidth: gameScale(1.5), 

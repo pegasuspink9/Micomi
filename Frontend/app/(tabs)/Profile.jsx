@@ -110,6 +110,7 @@ export default function Profile() {
             playerName={playerData.playerName}
             username={playerData.username}
             selectedBadge={playerData.selectedBadge}
+            playerRankImage={playerData.playerRankImage}
             playerLevel={playerData.playerLevel}
             expPoints={playerData.expPoints}
             maxLevelExp={playerData.maxLevelExp}
