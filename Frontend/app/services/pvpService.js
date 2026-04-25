@@ -435,6 +435,15 @@ export const pvpService = {
     return Array.isArray(response?.data) ? response.data : [];
   },
 
+  getRankTiers: async () => {
+    const response = await apiService.get('/game/pvp/rank-tiers');
+    if (!response?.success) {
+      throw new Error(response?.message || 'Failed to load rank tiers');
+    }
+
+    return Array.isArray(response?.data) ? response.data : [];
+  },
+
   submitDailyMatchAnswer: async (matchId, challengeId, selectedAnswers) => {
     const response = await apiService.post(
       `/game/pvp/daily/match/submit-answer/${matchId}/${challengeId}`,

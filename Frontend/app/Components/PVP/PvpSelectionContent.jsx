@@ -20,10 +20,10 @@ const TOPIC_IMAGES = {
 };
 
 const LEVEL_SELECTOR_IMAGES = {
-  HTML: require('../Map/Assets/html_selector.png'),
-  CSS: require('../Map/Assets/css_selector.png'),
-  JavaScript: require('../Map/Assets/javascript_selector.png'),
-  Computer: require('../Map/Assets/computer_selector.png'),
+  HTML: require('../Map/Assets/computer_selector.png'),
+  CSS: require('../Map/Assets/javascript_selector.png'),
+  JavaScript: require('../Map/Assets/css_selector.png'),
+  Computer: require('../Map/Assets/html_selector.png'),
 };
 
 const ARROW_IMAGE = require('../Map/Assets/right arrow.png');
