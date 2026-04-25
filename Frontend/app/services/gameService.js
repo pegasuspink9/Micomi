@@ -385,21 +385,48 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         } : null,
 
 
-        completionRewards: responseData.completionRewards ? {
-          feedbackMessage: responseData.completionRewards.feedbackMessage || null,
-          coinsEarned: responseData.completionRewards.coinsEarned || responseData.levelStatus?.coinsEarned || 0,
-          currentTotalPoints: responseData.completionRewards.totalPointsEarned || 
-                            responseData.levelStatus?.totalPointsEarned || 0,
-          currentExpPoints: responseData.completionRewards.totalExpPointsEarned || 
-                          responseData.levelStatus?.totalExpPointsEarned || 0,
-          stars: responseData.completionRewards.stars || 0,
-
-        } : (responseData.levelStatus && responseData.levelStatus.isCompleted ? {
+        completionRewards: (data.completionRewards || responseData.completionRewards) ? {
+          ...(data.completionRewards || responseData.completionRewards),
+          feedbackMessage:
+            data.completionRewards?.feedbackMessage ||
+            responseData.completionRewards?.feedbackMessage ||
+            null,
+          coinsEarned:
+            data.completionRewards?.coinsEarned ||
+            responseData.completionRewards?.coinsEarned ||
+            data.levelStatus?.coinsEarned ||
+            responseData.levelStatus?.coinsEarned ||
+            0,
+          currentTotalPoints:
+            data.completionRewards?.currentTotalPoints ||
+            data.completionRewards?.totalPointsEarned ||
+            responseData.completionRewards?.currentTotalPoints ||
+            responseData.completionRewards?.totalPointsEarned ||
+            data.levelStatus?.totalPointsEarned ||
+            responseData.levelStatus?.totalPointsEarned ||
+            0,
+          currentExpPoints:
+            data.completionRewards?.currentExpPoints ||
+            data.completionRewards?.totalExpPointsEarned ||
+            responseData.completionRewards?.currentExpPoints ||
+            responseData.completionRewards?.totalExpPointsEarned ||
+            data.levelStatus?.totalExpPointsEarned ||
+            responseData.levelStatus?.totalExpPointsEarned ||
+            0,
+          stars:
+            data.completionRewards?.stars ||
+            responseData.completionRewards?.stars ||
+            0,
+          rankProgress:
+            data.completionRewards?.rankProgress ||
+            responseData.completionRewards?.rankProgress ||
+            null,
+        } : ((data.levelStatus && data.levelStatus.isCompleted) || (responseData.levelStatus && responseData.levelStatus.isCompleted) ? {
           feedbackMessage: "Level completed successfully!",
-          coinsEarned: responseData.levelStatus.coinsEarned || 0,
-          currentTotalPoints: responseData.levelStatus.totalPointsEarned || 0,
-          currentExpPoints: responseData.levelStatus.totalExpPointsEarned || 0,
-          stars: responseData.levelStatus.stars || 0,
+          coinsEarned: data.levelStatus?.coinsEarned || responseData.levelStatus?.coinsEarned || 0,
+          currentTotalPoints: data.levelStatus?.totalPointsEarned || responseData.levelStatus?.totalPointsEarned || 0,
+          currentExpPoints: data.levelStatus?.totalExpPointsEarned || responseData.levelStatus?.totalExpPointsEarned || 0,
+          stars: data.levelStatus?.stars || responseData.levelStatus?.stars || 0,
         } : null),
 
         nextLevel: responseData.nextLevel ? {
