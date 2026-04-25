@@ -13,6 +13,10 @@ import { gameScale } from './Components/Responsiveness/gameResponsive';
 import { pvpService } from './services/pvpService';
 import { universalAssetPreloader } from './services/preloader/universalAssetPreloader';
 
+// Local image assets for stats
+const POINTS_ICON = require('../app/Components/icons/points.png');
+const COINS_ICON = require('../app/Components/icons/coins.png');
+
 const formatDateFiveYear = (isoDate) => {
   if (!isoDate) {
     return 'N/A';
@@ -121,8 +125,12 @@ export default function PvpHistoryPage() {
                     sortedHistory.map((item, index) => {
                       const characterAvatar = resolveImageUri(item?.character?.character_avatar);
                       const characterPlayerAvatar = resolveImageUri(item?.character?.player_avatar);
+                      const playerRankImage = resolveImageUri(item?.character?.player_rank_image);
+                      
                       const enemyAvatar = resolveImageUri(item?.enemy?.enemy_avatar);
                       const enemyPlayerAvatar = resolveImageUri(item?.enemy?.player_avatar);
+                      const enemyRankImage = resolveImageUri(item?.enemy?.player_rank_image);
+                      
                       const status = toLabel(item?.match_status).toUpperCase();
                       const isWin = status === 'WIN';
                       const isLoss = status === 'LOSS' || status === 'LOSE';
@@ -134,14 +142,36 @@ export default function PvpHistoryPage() {
                           <View style={styles.cardBackgroundContainer}>
                             {/* Player Background (Left Half, Blue) */}
                             <View style={[styles.sideBackground, styles.sideBackgroundPlayer]}>
+                              
+                              {/* Rank Image Container - Centered absolutely behind character */}
+                              <View style={styles.rankImageContainer}>
+                                {playerRankImage ? (
+                                  <Image source={{ uri: playerRankImage }} style={styles.rankBackgroundImage} resizeMode="contain" />
+                                ) : (
+                                  <View style={[styles.rankBackgroundImage, styles.avatarPlaceholder]} />
+                                )}
+                              </View>
+                              
+                              {/* Character Avatar (On top of rank, still behind content) */}
                               {characterAvatar ? (
                                 <Image source={{ uri: characterAvatar }} style={styles.characterBackgroundImage} resizeMode="cover" />
                               ) : (
                                 <View style={[styles.characterBackgroundImage, styles.avatarPlaceholder]} />
                               )}
                             </View>
+
                             {/* Enemy Background (Right Half, Red) */}
                             <View style={[styles.sideBackground, styles.sideBackgroundEnemy]}>
+                              {/* Rank Image Container (Reversed) - Centered absolutely behind character */}
+                              <View style={styles.rankImageContainer}>
+                                {enemyRankImage ? (
+                                  <Image source={{ uri: enemyRankImage }} style={[styles.rankBackgroundImage, styles.reversedBackground]} resizeMode="contain" />
+                                ) : (
+                                  <View style={[styles.rankBackgroundImage, styles.reversedBackground, styles.avatarPlaceholder]} />
+                                )}
+                              </View>
+
+                              {/* Enemy Avatar (Reversed) (On top of rank) */}
                               {enemyAvatar ? (
                                 <Image source={{ uri: enemyAvatar }} style={[styles.characterBackgroundImage, styles.reversedBackground]} resizeMode="cover" />
                               ) : (
@@ -150,7 +180,7 @@ export default function PvpHistoryPage() {
                             </View>
                           </View>
 
-                          {/* Content Layer (On top of backgrounds) */}
+                          {/* Content Layer (On top of all backgrounds) */}
                           <View style={styles.cardContentLayer}>
 
                             {/* Header: Player Info & Enemy Info */}
@@ -162,25 +192,37 @@ export default function PvpHistoryPage() {
                                 ) : (
                                   <View style={[styles.circularAvatar, styles.avatarPlaceholder]} />
                                 )}
-                                <Text style={styles.playerName}>{toLabel(item?.character?.player_name)}</Text>
+                                <View>
+                                    <Text style={styles.playerName}>{toLabel(item?.character?.player_name)}</Text>
+                                    <Text style={styles.heroName}>Hero: {toLabel(item?.character?.character_name)}</Text>
+                                </View>
                               </View>
-                              {/* Enemy Info (Right) */}
+                              {/* Enemy Info (Right - Swapped Order) */}
                               <View style={[styles.playerInfoRow, styles.reversedPlayerInfo]}>
-                                <Text style={styles.playerName}>{toLabel(item?.enemy?.player_name)}</Text>
                                 {enemyPlayerAvatar ? (
                                   <Image source={{ uri: enemyPlayerAvatar }} style={styles.circularAvatar} resizeMode="cover" />
                                 ) : (
                                   <View style={[styles.circularAvatar, styles.avatarPlaceholder]} />
                                 )}
+                                <View style={{alignItems: 'flex-end'}}>
+                                    <Text style={styles.playerName}>{toLabel(item?.enemy?.player_name)}</Text>
+                                    <Text style={styles.heroName}>Hero: {toLabel(item?.enemy?.enemy_name)}</Text>
+                                </View>
                               </View>
                             </View>
 
                             {/* Center: Status & Stats */}
                             <View style={styles.cardCenterContent}>
-                              {/* Player Stats (Left) */}
+                              {/* Player Stats (Left, Bottom) */}
                               <View style={styles.statsContainer}>
-                                <Text style={styles.sideText}>points: {toLabel(item?.character?.points)}</Text>
-                                <Text style={styles.sideText}>coins: {toLabel(item?.character?.coins)}</Text>
+                                <View style={styles.statItem}>
+                                  <Image source={POINTS_ICON} style={styles.statIcon} resizeMode="contain" />
+                                  <Text style={styles.sideText}>{toLabel(item?.character?.points)}</Text>
+                                </View>
+                                <View style={styles.statItem}>
+                                  <Image source={COINS_ICON} style={styles.statIcon} resizeMode="contain" />
+                                  <Text style={styles.sideText}>{toLabel(item?.character?.coins)}</Text>
+                                </View>
                               </View>
 
                               {/* Status (Centered Vertically) */}
@@ -188,10 +230,16 @@ export default function PvpHistoryPage() {
                                 <Text style={[styles.statusText, isWin && styles.statusTextWin, isLoss && styles.statusTextLoss]}>{status}</Text>
                               </View>
 
-                              {/* Enemy Stats (Right) */}
+                              {/* Enemy Stats (Right, Bottom) */}
                               <View style={[styles.statsContainer, styles.reversedStats]}>
-                                <Text style={styles.sideTextRight}>points: {toLabel(item?.enemy?.points)}</Text>
-                                <Text style={styles.sideTextRight}>coins: {toLabel(item?.enemy?.coins)}</Text>
+                                <View style={styles.statItem}>
+                                  <Image source={POINTS_ICON} style={styles.statIcon} resizeMode="contain" />
+                                  <Text style={styles.sideTextRight}>{toLabel(item?.enemy?.points)}</Text>
+                                </View>
+                                <View style={styles.statItem}>
+                                  <Image source={COINS_ICON} style={styles.statIcon} resizeMode="contain" />
+                                  <Text style={styles.sideTextRight}>{toLabel(item?.enemy?.coins)}</Text>
+                                </View>
                               </View>
                             </View>
 
@@ -355,7 +403,7 @@ const styles = StyleSheet.create({
     borderColor: '#4a90d9', // Default win/draw border
     backgroundColor: '#1e3a5f',
     overflow: 'hidden',
-    height: gameScale(160), // Fixed height for the card
+    height: gameScale(180), // Fixed height for the card
     position: 'relative',
   },
   cardOuterLoss: {
@@ -371,6 +419,9 @@ const styles = StyleSheet.create({
   sideBackground: {
     flex: 1,
     overflow: 'hidden',
+    position: 'relative',
+    justifyContent: 'center', // Center content (like rank image) vertically
+    alignItems: 'center', // Center content (like rank image) horizontally
   },
   sideBackgroundPlayer: {
     backgroundColor: 'rgba(0, 0, 255, 0.3)', // Blue tint
@@ -378,10 +429,36 @@ const styles = StyleSheet.create({
   sideBackgroundEnemy: {
     backgroundColor: 'rgba(255, 0, 0, 0.3)', // Red tint
   },
+
+  // Rank Image Styling
+  rankImageContainer: {
+    position: 'absolute', // Position absolutely within sideBackground
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center', // Center image vertically
+    alignItems: 'center', // Center image horizontally
+    zIndex: 1, // Behind character avatar
+  },
+  rankBackgroundImage: {
+    width: gameScale(300), 
+    height: gameScale(300),
+    opacity: 0.6, 
+  },
+
+  // Character Avatar Styling
   characterBackgroundImage: {
-    width: '100%',
-    height: '100%',
+    position: 'absolute', // Position absolutely within sideBackground
+    top: 0,
+    left: gameScale(-60), // Shift player avatar slightly to the right
+    right: 0,
+    bottom: 0,
+    width: gameScale(290),
+    height: gameScale(290),
+    alignSelf: 'center',
     opacity: 1, // Full opacity for character avatars
+    zIndex: 2, // Character is on top of rank
   },
   reversedBackground: {
     transform: [{ scaleX: -1 }], // Flip enemy background
@@ -390,7 +467,7 @@ const styles = StyleSheet.create({
   // Content Layer
   cardContentLayer: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 1,
+    zIndex: 3, // Content on top of all backgrounds
     padding: gameScale(8),
     justifyContent: 'space-between', // Header, Center, Footer
   },
@@ -399,7 +476,7 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start', // Align to top
   },
   playerInfoRow: {
     flexDirection: 'row',
@@ -424,23 +501,33 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
+  heroName: {
+    color: '#eaf5ff', // Lighter text color for hero name
+    fontSize: gameScale(10),
+    fontFamily: 'DynaPuff',
+    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
 
   // Center (Status & Stats)
   cardCenterContent: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end', // Align stats to bottom
     justifyContent: 'space-between',
     paddingHorizontal: gameScale(4),
+    marginBottom: gameScale(4),
   },
   statusContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1, // Take up remaining space in center
+    marginBottom: gameScale(30), // Push status up slightly
   },
   statusText: {
     color: '#ffd700', // Default yellow
-    fontSize: gameScale(20), // Larger font for status
+    fontSize: gameScale(40), // Larger font for status
     fontFamily: 'Grobold',
     textShadowColor: 'rgba(0, 0, 0, 0.7)',
     textShadowOffset: { width: 1, height: 1 },
@@ -448,16 +535,25 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   statusTextWin: {
-    color: '#4dff4d', // Green for win
+    color: '#06c32c', // Green for win
   },
   statusTextLoss: {
     color: '#ff4d4d', // Red for loss
   },
   statsContainer: {
-    gap: gameScale(2),
+    gap: gameScale(4),
+    alignItems: 'flex-start',
   },
   reversedStats: {
     alignItems: 'flex-end',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statIcon: {
+    width: gameScale(24),
+    height: gameScale(24),
+    marginBottom: gameScale(2),
   },
   sideText: {
     color: '#f4e7d1',
@@ -485,7 +581,7 @@ const styles = StyleSheet.create({
   dateText: {
     color: '#eaf5ff',
     fontSize: gameScale(10),
-    fontFamily: 'Grobold',
+    fontFamily: 'DynaPuff',
     opacity: 0.8,
   },
 
