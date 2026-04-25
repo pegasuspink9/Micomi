@@ -272,8 +272,9 @@ export interface PvpMatchHistoryCharacter {
   player_rank_image: string;
   character_name: string;
   character_avatar: string | null;
-  points: number;
   coins: number;
+  points: number;
+  exp_points: number;
 }
 
 export interface PvpMatchHistoryEnemy {
@@ -284,8 +285,9 @@ export interface PvpMatchHistoryEnemy {
   player_rank_image: string;
   enemy_name: string;
   enemy_avatar: string | null;
-  points: number;
   coins: number;
+  points: number;
+  exp_points: number;
 }
 
 export interface PvpMatchHistoryEntry {

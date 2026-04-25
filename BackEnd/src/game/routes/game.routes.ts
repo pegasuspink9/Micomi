@@ -49,6 +49,13 @@ router.post(
   ChallengeController.submitChallenge,
 );
 
+router.get(
+  "/submit-challenge/:levelId/:challengeId/guide",
+  authenticate,
+  requirePlayer,
+  ChallengeController.getChallengeGuide,
+);
+
 //Shop routes
 router.get(
   "/player-characters",
@@ -117,6 +124,12 @@ router.get(
 );
 
 // Daily PvP routes
+router.get(
+  "/pvp/rank-tiers",
+  authenticate,
+  requirePlayer,
+  PvPDailyController.getRankTiers,
+);
 router.get(
   "/pvp/daily/match/preview",
   authenticate,

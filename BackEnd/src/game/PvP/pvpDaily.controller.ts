@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { errorResponse, successResponse } from "../../../utils/response";
 import * as PvpDailyService from "./pvpDaily.service";
 import { PvpChallengeTopic } from "./pvpDaily.types";
+import { getAllRankTiers } from "./pvpRank.service";
 
 const parseMatchId = (value: string | undefined): string => {
   if (!value || typeof value !== "string" || value.trim().length === 0) {
@@ -195,7 +196,8 @@ export const setInGameMessage = async (req: Request, res: Response) => {
 
     return successResponse(res, result, "In-game message updated");
   } catch (error) {
-    const message = (error as Error).message || "Failed to update in-game message";
+    const message =
+      (error as Error).message || "Failed to update in-game message";
     const status = message.includes("not found") ? 404 : 400;
     return errorResponse(res, error, message, status);
   }
@@ -222,12 +224,12 @@ export const surrenderMatch = async (req: Request, res: Response) => {
     const matchId = parseMatchId(req.params.matchId);
 
     const result = await PvpDailyService.surrenderMatch(playerId, matchId);
-    
+
     return successResponse(res, result, "You have surrendered. Match ended.");
   } catch (error) {
     const message = (error as Error).message || "Failed to surrender match";
     const status = message.includes("not found") ? 404 : 400;
-    
+
     return errorResponse(res, error, message, status);
   }
 };
@@ -245,5 +247,14 @@ export const getMatchHistory = async (req: Request, res: Response) => {
       (error as Error).message || "Failed to load match history",
       400,
     );
+  }
+};
+
+export const getRankTiers = async (req: Request, res: Response) => {
+  try {
+    const result = await getAllRankTiers();
+    return successResponse(res, result, "Rank tiers retrieved successfully");
+  } catch (error) {
+    return errorResponse(res, error, "Failed to fetch rank tiers", 500);
   }
 };

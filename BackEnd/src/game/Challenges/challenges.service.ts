@@ -1582,6 +1582,17 @@ export const submitChallengeService = async (
       ...(nextChallenge as Record<string, unknown>),
       guide: aiGuide,
     };
+
+    const nextId = nextChallenge.challenge_id;
+    const currentAnswers =
+      (updatedProgress?.player_answer as Record<string, string[]>) || {};
+
+    currentAnswers[`_GUIDE_${nextId}`] = [aiGuide];
+
+    await prisma.playerProgress.update({
+      where: { progress_id: currentProgress.progress_id },
+      data: { player_answer: currentAnswers },
+    });
   }
 
   const nextCorrectAnswerLength = nextChallenge

@@ -66,7 +66,7 @@ export const submitChallenge = async (req: Request, res: Response) => {
     if (isHinted && submittedAnswer.join("").toLowerCase() === "next") {
       adjustedAnswer = effectiveCorrectAnswer;
       console.log(
-        `Hinted challenge ${challengeId}: "next" submitted, overriding to correct answer`
+        `Hinted challenge ${challengeId}: "next" submitted, overriding to correct answer`,
       );
     } else {
       console.log(`Standard submission for challenge ${challengeId}`);
@@ -76,7 +76,7 @@ export const submitChallenge = async (req: Request, res: Response) => {
       playerId,
       levelId,
       challengeId,
-      adjustedAnswer
+      adjustedAnswer,
     );
 
     // Handle error responses from service
@@ -162,7 +162,54 @@ export const submitChallenge = async (req: Request, res: Response) => {
       res,
       "Challenge submission failed.",
       (error as Error).message,
-      400
+      400,
+    );
+  }
+};
+
+export const getChallengeGuide = async (req: Request, res: Response) => {
+  const playerId = (req as any).user.id;
+  const levelId = Number(req.params.levelId);
+  const challengeId = Number(req.params.challengeId);
+
+  try {
+    const progress = await prisma.playerProgress.findUnique({
+      where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
+    });
+
+    if (!progress || !progress.player_answer) {
+      return errorResponse(res, null, "No progress found for this level", 404);
+    }
+
+    const playerAnswersRecord = progress.player_answer as Record<
+      string,
+      string[]
+    >;
+
+    const guideKey = `_GUIDE_${challengeId}`;
+    const stashedGuide = playerAnswersRecord[guideKey];
+
+    if (!stashedGuide || stashedGuide.length === 0) {
+      return errorResponse(
+        res,
+        null,
+        "No AI guide found for this challenge. It may not have been generated yet.",
+        404,
+      );
+    }
+
+    return successResponse(
+      res,
+      { guide: stashedGuide[0] },
+      "AI Guide retrieved successfully.",
+    );
+  } catch (error) {
+    console.error("Error in getChallengeGuide:", error);
+    return errorResponse(
+      res,
+      "Failed to fetch AI guide.",
+      (error as Error).message,
+      500,
     );
   }
 };
