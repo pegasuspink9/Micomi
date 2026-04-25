@@ -2424,6 +2424,7 @@ export const getPlayerMatchHistory = async (
 
     const characterPoints = isWin ? WIN_REWARD.points : LOSS_REWARD.points;
     const characterCoins = isWin ? WIN_REWARD.coins : LOSS_REWARD.coins;
+    const characterExp = isWin ? WIN_REWARD.exp : LOSS_REWARD.exp;
 
     const enemyPoints = opponent
       ? isWin
@@ -2435,6 +2436,7 @@ export const getPlayerMatchHistory = async (
         ? LOSS_REWARD.coins
         : WIN_REWARD.coins
       : 0;
+    const enemyExp = opponent ? (isWin ? LOSS_REWARD.exp : WIN_REWARD.exp) : 0;
 
     return {
       match_id: result.match_id,
@@ -2448,8 +2450,9 @@ export const getPlayerMatchHistory = async (
         player_rank_image: result.player.player_rank_image,
         character_name: result.character_name,
         character_avatar: result.character_avatar ?? null,
-        points: characterPoints,
         coins: characterCoins,
+        points: characterPoints,
+        exp_points: characterExp,
       },
       enemy: opponent
         ? {
@@ -2460,8 +2463,9 @@ export const getPlayerMatchHistory = async (
             player_rank_image: opponent.player.player_rank_image,
             enemy_name: opponent.character_name,
             enemy_avatar: opponent.character_avatar ?? null,
-            points: enemyPoints,
             coins: enemyCoins,
+            points: enemyPoints,
+            exp_points: enemyExp,
           }
         : null,
     };
