@@ -18,7 +18,12 @@ export const characterService = {
   // FIX: Updated to match "POST game/buy-character/:characterShopId"
   purchaseCharacter: async (characterShopId) => {
     try {
-      const response = await apiService.post(`/game/buy-character/${characterShopId}`);
+      if (!characterShopId) {
+        throw new Error('Character Shop ID is required');
+      }
+
+      const normalizedShopId = String(characterShopId).trim();
+      const response = await apiService.post(`/game/buy-character/${encodeURIComponent(normalizedShopId)}`);
       console.log(`💰 Character purchase response for Shop ID ${characterShopId}:`, response);
 
       if (!response.success) {
@@ -72,6 +77,13 @@ export const characterService = {
     apiData.forEach(item => {
       const character = item.character;
       const heroName = character.character_name;
+      const resolvedCharacterShopId =
+        item.character_shop_id ??
+        item.characterShopId ??
+        item.character_shop?.character_shop_id ??
+        item.characterShop?.characterShopId ??
+        character?.character_shop_id ??
+        character?.characterShopId;
       
       if (!heroName) return; // Skip if a character has no name
 
@@ -103,7 +115,8 @@ export const characterService = {
         character_dies: character.character_dies,
         character_hurt: character.character_hurt,
         avatar_image: character.avatar_image,
-        characterShopId: item.character_shop_id,
+        characterShopId: resolvedCharacterShopId,
+        character_shop_id: resolvedCharacterShopId,
         character_image_select: character.character_image_select,
         cards: character.cards || [],
       };

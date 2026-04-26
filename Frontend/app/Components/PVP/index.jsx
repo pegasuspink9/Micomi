@@ -33,7 +33,7 @@ export default function PvpLobbyPage() {
     preview,
     status: pvpStatus,
     loadingPreview,
-    settingTopic,
+    settingTopic, // This will be true while preparing
     startingMatch,
     findingMatch,
     matchedMatchId,
@@ -64,6 +64,7 @@ export default function PvpLobbyPage() {
 
   const primaryButtonLabel = useMemo(() => {
     if (findingMatch) return 'Matching';
+    // This will show "Preparing..." while waiting for the topic transition
     if (startingMatch || settingTopic) return 'Preparing...';
     if (hasResumableMatch) return 'Continue';
     if (currentTopic) return currentTopic;
@@ -121,15 +122,17 @@ export default function PvpLobbyPage() {
     }, [clearMatchReadyState, clearPvpError, loadPreview])
   );
 
+  // Ensure the carousel index syncs with the backend's selected topic on load
   useEffect(() => {
     if (!pvpTopics.length) {
       setCurrentTopicIndex(0);
       return;
     }
 
-    if (selectedPvpTopic) {
+    // Only sync if we aren't currently trying to change the topic ourself
+    if (selectedPvpTopic && !settingTopic) {
       const selectedIndex = pvpTopics.findIndex((topic) => topic === selectedPvpTopic);
-      if (selectedIndex >= 0) {
+      if (selectedIndex >= 0 && selectedIndex !== currentTopicIndex) {
         setCurrentTopicIndex(selectedIndex);
         return;
       }
@@ -138,7 +141,8 @@ export default function PvpLobbyPage() {
     if (currentTopicIndex >= pvpTopics.length) {
       setCurrentTopicIndex(0);
     }
-  }, [currentTopicIndex, pvpTopics, selectedPvpTopic]);
+    // Added currentTopicIndex to dependency array to ensure sync
+  }, [currentTopicIndex, pvpTopics, selectedPvpTopic, settingTopic]);
 
   useEffect(() => {
     if (!matchedMatchId) return;
@@ -165,9 +169,12 @@ export default function PvpLobbyPage() {
 
   // --- Event Handlers ---
 
+  // --------- THE FIX IS HERE ---------
   const changeTopic = useCallback(async (direction) => {
+      // Prevent double actions if already busy
       if (!pvpTopics.length || loadingPreview || settingTopic || startingMatch || findingMatch) return;
 
+      // 1. Calculate what the next index *will* be
       let nextIndex;
       if(direction === 'prev') {
          nextIndex = currentTopicIndex > 0 ? currentTopicIndex - 1 : pvpTopics.length - 1;
@@ -175,17 +182,25 @@ export default function PvpLobbyPage() {
          nextIndex = currentTopicIndex < pvpTopics.length - 1 ? currentTopicIndex + 1 : 0;
       }
 
-      setCurrentTopicIndex(nextIndex);
-
       const topic = pvpTopics[nextIndex];
       if (!topic) return;
 
+      // 2. Wait for backend preparation BEFORE updating UI state
       try {
+        // During this await, 'settingTopic' becomes true.
+        // The UI button will likely say "Preparing..." and arrows will be disabled.
         await setMatchTopic(topic);
+
+        // 3. Only update index upon success. This triggers the visual animation.
+        setCurrentTopicIndex(nextIndex);
+
       } catch (topicError) {
         console.error('Failed to set PvP topic:', topicError);
+        // Do not update setCurrentTopicIndex if it failed.
+        // The user stays on the current topic card.
       }
   }, [currentTopicIndex, findingMatch, loadingPreview, pvpTopics, setMatchTopic, settingTopic, startingMatch]);
+  // -----------------------------------
 
 
   const handlePreviousTopic = () => changeTopic('prev');
@@ -205,6 +220,9 @@ export default function PvpLobbyPage() {
   }, [cancelMatchmaking, clearMatchReadyState, findingMatch, router]);
 
   const handleStartPvpMatch = useCallback(async () => {
+    // Prevent starting if we are mid-transition
+    if (settingTopic) return;
+
     try {
       const latestPreview = await loadPreview();
       const latestStatus = latestPreview?.status || pvpStatus || null;
@@ -228,7 +246,7 @@ export default function PvpLobbyPage() {
     } catch (startError) {
       console.error('Failed to start PvP matchmaking:', startError);
     }
-  }, [loadPreview, navigateToPvpMatch, pvpStatus, selectedPvpTopic, startMatchmaking]);
+  }, [loadPreview, navigateToPvpMatch, pvpStatus, selectedPvpTopic, startMatchmaking, settingTopic]);
 
   const handleCancelPvpSearch = useCallback(async () => {
     try {

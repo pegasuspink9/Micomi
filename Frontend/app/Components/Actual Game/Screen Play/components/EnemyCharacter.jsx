@@ -672,6 +672,10 @@ const EnemyCharacter = ({
 
   const isFront = useMemo(() => currentState === 'attack' || isAttacking, [currentState, isAttacking]);
 
+  const shouldApplyHurtTint = useMemo(() => {
+      return characterAnimations.character_hurt != null;
+    }, [characterAnimations.character_hurt]);
+
   const renderReactionText = (text) => {
     if (!text) return null;
 
@@ -779,7 +783,7 @@ const EnemyCharacter = ({
             </Animated.View>
           )}
 
-          {currentAnimationUrl && currentState === 'hurt' && (
+          {currentAnimationUrl && currentState === 'hurt' && shouldApplyHurtTint && (
             <Animated.View style={[StyleSheet.absoluteFill, redFlashStyle, { pointerEvents: 'none' }]}>
               <Image
                 source={{ uri: currentAnimationUrl }}

@@ -687,6 +687,10 @@ const Character = ({
 
   const showRangeAttack = currentState === 'attack' && animationConfig.isRange && animationConfig.rangeUrl;
 
+  const shouldApplyHurtTint = useMemo(() => {
+    return characterAnimations.character_hurt != null;
+  }, [characterAnimations.character_hurt]);
+
    const renderReactionText = (text) => {
     if (!text) return null;
 
@@ -777,7 +781,7 @@ const Character = ({
             <View style={[styles.spriteImage, { backgroundColor: 'transparent' }]} />
           )}
           
-          {currentAnimationUrl && currentState === 'hurt' && (
+          {currentAnimationUrl && currentState === 'hurt' && shouldApplyHurtTint && (
             <Animated.View style={[StyleSheet.absoluteFill, redFlashStyle, { pointerEvents: 'none' }]}>
               <Image 
                 source={{ uri: currentAnimationUrl }} 
