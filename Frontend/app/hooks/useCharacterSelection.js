@@ -74,9 +74,19 @@ export const useCharacterSelection = () => {
         throw new Error('Character already purchased');
       }
 
-      console.log(`💰 Purchasing character: ${hero.character_name} (Character Shop ID: ${hero.characterShopId})`);
+      const characterShopId =
+        hero.characterShopId ??
+        hero.character_shop_id ??
+        hero.character_shopId ??
+        hero.shop_character_id;
+
+      if (!characterShopId) {
+        throw new Error('Character Shop ID is missing for this hero');
+      }
+
+      console.log(`💰 Purchasing character: ${hero.character_name} (Character Shop ID: ${characterShopId})`);
       
-      const response = await characterService.purchaseCharacter(hero.characterShopId);
+      const response = await characterService.purchaseCharacter(characterShopId);
       
       console.log(`✅ Purchase successful:`, response);
       

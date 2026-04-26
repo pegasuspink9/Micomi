@@ -244,7 +244,67 @@ export default function CharacterProfile() {
         </>
       )}
 
-      {/* ... [Modals and Loading] ... */}
+      <Modal
+        visible={showBuyModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowBuyModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Buy Character</Text>
+            <Text style={styles.modalText}>
+              Buy {currentHero?.character_name} for {currentHero?.character_price} coins?
+            </Text>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowBuyModal(false)}
+                disabled={purchasing}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.confirmButton}
+                onPress={handlePurchase}
+                disabled={purchasing}
+              >
+                {purchasing ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <>
+                    <Image source={{ uri: getCachedCoinIcon() }} style={styles.modalCoinIcon} />
+                    <Text style={styles.confirmButtonText}>Confirm</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={errorModal.visible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setErrorModal({ visible: false, message: '', title: 'Purchase Failed' })}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>{errorModal.title}</Text>
+            <Text style={styles.modalText}>{errorModal.message}</Text>
+            <TouchableOpacity
+              style={styles.modalSingleButton}
+              onPress={() => setErrorModal({ visible: false, message: '', title: 'Purchase Failed' })}
+            >
+              <Text style={styles.cancelButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <MainLoading visible={loading || !currentHero} />
     </View>
   );

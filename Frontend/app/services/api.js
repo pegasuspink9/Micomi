@@ -1,6 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const POSSIBLE_BACKEND_URLS = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://10.0.2.2:3000',
   'http://192.168.100.207:3000'
 ];
 
