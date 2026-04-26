@@ -15,7 +15,7 @@ export const pvpMethods = {
 
     // PVP background video
     addAsset(
-      'https://micomi-assets.me/Pvp%20Assets/Landing%20Image/FinalBackground.mp4',
+      'https://micomi-assets.me/Pvp%20Assets/Landing%20Image/FinalBackground%20(1).mp4',
       'pvp_background_video',
       'video',
       'ui_videos'

@@ -107,6 +107,7 @@ export default function GamePlay() {
     downloadProgress,
     individualAnimationProgress,
     canProceed,
+    reviewGuide = null,
     handleProceed,
     autoProceedCountdown = null,
     challengeStallCountdown = null,
@@ -662,11 +663,18 @@ export default function GamePlay() {
       const enemyName = fightResult?.enemy?.enemy_name || 'Enemy';
 
       setCompletionRewards({
+        ...(submissionResult?.completionRewards || {}),
         feedbackMessage: submissionResult?.completionRewards?.feedbackMessage || `${characterName} was defeated!`,
         coinsEarned: submissionResult?.completionRewards?.coinsEarned || 0,
-        currentTotalPoints: submissionResult?.completionRewards?.totalPointsEarned || 0,
-        currentExpPoints: submissionResult?.completionRewards?.totalExpPointsEarned || 0,
+        currentTotalPoints:
+          submissionResult?.completionRewards?.currentTotalPoints ||
+          submissionResult?.completionRewards?.totalPointsEarned || 0,
+        currentExpPoints:
+          submissionResult?.completionRewards?.currentExpPoints ||
+          submissionResult?.completionRewards?.totalExpPointsEarned || 0,
         stars: submissionResult?.completionRewards?.stars || 0,
+        rankProgress: submissionResult?.completionRewards?.rankProgress || null,
+        isVictory: false,
       });
 
 
@@ -721,11 +729,18 @@ export default function GamePlay() {
       hasTriggeredLevelCompletion.current = true;
 
       setCompletionRewards({
+        ...(submissionResult?.completionRewards || {}),
         feedbackMessage: submissionResult?.completionRewards?.feedbackMessage || 'Congratulations!',
         coinsEarned: submissionResult?.completionRewards?.coinsEarned || 0,
-        currentTotalPoints: submissionResult?.completionRewards?.totalPointsEarned || 0,
-        currentExpPoints: submissionResult?.completionRewards?.totalExpPointsEarned || 0,
+        currentTotalPoints:
+          submissionResult?.completionRewards?.currentTotalPoints ||
+          submissionResult?.completionRewards?.totalPointsEarned || 0,
+        currentExpPoints:
+          submissionResult?.completionRewards?.currentExpPoints ||
+          submissionResult?.completionRewards?.totalExpPointsEarned || 0,
         stars: submissionResult?.completionRewards?.stars || 0,
+        rankProgress: submissionResult?.completionRewards?.rankProgress || null,
+        isVictory: true,
       });
 
       setShowLevelCompletion(true);
@@ -734,6 +749,42 @@ export default function GamePlay() {
     
     }
   }, [gameState?.submissionResult?.fightResult, showLevelCompletion, isLoadingNextLevel, waitingForAnimation, canProceed, isRetrying]);
+
+  useEffect(() => {
+    if (!isPvpMode) {
+      return;
+    }
+
+    const pvpRewards = gameState?.submissionResult?.completionRewards;
+    if (!pvpRewards) {
+      return;
+    }
+
+    const fightStatus = gameState?.submissionResult?.fightResult?.status;
+    setCompletionRewards({
+      ...(pvpRewards || {}),
+      feedbackMessage: pvpRewards?.feedbackMessage || 'Congratulations!',
+      coinsEarned: pvpRewards?.coinsEarned || 0,
+      currentTotalPoints:
+        pvpRewards?.currentTotalPoints ||
+        pvpRewards?.totalPointsEarned ||
+        0,
+      currentExpPoints:
+        pvpRewards?.currentExpPoints ||
+        pvpRewards?.totalExpPointsEarned ||
+        0,
+      stars: pvpRewards?.stars || 0,
+      rankProgress: pvpRewards?.rankProgress || null,
+      isVictory:
+        typeof pvpRewards?.isVictory === 'boolean'
+          ? pvpRewards.isVictory
+          : fightStatus === 'won',
+    });
+  }, [
+    isPvpMode,
+    gameState?.submissionResult?.completionRewards,
+    gameState?.submissionResult?.fightResult?.status,
+  ]);
 
    useEffect(() => {
     if (runButtonClicked && !showRunButton && showLevelCompletion) {
@@ -1107,6 +1158,7 @@ export default function GamePlay() {
                 isAnswerCorrect={resolvedSubmissionIsCorrect}
                 canProceed={canProceed}
                 submissionResult={gameState?.submissionResult}
+                reviewGuide={reviewGuide}
             />
 
             <View 
@@ -1181,7 +1233,7 @@ export default function GamePlay() {
 
 
           <GameOverModal
-            visible={showGameOverModal}
+            visible={!isPvpMode && showGameOverModal}
             onRetry={handleRetry}
             onHome={handleHome}
            characterName={gameState?.submissionResult?.fightResult?.character?.character_name || 'Character'}
@@ -1193,7 +1245,11 @@ export default function GamePlay() {
           />
             
           <LevelCompletionModal
-              visible={showLevelCompletionModal && runButtonClicked && !showRunButton}
+              visible={
+                isPvpMode
+                  ? (showGameOverModal || (showLevelCompletionModal && runButtonClicked && !showRunButton))
+                  : (showLevelCompletionModal && runButtonClicked && !showRunButton)
+              }
               onRetry={handleRetry}
               onHome={handleHome}
               onNextLevel={handleNextLevel}
@@ -1202,6 +1258,7 @@ export default function GamePlay() {
               isLoading={isLoadingNextLevel}
               victoryAudioUrl={gameState?.submissionResult?.is_victory_audio}
               victoryImageUrl={gameState?.submissionResult?.is_victory_image} 
+              isPvpMode={isPvpMode}
           />
         
           </View>

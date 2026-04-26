@@ -102,6 +102,28 @@ export const gameService = {
     }
   },
 
+  getChallengeGuide: async (levelId, challengeId) => {
+    try {
+      if (!levelId || !challengeId) {
+        throw new Error('Missing required parameters: levelId or challengeId');
+      }
+
+      const response = await apiService.get(`/game/submit-challenge/${levelId}/${challengeId}/guide`);
+
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to fetch challenge guide');
+      }
+
+      return {
+        success: true,
+        guide: response.data?.guide || '',
+      };
+    } catch (error) {
+      console.error('❌ Failed to fetch challenge guide:', error);
+      throw error;
+    }
+  },
+
   retryLevel: async (levelId, onAnimationProgress = null, onDownloadProgress = null) => {
     return gameService.enterLevel(levelId, onAnimationProgress, onDownloadProgress);
   },
@@ -143,6 +165,8 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         currentLesson: data.currentLesson || responseData.currentLesson || null,
       
       enemy: {
+        player_id: data.enemy?.player_id || responseData.enemy?.player_id || null,
+        player_name: data.enemy?.player_name || responseData.enemy?.player_name || null,
         enemy_id: data.enemy?.enemy_id || responseData.enemy?.enemy_id || null,
         enemy_name: data.enemy?.enemy_name || responseData.enemy?.enemy_name || null,
         enemy_health: data.enemy?.enemy_health || responseData.enemy?.enemy_health || null,
@@ -167,6 +191,8 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
       },
       
       selectedCharacter: {
+        player_id: data.character?.player_id || responseData.character?.player_id || null,
+        player_name: data.character?.player_name || responseData.character?.player_name || null,
         character_id: data.character?.character_id || responseData.character?.character_id || null,
         character_name: data.character?.character_name || responseData.character?.character_name || null,
         current_health: data.character?.character_health || responseData.character?.character_health || null,
@@ -381,21 +407,48 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         } : null,
 
 
-        completionRewards: responseData.completionRewards ? {
-          feedbackMessage: responseData.completionRewards.feedbackMessage || null,
-          coinsEarned: responseData.completionRewards.coinsEarned || responseData.levelStatus?.coinsEarned || 0,
-          currentTotalPoints: responseData.completionRewards.totalPointsEarned || 
-                            responseData.levelStatus?.totalPointsEarned || 0,
-          currentExpPoints: responseData.completionRewards.totalExpPointsEarned || 
-                          responseData.levelStatus?.totalExpPointsEarned || 0,
-          stars: responseData.completionRewards.stars || 0,
-
-        } : (responseData.levelStatus && responseData.levelStatus.isCompleted ? {
+        completionRewards: (data.completionRewards || responseData.completionRewards) ? {
+          ...(data.completionRewards || responseData.completionRewards),
+          feedbackMessage:
+            data.completionRewards?.feedbackMessage ||
+            responseData.completionRewards?.feedbackMessage ||
+            null,
+          coinsEarned:
+            data.completionRewards?.coinsEarned ||
+            responseData.completionRewards?.coinsEarned ||
+            data.levelStatus?.coinsEarned ||
+            responseData.levelStatus?.coinsEarned ||
+            0,
+          currentTotalPoints:
+            data.completionRewards?.currentTotalPoints ||
+            data.completionRewards?.totalPointsEarned ||
+            responseData.completionRewards?.currentTotalPoints ||
+            responseData.completionRewards?.totalPointsEarned ||
+            data.levelStatus?.totalPointsEarned ||
+            responseData.levelStatus?.totalPointsEarned ||
+            0,
+          currentExpPoints:
+            data.completionRewards?.currentExpPoints ||
+            data.completionRewards?.totalExpPointsEarned ||
+            responseData.completionRewards?.currentExpPoints ||
+            responseData.completionRewards?.totalExpPointsEarned ||
+            data.levelStatus?.totalExpPointsEarned ||
+            responseData.levelStatus?.totalExpPointsEarned ||
+            0,
+          stars:
+            data.completionRewards?.stars ||
+            responseData.completionRewards?.stars ||
+            0,
+          rankProgress:
+            data.completionRewards?.rankProgress ||
+            responseData.completionRewards?.rankProgress ||
+            null,
+        } : ((data.levelStatus && data.levelStatus.isCompleted) || (responseData.levelStatus && responseData.levelStatus.isCompleted) ? {
           feedbackMessage: "Level completed successfully!",
-          coinsEarned: responseData.levelStatus.coinsEarned || 0,
-          currentTotalPoints: responseData.levelStatus.totalPointsEarned || 0,
-          currentExpPoints: responseData.levelStatus.totalExpPointsEarned || 0,
-          stars: responseData.levelStatus.stars || 0,
+          coinsEarned: data.levelStatus?.coinsEarned || responseData.levelStatus?.coinsEarned || 0,
+          currentTotalPoints: data.levelStatus?.totalPointsEarned || responseData.levelStatus?.totalPointsEarned || 0,
+          currentExpPoints: data.levelStatus?.totalExpPointsEarned || responseData.levelStatus?.totalExpPointsEarned || 0,
+          stars: data.levelStatus?.stars || responseData.levelStatus?.stars || 0,
         } : null),
 
         nextLevel: responseData.nextLevel ? {

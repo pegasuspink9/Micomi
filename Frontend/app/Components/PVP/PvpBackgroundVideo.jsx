@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
 
-const PVP_BG_VIDEO = 'https://micomi-assets.me/Pvp%20Assets/Landing%20Image/FinalBackground.mp4';
+const PVP_BG_VIDEO = 'https://micomi-assets.me/Pvp%20Assets/Landing%20Image/FinalBackground%20(1).mp4';
 
 const PvpBackgroundVideo = () => {
   const getCachedVideoSource = useCallback(() => {
@@ -19,7 +19,7 @@ const PvpBackgroundVideo = () => {
         style={styles.videoBackground}
         shouldPlay
         isLooping={true}
-        resizeMode={ResizeMode.STRETCH}
+        resizeMode={ResizeMode.COVER}
         isMuted
         useNativeControls={false}
       />

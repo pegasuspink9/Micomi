@@ -188,9 +188,11 @@ const mergeAuthoritativeCombatState = (displayState, combatState, rawData = {}) 
       ...(combatState.selectedCharacter || {}),
       player_id:
         pick(fightCharacter.player_id, combatState?.selectedCharacter?.player_id) ??
+        rawData?.character?.player_id ??
         displayState?.selectedCharacter?.player_id,
       player_name:
         pick(fightCharacter.player_name, combatState?.selectedCharacter?.player_name) ??
+        rawData?.character?.player_name ??
         displayState?.selectedCharacter?.player_name,
       character_id:
         pick(fightCharacter.character_id, combatState?.selectedCharacter?.character_id) ??
@@ -263,9 +265,12 @@ const mergeAuthoritativeCombatState = (displayState, combatState, rawData = {}) 
       ...(displayState.enemy || {}),
       ...(combatState.enemy || {}),
       player_id:
-        pick(fightEnemy.player_id, combatState?.enemy?.player_id) ?? displayState?.enemy?.player_id,
+        pick(fightEnemy.player_id, combatState?.enemy?.player_id) ??
+        rawData?.enemy?.player_id ??
+        displayState?.enemy?.player_id,
       player_name:
         pick(fightEnemy.player_name, combatState?.enemy?.player_name) ??
+        rawData?.enemy?.player_name ??
         displayState?.enemy?.player_name,
       enemy_id:
         pick(fightEnemy.enemy_id, combatState?.enemy?.enemy_id) ?? displayState?.enemy?.enemy_id,
@@ -419,6 +424,24 @@ export const pvpService = {
     }
 
     return normalizeAuthoritativeMatchStatePayload(response);
+  },
+
+  getDailyMatchHistory: async () => {
+    const response = await apiService.get('/game/pvp/daily/match/history');
+    if (!response?.success) {
+      throw new Error(response?.message || 'Failed to load match history');
+    }
+
+    return Array.isArray(response?.data) ? response.data : [];
+  },
+
+  getRankTiers: async () => {
+    const response = await apiService.get('/game/pvp/rank-tiers');
+    if (!response?.success) {
+      throw new Error(response?.message || 'Failed to load rank tiers');
+    }
+
+    return Array.isArray(response?.data) ? response.data : [];
   },
 
   submitDailyMatchAnswer: async (matchId, challengeId, selectedAnswers) => {

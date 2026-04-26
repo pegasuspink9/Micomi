@@ -18,7 +18,8 @@ const GameQuestions = ({
   selectedBlankIndex,
   onBlankPress,
   canProceed,
-  submissionResult
+  submissionResult,
+  reviewGuide = null,
 }) => {
   const scrollViewRef = useRef(null);
   const blankRefs = useRef({});
@@ -320,6 +321,7 @@ const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
               activeTab={activeTab}
               isCorrect={isAnswerCorrect} 
               submissionResult={submissionResult}
+              reviewGuide={reviewGuide}
 
             />
         ) : (currentQuestion.challenge_type === 'fill in the blank' || 
@@ -341,6 +343,7 @@ const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
             activeTab={activeTab}
             isCorrect={isAnswerCorrect}
             submissionResult={submissionResult}
+            reviewGuide={reviewGuide}
           />
         ) : (
           <DocumentQuestion 
@@ -366,7 +369,8 @@ export default React.memo(GameQuestions, (prev, next) => {
     prev.canProceed === next.canProceed &&
     prev.selectedBlankIndex === next.selectedBlankIndex &&
     prev.selectedAnswers === next.selectedAnswers && // Reference equality for Redux/State updates
-    prev.submissionResult === next.submissionResult
+    prev.submissionResult === next.submissionResult &&
+    prev.reviewGuide === next.reviewGuide
   );
 });
 

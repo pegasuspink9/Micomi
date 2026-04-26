@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { 
   View, 
   Text, 
@@ -88,10 +88,32 @@ const LevelCompletionModal = ({
   nextLevel,
   isLoading, 
   victoryAudioUrl,
-  victoryImageUrl
+  victoryImageUrl,
+  isPvpMode = false,
 }) => {
   //  1. Placeholder Data for Stars
   const stars = completionRewards?.stars || 0; 
+  const rankProgress = completionRewards?.rankProgress || null;
+  const usePvpRankProgress = Boolean(isPvpMode && rankProgress);
+
+  const requiredRankPoints = Math.max(1, Number(rankProgress?.rank_progress_required || 0));
+  const beforeRankPoints = Math.max(0, Number(rankProgress?.before_points || 0));
+  const currentRankPoints = Math.max(0, Number(rankProgress?.player_rank_points || 0));
+
+  const rankBeforePercent = Math.min(100, Math.max(0, (beforeRankPoints / requiredRankPoints) * 100));
+  const rankCurrentPercent = Math.min(100, Math.max(0, (currentRankPoints / requiredRankPoints) * 100));
+
+  const playerRankImage = useMemo(() => {
+    const sourceUrl = rankProgress?.player_rank_image;
+    if (!sourceUrl) return null;
+    return universalAssetPreloader.getCachedAssetPath(sourceUrl);
+  }, [rankProgress?.player_rank_image]);
+
+  const nextRankImage = useMemo(() => {
+    const sourceUrl = rankProgress?.next_rank_image;
+    if (!sourceUrl) return null;
+    return universalAssetPreloader.getCachedAssetPath(sourceUrl);
+  }, [rankProgress?.next_rank_image]);
 
   const [isAnimating, setIsAnimating] = useState(false);
   const [imageReady, setImageReady] = useState(false);
@@ -253,11 +275,17 @@ const LevelCompletionModal = ({
     star2Scale.value = 1;
     star3Scale.value = 1;
 
-    // Determine target percentage based on stars
+    // Determine target percentage based on mode
     let targetPercentage = 0;
-    if (stars === 1) targetPercentage = 30;
-    else if (stars === 2) targetPercentage = 70;
-    else if (stars === 3) targetPercentage = 100;
+    if (usePvpRankProgress) {
+      targetPercentage = rankCurrentPercent;
+    } else if (stars === 1) {
+      targetPercentage = 30;
+    } else if (stars === 2) {
+      targetPercentage = 70;
+    } else if (stars === 3) {
+      targetPercentage = 100;
+    }
 
     // 0. Background
     backgroundOpacity.value = withTiming(1, { duration: 300 });
@@ -269,20 +297,25 @@ const LevelCompletionModal = ({
     starsOpacity.value = withDelay(400, withTiming(1, { duration: 500 }));
     
     // Fill the bar
+    if (usePvpRankProgress) {
+      progressValue.value = rankBeforePercent;
+    }
     progressValue.value = withDelay(500, withTiming(targetPercentage, {
       duration: 1500,
       easing: Easing.out(Easing.cubic)
     }));
 
     // Trigger star pops based on timing relative to fill duration
-    if (stars >= 1) {
-      setTimeout(() => runOnJS(popStar)(star1Scale), 900); // ~30% filled
-    }
-    if (stars >= 2) {
-      setTimeout(() => runOnJS(popStar)(star2Scale), 1300); // ~70% filled
-    }
-    if (stars >= 3) {
-      setTimeout(() => runOnJS(popStar)(star3Scale), 1700); // ~100% filled
+    if (!usePvpRankProgress) {
+      if (stars >= 1) {
+        setTimeout(() => runOnJS(popStar)(star1Scale), 900); // ~30% filled
+      }
+      if (stars >= 2) {
+        setTimeout(() => runOnJS(popStar)(star2Scale), 1300); // ~70% filled
+      }
+      if (stars >= 3) {
+        setTimeout(() => runOnJS(popStar)(star3Scale), 1700); // ~100% filled
+      }
     }
 
     // 3. Text (Delayed further)
@@ -353,9 +386,19 @@ const LevelCompletionModal = ({
   const animatedStar2Style = useAnimatedStyle(() => ({ transform: [{ scale: star2Scale.value }] }));
   const animatedStar3Style = useAnimatedStyle(() => ({ transform: [{ scale: star3Scale.value }] }));
 
+  const rewardCoinsValue = Number(completionRewards?.coinsEarned ?? 0);
+  const rewardPointsValue = Number(
+    completionRewards?.currentTotalPoints ?? completionRewards?.totalPointsEarned ?? 0
+  );
+  const rewardExpValue = Number(
+    completionRewards?.currentExpPoints ?? completionRewards?.totalExpPointsEarned ?? 0
+  );
+
   if (!visible) return null;
 
-  const levelClearText = 'Level Cleared!';
+  const levelClearText = isPvpMode
+    ? (completionRewards?.isVictory === false ? 'You Lost!' : 'You Won!')
+    : 'Level Cleared!';
   const renderCurvedText = () => {
     return (
       <View style={styles.curvedTextContainer}>
@@ -445,40 +488,90 @@ const LevelCompletionModal = ({
             </View>
           </Reanimated.View>
 
-          {/*  2. PROGRESS BAR (Stars) - MOVED HERE (After Sprite) */}
+          {/*  2. PROGRESS BAR - PvE stars / PvP rank */}
           {!isLoading && (
-            <Reanimated.View style={[styles.progressBarContainer, starContainerStyle]}>
-              {/* Background Track with 3D Border Effect */}
-              <View style={styles.progressTrackBorder}>
-                <View style={styles.progressTrack}>
-                  {/* Animated Fill */}
-                  <Reanimated.View style={[styles.progressFill, progressBarStyle]}>
-                    <LinearGradient
-                      colors={['#FFD700', '#FFA500']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 0, y: 1 }}
-                      style={StyleSheet.absoluteFill}
-                    />
-                    {/* Diagonal Lines Effect */}
-                    <StripedFill />
-                  </Reanimated.View>
-                  
-                  {/* Star Markers (Animated Pop) */}
-                  {/* 1st Star (30%) */}
-                    <Reanimated.View style={[styles.starMarker, { left: '30%' }, animatedStar1Style]}>
-                    <Image source={require('../RoadMap/stars.png')} style={styles.starIcon} contentFit="contain" />
-                  </Reanimated.View>
-                  {/* 2nd Star (70%) */}
-                  <Reanimated.View style={[styles.starMarker, { left: '70%' }, animatedStar2Style]}>
-                    <Image source={require('../RoadMap/stars.png')} style={styles.starIcon} contentFit="contain" />
-                  </Reanimated.View>
-                  {/* 3rd Star (100%) */}
-                  <Reanimated.View style={[styles.starMarker, { left: '98%' }, animatedStar3Style]}> 
-                    <Image source={require('../RoadMap/stars.png')} style={styles.starIcon} contentFit="contain" />
-                  </Reanimated.View>
+            usePvpRankProgress ? (
+              <Reanimated.View style={[styles.pvpRankProgressContainer, starContainerStyle]}>
+                <View style={styles.pvpRankTopRow}>
+                  <View style={styles.pvpRankEndpoint}>
+                    {playerRankImage ? (
+                      <Image source={{ uri: playerRankImage }} style={styles.pvpRankImage} contentFit="contain" />
+                    ) : (
+                      <View style={styles.pvpRankImagePlaceholder} />
+                    )}
+                    <View style={styles.pvpRankLabelGroup}>
+                      <Text style={styles.pvpRankNameText} numberOfLines={1}>
+                        {rankProgress?.player_rank_name || 'Current Rank'}
+                      </Text>
+                      <Text style={styles.pvpRankValueText} numberOfLines={1}>
+                        {currentRankPoints}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.pvpRankBarWrap}>
+                    <View style={styles.progressTrackBorder}>
+                      <View style={styles.progressTrack}>
+                        <Reanimated.View style={[styles.progressFill, progressBarStyle]}>
+                          <LinearGradient
+                            colors={['#4ad8ff', '#2f9dff']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={StyleSheet.absoluteFill}
+                          />
+                        </Reanimated.View>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.pvpRankEndpoint}>
+                    {nextRankImage ? (
+                      <Image source={{ uri: nextRankImage }} style={styles.pvpRankImage} contentFit="contain" />
+                    ) : (
+                      <View style={styles.pvpRankImagePlaceholder} />
+                    )}
+                    <View style={styles.pvpRankLabelGroup}>
+                      <Text style={styles.pvpRankNameText} numberOfLines={1}>
+                        {rankProgress?.next_rank_name || 'Next Rank'}
+                      </Text>
+                      <Text style={styles.pvpRankValueText} numberOfLines={1}>
+                        {requiredRankPoints}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-              </View>
-            </Reanimated.View>
+              </Reanimated.View>
+            ) : (
+              <Reanimated.View style={[styles.progressBarContainer, starContainerStyle]}>
+                {/* Background Track with 3D Border Effect */}
+                <View style={styles.progressTrackBorder}>
+                  <View style={styles.progressTrack}>
+                    {/* Animated Fill */}
+                    <Reanimated.View style={[styles.progressFill, progressBarStyle]}>
+                      <LinearGradient
+                        colors={['#FFD700', '#FFA500']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 0, y: 1 }}
+                        style={StyleSheet.absoluteFill}
+                      />
+                      {/* Diagonal Lines Effect */}
+                      <StripedFill />
+                    </Reanimated.View>
+
+                    {/* Star Markers (Animated Pop) */}
+                    <Reanimated.View style={[styles.starMarker, { left: '30%' }, animatedStar1Style]}>
+                      <Image source={require('../RoadMap/stars.png')} style={styles.starIcon} contentFit="contain" />
+                    </Reanimated.View>
+                    <Reanimated.View style={[styles.starMarker, { left: '70%' }, animatedStar2Style]}>
+                      <Image source={require('../RoadMap/stars.png')} style={styles.starIcon} contentFit="contain" />
+                    </Reanimated.View>
+                    <Reanimated.View style={[styles.starMarker, { left: '98%' }, animatedStar3Style]}>
+                      <Image source={require('../RoadMap/stars.png')} style={styles.starIcon} contentFit="contain" />
+                    </Reanimated.View>
+                  </View>
+                </View>
+              </Reanimated.View>
+            )
           )}
 
           {/* 3. Text & Feedback (Drops In) */}
@@ -507,7 +600,11 @@ const LevelCompletionModal = ({
                   style={styles.rewardIcon}
                   resizeMode="contain"
                 />
-                <NumberCounter value={completionRewards.coinsEarned} start={startCoinCount} duration={1500} />
+                {isPvpMode ? (
+                  <Text style={styles.rewardValue}>{rewardCoinsValue}</Text>
+                ) : (
+                  <NumberCounter value={rewardCoinsValue} start={startCoinCount} duration={1500} />
+                )}
               </Reanimated.View>
 
               {/* Points */}
@@ -517,7 +614,11 @@ const LevelCompletionModal = ({
                   style={styles.rewardIcon}
                   resizeMode="contain"
                 />
-                <NumberCounter value={completionRewards.currentTotalPoints} start={startPointCount} duration={1500} />
+                {isPvpMode ? (
+                  <Text style={styles.rewardValue}>{rewardPointsValue}</Text>
+                ) : (
+                  <NumberCounter value={rewardPointsValue} start={startPointCount} duration={1500} />
+                )}
               </Reanimated.View>
 
               {/* EXP */}
@@ -527,7 +628,11 @@ const LevelCompletionModal = ({
                   style={styles.rewardIcon}
                   resizeMode="contain"
                 />
-                <NumberCounter value={completionRewards.currentExpPoints} start={startExpCount} duration={1500} />
+                {isPvpMode ? (
+                  <Text style={styles.rewardValue}>{rewardExpValue}</Text>
+                ) : (
+                  <NumberCounter value={rewardExpValue} start={startExpCount} duration={1500} />
+                )}
               </Reanimated.View>
             </View>
           )}
@@ -789,10 +894,75 @@ const styles = StyleSheet.create({
   
   //  UPDATED: Cartoonish 3D Progress Bar Styles
   progressBarContainer: {
-    width: '80%',
+    width: '60%',
     height: scale(50), 
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  pvpRankProgressContainer: {
+    width: '78%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: scale(4),
+  },
+  pvpRankTopRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: scale(8),
+  },
+  pvpRankBarWrap: {
+    flex: 1,
+  },
+  pvpRankEndpoint: {
+    width: scale(14),
+    zIndex: 10, 
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pvpRankImage: {
+    width: scale(90),
+    height: scale(90),
+  },
+  pvpRankImagePlaceholder: {
+    width: scale(40),
+    height: scale(40),
+    borderRadius: scale(20),
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  pvpRankBottomRow: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: scale(4),
+    paddingHorizontal: scale(4),
+  },
+  pvpRankLabelGroup: {
+    position: 'absolute',
+    top: scale(72),
+    alignItems: 'center',
+    width: scale(100),
+    zIndex: 11,
+  },
+  pvpRankLabelGroupRight: {
+    position: 'absolute',
+    top: scale(72),
+    alignItems: 'center',
+    width: scale(100),
+    zIndex: 11,
+  },
+  pvpRankNameText: {
+    color: '#e6f8ff',
+    fontSize: scale(10),
+    fontFamily: 'Grobold',
+    textAlign: 'center',
+  },
+  pvpRankValueText: {
+    color: '#ffffff',
+    fontSize: scale(10),
+    fontFamily: 'DynaPuff',
+    textAlign: 'center',
   },
   // The outer 3D border container
   progressTrackBorder: {
@@ -845,7 +1015,6 @@ const styles = StyleSheet.create({
     height: scale(34),
     marginLeft: scale(-17), 
     zIndex: 10,
-    // Drop shadow for stars to make them pop
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.5,

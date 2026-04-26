@@ -17,6 +17,15 @@ extractPlayerProfileAssets(playerData) {
       });
     }
 
+    if (playerData.playerRankImage) {
+      assets.push({
+        url: playerData.playerRankImage,
+        name: 'player_rank_image',
+        type: 'image',
+        category: 'player_profile'
+      });
+    }
+
     if (playerData.background) {
       assets.push({
         url: playerData.background,
@@ -148,6 +157,10 @@ extractProfileAssetsForMapReuse(profileData) {
     // Selected badge landscape image
     if (profileData.selectedBadge?.landscape_image) {
       addAsset(profileData.selectedBadge.landscape_image, 'selected_badge_landscape', 'image', 'game_images');
+    }
+
+    if (profileData.playerRankImage) {
+      addAsset(profileData.playerRankImage, 'player_rank_image', 'image', 'game_images');
     }
 
     // Potion icons (same URLs as Map API)
@@ -531,6 +544,10 @@ transformProfileDataWithMapCache(profileData) {
         ...transformedData.selectedBadge,
         landscape_image: this.getCachedAssetPath(transformedData.selectedBadge.landscape_image)
       };
+    }
+
+    if (transformedData.playerRankImage) {
+      transformedData.playerRankImage = this.getCachedAssetPath(transformedData.playerRankImage);
     }
 
     // Transform badge icons and landscape images

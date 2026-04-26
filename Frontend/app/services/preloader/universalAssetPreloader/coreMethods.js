@@ -128,6 +128,30 @@ getLocalFilePath(url, category = 'general') {
   return `${this.cacheDirectory}${category}/${finalFileName}`;
   },
 
+normalizeLocalUri(path = '') {
+  if (!path || typeof path !== 'string') return path;
+  if (path.startsWith('file://')) return path;
+  if (path.startsWith('/')) return `file://${path}`;
+  return path;
+  },
+
+getAcceptHeader(url = '', category = 'general') {
+  const lowerCategory = (category || '').toLowerCase();
+  if (this.isAudioFile(url) || lowerCategory.includes('audio') || lowerCategory.includes('sound')) {
+    return 'audio/*,*/*;q=0.9';
+  }
+
+  if (this.isVideoFile(url) || lowerCategory.includes('video')) {
+    return 'video/*,*/*;q=0.9';
+  }
+
+  if (this.isImageFile(url) || lowerCategory.includes('image') || lowerCategory.includes('visual')) {
+    return 'image/*,*/*;q=0.9';
+  }
+
+  return '*/*';
+  },
+
 getMinimumValidFileSize(url = '') {
   const lowerUrl = (url || '').toLowerCase().split('?')[0];
 
@@ -152,7 +176,8 @@ getMinimumValidFileSize(url = '') {
 
 async validateCachedFile(localPath, url = '', expectedBytes = 0) {
   try {
-    const fileInfo = await FileSystem.getInfoAsync(localPath);
+    const normalizedPath = this.normalizeLocalUri(localPath);
+    const fileInfo = await FileSystem.getInfoAsync(normalizedPath);
 
     if (!fileInfo.exists || !fileInfo.size || fileInfo.size <= 0) {
       return { valid: false, reason: 'missing_or_empty', size: 0 };
@@ -160,7 +185,7 @@ async validateCachedFile(localPath, url = '', expectedBytes = 0) {
 
     const minimumBytes = this.getMinimumValidFileSize(url);
     if (fileInfo.size < minimumBytes) {
-      await FileSystem.deleteAsync(localPath, { idempotent: true });
+      await FileSystem.deleteAsync(normalizedPath, { idempotent: true });
       return {
         valid: false,
         reason: 'too_small',
@@ -174,7 +199,7 @@ async validateCachedFile(localPath, url = '', expectedBytes = 0) {
       // Allow a tiny margin for servers that report slightly different content-length values.
       const lowerBound = Math.floor(numericExpected * 0.98);
       if (fileInfo.size < lowerBound) {
-        await FileSystem.deleteAsync(localPath, { idempotent: true });
+        await FileSystem.deleteAsync(normalizedPath, { idempotent: true });
         return {
           valid: false,
           reason: 'incomplete_download',
@@ -198,9 +223,10 @@ async downloadSingleAsset(url, category = 'general', onProgress = null, retries 
 
     if (url.startsWith('file://') || url.startsWith('/data/')) {
       console.log(`📦 Asset is already a local file, skipping download: ${url.slice(-50)}`);
+      const normalizedLocalPath = this.normalizeLocalUri(url);
       return { 
         success: true, 
-        localPath: url.replace('file://', ''), 
+        localPath: normalizedLocalPath,
         cached: true, 
         url, 
         category 
@@ -243,7 +269,7 @@ async downloadSingleAsset(url, category = 'general', onProgress = null, retries 
         {
           headers: {
             'User-Agent': 'MicomoGame/1.0',
-            'Accept': 'image/*'
+            'Accept': this.getAcceptHeader(url, category)
           }
         },
         onProgress ? (downloadProgress) => {
@@ -256,7 +282,7 @@ async downloadSingleAsset(url, category = 'general', onProgress = null, retries 
       const downloadTime = Date.now() - startTime;
 
       if (result && result.uri) {
-        const downloadedLocalPath = result.uri.replace('file://', '');
+        const downloadedLocalPath = this.normalizeLocalUri(result.uri);
         const expectedBytes = Number(result.headers?.['content-length'] || result.headers?.['Content-Length'] || 0);
         const downloadedValidation = await this.validateCachedFile(downloadedLocalPath, url, expectedBytes);
 
@@ -424,7 +450,7 @@ getCachedAssetPathSync(url) {
     
     const assetInfo = this.downloadedAssets.get(url);
     if (assetInfo && assetInfo.localPath) {
-      return `file://${assetInfo.localPath}`;
+      return this.normalizeLocalUri(assetInfo.localPath);
     }
     return url;
   },
@@ -455,7 +481,7 @@ getCachedAssetPath(url) {
     }
 
     if (assetInfo && assetInfo.localPath) {
-      return `file://${assetInfo.localPath}`;
+      return this.normalizeLocalUri(assetInfo.localPath);
     }
     return url; // Fallback to original URL
   },

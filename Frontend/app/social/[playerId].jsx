@@ -16,6 +16,7 @@ import InventorySection from '../Components/Profile Components/InventorySection'
 import { playerService } from '../services/playerService';
 import { useSocialHook } from '../hooks/useSocialHook';
 import { useAuth } from '../hooks/useAuth';
+import { universalAssetPreloader } from '../services/preloader/universalAssetPreloader';
 
 
 const normalizeRelation = (relation) => {
@@ -69,6 +70,12 @@ export default function PublicPlayerProfileScreen() {
       setLoading(true);
       setError(null);
 
+      await Promise.all([
+        universalAssetPreloader.loadCachedAssets('game_images'),
+        universalAssetPreloader.loadCachedAssets('game_animations'),
+        universalAssetPreloader.loadCachedAssets('map_assets'),
+      ]);
+
       const apiData = await socialService.getPublicProfile(playerId);
       const transformTarget = { ...(apiData || {}) };
 
@@ -77,7 +84,18 @@ export default function PublicPlayerProfileScreen() {
       }
 
       const transformedData = playerService.transformPlayerData(transformTarget);
-      setPlayerData(transformedData);
+
+      const cacheStatus = await universalAssetPreloader.areProfileAssetsCachedFromMap(transformedData);
+      if (!cacheStatus.cached && cacheStatus.missing > 0) {
+        await universalAssetPreloader.downloadMissingProfileAssets(cacheStatus.missingAssets);
+      }
+
+      const dataWithCachedPaths =
+        typeof universalAssetPreloader.transformProfileDataWithMapCache === 'function'
+          ? universalAssetPreloader.transformProfileDataWithMapCache(transformedData)
+          : universalAssetPreloader.transformPlayerDataWithCache(transformedData);
+
+      setPlayerData(dataWithCachedPaths);
       setRelationStatus(normalizeRelation(apiData?.relation_status));
     } catch (err) {
       setError(err.message || 'Failed to load profile');
@@ -182,6 +200,7 @@ export default function PublicPlayerProfileScreen() {
             playerName={playerData.playerName}
             username={playerData.username}
             selectedBadge={playerData.selectedBadge}
+            playerRankImage={playerData.playerRankImage}
             playerLevel={playerData.playerLevel}
             expPoints={playerData.expPoints}
             maxLevelExp={playerData.maxLevelExp}

@@ -20,7 +20,8 @@ const CodeEditor = ({
   isCorrect = null,
   onTabChange,
   activeTab: externalActiveTab,
-  submissionResult
+  submissionResult,
+  reviewGuide = null,
 }) => {
   const [activeTab, setActiveTab] = useState('code');
   const [hasAnimated, setHasAnimated] = useState(false); 
@@ -89,7 +90,7 @@ const CodeEditor = ({
   const renderTabContent = useCallback(() => {
     switch (activeTab) {
       case 'guide':
-         return  <Guide currentQuestion={currentQuestion} />;
+         return <Guide currentQuestion={currentQuestion} guideOverride={reviewGuide} />;
 
       case 'code':
         return (
@@ -248,7 +249,7 @@ const CodeEditor = ({
         </View>
 
         <View style={styles.tabsContainer}>
-          {currentQuestion?.guide && submissionResult?.isCorrect === false && (
+          {Boolean(reviewGuide) && isCorrect === false && (
             <Pressable
               onPress={handleGuideTabPress}
               style={[
@@ -273,7 +274,7 @@ const CodeEditor = ({
             style={[
               styles.webTab,
               activeTab === 'code' && styles.webTabActive,
-              (!currentQuestion?.guide || submissionResult?.isCorrect !== false) && styles.webTabFirst,
+              (!reviewGuide || isCorrect !== false) && styles.webTabFirst,
               tabsDisabled && { opacity: 0.5 } 
             ]}
             disabled={tabsDisabled} 
