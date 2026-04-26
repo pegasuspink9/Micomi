@@ -1960,6 +1960,7 @@ const buildSubmitLikeResponse = async (
       `tone${toneIsCorrect ? "correct" : "wrong"}`,
       `status${match.status}`,
     ].join(":");
+
     const feedbackKey = buildGameplayFeedbackKey(
       match.match_id,
       playerId,
@@ -1977,6 +1978,7 @@ const buildSubmitLikeResponse = async (
         opponentCharName,
         Number(opponentEnemy.enemy_health ?? 0),
         false,
+        enemyShowsAttack,
       ),
     );
 
