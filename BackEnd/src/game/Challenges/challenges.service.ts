@@ -148,7 +148,8 @@ export const dynamicBlankSetter = (
   if (!question || !correctAnswers || correctAnswers.length === 0)
     return question;
 
-  const blankPatterns = /<_>|<\/_>|\{blank\}|\[_+\]|_{2,}/;
+  const blankPatterns = /_|\{blank\}/;
+
   if (blankPatterns.test(question)) return question;
 
   let modifiedQuestion = question;
@@ -169,7 +170,6 @@ export const dynamicBlankSetter = (
 
     if (match) {
       const offset = match.index;
-
       const replacement = "_";
 
       modifiedQuestion =

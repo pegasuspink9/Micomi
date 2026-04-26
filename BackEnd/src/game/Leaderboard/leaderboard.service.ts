@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
+import { DEFAULT_AVATAR_URL } from "../../models/Player/player.service";
 
 export const getLeaderboard = async (limit = 10) => {
   const topRows = await prisma.$queryRawUnsafe<any[]>(`
@@ -53,7 +54,7 @@ export const getPlayerRank = async (playerId: number) => {
     player_id: player.player_id,
     username: player.username,
     total_points: player.total_points,
-    player_avatar: player.player_avatar, // Return here
+    player_avatar: player.player_avatar || DEFAULT_AVATAR_URL,
     player_rank_name: player.player_rank_name,
     player_rank_image: player.player_rank_image,
     player_rank_points: player.player_rank_points,
@@ -180,7 +181,7 @@ export const getPvpPlayerRank = async (playerId: number) => {
   return {
     player_id: Number(row.player_id),
     username: row.username,
-    player_avatar: row.player_avatar,
+    player_avatar: row.player_avatar || DEFAULT_AVATAR_URL,
     player_rank_name: row.player_rank_name,
     player_rank_image: row.player_rank_image,
     player_rank_points: Number(row.player_rank_points),

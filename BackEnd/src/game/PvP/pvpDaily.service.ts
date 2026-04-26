@@ -46,6 +46,7 @@ const MATCH_COMPLETION_CLEANUP_MS = 90 * 1000;
 const PVP_BASE_QUESTION_TIME_LIMIT_SECONDS = 40;
 const PVP_SECONDS_PER_BLANK = 8;
 const PVP_MAX_QUESTION_TIME_LIMIT_SECONDS = 120;
+const PVP_ROUND_DELAY_SECONDS = 5;
 const DEFAULT_FALLBACK_ATTACK_DAMAGE = 12;
 const MAX_IN_GAME_MESSAGE_LENGTH = 160;
 const WIN_REWARD: PvPCompletionRewards = {
@@ -626,11 +627,8 @@ const normalizeInGameMessage = (value: string): string => {
 };
 
 const countQuestionBlanks = (questionText: string): number => {
-  const characters = questionText.slice(0).split("");
-  return characters.reduce(
-    (count, character) => count + (character === "_" ? 1 : 0),
-    0,
-  );
+  const matches = questionText.match(/_+/g);
+  return matches ? matches.length : 0;
 };
 
 const getQuestionTimeLimitSeconds = (
@@ -650,7 +648,10 @@ const getRoundTimerString = (
   roundTimeLimitSeconds: number,
 ): string => {
   const elapsed = (Date.now() - new Date(roundStartedAtIso).getTime()) / 1000;
-  const timeRemaining = Math.max(0, roundTimeLimitSeconds - elapsed);
+
+  const effectiveElapsed = Math.max(0, elapsed - PVP_ROUND_DELAY_SECONDS);
+  const timeRemaining = Math.max(0, roundTimeLimitSeconds - effectiveElapsed);
+
   return formatTimer(timeRemaining);
 };
 
@@ -1340,7 +1341,9 @@ const getRoundRemainingSeconds = (match: PvPMatchState): number => {
   const roundTimeLimitSeconds = getQuestionTimeLimitSeconds(question);
   const elapsed =
     (Date.now() - new Date(match.current_round_started_at).getTime()) / 1000;
-  return Math.max(0, roundTimeLimitSeconds - elapsed);
+
+  const effectiveElapsed = Math.max(0, elapsed - PVP_ROUND_DELAY_SECONDS);
+  return Math.max(0, roundTimeLimitSeconds - effectiveElapsed);
 };
 
 const resolveExpiredRoundIfNeeded = async (

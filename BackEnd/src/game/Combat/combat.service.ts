@@ -473,6 +473,7 @@ export async function getCurrentFightState(
   let displayDamageArray = Array.isArray(character.character_damage)
     ? (character.character_damage as number[])
     : [10, 15, 25];
+
   if (progress.has_strong_effect) {
     displayDamageArray = displayDamageArray.map((d) => d * 2);
     console.log(
@@ -492,6 +493,21 @@ export async function getCurrentFightState(
       "https://micomi-assets.me/Enemies/Greenland/Boss%20Joshy/idle2.png";
   }
 
+  // Properly identify the exact boss special skill type if active
+  let activeBossSsType: string | null = null;
+  if (progress) {
+    if (progress.has_boss_shield) activeBossSsType = "shield";
+    else if (progress.has_reversed_curse) activeBossSsType = "reverse";
+    else if (progress.has_only_blanks_ss) activeBossSsType = "only_blanks";
+    else if (progress.has_dollar_sign_ss) activeBossSsType = "dollar_sign";
+    else if (progress.has_reverse_words_ss) activeBossSsType = "reverse_words";
+    else if (progress.has_shuffle_ss) activeBossSsType = "shuffle";
+    else if (progress.has_permuted_ss) activeBossSsType = "permuted";
+    else if (progress.has_force_character_attack_type)
+      activeBossSsType = "force_basic_attack";
+    else if (progress.has_both_hp_decrease) activeBossSsType = "mutual_damage";
+  }
+
   let enemy_current_state: string | null = null;
   let character_current_state: string | null = null;
   let character_attack_overlay: string | null = null;
@@ -499,10 +515,11 @@ export async function getCurrentFightState(
 
   const questionType = level.map.map_name;
 
+  // Fixed specific visual overlays & unified Leon's Muscle URL
   if (potionType === "Power") {
     character_current_state = "Strong";
     character_attack_overlay =
-      "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
+      "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png";
   } else if (potionType === "Immunity") {
     enemy_current_state = "Frozen";
     enemy_attack_overlay =
@@ -523,7 +540,7 @@ export async function getCurrentFightState(
   } else if (progress.has_strong_effect && !potionType) {
     character_current_state = "Strong";
     character_attack_overlay =
-      "https://micomi-assets.me/Icons/Miscellaneous/Leon's%20Muscle.png";
+      "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png";
     console.log("- Strong effect persisting from progress");
   } else if (progress.has_ryron_reveal && !potionType) {
     character_current_state = "Reveal";
@@ -557,23 +574,13 @@ export async function getCurrentFightState(
             special_skill_image: null,
             special_skill_description: null,
             streak: progress?.consecutive_wrongs ?? 0,
+            ss_type: null, // Ensured identical interface mapping
           };
         }
 
-        const hasAnyCurse =
-          progress?.has_reversed_curse ||
-          progress?.has_boss_shield ||
-          progress?.has_force_character_attack_type ||
-          progress?.has_both_hp_decrease ||
-          progress?.has_shuffle_ss ||
-          progress?.has_permuted_ss ||
-          progress?.has_only_blanks_ss ||
-          progress?.has_dollar_sign_ss ||
-          progress?.has_reverse_words_ss;
-
         return getBossSpecialSkillInfo(
           enemy.enemy_name,
-          hasAnyCurse ? "active" : null,
+          activeBossSsType,
           progress?.consecutive_wrongs,
         );
       })(),
