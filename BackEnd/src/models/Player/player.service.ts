@@ -236,6 +236,29 @@ export const getPlayerProfile = async (player_id: number) => {
     },
   });
 
+  const pvpStats = await prisma.playerVsPlayerResult.groupBy({
+    by: ["match_status"],
+    where: { player_id },
+    _count: {
+      _all: true,
+    },
+  });
+
+  let totalPvpMatches = 0;
+  let pvpWins = 0;
+
+  for (const stat of pvpStats) {
+    totalPvpMatches += stat._count._all;
+    if (stat.match_status === "win") {
+      pvpWins += stat._count._all;
+    }
+  }
+
+  const pvpWinRate =
+    totalPvpMatches > 0
+      ? Number(((pvpWins / totalPvpMatches) * 100).toFixed(2))
+      : 0;
+
   const questsData = await getAllPlayerQuests(player_id);
 
   const achievements = await prisma.achievement.findMany();
@@ -345,6 +368,9 @@ export const getPlayerProfile = async (player_id: number) => {
       player_next_rank_name: rankProgress.next_rank_name,
       player_next_rank_image: rankProgress.next_rank_image,
     },
+    pvp_total_matches: totalPvpMatches,
+    pvp_win_rate: pvpWinRate,
+
     followers_count: followersCount,
     following_count: followingCount,
     max_level_exp: maxLevelExp,
