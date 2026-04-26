@@ -13,10 +13,12 @@ import { gameScale } from '../Components/Responsiveness/gameResponsive';
 import PlayerInfoSection from '../Components/Profile Components/PlayerInfoSection';
 import StatsGridSection from '../Components/Profile Components/StatsGridSection';
 import InventorySection from '../Components/Profile Components/InventorySection';
+import ProfileRankHistorySection from '../Components/Profile Components/ProfileRankHistorySection';
 import { playerService } from '../services/playerService';
 import { useSocialHook } from '../hooks/useSocialHook';
 import { useAuth } from '../hooks/useAuth';
 import { universalAssetPreloader } from '../services/preloader/universalAssetPreloader';
+import { pvpService } from '../services/pvpService';
 
 
 const normalizeRelation = (relation) => {
@@ -48,8 +50,31 @@ export default function PublicPlayerProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [inventoryTab, setInventoryTab] = useState('Badges');
+  const [profileMode, setProfileMode] = useState('Classic');
   const [actionLoading, setActionLoading] = useState(false);
   const [relationStatus, setRelationStatus] = useState('none');
+  const [rankHistory, setRankHistory] = useState([]);
+  const [rankHistoryLoading, setRankHistoryLoading] = useState(false);
+  const [rankHistoryError, setRankHistoryError] = useState(null);
+
+  const loadRankHistory = useCallback(async () => {
+    try {
+      setRankHistoryLoading(true);
+      setRankHistoryError(null);
+      const response = await pvpService.getDailyMatchHistory();
+      const sorted = [...(Array.isArray(response) ? response : [])].sort((a, b) => {
+        const aTime = new Date(a?.date || 0).getTime();
+        const bTime = new Date(b?.date || 0).getTime();
+        return bTime - aTime;
+      });
+      setRankHistory(sorted.slice(0, 10));
+    } catch (historyError) {
+      setRankHistory([]);
+      setRankHistoryError(historyError?.message || 'Failed to load match history');
+    } finally {
+      setRankHistoryLoading(false);
+    }
+  }, []);
 
   const handleOpenVisitedSocial = useCallback(() => {
     if (!playerId) return;
@@ -109,7 +134,8 @@ export default function PublicPlayerProfileScreen() {
       // If visiting own profile via ID, redirect to tab profile if feasible,
       // or just handle it as "self" relation.
       loadProfile();
-    }, [loadProfile])
+      loadRankHistory();
+    }, [loadProfile, loadRankHistory])
   );
 
   const handleRelationAction = useCallback(async () => {
@@ -223,19 +249,35 @@ export default function PublicPlayerProfileScreen() {
             statsIcons={playerData.statsIcons}
             hero={playerData.heroSelected}
             background={playerData.background}
+            mode={profileMode}
+            playerRankName={playerData.playerRankName}
+            playerRankImage={playerData.playerRankImage}
+            playerCurrentPoints={playerData.playerCurrentPoints}
+            pvpTotalMatches={playerData.pvpTotalMatches}
+            pvpWinRate={playerData.pvpWinRate}
+            onModeChange={setProfileMode}
             disableHeroPress={true}
             relationButtonMeta={relationButtonMeta}
             onRelationPress={handleRelationAction}
             relationActionLoading={actionLoading}
           />
 
-          <InventorySection
-            activeTab={inventoryTab}
-            setActiveTab={setInventoryTab}
-            badges={playerData.badges || []}
-            potions={playerData.potions || []}
-            viewPlayerId={playerId}
-          />
+          {profileMode === 'Classic' ? (
+            <InventorySection
+              activeTab={inventoryTab}
+              setActiveTab={setInventoryTab}
+              badges={playerData.badges || []}
+              potions={playerData.potions || []}
+              viewPlayerId={playerId}
+            />
+          ) : (
+            <ProfileRankHistorySection
+              history={rankHistory}
+              loading={rankHistoryLoading}
+              error={rankHistoryError}
+              onRetry={loadRankHistory}
+            />
+          )}
 
           <View style={{ height: gameScale(16) }} />
         </ScrollView>

@@ -512,9 +512,9 @@ const styles = StyleSheet.create({
   playerRankContainer: {
     alignSelf: 'flex-start',
     marginTop: gameScale(10),
-    marginBottom: gameScale(10),
+    marginBottom: gameScale(0),
     position: 'absolute',
-    left: gameScale(40),
+    right: gameScale(0),
     bottom: gameScale(-16),
     
   },
