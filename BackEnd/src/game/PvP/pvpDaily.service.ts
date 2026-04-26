@@ -46,7 +46,6 @@ const MATCH_COMPLETION_CLEANUP_MS = 90 * 1000;
 const PVP_BASE_QUESTION_TIME_LIMIT_SECONDS = 40;
 const PVP_SECONDS_PER_BLANK = 8;
 const PVP_MAX_QUESTION_TIME_LIMIT_SECONDS = 120;
-const PVP_ROUND_DELAY_SECONDS = 5;
 const DEFAULT_FALLBACK_ATTACK_DAMAGE = 12;
 const MAX_IN_GAME_MESSAGE_LENGTH = 160;
 const WIN_REWARD: PvPCompletionRewards = {
@@ -643,18 +642,6 @@ const getQuestionTimeLimitSeconds = (
   return Math.min(dynamicLimit, PVP_MAX_QUESTION_TIME_LIMIT_SECONDS);
 };
 
-const getRoundTimerString = (
-  roundStartedAtIso: string,
-  roundTimeLimitSeconds: number,
-): string => {
-  const elapsed = (Date.now() - new Date(roundStartedAtIso).getTime()) / 1000;
-
-  const effectiveElapsed = Math.max(0, elapsed - PVP_ROUND_DELAY_SECONDS);
-  const timeRemaining = Math.max(0, roundTimeLimitSeconds - effectiveElapsed);
-
-  return formatTimer(timeRemaining);
-};
-
 const buildEntryLikePayload = async (
   match: PvPMatchState,
   viewerPlayerId: number,
@@ -721,10 +708,7 @@ const buildEntryLikePayload = async (
   const roundTimeLimitSeconds = getQuestionTimeLimitSeconds(question);
 
   const currentChallenge = { ...question };
-  const rootTimerString = getRoundTimerString(
-    match.current_round_started_at,
-    roundTimeLimitSeconds,
-  );
+  const rootTimerString = formatTimer(roundTimeLimitSeconds);
 
   const mapAssets = getMapMediaAssets(mapName);
   const combatBackground = [mapAssets.versus_background];
@@ -1342,7 +1326,7 @@ const getRoundRemainingSeconds = (match: PvPMatchState): number => {
   const elapsed =
     (Date.now() - new Date(match.current_round_started_at).getTime()) / 1000;
 
-  const effectiveElapsed = Math.max(0, elapsed - PVP_ROUND_DELAY_SECONDS);
+  const effectiveElapsed = Math.max(0, elapsed);
   return Math.max(0, roundTimeLimitSeconds - effectiveElapsed);
 };
 
@@ -1359,7 +1343,6 @@ const resolveExpiredRoundIfNeeded = async (
     return false;
   }
 
-  // Round timeout means no attack should be replayed while moving to the next challenge.
   match.last_attack_by_player_id = null;
   match.last_attack_type = null;
   match.last_attack_damage = 0;
@@ -1727,7 +1710,7 @@ const buildSubmitLikeResponse = async (
   const roundTimeLimitSeconds = getQuestionTimeLimitSeconds(nextQuestion);
 
   const rootTimerString = !isCompleted
-    ? getRoundTimerString(match.current_round_started_at, roundTimeLimitSeconds)
+    ? formatTimer(roundTimeLimitSeconds)
     : "00:00";
   const shouldExposeNextChallenge =
     !isCompleted &&
