@@ -520,38 +520,34 @@ export async function getCurrentFightState(
 
   const questionType = level.map.map_name;
 
-  // Fixed specific visual overlays & unified Leon's Muscle URL
+  if (progress.has_freeze_effect) {
+    enemy_current_state = "Frozen";
+    enemy_attack_overlay = "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png";
+    console.log("- Freeze effect persisting from progress");
+  }
+  if (progress.has_strong_effect) {
+    character_current_state = "Strong";
+    character_attack_overlay = "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png";
+    console.log("- Strong effect persisting from progress");
+  }
+  if (progress.has_ryron_reveal) {
+    character_current_state = "Reveal";
+    character_attack_overlay = "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
+    console.log("- Ryron reveal persisting from progress");
+  }
+
   if (potionType === "Power") {
     character_current_state = "Strong";
-    character_attack_overlay =
-      "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png";
+    character_attack_overlay = "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png";
   } else if (potionType === "Immunity") {
     enemy_current_state = "Frozen";
-    enemy_attack_overlay =
-      "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png";
+    enemy_attack_overlay = "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png";
   } else if (potionType === "Reveal") {
     character_current_state = "Reveal";
-    character_attack_overlay =
-      "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
+    character_attack_overlay = "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
   } else if (potionType === "Life") {
     character_current_state = "Revitalize";
-    character_attack_overlay =
-      "https://micomi-assets.me/Icons/Miscellaneous/Gino's%20Lightning.png";
-  } else if (progress.has_freeze_effect && !potionType) {
-    enemy_current_state = "Frozen";
-    enemy_attack_overlay =
-      "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png";
-    console.log("- Freeze effect persisting from progress");
-  } else if (progress.has_strong_effect && !potionType) {
-    character_current_state = "Strong";
-    character_attack_overlay =
-      "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png";
-    console.log("- Strong effect persisting from progress");
-  } else if (progress.has_ryron_reveal && !potionType) {
-    character_current_state = "Reveal";
-    character_attack_overlay =
-      "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
-    console.log("- Ryron reveal persisting from progress");
+    character_attack_overlay = "https://micomi-assets.me/Icons/Miscellaneous/Gino's%20Lightning.png";
   }
 
   return {
