@@ -284,7 +284,7 @@ model Character {
   character_dies          String?
   character_hurt          String?
   character_damage        Json?             @default("[]")
-  character_run           String?
+  character_run           Json?             @default("[]")
   character_attacks       Json?             @default("[]")
   character_avatar        String?
   character_image_display String?
