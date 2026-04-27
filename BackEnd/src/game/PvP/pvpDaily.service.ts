@@ -666,11 +666,18 @@ const buildEntryLikePayload = async (
     throw new Error("No current challenge found");
   }
 
-  const [viewerChar, opponentChar, energyStatus] = await Promise.all([
-    getSelectedCharacterDetails(viewerPlayerId),
-    getSelectedCharacterDetails(opponentSnapshot.player_id),
-    EnergyService.getPlayerEnergyStatus(viewerPlayerId),
-  ]);
+  const [viewerChar, opponentChar, energyStatus, selectedTheme] =
+    await Promise.all([
+      getSelectedCharacterDetails(viewerPlayerId),
+      getSelectedCharacterDetails(opponentSnapshot.player_id),
+      EnergyService.getPlayerEnergyStatus(viewerPlayerId),
+      prisma.playerTheme.findFirst({
+        where: { player_id: viewerPlayerId, is_selected: true },
+        include: { theme: true },
+      }),
+    ]);
+
+  const gameplay_theme_color = selectedTheme?.theme.theme_color ?? null;
 
   const viewerDamageArray = Array.isArray(viewerChar.character_damage)
     ? (viewerChar.character_damage as number[])
@@ -810,6 +817,7 @@ const buildEntryLikePayload = async (
     versus_background: mapAssets.versus_background,
     versus_audio: mapAssets.versus_audio,
     timer: rootTimerString,
+    gameplay_theme_color,
     gameplay_audio: mapAssets.gameplay_audio,
     is_correct_audio: null,
     enemy_attack_audio,
@@ -2047,6 +2055,7 @@ const buildSubmitLikeResponse = async (
       false,
     isCharacterFrozen: match.has_freeze_effect_by_player[playerId] ?? false,
     timer: rootTimerString,
+    gameplay_theme_color: (entryLike as any).gameplay_theme_color ?? null,
     gameplay_audio: entryLike.gameplay_audio,
     is_correct_audio:
       reason === "ongoing" || reason === "round_already_resolved"

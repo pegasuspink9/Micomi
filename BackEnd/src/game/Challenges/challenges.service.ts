@@ -798,9 +798,16 @@ export const submitChallengeService = async (
         where: { is_selected: true, is_purchased: true },
         include: { character: true },
       },
+      ownedThemes: {
+        where: { is_selected: true },
+        include: { theme: true },
+      },
     },
   });
+
   if (!player) return { message: "Player not found", success: false } as any;
+
+  const gameplay_theme_color = player.ownedThemes[0]?.theme.theme_color || null;
 
   const character = player.ownedCharacters[0]?.character;
   if (!character)
@@ -2111,6 +2118,7 @@ export const submitChallengeService = async (
     character_hurt_audio,
     enemy_hurt_audio,
     death_audio,
+    gameplay_theme_color,
     gameplay_audio,
     is_victory_audio,
     is_victory_image,
