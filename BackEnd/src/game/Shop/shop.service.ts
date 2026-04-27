@@ -21,7 +21,7 @@ const prisma = new PrismaClient();
 const reverseString = (str: string): string => str.split("").reverse().join("");
 
 type BuyCharacterResult =
-  | { success: true; character_name: string; remaining_coins: number }
+  | { success: true; character_name: string; remaining_diamonds: number }
   | { success: false; message: string };
 
 export const buyCharacter = async (
@@ -41,8 +41,8 @@ export const buyCharacter = async (
       });
       if (!charShop) throw new Error("Character not found");
 
-      if (Number(player.coins) < Number(charShop.character_price)) {
-        throw new Error("Not enough coins");
+      if (Number(player.diamonds) < Number(charShop.character_price)) {
+        throw new Error("Not enough diamonds");
       }
 
       const existing = await tx.playerCharacter.findUnique({
@@ -81,23 +81,22 @@ export const buyCharacter = async (
 
       const updatedPlayer = await tx.player.update({
         where: { player_id: playerId },
-        data: { coins: { decrement: charShop.character_price } },
+        data: { diamonds: { decrement: charShop.character_price } },
       });
 
       return {
         character_name: charShop.character.character_name,
         price: charShop.character_price,
-        remaining_coins: updatedPlayer.coins,
+        remaining_diamonds: updatedPlayer.diamonds,
       };
     });
 
     await updateQuestProgress(playerId, QuestType.unlock_character, 1);
-    await updateQuestProgress(playerId, QuestType.spend_coins, result.price);
 
     return {
       success: true,
       character_name: result.character_name,
-      remaining_coins: result.remaining_coins,
+      remaining_diamonds: result.remaining_diamonds,
     };
   } catch (error: any) {
     return {
