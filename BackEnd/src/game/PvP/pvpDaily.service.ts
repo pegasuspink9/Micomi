@@ -34,12 +34,93 @@ import {
 import { getCardForAttackType } from "../Combat/combat.service";
 import { formatTimer } from "../../../helper/dateTimeHelper";
 import * as EnergyService from "../Energy/energy.service";
-import { generateMotivationalMessage } from "../Challenges/challenges.service";
 import { generateDynamicMessage } from "../../../helper/gamePlayMessageHelper";
 import { applyPvpRankResult } from "./pvpRank.service";
 import { DEFAULT_AVATAR_URL } from "../../models/Player/player.service";
 
 const prisma = new PrismaClient();
+
+const generatePvpMotivationalMessage = (
+  isVictory: boolean,
+  playerMistakes: number,
+  opponentMistakes: number,
+  totalQuestions: number,
+  opponentName: string,
+): string => {
+  const random = (messages: string[]) =>
+    messages[Math.floor(Math.random() * messages.length)];
+
+  const playerAccuracy = Math.max(
+    0,
+    Math.round(((totalQuestions - playerMistakes) / totalQuestions) * 100),
+  );
+
+  if (!isVictory) {
+    if (playerMistakes === 0) {
+      return random([
+        `You were so close to victory against ${opponentName}! Your knowledge was perfect, but the battle was lost to time. Regroup and try again—you've got this!`,
+        `The duel ended in defeat despite your flawless answers! Sometimes speed matters just as much. Take a breath and dive back in!`,
+        `Not a single wrong answer, yet ${opponentName} narrowly claimed the win! You clearly know your stuff—one more attempt will seal your victory!`,
+        `Your knowledge shined bright with 100% accuracy! The win slipped away this time, but you're absolutely ready for the next arena match!`,
+      ]);
+    } else if (playerMistakes === 1) {
+      return random([
+        `${opponentName} defeated you this time with just 1 mistake on your end. You're almost there! One more focused attempt and victory will be yours!`,
+        `So close! Just 1 slip-up led to defeat against ${opponentName}. You know what to do now—go claim that victory!`,
+        `A single mistake cost you the win. Shake it off and show the arena what you're truly capable of!`,
+        `${opponentName} caught you on just 1 error. That's how close you are! Your comeback will be legendary!`,
+      ]);
+    } else if (playerMistakes <= 3) {
+      return random([
+        `You made ${playerMistakes} mistakes before falling to ${opponentName}. Don't be discouraged—every mistake is a lesson learned. Come back stronger!`,
+        `${opponentName} proved tough today. But now you know the traps—next time, they won't catch you off guard!`,
+        `${playerMistakes} mistakes this match. Each one teaches you something valuable. You're getting closer to mastery with every attempt!`,
+        `Defeated by ${opponentName} with ${playerMistakes} missteps. But look at everything you DID get right! Victory is well within reach!`,
+      ]);
+    } else {
+      return random([
+        `This match proved challenging with ${playerMistakes} mistakes. Remember, even the greatest heroes face setbacks. Study, practice, and return victorious!`,
+        `${playerMistakes} errors this round against ${opponentName}. The arena is testing you, but each attempt makes you sharper. Don't give up!`,
+        `A tough battle with ${playerMistakes} mistakes. Take your time, review your knowledge, and come back when you're ready to dominate!`,
+        `${opponentName} pushed you hard today. But you know what? You're still here, still trying. That's what champions do!`,
+      ]);
+    }
+  }
+
+  const isPerfect = playerMistakes === 0;
+
+  if (isPerfect) {
+    const rarePercent = Math.floor(Math.random() * 5) + 1;
+    return random([
+      `PERFECT SCORE! You conquered ${opponentName} flawlessly! Your mastery is exceptional, placing you in the top ${rarePercent}% today. Keep this momentum going!`,
+      `ABSOLUTE PERFECTION! ${opponentName} was defeated without you making a single error! You're a natural—amazing work!`,
+      `FLAWLESS VICTORY! Not one mistake against ${opponentName}! Your 100% accuracy is off the charts—what an incredible achievement!`,
+      `UNSTOPPABLE! You crushed ${opponentName} perfectly! You're setting the bar high for the entire arena—absolutely outstanding performance!`,
+    ]);
+  } else if (playerMistakes === 1) {
+    const percent = Math.floor(Math.random() * 10) + 10;
+    return random([
+      `Excellent work against ${opponentName}! Just 1 mistake shows a brilliant grasp of the material. You're better than ${100 - percent}% of challengers!`,
+      `Victory secured with only 1 error! That's outstanding accuracy—you really know your stuff!`,
+      `Impressive win against ${opponentName}! A single mistake is practically perfect. You're doing amazing!`,
+      `One mistake, ${playerAccuracy}% accuracy, and still victorious! Your understanding is rock solid—keep up this fantastic progress!`,
+    ]);
+  } else if (playerMistakes <= 3) {
+    return random([
+      `Well done defeating ${opponentName}! With only ${playerMistakes} mistakes, you demonstrated solid understanding. Keep up the great work!`,
+      `Victory is yours! Just ${playerMistakes} errors against ${opponentName} shows you're really grasping the concepts. Excellent progress!`,
+      `Match complete with ${playerMistakes} mistakes! That's a strong performance—you should be proud of this PvP achievement!`,
+      `${playerMistakes} mistakes, but victory over ${opponentName} was never in doubt! You're building real expertise here!`,
+    ]);
+  } else {
+    return random([
+      `Victory! You made ${playerMistakes} mistakes but learned from each one and outlasted ${opponentName}. That's the spirit of a true learner!`,
+      `You conquered the arena! ${playerMistakes} errors couldn't hold you back. Each mistake made you smarter, and you finished strong!`,
+      `You've beaten ${opponentName} with ${playerMistakes} mistakes along the way. The important thing? You kept going and won!`,
+      `Success! ${playerMistakes} slips were just speed bumps on your road to victory against ${opponentName}. Great determination!`,
+    ]);
+  }
+};
 
 const MATCHMAKING_TIMEOUT_MS = 2 * 60 * 1000;
 const MATCH_COMPLETION_CLEANUP_MS = 90 * 1000;
@@ -1981,19 +2062,25 @@ const buildSubmitLikeResponse = async (
   }
 
   const mistakes = match.mistakes_by_player[playerId] ?? 0;
+  const opponentIndex = getOpponentIndex(getPlayerIndex(match, playerId));
+  const opponentPlayerId = match.players[opponentIndex].player_id;
+  const opponentMistakes = match.mistakes_by_player[opponentPlayerId] ?? 0;
+
   const stars = isVictory
     ? calculateStars(mistakes, match.questions.length)
     : 0;
 
   const completionRewards = isCompleted
     ? {
-        feedbackMessage: generateMotivationalMessage(
-          false,
-          mistakes,
-          match.questions.length,
-          false,
+        feedbackMessage: generatePvpMotivationalMessage(
           isVictory,
-          entryLike.level.level_number ?? null,
+          mistakes,
+          opponentMistakes,
+          match.questions.length,
+          String(
+            (entryLike.character as Record<string, unknown>).player_name ||
+              "Player",
+          ),
         ),
         totalPointsEarned: match.rewards_by_player[playerId]?.points ?? 0,
         totalExpPointsEarned: match.rewards_by_player[playerId]?.exp ?? 0,
