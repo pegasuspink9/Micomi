@@ -16,6 +16,7 @@ import { getCardForAttackType } from "../Combat/combat.service";
 import {
   revealAllBlanks,
   applyRetryReveal,
+  applyRevealPotion,
 } from "../../../helper/revealPotionHelper";
 import {
   ENEMY_WRONG_LINES,
@@ -210,7 +211,7 @@ const formatReaction = (
   text: string,
   replacements: {
     player_name?: string;
-    line_display?: string;
+    line_number?: string;
     wrong_answer?: string;
     wrong_open_tag?: string;
     wrong_close_tag?: string;
@@ -222,7 +223,8 @@ const formatReaction = (
   return text
     .split("{player_name}")
     .join(replacements.player_name || "Player")
-    .replace(/line \{line_number\}/gi, replacements.line_display || "line X")
+    .split("{line_number}")
+    .join(replacements.line_number || "X")
     .split("{wrong_answer}")
     .join(replacements.wrong_answer || "that")
     .split("{wrong_open_tag}")
@@ -303,23 +305,27 @@ const detectTagMismatch = (
   userAnswers: string[],
   correctAnswers: string[],
   question: string | null,
-): { open: string; close: string } | null => {
+): { open: string; close: string; line: number } | null => {
   if (!question) return null;
 
   const tagPairRegex = /^<?\/?([a-zA-Z0-9]*?)>?$/;
 
   const getContextualTag = (val: string, index: number, q: string) => {
-    const blankRegex = /<(_|\/_|blank)>|\{blank\}|\[_+\]|_+|"_+|'_+|`_+/g;
+    const blankRegex = /<_([^>]*)>|<\/_>|\{blank\}|\[_+\]|_+|"_+|'_+|`_+/g;
     let match;
     let count = 0;
-    while ((match = blankRegex.exec(q)) !== null) {
+    const regex = new RegExp(blankRegex);
+    while ((match = regex.exec(q)) !== null) {
       if (count === index) {
         const text = String(val || "").trim();
         const beforeMatch = q.substring(
           Math.max(0, match.index - 2),
           match.index,
         );
-        if (beforeMatch.endsWith("</")) return `/${text.replace(/^\//, "")}`;
+
+        if (beforeMatch.endsWith("</") || match[0] === "</_>") {
+          return `/${text.replace(/^\//, "")}`;
+        }
         if (text && text.startsWith("/")) return text;
         return text;
       }
@@ -329,8 +335,8 @@ const detectTagMismatch = (
   };
 
   const isPair = (t1: string, t2: string) => {
-    const s1 = String(t1 || "");
-    const s2 = String(t2 || "");
+    const s1 = String(t1 || "").trim();
+    const s2 = String(t2 || "").trim();
     const m1 = s1.match(tagPairRegex);
     const m2 = s2.match(tagPairRegex);
     if (!m1 || !m2) return false;
@@ -347,13 +353,15 @@ const detectTagMismatch = (
   };
 
   const lines = question.split("\n");
-  const blankRegex = /<(_|\/_|blank)>|\{blank\}|\[_+\]|_+|"_+|'_+|`_+/g;
+  const blankRegex = /<_([^>]*)>|<\/_>|\{blank\}|\[_+\]|_+|"_+|'_+|`_+/g;
   const blankToLineMap: number[] = [];
 
   lines.forEach((line, lineIdx) => {
-    let match;
-    while ((match = blankRegex.exec(line)) !== null) {
-      blankToLineMap.push(lineIdx + 1);
+    const matches = line.match(blankRegex);
+    if (matches) {
+      for (let i = 0; i < matches.length; i++) {
+        blankToLineMap.push(lineIdx + 1);
+      }
     }
   });
 
@@ -362,7 +370,7 @@ const detectTagMismatch = (
     const u1Raw = userAnswers[i] || "";
 
     if (c1.startsWith("/") && u1Raw && !u1Raw.startsWith("/")) {
-      return { open: "unclosed tag", close: u1Raw };
+      return { open: "unclosed tag", close: u1Raw, line: blankToLineMap[i] };
     }
 
     for (let j = i + 1; j < correctAnswers.length; j++) {
@@ -370,15 +378,21 @@ const detectTagMismatch = (
         const c2 = getContextualTag(correctAnswers[j], j, question);
 
         if (isPair(c1, c2)) {
-          const u2 = userAnswers[j] || "";
+          const u1Raw = userAnswers[i] || "";
+          const u2Raw = userAnswers[j] || "";
 
           const u1Contextual = getContextualTag(u1Raw, i, question);
-          const u2Contextual = getContextualTag(u2, j, question);
+          const u2Contextual = getContextualTag(u2Raw, j, question);
 
-          if (!isPair(u1Contextual, u2Contextual)) {
+          if (
+            !isPair(u1Contextual, u2Contextual) ||
+            u1Raw === "" ||
+            u2Raw === ""
+          ) {
             return {
               open: u1Raw || "missing tag",
-              close: u2 || "missing tag",
+              close: u2Raw || "missing tag",
+              line: blankToLineMap[i],
             };
           }
         }
@@ -391,15 +405,17 @@ const detectTagMismatch = (
 const formatWrongAnswersDescription = (
   userAnswers: string[],
   correctAnswers: string[],
-  mismatch: { open: string; close: string } | null,
+  mismatch: { open: string; close: string; line: number } | null,
 ): string => {
   if (mismatch) {
-    if (mismatch.open === "unclosed tag") {
+    if (mismatch.open === "unclosed tag" || mismatch.open === "missing tag") {
       return `leaving "${mismatch.close}" hanging open`;
     }
     const openTag = mismatch.open || "opening tag";
     const closeVal = String(mismatch.close || "");
-    const closeTag = closeVal.startsWith("/") ? closeVal : `/${closeVal}`;
+    const closeTag = closeVal.startsWith("/")
+      ? closeVal
+      : `/${closeVal.replace(/^\//, "")}`;
     return `"${openTag}" and "${closeTag}"`;
   }
 
@@ -427,28 +443,28 @@ const calculateErrorDetails = (
   if (!question) return [];
 
   const lines = question.split("\n");
-  const blankRegex = /<(_|\/_|blank)>|\{blank\}|\[_+\]|_+|"_+|'_+|`_+/g;
+  const blankRegex = /<_([^>]*)>|<\/_>|\{blank\}|\[_+\]|_+|"_+|'_+|`_+/g;
   let currentBlankIndex = 0;
   const errors: { line: string; wrongAnswers: string[] }[] = [];
 
   for (let i = 0; i < lines.length; i++) {
     const lineStr = lines[i];
-    blankRegex.lastIndex = 0;
-    let match;
-    const lineErrors: string[] = [];
-
-    while ((match = blankRegex.exec(lineStr)) !== null) {
-      if (
-        userAnswers[currentBlankIndex] !== correctAnswers[currentBlankIndex]
-      ) {
-        const val = userAnswers[currentBlankIndex];
-        lineErrors.push(val && val.trim() ? val : "missing input");
+    const matches = lineStr.match(blankRegex);
+    if (matches) {
+      const lineErrors: string[] = [];
+      for (let m = 0; m < matches.length; m++) {
+        if (
+          userAnswers[currentBlankIndex] !== correctAnswers[currentBlankIndex]
+        ) {
+          const val = userAnswers[currentBlankIndex];
+          lineErrors.push(val && val.trim() ? val : "missing input");
+        }
+        currentBlankIndex++;
       }
-      currentBlankIndex++;
-    }
 
-    if (lineErrors.length > 0) {
-      errors.push({ line: String(i + 1), wrongAnswers: lineErrors });
+      if (lineErrors.length > 0) {
+        errors.push({ line: String(i + 1), wrongAnswers: lineErrors });
+      }
     }
   }
   return errors.slice(0, 2);
@@ -457,25 +473,25 @@ const calculateErrorDetails = (
 const formatErrorContext = (
   errorDetails: { line: string; wrongAnswers: string[] }[],
 ) => {
-  if (errorDetails.length === 0)
-    return { lineDisplay: "X", answerDisplay: "that" };
+  if (errorDetails.length === 0) {
+    return {
+      lineDisplay: "X",
+      answerDisplay: "that",
+    };
+  }
 
-  const lines = errorDetails.map((d) => d.line);
   const allWrong = Array.from(
     new Set(errorDetails.flatMap((d) => d.wrongAnswers)),
   ).map((a) => `"${a}"`);
-
-  const lineDisplay =
-    lines.length > 1
-      ? `"line ${lines[0]}" and "${lines[1]}"`
-      : `"line ${lines[0]}"`;
 
   const answerDisplay =
     allWrong.length > 1
       ? `${allWrong.slice(0, -1).join(", ")} and ${allWrong[allWrong.length - 1]}`
       : allWrong[0];
 
-  return { lineDisplay, answerDisplay };
+  const firstErrorLine = errorDetails[0]?.line || "X";
+
+  return { lineDisplay: firstErrorLine, answerDisplay };
 };
 
 function shuffleArray<T>(array: T[]): T[] {
@@ -975,8 +991,12 @@ export const submitChallengeService = async (
     ? true
     : multisetEqual(finalAnswer, effectiveCorrectAnswer);
 
+  const questionWithBlanks = challenge.question
+    ? dynamicBlankSetter(challenge.question, effectiveCorrectAnswer)
+    : null;
+
   const mismatch = !isCorrect
-    ? detectTagMismatch(finalAnswer, effectiveCorrectAnswer, challenge.question)
+    ? detectTagMismatch(finalAnswer, effectiveCorrectAnswer, questionWithBlanks)
     : null;
 
   const { wrongLetter, correctLetter, smartHint } = generateSmartHint(
@@ -985,11 +1005,12 @@ export const submitChallengeService = async (
   );
 
   const errorDetails = calculateErrorDetails(
-    challenge.question,
+    questionWithBlanks,
     finalAnswer,
     effectiveCorrectAnswer,
   );
-  const { lineDisplay, answerDisplay } = formatErrorContext(errorDetails);
+
+  const { answerDisplay } = formatErrorContext(errorDetails);
 
   const finalWrongAnswerDescription = mismatch
     ? formatWrongAnswersDescription(
@@ -1001,10 +1022,10 @@ export const submitChallengeService = async (
 
   const reactionContext = {
     player_name: player.username || "Player",
-    line_display: lineDisplay,
-    wrong_answer: mismatch
-      ? formatWrongAnswersDescription(answer, [""], mismatch)
-      : answerDisplay,
+    line_number: mismatch
+      ? String(mismatch.line)
+      : errorDetails.map((e) => e.line).join(" and "),
+    wrong_answer: finalWrongAnswerDescription,
     wrong_open_tag: mismatch?.open || "",
     wrong_close_tag: mismatch?.close || "",
     wrong_letter: wrongLetter,
@@ -1093,6 +1114,8 @@ export const submitChallengeService = async (
   } else {
     const charIndices =
       (currentProgress.used_char_wrong_reactions as number[]) || [];
+    const enemyIndices =
+      (currentProgress.used_enemy_correct_reactions as number[]) || [];
 
     const isComputerIsland = level.map.map_name === "Computer";
 
@@ -1106,11 +1129,21 @@ export const submitChallengeService = async (
         reactionContext,
       );
       updateReactionData.used_char_wrong_reactions = charResult.newUsedIndices;
+    } else if (isComputerIsland) {
+      const charResult = getUniqueReaction(
+        charIndices,
+        CHARACTER_COMPUTER_WRONG_REACTIONS,
+      );
+      characterReactionText = formatReaction(
+        charResult.reaction,
+        reactionContext,
+      );
+      updateReactionData.used_char_wrong_reactions = charResult.newUsedIndices;
     } else {
-      const wrongReactionsPool = isComputerIsland
-        ? CHARACTER_COMPUTER_WRONG_REACTIONS
-        : CHARACTER_WRONG_REACTIONS;
-      const charResult = getUniqueReaction(charIndices, wrongReactionsPool);
+      const charResult = getUniqueReaction(
+        charIndices,
+        CHARACTER_WRONG_REACTIONS,
+      );
       characterReactionText = formatReaction(
         charResult.reaction,
         reactionContext,
@@ -1118,16 +1151,20 @@ export const submitChallengeService = async (
       updateReactionData.used_char_wrong_reactions = charResult.newUsedIndices;
     }
 
-    const enemyCorrectPool = isComputerIsland
-      ? ENEMY_COMPUTER_CORRECT_REACTIONS
-      : ENEMY_CORRECT_LINES;
-    const enemyIndices =
-      (currentProgress.used_enemy_correct_reactions as number[]) || [];
-    const enemyResult = getUniqueReaction(enemyIndices, enemyCorrectPool);
-    enemyReactionText = formatReaction(enemyResult.reaction, reactionContext);
-
-    updateReactionData.used_enemy_correct_reactions =
-      enemyResult.newUsedIndices;
+    if (isComputerIsland) {
+      const enemyResult = getUniqueReaction(
+        enemyIndices,
+        ENEMY_COMPUTER_CORRECT_REACTIONS,
+      );
+      enemyReactionText = formatReaction(enemyResult.reaction, reactionContext);
+      updateReactionData.used_enemy_correct_reactions =
+        enemyResult.newUsedIndices;
+    } else {
+      const enemyResult = getUniqueReaction(enemyIndices, ENEMY_CORRECT_LINES);
+      enemyReactionText = formatReaction(enemyResult.reaction, reactionContext);
+      updateReactionData.used_enemy_correct_reactions =
+        enemyResult.newUsedIndices;
+    }
   }
 
   await prisma.playerProgress.update({
@@ -1135,7 +1172,7 @@ export const submitChallengeService = async (
     data: updateReactionData,
   });
 
-  let triggeredGinoPassive = false;
+  let triggeredRyronPassive = false;
 
   const isBonusRound =
     currentProgress.enemy_hp <= 0 && currentProgress.player_hp > 0;
@@ -1215,8 +1252,6 @@ export const submitChallengeService = async (
 
       updatedProgress.player_hp = newHp;
       console.log(`- Gino's Passive Triggered: Healed ${healAmount} HP`);
-
-      triggeredGinoPassive = true;
     }
 
     if (character.character_name === "ShiShi") {
@@ -1239,6 +1274,7 @@ export const submitChallengeService = async (
       });
 
       currentProgress.has_ryron_reveal = true;
+      triggeredRyronPassive = true;
 
       console.log(
         `- Ryron's Passive Triggered: Next challenge will be auto-revealed!`,
@@ -1281,10 +1317,8 @@ export const submitChallengeService = async (
     ? updatedWrongChallenges.length === 0
     : false;
 
-  const wasStrong = currentProgress.has_strong_effect;
   const hadFreezeThisTurn = currentProgress.has_freeze_effect === true;
   const wasFrozen = isCorrect && hadFreezeThisTurn;
-  const wasReveal = currentProgress.has_ryron_reveal;
 
   let fightResult: any;
   let message: string = "Challenge submitted.";
@@ -1529,18 +1563,22 @@ export const submitChallengeService = async (
     audioResponse = audio;
   }
 
-  if (fightResult && fightResult.enemy) {
-    (fightResult.enemy as any).enemy_hit_reaction = isCorrect
-      ? generatedReaction
-      : null;
-  }
-
   if (fightResult) {
-    if (wasStrong) {
-      if (!fightResult.character) fightResult.character = {};
-      fightResult.character.character_current_state = "Strong";
-      fightResult.character.character_attack_overlay = OVERLAYS.STRONG;
-      console.log("- Forcing Strong Overlay into response");
+    if (fightResult.character) {
+      fightResult.character.character_reaction = characterReactionText || null;
+    }
+
+    if (fightResult.enemy) {
+      fightResult.enemy.enemy_hit_reaction = null;
+      fightResult.enemy.enemy_reaction = enemyReactionText || null;
+    }
+
+    if (
+      fightResult.character &&
+      fightResult.character.character_current_state === "Reveal" &&
+      !triggeredRyronPassive
+    ) {
+      fightResult.character.character_current_state = null;
     }
 
     if (wasFrozen) {
@@ -1550,27 +1588,11 @@ export const submitChallengeService = async (
       console.log("- Forcing Freeze Overlay into response");
     }
 
-    if (wasReveal) {
+    if (triggeredRyronPassive) {
       if (!fightResult.character) fightResult.character = {};
       fightResult.character.character_current_state = "Reveal";
       fightResult.character.character_attack_overlay = OVERLAYS.REVEAL;
-    }
-
-    if (triggeredGinoPassive) {
-      if (!fightResult.character) fightResult.character = {};
-      fightResult.character.character_current_state = "Revitalize";
-      fightResult.character.character_attack_overlay = OVERLAYS.LIFE;
-      console.log("- Forcing Gino Life Overlay into response");
-    }
-  }
-
-  if (fightResult) {
-    if (fightResult.character) {
-      (fightResult.character as any).character_reaction = characterReactionText;
-    }
-
-    if (fightResult.enemy) {
-      (fightResult.enemy as any).enemy_reaction = enemyReactionText;
+      console.log("- Forcing Ryron Reveal Overlay into response");
     }
   }
 
@@ -2400,41 +2422,56 @@ const prepareChallenge = async (
 
   let modifiedChallenge = { ...challenge };
 
-  if (
-    modifiedChallenge.question &&
-    level.level_type === "enemyButton" &&
-    level.map_id !== 2
-  ) {
-    modifiedChallenge.question = dynamicBlankSetter(
-      modifiedChallenge.question,
-      (modifiedChallenge.correct_answer as string[]) || [],
+  const isAlreadyRevealed =
+    Array.isArray(modifiedChallenge.options) &&
+    modifiedChallenge.options.length === 1 &&
+    modifiedChallenge.options[0] === "Attack";
+
+  if (!isAlreadyRevealed) {
+    if (
+      modifiedChallenge.question &&
+      level.level_type === "enemyButton" &&
+      level.map_id !== 2
+    ) {
+      modifiedChallenge.question = dynamicBlankSetter(
+        modifiedChallenge.question,
+        (modifiedChallenge.correct_answer as string[]) || [],
+      );
+    }
+
+    modifiedChallenge = await overrideChallengeGuide(
+      modifiedChallenge as Challenge,
+      level,
     );
-  }
 
-  modifiedChallenge = await overrideChallengeGuide(
-    modifiedChallenge as Challenge,
-    level,
-  );
-
-  if (level && level.challenges) {
-    const dynamicOptions = generateDynamicOptions(challenge, level.challenges);
-    modifiedChallenge.options = dynamicOptions;
+    if (level && level.challenges) {
+      const dynamicOptions = generateDynamicOptions(
+        challenge,
+        level.challenges,
+      );
+      modifiedChallenge.options = dynamicOptions;
+    }
+  } else {
+    modifiedChallenge = await overrideChallengeGuide(
+      modifiedChallenge as Challenge,
+      level,
+    );
   }
 
   const wrongChallenges = (progress.wrong_challenges as number[]) || [];
   const isRetryOfWrong = wrongChallenges.includes(challenge.challenge_id);
 
-  if (progress.has_ryron_reveal || isRetryOfWrong) {
+  if (!isAlreadyRevealed && (progress.has_ryron_reveal || isRetryOfWrong)) {
     let effectiveCorrectAnswer = challenge.correct_answer as string[];
 
     if (progress.has_ryron_reveal) {
-      const revealResult = revealAllBlanks(
-        challenge.question ?? "",
+      const revealResult = await applyRevealPotion(
+        modifiedChallenge,
         effectiveCorrectAnswer,
       );
 
-      if (revealResult.success && revealResult.filledQuestion) {
-        const filledQuestion = revealResult.filledQuestion;
+      if (revealResult.success && revealResult.revealedChallenge) {
+        modifiedChallenge = revealResult.revealedChallenge;
 
         const challengeKey = challenge.challenge_id.toString();
         const currentPlayerAnswer =
@@ -2459,13 +2496,6 @@ const prepareChallenge = async (
           },
         });
 
-        modifiedChallenge = {
-          ...(challenge as Challenge),
-          question: filledQuestion,
-          options: ["Attack"],
-          answer: effectiveCorrectAnswer,
-        } as ChallengeDTO;
-
         console.log(
           `- Ryron's Passive Applied: All blanks revealed for challenge ${challenge.challenge_id}`,
         );
@@ -2473,11 +2503,13 @@ const prepareChallenge = async (
         return {
           nextChallenge: modifiedChallenge,
         };
+      } else {
+        console.error(`- Ryron's Passive Failed: ${revealResult.error}`);
       }
     } else {
       if (effectiveCorrectAnswer.length >= 8) {
         const revealResult = await applyRetryReveal(
-          challenge,
+          modifiedChallenge,
           effectiveCorrectAnswer,
         );
 
@@ -2496,95 +2528,96 @@ const prepareChallenge = async (
     }
   }
 
-  if (
-    progress.has_reversed_curse &&
-    (level.enemy?.enemy_name === "Boss Darco" ||
-      level.enemy?.enemy_name === "Boss Antcool")
-  ) {
-    const options = modifiedChallenge.options as string[];
-    if (Array.isArray(options) && options.length > 0) {
-      modifiedChallenge.options = options
-        .map(reverseString)
-        .sort(() => Math.random() - 0.5);
-      console.log(
-        "- Reversal curse applied: options strings reversed and jumbled for display",
-      );
-    }
-  } else if (
-    progress.has_shuffle_ss &&
-    level.enemy?.enemy_name === "Boss Maggmaw"
-  ) {
-    const options = modifiedChallenge.options as string[];
-    if (Array.isArray(options) && options.length > 0) {
-      modifiedChallenge.options = shuffleArray([...options]);
-      console.log("- Shuffle SS applied: options shuffled for display");
-    }
-  } else if (
-    progress.has_permuted_ss &&
-    level.enemy?.enemy_name === "Boss Pyroformic"
-  ) {
-    const options = modifiedChallenge.options as string[];
-    if (Array.isArray(options) && options.length > 0) {
-      const permutedOptions = options.map(permuteLetters);
-      modifiedChallenge.options = permutedOptions;
+  if (!isAlreadyRevealed) {
+    if (
+      progress.has_reversed_curse &&
+      (level.enemy?.enemy_name === "Boss Darco" ||
+        level.enemy?.enemy_name === "Boss Antcool")
+    ) {
+      const options = modifiedChallenge.options as string[];
+      if (Array.isArray(options) && options.length > 0) {
+        modifiedChallenge.options = options
+          .map(reverseString)
+          .sort(() => Math.random() - 0.5);
+        console.log(
+          "- Reversal curse applied: options strings reversed and jumbled for display",
+        );
+      }
+    } else if (
+      progress.has_shuffle_ss &&
+      level.enemy?.enemy_name === "Boss Maggmaw"
+    ) {
+      const options = modifiedChallenge.options as string[];
+      if (Array.isArray(options) && options.length > 0) {
+        modifiedChallenge.options = shuffleArray([...options]);
+        console.log("- Shuffle SS applied: options shuffled for display");
+      }
+    } else if (
+      progress.has_permuted_ss &&
+      level.enemy?.enemy_name === "Boss Pyroformic"
+    ) {
+      const options = modifiedChallenge.options as string[];
+      if (Array.isArray(options) && options.length > 0) {
+        const permutedOptions = options.map(permuteLetters);
+        modifiedChallenge.options = permutedOptions;
 
-      const currentMapping = (progress.permutation_mapping as any) || {};
-      currentMapping[challenge.challenge_id.toString()] = {
-        original: options,
-        permuted: permutedOptions,
-      };
+        const currentMapping = (progress.permutation_mapping as any) || {};
+        currentMapping[challenge.challenge_id.toString()] = {
+          original: options,
+          permuted: permutedOptions,
+        };
 
-      await prisma.playerProgress.update({
-        where: {
-          player_id_level_id: {
-            player_id: progress.player_id,
-            level_id: progress.level_id,
+        await prisma.playerProgress.update({
+          where: {
+            player_id_level_id: {
+              player_id: progress.player_id,
+              level_id: progress.level_id,
+            },
           },
-        },
-        data: {
-          permutation_mapping: currentMapping,
-          challenge_start_time: new Date(),
-        },
-      });
+          data: {
+            permutation_mapping: currentMapping,
+            challenge_start_time: new Date(),
+          },
+        });
 
-      console.log(
-        "- Permutation SS applied: letters within options shuffled for display and mapping stored",
-      );
+        console.log(
+          "- Permutation SS applied: letters within options shuffled for display and mapping stored",
+        );
 
-      return { nextChallenge: modifiedChallenge };
-    }
-  } else if (
-    progress.has_only_blanks_ss &&
-    level.enemy?.enemy_name === "King Feanaly"
-  ) {
-    if (modifiedChallenge.question) {
-      modifiedChallenge.question = keepOnlyBlanks(modifiedChallenge.question);
-      console.log(
-        "- King Feanaly SS applied: Question text removed, leaving only blanks.",
-      );
-    }
-  } else if (
-    progress.has_dollar_sign_ss &&
-    level.enemy?.enemy_name === "Boss Icycreamero"
-  ) {
-    const options = modifiedChallenge.options as string[];
-    if (Array.isArray(options) && options.length > 0) {
-      modifiedChallenge.options = options.map(replaceCharWithDollar);
-      console.log("- Boss Icycreamero SS applied: Added '$' to options.");
-    }
-  } else if (
-    progress.has_reverse_words_ss &&
-    level.enemy?.enemy_name === "Boss Scythe"
-  ) {
-    if (modifiedChallenge.question) {
-      modifiedChallenge.question = reverseThreeRandomWords(
-        modifiedChallenge.question,
-      );
-      console.log("- Boss Scythe SS applied: 3 words reversed in question.");
+        return { nextChallenge: modifiedChallenge };
+      }
+    } else if (
+      progress.has_only_blanks_ss &&
+      level.enemy?.enemy_name === "King Feanaly"
+    ) {
+      if (modifiedChallenge.question) {
+        modifiedChallenge.question = keepOnlyBlanks(modifiedChallenge.question);
+        console.log(
+          "- King Feanaly SS applied: Question text removed, leaving only blanks.",
+        );
+      }
+    } else if (
+      progress.has_dollar_sign_ss &&
+      level.enemy?.enemy_name === "Boss Icycreamero"
+    ) {
+      const options = modifiedChallenge.options as string[];
+      if (Array.isArray(options) && options.length > 0) {
+        modifiedChallenge.options = options.map(replaceCharWithDollar);
+        console.log("- Boss Icycreamero SS applied: Added '$' to options.");
+      }
+    } else if (
+      progress.has_reverse_words_ss &&
+      level.enemy?.enemy_name === "Boss Scythe"
+    ) {
+      if (modifiedChallenge.question) {
+        modifiedChallenge.question = reverseThreeRandomWords(
+          modifiedChallenge.question,
+        );
+        console.log("- Boss Scythe SS applied: 3 words reversed in question.");
+      }
     }
   }
 
-  // Update challenge start time so the elapsed time tracking is reset for the new challenge
   await prisma.playerProgress.update({
     where: {
       player_id_level_id: {

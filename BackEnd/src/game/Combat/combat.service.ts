@@ -522,32 +522,39 @@ export async function getCurrentFightState(
 
   if (progress.has_freeze_effect) {
     enemy_current_state = "Frozen";
-    enemy_attack_overlay = "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png";
+    enemy_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png";
     console.log("- Freeze effect persisting from progress");
   }
   if (progress.has_strong_effect) {
     character_current_state = "Strong";
-    character_attack_overlay = "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png";
+    character_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png";
     console.log("- Strong effect persisting from progress");
   }
   if (progress.has_ryron_reveal) {
     character_current_state = "Reveal";
-    character_attack_overlay = "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
+    character_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
     console.log("- Ryron reveal persisting from progress");
   }
 
   if (potionType === "Power") {
     character_current_state = "Strong";
-    character_attack_overlay = "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png";
+    character_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png";
   } else if (potionType === "Immunity") {
     enemy_current_state = "Frozen";
-    enemy_attack_overlay = "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png";
+    enemy_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png";
   } else if (potionType === "Reveal") {
     character_current_state = "Reveal";
-    character_attack_overlay = "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
+    character_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
   } else if (potionType === "Life") {
     character_current_state = "Revitalize";
-    character_attack_overlay = "https://micomi-assets.me/Icons/Miscellaneous/Gino's%20Lightning.png";
+    character_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Gino's%20Lightning.png";
   }
 
   return {
@@ -721,9 +728,6 @@ export async function fightEnemy(
   let character_attack_pose: string | null = null;
   let character_current_state: string | null = null;
   let enemy_current_state: string | null = null;
-  let wasEnemyFrozenThisTurn = progress.has_freeze_effect || false;
-  let wasCharacterStrongThisTurn = progress.has_strong_effect || false;
-  let wasCharacterHaveHintThisTurn = progress.has_ryron_reveal || false;
 
   character_run = runArray[0] || null;
   character_idle = character.avatar_image || null;
@@ -1301,37 +1305,40 @@ export async function fightEnemy(
       }
     }
   } else {
+    // WRONG ANSWER CONSUMPTION LOGIC (APPLIES TO NORMAL AND BONUS ROUNDS)
+    const freezeConsumedThisTurn = progress.has_freeze_effect === true;
+    if (freezeConsumedThisTurn) {
+      enemy_damage = 0;
+      enemy_run = null;
+      enemy_attack = null;
+      enemy_current_state = null;
+      character_hurt = null;
+      character_run = null;
+      enemy_idle = enemy.enemy_avatar || null;
+
+      await prisma.playerProgress.update({
+        where: { progress_id: progress.progress_id },
+        data: { has_freeze_effect: false },
+      });
+      progress.has_freeze_effect = false;
+      console.log(
+        "- Freeze effect consumed: enemy turn skipped and no damage taken.",
+      );
+    }
+
+    if (progress.has_strong_effect) {
+      await prisma.playerProgress.update({
+        where: { progress_id: progress.progress_id },
+        data: { has_strong_effect: false },
+      });
+      progress.has_strong_effect = false;
+      console.log(
+        "- Wrong answer (Normal Enemy): Leon's Strong Effect has dissipated.",
+      );
+    }
+
     if (!effectiveBonusRound && enemyHealth > 0) {
-      if (progress.has_strong_effect) {
-        await prisma.playerProgress.update({
-          where: { progress_id: progress.progress_id },
-          data: { has_strong_effect: false },
-        });
-        progress.has_strong_effect = false;
-        console.log(
-          "- Wrong answer (Normal Enemy): Leon's Strong Effect has dissipated.",
-        );
-      }
-
-      if (progress.has_freeze_effect) {
-        enemy_damage = 0;
-        enemy_run = null;
-        enemy_attack = null;
-        enemy_current_state = null;
-        character_hurt = null;
-        character_run = null;
-        enemy_idle = enemy.enemy_avatar || null;
-
-        await prisma.playerProgress.update({
-          where: { progress_id: progress.progress_id },
-          data: { has_freeze_effect: false },
-        });
-        progress.has_freeze_effect = false;
-
-        console.log(
-          "- Freeze effect consumed: enemy turn skipped and no damage taken.",
-        );
-      } else {
+      if (!freezeConsumedThisTurn) {
         enemy_damage = enemy.enemy_damage;
         charHealth = Math.max(charHealth - enemy_damage, 0);
         enemy_idle = enemy.enemy_avatar || null;
@@ -1363,8 +1370,6 @@ export async function fightEnemy(
           character_idle = null;
           character_run = null;
           character_attack_type = null;
-
-          // await EnergyService.deductEnergy(playerId, 10); disabled to allow retries while testing
         }
       }
     } else if (effectiveBonusRound) {
@@ -1552,12 +1557,20 @@ export async function fightEnemy(
   }
 
   //Passive effects overlay logic
-  if (wasEnemyFrozenThisTurn) {
+  if (progress?.has_freeze_effect) {
     enemy_current_state = "Frozen";
-  } else if (wasCharacterStrongThisTurn) {
+    enemy_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png";
+  }
+  if (progress?.has_strong_effect) {
     character_current_state = "Strong";
-  } else if (wasCharacterHaveHintThisTurn) {
+    character_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png";
+  }
+  if (progress?.has_ryron_reveal) {
     character_current_state = "Reveal";
+    character_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
   }
 
   console.log("Final result:");
@@ -1721,9 +1734,6 @@ export async function fightBossEnemy(
   let enemy_ss_type: string | null = null;
   let enemy_current_state: string | null = null;
   let character_current_state: string | null = null;
-  let wasEnemyFrozenThisTurn = progress.has_freeze_effect || false;
-  let wasCharacterStrongThisTurn = progress.has_strong_effect || false;
-  let wasCharacterHaveHintThisTurn = progress.has_ryron_reveal || false;
 
   character_run = runArray[0] || null;
   character_idle = character.avatar_image || null;
@@ -2183,7 +2193,40 @@ export async function fightBossEnemy(
       }
     }
   } else {
+    // WRONG ANSWER CONSUMPTION LOGIC (APPLIES TO NORMAL AND BONUS ROUNDS)
     const effectiveBonusRound = isBonusRound || isDetectedBonusRound;
+
+    const freezeConsumedThisTurn = progress.has_freeze_effect === true;
+    if (freezeConsumedThisTurn) {
+      enemy_damage = 0;
+      enemy_run = null;
+      enemy_attack = null;
+      enemy_attack_type = null;
+      enemy_current_state = null;
+      character_hurt = null;
+      character_run = null;
+      enemy_idle = enemy.enemy_avatar || null;
+
+      await prisma.playerProgress.update({
+        where: { progress_id: progress.progress_id },
+        data: { has_freeze_effect: false },
+      });
+      progress.has_freeze_effect = false;
+      console.log(
+        "- Freeze effect consumed: enemy turn skipped and no damage taken.",
+      );
+    }
+
+    if (progress.has_strong_effect) {
+      await prisma.playerProgress.update({
+        where: { progress_id: progress.progress_id },
+        data: { has_strong_effect: false },
+      });
+      progress.has_strong_effect = false;
+      console.log(
+        "- Wrong answer submitted (Boss): Leon's Strong Effect has dissipated.",
+      );
+    }
 
     if (effectiveBonusRound) {
       // For consistency, set animations for wrong in bonus (character idle, enemy hurt, no idle)
@@ -2193,38 +2236,6 @@ export async function fightBossEnemy(
       enemy_hurt = enemy.enemy_hurt || null;
       console.log("- Boss bonus round wrong: Enemy stays hurt, no counter");
     } else if (enemyHealth > 0) {
-      const freezeConsumedThisTurn = progress.has_freeze_effect === true;
-      if (freezeConsumedThisTurn) {
-        enemy_damage = 0;
-        enemy_run = null;
-        enemy_attack = null;
-        enemy_attack_type = null;
-        enemy_current_state = null;
-        character_hurt = null;
-        character_run = null;
-        enemy_idle = enemy.enemy_avatar || null;
-
-        await prisma.playerProgress.update({
-          where: { progress_id: progress.progress_id },
-          data: { has_freeze_effect: false },
-        });
-        progress.has_freeze_effect = false;
-        console.log(
-          "- Freeze effect consumed: enemy turn skipped and no damage taken.",
-        );
-      }
-
-      if (progress.has_strong_effect) {
-        await prisma.playerProgress.update({
-          where: { progress_id: progress.progress_id },
-          data: { has_strong_effect: false },
-        });
-        progress.has_strong_effect = false;
-        console.log(
-          "- Wrong answer submitted (Boss): Leon's Strong Effect has dissipated.",
-        );
-      }
-
       if (!freezeConsumedThisTurn) {
         enemy_damage = enemy.enemy_damage;
         charHealth = Math.max(charHealth - enemy_damage, 0);
@@ -2325,8 +2336,6 @@ export async function fightBossEnemy(
           character_idle = null;
           character_run = null;
           character_attack_type = null;
-
-          // await EnergyService.deductEnergy(playerId, 10); disabled to allow retries while testing
         }
       }
     } else {
@@ -2507,15 +2516,6 @@ export async function fightBossEnemy(
     }
   }
 
-  //Passive effects overlay logic
-  if (wasEnemyFrozenThisTurn) {
-    enemy_current_state = "Frozen";
-  } else if (wasCharacterStrongThisTurn) {
-    character_current_state = "Strong";
-  } else if (wasCharacterHaveHintThisTurn) {
-    character_current_state = "Reveal";
-  }
-
   const updatedEnergyStatus =
     await EnergyService.getPlayerEnergyStatus(playerId);
 
@@ -2524,6 +2524,23 @@ export async function fightBossEnemy(
       player_id_level_id: { player_id: playerId, level_id: level.level_id },
     },
   });
+
+  //Passive effects overlay logic
+  if (progress?.has_freeze_effect) {
+    enemy_current_state = "Frozen";
+    enemy_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png";
+  }
+  if (progress?.has_strong_effect) {
+    character_current_state = "Strong";
+    character_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png";
+  }
+  if (progress?.has_ryron_reveal) {
+    character_current_state = "Reveal";
+    character_attack_overlay =
+      "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
+  }
 
   console.log("Final result (Boss):");
   console.log("- Enemy health:", enemyHealth);
