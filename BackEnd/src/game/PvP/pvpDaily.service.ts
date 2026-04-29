@@ -831,13 +831,11 @@ const buildEntryLikePayload = async (
       ),
     );
 
-  // 👇 ADD THIS NEW BLOCK HERE 👇
   let viewer_current_state: string | null = null;
   let viewer_attack_overlay: string | null = null;
   let opponent_current_state: string | null = null;
   let opponent_attack_overlay: string | null = null;
 
-  // Evaluate Viewer's States
   if (match.has_freeze_effect_by_player[opponentSnapshot.player_id]) {
     viewer_current_state = "Frozen";
     viewer_attack_overlay = OVERLAYS.FREEZE;
@@ -851,7 +849,6 @@ const buildEntryLikePayload = async (
     viewer_attack_overlay = OVERLAYS.REVEAL;
   }
 
-  // Evaluate Opponent's States
   if (match.has_freeze_effect_by_player[viewerPlayerId]) {
     opponent_current_state = "Frozen";
     opponent_attack_overlay = OVERLAYS.FREEZE;
@@ -1972,7 +1969,6 @@ const buildSubmitLikeResponse = async (
   const final_character_hurt_audio =
     enemyShowsAttack && !wasFrozen ? getHeroHurtAudio(viewerCharName) : null;
 
-  // 👇 ADD THIS NEW BLOCK HERE 👇
   let character_current_state: string | null = null;
   let character_attack_overlay: string | null = null;
   let enemy_current_state: string | null = null;
@@ -1980,7 +1976,6 @@ const buildSubmitLikeResponse = async (
 
   const opponentPlayerId = Number(opponentEnemy.player_id);
 
-  // 1. Base Combat States (Attacking or Hurt)
   if (characterShowsAttack) {
     character_current_state = wasFrozen ? "Frozen" : "attacking";
     if (wasFrozen) character_attack_overlay = OVERLAYS.FREEZE;
@@ -1995,7 +1990,6 @@ const buildSubmitLikeResponse = async (
     enemy_current_state = wasFrozen ? null : "hurt";
   }
 
-  // 2. Persistent Passives
   if (match.has_freeze_effect_by_player[opponentPlayerId]) {
     character_current_state = "Frozen";
     character_attack_overlay = OVERLAYS.FREEZE;
@@ -2022,7 +2016,6 @@ const buildSubmitLikeResponse = async (
     enemy_attack_overlay = OVERLAYS.REVEAL;
   }
 
-  // 3. Just-Triggered Passives (overrides base states for 1 turn)
   if (reason === "correct_and_first") {
     if (
       isViewerLastAttacker &&
@@ -2051,7 +2044,6 @@ const buildSubmitLikeResponse = async (
     }
   }
 
-  // 4. Idle Overrides (Leon's Pose)
   let final_character_idle = viewerCharacter.character_idle as string | null;
   let final_enemy_idle = opponentEnemy.enemy_idle as string | null;
 
@@ -2081,11 +2073,14 @@ const buildSubmitLikeResponse = async (
     character_id: viewerCharacter.character_id,
     character_name: viewerCharacter.character_name,
     character_idle: final_character_idle,
-    character_run:
-      isWrongRetryState ||
-      enemyShowsAttack ||
-      isCharacterDead ||
-      (characterShowsAttack && wasFrozen)
+    character_run: isVictory
+      ? viewerCharacter.character_run
+      : isWrongRetryState ||
+          enemyShowsAttack ||
+          isCharacterDead ||
+          (characterShowsAttack && wasFrozen) ||
+          (characterShowsAttack &&
+            (viewerCharName === "ShiShi" || viewerCharName === "Ryron"))
         ? null
         : viewerCharacter.character_run,
     character_attack_type: characterShowsAttack ? resolvedAttackType : null,
@@ -2119,7 +2114,15 @@ const buildSubmitLikeResponse = async (
     enemy_id: opponentEnemy.enemy_id,
     enemy_name: opponentEnemy.enemy_name,
     enemy_idle: final_enemy_idle,
-    enemy_run: enemyShowsAttack && !wasFrozen ? opponentEnemy.enemy_run : null,
+    enemy_run:
+      isCompleted && !isVictory
+        ? opponentEnemy.enemy_run
+        : enemyShowsAttack &&
+            !wasFrozen &&
+            opponentCharName !== "ShiShi" &&
+            opponentCharName !== "Ryron"
+          ? opponentEnemy.enemy_run
+          : null,
     enemy_attack_type: enemyShowsAttack ? resolvedAttackType : null,
     enemy_attack: enemyShowsAttack && !wasFrozen ? opponentAttackAsset : null,
     enemy_hurt:
