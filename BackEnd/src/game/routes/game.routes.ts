@@ -3,7 +3,7 @@ import * as ChallengeController from "../Challenges/challenges.controller";
 import * as ShopController from "../Shop/shop.controller";
 import * as AchievementController from "../Achievements/achievements.controller";
 import * as LevelController from "../Levels/levels.controller";
-import * as MapController from "../Maps/maps.controller";
+import * as ThemeController from "../Themes/themes.controller";
 import * as LeaderboardController from "../Leaderboard/leaderboard.controller";
 import * as ModelShopService from "../../models/Shop/shop.service";
 import * as LessonsController from "../Lessons/lesson.controller";
@@ -189,6 +189,21 @@ router.post(
   authenticate,
   requirePlayer,
   PvPDailyController.submitAnswer,
+);
+
+//For gameplay theme color
+router.get("/themes", authenticate, requirePlayer, ThemeController.getThemes);
+router.post(
+  "/themes/:themeId/purchase",
+  authenticate,
+  requirePlayer,
+  ThemeController.buyTheme,
+);
+router.post(
+  "/themes/:themeId/select",
+  authenticate,
+  requirePlayer,
+  ThemeController.selectPlayerTheme,
 );
 
 export default router;

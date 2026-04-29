@@ -50,12 +50,10 @@ export const checkAchievements = async (playerId: number) => {
         .then((count) => count + 1)
     : null;
 
-  console.log(`Player ${playerId} rank: ${leaderboardRank}`);
-
   const purchasedCharacters = ownedCharacters;
   const potionCount = ownedPotions.reduce(
     (total: number, p: { quantity: number }) => total + p.quantity,
-    0
+    0,
   );
 
   const bossLevels = await prisma.level.findMany({
@@ -70,7 +68,7 @@ export const checkAchievements = async (playerId: number) => {
 
   const defeatedBosses = bossLevels.filter(
     (l: { playerProgress: { progress_id: number }[] }) =>
-      l.playerProgress.length > 0
+      l.playerProgress.length > 0,
   ).length;
 
   const finalLevels = await prisma.level.findMany({
@@ -102,7 +100,7 @@ export const checkAchievements = async (playerId: number) => {
 
   for (const achievement of achievements) {
     const existing = existingPlayerAchievements.find(
-      (pa) => pa.achievement_id === achievement.achievement_id
+      (pa) => pa.achievement_id === achievement.achievement_id,
     );
 
     let shouldAward = false;
@@ -184,7 +182,7 @@ export const checkAchievements = async (playerId: number) => {
   if (newlyUnlockedForEmit.length > 0) {
     io.to(playerId.toString()).emit(
       "achievementUnlocked",
-      newlyUnlockedForEmit
+      newlyUnlockedForEmit,
     );
   }
 

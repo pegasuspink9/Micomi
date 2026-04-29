@@ -802,6 +802,12 @@ export const enterLevel = async (playerId: number, levelId: number) => {
   card_type = cardInfo.card_type;
   character_attack_card = cardInfo.character_attack_card;
 
+  const selectedTheme = await prisma.playerTheme.findFirst({
+    where: { player_id: playerId, is_selected: true },
+    include: { theme: true },
+  });
+  const gameplay_theme_color = selectedTheme?.theme.theme_color || "default";
+
   const combatBackground = [
     await getBackgroundForLevel(level.map.map_name, level.level_number),
   ];
@@ -981,6 +987,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     question_type: questionType,
     versus_background: versus_background,
     versus_audio: versus_background_audio,
+    gameplay_theme_color,
     gameplay_audio: gameplay_audio,
     boss_skill_activated: progress.boss_skill_activated,
     isEnemyFrozen: progress.has_freeze_effect,

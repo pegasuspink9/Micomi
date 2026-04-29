@@ -56,6 +56,7 @@ export const generateDynamicMessage = async (
   enemy_name: string,
   enemyHealth: number,
   isBonusRound: boolean,
+  isEnemyScored: boolean = false,
 ): Promise<{ text: string; audio: string[] }> => {
   const lowHealth = playerHealth <= 50 && playerHealth > 0;
   const enemyLowHealth = enemyHealth <= 30 && enemyHealth > 0;
@@ -65,7 +66,17 @@ export const generateDynamicMessage = async (
   let category = "";
   const tags: string[] = [];
 
-  if (isCorrect) {
+  if (isEnemyScored) {
+    if (playerHealth <= 0) {
+      category = "WRONG_LOST";
+      tags.push("lost");
+    } else if (lowHealth) {
+      category = "WRONG_LOW_HEALTH";
+      tags.push("low_health");
+    } else {
+      category = "WRONG_BASE";
+    }
+  } else if (isCorrect) {
     if (hintUsed) {
       category = "CORRECT_HINT";
       tags.push("hint");
@@ -102,17 +113,31 @@ export const generateDynamicMessage = async (
     }
   }
 
-  const pool = await getMessagePool(category, tags);
-  const signature = buildSignature(category, tags);
+  let pool = await getMessagePool(category, tags);
+  let signature = buildSignature(category, tags);
+
+  if (isEnemyScored && (!pool || pool.length === 0)) {
+    const fallbackCategory =
+      playerHealth <= 0
+        ? "WRONG_LOST"
+        : lowHealth
+          ? "WRONG_LOW_HEALTH"
+          : "WRONG_BASE";
+    pool = await getMessagePool(fallbackCategory, tags);
+    category = fallbackCategory;
+    signature = buildSignature(category, tags);
+  }
 
   if (!pool || pool.length === 0) {
     console.error(
-      `[GameMessage] No messages found for category: ${category}, tags: ${tags.join(
-        ", ",
-      )}`,
+      `[GameMessage] No messages found for category: ${category}, tags: ${tags.join(", ")}`,
     );
     return {
-      text: isCorrect ? "Great job!" : "Try again!",
+      text: isEnemyScored
+        ? "Opponent scored!"
+        : isCorrect
+          ? "Great job!"
+          : "Try again!",
       audio: [],
     };
   }
@@ -124,7 +149,11 @@ export const generateDynamicMessage = async (
       `[GameMessage] Invalid message selected from pool for category: ${category}`,
     );
     return {
-      text: isCorrect ? "Great job!" : "Try again!",
+      text: isEnemyScored
+        ? "Opponent scored!"
+        : isCorrect
+          ? "Great job!"
+          : "Try again!",
       audio: [],
     };
   }

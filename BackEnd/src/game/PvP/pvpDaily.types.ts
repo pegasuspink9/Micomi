@@ -157,6 +157,7 @@ export interface PvpMatchEntryLikeResponse {
   versus_background: string;
   versus_audio: string;
   timer: string;
+  gameplay_theme_color: string | null;
   gameplay_audio: string;
   is_correct_audio: string | null;
   enemy_attack_audio: string | null;
@@ -251,6 +252,7 @@ export interface PvpDailySubmitAnswerResult {
     character_damage_card: number | null;
   };
   timer?: string | null;
+  gameplay_theme_color: string | null;
   gameplay_audio?: string;
   is_correct_audio?: string | null;
   enemy_attack_audio?: string | null;
