@@ -799,7 +799,7 @@ const buildEntryLikePayload = async (
   const rootTimerString = formatTimer(roundTimeLimitSeconds);
 
   const mapAssets = getMapMediaAssets(mapName);
-  const combatBackground = [mapAssets.versus_background];
+  const combatBackground = [mapAssets.combat_background];
 
   const viewerSS = getHeroSpecialSkillAssets(viewerChar.character_name);
   const opponentSS = getHeroSpecialSkillAssets(opponentChar.character_name);

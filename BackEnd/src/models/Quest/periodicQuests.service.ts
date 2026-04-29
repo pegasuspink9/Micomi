@@ -415,6 +415,7 @@ export async function cleanupExpiredQuests(period?: QuestPeriod) {
     const deletedPlayerQuests = await prisma.playerQuest.deleteMany({
       where: {
         expires_at: { lt: now },
+        is_claimed: true,
         ...(period && { quest_period: period }),
       },
     });
@@ -716,17 +717,8 @@ export async function cleanupExpiredQuestsForAllPlayers() {
 
     const expiredQuests = await prisma.playerQuest.findMany({
       where: {
-        AND: [
-          { expires_at: { lt: now } },
-          {
-            OR: [
-              { is_completed: false },
-              {
-                AND: [{ is_completed: true }, { is_claimed: false }],
-              },
-            ],
-          },
-        ],
+        expires_at: { lt: now },
+        is_claimed: true,
       },
       select: { player_quest_id: true, player_id: true, quest_id: true },
     });
@@ -750,6 +742,22 @@ export async function cleanupExpiredQuestsForAllPlayers() {
           },
         },
       });
+
+      const orphanedQuests = await prisma.quest.findMany({
+        where: { playerQuests: { none: {} } },
+        select: { quest_id: true },
+      });
+
+      if (orphanedQuests.length > 0) {
+        await prisma.quest.deleteMany({
+          where: {
+            quest_id: { in: orphanedQuests.map((q) => q.quest_id) },
+          },
+        });
+        console.log(
+          `[Quest Service] ✅ Also deleted ${orphanedQuests.length} orphaned Quests`,
+        );
+      }
 
       results.totalDeletedQuests = expiredQuests.length;
       expiredQuests.forEach((q) => {
