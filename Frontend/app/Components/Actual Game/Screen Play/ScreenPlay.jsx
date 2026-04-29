@@ -1192,6 +1192,7 @@ useEffect(() => {
     <GameContainer borderColor={borderColor}   setBorderColor={setBorderColor}>
       <GameBackground 
         isPaused={isPaused} 
+        isPvpMode={isPvpMode}
         combatBackground={combatBackground}
         characterCurrentState={characterCurrentState}
         characterAttackType={characterAttackType}

@@ -903,7 +903,7 @@ const styles = StyleSheet.create({
     width: '78%',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: scale(4),
+    marginBottom: scale(5),
   },
   pvpRankTopRow: {
     width: '100%',
@@ -922,8 +922,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pvpRankImage: {
-    width: scale(90),
-    height: scale(90),
+    width: scale(60),
+    height: scale(60),
   },
   pvpRankImagePlaceholder: {
     width: scale(40),
