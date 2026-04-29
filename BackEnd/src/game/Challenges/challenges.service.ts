@@ -2101,6 +2101,13 @@ export const submitChallengeService = async (
     console.log("- Freeze effect active: Muting all enemy audio responses.");
   }
 
+  if (character.character_name === "Leon" && attackType === "special_attack") {
+    if (fightResult && fightResult.character) {
+      fightResult.character.character_idle = "https://micomi-assets.me/Hero/Leon/UltIdle.png";
+      console.log("- Leon is holding a special attack card: Overriding character_idle in fightResult");
+    }
+  }
+
   return {
     isCorrect,
     attempts: freshProgress?.attempts ?? updatedProgress.attempts,
