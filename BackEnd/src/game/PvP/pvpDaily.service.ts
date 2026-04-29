@@ -142,8 +142,14 @@ const LOSS_REWARD: PvPCompletionRewards = {
   potion: null,
 };
 
-const FREEZE_OVERLAY =
-  "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png";
+const OVERLAYS = {
+  STRONG:
+    "https://micomi-assets.me/Icons/Miscellaneous/Leon%20Muscle%20Flex.png",
+  FREEZE: "https://micomi-assets.me/Icons/Miscellaneous/Shi's%20Ice.png",
+  REVEAL:
+    "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png",
+  LIFE: "https://micomi-assets.me/Icons/Miscellaneous/Gino's%20Lightning.png",
+};
 
 const PVP_TOPICS: PvpChallengeTopic[] = [
   "HTML",
@@ -825,6 +831,69 @@ const buildEntryLikePayload = async (
       ),
     );
 
+  // 👇 ADD THIS NEW BLOCK HERE 👇
+  let viewer_current_state: string | null = null;
+  let viewer_attack_overlay: string | null = null;
+  let opponent_current_state: string | null = null;
+  let opponent_attack_overlay: string | null = null;
+
+  // Evaluate Viewer's States
+  if (match.has_freeze_effect_by_player[opponentSnapshot.player_id]) {
+    viewer_current_state = "Frozen";
+    viewer_attack_overlay = OVERLAYS.FREEZE;
+  }
+  if (match.has_strong_effect_by_player[viewerPlayerId]) {
+    viewer_current_state = "Strong";
+    viewer_attack_overlay = OVERLAYS.STRONG;
+  }
+  if (match.has_ryron_reveal_by_player[viewerPlayerId]) {
+    viewer_current_state = "Reveal";
+    viewer_attack_overlay = OVERLAYS.REVEAL;
+  }
+
+  // Evaluate Opponent's States
+  if (match.has_freeze_effect_by_player[viewerPlayerId]) {
+    opponent_current_state = "Frozen";
+    opponent_attack_overlay = OVERLAYS.FREEZE;
+  }
+  if (match.has_strong_effect_by_player[opponentSnapshot.player_id]) {
+    opponent_current_state = "Strong";
+    opponent_attack_overlay = OVERLAYS.STRONG;
+  }
+  if (match.has_ryron_reveal_by_player[opponentSnapshot.player_id]) {
+    opponent_current_state = "Reveal";
+    opponent_attack_overlay = OVERLAYS.REVEAL;
+  }
+
+  let final_character_idle = viewerChar.avatar_image;
+  let final_enemy_idle = opponentChar.avatar_image;
+
+  const viewerStreak =
+    match.consecutive_corrects_by_player[viewerPlayerId] ?? 0;
+  const opponentStreak =
+    match.consecutive_corrects_by_player[opponentSnapshot.player_id] ?? 0;
+
+  if (
+    viewerChar.character_name === "Leon" &&
+    resolvePreviewAttackType(
+      viewerChar.character_name,
+      viewerStreak,
+      correctAnswerLength,
+    ) === "special_attack"
+  ) {
+    final_character_idle = "https://micomi-assets.me/Hero/Leon/UltIdle.png";
+  }
+  if (
+    opponentChar.character_name === "Leon" &&
+    resolvePreviewAttackType(
+      opponentChar.character_name,
+      opponentStreak,
+      correctAnswerLength,
+    ) === "special_attack"
+  ) {
+    final_enemy_idle = "https://micomi-assets.me/Hero/Leon/UltIdle.png";
+  }
+
   return {
     level: {
       level_id: 0,
@@ -843,7 +912,7 @@ const buildEntryLikePayload = async (
       enemy_name: opponentSnapshot.character_name,
       enemy_health: opponentSnapshot.character_health,
       enemy_max_health: opponentSnapshot.character_max_health,
-      enemy_idle: opponentChar.avatar_image,
+      enemy_idle: final_enemy_idle,
       enemy_run: opponentChar.character_run,
       enemy_damage: opponentChar.character_damage,
       enemy_attack: opponentChar.character_attacks,
@@ -856,8 +925,9 @@ const buildEntryLikePayload = async (
         streak:
           match.consecutive_corrects_by_player[opponentSnapshot.player_id] ?? 0,
         special_skill_description: opponentSS.special_skill_description,
-        ss_type: null,
       },
+      enemy_current_state: opponent_current_state,
+      enemy_attack_overlay: opponent_attack_overlay,
     },
     character: {
       player_id: viewerSnapshot.player_id,
@@ -869,7 +939,7 @@ const buildEntryLikePayload = async (
       character_health: viewerSnapshot.character_health,
       character_max_health: viewerSnapshot.character_max_health,
       character_damage: viewerChar.character_damage,
-      character_idle: viewerChar.avatar_image,
+      character_idle: final_character_idle,
       character_run: viewerChar.character_run,
       character_attack: viewerChar.character_attacks,
       character_hurt: viewerChar.character_hurt,
@@ -883,6 +953,8 @@ const buildEntryLikePayload = async (
         streak: match.consecutive_corrects_by_player[viewerPlayerId] ?? 0,
         special_skill_description: viewerSS.special_skill_description,
       },
+      character_current_state: viewer_current_state,
+      character_attack_overlay: viewer_attack_overlay,
     },
     card: {
       card_type: cardInfo.card_type,
@@ -1900,12 +1972,115 @@ const buildSubmitLikeResponse = async (
   const final_character_hurt_audio =
     enemyShowsAttack && !wasFrozen ? getHeroHurtAudio(viewerCharName) : null;
 
+  // 👇 ADD THIS NEW BLOCK HERE 👇
+  let character_current_state: string | null = null;
+  let character_attack_overlay: string | null = null;
+  let enemy_current_state: string | null = null;
+  let enemy_attack_overlay: string | null = null;
+
+  const opponentPlayerId = Number(opponentEnemy.player_id);
+
+  // 1. Base Combat States (Attacking or Hurt)
+  if (characterShowsAttack) {
+    character_current_state = wasFrozen ? "Frozen" : "attacking";
+    if (wasFrozen) character_attack_overlay = OVERLAYS.FREEZE;
+  } else if (enemyShowsAttack) {
+    character_current_state = wasFrozen ? null : "hurt";
+  }
+
+  if (enemyShowsAttack) {
+    enemy_current_state = wasFrozen ? "Frozen" : "attacking";
+    if (wasFrozen) enemy_attack_overlay = OVERLAYS.FREEZE;
+  } else if (characterShowsAttack) {
+    enemy_current_state = wasFrozen ? null : "hurt";
+  }
+
+  // 2. Persistent Passives
+  if (match.has_freeze_effect_by_player[opponentPlayerId]) {
+    character_current_state = "Frozen";
+    character_attack_overlay = OVERLAYS.FREEZE;
+  }
+  if (match.has_strong_effect_by_player[playerId]) {
+    character_current_state = "Strong";
+    character_attack_overlay = OVERLAYS.STRONG;
+  }
+  if (match.has_ryron_reveal_by_player[playerId]) {
+    character_current_state = "Reveal";
+    character_attack_overlay = OVERLAYS.REVEAL;
+  }
+
+  if (match.has_freeze_effect_by_player[playerId]) {
+    enemy_current_state = "Frozen";
+    enemy_attack_overlay = OVERLAYS.FREEZE;
+  }
+  if (match.has_strong_effect_by_player[opponentPlayerId]) {
+    enemy_current_state = "Strong";
+    enemy_attack_overlay = OVERLAYS.STRONG;
+  }
+  if (match.has_ryron_reveal_by_player[opponentPlayerId]) {
+    enemy_current_state = "Reveal";
+    enemy_attack_overlay = OVERLAYS.REVEAL;
+  }
+
+  // 3. Just-Triggered Passives (overrides base states for 1 turn)
+  if (reason === "correct_and_first") {
+    if (
+      isViewerLastAttacker &&
+      match.consecutive_corrects_by_player[playerId] === 3
+    ) {
+      if (viewerCharName === "Leon") character_attack_overlay = OVERLAYS.STRONG;
+      if (viewerCharName === "ShiShi") enemy_attack_overlay = OVERLAYS.FREEZE;
+      if (viewerCharName === "Ryron")
+        character_attack_overlay = OVERLAYS.REVEAL;
+      if (viewerCharName === "Gino") {
+        character_current_state = "Revitalize";
+        character_attack_overlay = OVERLAYS.LIFE;
+      }
+    } else if (
+      !isViewerLastAttacker &&
+      match.consecutive_corrects_by_player[opponentPlayerId] === 3
+    ) {
+      if (opponentCharName === "Leon") enemy_attack_overlay = OVERLAYS.STRONG;
+      if (opponentCharName === "ShiShi")
+        character_attack_overlay = OVERLAYS.FREEZE;
+      if (opponentCharName === "Ryron") enemy_attack_overlay = OVERLAYS.REVEAL;
+      if (opponentCharName === "Gino") {
+        enemy_current_state = "Revitalize";
+        enemy_attack_overlay = OVERLAYS.LIFE;
+      }
+    }
+  }
+
+  // 4. Idle Overrides (Leon's Pose)
+  let final_character_idle = viewerCharacter.character_idle as string | null;
+  let final_enemy_idle = opponentEnemy.enemy_idle as string | null;
+
+  const viewerStreak = match.consecutive_corrects_by_player[playerId] ?? 0;
+  const opponentStreak =
+    match.consecutive_corrects_by_player[opponentPlayerId] ?? 0;
+  const nextLength = nextChallenge?.correct_answer.length ?? 1;
+
+  if (
+    viewerCharName === "Leon" &&
+    resolvePreviewAttackType(viewerCharName, viewerStreak, nextLength) ===
+      "special_attack"
+  ) {
+    final_character_idle = "https://micomi-assets.me/Hero/Leon/UltIdle.png";
+  }
+  if (
+    opponentCharName === "Leon" &&
+    resolvePreviewAttackType(opponentCharName, opponentStreak, nextLength) ===
+      "special_attack"
+  ) {
+    final_enemy_idle = "https://micomi-assets.me/Hero/Leon/UltIdle.png";
+  }
+
   const characterForFightResult = {
     player_id: viewerCharacter.player_id,
     player_name: viewerCharacter.player_name,
     character_id: viewerCharacter.character_id,
     character_name: viewerCharacter.character_name,
-    character_idle: viewerCharacter.character_idle,
+    character_idle: final_character_idle,
     character_run:
       isWrongRetryState ||
       enemyShowsAttack ||
@@ -1933,17 +2108,8 @@ const buildSubmitLikeResponse = async (
     character_avatar: viewerCharacter.character_avatar,
     character_is_range: viewerCharacter.character_is_range,
     special_skill: viewerCharacter.special_skill,
-    character_current_state: characterShowsAttack
-      ? wasFrozen
-        ? "Frozen"
-        : "attacking"
-      : enemyShowsAttack
-        ? wasFrozen
-          ? null
-          : "hurt"
-        : null,
-    character_attack_overlay:
-      characterShowsAttack && wasFrozen ? FREEZE_OVERLAY : null,
+    character_current_state,
+    character_attack_overlay,
     character_reaction: viewerReaction,
   };
 
@@ -1952,7 +2118,7 @@ const buildSubmitLikeResponse = async (
     player_name: opponentEnemy.player_name,
     enemy_id: opponentEnemy.enemy_id,
     enemy_name: opponentEnemy.enemy_name,
-    enemy_idle: opponentEnemy.enemy_idle,
+    enemy_idle: final_enemy_idle,
     enemy_run: enemyShowsAttack && !wasFrozen ? opponentEnemy.enemy_run : null,
     enemy_attack_type: enemyShowsAttack ? resolvedAttackType : null,
     enemy_attack: enemyShowsAttack && !wasFrozen ? opponentAttackAsset : null,
@@ -1971,17 +2137,8 @@ const buildSubmitLikeResponse = async (
     enemy_max_health: opponentEnemy.enemy_max_health,
     enemy_avatar: opponentEnemy.enemy_avatar,
     special_skill: opponentEnemy.special_skill,
-    enemy_current_state: enemyShowsAttack
-      ? wasFrozen
-        ? "Frozen"
-        : "attacking"
-      : characterShowsAttack
-        ? wasFrozen
-          ? null
-          : "hurt"
-        : null,
-    enemy_attack_overlay: enemyShowsAttack && wasFrozen ? FREEZE_OVERLAY : null,
-    enemy_hit_reaction: null,
+    enemy_current_state,
+    enemy_attack_overlay,
     enemy_reaction: opponentReaction,
   };
 
@@ -2063,7 +2220,6 @@ const buildSubmitLikeResponse = async (
 
   const mistakes = match.mistakes_by_player[playerId] ?? 0;
   const opponentIndex = getOpponentIndex(getPlayerIndex(match, playerId));
-  const opponentPlayerId = match.players[opponentIndex].player_id;
   const opponentMistakes = match.mistakes_by_player[opponentPlayerId] ?? 0;
 
   const stars = isVictory
