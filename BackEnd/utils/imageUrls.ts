@@ -742,7 +742,7 @@ export const imagesUrls = [
   "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Mandiblade/run.png",
   "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Mandiblade/Mandiblade.png",
 
-  //Rank Tiers Images Placeholders
+  //Rank Tiers Images
   "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Pixel.png",
   "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Byte.png",
   "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Cipher.png",
@@ -750,4 +750,14 @@ export const imagesUrls = [
   "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Root.png",
   "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Sprite.png",
   "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Widget.png",
+
+  //PVP Versus and Combat Backgrounds
+  "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/CombatHTML.png",
+  "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/CombatCSS.png",
+  "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/CombatJS.png",
+  "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/CombatComputer.png",
+  "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/VersusHTML.png",
+  "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/VersusCSS.png",
+  "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/VersusJS.png",
+  "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/VersusComputer.png",
 ];

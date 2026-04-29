@@ -32,10 +32,19 @@ const MAP_MEDIA: Record<
 };
 
 const MAP_BACKGROUNDS: Record<string, string> = {
-  HTML: "https://micomi-assets.me/Maps/Greenland/1.png",
-  CSS: "https://micomi-assets.me/Maps/Lavaland/1.png",
-  Computer: "https://micomi-assets.me/Maps/Autumnland/1.png",
-  JavaScript: "https://micomi-assets.me/Maps/Snowland/1.png",
+  HTML: "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/CombatHTML.png",
+  CSS: "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/CombatCSS.png",
+  Computer: "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/CombatJS.png",
+  JavaScript:
+    "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/CombatComputer.png",
+};
+
+const MAP_INTRO_BACKGROUNDS: Record<string, string> = {
+  HTML: "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/VersusHTML.png",
+  CSS: "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/VersusCSS.png",
+  JavaSript: "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/VersusJS.png",
+  Computer:
+    "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/VersusComputer.png",
 };
 
 const HERO_SS_MAP: Record<
@@ -118,10 +127,13 @@ const HERO_HURT_AUDIO_MAP: Record<string, string> = {
 
 export const getMapMediaAssets = (mapName: string) => {
   const media = MAP_MEDIA[mapName];
-  const background = MAP_BACKGROUNDS[mapName] || MAP_BACKGROUNDS["HTML"];
+  const background =
+    MAP_INTRO_BACKGROUNDS[mapName] || MAP_INTRO_BACKGROUNDS["HTML"];
+  const combatBackground = MAP_BACKGROUNDS[mapName] || MAP_BACKGROUNDS["HTML"];
 
   if (!media) {
     return {
+      combat_background: combatBackground,
       versus_background: background,
       versus_audio: VERSUS_AUDIO,
       gameplay_audio: "",
@@ -129,6 +141,7 @@ export const getMapMediaAssets = (mapName: string) => {
   }
 
   return {
+    combat_background: combatBackground,
     versus_background: background,
     versus_audio: VERSUS_AUDIO,
     gameplay_audio: media.gameplay_audio,

@@ -557,6 +557,25 @@ export async function getCurrentFightState(
       "https://micomi-assets.me/Icons/Miscellaneous/Gino's%20Lightning.png";
   }
 
+  let finalCharacterIdle = character.character_idle || null;
+
+  if (character.character_name === "Leon") {
+    const wrongChallengesArr = (progress.wrong_challenges ?? []) as number[];
+    const isLastRemaining =
+      wrongChallengesArr.length === 0 && answeredCount + 1 === totalChallenges;
+
+    const isSpecialAttackPending =
+      progress.consecutive_corrects === 2 ||
+      (isLastRemaining && isInBonusRound);
+
+    if (isSpecialAttackPending) {
+      finalCharacterIdle = "https://micomi-assets.me/Hero/Leon/UltIdle.png";
+      console.log(
+        "- Leon is holding a special attack card: Overriding character_idle in getCurrentFightState",
+      );
+    }
+  }
+
   return {
     status,
     enemy: {
@@ -598,7 +617,7 @@ export async function getCurrentFightState(
     character: {
       character_id: character.character_id,
       character_name: character.character_name,
-      character_idle: character.character_idle || null,
+      character_idle: finalCharacterIdle,
       character_run: runArray[0] || null,
       character_attack_type: null,
       character_attack: null,
