@@ -717,27 +717,9 @@ const micomiImages = {
   ],
 };
 
-const playerMicomiIndex = new Map<
-  number,
-  { victory: number; defeat: number }
->();
-
-const getRandomMicomiImage = (playerId: number, isVictory: boolean): string => {
+const getRandomMicomiImage = (isVictory: boolean): string => {
   const images = isVictory ? micomiImages.Victory : micomiImages.Defeat;
-  const key = isVictory ? "victory" : "defeat";
-
-  let indices = playerMicomiIndex.get(playerId);
-  if (!indices) {
-    indices = { victory: 0, defeat: 0 };
-    playerMicomiIndex.set(playerId, indices);
-  }
-
-  const currentIndex = indices[key];
-  const image = images[currentIndex];
-
-  indices[key] = (currentIndex + 1) % images.length;
-
-  return image;
+  return images[Math.floor(Math.random() * images.length)];
 };
 
 const calculateStars = (
@@ -1719,7 +1701,7 @@ export const submitChallengeService = async (
       stars = 0;
       is_victory_audio =
         "https://micomi-assets.me/Sounds/Final/Defeat_Sound.wav";
-      is_victory_image = getRandomMicomiImage(playerId, false);
+      is_victory_image = getRandomMicomiImage(false);
 
       completionRewards = {
         feedbackMessage: motivationalMessage,
@@ -1766,7 +1748,7 @@ export const submitChallengeService = async (
 
       is_victory_audio =
         "https://micomi-assets.me/Sounds/Final/Victory_Sound.wav";
-      is_victory_image = getRandomMicomiImage(playerId, true);
+      is_victory_image = getRandomMicomiImage(true);
 
       if (wasFirstCompletion) {
         console.log(`✅ FIRST COMPLETION - Awarding rewards`);
@@ -1814,7 +1796,7 @@ export const submitChallengeService = async (
 
         is_victory_audio =
           "https://micomi-assets.me/Sounds/Final/Victory_Sound.wav";
-        is_victory_image = getRandomMicomiImage(playerId, true);
+        is_victory_image = getRandomMicomiImage(true);
 
         completionRewards = {
           feedbackMessage:
@@ -1846,7 +1828,7 @@ export const submitChallengeService = async (
 
     is_victory_audio =
       "https://micomi-assets.me/Sounds/Final/Victory_Sound.wav";
-    is_victory_image = getRandomMicomiImage(playerId, true);
+    is_victory_image = getRandomMicomiImage(true);
 
     if (wasFirstCompletion) {
       await prisma.playerProgress.update({
@@ -2103,8 +2085,11 @@ export const submitChallengeService = async (
 
   if (character.character_name === "Leon" && attackType === "special_attack") {
     if (fightResult && fightResult.character) {
-      fightResult.character.character_idle = "https://micomi-assets.me/Hero/Leon/UltIdle.png";
-      console.log("- Leon is holding a special attack card: Overriding character_idle in fightResult");
+      fightResult.character.character_idle =
+        "https://micomi-assets.me/Hero/Leon/UltIdle.png";
+      console.log(
+        "- Leon is holding a special attack card: Overriding character_idle in fightResult",
+      );
     }
   }
 

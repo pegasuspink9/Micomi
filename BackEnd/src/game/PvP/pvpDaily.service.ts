@@ -2336,8 +2336,12 @@ const buildSubmitLikeResponse = async (
       : null,
     is_victory_image: isCompleted
       ? isVictory
-        ? randomFrom(VICTORY_IMAGES)
-        : randomFrom(DEFEAT_IMAGES)
+        ? VICTORY_IMAGES[
+            deterministicHash(match.match_id) % VICTORY_IMAGES.length
+          ]
+        : DEFEAT_IMAGES[
+            deterministicHash(match.match_id) % DEFEAT_IMAGES.length
+          ]
       : null,
   } as PvpDailySubmitAnswerResult;
 };
