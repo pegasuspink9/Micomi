@@ -132,42 +132,42 @@ model Enemy {
 }
 
 model Player {
-  player_id          Int                      @id @default(autoincrement())
-  username           String                   @unique
-  email              String                   @unique
-  password           String?
-  total_points       Int                      @default(0)
-  created_at         DateTime                 @default(now())
-  last_active        DateTime?
-  days_logged_in     Int                      @default(0)
-  coins              Int                      @default(100)
-  diamonds           Int                      @default(0) 
-  exp_points         Int                      @default(0)
-  level              Int                      @default(1)
-  energy             Int                      @default(25)
-  energy_reset_at    DateTime?
-  player_name        String
-  current_streak     Int                      @default(0)
-  longest_streak     Int                      @default(0)
-  daily_reward_day   Int                      @default(0)
+  player_id                    Int                      @id @default(autoincrement())
+  username                     String                   @unique
+  email                        String                   @unique
+  password                     String?
+  total_points                 Int                      @default(0)
+  created_at                   DateTime                 @default(now())
+  last_active                  DateTime?
+  days_logged_in               Int                      @default(0)
+  coins                        Int                      @default(100)
+  exp_points                   Int                      @default(0)
+  level                        Int                      @default(1)
+  energy                       Int                      @default(25)
+  energy_reset_at              DateTime?
+  player_name                  String
+  current_streak               Int                      @default(0)
+  longest_streak               Int                      @default(0)
+  google_id                    String?                  @unique
+  facebook_id                  String?                  @unique
+  player_avatar                String?
+  player_rank_image            String                   @default("https://placehold.co/512x512/png?text=Pixel")
+  player_rank_name             String                   @default("Pixel")
+  player_rank_points           Int                      @default(0)
+  daily_reward_day             Int                      @default(0)
   daily_reward_last_claimed_at DateTime?
-  google_id          String?                  @unique
-  facebook_id        String?                  @unique
-  player_avatar      String?
-  player_rank_image  String                   @default("https://placehold.co/512x512/png?text=Pixel")
-  player_rank_name   String                   @default("Pixel")
-  player_rank_points Int                      @default(0)
-  following          Follow[]                 @relation("FollowFollower")
-  followers          Follow[]                 @relation("FollowFollowing")
-  playerAchievements PlayerAchievement[]
-  ownedCharacters    PlayerCharacter[]
-  ownedPotions       PlayerPotion[]
-  playerProgress     PlayerProgress[]
-  playerQuests       PlayerQuest[]
-  pvpProgressAsP1    PlayerVsPlayerProgress[] @relation("PvpProgressP1")
-  pvpProgressAsP2    PlayerVsPlayerProgress[] @relation("PvpProgressP2")
-  pvpResults         PlayerVsPlayerResult[]
-  ownedThemes        PlayerTheme[]  
+  diamonds                     Int                      @default(0)
+  following                    Follow[]                 @relation("FollowFollower")
+  followers                    Follow[]                 @relation("FollowFollowing")
+  playerAchievements           PlayerAchievement[]
+  ownedCharacters              PlayerCharacter[]
+  ownedPotions                 PlayerPotion[]
+  playerProgress               PlayerProgress[]
+  playerQuests                 PlayerQuest[]
+  ownedThemes                  PlayerTheme[]
+  pvpProgressAsP1              PlayerVsPlayerProgress[] @relation("PvpProgressP1")
+  pvpProgressAsP2              PlayerVsPlayerProgress[] @relation("PvpProgressP2")
+  pvpResults                   PlayerVsPlayerResult[]
 
   @@index([email])
   @@index([total_points])
@@ -284,7 +284,6 @@ model Character {
   character_dies          String?
   character_hurt          String?
   character_damage        Json?             @default("[]")
-  character_run           Json?             @default("[]")
   character_attacks       Json?             @default("[]")
   character_avatar        String?
   character_image_display String?
@@ -292,6 +291,7 @@ model Character {
   is_range                Boolean?          @default(false)
   character_image_select  String?
   range_attacks           Json?             @default("[]")
+  character_run           Json?             @default("[]")
   characterShop           CharacterShop?
   playerCharacter         PlayerCharacter[]
 }
@@ -430,8 +430,8 @@ model GameplayMessage {
 model ThemeShop {
   theme_id    Int           @id @default(autoincrement())
   theme_name  String        @unique
-  theme_color String       
-  price       Int       
+  theme_color String
+  price       Int
   buyers      PlayerTheme[]
 }
 

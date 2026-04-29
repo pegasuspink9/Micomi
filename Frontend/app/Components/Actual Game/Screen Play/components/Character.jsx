@@ -432,10 +432,12 @@ const Character = ({
     }
 
     const targetUrl = animationConfig.isCompound ? animationConfig.runUrl : animationConfig.url;
-    if (targetUrl && currentAnimationUrlRef.current !== targetUrl) {
-      currentAnimationUrlRef.current = targetUrl;
-      setCurrentAnimationUrl(targetUrl);
+    // NOTE: Removed the immediate ref update here to rely on the gatekeeper logic below for critical states.
+    if (targetUrl && currentAnimationUrlRef.current !== targetUrl && currentState !== 'attack' && currentState !== 'run') {
+        currentAnimationUrlRef.current = targetUrl;
+        setCurrentAnimationUrl(targetUrl);
     }
+
   }, [currentState, animationConfig.url, animationConfig.runUrl, animationConfig.attackUrl, animationConfig.isCompound]);
 
   // ========== Main Animation Effect ==========
@@ -455,18 +457,17 @@ const Character = ({
     const config = animationConfig;
     const targetUrl = config.isCompound ? config.runUrl : config.url;
 
-    // Sync URL immediately via ref
-    if (targetUrl && currentAnimationUrlRef.current !== targetUrl) {
-      currentAnimationUrlRef.current = targetUrl;
-      setCurrentAnimationUrl(targetUrl);
-    }
-
     if (currentState !== 'attack' && currentState !== 'run') {
       attackInitiated.value = false;
       attackSequenceRef.current = { runUrl: null, attackUrl: null };
+      
+      // For non-moving states, sync immediately if needed
+      if (targetUrl && currentAnimationUrl !== targetUrl) {
+         setCurrentAnimationUrl(targetUrl);
+      }
     }
 
-    const activeUrl = currentAnimationUrlRef.current;
+    const activeUrl = currentAnimationUrl; // Use state directly for reliability
 
     const isActiveUrlCached = isUrlCached(activeUrl) || preloadedImages.has(activeUrl);
     const isTargetUrlCached = targetUrl ? (isUrlCached(targetUrl) || preloadedImages.has(targetUrl)) : true;
@@ -512,6 +513,7 @@ const Character = ({
 
     blinkOpacity.value = 0;
     frameIndex.value = 0;
+    // Ensure position is reset immediately
     positionX.value = 0;
     opacity.value = 1;
 
@@ -543,64 +545,93 @@ const Character = ({
       if (isUrlCached(runUrl)) preloadedImages.set(runUrl, true);
       if (isUrlCached(attackUrl)) preloadedImages.set(attackUrl, true);
 
-      // Ensure run URL is active before starting — match EnemyCharacter pattern
-      currentAnimationUrlRef.current = runUrl;
-      setCurrentAnimationUrl(runUrl);
+      // Ensure run URL is active. This queues a React update.
+      if (currentAnimationUrl !== runUrl) {
+          currentAnimationUrlRef.current = runUrl;
+          setCurrentAnimationUrl(runUrl);
+      }
+     
+      // --------- FIX STARTS HERE ---------
+      // Wrap the start of the animation sequence in setTimeout(0).
+      // This yields execution to the event loop, allowing React to render the "run" image
+      // BEFORE Reanimated starts moving the container. This prevents the "sliding idle" bug.
+      // It also avoids using a premature 'return', so the callback chain doesn't get stuck.
+      setTimeout(() => {
+        // 1. Start SPRITE animation immediately
+        frameIndex.value = withRepeat(
+          withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }),
+          -1,
+          false
+        );
 
-      // Reset position and opacity explicitly — match EnemyCharacter pattern
-      positionX.value = 0;
-      opacity.value = 1;
+        // 2. Start MOVEMENT immediately
+        positionX.value = withTiming(ATTACK_RUN_DISTANCE, { duration: 700, easing: Easing.in(Easing.quad) }, (finished) => {
+          if (!finished) return;
 
-       frameIndex.value = withRepeat(
-        withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }),
-        -1,
-        false
-      );
+          // Movement finished, switch to attack part
+          cancelAnimation(frameIndex);
+          frameIndex.value = 0;
+          currentAnimationUrlRef.current = attackUrl;
+          runOnJS(setCurrentAnimationUrl)(attackUrl);
 
-      // 🐌 Slower: Increase the charge attack distance duration
-      positionX.value = withTiming(ATTACK_RUN_DISTANCE, { duration: 700, easing: Easing.in(Easing.quad) }, (finished) => {
-        if (!finished) return;
-
-        cancelAnimation(frameIndex);
-        frameIndex.value = 0;
-        currentAnimationUrlRef.current = attackUrl;
-        runOnJS(setCurrentAnimationUrl)(attackUrl);
-
-        frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration: ANIMATION_DURATIONS.attack, easing: Easing.linear }, (attackFinished) => {
-          if (attackFinished) {
-            // 🐌 Slower: Increase return (jumping back) duration
-            positionX.value = withTiming(0, { duration: 500, easing: Easing.quad }, (returnFinished) => {
-              if (returnFinished) runOnJS(notifyAnimationComplete)();
-            });
-          }
+          // No delay needed here, we are just switching sprites in place
+          frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration: ANIMATION_DURATIONS.attack, easing: Easing.linear }, (attackFinished) => {
+            if (attackFinished) {
+              // 🐌 Slower: Increase return (jumping back) duration
+              positionX.value = withTiming(0, { duration: 500, easing: Easing.quad }, (returnFinished) => {
+                if (returnFinished) runOnJS(notifyAnimationComplete)();
+              });
+            }
+          });
         });
-      });
+      }, 400);
+      // --------- FIX ENDS HERE ---------
+      
       return;
     }
 
     if (currentState === 'run' && !config.isCompound) {
       attackInitiated.value = true;
 
-      frameIndex.value = withRepeat(
-        withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }),
-        -1,
-        false
-      );
+      // Ensure run URL is active
+      if (currentAnimationUrl !== config.url) {
+          currentAnimationUrlRef.current = config.url;
+          setCurrentAnimationUrl(config.url);
+      }
 
-      // Linear retreat to the right
-      positionX.value = withTiming(RUN_AWAY_DISTANCE, { 
-        duration: ANIMATION_DURATIONS.run, 
-        easing: Easing.linear 
-      }, (finished) => {
-        if (finished) {
-          cancelAnimation(frameIndex);
-          runOnJS(notifyAnimationComplete)();
-        }
-      });
+      // --------- FIX STARTS HERE ---------
+      // Wrap in setTimeout(0) to allow image swap before movement.
+      setTimeout(() => {
+        // 1. Start sprite frames immediately
+        frameIndex.value = withRepeat(
+          withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }),
+          -1,
+          false
+        );
+
+        // 2. Start movement immediately
+        positionX.value = withTiming(RUN_AWAY_DISTANCE, { 
+            duration: ANIMATION_DURATIONS.run, 
+            easing: Easing.linear 
+          }, (finished) => {
+            if (finished) {
+              cancelAnimation(frameIndex);
+              runOnJS(notifyAnimationComplete)();
+            }
+          });
+      }, 400);
+      // --------- FIX ENDS HERE ---------
       return;
     }
 
     if (config.shouldLoop) {
+      // Gatekeeper for generic looping states (like idle) if they change
+      if (targetUrl && currentAnimationUrl !== targetUrl) {
+         setCurrentAnimationUrl(targetUrl);
+         // We can return here safely as looping states don't have completion callbacks that block logic
+         return; 
+      }
+
       frameIndex.value = withRepeat(
         withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }),
         -1,
@@ -618,15 +649,26 @@ const Character = ({
     const duration = ANIMATION_DURATIONS[currentState] || (FRAME_DURATION * TOTAL_FRAMES);
 
     if (currentState === 'attack' && config.isRange) {
+       // Ensure range URL is active immediately
+       if (targetUrl && currentAnimationUrl !== targetUrl) {
+         setCurrentAnimationUrl(targetUrl);
+       }
+
       if (effectiveCharacterName === 'Ryron') {
         rangeProjectileX.value = 0;
-        rangeProjectileX.value = withDelay(700, withTiming(ATTACK_RUN_DISTANCE, {
-          duration: duration * 0.4,
+        // Small delay for projectile to sync with animation frame
+        rangeProjectileX.value = withDelay(900, withTiming(ATTACK_RUN_DISTANCE, {
+          duration: duration * 0.3,
           easing: Easing.linear
         }));
       } else {
         rangeProjectileX.value = ATTACK_RUN_DISTANCE + gameScale(50);
       }
+    }
+
+    // Ensure one-shot URL is active immediately
+    if (targetUrl && currentAnimationUrl !== targetUrl && !config.isRange) {
+         setCurrentAnimationUrl(targetUrl);
     }
 
     frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration, easing: Easing.inOut(Easing.ease) }, (finished) => {
@@ -642,7 +684,7 @@ const Character = ({
       }
     });
   }, [
-    currentState, isPaused, currentAnimationUrl,
+    currentState, isPaused, currentAnimationUrl, // Ensure currentAnimationUrl is a dependency
     animationConfig.isCompound, animationConfig.shouldLoop, animationConfig.url, 
     animationConfig.runUrl, animationConfig.attackUrl, animationConfig.rangeUrl, animationConfig.isRange,
     notifyAnimationComplete, isUrlCached, effectiveCharacterName, SPRITE_SIZE
