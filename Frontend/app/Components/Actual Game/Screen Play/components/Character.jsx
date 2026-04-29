@@ -227,15 +227,16 @@ const Character = ({
 
 
   const isUrlCached = useCallback((url) => {
-    if (!url) return false;
+    if (!url || typeof url !== 'string') return false;
     if (url.startsWith('file://')) return true;
     const cachedPath = universalAssetPreloader.getCachedAssetPath(url);
-    return cachedPath !== url && cachedPath.startsWith('file://');
+    return (typeof cachedPath === 'string') && cachedPath !== url && cachedPath.startsWith('file://');
   }, []);
 
   const resolveCachedUrl = useCallback((url) => {
-    if (!url || typeof url !== 'string') return url;
-    return universalAssetPreloader.getCachedAssetPath(url);
+    if (!url || typeof url !== 'string') return '';
+    const cached = universalAssetPreloader.getCachedAssetPath(url);
+    return typeof cached === 'string' ? cached : '';
   }, []);
 
   const allAnimationUrls = useMemo(() => {
