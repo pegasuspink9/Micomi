@@ -694,6 +694,7 @@ const getAttackIndexByType = (attackType: string | null): number => {
 };
 
 const getArrayItemOrNull = (value: unknown, index: number): string | null => {
+  if (typeof value === "string") return value;
   if (!Array.isArray(value)) return null;
   const item = value[index] ?? value[0] ?? null;
   return typeof item === "string" ? item : null;
@@ -1933,6 +1934,16 @@ const buildSubmitLikeResponse = async (
     resolvedAttackIndex,
   );
 
+  const viewerRunAsset = getArrayItemOrNull(
+    viewerCharacter.character_run,
+    resolvedAttackIndex,
+  );
+
+  const opponentRunAsset = getArrayItemOrNull(
+    opponentEnemy.enemy_run,
+    resolvedAttackIndex,
+  );
+
   const characterShowsAttack = !!resolvedAttack && isViewerLastAttacker;
   const enemyShowsAttack = !!resolvedAttack && !isViewerLastAttacker;
   const isCharacterDead = Number(viewerCharacter.character_health ?? 0) <= 0;
@@ -2074,7 +2085,7 @@ const buildSubmitLikeResponse = async (
     character_name: viewerCharacter.character_name,
     character_idle: final_character_idle,
     character_run: isVictory
-      ? viewerCharacter.character_run
+      ? viewerRunAsset
       : isWrongRetryState ||
           enemyShowsAttack ||
           isCharacterDead ||
@@ -2082,7 +2093,7 @@ const buildSubmitLikeResponse = async (
           (characterShowsAttack &&
             (viewerCharName === "ShiShi" || viewerCharName === "Ryron"))
         ? null
-        : viewerCharacter.character_run,
+        : viewerRunAsset,
     character_attack_type: characterShowsAttack ? resolvedAttackType : null,
     character_attack:
       characterShowsAttack && !wasFrozen ? viewerAttackAsset : null,
@@ -2116,12 +2127,12 @@ const buildSubmitLikeResponse = async (
     enemy_idle: final_enemy_idle,
     enemy_run:
       isCompleted && !isVictory
-        ? opponentEnemy.enemy_run
+        ? opponentRunAsset
         : enemyShowsAttack &&
             !wasFrozen &&
             opponentCharName !== "ShiShi" &&
             opponentCharName !== "Ryron"
-          ? opponentEnemy.enemy_run
+          ? opponentRunAsset
           : null,
     enemy_attack_type: enemyShowsAttack ? resolvedAttackType : null,
     enemy_attack: enemyShowsAttack && !wasFrozen ? opponentAttackAsset : null,
@@ -2325,8 +2336,12 @@ const buildSubmitLikeResponse = async (
       : null,
     is_victory_image: isCompleted
       ? isVictory
-        ? randomFrom(VICTORY_IMAGES)
-        : randomFrom(DEFEAT_IMAGES)
+        ? VICTORY_IMAGES[
+            deterministicHash(match.match_id) % VICTORY_IMAGES.length
+          ]
+        : DEFEAT_IMAGES[
+            deterministicHash(match.match_id) % DEFEAT_IMAGES.length
+          ]
       : null,
   } as PvpDailySubmitAnswerResult;
 };

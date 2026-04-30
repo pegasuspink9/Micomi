@@ -265,6 +265,55 @@ const safeHp = (hp: number | null | undefined, fallbackMax: number) =>
     ? Math.max(hp, 0)
     : Math.max(fallbackMax, 0);
 
+const resolveAttackFromType = (params: {
+  characterName: string;
+  attackType: string;
+  correctAnswerLength: number;
+  damageArray: number[];
+  attacksArray: string[];
+  rangeAttacksArray: string[];
+  runArray: string[];
+  isFinalBonusSpecial: boolean;
+}) => {
+  const damageIndexForSpecial =
+    params.correctAnswerLength >= 8
+      ? 2
+      : params.correctAnswerLength >= 5
+        ? 1
+        : 0;
+
+  const damageIndex =
+    params.attackType === "third_attack"
+      ? 2
+      : params.attackType === "second_attack"
+        ? 1
+        : params.attackType === "basic_attack"
+          ? 0
+          : damageIndexForSpecial;
+
+  const attackIndex = params.attackType === "special_attack" ? 3 : damageIndex;
+
+  const cardInfo = getCardForAttackType(
+    params.characterName,
+    params.attackType,
+    params.isFinalBonusSpecial,
+  );
+
+  let character_run = params.runArray[attackIndex] || null;
+  if (params.characterName === "ShiShi" || params.characterName === "Ryron") {
+    character_run = null;
+  }
+
+  return {
+    card_type: cardInfo.card_type,
+    character_attack_card: cardInfo.character_attack_card,
+    damage: params.damageArray[damageIndex] ?? 10,
+    character_attack: params.attacksArray[attackIndex] || null,
+    character_range_attack: params.rangeAttacksArray[attackIndex] || null,
+    character_run,
+  };
+};
+
 export function getCardForAttackType(
   characterName: string,
   attackType: string,
@@ -390,6 +439,7 @@ export async function handleFight(
   isCompletingBonus: boolean = false,
   bonusTotalQuestions: number = 0,
   bonusAllCorrect: boolean = false,
+  overrideAttackType?: string | null,
 ) {
   const level = await prisma.level.findUnique({
     where: { level_id: levelId },
@@ -415,6 +465,8 @@ export async function handleFight(
       isBonusRound,
       isCompletingBonus,
       bonusTotalQuestions,
+      bonusAllCorrect,
+      overrideAttackType,
     );
   } else {
     console.log("Normal Level detected — using fightEnemy()");
@@ -431,6 +483,7 @@ export async function handleFight(
       isCompletingBonus,
       bonusTotalQuestions,
       bonusAllCorrect,
+      overrideAttackType,
     );
   }
 }
@@ -658,6 +711,7 @@ export async function fightEnemy(
   isCompletingBonus: boolean = false,
   bonusTotalQuestions: number = 0,
   bonusAllCorrect: boolean = false,
+  overrideAttackType?: string | null,
 ) {
   const enemy = await prisma.enemy.findUnique({ where: { enemy_id: enemyId } });
   if (!enemy) throw new Error("Enemy not found");
@@ -782,177 +836,40 @@ export async function fightEnemy(
       progress.consecutive_corrects,
     );
 
-    // Determine attack type and card for all correct answers (normal or bonus)
-    if (effectiveBonusRound && isCompletingBonus) {
-      if (bonusAllCorrect) {
-        character_attack_type = "special_attack";
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          character_attack_type,
-          true,
-        );
+    const isFinalBonusSpecial =
+      effectiveBonusRound && isCompletingBonus && bonusAllCorrect;
 
-        if (
-          character.character_name === "ShiShi" ||
-          character.character_name === "Ryron"
-        ) {
-          character_run = null;
-        }
-
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-        damage = damageArray[2] ?? 25;
-        character_attack = attacksArray[3] || null;
-        character_range_attack = rangeAttacksArray[3] || null;
-        character_run = runArray[3] || null;
-        console.log("SS is used: ", character_attack);
-      } else {
-        character_attack_type = "third_attack";
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          character_attack_type,
-        );
-
-        if (
-          character.character_name === "ShiShi" ||
-          character.character_name === "Ryron"
-        ) {
-          character_run = null;
-        }
-
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-        damage = damageArray[2] ?? 15;
-        character_attack = attacksArray[2] || null;
-        character_range_attack = rangeAttacksArray[2] || null;
-        character_run = runArray[2] || null;
-      }
-      character_idle = character.avatar_image || null;
-      console.log(
-        `- Final bonus ${character_attack_type} triggered with ${bonusTotalQuestions} questions!`,
-      );
+    // 1. Determine the Attack Type
+    if (overrideAttackType) {
+      character_attack_type = overrideAttackType;
+    } else if (effectiveBonusRound && isCompletingBonus) {
+      character_attack_type = bonusAllCorrect
+        ? "special_attack"
+        : "third_attack";
     } else if (effectiveBonusRound) {
-      // Non-final bonus correct: determine attack based on correctAnswerLength
       if (
         character.character_name === "Gino" &&
         progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
-
-        let damageIndex = 0;
-        if (correctAnswerLength >= 8) {
-          damageIndex = 2;
-        } else if (correctAnswerLength >= 5) {
-          damageIndex = 1;
-        } else {
-          damageIndex = 0;
-        }
-
-        damage = damageArray[damageIndex] ?? 10;
-
-        character_attack = attacksArray[3] || null;
-        character_range_attack = rangeAttacksArray[3] || null;
-        character_run = runArray[3] || null;
-
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          "special_attack",
-        );
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-
-        character_idle = character.avatar_image || null;
       } else if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "Leon" &&
         progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
-
-        let damageIndex = 0;
-        if (correctAnswerLength >= 8) {
-          damageIndex = 2;
-        } else if (correctAnswerLength >= 5) {
-          damageIndex = 1;
-        } else {
-          damageIndex = 0;
-        }
-
-        character_attack = attacksArray[3] || null;
-        character_range_attack = rangeAttacksArray[3] || null;
-        character_run = runArray[3] || null;
-
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          "special_attack",
-        );
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-
-        character_idle = character.avatar_image || null;
       } else if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "ShiShi" &&
         progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
-
-        let damageIndex = 0;
-        if (correctAnswerLength >= 8) damageIndex = 2;
-        else if (correctAnswerLength >= 5) damageIndex = 1;
-
-        damage = damageArray[damageIndex] ?? 10;
-
-        character_attack = attacksArray[3] || null;
-        character_range_attack = rangeAttacksArray[3] || null;
-
-        character_run = null;
-        character_idle = character.avatar_image || null;
-
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          "special_attack",
-        );
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-
-        console.log(
-          `- ShiShi's SS Execution! Animation: special_attack, Freeze Re-applied`,
-        );
       } else if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "Ryron" &&
         progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
-
-        let damageIndex = 0;
-        if (correctAnswerLength >= 8) {
-          damageIndex = 2;
-        } else if (correctAnswerLength >= 5) {
-          damageIndex = 1;
-        } else {
-          damageIndex = 0;
-        }
-
-        damage = damageArray[damageIndex] ?? 10;
-
-        character_attack = attacksArray[3] || null;
-        character_range_attack = rangeAttacksArray[3] || null;
-
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          "special_attack",
-        );
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-
-        character_idle = character.avatar_image || null;
-        character_run = null;
-
-        console.log(
-          `- Ryron's SS triggered! Animation: special_attack, Damage: ${damage}`,
-        );
       } else if (correctAnswerLength >= 8) {
         character_attack_type = "third_attack";
       } else if (correctAnswerLength >= 5) {
@@ -960,259 +877,80 @@ export async function fightEnemy(
       } else {
         character_attack_type = "basic_attack";
       }
-      const cardInfo = getCardForAttackType(
-        character.character_name,
-        character_attack_type,
-      );
-      card_type = cardInfo.card_type;
-      character_attack_card = cardInfo.character_attack_card;
-
-      const damageIndex =
-        character_attack_type === "third_attack"
-          ? 2
-          : character_attack_type === "second_attack"
-            ? 1
-            : 0;
-
-      if (
-        character.character_name === "ShiShi" ||
-        character.character_name === "Ryron"
-      ) {
-        character_run = null;
-      }
-
-      damage = damageArray[damageIndex] ?? 10;
-      character_attack = attacksArray[damageIndex] || null;
-      character_range_attack = rangeAttacksArray[damageIndex] || null;
-      character_run = runArray[damageIndex] || null;
-      character_idle = character.avatar_image || null;
-      console.log(`- Bonus round ${character_attack_type} attack displayed!`);
-      enemy_hurt = enemy.enemy_hurt || null;
     } else if (enemyHealth > 0 || answeredCount >= totalChallenges) {
-      // Normal or celebratory (HP <=0 but not bonus)
       if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "Gino" &&
         progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
-
-        let damageIndex = 0;
-        if (correctAnswerLength >= 8) {
-          damageIndex = 2;
-        } else if (correctAnswerLength >= 5) {
-          damageIndex = 1;
-        } else {
-          damageIndex = 0;
-        }
-
-        damage = damageArray[damageIndex] ?? 10;
-        character_attack = attacksArray[3] || null;
-        character_range_attack = rangeAttacksArray[3] || null;
-        character_run = runArray[3] || null;
-
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          "special_attack",
-        );
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-
-        character_idle = character.avatar_image || null;
       } else if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "Leon" &&
         progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
-
-        let damageIndex = 0;
-        if (correctAnswerLength >= 8) {
-          damageIndex = 2;
-        } else if (correctAnswerLength >= 5) {
-          damageIndex = 1;
-        } else {
-          damageIndex = 0;
-        }
-
-        const baseDamage = damageArray[damageIndex] ?? 10;
-        damage = baseDamage;
-
-        character_attack = attacksArray[3] || null;
-        character_range_attack = rangeAttacksArray[3] || null;
-        character_run = runArray[3] || null;
-
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          "special_attack",
-        );
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-
-        character_idle = character.avatar_image || null;
       } else if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "ShiShi" &&
         progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
-
-        let damageIndex = 0;
-        if (correctAnswerLength >= 8) damageIndex = 2;
-        else if (correctAnswerLength >= 5) damageIndex = 1;
-
-        damage = damageArray[damageIndex] ?? 10;
-
-        character_attack = attacksArray[3] || null;
-        character_range_attack = rangeAttacksArray[3] || null;
-
-        character_run = null;
-        character_idle = character.avatar_image || null;
-
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          "special_attack",
-        );
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-
-        console.log(
-          `- ShiShi's SS Execution! Animation: special_attack, Freeze Re-applied`,
-        );
       } else if (
         !alreadyAnsweredCorrectly &&
         character.character_name === "Ryron" &&
         progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
-
-        let damageIndex = 0;
-        if (correctAnswerLength >= 8) {
-          damageIndex = 2;
-        } else if (correctAnswerLength >= 5) {
-          damageIndex = 1;
-        } else {
-          damageIndex = 0;
-        }
-
-        damage = damageArray[damageIndex] ?? 10;
-
-        character_attack = attacksArray[3] || null;
-        character_range_attack = rangeAttacksArray[3] || null;
-
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          "special_attack",
-        );
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-
-        character_idle = character.avatar_image || null;
-        character_run = null;
-
-        console.log(
-          `- Ryron's SS triggered! Animation: special_attack, Damage: ${damage}`,
-        );
       } else if (
         !alreadyAnsweredCorrectly &&
         !wasEverWrong &&
         correctAnswerLength >= 8
       ) {
         character_attack_type = "third_attack";
-
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          character_attack_type,
-        );
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-
-        damage = damageArray[2] ?? 10;
-        character_attack = attacksArray[2] || null;
-        character_range_attack = rangeAttacksArray[2] || null;
-        character_idle = character.avatar_image || null;
-        character_run = runArray[2] || null;
-
-        if (
-          character.character_name === "ShiShi" ||
-          character.character_name === "Ryron"
-        ) {
-          character_run = null;
-        }
-
-        console.log(`- third_attack triggered!`);
       } else if (
         !alreadyAnsweredCorrectly &&
         !wasEverWrong &&
         correctAnswerLength >= 5
       ) {
         character_attack_type = "second_attack";
-
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          character_attack_type,
-        );
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-
-        damage = damageArray[1] ?? 10;
-        character_attack = attacksArray[1] || null;
-        character_range_attack = rangeAttacksArray[1] || null;
-        character_run = runArray[1] || null;
-        character_idle = character.avatar_image || null;
-
-        if (
-          character.character_name === "ShiShi" ||
-          character.character_name === "Ryron"
-        ) {
-          character_run = null;
-        }
-
-        console.log(`- second_attack triggered!`);
       } else {
         character_attack_type = "basic_attack";
-
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          character_attack_type,
-        );
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-
-        damage = damageArray[0] ?? 10;
-        character_attack = attacksArray[0] || null;
-        character_range_attack = rangeAttacksArray[0] || null;
-        character_run = runArray[0] || null;
-        character_idle = character.avatar_image || null;
-
-        if (
-          character.character_name === "ShiShi" ||
-          character.character_name === "Ryron"
-        ) {
-          character_run = null;
-        }
-
-        console.log(`- basic_attack triggered!`);
       }
+    }
+
+    // 2. Resolve Attack Mapping
+    if (character_attack_type) {
+      const resolved = resolveAttackFromType({
+        characterName: character.character_name,
+        attackType: character_attack_type,
+        correctAnswerLength,
+        damageArray,
+        attacksArray,
+        rangeAttacksArray,
+        runArray,
+        isFinalBonusSpecial,
+      });
+
+      card_type = resolved.card_type;
+      character_attack_card = resolved.character_attack_card;
+      damage = resolved.damage;
+      character_attack = resolved.character_attack;
+      character_range_attack = resolved.character_range_attack;
+      character_run = resolved.character_run;
+      character_idle = character.avatar_image || null;
+
+      console.log(
+        `- Attack type resolved: ${character_attack_type} | Damage: ${damage}`,
+      );
+      enemy_hurt = enemy.enemy_hurt || null;
     } else {
       console.log("- Enemy already defeated: no attack shown.");
       character_idle = character.avatar_image || null;
       character_run = null;
     }
 
-    if (
-      character.character_name === "Leon" &&
-      character_attack_type === "special_attack"
-    ) {
-      character_attack = attacksArray[3] || null;
-      character_range_attack = rangeAttacksArray[3] || null;
-      character_run = runArray[3] || null;
-    }
-
-    console.log("- Attack type:", character_attack_type);
-    console.log("- Base damage:", damage);
-    console.log("- Paired attack URL:", character_attack);
-
+    // 3. Passive Abilities (Leon Strong Effect)
     if (progress.has_strong_effect) {
       const isLeonSSTurn =
         character.character_name === "Leon" &&
@@ -1277,7 +1015,6 @@ export async function fightEnemy(
           enemy_attack = null;
 
           character_idle = character.avatar_image || null;
-          character_run = runArray[0] || null;
 
           if (!progress.has_received_rewards) {
             const totalExp = progress.total_exp_points_earned ?? 0;
@@ -1426,7 +1163,6 @@ export async function fightEnemy(
         enemy_attack = null;
 
         character_idle = character.avatar_image || null;
-        character_run = runArray[0] || null;
 
         if (!progress.has_received_rewards) {
           const totalExp = progress.total_exp_points_earned ?? 0;
@@ -1489,7 +1225,6 @@ export async function fightEnemy(
     enemy_attack = null;
 
     character_idle = character.avatar_image || null;
-    character_run = runArray[0] || null;
 
     if (!progress.has_received_rewards) {
       const wrongChallengesCount = (
@@ -1662,6 +1397,7 @@ export async function fightBossEnemy(
   isCompletingBonus: boolean = false,
   bonusTotalQuestions: number = 0,
   bonusAllCorrect: boolean = false,
+  overrideAttackType?: string | null,
 ) {
   const enemy = await prisma.enemy.findUnique({ where: { enemy_id: enemyId } });
   if (!enemy) throw new Error("Enemy not found");
@@ -1702,14 +1438,6 @@ export async function fightBossEnemy(
   const isDetectedBonusRound =
     enemyHealth <= 0 && answeredCount < totalChallenges;
 
-  console.log("DEBUG Combat Service (Boss):");
-  console.log("- Enemy base health:", BOSS_ENEMY_HEALTH);
-  console.log("- Number of challenges:", challengeCount);
-  console.log("- Calculated scaled health:", scaledEnemyMaxHealth);
-  console.log("- FRESH Progress enemy_hp from DB:", progress.enemy_hp);
-  console.log("- FRESH Progress player_hp from DB:", progress.player_hp);
-  console.log("- Detected bonus round:", isDetectedBonusRound);
-
   let charHealth = safeHp(progress.player_hp, character.health);
 
   let status: BattleStatus = BattleStatus.in_progress;
@@ -1730,8 +1458,6 @@ export async function fightBossEnemy(
     ? (character.character_run as string[])
     : [];
 
-  console.log("- Character damage array:", damageArray);
-
   let character_attack_type: string | null = null;
   let damage = 0;
   let enemy_damage = 0;
@@ -1745,16 +1471,14 @@ export async function fightBossEnemy(
   let character_idle: string | null = null;
   let enemy_idle: string | null = null;
   let enemy_run: string | null = null;
-  let character_run: string | null = null;
+  let character_run: string | null = runArray[0] || null;
   let enemy_attack_type: string | null = null;
   let character_attack_card: string | null = null;
   let card_type: string | null = null;
-  let character_attack_pose: string | null = null;
   let enemy_ss_type: string | null = null;
   let enemy_current_state: string | null = null;
   let character_current_state: string | null = null;
 
-  character_run = runArray[0] || null;
   character_idle = character.avatar_image || null;
 
   const effectiveBonusRound = isBonusRound || isDetectedBonusRound;
@@ -1778,303 +1502,102 @@ export async function fightBossEnemy(
       ? (currentChallenge.correct_answer as string[]).length
       : 1;
 
-    console.log("- Challenge ID:", challengeId);
-    console.log("- Correct answer length:", correctAnswerLength);
-    console.log("- Elapsed seconds:", elapsedSeconds);
-    console.log("- Already answered correctly:", alreadyAnsweredCorrectly);
-    console.log("- Was ever wrong:", wasEverWrong);
+    const isFinalBonusSpecial =
+      effectiveBonusRound && isCompletingBonus && bonusAllCorrect;
 
-    // Determine attack type and card for all correct answers (normal or bonus)
-    if (effectiveBonusRound && isCompletingBonus) {
-      if (bonusAllCorrect) {
-        character_attack_type = "special_attack";
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          character_attack_type,
-          true, // isNormalFinalBonus for normal levels
-        );
-
-        if (
-          character.character_name === "ShiShi" ||
-          character.character_name === "Ryron"
-        ) {
-          character_run = null;
-        }
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-        damage = damageArray[1] ?? 25;
-        character_attack = attacksArray[3] || null;
-        character_range_attack = rangeAttacksArray[3] || null;
-        character_run = runArray[3] || null;
-        console.log("SS is used: ", character_attack);
-      } else {
-        character_attack_type = "third_attack";
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          character_attack_type,
-        );
-        if (
-          character.character_name === "ShiShi" ||
-          character.character_name === "Ryron"
-        ) {
-          character_run = null;
-        }
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-        damage = damageArray[2] ?? 15;
-        character_attack = attacksArray[2] || null;
-        character_range_attack = rangeAttacksArray[2] || null;
-        character_run = runArray[2] || null;
-      }
-      character_idle = character.avatar_image || null;
-      console.log(
-        `- Final bonus ${character_attack_type} triggered with ${bonusTotalQuestions} questions!`,
-      );
+    // 1. Determine the Attack Type
+    if (overrideAttackType) {
+      character_attack_type = overrideAttackType;
+    } else if (effectiveBonusRound && isCompletingBonus) {
+      character_attack_type = bonusAllCorrect
+        ? "special_attack"
+        : "third_attack";
     } else if (effectiveBonusRound) {
-      // Non-final bonus correct: determine attack based on correctAnswerLength
       if (
         character.character_name === "Gino" &&
         progress.consecutive_corrects === 3
       ) {
         character_attack_type = "special_attack";
-
-        let damageIndex = 0;
-        if (correctAnswerLength >= 8) {
-          damageIndex = 2;
-        } else if (correctAnswerLength >= 5) {
-          damageIndex = 1;
-        } else {
-          damageIndex = 0;
-        }
-
-        damage = damageArray[damageIndex] ?? 10;
-
-        character_attack = attacksArray[3] || null;
-        character_range_attack = rangeAttacksArray[3] || null;
-        character_run = runArray[3] || null;
-
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          "special_attack",
-        );
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-
-        character_idle = character.avatar_image || null;
       } else if (
         !alreadyAnsweredCorrectly &&
-        character.character_name === "Leon" &&
-        progress.consecutive_corrects === 3
+        progress.consecutive_corrects === 3 &&
+        ["Leon", "ShiShi", "Ryron"].includes(character.character_name)
       ) {
         character_attack_type = "special_attack";
-
-        let damageIndex = 0;
-        if (correctAnswerLength >= 8) {
-          damageIndex = 2;
-        } else if (correctAnswerLength >= 5) {
-          damageIndex = 1;
-        } else {
-          damageIndex = 0;
-        }
-
-        const baseDamage = damageArray[damageIndex] ?? 10;
-        damage = baseDamage * 2;
-
-        character_attack = attacksArray[3] || null;
-        character_range_attack = rangeAttacksArray[3] || null;
-        character_run = runArray[3] || null;
-
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          "special_attack",
-        );
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-
-        character_idle = character.avatar_image || null;
-
-        console.log(
-          `- Leon's SS triggered (Boss)! Animation: special_attack, Base Damage: ${baseDamage}, Final 2x Damage: ${damage}`,
-        );
-      } else if (
+      } else if (correctAnswerLength >= 8) {
+        character_attack_type = "third_attack";
+      } else if (correctAnswerLength >= 5) {
+        character_attack_type = "second_attack";
+      } else {
+        character_attack_type = "basic_attack";
+      }
+    } else if (enemyHealth > 0 || answeredCount >= totalChallenges) {
+      if (
         !alreadyAnsweredCorrectly &&
-        character.character_name === "ShiShi" &&
-        progress.consecutive_corrects === 3
+        progress.consecutive_corrects === 3 &&
+        ["Gino", "Leon", "ShiShi", "Ryron"].includes(character.character_name)
       ) {
         character_attack_type = "special_attack";
-
-        let damageIndex = 0;
-        if (correctAnswerLength >= 8) {
-          damageIndex = 2;
-        } else if (correctAnswerLength >= 5) {
-          damageIndex = 1;
-        } else {
-          damageIndex = 0;
-        }
-
-        damage = damageArray[damageIndex] ?? 10;
-
-        character_attack = attacksArray[3] || null;
-        character_range_attack = rangeAttacksArray[3] || null;
-
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          "special_attack",
-        );
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-
-        character_idle = character.avatar_image || null;
-        character_run = null;
-
-        console.log(
-          `- ShiShi's SS triggered! Animation: special_attack, Enemy Frozen set to TRUE`,
-        );
-      } else if (
-        !alreadyAnsweredCorrectly &&
-        character.character_name === "Ryron" &&
-        progress.consecutive_corrects === 3
-      ) {
-        character_attack_type = "special_attack";
-
-        let damageIndex = 0;
-        if (correctAnswerLength >= 8) {
-          damageIndex = 2;
-        } else if (correctAnswerLength >= 5) {
-          damageIndex = 1;
-        } else {
-          damageIndex = 0;
-        }
-
-        damage = damageArray[damageIndex] ?? 10;
-
-        character_attack = attacksArray[3] || null;
-        character_range_attack = rangeAttacksArray[3] || null;
-
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          "special_attack",
-        );
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-
-        character_idle = character.avatar_image || null;
-        character_run = null;
-
-        console.log(
-          `- Ryron's SS triggered! Animation: special_attack, Damage: ${damage}`,
-        );
       } else if (
         !alreadyAnsweredCorrectly &&
         !wasEverWrong &&
         correctAnswerLength >= 8
       ) {
         character_attack_type = "third_attack";
-
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          character_attack_type,
-        );
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-
-        damage = damageArray[2] ?? 10;
-        character_attack = attacksArray[2] || null;
-        character_range_attack = rangeAttacksArray[2] || null;
-        character_idle = character.avatar_image || null;
-        character_run = runArray[2] || null;
-
-        if (
-          character.character_name === "ShiShi" ||
-          character.character_name === "Ryron"
-        ) {
-          character_run = null;
-        }
-
-        console.log(`- third_attack triggered!`);
       } else if (
         !alreadyAnsweredCorrectly &&
         !wasEverWrong &&
         correctAnswerLength >= 5
       ) {
         character_attack_type = "second_attack";
-
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          character_attack_type,
-        );
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-
-        damage = damageArray[1] ?? 10;
-        character_attack = attacksArray[1] || null;
-        character_range_attack = rangeAttacksArray[1] || null;
-        character_run = runArray[1] || null;
-        character_idle = character.avatar_image || null;
-
-        if (
-          character.character_name === "ShiShi" ||
-          character.character_name === "Ryron"
-        ) {
-          character_run = null;
-        }
-
-        console.log(`- second_attack triggered!`);
       } else {
         character_attack_type = "basic_attack";
-
-        const cardInfo = getCardForAttackType(
-          character.character_name,
-          character_attack_type,
-        );
-        card_type = cardInfo.card_type;
-        character_attack_card = cardInfo.character_attack_card;
-
-        damage = damageArray[0] ?? 10;
-        character_attack = attacksArray[0] || null;
-        character_range_attack = rangeAttacksArray[0] || null;
-        character_run = runArray[0] || null;
-        character_idle = character.avatar_image || null;
-
-        if (
-          character.character_name === "ShiShi" ||
-          character.character_name === "Ryron"
-        ) {
-          character_run = null;
-        }
-
-        console.log(`- basic_attack triggered!`);
       }
+    }
+
+    // 2. Resolve Attack Mapping (Ensures Card matches Animation matches Damage)
+    if (character_attack_type) {
+      const resolved = resolveAttackFromType({
+        characterName: character.character_name,
+        attackType: character_attack_type,
+        correctAnswerLength,
+        damageArray,
+        attacksArray,
+        rangeAttacksArray,
+        runArray,
+        isFinalBonusSpecial,
+      });
+
+      card_type = resolved.card_type;
+      character_attack_card = resolved.character_attack_card;
+      damage = resolved.damage;
+      character_attack = resolved.character_attack;
+      character_range_attack = resolved.character_range_attack;
+      character_run = resolved.character_run;
+      character_idle = character.avatar_image || null;
+
+      // Boss Specific Modifier: Leon SS does double damage against bosses
+      if (
+        character.character_name === "Leon" &&
+        character_attack_type === "special_attack"
+      ) {
+        damage *= 2;
+      }
+
+      enemy_hurt = enemy.enemy_hurt || null;
     } else {
-      console.log("- Enemy already defeated: no attack shown.");
       character_idle = character.avatar_image || null;
       character_run = null;
     }
 
-    if (
-      character.character_name === "Leon" &&
-      character_attack_type === "special_attack"
-    ) {
-      character_attack = attacksArray[3] || null;
-      character_range_attack = rangeAttacksArray[3] || null;
-      character_run = runArray[3] || null;
-    }
-
-    console.log("- Attack type:", character_attack_type);
-    console.log("- Base damage:", damage);
-    console.log("- Paired attack URL:", character_attack);
-
+    // 3. Passive Abilities (Leon Strong Effect)
     if (progress.has_strong_effect) {
       const isLeonSSTurn =
         character.character_name === "Leon" &&
         progress.consecutive_corrects === 3 &&
         character_attack_type === "special_attack";
 
-      if (isLeonSSTurn) {
-        console.log(
-          "- Leon's SS turn: Double damage will apply on NEXT correct answer",
-        );
-      } else {
+      if (!isLeonSSTurn) {
         damage *= 2;
         await prisma.playerProgress.update({
           where: { progress_id: progress.progress_id },
@@ -2083,21 +1606,14 @@ export async function fightBossEnemy(
       }
     }
 
-    enemyHealth = Math.max(enemyHealth - damage, 0);
-
+    // Apply Boss Shield or Mutual Damage logic
     if (progress.has_boss_shield) {
       enemy_ss_type = "shield";
-
       enemy_idle = enemy.enemy_hurt || null;
       enemy_run = null;
       enemy_hurt =
         "https://micomi-assets.me/Enemies/Greenland/Boss%20Joshy/idle2.png";
-
-      console.log(
-        "- Boss Joshy's shield active: blocking all damage (",
-        damage,
-        ")",
-      );
+      enemyHealth = Math.max(enemyHealth, 0); // Shield blocks damage
 
       await prisma.playerProgress.update({
         where: { progress_id: progress.progress_id },
@@ -2105,7 +1621,6 @@ export async function fightBossEnemy(
       });
     } else if (progress.has_both_hp_decrease) {
       enemy_ss_type = "mutual_damage";
-
       charHealth = Math.max(charHealth - damage, 0);
       enemyHealth = Math.max(enemyHealth - damage, 0);
       enemy_hurt = enemy_hurt || enemy.enemy_hurt || null;
@@ -2125,30 +1640,20 @@ export async function fightBossEnemy(
       enemy_idle = null;
     }
 
-    console.log("- Enemy health after attack:", enemyHealth);
-
     if (enemyHealth <= 0) {
       const wrongChallengesCount = (
         (progress.wrong_challenges as unknown[]) ?? []
       ).length;
-
       const isBonusRoundStunned =
         answeredCount < totalChallenges && !isCompletingBonus;
 
       if (isBonusRoundStunned) {
-        // Non-final bonus: stunned state, show hurt (no dies)
         status = BattleStatus.in_progress;
         enemy_hurt = enemy.enemy_hurt || null;
         enemy_idle = null;
         character_idle = character.avatar_image || null;
-
         enemyHealth = 0;
-
-        console.log(
-          "- Boss defeated but there are remaining challenges — entering bonus/stunned state",
-        );
       } else {
-        // Win condition: answered all challenges (bonus completion or normal)
         if (answeredCount >= totalChallenges || isCompletingBonus) {
           status = BattleStatus.won;
           enemy_idle = null;
@@ -2156,18 +1661,14 @@ export async function fightBossEnemy(
           enemy_attack = null;
           enemy_hurt = enemy.enemy_hurt || null;
           enemy_dies = enemy.enemy_dies || null;
-
           character_idle = character.avatar_image || null;
-          character_run = runArray[0] || null;
 
           if (!progress.has_received_rewards) {
             const totalExp = progress.total_exp_points_earned ?? 0;
             const totalPoints = progress.total_points_earned ?? 0;
             const totalCoins = progress.coins_earned ?? 0;
 
-            // Always give base rewards on win
             await updateQuestProgress(playerId, QuestType.defeat_enemy, 1);
-
             if (
               enemy.enemy_difficulty === "hard" ||
               enemy.enemy_difficulty === "final"
@@ -2180,10 +1681,8 @@ export async function fightBossEnemy(
               coins: totalCoins,
               total_points: totalPoints,
             });
-
             await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
 
-            // Perfect rewards only if no wrongs and no damage
             if (wrongChallengesCount === 0 && !progress.took_damage) {
               await updateQuestProgress(
                 playerId,
@@ -2200,22 +1699,17 @@ export async function fightBossEnemy(
               level.map_id,
               level.level_id,
             );
-            console.log(
-              "- Level unlocked after boss defeated and all challenges answered",
-            );
           } catch (err) {
             console.error("Error unlocking next level:", err);
           }
-
-          console.log("- Level won with completion rewards");
         }
       }
     }
   } else {
     // WRONG ANSWER CONSUMPTION LOGIC (APPLIES TO NORMAL AND BONUS ROUNDS)
     const effectiveBonusRound = isBonusRound || isDetectedBonusRound;
-
     const freezeConsumedThisTurn = progress.has_freeze_effect === true;
+
     if (freezeConsumedThisTurn) {
       enemy_damage = 0;
       enemy_run = null;
@@ -2231,9 +1725,6 @@ export async function fightBossEnemy(
         data: { has_freeze_effect: false },
       });
       progress.has_freeze_effect = false;
-      console.log(
-        "- Freeze effect consumed: enemy turn skipped and no damage taken.",
-      );
     }
 
     if (progress.has_strong_effect) {
@@ -2242,18 +1733,13 @@ export async function fightBossEnemy(
         data: { has_strong_effect: false },
       });
       progress.has_strong_effect = false;
-      console.log(
-        "- Wrong answer submitted (Boss): Leon's Strong Effect has dissipated.",
-      );
     }
 
     if (effectiveBonusRound) {
-      // For consistency, set animations for wrong in bonus (character idle, enemy hurt, no idle)
       character_idle = character.avatar_image || null;
       character_run = null;
       enemy_idle = null;
       enemy_hurt = enemy.enemy_hurt || null;
-      console.log("- Boss bonus round wrong: Enemy stays hurt, no counter");
     } else if (enemyHealth > 0) {
       if (!freezeConsumedThisTurn) {
         enemy_damage = enemy.enemy_damage;
@@ -2261,81 +1747,63 @@ export async function fightBossEnemy(
         enemy_idle = enemy.enemy_avatar || null;
         enemy_run = enemy.enemy_run || null;
         character_run = null;
+
         if (progress.has_reversed_curse) {
           enemy_ss_type = "reverse";
           enemy_run = enemy.enemy_run || null;
           enemy_idle = enemy.enemy_avatar || null;
           enemy_attack_type = "special attack";
           enemy_attack = enemy.special_skill || null;
-          console.log("- Reversed curse active: using special skill attack");
         } else if (progress.has_only_blanks_ss) {
           enemy_ss_type = "only_blanks";
           enemy_attack_type = "special attack";
           enemy_attack = enemy.special_skill || null;
-          console.log("- King Feanaly SS active: Hiding text");
         } else if (progress.has_dollar_sign_ss) {
           enemy_ss_type = "dollar_sign";
           enemy_attack_type = "special attack";
           enemy_attack = enemy.special_skill || null;
-          console.log("- Boss Icycreamero SS active: Inserting $ symbols");
         } else if (progress.has_reverse_words_ss) {
           enemy_ss_type = "reverse_words";
           enemy_attack_type = "special attack";
           enemy_attack = enemy.special_skill || null;
-          console.log("- Boss Scythe SS active: Reversing 3 words");
         } else if (progress.has_shuffle_ss) {
           enemy_ss_type = "shuffle";
           enemy_run = enemy.enemy_run || null;
           enemy_idle = enemy.enemy_avatar || null;
           enemy_attack_type = "special attack";
           enemy_attack = enemy.special_skill || null;
-          console.log("- Shuffle options active: using special skill attack");
         } else if (progress.has_permuted_ss) {
           enemy_ss_type = "permuted";
           enemy_run = enemy.enemy_run || null;
           enemy_idle = enemy.enemy_avatar || null;
           enemy_attack_type = "special attack";
           enemy_attack = enemy.special_skill || null;
-          console.log(
-            "- Letters shuffled in a word active: using special skill attack",
-          );
         } else if (progress.has_boss_shield) {
           enemy_ss_type = "shield";
           enemy_run =
             "https://micomi-assets.me/Enemies/Greenland/Boss%20Joshy/Run2.png";
           enemy_idle =
             "https://micomi-assets.me/Enemies/Greenland/Boss%20Joshy/idle2.png";
-
           enemy_attack_type = "special attack";
           enemy_attack = enemy.special_skill || null;
-          console.log("- Shield curse active: using special skill attack");
         } else if (progress.has_force_character_attack_type) {
           enemy_ss_type = "force_basic_attack";
           enemy_run = enemy.enemy_run || null;
           enemy_idle = enemy.enemy_avatar || null;
-
           enemy_attack_type = "special attack";
           enemy_attack = enemy.special_skill || null;
-          console.log("- Force basic curse active: using special skill attack");
         } else if (progress.has_both_hp_decrease) {
           enemy_ss_type = "mutual_damage";
           enemy_run = enemy.enemy_run || null;
           enemy_idle = enemy.enemy_avatar || null;
-
           enemy_attack_type = "special attack";
           enemy_attack = enemy.special_skill || null;
-          console.log("- Both hp decrease: using special skill attack");
         } else {
           enemy_attack_type = "basic attack";
           enemy_attack = enemy.enemy_attack || null;
         }
+
         character_hurt = character.character_hurt || null;
-        console.log(
-          "- Enemy dealt",
-          enemy_damage,
-          "damage, player health:",
-          charHealth,
-        );
 
         if (charHealth < character.health) {
           await prisma.playerProgress.update({
@@ -2349,19 +1817,14 @@ export async function fightBossEnemy(
           status = BattleStatus.lost;
           character_hurt = character.character_hurt || null;
           character_dies = character.character_dies || null;
-
           enemy_run = enemy.enemy_run || null;
-
           character_idle = null;
           character_run = null;
           character_attack_type = null;
         }
       }
-    } else {
-      console.log("- Enemy already defeated: no counterattack damage.");
     }
 
-    // Check for win after bonus completion on wrong answer
     if (
       status === BattleStatus.in_progress &&
       effectiveBonusRound &&
@@ -2380,18 +1843,14 @@ export async function fightBossEnemy(
         enemy_attack = null;
         enemy_hurt = enemy.enemy_hurt || null;
         enemy_dies = enemy.enemy_dies || null;
-
         character_idle = character.avatar_image || null;
-        character_run = runArray[0] || null;
 
         if (!progress.has_received_rewards) {
           const totalExp = progress.total_exp_points_earned ?? 0;
           const totalPoints = progress.total_points_earned ?? 0;
           const totalCoins = progress.coins_earned ?? 0;
 
-          // Always give base rewards on win
           await updateQuestProgress(playerId, QuestType.defeat_enemy, 1);
-
           if (
             enemy.enemy_difficulty === "hard" ||
             enemy.enemy_difficulty === "final"
@@ -2404,10 +1863,8 @@ export async function fightBossEnemy(
             coins: totalCoins,
             total_points: totalPoints,
           });
-
           await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
 
-          // Perfect rewards only if no wrongs and no damage
           if (wrongChallengesCount === 0 && !progress.took_damage) {
             await updateQuestProgress(
               playerId,
@@ -2424,14 +1881,9 @@ export async function fightBossEnemy(
             level.map_id,
             level.level_id,
           );
-          console.log(
-            "- Level unlocked after boss defeated and all challenges answered",
-          );
         } catch (err) {
           console.error("Error unlocking next level:", err);
         }
-
-        console.log("- Level won with completion rewards");
       }
     }
   }
@@ -2441,18 +1893,13 @@ export async function fightBossEnemy(
     enemyHealth <= 0 &&
     answeredCount >= totalChallenges
   ) {
-    console.log(
-      "- Boss bonus round completed (all challenges answered), setting status to won",
-    );
     status = BattleStatus.won;
     enemy_idle = null;
     enemy_run = null;
     enemy_attack = null;
     enemy_hurt = enemy.enemy_hurt || null;
     enemy_dies = enemy.enemy_dies || null;
-
     character_idle = character.avatar_image || null;
-    character_run = runArray[0] || null;
 
     if (!progress.has_received_rewards) {
       const wrongChallengesCount = (
@@ -2475,7 +1922,6 @@ export async function fightBossEnemy(
         coins: totalCoins,
         total_points: totalPoints,
       });
-
       await updateQuestProgress(playerId, QuestType.earn_exp, totalExp);
 
       if (wrongChallengesCount === 0) {
@@ -2492,9 +1938,6 @@ export async function fightBossEnemy(
         playerId,
         level.map_id,
         level.level_id,
-      );
-      console.log(
-        "- Level unlocked after all boss challenges answered (bonus completed)",
       );
     } catch (err) {
       console.error("Error unlocking next level:", err);
@@ -2537,14 +1980,12 @@ export async function fightBossEnemy(
 
   const updatedEnergyStatus =
     await EnergyService.getPlayerEnergyStatus(playerId);
-
   progress = await prisma.playerProgress.findUnique({
     where: {
       player_id_level_id: { player_id: playerId, level_id: level.level_id },
     },
   });
 
-  //Passive effects overlay logic
   if (progress?.has_freeze_effect) {
     enemy_current_state = "Frozen";
     enemy_attack_overlay =
@@ -2560,11 +2001,6 @@ export async function fightBossEnemy(
     character_attack_overlay =
       "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
   }
-
-  console.log("Final result (Boss):");
-  console.log("- Enemy health:", enemyHealth);
-  console.log("- Enemy max health:", scaledEnemyMaxHealth);
-  console.log("- Player health:", charHealth);
 
   return {
     status,
