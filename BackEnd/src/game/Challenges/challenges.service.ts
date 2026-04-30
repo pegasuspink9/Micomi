@@ -1189,7 +1189,19 @@ export const submitChallengeService = async (
 
     let damageIndex = 0;
 
+    let anticipatedStreak = (currentProgress.consecutive_corrects ?? 0) + 1;
+    if (anticipatedStreak > 3) anticipatedStreak = 1;
+
+    const isSpecialAttackActive =
+      (character.character_name === "Gino" ||
+        character.character_name === "Leon" ||
+        character.character_name === "ShiShi" ||
+        character.character_name === "Ryron") &&
+      anticipatedStreak === 3;
+
     if (isCompletingBonusCheck && bonusAllCorrectCheck) {
+      damageIndex = 3;
+    } else if (isSpecialAttackActive) {
       damageIndex = 3;
     } else if (isCompletingBonusCheck) {
       damageIndex = 2;
@@ -1551,7 +1563,6 @@ export const submitChallengeService = async (
     }
 
     if (fightResult.enemy) {
-      fightResult.enemy.enemy_hit_reaction = null;
       fightResult.enemy.enemy_reaction = enemyReactionText || null;
     }
 
