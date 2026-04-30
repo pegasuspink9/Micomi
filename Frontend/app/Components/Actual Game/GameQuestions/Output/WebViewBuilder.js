@@ -1,8 +1,8 @@
+// WebViewBuilder.js
+
 /**
  * Replaces all blanks (_) in a template string with provided answers.
- * @param {string} template The string containing blanks.
- * @param {string[]} answers An array of strings to fill the blanks.
- * @returns {string} The template with blanks filled.
+ * (Unchanged)
  */
 const fillBlanks = (template = '', answers = []) => {
   let filledContent = template;
@@ -11,132 +11,150 @@ const fillBlanks = (template = '', answers = []) => {
       filledContent = filledContent.replace('_', answer);
     }
   });
-  return filledContent.replace(/_/g, ''); // Clean up any remaining blanks
+  return filledContent.replace(/_/g, ''); 
 };
 
+
 /**
- * Injects CSS and JS content into a base HTML string.
- * @param {string} html The base HTML document string.
- * @param {string} css The CSS code to inject.
- * @param {string} js The JavaScript code to inject.
- * @returns {string} The final combined HTML string.
+ * This is the critical part that makes mobile behave like desktop.
+ * These tags force light mode and set a standard baseline.
  */
-
-export const assemblePage = (html, css, js) => {
-    let finalHtml = html || '';
-    
-    // 1. Standardize Error Handling Script
-    const errorHandlingScript = `
-        window.onerror = function(msg, url, lineNo, columnNo, error) {
-            const errorDiv = document.getElementById('micomi-error-display') || document.createElement('div');
-            errorDiv.id = 'micomi-error-display';
-            errorDiv.style.position = 'fixed'; errorDiv.style.bottom = '0'; errorDiv.style.left = '0'; 
-            errorDiv.style.right = '0'; errorDiv.style.backgroundColor = '#ff5f56'; errorDiv.style.color = 'white'; 
-            errorDiv.style.padding = '10px'; errorDiv.style.fontFamily = 'monospace'; errorDiv.style.zIndex = '10000';
-            errorDiv.style.fontSize = '12px';
-            errorDiv.innerText = 'Runtime Error: ' + msg; 
-            if(!document.getElementById('micomi-error-display')) document.body.appendChild(errorDiv);
-            return false;
-        };
-    `;
-
-    // 2. Prepare Injections
-    const cssInjection = css ? `<style id="micomi-injected-css">${css}</style>` : '';
-    const jsInjection = `<script id="micomi-injected-js">${errorHandlingScript}\ntry { ${js || ''} } catch(e) { console.error(e); }</script>`;
-    
-    // 3. AUTO-FIX: Inject Viewport Meta Tag if missing (Case Insensitive)
-    // This is critical for mobile WebView rendering
-    if (!/<meta[^>]+name=["']viewport["']/i.test(finalHtml)) {
-        const viewportTag = '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">';
-        if (/<head>/i.test(finalHtml)) {
-            finalHtml = finalHtml.replace(/<head>/i, `<head>${viewportTag}`);
-        } else if (/<html>/i.test(finalHtml)) {
-            finalHtml = finalHtml.replace(/<html>/i, `<html><head>${viewportTag}</head>`);
-        } else if (!/<!DOCTYPE/i.test(finalHtml)) {
-            // If fragment, prepend the tag
-            finalHtml = viewportTag + finalHtml;
+const MOBILE_WEBVIEW_FIXES = `
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- CRITICAL: Tell iOS/Android not to auto-invert colors -->
+    <meta name="color-scheme" content="light only">
+    <style>
+        /* CRITICAL: CSS forcing light mode and baseline colors */
+        :root {
+            color-scheme: light only;
         }
+        html, body {
+            /* Force white background and black text like a desktop browser */
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            margin: 0;
+            padding: 0; 
+            box-sizing: border-box;
+            /* Optional: ensure full height */
+            min-height: 100%;
+            width: 100%;
+        }
+        /* Ensure box-sizing applies to everything for predictable sizing */
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+    </style>
+`;
+
+
+/**
+ * assemblePage
+ * 
+ * Strategy:
+ * 1. If the user provides a fragment, wrap it in a standard skeleton containing the fixes.
+ * 2. If the user provides a full document, INJECT the fixes into their <head> so we don't break their structure, but still ensure correct rendering.
+ */
+export const assemblePage = (htmlContent) => {
+    let finalHtml = htmlContent || '';
+
+    // 1. Ensure DOCTYPE exists (prevents Quirks Mode)
+    if (!/<!DOCTYPE html>/i.test(finalHtml)) {
+        finalHtml = `<!DOCTYPE html>\n${finalHtml}`;
     }
 
-    // 4. Inject CSS (Safe Injection - Case Insensitive)
-    if (cssInjection) {
-        if (/<\/head>/i.test(finalHtml)) {
-            finalHtml = finalHtml.replace(/<\/head>/i, `${cssInjection}</head>`);
-        } else if (/<body/i.test(finalHtml)) {
-            // Inject before body start if no head found
-            finalHtml = finalHtml.replace(/<body/i, `<head>${cssInjection}</head><body`);
+    // 2. Check if it's a full document structure (has <html> or <body>)
+    const hasHtmlStructure = /<html/i.test(finalHtml) || /<body/i.test(finalHtml);
+
+    if (hasHtmlStructure) {
+        // --- FULL DOCUMENT STRATEGY ---
+        // The user provided their own structure. We must inject our fixes 
+        // into their existing <head> without destroying it.
+        
+        if (/<head/i.test(finalHtml)) {
+            // Inject fixes right after the opening <head> tag
+            finalHtml = finalHtml.replace(/<head[^>]*>/i, `$&${MOBILE_WEBVIEW_FIXES}`);
+        } else if (/<html/i.test(finalHtml)) {
+            // No head, but has html tag. Inject head with fixes.
+            finalHtml = finalHtml.replace(/<html[^>]*>/i, `$&\n<head>${MOBILE_WEBVIEW_FIXES}</head>`);
         } else {
-            finalHtml = `<style>${css}</style>${finalHtml}`;
+            // Has body but no html/head wrap. Prepend right before body.
+             finalHtml = finalHtml.replace(/<body/i, `<head>${MOBILE_WEBVIEW_FIXES}</head>\n<body`);
         }
-    }
-    
-    // 5. Inject JS (Case Insensitive)
-    if (/<\/body>/i.test(finalHtml)) {
-        finalHtml = finalHtml.replace(/<\/body>/i, `${jsInjection}</body>`);
     } else {
-        finalHtml += jsInjection;
+        // --- FRAGMENT STRATEGY ---
+        // The user just provided some tags (e.g., just <h1>...</h1>).
+        // Wrap it in a perfect skeleton with fixes.
+        finalHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+${MOBILE_WEBVIEW_FIXES}
+</head>
+<body>
+    ${finalHtml}
+</body>
+</html>
+`;
     }
 
-    return finalHtml;
+    return finalHtml.trim();
 }
 
 
 /**
- * Generates a complete HTML document based on the question type, filled answers, and associated files.
- * @param {object} currentQuestion The challenge object from the API.
- * @param {string[]} answers The array of answers to fill the blanks.
- * @returns {string} A complete HTML document as a string.
+ * Generates a complete HTML document.
+ * Simplified to rely on assemblePage's robust injection logic.
  */
 export const generateCombinedHtml = (currentQuestion, answers = []) => {
     if (!currentQuestion || !currentQuestion.question) {
-        return '<html><body><p>No question content available.</p></body></html>';
+        return assemblePage('<p>No question content available.</p>');
     }
 
     const questionType = currentQuestion?.question_type?.toLowerCase();
-    const filledQuestion = fillBlanks(currentQuestion.question, answers);
+    // Fill blanks in the user's answer
+    const filledAnswer = fillBlanks(currentQuestion.question, answers);
 
-    // Initialize defaults
+    // Start with base files defined in the challenge
     let baseHtml = currentQuestion.html_file || '';
-    let cssToInject = currentQuestion.css_file || '';
-    let jsToInject = currentQuestion.javascript_file || '';
+    let baseCss = currentQuestion.css_file || '';
+    let baseJs = currentQuestion.javascript_file || '';
 
-    // Default Skeleton used for fragments
-    const defaultSkeleton = `<!DOCTYPE html><html><head><title>Preview</title><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"></head><body></body></html>`;
-
+    // Combine inputs based on type
     switch (questionType) {
         case 'css':
-             // If baseHtml is empty, use skeleton
-             if (!baseHtml) baseHtml = defaultSkeleton;
-             // The user input is purely CSS here
-             cssToInject += '\n' + filledQuestion;
+             baseCss += '\n' + filledAnswer;
             break;
-            
         case 'javascript':
-             if (!baseHtml) baseHtml = defaultSkeleton;
-             // The user input is purely JS here
-             jsToInject += '\n' + filledQuestion;
+             baseJs += '\n' + filledAnswer;
             break;
-            
         case 'html':
         default:
-            // Check if user wrote a Full Document (starts with doctype or html tag)
-            const isFullDocument = /^\s*<!DOCTYPE/i.test(filledQuestion) || /^\s*<html/i.test(filledQuestion);
-
-            if (isFullDocument) {
-                // USE USER INPUT AS BASE
-                baseHtml = filledQuestion;
-            } else {
-                // HANDLE FRAGMENTS (e.g., just <h1>Hello</h1>)
-                if (!baseHtml) baseHtml = defaultSkeleton;
-
-                if (baseHtml.includes('</body>')) {
-                     baseHtml = baseHtml.replace('</body>', `${filledQuestion}</body>`);
-                } else {
-                    baseHtml += filledQuestion;
-                }
-            }
+            baseHtml += '\n' + filledAnswer;
             break;
     }
 
-    return assemblePage(baseHtml, cssToInject, jsToInject);
+    // If there is separate CSS or JS, inject them into the HTML string
+    // before passing to assemblePage.
+    if (baseCss) {
+        // Add CSS styles to the HTML
+        const styleTag = `<style>${baseCss}</style>`;
+        if (baseHtml.includes('</head>')) {
+             baseHtml = baseHtml.replace('</head>', `${styleTag}</head>`);
+        } else {
+             baseHtml = styleTag + baseHtml;
+        }
+    }
+
+    if (baseJs) {
+        // Add JS script to the HTML
+        const scriptTag = `<script>try{${baseJs}}catch(e){console.error(e)}</script>`;
+        if (baseHtml.includes('</body>')) {
+             baseHtml = baseHtml.replace('</body>', `${scriptTag}</body>`);
+        } else {
+             baseHtml += scriptTag;
+        }
+    }
+
+    return assemblePage(baseHtml);
 };
