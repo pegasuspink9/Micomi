@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { PrismaClient, QuestPeriod } from "@prisma/client";
+import { PrismaClient, QuestPeriod, QuestType } from "@prisma/client";
 import { successResponse, errorResponse } from "../../../utils/response";
 import { CreateQuest, UpdateQuest } from "./quest.types";
 import {
@@ -32,9 +32,119 @@ const formatQuestData = (playerQuests: any[]) => {
     expires_at: pq.expires_at,
     progress_percentage: Math.min(
       100,
-      Math.round((pq.current_value / pq.quest.target_value) * 100)
+      Math.round((pq.current_value / pq.quest.target_value) * 100),
     ),
   }));
+};
+
+function shuffleArray<T>(array: T[]): T[] {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+export const assignBalancedQuests = async (
+  playerId: number,
+  period: "daily" | "weekly" | "monthly",
+  targetCount: number,
+  expiresAt: Date,
+) => {
+  const allBaseQuests = await prisma.quest.findMany({
+    where: { quest_period: period, is_active: true },
+  });
+
+  if (allBaseQuests.length === 0) return;
+
+  const questsByType = new Map<QuestType, any[]>();
+  for (const quest of allBaseQuests) {
+    if (!questsByType.has(quest.objective_type)) {
+      questsByType.set(quest.objective_type, []);
+    }
+    questsByType.get(quest.objective_type)!.push(quest);
+  }
+
+  for (const [type, quests] of questsByType.entries()) {
+    questsByType.set(type, shuffleArray(quests));
+  }
+
+  let availableTypes = shuffleArray(Array.from(questsByType.keys()));
+
+  const selectedQuestsToAssign = [];
+  let typeIndex = 0;
+
+  while (selectedQuestsToAssign.length < targetCount) {
+    if (typeIndex >= availableTypes.length) {
+      availableTypes = shuffleArray(Array.from(questsByType.keys()));
+      typeIndex = 0;
+    }
+
+    const currentType = availableTypes[typeIndex];
+    const group = questsByType.get(currentType)!;
+
+    if (group.length > 0) {
+      selectedQuestsToAssign.push(group.pop());
+    } else {
+      questsByType.delete(currentType);
+      availableTypes = availableTypes.filter((t) => t !== currentType);
+
+      if (availableTypes.length === 0) break;
+      continue;
+    }
+
+    typeIndex++;
+  }
+
+  const playerQuestsData = selectedQuestsToAssign.map((quest) => ({
+    player_id: playerId,
+    quest_id: quest.quest_id,
+    quest_period: period,
+    target_value: quest.target_value,
+    current_value: 0,
+    is_completed: false,
+    is_claimed: false,
+    expires_at: expiresAt,
+  }));
+
+  await prisma.playerQuest.createMany({
+    data: playerQuestsData,
+  });
+
+  console.log(
+    `Assigned ${playerQuestsData.length} perfectly balanced ${period} quests to player ${playerId}`,
+  );
+};
+
+const balanceQuests = (formattedQuests: any[]) => {
+  const completedQuests = formattedQuests.filter((q) => q.is_completed);
+  const activeQuests = formattedQuests.filter((q) => !q.is_completed);
+
+  const grouped = new Map<string, any[]>();
+  for (const q of activeQuests) {
+    const type = q.objective_type;
+    if (!grouped.has(type)) grouped.set(type, []);
+    grouped.get(type)!.push(q);
+  }
+
+  const sortedGroups = Array.from(grouped.values()).sort(
+    (a, b) => b.length - a.length,
+  );
+
+  const balancedActive: any[] = [];
+  let hasMore = true;
+  while (hasMore) {
+    hasMore = false;
+    for (const group of sortedGroups) {
+      if (group.length > 0) {
+        balancedActive.push(group.shift());
+        hasMore = true;
+      }
+    }
+  }
+
+  return [...completedQuests, ...balancedActive];
 };
 
 export const getAllPlayerQuests = async (playerId: number) => {
@@ -93,13 +203,13 @@ export const getAllPlayerQuests = async (playerId: number) => {
     });
 
     const dailyActiveCount = dailyQuests.filter(
-      (pq) => !pq.is_completed
+      (pq) => !pq.is_completed,
     ).length;
     const weeklyActiveCount = weeklyQuests.filter(
-      (pq) => !pq.is_completed
+      (pq) => !pq.is_completed,
     ).length;
     const monthlyActiveCount = monthlyQuests.filter(
-      (pq) => !pq.is_completed
+      (pq) => !pq.is_completed,
     ).length;
 
     const dailyCompletedCount = dailyQuests.length - dailyActiveCount;
@@ -117,9 +227,9 @@ export const getAllPlayerQuests = async (playerId: number) => {
     });
 
     return {
-      dailyQuests: formatQuestData(dailyQuests),
-      weeklyQuests: formatQuestData(weeklyQuests),
-      monthlyQuests: formatQuestData(monthlyQuests),
+      dailyQuests: balanceQuests(formatQuestData(dailyQuests)),
+      weeklyQuests: balanceQuests(formatQuestData(weeklyQuests)),
+      monthlyQuests: balanceQuests(formatQuestData(monthlyQuests)),
       questLog: formatQuestData(questLog),
       summary: {
         totalActive: dailyActiveCount + weeklyActiveCount + monthlyActiveCount,
@@ -213,7 +323,7 @@ export const getPlayerQuest = async (req: Request, res: Response) => {
 
 export const getPlayerQuestsByPeriodController = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   const playerId = (req as any).user.id;
 
@@ -241,7 +351,7 @@ export const getPlayerQuestsByPeriodController = async (
 
 export const getPlayerDailyQuestsController = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   const playerId = (req as any).user.id;
   try {
@@ -253,7 +363,7 @@ export const getPlayerDailyQuestsController = async (
       return successResponse(
         res,
         newQuests,
-        "Daily quests generated (missed cron)"
+        "Daily quests generated (missed cron)",
       );
     }
 
@@ -266,7 +376,7 @@ export const getPlayerDailyQuestsController = async (
 
 export const adminGeneratePeriodicQuests = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   const period = req.body.period as QuestPeriod;
 
@@ -275,7 +385,7 @@ export const adminGeneratePeriodicQuests = async (
       res,
       null,
       "Invalid period. Must be daily, weekly, or monthly",
-      400
+      400,
     );
   }
 
@@ -285,7 +395,7 @@ export const adminGeneratePeriodicQuests = async (
     return successResponse(
       res,
       result,
-      `${period} quests generated for all players`
+      `${period} quests generated for all players`,
     );
   } catch (error) {
     console.error(`Admin ${period} generation error:`, error);
@@ -293,14 +403,14 @@ export const adminGeneratePeriodicQuests = async (
       res,
       error,
       `Failed to generate ${period} quests`,
-      500
+      500,
     );
   }
 };
 
 export const adminGenerateDailyQuests = async (
   _req: Request,
-  res: Response
+  res: Response,
 ) => {
   try {
     console.log("🔧 Admin triggered daily quest generation");
@@ -308,7 +418,7 @@ export const adminGenerateDailyQuests = async (
     return successResponse(
       res,
       result,
-      "Daily quests generated for all players"
+      "Daily quests generated for all players",
     );
   } catch (error) {
     console.error("Admin generation error:", error);
@@ -318,14 +428,14 @@ export const adminGenerateDailyQuests = async (
 
 export const adminCleanupExpiredQuests = async (
   _req: Request,
-  res: Response
+  res: Response,
 ) => {
   try {
     const result = await cleanupExpiredQuests();
     return successResponse(
       res,
       result,
-      "Cleaned up expired quests successfully"
+      "Cleaned up expired quests successfully",
     );
   } catch (error) {
     return errorResponse(res, error, "Failed to cleanup quests", 500);
@@ -334,7 +444,7 @@ export const adminCleanupExpiredQuests = async (
 
 export const adminForceRefreshPlayerQuests = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   const playerId = Number(req.params.playerId);
   const period = (req.body.period as QuestPeriod) || "daily";
@@ -344,7 +454,7 @@ export const adminForceRefreshPlayerQuests = async (
       res,
       null,
       "Invalid period. Must be daily, weekly, or monthly",
-      400
+      400,
     );
   }
 
@@ -353,14 +463,14 @@ export const adminForceRefreshPlayerQuests = async (
     return successResponse(
       res,
       newQuests,
-      `${period} quests refreshed for player ${playerId}`
+      `${period} quests refreshed for player ${playerId}`,
     );
   } catch (error) {
     return errorResponse(
       res,
       error,
       `Failed to refresh player ${period} quests`,
-      500
+      500,
     );
   }
 };
@@ -373,7 +483,7 @@ export const adminGetQuestStats = async (req: Request, res: Response) => {
       res,
       null,
       "Invalid period. Must be daily, weekly, or monthly",
-      400
+      400,
     );
   }
 
@@ -492,7 +602,7 @@ export const adminFillMissingQuests = async (_req: Request, res: Response) => {
     return successResponse(
       res,
       { message: "Missing quests generated successfully" },
-      "All players now have complete quest sets"
+      "All players now have complete quest sets",
     );
   } catch (error) {
     console.error("Admin fill missing quests error:", error);
