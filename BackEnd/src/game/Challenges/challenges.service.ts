@@ -1663,11 +1663,9 @@ export const submitChallengeService = async (
     const ans = playerAnswer[id.toString()];
     return ans && ans[0] !== "_REVEAL_PENDING_";
   });
+
   const wrongChallengesArr = (freshProgress?.wrong_challenges ??
     []) as number[];
-  const allCompleted =
-    effectiveAnsweredIds.length === level.challenges.length &&
-    wrongChallengesArr.length === 0;
 
   let completionRewards: CompletionRewards | undefined = undefined;
   let nextLevel: SubmitChallengeControllerResult["nextLevel"] = null;
@@ -1676,163 +1674,84 @@ export const submitChallengeService = async (
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
   });
 
+  const isWon = fightResult?.status === "won";
+  const isLost = fightResult?.status === "lost";
+
   const wasFirstCompletion =
-    allCompleted &&
+    isWon &&
     !isReplayingCompletedLevel &&
     !freshCurrentProgress?.has_received_rewards;
 
   console.log(
-    `✅ FIRST COMPLETION CHECK: allCompleted=${allCompleted}, isReplayingCompletedLevel=${isReplayingCompletedLevel}, has_received_rewards=${freshCurrentProgress?.has_received_rewards}, wasFirstCompletion=${wasFirstCompletion}`,
+    `✅ COMPLETION CHECK: isWon=${isWon}, isLost=${isLost}, isReplayingCompletedLevel=${isReplayingCompletedLevel}, has_received_rewards=${freshCurrentProgress?.has_received_rewards}, wasFirstCompletion=${wasFirstCompletion}`,
   );
-
-  const playerLost = freshProgress!.player_hp <= 0;
-
-  const isNewBonusRound =
-    freshProgress!.enemy_hp <= 0 && freshProgress!.player_hp > 0;
 
   let is_victory_audio: string | null = null;
   let is_victory_image: string | null = null;
   let stars: number | undefined = undefined;
 
-  if (allCompleted || playerLost) {
-    const wrongCount = wrongChallengesArr.length;
+  if (isLost) {
+    // Tracks lifetime mistakes made during the run, not just currently unfixed ones.
+    const totalMistakesMade = freshCurrentProgress?.wrong_challenges_count ?? 0;
     const wasInBonusRound =
       freshProgress!.enemy_hp <= 0 && freshProgress!.player_hp > 0;
 
-    if (playerLost) {
-      const motivationalMessage = generateMotivationalMessage(
-        false,
-        wrongCount,
-        totalChallenges,
-        wasInBonusRound,
-        false,
-        level.level_number,
-      );
+    const motivationalMessage = generateMotivationalMessage(
+      false,
+      totalMistakesMade,
+      totalChallenges,
+      wasInBonusRound,
+      false,
+      level.level_number,
+    );
 
-      stars = 0;
-      is_victory_audio =
-        "https://micomi-assets.me/Sounds/Final/Defeat_Sound.wav";
-      is_victory_image = getRandomMicomiImage(false);
+    stars = 0;
+    is_victory_audio = "https://micomi-assets.me/Sounds/Final/Defeat_Sound.wav";
+    is_victory_image = getRandomMicomiImage(false);
 
-      completionRewards = {
-        feedbackMessage: motivationalMessage,
-        coinsEarned: 0,
-        totalPointsEarned: 0,
-        totalExpPointsEarned: 0,
-        isVictory: false,
-        stars,
-      };
+    completionRewards = {
+      feedbackMessage: motivationalMessage,
+      coinsEarned: 0,
+      totalPointsEarned: 0,
+      totalExpPointsEarned: 0,
+      isVictory: false,
+      stars,
+    };
 
-      await prisma.playerProgress.update({
-        where: { progress_id: currentProgress.progress_id },
-        data: {
-          player_hp: character.health,
-          enemy_hp: enemyMaxHealth,
-          player_answer: {},
-          wrong_challenges: [],
-          attempts: 0,
-          coins_earned: 0,
-          total_points_earned: 0,
-          total_exp_points_earned: 0,
-          consecutive_corrects: 0,
-          consecutive_wrongs: 0,
-          wrong_challenges_count: 0,
-          has_strong_effect: false,
-          has_freeze_effect: false,
-          has_reversed_curse: false,
-          has_boss_shield: false,
-          is_completed: true,
-          completed_at: new Date(),
-        },
-      });
-    } else if (allCompleted) {
-      stars = calculateStars(wrongCount, totalChallenges);
+    await prisma.playerProgress.update({
+      where: { progress_id: currentProgress.progress_id },
+      data: {
+        player_hp: character.health,
+        enemy_hp: enemyMaxHealth,
+        player_answer: {},
+        wrong_challenges: [],
+        attempts: 0,
+        coins_earned: 0,
+        total_points_earned: 0,
+        total_exp_points_earned: 0,
+        consecutive_corrects: 0,
+        consecutive_wrongs: 0,
+        wrong_challenges_count: 0,
+        has_strong_effect: false,
+        has_freeze_effect: false,
+        has_reversed_curse: false,
+        has_boss_shield: false,
+        is_completed: true,
+        completed_at: new Date(),
+      },
+    });
+  } else if (isWon) {
+    const totalMistakesMade = freshCurrentProgress?.wrong_challenges_count ?? 0;
+    stars = calculateStars(totalMistakesMade, totalChallenges);
 
-      const motivationalMessage = generateMotivationalMessage(
-        wasFirstCompletion,
-        wrongCount,
-        totalChallenges,
-        wasInBonusRound,
-        true,
-        level.level_number,
-      );
-
-      is_victory_audio =
-        "https://micomi-assets.me/Sounds/Final/Victory_Sound.wav";
-      is_victory_image = getRandomMicomiImage(true);
-
-      if (wasFirstCompletion) {
-        console.log(`✅ FIRST COMPLETION - Awarding rewards`);
-
-        await prisma.playerProgress.update({
-          where: { progress_id: currentProgress.progress_id },
-          data: {
-            is_completed: true,
-            completed_at: new Date(),
-            has_strong_effect: false,
-            has_freeze_effect: false,
-            stars_earned: stars,
-            has_received_rewards: true,
-          },
-        });
-
-        completionRewards = {
-          feedbackMessage: motivationalMessage,
-          coinsEarned: freshProgress?.coins_earned ?? 0,
-          totalPointsEarned: freshProgress?.total_points_earned ?? 0,
-          totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
-          isVictory: true,
-          stars,
-        };
-
-        nextLevel = await LevelService.unlockNextLevel(
-          playerId,
-          level.map_id,
-          level.level_id,
-        );
-      } else {
-        console.log(`🔄 REPLAYING LEVEL - No rewards given`);
-
-        const currentStars = freshProgress?.stars_earned ?? 0;
-        const improved = stars > currentStars;
-
-        if (improved) {
-          await prisma.playerProgress.update({
-            where: { progress_id: currentProgress.progress_id },
-            data: {
-              stars_earned: stars,
-            },
-          });
-        }
-
-        is_victory_audio =
-          "https://micomi-assets.me/Sounds/Final/Victory_Sound.wav";
-        is_victory_image = getRandomMicomiImage(true);
-
-        completionRewards = {
-          feedbackMessage:
-            motivationalMessage +
-            "\nAlready completed—no extra rewards. Great practice!",
-          coinsEarned: 0,
-          totalPointsEarned: 0,
-          totalExpPointsEarned: 0,
-          isVictory: true,
-          stars,
-        };
-      }
-    }
-  } else if (
-    isNewBonusRound &&
-    effectiveAnsweredIds.length === totalChallenges
-  ) {
-    const wrongCount = wrongChallengesArr.length;
-    stars = calculateStars(wrongCount, totalChallenges);
+    const wasInBonusRound =
+      freshProgress!.enemy_hp <= 0 && freshProgress!.player_hp > 0;
 
     const motivationalMessage = generateMotivationalMessage(
       wasFirstCompletion,
-      wrongCount,
+      totalMistakesMade,
       totalChallenges,
-      true,
+      wasInBonusRound,
       true,
       level.level_number,
     );
@@ -1842,6 +1761,8 @@ export const submitChallengeService = async (
     is_victory_image = getRandomMicomiImage(true);
 
     if (wasFirstCompletion) {
+      console.log(`✅ FIRST COMPLETION - Awarding rewards`);
+
       await prisma.playerProgress.update({
         where: { progress_id: currentProgress.progress_id },
         data: {
@@ -1869,6 +1790,8 @@ export const submitChallengeService = async (
         level.level_id,
       );
     } else {
+      console.log(`🔄 REPLAYING LEVEL - No rewards given`);
+
       const currentStars = freshProgress?.stars_earned ?? 0;
       const improved = stars > currentStars;
 
@@ -1929,8 +1852,9 @@ export const submitChallengeService = async (
   }
 
   const isLastRemainingChallenge = currentAnsweredCount + 1 === totalChallenges;
-
   const hasWrongCounts = updatedProgress.wrong_challenges_count > 0;
+  const isNewBonusRound =
+    freshProgress!.enemy_hp <= 0 && freshProgress!.player_hp > 0;
 
   if (nextChallenge) {
     const isRetryOfWrong = updatedWrongChallenges.includes(
@@ -2056,7 +1980,6 @@ export const submitChallengeService = async (
 
   if (!isCorrect) {
     const soundConfig = ENEMY_ATTACK_SOUNDS[enemy.enemy_name];
-
     const attackType = fightResult.enemy?.enemy_attack_type;
 
     if (soundConfig) {
@@ -2112,7 +2035,7 @@ export const submitChallengeService = async (
     nextChallenge,
     audio: audioResponse,
     levelStatus: {
-      isCompleted: allCompleted,
+      isCompleted: isWon,
       showFeedback: true,
       playerHealth:
         fightResult?.charHealth ?? freshProgress?.player_hp ?? character.health,

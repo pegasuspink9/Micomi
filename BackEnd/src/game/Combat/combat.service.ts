@@ -1015,7 +1015,6 @@ export async function fightEnemy(
           enemy_attack = null;
 
           character_idle = character.avatar_image || null;
-          character_run = runArray[0] || null;
 
           if (!progress.has_received_rewards) {
             const totalExp = progress.total_exp_points_earned ?? 0;
@@ -1164,7 +1163,6 @@ export async function fightEnemy(
         enemy_attack = null;
 
         character_idle = character.avatar_image || null;
-        character_run = runArray[0] || null;
 
         if (!progress.has_received_rewards) {
           const totalExp = progress.total_exp_points_earned ?? 0;
@@ -1227,7 +1225,6 @@ export async function fightEnemy(
     enemy_attack = null;
 
     character_idle = character.avatar_image || null;
-    character_run = runArray[0] || null;
 
     if (!progress.has_received_rewards) {
       const wrongChallengesCount = (
@@ -1665,7 +1662,6 @@ export async function fightBossEnemy(
           enemy_hurt = enemy.enemy_hurt || null;
           enemy_dies = enemy.enemy_dies || null;
           character_idle = character.avatar_image || null;
-          character_run = runArray[0] || null;
 
           if (!progress.has_received_rewards) {
             const totalExp = progress.total_exp_points_earned ?? 0;
@@ -1848,7 +1844,6 @@ export async function fightBossEnemy(
         enemy_hurt = enemy.enemy_hurt || null;
         enemy_dies = enemy.enemy_dies || null;
         character_idle = character.avatar_image || null;
-        character_run = runArray[0] || null;
 
         if (!progress.has_received_rewards) {
           const totalExp = progress.total_exp_points_earned ?? 0;
@@ -1905,7 +1900,6 @@ export async function fightBossEnemy(
     enemy_hurt = enemy.enemy_hurt || null;
     enemy_dies = enemy.enemy_dies || null;
     character_idle = character.avatar_image || null;
-    character_run = runArray[0] || null;
 
     if (!progress.has_received_rewards) {
       const wrongChallengesCount = (
