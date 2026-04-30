@@ -512,18 +512,17 @@ const styles = StyleSheet.create({
   playerRankContainer: {
     alignSelf: 'flex-start',
     marginTop: gameScale(10),
-    marginBottom: gameScale(10),
+    marginBottom: gameScale(0),
     position: 'absolute',
-    left: gameScale(40),
-    bottom: gameScale(-16),
-    
+    right: gameScale(10),
+    bottom: gameScale(-5),
   },
  
   playerRankImage: {
-    width: gameScale(100),
-    height: gameScale(100),
+    width: gameScale(60),
+    height: gameScale(60),
     borderRadius: gameScale(5),
-    resizeMode: 'cover',
+    resizeMode: 'contain',
   },
   playerAvatarOuterBorder: {
     borderWidth: gameScale(1.5), 

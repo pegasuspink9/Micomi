@@ -22,6 +22,8 @@ import { usePlayerProfile } from '../hooks/usePlayerProfile';
 import PlayerInfoSection from '../Components/Profile Components/PlayerInfoSection';
 import StatsGridSection from '../Components/Profile Components/StatsGridSection';
 import InventorySection from '../Components/Profile Components/InventorySection';
+import ProfileRankHistorySection from '../Components/Profile Components/ProfileRankHistorySection';
+import { pvpService } from '../services/pvpService';
 
 export default function Profile() {
   const router = useRouter();
@@ -37,14 +39,38 @@ export default function Profile() {
   } = usePlayerProfile();
 
   const [inventoryTab, setInventoryTab] = useState('Badges');
+  const [profileMode, setProfileMode] = useState('Classic');
   const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
   const [selectedAvatarId, setSelectedAvatarId] = useState(null);
+  const [rankHistory, setRankHistory] = useState([]);
+  const [rankHistoryLoading, setRankHistoryLoading] = useState(false);
+  const [rankHistoryError, setRankHistoryError] = useState(null);
+
+  const loadRankHistory = useCallback(async () => {
+    try {
+      setRankHistoryLoading(true);
+      setRankHistoryError(null);
+      const response = await pvpService.getDailyMatchHistory();
+      const sorted = [...(Array.isArray(response) ? response : [])].sort((a, b) => {
+        const aTime = new Date(a?.date || 0).getTime();
+        const bTime = new Date(b?.date || 0).getTime();
+        return bTime - aTime;
+      });
+      setRankHistory(sorted.slice(0, 10));
+    } catch (historyError) {
+      setRankHistory([]);
+      setRankHistoryError(historyError?.message || 'Failed to load match history');
+    } finally {
+      setRankHistoryLoading(false);
+    }
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
       console.log('🔄 Profile tab focused - refreshing data...');
-      loadPlayerProfile();  
-    }, [loadPlayerProfile])
+      loadPlayerProfile();
+      loadRankHistory();
+    }, [loadPlayerProfile, loadRankHistory])
   );
 
   const handleAvatarSelect = async () => {
@@ -131,14 +157,30 @@ export default function Profile() {
             statsIcons={playerData.statsIcons}
             hero={playerData.heroSelected}
             background={playerData.background}
+            mode={profileMode}
+            playerRankName={playerData.playerRankName}
+            playerRankImage={playerData.playerRankImage}
+            playerCurrentPoints={playerData.playerCurrentPoints}
+            pvpTotalMatches={playerData.pvpTotalMatches}
+            pvpWinRate={playerData.pvpWinRate}
+            onModeChange={setProfileMode}
           />
           
-          <InventorySection 
-            activeTab={inventoryTab}
-            setActiveTab={setInventoryTab}
-            badges={playerData.badges}
-            potions={playerData.potions}
-          />
+          {profileMode === 'Classic' ? (
+            <InventorySection 
+              activeTab={inventoryTab}
+              setActiveTab={setInventoryTab}
+              badges={playerData.badges}
+              potions={playerData.potions}
+            />
+          ) : (
+            <ProfileRankHistorySection
+              history={rankHistory}
+              loading={rankHistoryLoading}
+              error={rankHistoryError}
+              onRetry={loadRankHistory}
+            />
+          )}
           
           <View style={{ height: gameScale(16) }} />
         </ScrollView>

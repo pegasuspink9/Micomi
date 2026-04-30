@@ -218,14 +218,14 @@ const CombatVSModal = ({
 
   const characterSpriteUrl = useMemo(() => {
   if (selectedCharacter?.character_attack && Array.isArray(selectedCharacter.character_attack) && selectedCharacter.character_attack.length > 3) {
-    return selectedCharacter.character_attack[3]; 
+    return selectedCharacter.character_attack[2]; 
   }
   return null;
 }, [selectedCharacter]);
 
   const enemySpriteUrl = useMemo(() => {
     if (isPvpMode && Array.isArray(enemy?.enemy_attack) && enemy.enemy_attack.length > 3) {
-      return enemy.enemy_attack[3];
+      return enemy.enemy_attack[2];
     }
     if (enemy?.enemy_attack && typeof enemy.enemy_attack === 'string') {
       return enemy.enemy_attack;

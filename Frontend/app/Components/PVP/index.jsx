@@ -185,19 +185,13 @@ export default function PvpLobbyPage() {
       const topic = pvpTopics[nextIndex];
       if (!topic) return;
 
-      // 2. Wait for backend preparation BEFORE updating UI state
       try {
-        // During this await, 'settingTopic' becomes true.
-        // The UI button will likely say "Preparing..." and arrows will be disabled.
         await setMatchTopic(topic);
 
-        // 3. Only update index upon success. This triggers the visual animation.
         setCurrentTopicIndex(nextIndex);
 
       } catch (topicError) {
         console.error('Failed to set PvP topic:', topicError);
-        // Do not update setCurrentTopicIndex if it failed.
-        // The user stays on the current topic card.
       }
   }, [currentTopicIndex, findingMatch, loadingPreview, pvpTopics, setMatchTopic, settingTopic, startingMatch]);
   // -----------------------------------

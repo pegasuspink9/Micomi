@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { gameScale } from '../Responsiveness/gameResponsive';
 import StatCard from './StatCard';
 import ProfileHeroSprite from './ProfileHeroSprite';
+import InventoryTabButton from './InventoryTabButton';
 
 const StatsGridSection = ({
   coins,
@@ -13,6 +14,13 @@ const StatsGridSection = ({
   statsIcons,
   hero,
   background,
+  mode = 'classic',
+  playerRankName,
+  playerRankImage,
+  playerCurrentPoints = 0,
+  pvpTotalMatches = 0,
+  pvpWinRate = 0,
+  onModeChange,
   disableHeroPress = false,
   relationButtonMeta,
   onRelationPress,
@@ -42,6 +50,74 @@ const StatsGridSection = ({
     router.push('/Components/CharacterSelection/CharacterSelect');
   };
 
+  const winRateDisplay = `${Number(pvpWinRate || 0)}%`;
+
+  const isRankMode = String(mode).toLowerCase() === 'rank';
+
+  const leftTopStat = isRankMode
+    ? {
+        icon: null,
+        label: 'Rank',
+        value: playerRankName || 'Unranked',
+        displayValueInIcon: false,
+        hideIcon: true,
+      }
+    : {
+        icon: require('../icons/coins.png'),
+        label: 'Coins',
+        value: formatCompactNumber(coins),
+        displayValueInIcon: false,
+        hideIcon: false,
+      };
+
+  const leftBottomStat = isRankMode
+    ? {
+        icon: require('../icons/fire.png'),
+        label: 'Matches',
+        value: formatCompactNumber(pvpTotalMatches),
+        displayValueInIcon: false,
+        hideIcon: true,
+      }
+    : {
+        icon: require('../icons/fire.png'),
+        label: 'Streak',
+        value: currentStreak,
+        displayValueInIcon: false,
+        hideIcon: false,
+      };
+
+  const rightTopStat = isRankMode
+    ? {
+        icon: require('../icons/exp.png'),
+        label: 'Points',
+        value: formatCompactNumber(playerCurrentPoints),
+        displayValueInIcon: false,
+        hideIcon: true,
+      }
+    : {
+        icon: require('../icons/exp.png'),
+        label: 'EXP Points',
+        value: formatCompactNumber(expPoints),
+        displayValueInIcon: false,
+        hideIcon: false,
+      };
+
+  const rightBottomStat = isRankMode
+    ? {
+        icon: require('../icons/map.png'),
+        label: 'Win Rate',
+        value: winRateDisplay,
+        displayValueInIcon: false,
+        hideIcon: true,
+      }
+    : {
+        icon: require('../icons/map.png'),
+        label: 'Maps',
+        value: mapsOpened,
+        displayValueInIcon: false,
+        hideIcon: false,
+      };
+
   const overviewContent = (
     <View style={styles.overviewBorderOuter}>
       <View style={styles.overviewBorderMiddle}>
@@ -51,14 +127,18 @@ const StatsGridSection = ({
         >
           <View style={styles.statColumn}>
             <StatCard 
-              icon={require('../icons/coins.png')}
-              label="Coins" 
-              value={formatCompactNumber(coins)}
+              icon={leftTopStat.icon}
+              label={leftTopStat.label}
+              value={leftTopStat.value}
+              displayValueInIcon={leftTopStat.displayValueInIcon}
+              hideIcon={leftTopStat.hideIcon}
             />
             <StatCard 
-              icon={require('../icons/fire.png')}
-              label="Streak" 
-              value={currentStreak}
+              icon={leftBottomStat.icon}
+              label={leftBottomStat.label}
+              value={leftBottomStat.value}
+              displayValueInIcon={leftBottomStat.displayValueInIcon}
+              hideIcon={leftBottomStat.hideIcon}
             />
           </View>
 
@@ -88,14 +168,18 @@ const StatsGridSection = ({
 
           <View style={styles.statColumn}>
             <StatCard 
-              icon={require('../icons/exp.png')} 
-              label="EXP Points" 
-              value={formatCompactNumber(expPoints)}
+              icon={rightTopStat.icon}
+              label={rightTopStat.label}
+              value={rightTopStat.value}
+              displayValueInIcon={rightTopStat.displayValueInIcon}
+              hideIcon={rightTopStat.hideIcon}
             />
             <StatCard 
-              icon={require('../icons/map.png')} 
-              label="Maps" 
-              value={mapsOpened}
+              icon={rightBottomStat.icon}
+              label={rightBottomStat.label}
+              value={rightBottomStat.value}
+              displayValueInIcon={rightBottomStat.displayValueInIcon}
+              hideIcon={rightBottomStat.hideIcon}
             />
           </View>
         </ImageBackground>
@@ -106,6 +190,22 @@ const StatsGridSection = ({
   return (
     <View style={styles.statsSection}>
       <Text style={[styles.sectionTitle, { textAlign: 'center' }]}>Overview</Text>
+
+      <View style={styles.profileModeTabsContainer}>
+        <InventoryTabButton
+          label="Classic"
+          isActive={!isRankMode}
+          onPress={() => onModeChange?.('Classic')}
+        />
+
+        <View style={{ width: gameScale(12) }} />
+
+        <InventoryTabButton
+          label="Rank"
+          isActive={isRankMode}
+          onPress={() => onModeChange?.('Rank')}
+        />
+      </View>
 
       {disableHeroPress ? (
         overviewContent
@@ -131,6 +231,15 @@ const styles = StyleSheet.create({
     textShadowColor: '#000000ff',
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 4,
+  },
+  profileModeTabsContainer: {
+    flexDirection: 'row',
+    borderRadius: gameScale(25),
+    width: '100%',
+    alignSelf: 'center',
+    paddingHorizontal: gameScale(60),
+    paddingVertical: gameScale(6),
+    marginBottom: gameScale(14),
   },
   overviewBorderOuter: {
     borderRadius: gameScale(18), 

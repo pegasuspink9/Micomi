@@ -14,7 +14,7 @@ import { gameScale } from '../../../Responsiveness/gameResponsive';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const GameBackground = ({ children, isPaused, combatBackground, characterName, characterAttackType }) => {
+const GameBackground = ({ children, isPaused, combatBackground, characterName, characterAttackType, isPvpMode = false }) => {
   const frameIndex = useSharedValue(0);
   const darkOverlayOpacity = useSharedValue(0);
   const activeOverlayColor = useSharedValue('#e71212'); 
@@ -58,13 +58,19 @@ const GameBackground = ({ children, isPaused, combatBackground, characterName, c
 
 
   useEffect(() => {
+    // In PvP mode we display a normal (static) background image, so skip sprite animation.
+    if (isPvpMode) {
+      cancelAnimation(frameIndex);
+      return;
+    }
+
     if (!isPaused) {
       frameIndex.value = withRepeat(
         withTiming(TOTAL_FRAMES - 1, {
           duration: TOTAL_ANIMATION_DURATION,
           easing: Easing.linear,
         }),
-        -1, 
+        -1,
         true
       );
     } else {
@@ -75,7 +81,7 @@ const GameBackground = ({ children, isPaused, combatBackground, characterName, c
     return () => {
       cancelAnimation(frameIndex);
     };
-  }, [isPaused, TOTAL_FRAMES, TOTAL_ANIMATION_DURATION]);
+  }, [isPaused, TOTAL_FRAMES, TOTAL_ANIMATION_DURATION, isPvpMode]);
 
 const animatedSpriteStyle = useAnimatedStyle(() => {
   const currentFrame = Math.floor(frameIndex.value) % TOTAL_FRAMES;
@@ -109,17 +115,27 @@ const darkOverlayStyle = useAnimatedStyle(() => ({
 
 return (
   <View style={[styles.container, isPaused && styles.pausedBackground]}>
-    <View style={styles.spriteContainer}>
-      <Animated.View style={[animatedSpriteStyle]}>
-        <Image
-          source={{ uri: SPRITE_URL }}
-          style={styles.spriteImage}
-          contentFit="fill" 
-          cachePolicy="memory-disk"
-          priority="high"
-        />
-      </Animated.View>
-    </View>
+      <View style={styles.spriteContainer}>
+        {isPvpMode ? (
+          <Image
+            source={{ uri: SPRITE_URL }}
+            style={styles.spriteImage}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            priority="high"
+          />
+        ) : (
+          <Animated.View style={[animatedSpriteStyle]}>
+            <Image
+              source={{ uri: SPRITE_URL }}
+              style={styles.spriteImage}
+              contentFit="fill"
+              cachePolicy="memory-disk"
+              priority="high"
+            />
+          </Animated.View>
+        )}
+      </View>
 
     {/* Special Skill Dark Overlay */}
     <Animated.View style={[styles.darkOverlay, darkOverlayStyle]} pointerEvents="none" />
