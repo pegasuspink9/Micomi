@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 9999,
+    zIndex: 9999999,
   },
    contentWrapper: {
     alignItems: 'center',

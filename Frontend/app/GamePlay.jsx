@@ -54,6 +54,7 @@ export default function GamePlay() {
   const [borderColor, setBorderColor] = useState('white');
   const [activeGameTab, setActiveGameTab] = useState('code');
   const [showOutputInScreenPlay, setShowOutputInScreenPlay] = useState(false);
+  const outputAutoShowTimerRef = useRef(null);
   const [selectedBlankIndex, setSelectedBlankIndex] = useState(0); 
   const [showVSModal, setShowVSModal] = useState(false);
   const [showMicomic, setShowMicomic] = useState(false);
@@ -90,6 +91,38 @@ export default function GamePlay() {
   const pvpGameData = usePvpGameData(matchId, { disabled: !isPvpMode });
 
   const activeGameData = isPvpMode ? pvpGameData : pveGameData;
+
+
+  useEffect(() => {
+    return () => {
+      if (outputAutoShowTimerRef.current) {
+        clearTimeout(outputAutoShowTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleRunPressForOutput = useCallback(() => {
+    // Only trigger this sequence if the output is actually showing
+    if (showOutputInScreenPlay) {
+      console.log('🏃 Run pressed: Hiding output overlay immediately for 5 seconds');
+
+      // 1. Hide immediately
+      setShowOutputInScreenPlay(false);
+
+      // Clear any pending timer just in case rapid clicks happen
+      if (outputAutoShowTimerRef.current) {
+        clearTimeout(outputAutoShowTimerRef.current);
+      }
+
+      // 2. Set timer to show it back after 5 seconds
+      outputAutoShowTimerRef.current = setTimeout(() => {
+        console.log('⏰ 5 seconds passed: Re-showing output overlay');
+        setShowOutputInScreenPlay(true);
+        outputAutoShowTimerRef.current = null;
+      }, 6000);
+    }
+  }, [showOutputInScreenPlay]);
+
 
   const {
     gameState,   
@@ -998,6 +1031,13 @@ export default function GamePlay() {
   
   const memoizedOptions = useMemo(() => currentChallenge?.options || [], [currentChallenge?.options]);
 
+
+    const handleAutoHideOutput = useCallback(() => {
+    console.log('🕒 Auto-hiding screenplay output overlay');
+    setShowOutputInScreenPlay(false);
+  }, []);
+
+  
   const outputView = (
     <Output
       currentQuestion={currentChallenge}
@@ -1007,6 +1047,8 @@ export default function GamePlay() {
       showLiveHTML={true}
       options={memoizedOptions}
       displayMode="overlay"
+      runButtonClicked={runButtonClicked}
+      onAutoHide={handleAutoHideOutput}
     />
   );
 
@@ -1251,6 +1293,7 @@ export default function GamePlay() {
                 pvpMatchId={resolvedMatchId || matchId || null}
                 onSendPvpMessage={sendPvpMatchMessage}
                 sendingPvpMessage={sendingPvpMessage}
+                onRunPressHideOutput={handleRunPressForOutput}
               />
             </View>
 
@@ -1360,7 +1403,7 @@ const styles = StyleSheet.create({
 
   screenPlayOverlay: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 1000,
+    zIndex: 99999,
     elevation: 1000,
   },
 

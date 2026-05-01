@@ -17,8 +17,10 @@ const Output = ({
   displayMode = 'gameQuestion',
   showWebViewInScreenPlay = false,
   onWebViewToggle = null,
+  // REMOVED runButtonClicked and onAutoHide props
 }) => {
   const [htmlOutput, setHtmlOutput] = useState('');
+  // REMOVED autoHideTimerRef
 
    const generateHtmlOutput = useCallback(() => {
     const userAnswers = selectedAnswers.map(index => options?.[index]).filter(Boolean);
@@ -37,6 +39,8 @@ const Output = ({
     (currentQuestion.challenge_type === 'fill in the blank' || currentQuestion.challenge_type === 'code with guide'),
     [showLiveHTML, currentQuestion]
   );
+
+  // REMOVED THE useEffect FOR AUTO-HIDE TIMER
 
   //  Memoize event handlers
   const handleWebViewError = useCallback((error) => {
@@ -89,7 +93,7 @@ const Output = ({
           style={styles.webViewToggleButton}
         >
           <Text style={styles.webViewToggleText}>
-            {showWebViewInScreenPlay ? 'Hide' : 'Show'}
+            {showWebViewInScreenPlay ? 'Hide Screen' : 'Show Screen'}
           </Text>
         </Pressable>
       )}
@@ -99,6 +103,7 @@ const Output = ({
 
 
 const styles = StyleSheet.create({
+  // ... (styles remain the same as the original file)
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
@@ -172,7 +177,7 @@ const styles = StyleSheet.create({
   },
   webViewToggleButton: {
     position: 'absolute',
-    top: gameScale(12),
+    bottom: gameScale(300),
     right: gameScale(12),
     backgroundColor: '#3c3c3c',
     paddingVertical: gameScale(7),
@@ -199,6 +204,7 @@ const styles = StyleSheet.create({
   },
 });
 
+// REVERTED MEMOIZATION comparison
 export default React.memo(Output, (prevProps, nextProps) => {
   return (
     prevProps.actualResult === nextProps.actualResult &&
@@ -206,6 +212,7 @@ export default React.memo(Output, (prevProps, nextProps) => {
     prevProps.showLiveHTML === nextProps.showLiveHTML &&
     prevProps.displayMode === nextProps.displayMode &&
     prevProps.showWebViewInScreenPlay === nextProps.showWebViewInScreenPlay &&
+    // REMOVED runButtonClicked comparison
     prevProps.currentQuestion?.question === nextProps.currentQuestion?.question &&
     prevProps.currentQuestion?.challenge_type === nextProps.currentQuestion?.challenge_type &&
     JSON.stringify(prevProps.selectedAnswers) === JSON.stringify(nextProps.selectedAnswers)

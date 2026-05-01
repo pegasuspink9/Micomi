@@ -66,18 +66,18 @@ model Dialogue {
 }
 
 model Challenge {
-  challenge_id         Int     @id @default(autoincrement())
-  level_id             Int
-  points_reward        Int     @default(0)
-  coins_reward         Int     @default(0)
-  challenge_type       String
-  guide                String?
-  correct_answer       Json    @default("[]")
-  options              Json?   @default("[]")
-  question             String?
-  css_file             String?
-  html_file            String?
-  level                Level   @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
+  challenge_id   Int     @id @default(autoincrement())
+  level_id       Int
+  points_reward  Int     @default(0)
+  coins_reward   Int     @default(0)
+  challenge_type String
+  correct_answer Json    @default("[]")
+  question       String?
+  css_file       String?
+  html_file      String?
+  guide          String?
+  options        Json?   @default("[]")
+  level          Level   @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
 }
 
 model PVPChallenge {

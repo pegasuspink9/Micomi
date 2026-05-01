@@ -64,6 +64,7 @@ const ThirdGrid = ({
   onSendPvpMessage = null,
   sendingPvpMessage = false,
   pvpChallengeCountdown = null,
+    onRunPressHideOutput = null,
 }) => {
 
   if (!currentQuestion) {
@@ -179,18 +180,28 @@ const ThirdGrid = ({
 
   const handleRunPress = useCallback(() => {
     soundManager.playGameButtonTapSound();
-    setRunDisabled(true); 
+    setRunDisabled(true);
+
+    // ---- TRIGGER AUTO-HIDE LOGIC ----
+    // Call the function passed from GamePlay to hide the output overlay
+    if (onRunPressHideOutput) {
+      onRunPressHideOutput();
+    }
+    // ---------------------------------
+
     if (selectedPotion) {
-      setPotionUsed(true); 
+      setPotionUsed(true);
       usePotion(selectedPotion.player_potion_id);
-      setBorderColor(getPotionBorderColor(selectedPotion.name)); 
+      setBorderColor(getPotionBorderColor(selectedPotion.name));
     } else {
       handleCheckAnswer();
     }
     setTimeout(() => {
       setRunDisabled(false);
     }, 5000);
-  }, [selectedPotion, usePotion, handleCheckAnswer, setBorderColor]);
+    // Add onRunPressHideOutput to dependencies
+  }, [selectedPotion, usePotion, handleCheckAnswer, setBorderColor, onRunPressHideOutput]);
+
 
   const handleClearAll = useCallback(() => {
     soundManager.playGameButtonTapSound();
@@ -502,6 +513,7 @@ export default React.memo(ThirdGrid, (prev, next) => {
       prev.isPvpMode === next.isPvpMode &&
       prev.pvpMatchId === next.pvpMatchId &&
       prev.sendingPvpMessage === next.sendingPvpMessage &&
-      prev.pvpChallengeCountdown === next.pvpChallengeCountdown
+      prev.pvpChallengeCountdown === next.pvpChallengeCountdown &&
+      prev.onRunPressHideOutput === next.onRunPressHideOutput
     );
 });
