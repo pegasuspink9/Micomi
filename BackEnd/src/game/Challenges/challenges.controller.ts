@@ -118,7 +118,6 @@ export const submitChallenge = async (req: Request, res: Response) => {
       const level = await prisma.level.findUnique({
         where: { level_id: levelId },
         select: {
-          feedback_message: true,
           map_id: true,
           level_number: true,
         },
@@ -128,7 +127,6 @@ export const submitChallenge = async (req: Request, res: Response) => {
         enhancedResult.completionRewards = {
           feedbackMessage:
             result.completionRewards?.feedbackMessage ??
-            level.feedback_message ??
             `Level ${level.level_number} completed!`,
           coinsEarned: result.levelStatus?.coinsEarned ?? 0,
           totalPointsEarned: result.levelStatus?.totalPointsEarned ?? 0,
