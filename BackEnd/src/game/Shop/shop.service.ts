@@ -469,9 +469,7 @@ export const usePotion = async (
       },
     });
     completionRewards = {
-      feedbackMessage:
-        level?.feedback_message ??
-        `Level ${level?.level_number} completed! (Potion-powered!)`,
+      feedbackMessage: `Level ${level?.level_number} completed! (Potion-powered!)`,
     };
     nextLevel = await LevelService.unlockNextLevel(
       playerId,
