@@ -297,6 +297,14 @@ const mergeFightAttributes = (baseState, sourceState) => {
     nextState.enemy.enemy_attack = enemy.enemy_attack;
   }
 
+  if (enemy.enemy_range_attack !== undefined) {
+    nextState.enemy.enemy_range_attack = enemy.enemy_range_attack;
+  }
+
+  if (enemy.enemy_is_range_attack !== undefined) {
+    nextState.enemy.enemy_is_range_attack = enemy.enemy_is_range_attack;
+  }
+
   if (enemy.enemy_hurt !== undefined) {
     nextState.enemy.enemy_hurt = enemy.enemy_hurt;
   }

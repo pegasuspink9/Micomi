@@ -472,6 +472,48 @@ const ScreenPlay = ({
     return skill;
   }, [gameState]);
 
+  const resolvedCharacterAttackAudio =
+    gameState.submissionResult?.characterAttackAudio ??
+    gameState.submissionResult?.character_attack_audio ??
+    gameState.selectedCharacter?.characterAttackAudio ??
+    gameState.selectedCharacter?.character_attack_audio ??
+    null;
+
+  const resolvedEnemyAttackAudio =
+    gameState.submissionResult?.enemyAttackAudio ??
+    gameState.submissionResult?.enemy_attack_audio ??
+    gameState.enemy?.enemyAttackAudio ??
+    gameState.enemy?.enemy_attack_audio ??
+    null;
+
+  const resolvedCharacterHurtAudio =
+    gameState.submissionResult?.characterHurtAudio ??
+    gameState.submissionResult?.character_hurt_audio ??
+    gameState.selectedCharacter?.characterHurtAudio ??
+    gameState.selectedCharacter?.character_hurt_audio ??
+    null;
+
+  const resolvedEnemyHurtAudio =
+    gameState.submissionResult?.enemyHurtAudio ??
+    gameState.submissionResult?.enemy_hurt_audio ??
+    gameState.enemy?.enemyHurtAudio ??
+    gameState.enemy?.enemy_hurt_audio ??
+    null;
+
+  const resolvedCharacterIdleAudio =
+    gameState.submissionResult?.characterIdleAudio ??
+    gameState.submissionResult?.character_idle_audio ??
+    gameState.selectedCharacter?.characterIdleAudio ??
+    gameState.selectedCharacter?.character_idle_audio ??
+    null;
+
+  const resolvedEnemyIdleAudio =
+    gameState.submissionResult?.enemyIdleAudio ??
+    gameState.submissionResult?.enemy_idle_audio ??
+    gameState.enemy?.enemyIdleAudio ??
+    gameState.enemy?.enemy_idle_audio ??
+    null;
+
   const characterAnimations = useMemo(() => {
     const base = gameState.selectedCharacter;
     const action = gameState.submissionResult?.fightResult?.character;
@@ -745,18 +787,38 @@ const ScreenPlay = ({
     lastIdleAudioSequenceKeyRef.current = submissionAudioKey;
     clearIdleAudioTimeouts();
 
-    const characterAttackAudio =
-      submission?.characterAttackAudio ?? submission?.character_attack_audio ?? null;
-    const enemyAttackAudio = submission?.enemyAttackAudio ?? submission?.enemy_attack_audio ?? null;
-    const characterIdleAudio = submission?.characterIdleAudio ?? submission?.character_idle_audio ?? null;
-    const enemyIdleAudio = submission?.enemyIdleAudio ?? submission?.enemy_idle_audio ?? null;
+    const characterAttackAudio = resolvedCharacterAttackAudio;
+    const enemyAttackAudio = resolvedEnemyAttackAudio;
+    const characterHurtAudio = resolvedCharacterHurtAudio;
+    const enemyHurtAudio = resolvedEnemyHurtAudio;
+    const characterIdleAudio = resolvedCharacterIdleAudio;
+    const enemyIdleAudio = resolvedEnemyIdleAudio;
 
     const firstIdleAudio = attackerIsCharacter ? characterIdleAudio : enemyIdleAudio;
     const secondIdleAudio = attackerIsCharacter ? enemyIdleAudio : characterIdleAudio;
     const attackerAttackAudio = attackerIsCharacter ? characterAttackAudio : enemyAttackAudio;
+    const defenderHurtAudio = attackerIsCharacter ? enemyHurtAudio : characterHurtAudio;
 
     const attackSoundStartDelayMs = attackerIsCharacter ? 1000 : 500;
+    const hurtSoundDelayMs = attackerIsCharacter ? 700 : 1000;
     const idlePreDelayMs = 2000;
+
+    // Schedule attack audio for the attacker
+    if (attackerAttackAudio) {
+      const attackTimeout = setTimeout(() => {
+        soundManager.playCachedSound(attackerAttackAudio, 'combat', 1.0);
+      }, attackSoundStartDelayMs);
+      idleAudioTimeoutsRef.current.push(attackTimeout);
+    }
+
+    // Schedule hurt audio for the defender (after attack)
+    if (defenderHurtAudio) {
+      const hurtTimeout = setTimeout(() => {
+        soundManager.playCachedSound(defenderHurtAudio, 'combat', 1.0);
+      }, attackSoundStartDelayMs + hurtSoundDelayMs);
+      idleAudioTimeoutsRef.current.push(hurtTimeout);
+    }
+
     const firstIdleDelayMs = attackSoundStartDelayMs + (attackerAttackAudio ? 900 : 120) + idlePreDelayMs;
     const secondIdleDelayMs = firstIdleDelayMs + (firstIdleAudio ? 1000 : 0);
 
@@ -773,7 +835,7 @@ const ScreenPlay = ({
       }, secondIdleDelayMs);
       idleAudioTimeoutsRef.current.push(secondTimeout);
     }
-  }, [clearIdleAudioTimeouts, gameState?.currentChallenge?.id, gameState?.submissionResult]);
+  }, [clearIdleAudioTimeouts, gameState?.currentChallenge?.id, gameState?.submissionResult, resolvedCharacterAttackAudio, resolvedEnemyAttackAudio, resolvedCharacterHurtAudio, resolvedEnemyHurtAudio, resolvedCharacterIdleAudio, resolvedEnemyIdleAudio]);
 
   useEffect(() => {
   const submission = gameState.submissionResult;
@@ -1157,11 +1219,15 @@ useEffect(() => {
     return {
       character_idle: action?.enemy_idle ?? base?.enemy_idle,
       character_attack: action?.enemy_attack ?? base?.enemy_attack,
+      character_range_attack: action?.enemy_range_attack ?? base?.enemy_range_attack,
+      character_is_range: action?.enemy_is_range_attack ?? base?.enemy_is_range_attack,
       character_hurt: action?.enemy_hurt ?? base?.enemy_hurt,
       character_run: action?.enemy_run ?? base?.enemy_run,
       character_dies: action?.enemy_dies ?? base?.enemy_dies,
       enemy_idle: action?.enemy_idle ?? base?.enemy_idle,
       enemy_attack: action?.enemy_attack ?? base?.enemy_attack,
+      enemy_range_attack: action?.enemy_range_attack ?? base?.enemy_range_attack,
+      enemy_is_range_attack: action?.enemy_is_range_attack ?? base?.enemy_is_range_attack,
       enemy_hurt: action?.enemy_hurt ?? base?.enemy_hurt,
       enemy_run: action?.enemy_run ?? base?.enemy_run,
       enemy_dies: action?.enemy_dies ?? base?.enemy_dies,
@@ -1202,14 +1268,14 @@ useEffect(() => {
           characterAnimations={characterAnimations}
           currentState={characterAnimationState}
           onAnimationComplete={handleCharacterAnimationComplete}
-          attackAudioUrl={gameState.submissionResult?.characterAttackAudio}
+          attackAudioUrl={resolvedCharacterAttackAudio ?? resolvedEnemyAttackAudio}
           isBonusRound={gameState.submissionResult?.isBonusRound ?? false}
           characterName={characterName}
           potionEffectUrl={gameState.submissionResult?.use_potion_effect}
           attackOverlayUrl={characterAttackOverlay} 
           statusState={characterCurrentState} // ✅ Passing character status
           enemyStatusState={enemyCurrentState} 
-          hurtAudioUrl={gameState.submissionResult?.characterHurtAudio}
+          hurtAudioUrl={resolvedCharacterHurtAudio ?? resolvedEnemyHurtAudio}
           reactionText={activeCharReaction}
         />
 
@@ -1232,12 +1298,12 @@ useEffect(() => {
               currentState={currentEnemyState} 
               isBonusRound={gameState.submissionResult?.isBonusRound ?? false}
               fightStatus={gameState.submissionResult?.fightResult?.status}
-              attackAudioUrl={gameState.submissionResult?.enemyAttackAudio}
+              attackAudioUrl={resolvedEnemyAttackAudio}
               onAnimationComplete={handleEnemyAnimationComplete(index)}
               attackOverlayUrl={enemyAttackOverlay}
               enemyCurrentState={enemyCurrentState}
               reactionText={activeEnemyReaction}
-              hurtAudioUrl={gameState.submissionResult?.enemyHurtAudio}
+              hurtAudioUrl={resolvedEnemyHurtAudio}
               matchCharacterStyle={isPvpMode}
               animationTriggerKey={enemyAnimationTriggerKey}
             />

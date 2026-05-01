@@ -175,6 +175,9 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         enemy_idle: data.enemy?.enemy_idle || responseData.enemy?.enemy_idle || null,
         enemy_run: data.enemy?.enemy_run || responseData.enemy?.enemy_run || null,
         enemy_attack: data.enemy?.enemy_attack || responseData.enemy?.enemy_attack || null,
+        enemy_range_attack: data.enemy?.enemy_range_attack || responseData.enemy?.enemy_range_attack || null,
+        enemy_is_range_attack:
+          data.enemy?.enemy_is_range_attack ?? responseData.enemy?.enemy_is_range_attack ?? false,
         enemy_hurt: data.enemy?.enemy_hurt || responseData.enemy?.enemy_hurt || null,
         enemy_dies: data.enemy?.enemy_dies || responseData.enemy?.enemy_dies || null,
         enemy_avatar: data.enemy?.enemy_avatar || responseData.enemy?.enemy_avatar || null, 
@@ -380,6 +383,8 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
             enemy_idle: fightResult.enemy.enemy_idle,
             enemy_run: fightResult.enemy.enemy_run,
             enemy_attack: fightResult.enemy.enemy_attack,
+            enemy_range_attack: fightResult.enemy.enemy_range_attack || null,
+            enemy_is_range_attack: fightResult.enemy.enemy_is_range_attack || false,
             enemy_attack_type: fightResult.enemy.enemy_attack_type, 
             enemy_hurt: fightResult.enemy.enemy_hurt,
             enemy_dies: fightResult.enemy.enemy_dies,

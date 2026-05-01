@@ -41,6 +41,7 @@ const EnemyCharacter = ({
   // ========== Shared Animation Values ==========
   const frameIndex = useSharedValue(0);
   const positionX = useSharedValue(0);
+  const rangeProjectileX = useSharedValue(0);
   const opacity = useSharedValue(1);
   const blinkOpacity = useSharedValue(0);
   const attackInitiated = useSharedValue(false);
@@ -218,6 +219,16 @@ const EnemyCharacter = ({
       idle: pick(characterAnimations.character_idle, characterAnimations.enemy_idle, characterAnimations.idle),
       run: pick(characterAnimations.character_run, characterAnimations.enemy_run, characterAnimations.run),
       attack: pick(characterAnimations.character_attack, characterAnimations.enemy_attack, characterAnimations.attack),
+      rangeAttack: pick(
+        characterAnimations.character_range_attack,
+        characterAnimations.enemy_range_attack,
+        characterAnimations.range_attack
+      ),
+      isRange: pick(
+        characterAnimations.character_is_range,
+        characterAnimations.enemy_is_range_attack,
+        characterAnimations.is_range_attack
+      ),
       hurt: pick(characterAnimations.character_hurt, characterAnimations.enemy_hurt, characterAnimations.hurt),
       dies: pick(characterAnimations.character_dies, characterAnimations.enemy_dies, characterAnimations.dies),
     };
@@ -244,6 +255,8 @@ const EnemyCharacter = ({
     const attackUrl = Array.isArray(normalizedAnimations.attack)
       ? normalizedAnimations.attack.filter(url => url && typeof url === 'string')[0]
       : normalizedAnimations.attack;
+    const rangeUrl = resolveCachedUrl(normalizedAnimations.rangeAttack);
+    const isRange = normalizedAnimations.isRange === true;
 
     const configs = {
       idle: {
@@ -254,8 +267,11 @@ const EnemyCharacter = ({
       attack: {
         runUrl: resolveCachedUrl(normalizedAnimations.run),
         attackUrl: resolveCachedUrl(attackUrl),
+        rangeUrl,
+        isRange,
+        url: resolveCachedUrl(attackUrl),
         shouldLoop: false,
-        isCompound: true,
+        isCompound: !isRange && !!resolveCachedUrl(normalizedAnimations.run),
       },
       hurt: {
         url: resolveCachedUrl(normalizedAnimations.hurt),
@@ -283,6 +299,7 @@ const EnemyCharacter = ({
     if (normalizedAnimations.run) urls.push(resolveCachedUrl(normalizedAnimations.run));
     if (normalizedAnimations.hurt) urls.push(resolveCachedUrl(normalizedAnimations.hurt));
     if (normalizedAnimations.dies) urls.push(resolveCachedUrl(normalizedAnimations.dies));
+    if (normalizedAnimations.rangeAttack) urls.push(resolveCachedUrl(normalizedAnimations.rangeAttack));
     if (Array.isArray(normalizedAnimations.attack)) {
       normalizedAnimations.attack.filter(Boolean).forEach(url => urls.push(resolveCachedUrl(url)));
     } else if (normalizedAnimations.attack) {
@@ -359,7 +376,6 @@ const EnemyCharacter = ({
   // FIX: Set imageReady to true if ALL animations are cached
   const [imageReady, setImageReady] = useState(allAnimationsCached || isUrlCached(initialUrl));
   const [preloadedImages] = useState(new Map());
-  const attackSoundTimeoutRef = useRef(null);
   const hasInitialized = useRef(false);
 
   // FIX: Pre-populate preloadedImages map with all cached URLs on mount
@@ -381,30 +397,6 @@ const EnemyCharacter = ({
       }
     }
   }, [allAnimationUrls, isUrlCached, index]);
-
-   useEffect(() => {
-    if (attackSoundTimeoutRef.current) {
-      clearTimeout(attackSoundTimeoutRef.current);
-    }
-
-    if (currentState === 'attack' && attackAudioUrl) {
-      const SOUND_DELAY = 500; 
-      attackSoundTimeoutRef.current = setTimeout(() => {
-        soundManager.playCachedSound(attackAudioUrl, 'combat', 1.0);
-      }, SOUND_DELAY);
-    } else if (currentState === 'hurt' && hurtAudioUrl) {
-      const HURT_DELAY = 1000; 
-      attackSoundTimeoutRef.current = setTimeout(() => {
-        soundManager.playCachedSound(hurtAudioUrl, 'combat', 1.0);
-      }, HURT_DELAY);
-    }
-
-    return () => {
-      if (attackSoundTimeoutRef.current) {
-        clearTimeout(attackSoundTimeoutRef.current);
-      }
-    };
-  }, [currentState, attackAudioUrl, hurtAudioUrl, index, isBonusRound]);
 
   if (isBonusRound) wasBonusRound.current = true;
   else if (currentState === 'idle') wasBonusRound.current = false;
@@ -493,13 +485,13 @@ const EnemyCharacter = ({
   if (isPaused || isFrozen) {
     cancelAnimation(frameIndex);
     cancelAnimation(positionX);
+    cancelAnimation(rangeProjectileX);
     cancelAnimation(opacity);
     cancelAnimation(blinkOpacity);
     blinkOpacity.value = 0;
     return;
   }
 
-  // 🚀 NEW: Specifically check if it's a compound attack and require BOTH URLs to be loaded
   let compoundReady = true;
   if (config.isCompound && currentState === 'attack') {
       const { runUrl, attackUrl } = config;
@@ -527,6 +519,52 @@ const EnemyCharacter = ({
 
   positionX.value = 0; 
   opacity.value = 1;
+
+  if (config.isRange && currentState === 'attack') {
+    const attackUrl = config.attackUrl;
+    const rangeUrl = config.rangeUrl;
+    const attackReady = isUrlCached(attackUrl) || preloadedImages.has(attackUrl);
+    const rangeReady = !rangeUrl || isUrlCached(rangeUrl) || preloadedImages.has(rangeUrl);
+
+    if (!attackReady || !rangeReady) {
+      return;
+    }
+
+    attackSequenceRef.current = { runUrl: null, attackUrl };
+    attackInitiated.value = true;
+
+    currentAnimationUrlRef.current = attackUrl;
+    setCurrentAnimationUrl(attackUrl);
+
+    const duration = ANIMATION_DURATIONS.attack;
+    const ATTACK_RUN_DISTANCE = RUN_DISTANCE;
+
+    if (effectiveEnemyName === 'Ryron') {
+      rangeProjectileX.value = 0;
+      rangeProjectileX.value = withDelay(
+        900,
+        withTiming(ATTACK_RUN_DISTANCE, {
+          duration: duration * 0.3,
+          easing: Easing.linear,
+        })
+      );
+    } else {
+      rangeProjectileX.value = ATTACK_RUN_DISTANCE + gameScale(-50);
+    }
+
+    frameIndex.value = withTiming(
+      TOTAL_FRAMES - 1,
+      { duration: ANIMATION_DURATIONS.attack, easing: Easing.linear },
+      (finished) => {
+        if (finished) {
+          rangeProjectileX.value = 0;
+          runOnJS(notifyAnimationComplete)();
+        }
+      }
+    );
+
+    return;
+  }
 
   if (config.isCompound && currentState === 'attack') {
     const { runUrl, attackUrl } = config;
@@ -667,6 +705,10 @@ const EnemyCharacter = ({
     transform: [{ translateX: positionX.value }],
   }), []);
 
+  const rangeContainerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: rangeProjectileX.value }],
+  }), []);
+
   const redFlashStyle = useAnimatedStyle(() => ({
     opacity: blinkOpacity.value,
   }), []);
@@ -676,6 +718,8 @@ const EnemyCharacter = ({
   const shouldApplyHurtTint = useMemo(() => {
       return characterAnimations.character_hurt != null;
     }, [characterAnimations.character_hurt]);
+
+  const showRangeAttack = currentState === 'attack' && animationConfig.isRange && animationConfig.rangeUrl;
 
   const renderReactionText = (text) => {
     if (!text) return null;
@@ -797,6 +841,39 @@ const EnemyCharacter = ({
           )}
         </Animated.View>
       </View>
+
+      {showRangeAttack && (
+        <Animated.View
+          style={[
+            styles.spriteContainer,
+            rangeContainerStyle,
+            {
+              position: 'absolute',
+              width: SPRITE_SIZE,
+              height: SPRITE_SIZE,
+              zIndex: 20,
+            },
+            matchCharacterStyle && styles.flipHorizontal,
+          ]}
+        >
+          <Animated.View
+            style={[
+              styles.spriteSheet,
+              animatedStyle,
+              { width: SPRITE_SIZE * SPRITE_COLUMNS, height: SPRITE_SIZE * SPRITE_ROWS },
+            ]}
+          >
+            <Image
+              source={{ uri: animationConfig.rangeUrl }}
+              style={styles.spriteImage}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              priority="high"
+              transition={0}
+            />
+          </Animated.View>
+        </Animated.View>
+      )}
     </Animated.View>
   );
 };

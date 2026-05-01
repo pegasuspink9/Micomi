@@ -283,6 +283,12 @@ const mergeAuthoritativeCombatState = (displayState, combatState, rawData = {}) 
       enemy_attack:
         pick(fightEnemy.enemy_attack, combatState?.enemy?.enemy_attack) ??
         displayState?.enemy?.enemy_attack,
+      enemy_range_attack:
+        pick(fightEnemy.enemy_range_attack, combatState?.enemy?.enemy_range_attack) ??
+        displayState?.enemy?.enemy_range_attack,
+      enemy_is_range_attack:
+        pick(fightEnemy.enemy_is_range_attack, combatState?.enemy?.enemy_is_range_attack) ??
+        displayState?.enemy?.enemy_is_range_attack,
       enemy_hurt:
         pick(fightEnemy.enemy_hurt, combatState?.enemy?.enemy_hurt) ?? displayState?.enemy?.enemy_hurt,
       enemy_dies:
