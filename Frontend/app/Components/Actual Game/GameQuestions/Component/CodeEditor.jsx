@@ -22,6 +22,8 @@ const CodeEditor = ({
   activeTab: externalActiveTab,
   submissionResult,
   reviewGuide = null,
+  showOutputInScreenPlay = false,
+  onOutputToggle = null,
 }) => {
   const [activeTab, setActiveTab] = useState('code');
   const [hasAnimated, setHasAnimated] = useState(false); 
@@ -83,6 +85,16 @@ const CodeEditor = ({
       onTabChange(tabName);
     }
   }, [onTabChange, tabsDisabled]); 
+
+  const handleOutputTabPress = useCallback(() => handleTabChange('output'), [handleTabChange]);
+
+  const handleOutputTogglePress = useCallback(() => {
+    if (tabsDisabled) return;
+
+    if (onOutputToggle) {
+      onOutputToggle();
+    }
+  }, [onOutputToggle, tabsDisabled]);
 
 
   const options = currentQuestion?.options || [];
@@ -234,7 +246,6 @@ const CodeEditor = ({
 
 
   const handleCodeTabPress = useCallback(() => handleTabChange('code'), [handleTabChange]);
-  const handleOutputTabPress = useCallback(() => handleTabChange('output'), [handleTabChange]);
   const handleExpectedTabPress = useCallback(() => handleTabChange('expected'), [handleTabChange]);
   const handleGuideTabPress = useCallback(() => handleTabChange('guide'), [handleTabChange]);
   const handleFileTabPress = useCallback((fileName) => handleTabChange(fileName), [handleTabChange]);
@@ -320,6 +331,23 @@ const CodeEditor = ({
               activeTab === 'output' && styles.webTabTextActive
             ]}>
               {activeTab === 'output' ? 'Output' : 'Output'} 
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={handleOutputTogglePress}
+            style={[
+              styles.webTab,
+              showOutputInScreenPlay && styles.webTabActive,
+              tabsDisabled && { opacity: 0.5 } 
+            ]}
+            disabled={tabsDisabled} 
+          >
+            <Text style={[
+              styles.webTabText,
+              showOutputInScreenPlay && styles.webTabTextActive
+            ]}>
+              {showOutputInScreenPlay ? 'Hide WebView' : 'Show WebView'}
             </Text>
           </Pressable>
 
@@ -598,6 +626,7 @@ export default React.memo(CodeEditor, (prev, next) => {
   return (
     prev.renderSyntaxHighlightedLine === next.renderSyntaxHighlightedLine &&
     prev.userOutput === next.userOutput &&
-    prev.expectedOutput === next.expectedOutput
+    prev.expectedOutput === next.expectedOutput &&
+    prev.showOutputInScreenPlay === next.showOutputInScreenPlay
   );
 });

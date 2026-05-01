@@ -3,6 +3,7 @@ import { View, StyleSheet, Dimensions, ImageBackground, Text, ActivityIndicator,
 import { StatusBar } from 'expo-status-bar';
 import ScreenPlay from '../app/Components/Actual Game/Screen Play/ScreenPlay';
 import GameQuestions from '../app/Components/Actual Game/GameQuestions/GameQuestions';
+import Output from './Components/Actual Game/GameQuestions/Output/Output';
 import ThirdGrid from '../app/Components/Actual Game/Third Grid/thirdGrid';
 import Card from '../app/Components/Actual Game/Card/Card';
 import { useGameData } from './hooks/useGameData';
@@ -52,6 +53,7 @@ export default function GamePlay() {
   const [selectedAnswers, setSelectedAnswers] = useState([]);
   const [borderColor, setBorderColor] = useState('white');
   const [activeGameTab, setActiveGameTab] = useState('code');
+  const [showOutputInScreenPlay, setShowOutputInScreenPlay] = useState(false);
   const [selectedBlankIndex, setSelectedBlankIndex] = useState(0); 
   const [showVSModal, setShowVSModal] = useState(false);
   const [showMicomic, setShowMicomic] = useState(false);
@@ -595,6 +597,10 @@ export default function GamePlay() {
     }
   }, [selectedPotion, clearSelectedPotion]);
 
+  const handleOutputToggle = useCallback(() => {
+    setShowOutputInScreenPlay((current) => !current);
+  }, []);
+
   
     const handleBlankSelect = useCallback((blankIndex) => {
     console.log('🎯 Blank selected in GamePlay:', blankIndex);
@@ -812,6 +818,7 @@ export default function GamePlay() {
     setShowGameplay(false);
     setShowLevelCompletion(false);
     setShowLevelCompletionModal(false);
+    setShowOutputInScreenPlay(false);
     
     setIsRetrying(true);
 
@@ -866,6 +873,7 @@ export default function GamePlay() {
     setShowVSModal(false); 
     setShowLevelCompletion(false); 
     setShowGameplay(false);
+    setShowOutputInScreenPlay(false);
     hasTriggeredLevelCompletion.current = false;
     hasShownVSModalRef.current = false;
     soundManager.stopAllSounds();
@@ -902,6 +910,7 @@ export default function GamePlay() {
     setShowLevelCompletion(false); 
     setIsRetrying(false);
     setIsLoadingNextLevel(false);
+    setShowOutputInScreenPlay(false);
     setRunButtonClicked(false);
     setShowRunButton(true);
     hasTriggeredGameOver.current = false;
@@ -988,6 +997,18 @@ export default function GamePlay() {
 
   
   const memoizedOptions = useMemo(() => currentChallenge?.options || [], [currentChallenge?.options]);
+
+  const outputView = (
+    <Output
+      currentQuestion={currentChallenge}
+      selectedAnswers={selectedAnswers}
+      actualResult={gameState?.submissionResult?.message || gameState?.submissionResult?.reason || ''}
+      isCorrect={resolvedSubmissionIsCorrect}
+      showLiveHTML={true}
+      options={memoizedOptions}
+      displayMode="overlay"
+    />
+  );
 
   // COMBINED LOADING STATE: Used to trigger the MainLoading entrance/exit
   const showLoadingScreen = loading || animationsLoading || isLoadingNextLevel || isRetrying;
@@ -1145,6 +1166,14 @@ export default function GamePlay() {
                 isPvpMode={isPvpMode}
                 pvpReactionEvent={chatReactionEvent}
               />
+
+              {showOutputInScreenPlay && (
+                <View style={styles.screenPlayOverlay} pointerEvents="box-none">
+                  <View style={styles.screenPlayOutputContainer}>
+                    {outputView}
+                  </View>
+                </View>
+              )}
             </View>
 
             <GameQuestions 
@@ -1159,6 +1188,8 @@ export default function GamePlay() {
                 canProceed={canProceed}
                 submissionResult={gameState?.submissionResult}
                 reviewGuide={reviewGuide}
+                showOutputInScreenPlay={showOutputInScreenPlay}
+                onOutputToggle={handleOutputToggle}
             />
 
             <View 
@@ -1319,6 +1350,18 @@ const styles = StyleSheet.create({
 
   screenPlayContainer: {
     height: gameScale(844 * 0.38), 
+    position: 'relative',
+  },
+
+  screenPlayOutputContainer: {
+    flex: 1,
+    minHeight: 0,
+  },
+
+  screenPlayOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1000,
+    elevation: 1000,
   },
 
   pvpFallbackContainer: {

@@ -13,6 +13,7 @@ const Output = ({
   selectedAnswers = [],
   showLiveHTML = false,
   options = [],
+  displayMode = 'gameQuestion',
 }) => {
   const [htmlOutput, setHtmlOutput] = useState('');
 
@@ -47,10 +48,19 @@ const Output = ({
     console.log('WebView loaded');
   }, []);
 
+  // Determine container style based on display mode
+  const containerStyle = displayMode === 'gameQuestion' 
+    ? styles.containerGameQuestion 
+    : styles.containerOverlay;
+  
+  const webviewContainerStyle = displayMode === 'gameQuestion'
+    ? styles.webviewContainerGameQuestion
+    : styles.webviewContainerOverlay;
+
   return (
-    <View style={styles.container}>
+    <View style={[containerStyle, style]}>
       {shouldShowHTML ? (
-        <View style={styles.webviewContainer}>
+        <View style={webviewContainerStyle}>
           <WebView
             key={`output-${currentQuestion?.id}-${selectedAnswers.join('-')}`} // Use key to force reload
             source={{ html: htmlOutput, baseUrl: '' }}
@@ -83,7 +93,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
+    height: '100%',
+  },
+  containerGameQuestion: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
     minHeight: SCREEN_HEIGHT * 1,
+    height: '100%',
+  },
+  containerOverlay: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    minHeight: 0,
     height: '100%',
   },
   outputContainer: {
@@ -93,7 +116,7 @@ const styles = StyleSheet.create({
     padding: 15, 
     borderWidth: 1,
     borderColor: '#e9ecef',
-    minHeight: SCREEN_HEIGHT * 0.35, 
+    minHeight: 0, 
   },
   outputText: {
     fontSize: 16, 
@@ -109,7 +132,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e9ecef',
     overflow: 'hidden',
+    height: '100%',
+  },
+  webviewContainerGameQuestion: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    overflow: 'hidden',
     minHeight: SCREEN_HEIGHT * 0.35,
+    height: '100%',
+  },
+  webviewContainerOverlay: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    overflow: 'hidden',
+    minHeight: 0,
     height: '100%',
   },
   webview: {
@@ -125,6 +167,7 @@ export default React.memo(Output, (prevProps, nextProps) => {
     prevProps.actualResult === nextProps.actualResult &&
     prevProps.isCorrect === nextProps.isCorrect &&
     prevProps.showLiveHTML === nextProps.showLiveHTML &&
+    prevProps.displayMode === nextProps.displayMode &&
     prevProps.currentQuestion?.question === nextProps.currentQuestion?.question &&
     prevProps.currentQuestion?.challenge_type === nextProps.currentQuestion?.challenge_type &&
     JSON.stringify(prevProps.selectedAnswers) === JSON.stringify(nextProps.selectedAnswers)
