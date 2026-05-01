@@ -10,11 +10,7 @@ import { successResponse, errorResponse } from "../../../utils/response";
 
 export const getAllModules = async (req: Request, res: Response) => {
   try {
-    const modules = await prisma.module.findMany({
-      include: {
-        level: true,
-      },
-    });
+    const modules = await prisma.module.findMany();
 
     if (!modules) {
       return errorResponse(res, null, "Modules not found", 404);

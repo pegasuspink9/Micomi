@@ -37,6 +37,7 @@ import * as EnergyService from "../Energy/energy.service";
 import { generateDynamicMessage } from "../../../helper/gamePlayMessageHelper";
 import { applyPvpRankResult } from "./pvpRank.service";
 import { DEFAULT_AVATAR_URL } from "../../models/Player/player.service";
+import { dynamicBlankSetter } from "../../game/Challenges/challenges.service";
 
 const prisma = new PrismaClient();
 
@@ -123,7 +124,7 @@ const generatePvpMotivationalMessage = (
 };
 
 const MATCHMAKING_TIMEOUT_MS = 2 * 60 * 1000;
-const MATCH_COMPLETION_CLEANUP_MS = 90 * 1000;
+const MATCH_COMPLETION_CLEANUP_MS = 5 * 60 * 1000;
 const PVP_BASE_QUESTION_TIME_LIMIT_SECONDS = 40;
 const PVP_SECONDS_PER_BLANK = 8;
 const PVP_MAX_QUESTION_TIME_LIMIT_SECONDS = 120;
@@ -615,6 +616,12 @@ const buildQuestionPool = async (
   }
 
   return finalSelection.map((current) => {
+    const normalizedAnswers = normalizeToStringArray(current.correct_answer);
+
+    const processedQuestion = current.question
+      ? dynamicBlankSetter(current.question, normalizedAnswers)
+      : current.question;
+
     return {
       challenge_id: current.challenge_id,
       topic,
@@ -623,11 +630,9 @@ const buildQuestionPool = async (
       map_name: current.level?.map?.map_name ?? topic,
       level_title: current.level?.level_title ?? "",
       challenge_type: current.challenge_type,
-      title: current.title,
-      description: current.description,
-      question: current.question,
+      question: processedQuestion,
       options: generateDynamicPvpOptions(current, challenges),
-      correct_answer: normalizeToStringArray(current.correct_answer),
+      correct_answer: normalizedAnswers,
       html_file: current.html_file ?? null,
       css_file: current.css_file ?? null,
     };
@@ -917,6 +922,8 @@ const buildEntryLikePayload = async (
       enemy_hurt: opponentChar.character_hurt,
       enemy_dies: opponentChar.character_dies,
       enemy_avatar: opponentChar.character_avatar,
+      enemy_is_range_attack: opponentChar.is_range,
+      enemy_range_attack: opponentChar.range_attacks,
       enemy_reaction: opponentReaction,
       special_skill: {
         special_skill_image: opponentSS.special_skill_image,
@@ -1663,8 +1670,6 @@ const publicQuestion = (question: DailyPvpQuestion) => {
     map_name: question.map_name,
     level_title: question.level_title,
     challenge_type: question.challenge_type,
-    title: question.title,
-    description: question.description,
     question: question.question,
     options: question.options,
     html_file: question.html_file,
@@ -1934,6 +1939,11 @@ const buildSubmitLikeResponse = async (
     resolvedAttackIndex,
   );
 
+  const opponentRangeAttackAsset = getArrayItemOrNull(
+    opponentEnemy.enemy_range_attack,
+    resolvedAttackIndex,
+  );
+
   const viewerRunAsset = getArrayItemOrNull(
     viewerCharacter.character_run,
     resolvedAttackIndex,
@@ -1986,16 +1996,15 @@ const buildSubmitLikeResponse = async (
   let enemy_attack_overlay: string | null = null;
 
   const opponentPlayerId = Number(opponentEnemy.player_id);
-
-  if (characterShowsAttack) {
-    character_current_state = wasFrozen ? "Frozen" : "attacking";
+if (characterShowsAttack) {
+    character_current_state = wasFrozen ? null : "attacking";
     if (wasFrozen) character_attack_overlay = OVERLAYS.FREEZE;
   } else if (enemyShowsAttack) {
     character_current_state = wasFrozen ? null : "hurt";
   }
 
   if (enemyShowsAttack) {
-    enemy_current_state = wasFrozen ? "Frozen" : "attacking";
+    enemy_current_state = wasFrozen ? null : "attacking";
     if (wasFrozen) enemy_attack_overlay = OVERLAYS.FREEZE;
   } else if (characterShowsAttack) {
     enemy_current_state = wasFrozen ? null : "hurt";
@@ -2136,6 +2145,11 @@ const buildSubmitLikeResponse = async (
           : null,
     enemy_attack_type: enemyShowsAttack ? resolvedAttackType : null,
     enemy_attack: enemyShowsAttack && !wasFrozen ? opponentAttackAsset : null,
+    enemy_is_range_attack: opponentEnemy.enemy_is_range_attack,
+    enemy_range_attack:
+      enemyShowsAttack && opponentEnemy.enemy_is_range_attack && !wasFrozen
+        ? opponentRangeAttackAsset
+        : null,
     enemy_hurt:
       characterShowsAttack && !wasFrozen ? opponentEnemy.enemy_hurt : null,
     enemy_dies:

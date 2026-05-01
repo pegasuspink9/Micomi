@@ -9,7 +9,6 @@ export interface LevelCreateInput {
   level_title?: string;
   boss_level_expected_output?: Prisma.InputJsonValue;
   content: string;
-  feedback_message: string;
 }
 
 export interface LevelUpdateInput {
@@ -22,5 +21,4 @@ export interface LevelUpdateInput {
   level_title?: string;
   boss_level_expected_output?: Prisma.InputJsonValue;
   content?: string;
-  feedback_message?: string;
 }

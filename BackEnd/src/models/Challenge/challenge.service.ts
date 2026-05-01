@@ -6,9 +6,6 @@ import { successResponse, errorResponse } from "../../../utils/response";
 export const getAllChallenges = async (req: Request, res: Response) => {
   try {
     const challenges = await prisma.challenge.findMany({
-      include: {
-        level: true,
-      },
       orderBy: {
         level_id: "asc",
       },
