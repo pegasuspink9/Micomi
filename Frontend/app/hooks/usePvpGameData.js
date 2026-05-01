@@ -63,6 +63,49 @@ const toStableValue = (value) => {
   return String(value);
 };
 
+// Parse timer strings like "MM:SS" to seconds
+const parseTimerToSeconds = (timerString) => {
+  if (!timerString || typeof timerString !== 'string') return null;
+  
+  const parts = timerString.split(':').map((p) => parseInt(p, 10));
+  if (parts.some((p) => Number.isNaN(p))) return null;
+  
+  // Handle MM:SS format (most common for PvP)
+  if (parts.length === 2) {
+    const [minutes, seconds] = parts;
+    return Math.max(0, minutes * 60 + seconds);
+  }
+  
+  // Handle HH:MM:SS format
+  if (parts.length === 3) {
+    const [hours, minutes, seconds] = parts;
+    return Math.max(0, hours * 3600 + minutes * 60 + seconds);
+  }
+  
+  return null;
+};
+
+const resolveTimerForChallenge = (prevState, incomingState, nextTimer) => {
+  const prevChallengeId = getChallengeId(prevState?.currentChallenge);
+  const incomingChallengeId = getChallengeId(incomingState?.currentChallenge);
+
+  if (
+    prevChallengeId &&
+    incomingChallengeId &&
+    prevChallengeId === incomingChallengeId &&
+    prevState?.timer !== null &&
+    prevState?.timer !== undefined
+  ) {
+    return prevState.timer;
+  }
+
+  if (nextTimer !== null && nextTimer !== undefined) {
+    return nextTimer;
+  }
+
+  return prevState?.timer ?? CHALLENGE_STALL_SECONDS;
+};
+
 const buildSubmissionSignature = (submission) => {
   if (!submission) {
     return 'none';
@@ -409,6 +452,7 @@ export const usePvpGameData = (matchId, options = {}) => {
     submissionResult: null,
     attemptId: 0,
     nextChallengeData: null,
+    timer: null,
   });
 
   const [loading, setLoading] = useState(!disabled);
@@ -881,12 +925,17 @@ export const usePvpGameData = (matchId, options = {}) => {
         throw new Error('Failed to parse PvP match data');
       }
 
+      // Extract timer from response for dynamic countdown initialization
+      const serverTimer = payload?.data?.timer ?? null;
+      const timerSeconds = serverTimer ? Math.max(0, parseTimerToSeconds(serverTimer) - 10) : null;
+
       setGameStateIfChanged((prev) => {
         const responseState = toResponseDrivenState(prev, unifiedState, {
           submissionResult: unifiedState?.submissionResult ?? null,
           nextChallengeData: null,
         });
         const nextState = mergeFightAttributes(responseState, unifiedState);
+        nextState.timer = resolveTimerForChallenge(prev, unifiedState, timerSeconds);
 
         currentChallengeIdRef.current = getChallengeId(nextState.currentChallenge);
         return nextState;
@@ -1138,7 +1187,13 @@ export const usePvpGameData = (matchId, options = {}) => {
       });
 
       if (hasDelta) {
-        return normalized;
+        // Extract timer from successful payload and return with state
+        const serverTimer = payload?.data?.timer ?? null;
+        const timerSeconds = serverTimer ? Math.max(0, parseTimerToSeconds(serverTimer) - 10) : null;
+        return {
+          state: normalized,
+          timer: timerSeconds,
+        };
       }
 
       if (attempt === maxAttempts) {
@@ -1196,6 +1251,10 @@ export const usePvpGameData = (matchId, options = {}) => {
       const latestMatchState = pvpService.extractAuthoritativeMatchState(latestMatchPayload);
       const latestChallengeId = getChallengeId(latestMatchState?.currentChallenge);
 
+      // Extract timer from initial match state fetch
+      const serverTimer = latestMatchPayload?.data?.timer ?? null;
+      const timerSeconds = serverTimer ? Math.max(0, parseTimerToSeconds(serverTimer) - 10) : null;
+
       if (!latestChallengeId) {
         throw new Error('Missing challenge ID');
       }
@@ -1232,13 +1291,13 @@ export const usePvpGameData = (matchId, options = {}) => {
       setWaitingForAnimation(true);
       waitingRef.current = true;
 
-      const authoritativeState = await getAuthoritativeStateAfterSubmit(
+      const authResponse = await getAuthoritativeStateAfterSubmit(
         latestMatchId,
         latestChallengeId,
         submitBaselineCombatSignatureRef.current
       );
 
-      if (!authoritativeState) {
+      if (!authResponse) {
         setWaitingForAnimation(false);
         waitingRef.current = false;
         submitAwaitingDeltaRef.current = false;
@@ -1253,6 +1312,9 @@ export const usePvpGameData = (matchId, options = {}) => {
           awaitingAuthoritativeSync: true,
         };
       }
+
+      const authoritativeState = authResponse.state;
+      const authoritativeTimer = authResponse.timer;
 
       submitAwaitingDeltaRef.current = false;
       pendingSubmissionRef.current = suppressAlreadyRenderedSubmissionForChallenge(
@@ -1280,6 +1342,7 @@ export const usePvpGameData = (matchId, options = {}) => {
           enemy: authoritativeState.enemy || prev.enemy,
           avatar: authoritativeState.avatar || prev.avatar,
           level: authoritativeState.level || prev.level,
+          timer: resolveTimerForChallenge(prev, authoritativeState, authoritativeTimer),
           nextChallengeData:
             hasChallengeShift && authTargetNext
               ? {
@@ -1401,6 +1464,10 @@ export const usePvpGameData = (matchId, options = {}) => {
       const normalized = pvpService.extractAuthoritativeMatchState(payload);
       if (!normalized) return;
 
+      // Extract timer from response for dynamic countdown initialization
+      const serverTimer = payload?.data?.timer ?? null;
+      const timerSeconds = serverTimer ? Math.max(0, parseTimerToSeconds(serverTimer) - 10) : null;
+
       await setResolvedMatchId(resolvedMatchId);
       setSyncConnected();
 
@@ -1467,6 +1534,7 @@ export const usePvpGameData = (matchId, options = {}) => {
             avatar: normalized.avatar || prev.avatar,
             level: normalized.level || prev.level,
             card: normalized.card || prev.card || null,
+            timer: resolveTimerForChallenge(prev, normalized, timerSeconds),
           };
 
           return mergeFightAttributes(merged, normalized);
@@ -1495,6 +1563,7 @@ export const usePvpGameData = (matchId, options = {}) => {
             submissionResult: syncedState.submissionResult ?? null,
             nextChallengeData: null,
           });
+          merged.timer = resolveTimerForChallenge(prev, syncedState, timerSeconds);
 
           return mergeFightAttributes(merged, syncedState);
         });
@@ -1515,6 +1584,7 @@ export const usePvpGameData = (matchId, options = {}) => {
             avatar: syncedState.avatar || prev.avatar,
             level: syncedState.level || prev.level,
             card: syncedState.card || prev.card || null,
+            timer: resolveTimerForChallenge(prev, syncedState, timerSeconds),
             nextChallengeData: {
                 ...validNextChallenge,
                 card: syncedState.card || prev.card || null,
@@ -1549,6 +1619,7 @@ export const usePvpGameData = (matchId, options = {}) => {
           submissionResult: syncedState.submissionResult ?? null,
           nextChallengeData: prev.nextChallengeData || null,
         });
+        merged.timer = resolveTimerForChallenge(prev, syncedState, timerSeconds);
 
         return mergeFightAttributes(merged, syncedState);
       });
@@ -1607,6 +1678,9 @@ export const usePvpGameData = (matchId, options = {}) => {
         const normalized = pvpService.extractAuthoritativeMatchState(payload);
 
         if (normalized) {
+          const serverTimer = payload?.data?.timer ?? null;
+          const timerSeconds = serverTimer ? Math.max(0, parseTimerToSeconds(serverTimer) - 10) : null;
+
           const syncedState = suppressAlreadyRenderedSubmissionForChallenge(
             suppressReplayForProceededChallenge(normalized)
           );
@@ -1616,6 +1690,7 @@ export const usePvpGameData = (matchId, options = {}) => {
               submissionResult: syncedState.submissionResult ?? prev.submissionResult ?? null,
               nextChallengeData: prev.nextChallengeData || null,
             });
+            merged.timer = resolveTimerForChallenge(prev, syncedState, timerSeconds);
 
             return mergeFightAttributes(merged, syncedState);
           });
@@ -1691,11 +1766,15 @@ export const usePvpGameData = (matchId, options = {}) => {
       const authoritativeState = pvpService.extractAuthoritativeMatchState(payload);
 
       if (authoritativeState) {
+        const serverTimer = payload?.data?.timer ?? null;
+        const timerSeconds = serverTimer ? Math.max(0, parseTimerToSeconds(serverTimer) - 10) : null;
+
         setGameStateIfChanged((prev) => {
           const merged = toResponseDrivenState(prev, authoritativeState, {
             submissionResult: authoritativeState?.submissionResult ?? null,
             nextChallengeData: null,
           });
+          merged.timer = resolveTimerForChallenge(prev, authoritativeState, timerSeconds);
 
           return mergeFightAttributes(merged, authoritativeState);
         });
@@ -1897,7 +1976,10 @@ export const usePvpGameData = (matchId, options = {}) => {
     }
 
     const timerStartedAt = Date.now();
-    setChallengeStallCountdown(CHALLENGE_STALL_SECONDS);
+    
+    // Use server timer if available, otherwise fallback to default
+    const initialTimerSeconds = gameState?.timer ?? CHALLENGE_STALL_SECONDS;
+    setChallengeStallCountdown(initialTimerSeconds);
     stopChallengeStallTimer();
 
     const runTimeoutAction = async () => {
@@ -1917,7 +1999,7 @@ export const usePvpGameData = (matchId, options = {}) => {
 
     const updateCountdown = () => {
       const elapsedSeconds = Math.floor((Date.now() - timerStartedAt) / 1000);
-      const remainingSeconds = Math.max(CHALLENGE_STALL_SECONDS - elapsedSeconds, 0);
+      const remainingSeconds = Math.max(initialTimerSeconds - elapsedSeconds, 0);
 
       setChallengeStallCountdown((prev) =>
         prev === remainingSeconds ? prev : remainingSeconds
@@ -1946,6 +2028,7 @@ export const usePvpGameData = (matchId, options = {}) => {
   }, [
     disabled,
     gameState?.currentChallenge?.id,
+    gameState?.timer,
     gameState?.submissionResult?.fightResult?.status,
     handleProceed,
     stopChallengeStallTimer,

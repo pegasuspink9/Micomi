@@ -92,7 +92,7 @@ const LevelCompletionModal = ({
   isPvpMode = false,
 }) => {
   //  1. Placeholder Data for Stars
-  const stars = completionRewards?.stars || 0; 
+  const stars = isPvpMode ? 0 : (completionRewards?.stars || 0); 
   const rankProgress = completionRewards?.rankProgress || null;
   const usePvpRankProgress = Boolean(isPvpMode && rankProgress);
 
@@ -580,7 +580,7 @@ const LevelCompletionModal = ({
               {
                 alignItems: 'center',
                 width: '100%',
-                marginTop: scale(20) // Added margin to separate from progress bar
+                marginTop: isPvpMode ? scale(60) : scale(20) // Added margin to separate from progress bar
               },
               textStyle
             ]}
@@ -941,9 +941,10 @@ const styles = StyleSheet.create({
   pvpRankLabelGroup: {
     position: 'absolute',
     top: scale(72),
+    marginBottom: scale(18),
     alignItems: 'center',
     width: scale(100),
-    zIndex: 11,
+    zIndex: 11
   },
   pvpRankLabelGroupRight: {
     position: 'absolute',
