@@ -8,12 +8,7 @@ const prisma = new PrismaClient();
 export const getAllLevels = async (req: Request, res: Response) => {
   try {
     const levels = await prisma.level.findMany({
-      include: {
-        map: true,
-        challenges: true,
-        playerProgress: true,
-        lessons: true,
-      },
+      orderBy: { level_id: "asc" },
     });
     return successResponse(res, levels, "Fetched all levels");
   } catch (error) {

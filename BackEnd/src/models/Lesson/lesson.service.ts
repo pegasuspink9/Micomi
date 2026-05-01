@@ -7,7 +7,9 @@ const prisma = new PrismaClient();
 
 export const getAllLessons = async (req: Request, res: Response) => {
   try {
-    const lessons = await prisma.lesson.findMany();
+    const lessons = await prisma.lesson.findMany({
+      orderBy: { level_id: "asc" },
+    });
 
     if (!lessons) {
       return errorResponse(res, null, "Lessons not found", 404);

@@ -34,8 +34,8 @@ const MAP_MEDIA: Record<
 const MAP_BACKGROUNDS: Record<string, string> = {
   HTML: "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/CombatHTML.png",
   CSS: "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/CombatCSS.png",
-  Computer: "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/CombatJS.png",
-  JavaScript:
+  JavaScript: "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/CombatJS.png",
+  Computer:
     "https://micomi-assets.me/Pvp%20Assets/Versus%20Map/CombatComputer.png",
 };
 
