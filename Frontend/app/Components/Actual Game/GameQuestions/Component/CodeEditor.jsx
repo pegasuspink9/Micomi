@@ -88,15 +88,6 @@ const CodeEditor = ({
 
   const handleOutputTabPress = useCallback(() => handleTabChange('output'), [handleTabChange]);
 
-  const handleOutputTogglePress = useCallback(() => {
-    if (tabsDisabled) return;
-
-    if (onOutputToggle) {
-      onOutputToggle();
-    }
-  }, [onOutputToggle, tabsDisabled]);
-
-
   const options = currentQuestion?.options || [];
 
   const renderTabContent = useCallback(() => {
@@ -164,6 +155,8 @@ const CodeEditor = ({
               showLiveHTML={true}
               style={styles.tabOutput}
               options={options}
+              showWebViewInScreenPlay={showOutputInScreenPlay}
+              onWebViewToggle={onOutputToggle}
            />
           </View>
         );
@@ -331,23 +324,6 @@ const CodeEditor = ({
               activeTab === 'output' && styles.webTabTextActive
             ]}>
               {activeTab === 'output' ? 'Output' : 'Output'} 
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={handleOutputTogglePress}
-            style={[
-              styles.webTab,
-              showOutputInScreenPlay && styles.webTabActive,
-              tabsDisabled && { opacity: 0.5 } 
-            ]}
-            disabled={tabsDisabled} 
-          >
-            <Text style={[
-              styles.webTabText,
-              showOutputInScreenPlay && styles.webTabTextActive
-            ]}>
-              {showOutputInScreenPlay ? 'Hide WebView' : 'Show WebView'}
             </Text>
           </Pressable>
 

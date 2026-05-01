@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions, Pressable } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { generateCombinedHtml } from './WebViewBuilder'; 
+import { generateCombinedHtml } from './WebViewBuilder';
+import { gameScale } from '../../../../Components/Responsiveness/gameResponsive';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -14,18 +15,16 @@ const Output = ({
   showLiveHTML = false,
   options = [],
   displayMode = 'gameQuestion',
+  showWebViewInScreenPlay = false,
+  onWebViewToggle = null,
 }) => {
   const [htmlOutput, setHtmlOutput] = useState('');
 
-  //  Memoize HTML generation function
    const generateHtmlOutput = useCallback(() => {
-    // Get user's answers from the selected options
     const userAnswers = selectedAnswers.map(index => options?.[index]).filter(Boolean);
-    // Generate the combined HTML using the utility
     return generateCombinedHtml(currentQuestion, userAnswers);
   }, [currentQuestion, selectedAnswers, options]);
 
-  // Update HTML output when dependencies change
     useEffect(() => {
     const newHtmlOutput = generateHtmlOutput();
     setHtmlOutput(newHtmlOutput);
@@ -82,6 +81,17 @@ const Output = ({
             {actualResult || ""}
           </Text>
         </ScrollView>
+      )}
+      
+      {displayMode === 'gameQuestion' && onWebViewToggle && (
+        <Pressable 
+          onPress={onWebViewToggle}
+          style={styles.webViewToggleButton}
+        >
+          <Text style={styles.webViewToggleText}>
+            {showWebViewInScreenPlay ? 'Hide' : 'Show'}
+          </Text>
+        </Pressable>
       )}
     </View>
   );
@@ -160,6 +170,33 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  webViewToggleButton: {
+    position: 'absolute',
+    top: gameScale(12),
+    right: gameScale(12),
+    backgroundColor: '#3c3c3c',
+    paddingVertical: gameScale(7),
+    paddingHorizontal: gameScale(14),
+    borderRadius: gameScale(20),
+    borderTopWidth: gameScale(1),
+    borderLeftWidth: gameScale(1),
+    borderRightWidth: gameScale(1),
+    borderTopColor: '#555',
+    borderLeftColor: '#555',
+    borderRightColor: '#555',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: gameScale(-1) },
+    shadowOpacity: 0.2,
+    shadowRadius: gameScale(2),
+    elevation: gameScale(3),
+    zIndex: 10,
+  },
+  webViewToggleText: {
+    color: '#d1d5d9',
+    fontSize: gameScale(10),
+    fontFamily: 'DynaPuff',
+    fontWeight: '500',
+  },
 });
 
 export default React.memo(Output, (prevProps, nextProps) => {
@@ -168,6 +205,7 @@ export default React.memo(Output, (prevProps, nextProps) => {
     prevProps.isCorrect === nextProps.isCorrect &&
     prevProps.showLiveHTML === nextProps.showLiveHTML &&
     prevProps.displayMode === nextProps.displayMode &&
+    prevProps.showWebViewInScreenPlay === nextProps.showWebViewInScreenPlay &&
     prevProps.currentQuestion?.question === nextProps.currentQuestion?.question &&
     prevProps.currentQuestion?.challenge_type === nextProps.currentQuestion?.challenge_type &&
     JSON.stringify(prevProps.selectedAnswers) === JSON.stringify(nextProps.selectedAnswers)
