@@ -1,9 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { View, ScrollView, StyleSheet, Dimensions, Text, Animated } from 'react-native';
 import AnswerOption from './AnswerOption';
 import { gameScale } from '../../../Responsiveness/gameResponsive';
 
 const AnswerGrid = ({ 
+  challengeId = null,
+  strictChallengeRender = false,
   options, 
   selectedAnswers = [],
   maxAnswers = 1,
@@ -14,41 +16,35 @@ const AnswerGrid = ({
 }) => {
 
   const animations = useRef([]);
-  
-  
-  const renderListItems = () => {
-    // Early return if no options
+
+  const normalizedOptions = useMemo(() => {
     if (!options) {
+      return [];
+    }
+
+    if (Array.isArray(options)) {
+      return options.filter((item) => item !== null && item !== undefined);
+    }
+
+    if (typeof options === 'string' && options.trim().length > 0) {
+      return options
+        .split(',')
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0);
+    }
+
+    return [];
+  }, [options]);
+
+  const renderedItems = useMemo(() => {
+    // Early return if no options
+    if (!normalizedOptions.length) {
       console.warn('⚠️ No options provided to AnswerGrid');
       return [];
     }
 
-    // Handle both array and string formats
-    let optionsArray = [];
-    
     try {
-      if (Array.isArray(options)) {
-        // API format: options is already an array
-        optionsArray = options.filter(item => item !== null && item !== undefined);
-        console.log('📋 Options received as array:', optionsArray);
-      } else if (typeof options === 'string' && options.trim().length > 0) {
-        // Legacy format: options is a comma-separated string
-        optionsArray = options.split(',')
-          .map(item => item.trim())
-          .filter(item => item.length > 0);
-        console.log('📋 Options received as string, converted to array:', optionsArray);
-      } else {
-        console.error('❌ Invalid options format:', typeof options, options);
-        return [];
-      }
-
-      // Additional safety check
-      if (optionsArray.length === 0) {
-        console.warn('⚠️ Options array is empty after processing');
-        return [];
-      }
-
-      return optionsArray.map((item, index) => {
+      return normalizedOptions.map((item, index) => {
         const trimmedItem = typeof item === 'string' ? item.trim() : String(item).trim();
         
         // Skip empty items
@@ -69,7 +65,7 @@ const AnswerGrid = ({
         
         return (
         <Animated.View
-          key={`option-${index}-${trimmedItem}-${isSpecialAttack}`}
+          key={`option-${challengeId || 'none'}-${index}`}
           style={{
             opacity: animations.current[index].opacity,
             transform: [{ scale: animations.current[index].scale }],
@@ -85,16 +81,20 @@ const AnswerGrid = ({
           />
         </Animated.View>
       );
-    }).filter(item => item !== null);
+      }).filter(item => item !== null);
       
     } catch (error) {
       console.error('❌ Error processing options:', error);
       return [];
     }
-  };
+    }, [challengeId, isSpecialAttack, maxAnswers, normalizedOptions, onAnswerSelect, selectedAnswers]);
+
+  const animationTriggerKey = strictChallengeRender
+    ? String(challengeId ?? 'none')
+    : `${String(challengeId ?? 'none')}|${normalizedOptions.length}`;
 
    useEffect(() => {
-    if (options && Array.isArray(options) && options.length > 0) {
+      if (normalizedOptions.length > 0) {
       // Reset animations
       animations.current.forEach(anim => {
         if (anim) {
@@ -104,7 +104,7 @@ const AnswerGrid = ({
       });
 
       // Stagger animation for each option
-      const anims = animations.current.slice(0, options.length).map((anim, index) =>
+      const anims = animations.current.slice(0, normalizedOptions.length).map((anim, index) =>
         Animated.parallel([
           Animated.timing(anim.opacity, {
             toValue: 1,
@@ -124,7 +124,7 @@ const AnswerGrid = ({
 
       Animated.stagger(50, anims).start();
     }
-  }, [options]);
+  }, [animationTriggerKey, normalizedOptions.length]);
   
 
   if (!options) {
@@ -134,8 +134,6 @@ const AnswerGrid = ({
       </View>
     );
   }
-
-  const renderedItems = renderListItems();
   
   // Show message if no valid options after processing
   if (renderedItems.length === 0) {
@@ -189,4 +187,37 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AnswerGrid;
+const MemoizedAnswerGrid = React.memo(AnswerGrid, (prev, next) => {
+  const prevOptions = prev.options;
+  const nextOptions = next.options;
+  const optionsEqual = prevOptions === nextOptions;
+
+  const prevSelected = prev.selectedAnswers || [];
+  const nextSelected = next.selectedAnswers || [];
+  const selectedEqual = prevSelected.length === nextSelected.length && prevSelected.every((value, index) => value === nextSelected[index]);
+
+  const challengeEqual = prev.challengeId === next.challengeId;
+  const strictChallengeMode = prev.strictChallengeRender && next.strictChallengeRender;
+
+  if (strictChallengeMode && challengeEqual) {
+    return (
+      selectedEqual &&
+      prev.maxAnswers === next.maxAnswers &&
+      prev.isFillInTheBlank === next.isFillInTheBlank &&
+      prev.selectedBlankIndex === next.selectedBlankIndex &&
+      prev.isSpecialAttack === next.isSpecialAttack
+    );
+  }
+
+  return (
+    challengeEqual &&
+    optionsEqual &&
+    selectedEqual &&
+    prev.maxAnswers === next.maxAnswers &&
+    prev.isFillInTheBlank === next.isFillInTheBlank &&
+    prev.selectedBlankIndex === next.selectedBlankIndex &&
+    prev.isSpecialAttack === next.isSpecialAttack
+  );
+});
+
+export default MemoizedAnswerGrid;

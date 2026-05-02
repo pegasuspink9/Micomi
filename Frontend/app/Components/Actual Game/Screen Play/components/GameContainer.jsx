@@ -13,7 +13,6 @@ import Animated, {
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Pre-calculate the scale factor once to use inside the animation worklet
 const GS_FACTOR = gameScale(100) / 100;
 
 const CollisionOverlay = ({ color, onReset }) => {
@@ -21,9 +20,18 @@ const CollisionOverlay = ({ color, onReset }) => {
   const [displayColor, setDisplayColor] = useState('transparent');
 
   useEffect(() => {
-    cancelAnimation(progress);
+    // CRITICAL FIX:
+    // We removed 'cancelAnimation(progress);' from here.
+    // If it's here, it stops the animation immediately if the parent 
+    // sets the color back to 'white' before the animation finishes.
+
+    const isValidColor = color && color !== 'white' && color !== 'transparent';
     
-    if (color && color !== 'white' && color !== 'transparent') {
+    if (isValidColor) {
+      // We only cancel the previous animation if we are absolutely sure
+      // we are about to start a new one.
+      cancelAnimation(progress);
+
       progress.value = 0;
 
       let newColor = color;
@@ -32,15 +40,16 @@ const CollisionOverlay = ({ color, onReset }) => {
       
       setDisplayColor(newColor);
       
-      // 3. Start the animation with a tiny delay to ensure displayColor is ready
+      // The animation logic remains exactly the same
       progress.value = withDelay(50, withTiming(1, { 
         duration: 600, 
         easing: Easing.out(Easing.back(1.5)) 
       }, (finished) => {
+        // If the animation was cancelled (by a new valid color coming in fast),
+        // finished will be false, and this block won't run.
         if (finished) {
           progress.value = withDelay(3000, withTiming(0, { duration: 200 }, (done) => {
             if (done) {
-              // 4. Clear the color state when finished to prevent "ghosting" next time
               runOnJS(setDisplayColor)('transparent');
               if (onReset) {
                 runOnJS(onReset)();
@@ -50,6 +59,8 @@ const CollisionOverlay = ({ color, onReset }) => {
         }
       }));
     }
+    // ELSE: If the incoming color is 'white' or transparent, we do nothing.
+    // We let the animation started in the previous turn finish its natural lifecycle.
   }, [color]);
 
   const animatedGlowStyle = useAnimatedStyle(() => {
@@ -57,7 +68,8 @@ const CollisionOverlay = ({ color, onReset }) => {
     return {
       height: `${progress.value * 50}%`,
       borderColor: displayColor,
-      opacity: progress.value > 0.001 ? 1 : 0,
+      // Use a tiny threshold to ensure opacity is zero when finished
+      opacity: progress.value > 0.005 ? 1 : 0,
       borderWidth: (6 + progress.value * 3) * GS_FACTOR,
       shadowColor: displayColor,
       shadowOpacity: glowIntensity * 1,
@@ -68,11 +80,13 @@ const CollisionOverlay = ({ color, onReset }) => {
   return (
     <>
       <Animated.View 
-        style={[styles.collisionBase, styles.collisionTop, animatedGlowStyle]} 
+        // Style order fixed to prevent visual cutting
+        style={[styles.collisionBase, animatedGlowStyle, styles.collisionTop]} 
         pointerEvents="none" 
       />
       <Animated.View 
-        style={[styles.collisionBase, styles.collisionBottom, animatedGlowStyle]} 
+         // Style order fixed to prevent visual cutting
+        style={[styles.collisionBase, animatedGlowStyle, styles.collisionBottom]} 
         pointerEvents="none" 
       />
     </>
@@ -116,7 +130,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     borderRadius: gameScale(43)
   },
-  // 3-Layer Cabinet Border (replacing old container)
   containerBorderOuter: {
     flex: 1,
     backgroundColor: '#1e3a5f',
@@ -146,7 +159,7 @@ const styles = StyleSheet.create({
     padding: gameScale(4),
     borderWidth: gameScale(1),
     borderColor: 'rgba(74, 144, 217, 0.3)',
-    position: 'relative', // Ensure children can use absolute positioning
+    position: 'relative',
   },
     collisionBase: {
     position: 'absolute',
@@ -160,13 +173,13 @@ const styles = StyleSheet.create({
     top: gameScale(4),
     borderTopLeftRadius: gameScale(31),
     borderTopRightRadius: gameScale(31),
-    borderBottomWidth: 0, // Don't show border where they meet
+    borderBottomWidth: 0,
   },
   collisionBottom: {
     bottom: gameScale(4),
     borderBottomLeftRadius: gameScale(31),
     borderBottomRightRadius: gameScale(31),
-    borderTopWidth: 0, // Don't show border where they meet
+    borderTopWidth: 0,
   },
     innerBorderContainer: {
     flex: 1,
@@ -174,7 +187,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderRadius: gameScale(31),
     position: 'relative',
-    // FIX: Changed from #a51010ff (red) to #152d4a (dark blue) to stop the red flicker
     backgroundColor: '#152d4a', 
     borderTopWidth: gameScale(6),
     borderTopColor: '#f0f8ffff', 
@@ -185,7 +197,6 @@ const styles = StyleSheet.create({
     borderRightWidth: gameScale(6),
     borderRightColor: '#e0f0ffff',
   },
-  // 3-Layer Content Border (replacing old contentContainer)
   contentBorderOuter: {
     flex: 1,
     backgroundColor: '#d0e8f8',
@@ -219,6 +230,5 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 });
-
 
 export default GameContainer;

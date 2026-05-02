@@ -16,6 +16,7 @@ const ComputerEditor = ({
   isCorrect,
   submissionResult,
   reviewGuide = null,
+  shouldDelayAnimation = false,
 }) => {
   const [activeTab, setActiveTab] = useState('code');
   const [hasAnimated, setHasAnimated] = useState(false); 
@@ -129,11 +130,22 @@ const ComputerEditor = ({
         ])
       );
 
-      Animated.stagger(20, anims).start(() => { 
-        setHasAnimated(true); 
-      });
+      // DELAYED START: Wait 2 seconds before entrance animation begins in PvP mode
+      const startAnimationDelay = shouldDelayAnimation ? 2000 : 0;
+      
+      if (startAnimationDelay > 0) {
+        setTimeout(() => {
+          Animated.stagger(20, anims).start(() => { 
+            setHasAnimated(true); 
+          });
+        }, startAnimationDelay);
+      } else {
+        Animated.stagger(20, anims).start(() => { 
+          setHasAnimated(true); 
+        });
+      }
     }
-  }, [activeTab, lines, hasAnimated]);
+  }, [activeTab, lines, hasAnimated, shouldDelayAnimation]);
 
   return (
     <View style={styles.bookEditorWrapper}>

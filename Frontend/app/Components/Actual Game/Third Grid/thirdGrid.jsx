@@ -72,7 +72,31 @@ const ThirdGrid = ({
     return null;
   }
   
-  const maxAnswers = useMemo(() => getMaxAnswers(currentQuestion), [currentQuestion]);
+  const currentQuestionId = currentQuestion?.id;
+  const activeChallengeId = useMemo(() => {
+    if (!isPvpMode) {
+      return currentQuestionId;
+    }
+
+    // Use the currently rendered question as the authoritative challenge key in PvP.
+    // This prevents reaction-only payload refreshes from switching ids and remounting AnswerGrid.
+    return (
+      currentQuestionId ??
+      gameState?.currentChallenge?.challenge_id ??
+      gameState?.currentChallenge?.id ??
+      challengeData?.challenge_id ??
+      challengeData?.id ??
+      'pvp-challenge'
+    );
+  }, [
+    isPvpMode,
+    currentQuestionId,
+    gameState?.currentChallenge?.challenge_id,
+    gameState?.currentChallenge?.id,
+    challengeData?.challenge_id,
+    challengeData?.id,
+  ]);
+  const maxAnswers = useMemo(() => getMaxAnswers(currentQuestion), [currentQuestionId, currentQuestion?.type, currentQuestion?.challenge_type]);
   const isFillInTheBlank = (currentQuestion.type || currentQuestion.challenge_type) === 'fill in the blank';
   const options = useMemo(() => currentQuestion.options || [], [currentQuestion.options]);
 
@@ -114,7 +138,7 @@ const ThirdGrid = ({
     setSelectedAnswers,
     selectedBlankIndex,
     setSelectedBlankIndex 
-  ), [currentQuestion, selectedAnswers, setSelectedAnswers, selectedBlankIndex, setSelectedBlankIndex]);
+  ), [currentQuestionId, currentQuestion?.type, currentQuestion?.challenge_type, selectedAnswers, setSelectedAnswers, selectedBlankIndex, setSelectedBlankIndex]);
 
   const handleCheckAnswer = useMemo(() => 
     createCheckAnswerHandler(
@@ -125,7 +149,7 @@ const ThirdGrid = ({
       submitAnswer,
       onCorrectAnswer,
       options
-    ), [currentQuestion, selectedAnswers, setBorderColor, setCorrectAnswerRef, submitAnswer, onCorrectAnswer, options]
+    ), [currentQuestionId, currentQuestion?.type, currentQuestion?.challenge_type, selectedAnswers, setBorderColor, setCorrectAnswerRef, submitAnswer, onCorrectAnswer, options]
   );
 
   const [showPotions, setShowPotions] = useState(false);
@@ -387,7 +411,9 @@ const ThirdGrid = ({
             {/* ANSWERS VIEW */}
             <View style={{ display: !showPotions ? 'flex' : 'none', width: '100%' }}>
               <AnswerGrid
-                key={`answer-grid-${currentQuestion.id}`}
+                key={`answer-grid-${activeChallengeId}`}
+                challengeId={activeChallengeId}
+                strictChallengeRender={isPvpMode}
                 options={options}
                 selectedAnswers={selectedAnswers}
                 maxAnswers={maxAnswers}

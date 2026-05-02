@@ -24,6 +24,7 @@ const CodeEditor = ({
   reviewGuide = null,
   showOutputInScreenPlay = false,
   onOutputToggle = null,
+  shouldDelayAnimation = false,
 }) => {
   const [activeTab, setActiveTab] = useState('code');
   const [hasAnimated, setHasAnimated] = useState(false); 
@@ -231,11 +232,23 @@ const CodeEditor = ({
         ])
       );
 
-      Animated.stagger(actualStaggerDelay, anims).start(() => { 
-        setHasAnimated(true); 
-      });
+      // DELAYED START: Wait 2 seconds before entrance animation begins in PvP mode
+      // This allows tab switching to complete before animation interrupts rendering
+      const startAnimationDelay = shouldDelayAnimation ? 2000 : 0;
+      
+      if (startAnimationDelay > 0) {
+        setTimeout(() => {
+          Animated.stagger(actualStaggerDelay, anims).start(() => { 
+            setHasAnimated(true); 
+          });
+        }, startAnimationDelay);
+      } else {
+        Animated.stagger(actualStaggerDelay, anims).start(() => { 
+          setHasAnimated(true); 
+        });
+      }
     }
-  }, [activeTab, lines, hasAnimated]);
+  }, [activeTab, lines, hasAnimated, shouldDelayAnimation]);
 
 
   const handleCodeTabPress = useCallback(() => handleTabChange('code'), [handleTabChange]);

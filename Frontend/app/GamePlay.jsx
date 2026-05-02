@@ -1224,6 +1224,7 @@ export default function GamePlay() {
                 getBlankIndex={getBlankIndex}
                 onTabChange={handleGameTabChange}
                 activeTab={activeGameTab}
+                isPvpMode={isPvpMode}
                 selectedBlankIndex={selectedBlankIndex}
                 onBlankPress={handleBlankSelect} 
                 isAnswerCorrect={resolvedSubmissionIsCorrect}

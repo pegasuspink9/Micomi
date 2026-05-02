@@ -14,6 +14,7 @@ const GameQuestions = ({
   getBlankIndex,
   onTabChange,
   activeTab,
+  isPvpMode = false,
   isAnswerCorrect, 
   selectedBlankIndex,
   onBlankPress,
@@ -27,6 +28,10 @@ const GameQuestions = ({
   const blankRefs = useRef({});
   const computerQuestionTemplateRef = useRef({});
   const options = currentQuestion?.options || [];
+
+  const currentChallengeId = useMemo(() => (
+    currentQuestion?.challenge_id ?? currentQuestion?.id ?? null
+  ), [currentQuestion?.challenge_id, currentQuestion?.id]);
 
   const isComputerMap = currentQuestion?.map_name === 'Computer' || 
                         currentQuestion?.question_type?.toLowerCase() === 'computer';
@@ -326,7 +331,7 @@ const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
               reviewGuide={reviewGuide}
               showOutputInScreenPlay={showOutputInScreenPlay}
               onOutputToggle={onOutputToggle}
-
+              shouldDelayAnimation={isPvpMode}
             />
         ) : (currentQuestion.challenge_type === 'fill in the blank' || 
           currentQuestion.challenge_type === 'code with guide' || 
@@ -350,6 +355,7 @@ const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
             reviewGuide={reviewGuide}
             showOutputInScreenPlay={showOutputInScreenPlay}
             onOutputToggle={onOutputToggle}
+            shouldDelayAnimation={isPvpMode}
           />
         ) : (
           <DocumentQuestion 
