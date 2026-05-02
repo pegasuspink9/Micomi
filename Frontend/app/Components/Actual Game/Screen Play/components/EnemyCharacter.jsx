@@ -213,7 +213,7 @@ const EnemyCharacter = ({
     idle: -1,
     attack: 1300,
     hurt: 2000,
-    run: 3200,
+    run: 2000,
     dies: 2000,
     diesOutro: 500
   }), []);
@@ -685,7 +685,6 @@ const EnemyCharacter = ({
       { duration: ANIMATION_DURATIONS.attack, easing: Easing.linear },
       (finished) => {
         if (finished) {
-          rangeProjectileX.value = 0;
           runOnJS(notifyAnimationComplete)();
         }
       }
