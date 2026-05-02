@@ -3,6 +3,7 @@ import { View, StyleSheet, Dimensions, ImageBackground, Text, ActivityIndicator,
 import { StatusBar } from 'expo-status-bar';
 import ScreenPlay from '../app/Components/Actual Game/Screen Play/ScreenPlay';
 import GameQuestions from '../app/Components/Actual Game/GameQuestions/GameQuestions';
+import Output from './Components/Actual Game/GameQuestions/Output/Output';
 import ThirdGrid from '../app/Components/Actual Game/Third Grid/thirdGrid';
 import Card from '../app/Components/Actual Game/Card/Card';
 import { useGameData } from './hooks/useGameData';
@@ -52,6 +53,8 @@ export default function GamePlay() {
   const [selectedAnswers, setSelectedAnswers] = useState([]);
   const [borderColor, setBorderColor] = useState('white');
   const [activeGameTab, setActiveGameTab] = useState('code');
+  const [showOutputInScreenPlay, setShowOutputInScreenPlay] = useState(false);
+  const outputAutoShowTimerRef = useRef(null);
   const [selectedBlankIndex, setSelectedBlankIndex] = useState(0); 
   const [showVSModal, setShowVSModal] = useState(false);
   const [showMicomic, setShowMicomic] = useState(false);
@@ -88,6 +91,38 @@ export default function GamePlay() {
   const pvpGameData = usePvpGameData(matchId, { disabled: !isPvpMode });
 
   const activeGameData = isPvpMode ? pvpGameData : pveGameData;
+
+
+  useEffect(() => {
+    return () => {
+      if (outputAutoShowTimerRef.current) {
+        clearTimeout(outputAutoShowTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleRunPressForOutput = useCallback(() => {
+    // Only trigger this sequence if the output is actually showing
+    if (showOutputInScreenPlay) {
+      console.log('🏃 Run pressed: Hiding output overlay immediately for 5 seconds');
+
+      // 1. Hide immediately
+      setShowOutputInScreenPlay(false);
+
+      // Clear any pending timer just in case rapid clicks happen
+      if (outputAutoShowTimerRef.current) {
+        clearTimeout(outputAutoShowTimerRef.current);
+      }
+
+      // 2. Set timer to show it back after 5 seconds
+      outputAutoShowTimerRef.current = setTimeout(() => {
+        console.log('⏰ 5 seconds passed: Re-showing output overlay');
+        setShowOutputInScreenPlay(true);
+        outputAutoShowTimerRef.current = null;
+      }, 6000);
+    }
+  }, [showOutputInScreenPlay]);
+
 
   const {
     gameState,   
@@ -595,6 +630,10 @@ export default function GamePlay() {
     }
   }, [selectedPotion, clearSelectedPotion]);
 
+  const handleOutputToggle = useCallback(() => {
+    setShowOutputInScreenPlay((current) => !current);
+  }, []);
+
   
     const handleBlankSelect = useCallback((blankIndex) => {
     console.log('🎯 Blank selected in GamePlay:', blankIndex);
@@ -812,6 +851,7 @@ export default function GamePlay() {
     setShowGameplay(false);
     setShowLevelCompletion(false);
     setShowLevelCompletionModal(false);
+    setShowOutputInScreenPlay(false);
     
     setIsRetrying(true);
 
@@ -866,6 +906,7 @@ export default function GamePlay() {
     setShowVSModal(false); 
     setShowLevelCompletion(false); 
     setShowGameplay(false);
+    setShowOutputInScreenPlay(false);
     hasTriggeredLevelCompletion.current = false;
     hasShownVSModalRef.current = false;
     soundManager.stopAllSounds();
@@ -902,6 +943,7 @@ export default function GamePlay() {
     setShowLevelCompletion(false); 
     setIsRetrying(false);
     setIsLoadingNextLevel(false);
+    setShowOutputInScreenPlay(false);
     setRunButtonClicked(false);
     setShowRunButton(true);
     hasTriggeredGameOver.current = false;
@@ -988,6 +1030,27 @@ export default function GamePlay() {
 
   
   const memoizedOptions = useMemo(() => currentChallenge?.options || [], [currentChallenge?.options]);
+
+
+    const handleAutoHideOutput = useCallback(() => {
+    console.log('🕒 Auto-hiding screenplay output overlay');
+    setShowOutputInScreenPlay(false);
+  }, []);
+
+  
+  const outputView = (
+    <Output
+      currentQuestion={currentChallenge}
+      selectedAnswers={selectedAnswers}
+      actualResult={gameState?.submissionResult?.message || gameState?.submissionResult?.reason || ''}
+      isCorrect={resolvedSubmissionIsCorrect}
+      showLiveHTML={true}
+      options={memoizedOptions}
+      displayMode="overlay"
+      runButtonClicked={runButtonClicked}
+      onAutoHide={handleAutoHideOutput}
+    />
+  );
 
   // COMBINED LOADING STATE: Used to trigger the MainLoading entrance/exit
   const showLoadingScreen = loading || animationsLoading || isLoadingNextLevel || isRetrying;
@@ -1145,6 +1208,14 @@ export default function GamePlay() {
                 isPvpMode={isPvpMode}
                 pvpReactionEvent={chatReactionEvent}
               />
+
+              {showOutputInScreenPlay && (
+                <View style={styles.screenPlayOverlay} pointerEvents="box-none">
+                  <View style={styles.screenPlayOutputContainer}>
+                    {outputView}
+                  </View>
+                </View>
+              )}
             </View>
 
             <GameQuestions 
@@ -1159,6 +1230,8 @@ export default function GamePlay() {
                 canProceed={canProceed}
                 submissionResult={gameState?.submissionResult}
                 reviewGuide={reviewGuide}
+                showOutputInScreenPlay={showOutputInScreenPlay}
+                onOutputToggle={handleOutputToggle}
             />
 
             <View 
@@ -1220,6 +1293,7 @@ export default function GamePlay() {
                 pvpMatchId={resolvedMatchId || matchId || null}
                 onSendPvpMessage={sendPvpMatchMessage}
                 sendingPvpMessage={sendingPvpMessage}
+                onRunPressHideOutput={handleRunPressForOutput}
               />
             </View>
 
@@ -1319,6 +1393,18 @@ const styles = StyleSheet.create({
 
   screenPlayContainer: {
     height: gameScale(844 * 0.38), 
+    position: 'relative',
+  },
+
+  screenPlayOutputContainer: {
+    flex: 1,
+    minHeight: 0,
+  },
+
+  screenPlayOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 99999,
+    elevation: 1000,
   },
 
   pvpFallbackContainer: {

@@ -22,6 +22,8 @@ const CodeEditor = ({
   activeTab: externalActiveTab,
   submissionResult,
   reviewGuide = null,
+  showOutputInScreenPlay = false,
+  onOutputToggle = null,
 }) => {
   const [activeTab, setActiveTab] = useState('code');
   const [hasAnimated, setHasAnimated] = useState(false); 
@@ -84,6 +86,7 @@ const CodeEditor = ({
     }
   }, [onTabChange, tabsDisabled]); 
 
+  const handleOutputTabPress = useCallback(() => handleTabChange('output'), [handleTabChange]);
 
   const options = currentQuestion?.options || [];
 
@@ -152,6 +155,8 @@ const CodeEditor = ({
               showLiveHTML={true}
               style={styles.tabOutput}
               options={options}
+              showWebViewInScreenPlay={showOutputInScreenPlay}
+              onWebViewToggle={onOutputToggle}
            />
           </View>
         );
@@ -234,7 +239,6 @@ const CodeEditor = ({
 
 
   const handleCodeTabPress = useCallback(() => handleTabChange('code'), [handleTabChange]);
-  const handleOutputTabPress = useCallback(() => handleTabChange('output'), [handleTabChange]);
   const handleExpectedTabPress = useCallback(() => handleTabChange('expected'), [handleTabChange]);
   const handleGuideTabPress = useCallback(() => handleTabChange('guide'), [handleTabChange]);
   const handleFileTabPress = useCallback((fileName) => handleTabChange(fileName), [handleTabChange]);
@@ -598,6 +602,7 @@ export default React.memo(CodeEditor, (prev, next) => {
   return (
     prev.renderSyntaxHighlightedLine === next.renderSyntaxHighlightedLine &&
     prev.userOutput === next.userOutput &&
-    prev.expectedOutput === next.expectedOutput
+    prev.expectedOutput === next.expectedOutput &&
+    prev.showOutputInScreenPlay === next.showOutputInScreenPlay
   );
 });

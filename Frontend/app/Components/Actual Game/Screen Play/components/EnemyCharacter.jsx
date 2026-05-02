@@ -11,7 +11,7 @@ import Animated, {
   cancelAnimation,
   runOnJS,
   Easing,
-  interpolate,   // Added for shadow focus
+  interpolate,  
   Extrapolate,  
 } from 'react-native-reanimated';
 import { universalAssetPreloader } from '../../../../services/preloader/universalAssetPreloader';
@@ -37,10 +37,12 @@ const EnemyCharacter = ({
   reactionText = null,
   hurtAudioUrl = null,
   matchCharacterStyle = false,
+  animationTriggerKey = null,
 }) => {
   // ========== Shared Animation Values ==========
   const frameIndex = useSharedValue(0);
   const positionX = useSharedValue(0);
+  const rangeProjectileX = useSharedValue(0);
   const opacity = useSharedValue(1);
   const blinkOpacity = useSharedValue(0);
   const attackInitiated = useSharedValue(false);
@@ -50,8 +52,15 @@ const EnemyCharacter = ({
   const overlayScale = useSharedValue(1);
   const overlayFrameIndex = useSharedValue(0);
 
+  // Add ref to track previous trigger key
+  const prevTriggerKeyRef = useRef(null);
+  // ✅ FIX: Add a ref to signal skipping the frame reset for seamless transitions
+  const shouldSkipNextFrameResetRef = useRef(false);
+
   const REACTION_OFFSET = useMemo(() => gameScale(10), []);
   const OVERLAY_SIZE = useMemo(() => gameScale(140), []);
+  const SHADOW_BLUR_START = useMemo(() => gameScale(8), []);
+  const SHADOW_BLUR_END = useMemo(() => gameScale(45), []);
   const FLOAT_OFFSET_ENEMY = useMemo(() => -gameScale(5), []);
 
   const OVERLAY_COLUMNS = 6;
@@ -95,13 +104,33 @@ const EnemyCharacter = ({
     };
   });
 
-  const overlayAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: overlayOpacity.value,
-    transform: [
-      { scale: overlayScale.value },
-      { translateY: withRepeat(withTiming(FLOAT_OFFSET_ENEMY, { duration: 1000 }), -1, true) }
-    ]
-  }));
+  const overlayAnimatedStyle = useAnimatedStyle(() => {
+    const shadowBlur = interpolate(overlayScale.value, [1, 6], [SHADOW_BLUR_START, SHADOW_BLUR_END], Extrapolate.CLAMP);
+    const shadowAlpha = interpolate(overlayScale.value, [1, 6], [0.7, 0.1], Extrapolate.CLAMP);
+
+    return {
+      opacity: overlayOpacity.value,
+      shadowRadius: shadowBlur,
+      shadowOpacity: shadowAlpha,
+      transform: [
+        { scale: overlayScale.value },
+        {
+          translateY:
+            overlayScale.value < 1.1
+              ? withRepeat(withTiming(FLOAT_OFFSET_ENEMY, { duration: 1500 }), -1, true)
+              : 0,
+        },
+      ],
+    };
+  });
+
+  const attackOverlayZIndex = useMemo(() => {
+    if (enemyCurrentState === 'Frozen') {
+      return 20;
+    }
+
+    return 1;
+  }, [enemyCurrentState]);
 
 
 
@@ -205,10 +234,23 @@ const EnemyCharacter = ({
     return (typeof cachedPath === 'string') && cachedPath !== url && cachedPath.startsWith('file://');
   }, []);
 
+  const hasUsableAnimationUrl = useCallback((url) => {
+    return typeof url === 'string' && url.trim().length > 0;
+  }, []);
+
   const resolveCachedUrl = useCallback((url) => {
     if (!url || typeof url !== 'string') return '';
     const cached = universalAssetPreloader.getCachedAssetPath(url);
     return typeof cached === 'string' ? cached : '';
+  }, []);
+
+  const getDisplayUrl = useCallback((url) => {
+    if (!url || typeof url !== 'string') return '';
+    const cached = universalAssetPreloader.getCachedAssetPath(url);
+    if (typeof cached === 'string' && cached.trim().length > 0) {
+      return cached;
+    }
+    return url;
   }, []);
 
   const normalizedAnimations = useMemo(() => {
@@ -218,6 +260,16 @@ const EnemyCharacter = ({
       idle: pick(characterAnimations.character_idle, characterAnimations.enemy_idle, characterAnimations.idle),
       run: pick(characterAnimations.character_run, characterAnimations.enemy_run, characterAnimations.run),
       attack: pick(characterAnimations.character_attack, characterAnimations.enemy_attack, characterAnimations.attack),
+      rangeAttack: pick(
+        characterAnimations.character_range_attack,
+        characterAnimations.enemy_range_attack,
+        characterAnimations.range_attack
+      ),
+      isRange: pick(
+        characterAnimations.character_is_range,
+        characterAnimations.enemy_is_range_attack,
+        characterAnimations.is_range_attack
+      ),
       hurt: pick(characterAnimations.character_hurt, characterAnimations.enemy_hurt, characterAnimations.hurt),
       dies: pick(characterAnimations.character_dies, characterAnimations.enemy_dies, characterAnimations.dies),
     };
@@ -227,12 +279,12 @@ const EnemyCharacter = ({
   // ========== State Management ==========
   const initialUrl = useMemo(() => {
     const candidates = [
-      resolveCachedUrl(normalizedAnimations.idle),
-      resolveCachedUrl(enemy?.enemy_idle),
-      resolveCachedUrl(enemy?.idle),
+      getDisplayUrl(normalizedAnimations.idle),
+      getDisplayUrl(enemy?.enemy_idle),
+      getDisplayUrl(enemy?.idle),
     ].filter(url => url && typeof url === 'string');
     return candidates[0] || '';
-  }, [enemy, normalizedAnimations, resolveCachedUrl]);
+  }, [enemy, normalizedAnimations, getDisplayUrl]);
 
   const onAnimationCompleteRef = useRef(onAnimationComplete);
   
@@ -244,58 +296,137 @@ const EnemyCharacter = ({
     const attackUrl = Array.isArray(normalizedAnimations.attack)
       ? normalizedAnimations.attack.filter(url => url && typeof url === 'string')[0]
       : normalizedAnimations.attack;
+    const rangeUrl = getDisplayUrl(normalizedAnimations.rangeAttack);
+    const isRange = normalizedAnimations.isRange === true;
 
     const configs = {
       idle: {
-        url: resolveCachedUrl(normalizedAnimations.idle),
+        url: getDisplayUrl(normalizedAnimations.idle),
         shouldLoop: true,
         isCompound: false,
       },
       attack: {
-        runUrl: resolveCachedUrl(normalizedAnimations.run),
-        attackUrl: resolveCachedUrl(attackUrl),
+        runUrl: getDisplayUrl(normalizedAnimations.run),
+        attackUrl: getDisplayUrl(attackUrl),
+        rangeUrl,
+        isRange,
+        url: getDisplayUrl(attackUrl),
         shouldLoop: false,
-        isCompound: true,
+        isCompound: !isRange && !!getDisplayUrl(normalizedAnimations.run),
       },
       hurt: {
-        url: resolveCachedUrl(normalizedAnimations.hurt),
+        url: getDisplayUrl(normalizedAnimations.hurt),
         shouldLoop: isBonusRound && fightStatus !== 'won',
         isCompound: false,
       },
       run: {
-        url: resolveCachedUrl(normalizedAnimations.run),
+        url: getDisplayUrl(normalizedAnimations.run),
         shouldLoop: true,
         isCompound: false,
       },
       dies: {
-        url: resolveCachedUrl(normalizedAnimations.dies),
+        url: getDisplayUrl(normalizedAnimations.dies),
         shouldLoop: false,
         isCompound: false,
       },
     };
     return configs[currentState] || configs.idle;
-  }, [currentState, normalizedAnimations, isBonusRound, fightStatus, resolveCachedUrl]);
+  }, [currentState, normalizedAnimations, isBonusRound, fightStatus, getDisplayUrl]);
 
   // FIX: Pre-check ALL animation URLs on mount to populate memory cache
   const allAnimationUrls = useMemo(() => {
     const urls = [];
-    if (normalizedAnimations.idle) urls.push(resolveCachedUrl(normalizedAnimations.idle));
-    if (normalizedAnimations.run) urls.push(resolveCachedUrl(normalizedAnimations.run));
-    if (normalizedAnimations.hurt) urls.push(resolveCachedUrl(normalizedAnimations.hurt));
-    if (normalizedAnimations.dies) urls.push(resolveCachedUrl(normalizedAnimations.dies));
+    if (normalizedAnimations.idle) urls.push(getDisplayUrl(normalizedAnimations.idle));
+    if (normalizedAnimations.run) urls.push(getDisplayUrl(normalizedAnimations.run));
+    if (normalizedAnimations.hurt) urls.push(getDisplayUrl(normalizedAnimations.hurt));
+    if (normalizedAnimations.dies) urls.push(getDisplayUrl(normalizedAnimations.dies));
+    if (normalizedAnimations.rangeAttack) urls.push(getDisplayUrl(normalizedAnimations.rangeAttack));
     if (Array.isArray(normalizedAnimations.attack)) {
-      normalizedAnimations.attack.filter(Boolean).forEach(url => urls.push(resolveCachedUrl(url)));
+      normalizedAnimations.attack.filter(Boolean).forEach(url => urls.push(getDisplayUrl(url)));
     } else if (normalizedAnimations.attack) {
-      urls.push(resolveCachedUrl(normalizedAnimations.attack));
+      urls.push(getDisplayUrl(normalizedAnimations.attack));
     }
     // Also include enemy-specific URLs
-    if (enemy?.enemy_idle) urls.push(resolveCachedUrl(enemy.enemy_idle));
-    if (enemy?.enemy_run) urls.push(resolveCachedUrl(enemy.enemy_run));
-    if (enemy?.enemy_attack) urls.push(resolveCachedUrl(enemy.enemy_attack));
-    if (enemy?.enemy_hurt) urls.push(resolveCachedUrl(enemy.enemy_hurt));
-    if (enemy?.enemy_dies) urls.push(resolveCachedUrl(enemy.enemy_dies));
+    if (enemy?.enemy_idle) urls.push(getDisplayUrl(enemy.enemy_idle));
+    if (enemy?.enemy_run) urls.push(getDisplayUrl(enemy.enemy_run));
+    if (enemy?.enemy_attack) urls.push(getDisplayUrl(enemy.enemy_attack));
+    if (enemy?.enemy_hurt) urls.push(getDisplayUrl(enemy.enemy_hurt));
+    if (enemy?.enemy_dies) urls.push(getDisplayUrl(enemy.enemy_dies));
     return urls.filter(url => url && typeof url === 'string');
-  }, [normalizedAnimations, enemy, resolveCachedUrl]);
+  }, [normalizedAnimations, enemy, getDisplayUrl]);
+
+  useEffect(() => {
+    if (!animationTriggerKey) {
+      return;
+    }
+
+    const resetUrl = animationConfig.isCompound ? animationConfig.runUrl : animationConfig.url;
+
+    // ✅ FIX: Smart reset logic for PvP freezing issue.
+    // Split keys to analyze changes. Index 0 is Challenge ID, Index 14 is Enemy State in ScreenPlay.js structure.
+    const currentParts = animationTriggerKey.split('|');
+    const prevParts = (prevTriggerKeyRef.current || '').split('|');
+    prevTriggerKeyRef.current = animationTriggerKey;
+
+    // Only parse if we have previous data to compare against
+    if (prevParts.length > 0 && currentParts.length > 14) {
+      const currentId = currentParts[0];
+      const prevId = prevParts[0];
+      // Normalizing state to handle 'na' as 'idle' for comparison
+      const currentStateStr = currentParts[14] === 'na' ? 'idle' : currentParts[14];
+      // const prevStateStr = prevParts[14] === 'na' ? 'idle' : prevParts[14]; // <-- REMOVED
+
+      const isNewRound = currentId !== prevId;
+      
+      // ---------- CRITICAL FIX ----------
+      // Relaxed condition: If it's a new round AND the *new* intended state is 'idle',
+      // we skip the hard reset, regardless of what the previous state was.
+      if (isNewRound && currentStateStr === 'idle') {
+        console.log('🔄 PvP: New round with idle state detected. Flagging to skip frame reset to prevent freeze.');
+        shouldSkipNextFrameResetRef.current = true; // Set flag for main animation effect
+        
+        // Ensure URL is up to date without killing animation
+        if (resetUrl && currentAnimationUrlRef.current !== resetUrl) {
+          currentAnimationUrlRef.current = resetUrl;
+          setCurrentAnimationUrl(resetUrl);
+        }
+        return; // Exit early to prevent the hard reset below
+      }
+      // ----------------------------------
+    }
+
+    // --- Original Hard Reset Logic (runs if states are changing meaningfully) ---
+    attackInitiated.value = false;
+    attackSequenceRef.current = { runUrl: null, attackUrl: null };
+    // This cancelAnimation is what causes the freeze if called incorrectly
+    cancelAnimation(frameIndex);
+    cancelAnimation(positionX);
+    cancelAnimation(rangeProjectileX);
+    cancelAnimation(blinkOpacity);
+    // We only reset frameIndex here if it's NOT a seamless transition
+    frameIndex.value = 0;
+    positionX.value = 0;
+    rangeProjectileX.value = 0;
+    blinkOpacity.value = 0;
+
+    if (resetUrl && currentAnimationUrlRef.current !== resetUrl) {
+      currentAnimationUrlRef.current = resetUrl;
+      setCurrentAnimationUrl(resetUrl);
+    }
+  }, [
+    animationTriggerKey,
+    animationConfig.isCompound,
+    animationConfig.runUrl,
+    animationConfig.url,
+    attackInitiated,
+    blinkOpacity,
+    frameIndex,
+    positionX,
+    rangeProjectileX,
+  ]);
+
+  // FIX: Check if ALL animations are cached (for immediate playback)
+  // ... rest of the file remains unchanged ...
 
   // FIX: Check if ALL animations are cached (for immediate playback)
   const allAnimationsCached = useMemo(() => {
@@ -359,7 +490,6 @@ const EnemyCharacter = ({
   // FIX: Set imageReady to true if ALL animations are cached
   const [imageReady, setImageReady] = useState(allAnimationsCached || isUrlCached(initialUrl));
   const [preloadedImages] = useState(new Map());
-  const attackSoundTimeoutRef = useRef(null);
   const hasInitialized = useRef(false);
 
   // FIX: Pre-populate preloadedImages map with all cached URLs on mount
@@ -382,35 +512,9 @@ const EnemyCharacter = ({
     }
   }, [allAnimationUrls, isUrlCached, index]);
 
-   useEffect(() => {
-    if (attackSoundTimeoutRef.current) {
-      clearTimeout(attackSoundTimeoutRef.current);
-    }
-
-    if (currentState === 'attack' && attackAudioUrl) {
-      const SOUND_DELAY = 500; 
-      attackSoundTimeoutRef.current = setTimeout(() => {
-        soundManager.playCachedSound(attackAudioUrl, 'combat', 1.0);
-      }, SOUND_DELAY);
-    } else if (currentState === 'hurt' && hurtAudioUrl) {
-      const HURT_DELAY = 1000; 
-      attackSoundTimeoutRef.current = setTimeout(() => {
-        soundManager.playCachedSound(hurtAudioUrl, 'combat', 1.0);
-      }, HURT_DELAY);
-    }
-
-    return () => {
-      if (attackSoundTimeoutRef.current) {
-        clearTimeout(attackSoundTimeoutRef.current);
-      }
-    };
-  }, [currentState, attackAudioUrl, hurtAudioUrl, index, isBonusRound]);
-
   if (isBonusRound) wasBonusRound.current = true;
   else if (currentState === 'idle') wasBonusRound.current = false;
 
-  // ========== Animation Configuration Logic ==========
-  
   // ========== Image Preloading ==========
   useEffect(() => {
     if (!currentAnimationUrl) return;
@@ -455,6 +559,7 @@ const EnemyCharacter = ({
   }, [currentState]);
 
   const isFrozen = enemyCurrentState === 'Frozen';
+  const shouldFlipRangeAttack = matchCharacterStyle || animationConfig.isRange;
 
   // ========== Main Animation Effect ==========
   useEffect(() => {
@@ -489,29 +594,33 @@ const EnemyCharacter = ({
 
   const isActiveUrlCached = isUrlCached(activeUrl) || preloadedImages.has(activeUrl);
   const isTargetUrlCached = targetUrl ? (isUrlCached(targetUrl) || preloadedImages.has(targetUrl)) : true;
+  const hasActiveUrl = hasUsableAnimationUrl(activeUrl);
+  const hasTargetUrl = hasUsableAnimationUrl(targetUrl);
   
   if (isPaused || isFrozen) {
     cancelAnimation(frameIndex);
     cancelAnimation(positionX);
+    cancelAnimation(rangeProjectileX);
     cancelAnimation(opacity);
     cancelAnimation(blinkOpacity);
     blinkOpacity.value = 0;
     return;
   }
 
-  // 🚀 NEW: Specifically check if it's a compound attack and require BOTH URLs to be loaded
   let compoundReady = true;
   if (config.isCompound && currentState === 'attack') {
       const { runUrl, attackUrl } = config;
       const runCached = isUrlCached(runUrl) || preloadedImages.has(runUrl);
       const attackCached = isUrlCached(attackUrl) || preloadedImages.has(attackUrl);
-      compoundReady = runCached && attackCached;
+      const runUsable = hasUsableAnimationUrl(runUrl);
+      const attackUsable = hasUsableAnimationUrl(attackUrl);
+      compoundReady = (runCached || runUsable) && (attackCached || attackUsable);
   }
 
   const isCriticalState = currentState === 'attack' || currentState === 'hurt' || currentState === 'dies' || currentState === 'run';
-  const canProceed = isCriticalState 
-      ? (isActiveUrlCached || isTargetUrlCached) && compoundReady 
-      : (imageReady || isActiveUrlCached || isTargetUrlCached);
+    const canProceed = isCriticalState 
+      ? (isActiveUrlCached || isTargetUrlCached || hasActiveUrl || hasTargetUrl) && compoundReady 
+      : (imageReady || isActiveUrlCached || isTargetUrlCached || hasActiveUrl || hasTargetUrl);
 
   // 🚀 FIX: Hold all movement and frame logic until sprite-sheet is in memory
   if (!canProceed) {
@@ -523,10 +632,67 @@ const EnemyCharacter = ({
   cancelAnimation(opacity);
   cancelAnimation(blinkOpacity);
   blinkOpacity.value = 0;
-  frameIndex.value = 0;
+  
+  // ✅ FIX: Check flag before resetting frame to 0. This ensures continuous animation.
+  if (shouldSkipNextFrameResetRef.current) {
+       console.log('⏩ PvP: Skipping frame reset for seamless transition.');
+       shouldSkipNextFrameResetRef.current = false; // Reset flag immediately
+       // Do NOT set frameIndex.value = 0 here. Reanimated will pick up from current frame.
+  } else {
+       // Normal behavior for actual state changes (attack, run, etc.)
+       frameIndex.value = 0;
+  }
 
   positionX.value = 0; 
   opacity.value = 1;
+
+  if (config.isRange && currentState === 'attack') {
+    const attackUrl = config.attackUrl;
+    const rangeUrl = config.rangeUrl;
+    const attackReady = isUrlCached(attackUrl) || preloadedImages.has(attackUrl);
+    const rangeReady = !rangeUrl || isUrlCached(rangeUrl) || preloadedImages.has(rangeUrl);
+    const attackUsable = hasUsableAnimationUrl(attackUrl);
+    const rangeUsable = !rangeUrl || hasUsableAnimationUrl(rangeUrl);
+
+    if ((!attackReady && !attackUsable) || (!rangeReady && !rangeUsable)) {
+      return;
+    }
+
+    attackSequenceRef.current = { runUrl: null, attackUrl };
+    attackInitiated.value = true;
+
+    currentAnimationUrlRef.current = attackUrl;
+    setCurrentAnimationUrl(attackUrl);
+
+    const duration = ANIMATION_DURATIONS.attack;
+    const ATTACK_RUN_DISTANCE = RUN_DISTANCE;
+
+    if (effectiveEnemyName === 'Ryron') {
+      rangeProjectileX.value = 0;
+      rangeProjectileX.value = withDelay(
+        900,
+        withTiming(ATTACK_RUN_DISTANCE, {
+          duration: duration * 0.3,
+          easing: Easing.linear,
+        })
+      );
+    } else {
+      rangeProjectileX.value = ATTACK_RUN_DISTANCE + gameScale(-50);
+    }
+
+    frameIndex.value = withTiming(
+      TOTAL_FRAMES - 1,
+      { duration: ANIMATION_DURATIONS.attack, easing: Easing.linear },
+      (finished) => {
+        if (finished) {
+          rangeProjectileX.value = 0;
+          runOnJS(notifyAnimationComplete)();
+        }
+      }
+    );
+
+    return;
+  }
 
   if (config.isCompound && currentState === 'attack') {
     const { runUrl, attackUrl } = config;
@@ -543,7 +709,7 @@ const EnemyCharacter = ({
     // Double check BOTH urls are cached before authorizing movement.
     const isRunReady = isUrlCached(runUrl) || preloadedImages.has(runUrl);
     const isAttackReady = isUrlCached(attackUrl) || preloadedImages.has(attackUrl);
-    if (!isRunReady || !isAttackReady) return;
+    if ((!isRunReady && !hasUsableAnimationUrl(runUrl)) || (!isAttackReady && !hasUsableAnimationUrl(attackUrl))) return;
     
     attackSequenceRef.current = { runUrl, attackUrl };
     attackInitiated.value = true;
@@ -645,8 +811,7 @@ const EnemyCharacter = ({
 }, [
   currentState, isPaused, isFrozen, currentAnimationUrl,
   animationConfig.isCompound, animationConfig.shouldLoop, animationConfig.url,
-  animationConfig.runUrl, animationConfig.attackUrl,
-  notifyAnimationComplete, isUrlCached, imageReady
+  animationConfig.runUrl, animationConfig.attackUrl, notifyAnimationComplete, isUrlCached, hasUsableAnimationUrl, imageReady, animationTriggerKey
 ]);
 
   // ========== Animated Styles ==========
@@ -667,6 +832,10 @@ const EnemyCharacter = ({
     transform: [{ translateX: positionX.value }],
   }), []);
 
+  const rangeContainerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: rangeProjectileX.value }],
+  }), []);
+
   const redFlashStyle = useAnimatedStyle(() => ({
     opacity: blinkOpacity.value,
   }), []);
@@ -676,6 +845,8 @@ const EnemyCharacter = ({
   const shouldApplyHurtTint = useMemo(() => {
       return characterAnimations.character_hurt != null;
     }, [characterAnimations.character_hurt]);
+
+  const showRangeAttack = currentState === 'attack' && animationConfig.isRange && animationConfig.rangeUrl;
 
   const renderReactionText = (text) => {
     if (!text) return null;
@@ -731,6 +902,7 @@ const EnemyCharacter = ({
         <Animated.View
           style={[
             styles.attackOverlay,
+            { zIndex: attackOverlayZIndex },
             overlayAnimatedStyle,
             matchCharacterStyle && styles.flipHorizontal,
           ]}
@@ -797,6 +969,38 @@ const EnemyCharacter = ({
           )}
         </Animated.View>
       </View>
+
+      {showRangeAttack && (
+        <Animated.View
+          style={[
+            styles.spriteContainer,
+            rangeContainerStyle,
+            {
+              position: 'absolute',
+              width: SPRITE_SIZE,
+              height: SPRITE_SIZE,
+              zIndex: 20,
+            },
+          ]}
+        >
+          <Animated.View
+            style={[
+              styles.spriteSheet,
+              animatedStyle,
+              { width: SPRITE_SIZE * SPRITE_COLUMNS, height: SPRITE_SIZE * SPRITE_ROWS },
+            ]}
+          >
+            <Image
+              source={{ uri: animationConfig.rangeUrl }}
+              style={[styles.spriteImage, shouldFlipRangeAttack && styles.flipHorizontal]}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              priority="high"
+              transition={0}
+            />
+          </Animated.View>
+        </Animated.View>
+      )}
     </Animated.View>
   );
 };
@@ -893,14 +1097,23 @@ const styles = StyleSheet.create({
   },
   attackOverlay: {
     position: 'absolute',
-    top: gameScale(10),
+    top: gameScale(-30),
+    right: gameScale(-20),
     width: gameScale(140),
     height: gameScale(140),
+    justifyContent: 'center',
+    alignItems: 'center',
     zIndex: 1001,
+    shadowColor: '#fff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: gameScale(10),
+    elevation: gameScale(5),
   },
   overlaySpriteContainer: {
     width: gameScale(140),
     height: gameScale(140),
+    opacity: 0.7,
     overflow: 'hidden',
   },
   overlaySpriteSheet: {
@@ -920,6 +1133,7 @@ const styles = StyleSheet.create({
 export default React.memo(EnemyCharacter, (prev, next) => {
   return (
     prev.reactionText === next.reactionText &&
+    prev.animationTriggerKey === next.animationTriggerKey &&
     prev.currentState === next.currentState &&
     prev.isPaused === next.isPaused &&
     prev.isAttacking === next.isAttacking &&
