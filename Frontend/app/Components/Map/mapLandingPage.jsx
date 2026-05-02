@@ -85,16 +85,7 @@ export default function MapLandingPage() {
         {/* Lower Hills - Optimization: Pause when not focused */}
      
 
-        {/* Clouds - Optimization: Pause when not focused */}
-        <LottieView
-          source={{ uri: 'https://lottie.host/6dc90492-37c5-4169-9db7-4a6f79ad0bf9/pR3Q6bxLZq.lottie' }}
-          style={styles.clouds}
-          resizeMode="cover"
-          autoPlay={isFocused}
-          loop={isFocused}
-          speed={0.8}
-          pointerEvents="none"
-        />
+  
 
 
         {/* Header */}
