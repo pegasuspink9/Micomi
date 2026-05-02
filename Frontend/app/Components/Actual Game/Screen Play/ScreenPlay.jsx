@@ -16,6 +16,56 @@ import { gameScale } from '../../Responsiveness/gameResponsive';
 import BonusRoundModal from './components/BonusRoundModal'; 
 import SpecialSkillIcon from './components/SpecialSkillIcon';
 import { soundManager } from '../Sounds/UniversalSoundManager';
+import { Image } from 'expo-image'; 
+
+const prefetchGameAssets = (submissionResult) => {
+  if (!submissionResult?.fightResult) return;
+
+  const { character, enemy } = submissionResult.fightResult;
+  const urlsToPrefetch = new Set();
+
+  const extractUrls = (obj) => {
+    if (!obj) return;
+    const keysToCheck = [
+      'character_idle', 'character_attack', 'character_hurt', 'character_dies', 'character_run', 'character_range_attack', 'character_attack_overlay', 'character_avatar',
+      'enemy_idle', 'enemy_attack', 'enemy_hurt', 'enemy_dies', 'enemy_run', 'enemy_range_attack', 'enemy_attack_overlay', 'enemy_avatar'
+    ];
+    
+    keysToCheck.forEach(key => {
+        const value = obj[key];
+        if (typeof value === 'string' && value.startsWith('http')) {
+            urlsToPrefetch.add(value);
+        } else if (Array.isArray(value)) {
+            value.forEach(url => {
+                 if (typeof url === 'string' && url.startsWith('http')) urlsToPrefetch.add(url);
+            });
+        }
+    });
+
+    if (obj.special_skill?.special_skill_image) {
+        urlsToPrefetch.add(obj.special_skill.special_skill_image);
+    }
+  };
+
+  extractUrls(character);
+  extractUrls(enemy);
+
+  // Add combat background if present in base state
+  if (submissionResult.combat_background && Array.isArray(submissionResult.combat_background)) {
+      submissionResult.combat_background.forEach(url => urlsToPrefetch.add(url));
+  }
+
+  // Execute proactive prefetching using Expo Image's high-priority prefetcher
+  urlsToPrefetch.forEach(url => {
+    // Using 'memory-disk' ensures it's ready in RAM for immediate display
+    Image.prefetch(url, { cachePolicy: 'memory-disk', priority: 'high' });
+  });
+  
+  if (urlsToPrefetch.size > 0) {
+      console.log(`🚀 Proactively prefetching ${urlsToPrefetch.size} heavy assets for next state.`);
+  }
+};
+
 
 
 const ScreenPlay = ({ 
@@ -1234,7 +1284,7 @@ useEffect(() => {
     };
   }, [gameState.submissionResult?.fightResult?.enemy, gameState.enemy]);
 
-  const enemyAnimationTriggerKey = useMemo(() => {
+  const pvpAnimationTriggerKey = useMemo(() => {
     const submission = gameState?.submissionResult;
     const fightResult = submission?.fightResult;
 
@@ -1246,14 +1296,43 @@ useEffect(() => {
       gameState?.currentChallenge?.id ?? 'none',
       submission?.reason ?? 'none',
       submission?.acceptedForAttack ?? submission?.accepted_for_attack ?? 'na',
+      submission?.isCorrect ?? submission?.is_correct ?? 'na',
       fightResult?.status ?? 'na',
+      fightResult?.character?.character_attack ?? 'na',
+      fightResult?.character?.character_run ?? 'na',
+      fightResult?.character?.character_range_attack ?? 'na',
       fightResult?.character?.character_health ?? 'na',
       fightResult?.character?.character_current_state ?? 'na',
+      fightResult?.enemy?.enemy_attack ?? 'na',
+      fightResult?.enemy?.enemy_run ?? 'na',
+      fightResult?.enemy?.enemy_range_attack ?? 'na',
       fightResult?.enemy?.enemy_health ?? 'na',
       fightResult?.enemy?.enemy_current_state ?? 'na',
+      gameState?.isCharacterFrozen ?? 'na',
+      gameState?.isEnemyFrozen ?? 'na',
     ].join('|');
   }, [gameState?.currentChallenge?.id, gameState?.submissionResult]);
 
+  useEffect(() => {
+    if (!isPvpMode) {
+      return;
+    }
+
+    // Ensure prior round lock never blocks the next challenge animation trigger.
+    setIsPlayingSubmissionAnimation(false);
+    lastSubmissionKeyRef.current = null;
+    pvpAnimationTimeoutsRef.current.forEach(clearTimeout);
+    pvpAnimationTimeoutsRef.current = [];
+  }, [isPvpMode, gameState?.currentChallenge?.id]);
+
+
+  useEffect(() => {
+    if (gameState?.submissionResult) {
+        prefetchGameAssets(gameState.submissionResult);
+    }
+  }, [gameState?.submissionResult]);
+
+  
   return (
     <GameContainer borderColor={borderColor}   setBorderColor={setBorderColor}>
       <GameBackground 
@@ -1268,6 +1347,8 @@ useEffect(() => {
           characterAnimations={characterAnimations}
           currentState={characterAnimationState}
           onAnimationComplete={handleCharacterAnimationComplete}
+          animationTriggerKey={pvpAnimationTriggerKey}
+          characterCurrentState={characterCurrentState}
           attackAudioUrl={resolvedCharacterAttackAudio ?? resolvedEnemyAttackAudio}
           isBonusRound={gameState.submissionResult?.isBonusRound ?? false}
           characterName={characterName}
@@ -1305,7 +1386,7 @@ useEffect(() => {
               reactionText={activeEnemyReaction}
               hurtAudioUrl={resolvedEnemyHurtAudio}
               matchCharacterStyle={isPvpMode}
-              animationTriggerKey={enemyAnimationTriggerKey}
+              animationTriggerKey={pvpAnimationTriggerKey}
             />
           );
         })}

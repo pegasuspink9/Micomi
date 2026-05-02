@@ -1,12 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { pvpService } from '../services/pvpService';
+import { pvpRealtimeService } from '../services/pvpRealtimeService';
 
 const PVP_MATCH_CACHE_PREFIX = 'pvp_match_cache:';
 const PVP_ACTIVE_MATCH_ID_KEY = 'pvp_active_match_id';
 const AUTO_PROCEED_SECONDS = 10;
 const CHALLENGE_STALL_SECONDS = 300;
 const MATCH_SYNC_INTERVAL_MS = 500;
+
+const normalizeMatchId = (value) => {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  return String(value);
+};
 
 const normalizeChallengeId = (value) => {
   if (value === null || value === undefined || value === '') {
@@ -63,6 +72,49 @@ const toStableValue = (value) => {
   return String(value);
 };
 
+const buildFightAssetSignature = (payload = {}) => {
+  const fightResult = payload?.fightResult || payload?.submissionResult?.fightResult || {};
+  const character = fightResult.character || payload?.selectedCharacter || {};
+  const enemy = fightResult.enemy || payload?.enemy || {};
+
+  return [
+    toStableValue(character.character_idle),
+    toStableValue(character.character_run),
+    toStableValue(character.character_attack),
+    toStableValue(character.character_range_attack),
+    toStableValue(character.character_hurt),
+    toStableValue(character.character_dies),
+    toStableValue(character.character_attack_overlay),
+    toStableValue(character.character_current_state),
+    toStableValue(character.character_is_range),
+    toStableValue(character.character_attack_type),
+    toStableValue(enemy.enemy_idle),
+    toStableValue(enemy.enemy_run),
+    toStableValue(enemy.enemy_attack),
+    toStableValue(enemy.enemy_range_attack),
+    toStableValue(enemy.enemy_hurt),
+    toStableValue(enemy.enemy_dies),
+    toStableValue(enemy.enemy_attack_overlay),
+    toStableValue(enemy.enemy_current_state),
+    toStableValue(enemy.enemy_is_range_attack),
+    toStableValue(enemy.enemy_attack_type),
+    toStableValue(fightResult.gameplay_audio),
+    toStableValue(fightResult.combat_background),
+    toStableValue(payload?.characterAttackAudio),
+    toStableValue(payload?.character_attack_audio),
+    toStableValue(payload?.enemyAttackAudio),
+    toStableValue(payload?.enemy_attack_audio),
+    toStableValue(payload?.characterHurtAudio),
+    toStableValue(payload?.character_hurt_audio),
+    toStableValue(payload?.enemyHurtAudio),
+    toStableValue(payload?.enemy_hurt_audio),
+    toStableValue(payload?.characterIdleAudio),
+    toStableValue(payload?.character_idle_audio),
+    toStableValue(payload?.enemyIdleAudio),
+    toStableValue(payload?.enemy_idle_audio),
+  ].join('|');
+};
+
 // Parse timer strings like "MM:SS" to seconds
 const parseTimerToSeconds = (timerString) => {
   if (!timerString || typeof timerString !== 'string') return null;
@@ -111,20 +163,17 @@ const buildSubmissionSignature = (submission) => {
     return 'none';
   }
 
-  const fightResult = submission.fightResult || {};
-  const character = fightResult.character || {};
-  const enemy = fightResult.enemy || {};
-
   return [
     toStableValue(submission.reason),
     toStableValue(submission.acceptedForAttack ?? submission.accepted_for_attack),
     toStableValue(submission.isCorrect ?? submission.is_correct),
     toStableValue(submission.message),
-    toStableValue(fightResult.status),
-    toStableValue(character.character_health),
-    toStableValue(character.character_current_state),
-    toStableValue(enemy.enemy_health),
-    toStableValue(enemy.enemy_current_state),
+    toStableValue(submission.fightResult?.status),
+    toStableValue(submission.fightResult?.character?.character_health),
+    toStableValue(submission.fightResult?.character?.character_current_state),
+    toStableValue(submission.fightResult?.enemy?.enemy_health),
+    toStableValue(submission.fightResult?.enemy?.enemy_current_state),
+    buildFightAssetSignature(submission),
   ].join('|');
 };
 
@@ -133,19 +182,16 @@ const buildFightVisualSignature = (submission) => {
     return 'none';
   }
 
-  const fightResult = submission.fightResult || {};
-  const character = fightResult.character || {};
-  const enemy = fightResult.enemy || {};
-
   // Keep this signature visual-only; reaction copy can vary between sync payloads.
   return [
-    toStableValue(fightResult.status),
-    toStableValue(character.character_health),
-    toStableValue(character.character_current_state),
-    toStableValue(character.character_damage),
-    toStableValue(enemy.enemy_health),
-    toStableValue(enemy.enemy_current_state),
-    toStableValue(enemy.enemy_damage),
+    toStableValue(submission.fightResult?.status),
+    toStableValue(submission.fightResult?.character?.character_health),
+    toStableValue(submission.fightResult?.character?.character_current_state),
+    toStableValue(submission.fightResult?.character?.character_damage),
+    toStableValue(submission.fightResult?.enemy?.enemy_health),
+    toStableValue(submission.fightResult?.enemy?.enemy_current_state),
+    toStableValue(submission.fightResult?.enemy?.enemy_damage),
+    buildFightAssetSignature(submission),
   ].join('|');
 };
 
@@ -420,6 +466,7 @@ const buildCombatStateSignature = (state) => {
     ),
     toStableValue(state.energy),
     toStableValue(state.card?.character_attack_card),
+    buildFightAssetSignature(state),
   ].join('||');
 };
 
@@ -1966,6 +2013,82 @@ export const usePvpGameData = (matchId, options = {}) => {
       stopPolling();
     };
   }, [activeMatchId, disabled, resolveLatestMatchId, stopPolling, syncMatchState]);
+
+  useEffect(() => {
+    if (disabled) {
+      return undefined;
+    }
+
+    let unmounted = false;
+
+    const unsubscribe = pvpRealtimeService.subscribe((socketEvent) => {
+      if (unmounted || !socketEvent) {
+        return;
+      }
+
+      if (socketEvent.type === 'connected') {
+        setSyncConnected({ pendingRemoteProceed: false }, { touch: true });
+        syncMatchState();
+        return;
+      }
+
+      if (socketEvent.type === 'disconnected' || socketEvent.type === 'error') {
+        setSyncReconnecting();
+        return;
+      }
+
+      if (socketEvent.type !== 'event') {
+        return;
+      }
+
+      const eventName = socketEvent.event;
+      const payload = socketEvent.payload || {};
+
+      const socketMatchId = normalizeMatchId(
+        payload?.match_id ?? payload?.matchId ?? payload?.status?.match_id ?? payload?.status?.matchId
+      );
+      const currentMatchId = normalizeMatchId(activeMatchIdRef.current);
+
+      if (socketMatchId && currentMatchId && socketMatchId !== currentMatchId) {
+        return;
+      }
+
+      if (
+        eventName === 'pvp:match-update' ||
+        eventName === 'pvp:match-found' ||
+        eventName === 'pvp:match-completed' ||
+        eventName === 'pvp:matchmaking-status'
+      ) {
+        syncMatchState();
+      }
+    });
+
+    const connectRealtime = async () => {
+      const candidatePlayerId =
+        gameState?.selectedCharacter?.player_id ??
+        gameState?.enemy?.player_id ??
+        null;
+
+      await pvpRealtimeService.connect({ playerId: candidatePlayerId });
+    };
+
+    connectRealtime().catch((error) => {
+      console.warn('Failed to connect PvP realtime socket:', error?.message || error);
+    });
+
+    return () => {
+      unmounted = true;
+      unsubscribe();
+      pvpRealtimeService.disconnect();
+    };
+  }, [
+    disabled,
+    gameState?.selectedCharacter?.player_id,
+    gameState?.enemy?.player_id,
+    setSyncConnected,
+    setSyncReconnecting,
+    syncMatchState,
+  ]);
 
   useEffect(() => {
     if (disabled) {

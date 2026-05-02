@@ -29,11 +29,14 @@ const Character = ({
   containerStyle: propContainerStyle,
   potionEffectUrl = null,
   attackOverlayUrl = null, 
+  characterCurrentState = null,
   statusState = null,
   enemyStatusState = null, 
   reactionText = null,
   isBonusRound = false,
   hurtAudioUrl = null,
+  animationTriggerKey = null,
+  recyclingKey = null,
 }) => {
   // ========== Shared Animation Values ==========
   const frameIndex = useSharedValue(0);
@@ -53,6 +56,10 @@ const Character = ({
   const [displayReaction, setDisplayReaction] = useState(null);
   const reactionOpacity = useSharedValue(0);
   const prevOverlayUrlRef = useRef(null);
+  // Add ref to track previous trigger key
+  const prevTriggerKeyRef = useRef(null);
+  // ✅ FIX: Add a ref to signal skipping the frame reset for seamless transitions
+  const shouldSkipNextFrameResetRef = useRef(false);
 
   const REACTION_OFFSET = useMemo(() => gameScale(10), []);
   const OVERLAY_SIZE = useMemo(() => gameScale(140), []);
@@ -91,6 +98,9 @@ const Character = ({
     if (statusState === 'Reveal' || statusState === 'Strong' || statusState === 'Revitalize') return 1;
     return 1;
   }, [enemyStatusState, statusState]);
+
+  const effectiveCharacterState = characterCurrentState ?? statusState;
+  const isFrozen = effectiveCharacterState === 'Frozen';
 
 
     useEffect(() => {
@@ -171,14 +181,40 @@ const Character = ({
 
   
 
+  const isUrlCached = useCallback((url) => {
+    if (!url || typeof url !== 'string') return false;
+    if (url.startsWith('file://')) return true;
+    const cachedPath = universalAssetPreloader.getCachedAssetPath(url);
+    return (typeof cachedPath === 'string') && cachedPath !== url && cachedPath.startsWith('file://');
+  }, []);
+
+  const hasUsableAnimationUrl = useCallback((url) => {
+    return typeof url === 'string' && url.trim().length > 0;
+  }, []);
+
+  const resolveCachedUrl = useCallback((url) => {
+    if (!url || typeof url !== 'string') return '';
+    const cached = universalAssetPreloader.getCachedAssetPath(url);
+    return typeof cached === 'string' ? cached : '';
+  }, []);
+
+  const getDisplayUrl = useCallback((url) => {
+    if (!url || typeof url !== 'string') return '';
+    const cached = universalAssetPreloader.getCachedAssetPath(url);
+    if (typeof cached === 'string' && cached.trim().length > 0) {
+      return cached;
+    }
+    return url;
+  }, []);
+
   // ========== State Management (Lifted up for use in effectiveName) ==========
   const initialUrl = useMemo(() => {
     const candidates = [
-      universalAssetPreloader.getCachedAssetPath(characterAnimations.character_idle || ''),
-      universalAssetPreloader.getCachedAssetPath(characterAnimations.idle || '')
+      getDisplayUrl(characterAnimations.character_idle || ''),
+      getDisplayUrl(characterAnimations.idle || '')
     ].filter(url => url && typeof url === 'string');
     return candidates[0] || '';
-  }, [characterAnimations.character_idle, characterAnimations.idle]);
+  }, [characterAnimations.character_idle, characterAnimations.idle, getDisplayUrl]);
 
   const [currentAnimationUrl, setCurrentAnimationUrl] = useState(initialUrl);
   const currentAnimationUrlRef = useRef(initialUrl);
@@ -225,43 +261,29 @@ const Character = ({
     return SCREEN.width + gameScale(400); 
   }, []);
 
-
-  const isUrlCached = useCallback((url) => {
-    if (!url || typeof url !== 'string') return false;
-    if (url.startsWith('file://')) return true;
-    const cachedPath = universalAssetPreloader.getCachedAssetPath(url);
-    return (typeof cachedPath === 'string') && cachedPath !== url && cachedPath.startsWith('file://');
-  }, []);
-
-  const resolveCachedUrl = useCallback((url) => {
-    if (!url || typeof url !== 'string') return '';
-    const cached = universalAssetPreloader.getCachedAssetPath(url);
-    return typeof cached === 'string' ? cached : '';
-  }, []);
-
   const allAnimationUrls = useMemo(() => {
     const urls = [];
-    if (characterAnimations.character_idle) urls.push(resolveCachedUrl(characterAnimations.character_idle));
-    if (characterAnimations.idle) urls.push(resolveCachedUrl(characterAnimations.idle));
-    if (characterAnimations.character_run) urls.push(resolveCachedUrl(characterAnimations.character_run));
-    if (characterAnimations.run) urls.push(resolveCachedUrl(characterAnimations.run));
-    if (characterAnimations.character_hurt) urls.push(resolveCachedUrl(characterAnimations.character_hurt));
-    if (characterAnimations.hurt) urls.push(resolveCachedUrl(characterAnimations.hurt));
-    if (characterAnimations.character_dies) urls.push(resolveCachedUrl(characterAnimations.character_dies));
-    if (characterAnimations.dies) urls.push(resolveCachedUrl(characterAnimations.dies));
+    if (characterAnimations.character_idle) urls.push(getDisplayUrl(characterAnimations.character_idle));
+    if (characterAnimations.idle) urls.push(getDisplayUrl(characterAnimations.idle));
+    if (characterAnimations.character_run) urls.push(getDisplayUrl(characterAnimations.character_run));
+    if (characterAnimations.run) urls.push(getDisplayUrl(characterAnimations.run));
+    if (characterAnimations.character_hurt) urls.push(getDisplayUrl(characterAnimations.character_hurt));
+    if (characterAnimations.hurt) urls.push(getDisplayUrl(characterAnimations.hurt));
+    if (characterAnimations.character_dies) urls.push(getDisplayUrl(characterAnimations.character_dies));
+    if (characterAnimations.dies) urls.push(getDisplayUrl(characterAnimations.dies));
     
     if (Array.isArray(characterAnimations.character_attack)) {
-      characterAnimations.character_attack.filter(Boolean).forEach(url => urls.push(resolveCachedUrl(url)));
+      characterAnimations.character_attack.filter(Boolean).forEach(url => urls.push(getDisplayUrl(url)));
     } else if (characterAnimations.character_attack) {
-      urls.push(resolveCachedUrl(characterAnimations.character_attack));
+      urls.push(getDisplayUrl(characterAnimations.character_attack));
     }
     
     if (characterAnimations.character_range_attack) {
-        urls.push(resolveCachedUrl(characterAnimations.character_range_attack));
+        urls.push(getDisplayUrl(characterAnimations.character_range_attack));
     }
 
     return urls.filter(url => url && typeof url === 'string');
-  }, [characterAnimations, resolveCachedUrl]);
+  }, [characterAnimations, getDisplayUrl]);
 
 
   const allAnimationsCached = useMemo(() => {
@@ -296,41 +318,21 @@ const Character = ({
 
   
 
-  useEffect(() => {
-    if (attackSoundTimeoutRef.current) clearTimeout(attackSoundTimeoutRef.current);
-    
-    if (currentState === 'attack' && attackAudioUrl) {
-      const SOUND_DELAY = 1000; 
-      attackSoundTimeoutRef.current = setTimeout(() => {
-        soundManager.playCombatSound(attackAudioUrl);
-      }, SOUND_DELAY);
-    } else if (currentState === 'hurt' && hurtAudioUrl && !isBonusRound) {
-      const CHAR_HURT_DELAY = 700;
-      attackSoundTimeoutRef.current = setTimeout(() => {
-        soundManager.playCombatSound(hurtAudioUrl);
-      }, CHAR_HURT_DELAY);
-    }
-
-    return () => {
-      if (attackSoundTimeoutRef.current) clearTimeout(attackSoundTimeoutRef.current);
-    };
-  }, [currentState, attackAudioUrl, hurtAudioUrl, isBonusRound]);
-
   // ========== Animation Configuration Logic ==========
   const animationConfig = useMemo(() => {
     const isRange = characterAnimations.character_is_range === true;
-    const rangeUrl = resolveCachedUrl(characterAnimations.character_range_attack);
+    const rangeUrl = getDisplayUrl(characterAnimations.character_range_attack);
     
     const attackUrl = Array.isArray(characterAnimations.character_attack) 
       ? characterAnimations.character_attack.filter(Boolean)[0] 
       : characterAnimations.character_attack;
-    const resolvedAttackUrl = resolveCachedUrl(attackUrl);
+    const resolvedAttackUrl = getDisplayUrl(attackUrl);
 
-    const runUrl = resolveCachedUrl(characterAnimations.character_run || characterAnimations.run);
+    const runUrl = getDisplayUrl(characterAnimations.character_run || characterAnimations.run);
 
     const configs = {
       idle: { 
-        url: resolveCachedUrl(characterAnimations.character_idle || characterAnimations.idle), 
+        url: getDisplayUrl(characterAnimations.character_idle || characterAnimations.idle), 
         shouldLoop: true, 
         isCompound: false 
       },
@@ -343,12 +345,85 @@ const Character = ({
           shouldLoop: false, 
           isCompound: !isRange && !!runUrl 
       },
-      hurt: { url: resolveCachedUrl(characterAnimations.character_hurt || characterAnimations.hurt), shouldLoop: false, isCompound: false },
+      hurt: { url: getDisplayUrl(characterAnimations.character_hurt || characterAnimations.hurt), shouldLoop: false, isCompound: false },
       run: { url: runUrl, shouldLoop: true, isCompound: false },
-      dies: { url: resolveCachedUrl(characterAnimations.character_dies || characterAnimations.dies), shouldLoop: false, isCompound: false },
+      dies: { url: getDisplayUrl(characterAnimations.character_dies || characterAnimations.dies), shouldLoop: false, isCompound: false },
     };
     return configs[currentState] || configs.idle;
-  }, [currentState, characterAnimations, resolveCachedUrl]);
+  }, [currentState, characterAnimations, getDisplayUrl]);
+
+  useEffect(() => {
+    if (!animationTriggerKey) {
+      return;
+    }
+
+    const resetUrl = animationConfig.isCompound ? animationConfig.runUrl : animationConfig.url;
+
+    // ✅ FIX: Smart reset logic for PvP freezing issue.
+    // Split keys to analyze changes. Index 0 is Challenge ID, Index 9 is Character State in ScreenPlay.js structure.
+    const currentParts = animationTriggerKey.split('|');
+    const prevParts = (prevTriggerKeyRef.current || '').split('|');
+    prevTriggerKeyRef.current = animationTriggerKey;
+
+    // Only parse if we have previous data to compare against
+    if (prevParts.length > 0 && currentParts.length > 9) {
+      const currentId = currentParts[0];
+      const prevId = prevParts[0];
+      // Normalizing state to handle 'na' as 'idle' for comparison
+      const currentStateStr = currentParts[9] === 'na' ? 'idle' : currentParts[9];
+      // const prevStateStr = prevParts[9] === 'na' ? 'idle' : prevParts[9]; // <-- REMOVED
+
+      const isNewRound = currentId !== prevId;
+      
+      // ---------- CRITICAL FIX ----------
+      // Relaxed condition: If it's a new round AND the *new* intended state is 'idle',
+      // we skip the hard reset, regardless of what the previous state was.
+      if (isNewRound && currentStateStr === 'idle') {
+        console.log('🔄 PvP: New round with idle state detected. Flagging to skip frame reset to prevent freeze.');
+        shouldSkipNextFrameResetRef.current = true; // Set flag for main animation effect
+        
+        // Ensure URL is up to date without killing animation
+        if (resetUrl && currentAnimationUrlRef.current !== resetUrl) {
+          currentAnimationUrlRef.current = resetUrl;
+          setCurrentAnimationUrl(resetUrl);
+        }
+        return; // Exit early to prevent the hard reset below
+      }
+      // ----------------------------------
+    }
+
+    // --- Original Hard Reset Logic (runs if states are changing meaningfully) ---
+    attackInitiated.value = false;
+    attackSequenceRef.current = { runUrl: null, attackUrl: null };
+    // This cancelAnimation is what causes the freeze if called incorrectly
+    cancelAnimation(frameIndex);
+    cancelAnimation(positionX);
+    cancelAnimation(rangeProjectileX);
+    cancelAnimation(blinkOpacity);
+    // We only reset frameIndex here if it's NOT a seamless transition
+    frameIndex.value = 0;
+    positionX.value = 0;
+    rangeProjectileX.value = 0;
+    blinkOpacity.value = 0;
+
+    if (resetUrl && currentAnimationUrlRef.current !== resetUrl) {
+      currentAnimationUrlRef.current = resetUrl;
+      setCurrentAnimationUrl(resetUrl);
+    }
+  }, [
+    animationTriggerKey,
+    animationConfig.isCompound,
+    animationConfig.runUrl,
+    animationConfig.url,
+    attackInitiated,
+    blinkOpacity,
+    frameIndex,
+    positionX,
+    rangeProjectileX,
+  ]);
+
+  // ========== Image Preloading ==========
+  // ... rest of the file remains unchanged ...
 
   // ========== Image Preloading ==========
   useEffect(() => {
@@ -472,8 +547,10 @@ const Character = ({
 
     const isActiveUrlCached = isUrlCached(activeUrl) || preloadedImages.has(activeUrl);
     const isTargetUrlCached = targetUrl ? (isUrlCached(targetUrl) || preloadedImages.has(targetUrl)) : true;
+    const hasActiveUrl = hasUsableAnimationUrl(activeUrl);
+    const hasTargetUrl = hasUsableAnimationUrl(targetUrl);
 
-    if (isPaused) {
+    if (isPaused || isFrozen) {
       cancelAnimation(frameIndex);
       cancelAnimation(positionX);
       cancelAnimation(blinkOpacity);
@@ -488,18 +565,22 @@ const Character = ({
         if (config.isCompound) {
             const runCached = isUrlCached(config.runUrl) || preloadedImages.has(config.runUrl);
             const attackCached = isUrlCached(config.attackUrl) || preloadedImages.has(config.attackUrl);
-            attackReady = runCached && attackCached;
+        const runUsable = hasUsableAnimationUrl(config.runUrl);
+        const attackUsable = hasUsableAnimationUrl(config.attackUrl);
+        attackReady = (runCached || runUsable) && (attackCached || attackUsable);
         } else if (config.isRange) {
             const attackCached = isUrlCached(config.attackUrl) || preloadedImages.has(config.attackUrl);
             const rangeCached = config.rangeUrl ? (isUrlCached(config.rangeUrl) || preloadedImages.has(config.rangeUrl)) : true;
-            attackReady = attackCached && rangeCached;
+        const attackUsable = hasUsableAnimationUrl(config.attackUrl);
+        const rangeUsable = config.rangeUrl ? hasUsableAnimationUrl(config.rangeUrl) : true;
+        attackReady = (attackCached || attackUsable) && (rangeCached || rangeUsable);
         }
     }
 
     const isCriticalState = currentState === 'attack' || currentState === 'hurt' || currentState === 'dies' || currentState === 'run';
     const canProceed = isCriticalState 
-        ? (isActiveUrlCached || isTargetUrlCached) && attackReady 
-        : (imageReady || isActiveUrlCached || isTargetUrlCached);
+      ? (isActiveUrlCached || isTargetUrlCached || hasActiveUrl || hasTargetUrl) && attackReady 
+      : (imageReady || isActiveUrlCached || isTargetUrlCached || hasActiveUrl || hasTargetUrl);
     
     // Hold animation progression completely if assets are streaming into memory
     if (!canProceed) {
@@ -513,7 +594,17 @@ const Character = ({
     cancelAnimation(rangeProjectileX);
 
     blinkOpacity.value = 0;
-    frameIndex.value = 0;
+    
+    // ✅ FIX: Check flag before resetting frame to 0. This ensures continuous animation.
+    if (shouldSkipNextFrameResetRef.current) {
+         console.log('⏩ PvP: Skipping frame reset for seamless transition.');
+         shouldSkipNextFrameResetRef.current = false; // Reset flag immediately
+         // Do NOT set frameIndex.value = 0 here. Reanimated will pick up from current frame.
+    } else {
+         // Normal behavior for actual state changes (attack, run, etc.)
+         frameIndex.value = 0;
+    }
+
     // Ensure position is reset immediately
     positionX.value = 0;
     opacity.value = 1;
@@ -533,7 +624,7 @@ const Character = ({
       // 🚀 FIX: Double check BOTH urls exist in cache strictly before authorizing movement
       const isRunReady = isUrlCached(runUrl) || preloadedImages.has(runUrl);
       const isAttackReady = isUrlCached(attackUrl) || preloadedImages.has(attackUrl);
-      if (!isRunReady || !isAttackReady) return;
+      if ((!isRunReady && !hasUsableAnimationUrl(runUrl)) || (!isAttackReady && !hasUsableAnimationUrl(attackUrl))) return;
 
       attackSequenceRef.current = { runUrl, attackUrl };
       attackInitiated.value = true;
@@ -685,10 +776,10 @@ const Character = ({
       }
     });
   }, [
-    currentState, isPaused, currentAnimationUrl, // Ensure currentAnimationUrl is a dependency
+    currentState, isPaused, isFrozen, currentAnimationUrl, // Ensure currentAnimationUrl is a dependency
     animationConfig.isCompound, animationConfig.shouldLoop, animationConfig.url, 
     animationConfig.runUrl, animationConfig.attackUrl, animationConfig.rangeUrl, animationConfig.isRange,
-    notifyAnimationComplete, isUrlCached, effectiveCharacterName, SPRITE_SIZE
+    notifyAnimationComplete, isUrlCached, hasUsableAnimationUrl, effectiveCharacterName, SPRITE_SIZE, animationTriggerKey
   ]);
 
 
@@ -835,6 +926,18 @@ const Character = ({
               />
             </Animated.View>
           )}
+
+          {currentAnimationUrl && isFrozen && (
+            <Animated.View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
+              <Image
+                source={{ uri: currentAnimationUrl }}
+                style={[styles.spriteImage, { tintColor: '#00ccff80' }]}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                priority="high"
+              />
+            </Animated.View>
+          )}
         </Animated.View>
 
         {potionEffectUrl && (
@@ -922,7 +1025,7 @@ const styles = StyleSheet.create({
     borderRadius: gameScale(8), 
     borderWidth: gameScale(1.5),
     borderColor: '#d4d4d4',
-    width: gameScale(220), // Fixed width
+    width: gameScale(220), 
     height: gameScale(55), // Fixed height
     justifyContent: 'center', // Centered vertically
   },
@@ -1013,8 +1116,12 @@ const styles = StyleSheet.create({
 export default React.memo(Character, (prev, next) => {
   return (
     prev.reactionText === next.reactionText && 
+    prev.animationTriggerKey === next.animationTriggerKey &&
     prev.currentState === next.currentState &&
     prev.isPaused === next.isPaused &&
+    prev.statusState === next.statusState &&
+    prev.enemyStatusState === next.enemyStatusState &&
+    prev.characterCurrentState === next.characterCurrentState &&
     prev.isBonusRound === next.isBonusRound &&
     prev.characterName === next.characterName &&
     prev.potionEffectUrl === next.potionEffectUrl &&
