@@ -9,8 +9,6 @@ export interface DailyPvpQuestion {
   map_name: string;
   level_title: string | null;
   challenge_type: string;
-  title: string;
-  description: string;
   question: string | null;
   options: string[];
   correct_answer: string[];
@@ -133,6 +131,7 @@ export interface PvpDailyPreviewResponse {
 }
 
 export interface PvpMatchEntryLikeResponse {
+  is_syncing: boolean;
   level: {
     level_id: number;
     level_number: number | null;
@@ -195,6 +194,7 @@ export interface PvpDailyInGameMessageResponse {
 }
 
 export interface PvpDailySubmitAnswerResult {
+  is_syncing: boolean;
   is_correct: boolean;
   accepted_for_attack: boolean;
   reason:
@@ -264,6 +264,8 @@ export interface PvpDailySubmitAnswerResult {
   death_audio?: string | null;
   is_victory_audio?: string | null;
   is_victory_image?: string | null;
+  isEnemyFrozen?: boolean;
+  isCharacterFrozen?: boolean;
 }
 
 export interface PvpMatchHistoryCharacter {

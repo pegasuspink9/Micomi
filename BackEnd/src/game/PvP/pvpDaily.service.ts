@@ -158,7 +158,7 @@ const PVP_TOPICS: PvpChallengeTopic[] = [
   "JavaScript",
   "Computer",
 ];
-const QUESTIONS_PER_MATCH = 5;
+const QUESTIONS_PER_MATCH = 15;
 
 const matchmakingByPlayer = new Map<number, PlayerMatchmakingState>();
 const queueByTopic = new Map<PvpChallengeTopic, Set<number>>();
@@ -245,6 +245,32 @@ const calculateStars = (mistakes: number, totalQuestions: number): number => {
 };
 
 const getNowIso = () => new Date().toISOString();
+
+const applyPassiveEffectWithOverride = (
+  match: PvPMatchState,
+  playerCharacterName: string,
+  playerId: number,
+  opponentPlayerId: number,
+) => {
+  // ShiShi's Freeze should override Ryron's Reveal on opponent
+  if (playerCharacterName === "ShiShi") {
+    match.has_freeze_effect_by_player[playerId] = true;
+    match.has_ryron_reveal_by_player[opponentPlayerId] = false;
+  }
+  // Ryron's Reveal should override nothing but can coexist with others on player
+  else if (playerCharacterName === "Ryron") {
+    match.has_ryron_reveal_by_player[playerId] = true;
+    // Clear opponent's freeze if Ryron reveals first
+    if (match.has_freeze_effect_by_player[opponentPlayerId]) {
+      match.has_freeze_effect_by_player[opponentPlayerId] = false;
+    }
+  }
+  // Leon's Strong effect
+  else if (playerCharacterName === "Leon") {
+    match.has_strong_effect_by_player[playerId] = true;
+  }
+  // Gino's healing is handled separately
+};
 
 const emitToPlayer = (
   playerId: number,
@@ -898,6 +924,7 @@ const buildEntryLikePayload = async (
   }
 
   return {
+    is_syncing: true,
     level: {
       level_id: 0,
       level_number: null,
@@ -1996,7 +2023,7 @@ const buildSubmitLikeResponse = async (
   let enemy_attack_overlay: string | null = null;
 
   const opponentPlayerId = Number(opponentEnemy.player_id);
-if (characterShowsAttack) {
+  if (characterShowsAttack) {
     character_current_state = wasFrozen ? null : "attacking";
     if (wasFrozen) character_attack_overlay = OVERLAYS.FREEZE;
   } else if (enemyShowsAttack) {
@@ -2280,6 +2307,7 @@ if (characterShowsAttack) {
     : undefined;
 
   return {
+    is_syncing: true,
     is_correct: isCorrect,
     accepted_for_attack: reason === "correct_and_first",
     reason,
@@ -2434,7 +2462,12 @@ export const submitAnswer = async (
   if (!isCorrect) {
     match.mistakes_by_player[playerId] =
       (match.mistakes_by_player[playerId] ?? 0) + 1;
-    match.consecutive_corrects_by_player[playerId] = 0;
+
+    const currentStreak = match.consecutive_corrects_by_player[playerId] ?? 0;
+    match.consecutive_corrects_by_player[playerId] = Math.max(
+      0,
+      currentStreak - 1,
+    );
 
     emitMatchStateToPlayers(match, "pvp:match-update");
     await persistMatchProgress(match);
@@ -2448,6 +2481,17 @@ export const submitAnswer = async (
     nextStreak > 3 ? 1 : nextStreak;
 
   const playerCharacter = await getSelectedCharacterDetails(playerId);
+  const opponentIndex = getOpponentIndex(playerIndex);
+  const opponentPlayerId = match.players[opponentIndex].player_id;
+
+  if (isFirstCorrect) {
+    const currentEnemyStreak =
+      match.consecutive_corrects_by_player[opponentPlayerId] ?? 0;
+    match.consecutive_corrects_by_player[opponentPlayerId] = Math.max(
+      0,
+      currentEnemyStreak - 1,
+    );
+  }
 
   if (match.consecutive_corrects_by_player[playerId] === 3) {
     if (playerCharacter.character_name === "Gino") {
@@ -2462,17 +2506,15 @@ export const submitAnswer = async (
       );
     }
 
-    if (playerCharacter.character_name === "ShiShi") {
-      match.has_freeze_effect_by_player[playerId] = true;
-    }
-
-    if (playerCharacter.character_name === "Ryron") {
-      match.has_ryron_reveal_by_player[playerId] = true;
-    }
-
-    if (playerCharacter.character_name === "Leon") {
-      match.has_strong_effect_by_player[playerId] = true;
-    }
+    // Apply passive effect with override logic
+    const opponentIndex = getOpponentIndex(playerIndex);
+    const opponentPlayerId = match.players[opponentIndex].player_id;
+    applyPassiveEffectWithOverride(
+      match,
+      playerCharacter.character_name,
+      playerId,
+      opponentPlayerId,
+    );
   }
 
   if (isFirstCorrect) {
