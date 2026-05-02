@@ -20,6 +20,7 @@ export interface PvPDailyPlayerSnapshot {
   player_id: number;
   player_name: string;
   player_username: string;
+  player_avatar: string | null;
   player_rank_name: string;
   level: number;
   character_id: number;
