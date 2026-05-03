@@ -502,6 +502,61 @@ function shuffleArray<T>(array: T[]): T[] {
   return array;
 }
 
+const MIN_PAST_LEVEL_CHALLENGE_POOL = 5;
+
+const getRandomPastLevelChallenge = async (
+  progress: any,
+): Promise<Challenge | null> => {
+  const level = progress?.level;
+  if (!level) return null;
+
+  const lowerLevels = await prisma.level.findMany({
+    where: {
+      map_id: level.map_id,
+      level_number: { lt: level.level_number },
+    },
+    select: { level_id: true },
+  });
+
+  if (lowerLevels.length === 0) return null;
+
+  const lowerLevelIds = lowerLevels.map((l) => l.level_id);
+
+  const pastLevelChallenges = await prisma.challenge.findMany({
+    where: { level_id: { in: lowerLevelIds } },
+  });
+
+  if (pastLevelChallenges.length === 0) return null;
+
+  const playerAnswer =
+    (progress.player_answer as Record<string, string[]>) || {};
+  const attemptedChallengeIds = new Set(
+    Object.keys(playerAnswer)
+      .filter((key) => /^\d+$/.test(key))
+      .map((key) => Number(key)),
+  );
+
+  const unattemptedPastChallenges = pastLevelChallenges.filter(
+    (challenge) => !attemptedChallengeIds.has(challenge.challenge_id),
+  );
+
+  if (unattemptedPastChallenges.length === 0) return null;
+
+  const randomPool = shuffleArray([...unattemptedPastChallenges]).slice(
+    0,
+    Math.min(MIN_PAST_LEVEL_CHALLENGE_POOL, unattemptedPastChallenges.length),
+  );
+
+  const pickedChallenge =
+    randomPool[Math.floor(Math.random() * randomPool.length)];
+
+  console.log(
+    `- Borrowed challenge fallback: picked challenge ${pickedChallenge.challenge_id} from lower levels (pool size: ${randomPool.length}, available: ${unattemptedPastChallenges.length})`,
+  );
+
+  return pickedChallenge;
+};
+
 export const generateDynamicOptions = (
   currentChallenge: Challenge,
   allChallenges: Challenge[],
@@ -2123,14 +2178,29 @@ const getNextChallengeEasy = async (progress: any) => {
   const playerAlive = progress.player_hp > 0;
   let nextChallenge: Challenge | null = null;
 
+  const originalChallengeIds = level.challenges.map(
+    (c: Challenge) => c.challenge_id,
+  );
+  const originalWrongs = wrongChallenges.filter((id) =>
+    originalChallengeIds.includes(id),
+  );
+
   if (!enemyDefeated) {
     nextChallenge =
       sortedChallenges.find(
         (c: Challenge) => !effectiveAnsweredIds.includes(c.challenge_id),
       ) || null;
 
-    if (!nextChallenge && wrongChallenges.length > 0) {
-      nextChallenge = getNextWrongChallenge(progress, level, wrongChallenges);
+    if (!nextChallenge && originalWrongs.length > 0) {
+      nextChallenge = await getNextWrongChallenge(
+        progress,
+        level,
+        originalWrongs,
+      );
+    }
+
+    if (!nextChallenge && originalWrongs.length === 0 && playerAlive) {
+      nextChallenge = await getRandomPastLevelChallenge(progress);
     }
 
     if (!playerAlive) nextChallenge = null;
@@ -2226,6 +2296,10 @@ const getNextChallengeHard = async (progress: any) => {
         sortedChallenges.find(
           (c: Challenge) => !correctlyAnsweredIds.includes(c.challenge_id),
         ) || null;
+
+      if (!nextChallenge) {
+        nextChallenge = await getRandomPastLevelChallenge(progress);
+      }
     }
   }
 
@@ -2272,17 +2346,36 @@ const getNextChallengeHard = async (progress: any) => {
   return prepareChallenge(progress, nextChallenge, level);
 };
 
-function getNextWrongChallenge(
+async function getNextWrongChallenge(
   progress: any,
   level: any,
   wrongChallenges: number[],
 ) {
+  const levelChallengeMap = new Map<number, Challenge>(
+    level.challenges.map((c: Challenge) => [c.challenge_id, c]),
+  );
+
+  const missingChallengeIds = wrongChallenges.filter(
+    (id: number) => !levelChallengeMap.has(id),
+  );
+
+  if (missingChallengeIds.length > 0) {
+    const borrowedChallenges = await prisma.challenge.findMany({
+      where: { challenge_id: { in: missingChallengeIds } },
+    });
+
+    for (const challenge of borrowedChallenges) {
+      levelChallengeMap.set(challenge.challenge_id, challenge);
+    }
+  }
+
   const filteredWrongs = wrongChallenges.filter((id: number) => {
     const ans = progress.player_answer?.[id.toString()] ?? [];
-    const challenge = level.challenges.find(
-      (c: Challenge) => c.challenge_id === id,
-    );
-    return !multisetEqual(ans, challenge?.correct_answer ?? []);
+    const challenge = levelChallengeMap.get(id);
+    const correctAnswer = Array.isArray(challenge?.correct_answer)
+      ? (challenge?.correct_answer as string[])
+      : [];
+    return !multisetEqual(ans, correctAnswer);
   });
 
   const currentWrongs = [...new Set(filteredWrongs)];
@@ -2293,9 +2386,7 @@ function getNextWrongChallenge(
   const idx = cyclingAttempts % currentWrongs.length;
 
   const id = currentWrongs[idx];
-  const challenge = level.challenges.find(
-    (c: Challenge) => c.challenge_id === id,
-  );
+  const challenge = levelChallengeMap.get(id);
 
   return challenge || null;
 }
@@ -2354,10 +2445,31 @@ const prepareChallenge = async (
     modifiedChallenge.options[0] === "Attack";
 
   if (!isAlreadyRevealed) {
+    let poolForOptions = level.challenges || [];
+    let originalLevelType = level.level_type;
+    let originalMapId = level.map_id;
+
+    const isBorrowed = !poolForOptions.some(
+      (c: Challenge) => c.challenge_id === challenge.challenge_id,
+    );
+
+    if (isBorrowed) {
+      const originalLevel = await prisma.level.findUnique({
+        where: { level_id: challenge.level_id },
+        include: { challenges: true },
+      });
+
+      if (originalLevel) {
+        poolForOptions = originalLevel.challenges;
+        originalLevelType = originalLevel.level_type;
+        originalMapId = originalLevel.map_id;
+      }
+    }
+
     if (
       modifiedChallenge.question &&
-      level.level_type === "enemyButton" &&
-      level.map_id !== 2
+      (level.level_type === "enemyButton" ||
+        originalLevelType === "enemyButton")
     ) {
       modifiedChallenge.question = dynamicBlankSetter(
         modifiedChallenge.question,
@@ -2370,12 +2482,30 @@ const prepareChallenge = async (
       level,
     );
 
-    if (level && level.challenges) {
-      const dynamicOptions = generateDynamicOptions(
-        challenge,
-        level.challenges,
-      );
-      modifiedChallenge.options = dynamicOptions;
+    if (poolForOptions && poolForOptions.length > 0) {
+      let dynamicOptions = generateDynamicOptions(challenge, poolForOptions);
+
+      if (dynamicOptions.length < 5) {
+        const paddingChallenges = await prisma.challenge.findMany({
+          where: {
+            level: { map_id: originalMapId },
+            challenge_id: { not: challenge.challenge_id },
+          },
+          take: 20,
+        });
+
+        for (const padChallenge of paddingChallenges) {
+          const answers = (padChallenge.correct_answer as string[]) || [];
+          for (const ans of answers) {
+            if (dynamicOptions.length < 5 && !dynamicOptions.includes(ans)) {
+              dynamicOptions.push(ans);
+            }
+          }
+          if (dynamicOptions.length >= 5) break;
+        }
+      }
+
+      modifiedChallenge.options = shuffleArray(dynamicOptions);
     }
   } else {
     modifiedChallenge = await overrideChallengeGuide(

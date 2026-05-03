@@ -158,7 +158,7 @@ const PVP_TOPICS: PvpChallengeTopic[] = [
   "JavaScript",
   "Computer",
 ];
-const QUESTIONS_PER_MATCH = 5;
+const QUESTIONS_PER_MATCH = 15;
 
 const matchmakingByPlayer = new Map<number, PlayerMatchmakingState>();
 const queueByTopic = new Map<PvpChallengeTopic, Set<number>>();
@@ -392,6 +392,36 @@ const shuffleArray = <T>(array: T[]): T[] => {
     [array[i], array[j]] = [array[j], array[i]];
   }
   return array;
+};
+
+// Ryron Passive Helper - dynamically formats challenge to "Attack" and fills the question
+const applyRyronRevealToQuestion = (
+  question: DailyPvpQuestion,
+): DailyPvpQuestion => {
+  if (!question.question) return { ...question, options: ["Attack"] };
+
+  let filledQuestion = question.question;
+  const answersToFill = [...question.correct_answer];
+  const universalBlankRegex = /<_([^>]*)>|<\/_>|\{blank\}|\[_+\]|_+/g;
+
+  filledQuestion = filledQuestion.replace(
+    universalBlankRegex,
+    (match: string, htmlAttrs?: string) => {
+      const nextAnswer = answersToFill.shift();
+      if (!nextAnswer) return match;
+      if (match.startsWith("<_")) return `<${nextAnswer}${htmlAttrs || ""}>`;
+      if (match === "</_>") return `</${nextAnswer}>`;
+      if (match === "{blank}") return nextAnswer;
+      if (match.startsWith("[")) return nextAnswer;
+      return nextAnswer;
+    },
+  );
+
+  return {
+    ...question,
+    question: filledQuestion,
+    options: ["Attack"],
+  };
 };
 
 const generateDynamicPvpOptions = (
@@ -807,7 +837,11 @@ const buildEntryLikePayload = async (
   const mapName = question.map_name || question.topic;
   const roundTimeLimitSeconds = getQuestionTimeLimitSeconds(question);
 
-  const currentChallenge = { ...question };
+  let currentChallenge = { ...question };
+  if (match.has_ryron_reveal_by_player[viewerPlayerId]) {
+    currentChallenge = applyRyronRevealToQuestion(currentChallenge);
+  }
+
   const rootTimerString = formatTimer(roundTimeLimitSeconds);
 
   const mapAssets = getMapMediaAssets(mapName);
@@ -842,7 +876,7 @@ const buildEntryLikePayload = async (
   let opponent_current_state: string | null = null;
   let opponent_attack_overlay: string | null = null;
 
-  if (match.has_freeze_effect_by_player[opponentSnapshot.player_id]) {
+  if (match.has_freeze_effect_by_player[viewerPlayerId]) {
     viewer_current_state = "Frozen";
     viewer_attack_overlay = OVERLAYS.FREEZE;
   }
@@ -855,7 +889,7 @@ const buildEntryLikePayload = async (
     viewer_attack_overlay = OVERLAYS.REVEAL;
   }
 
-  if (match.has_freeze_effect_by_player[viewerPlayerId]) {
+  if (match.has_freeze_effect_by_player[opponentSnapshot.player_id]) {
     opponent_current_state = "Frozen";
     opponent_attack_overlay = OVERLAYS.FREEZE;
   }
@@ -898,6 +932,7 @@ const buildEntryLikePayload = async (
   }
 
   return {
+    is_syncing: true,
     level: {
       level_id: 0,
       level_number: null,
@@ -910,6 +945,7 @@ const buildEntryLikePayload = async (
       player_id: opponentSnapshot.player_id,
       player_name: opponentSnapshot.player_name,
       player_username: opponentSnapshot.player_username,
+      player_avatar: opponentSnapshot.player_avatar,
       player_rank_name: opponentSnapshot.player_rank_name,
       enemy_id: opponentSnapshot.character_id,
       enemy_name: opponentSnapshot.character_name,
@@ -938,6 +974,7 @@ const buildEntryLikePayload = async (
       player_id: viewerSnapshot.player_id,
       player_name: viewerSnapshot.player_name,
       player_username: viewerSnapshot.player_username,
+      player_avatar: viewerSnapshot.player_avatar,
       player_rank_name: viewerSnapshot.player_rank_name,
       character_id: viewerSnapshot.character_id,
       character_name: viewerSnapshot.character_name,
@@ -1026,6 +1063,7 @@ const getSelectedCharacterSnapshot = async (
     player_id: player.player_id,
     player_name: player.player_name,
     player_username: player.username,
+    player_avatar: player.player_avatar,
     player_rank_name: player.player_rank_name,
     level: player.level,
     character_id: selected.character_id,
@@ -1223,14 +1261,21 @@ const getMatchFromMemoryOrDb = async (
   return hydrated;
 };
 
-const buildPublicMatchPayload = (match: PvPMatchState) => {
+const buildPublicMatchPayloadForPlayer = (
+  match: PvPMatchState,
+  playerId: number,
+) => {
   const snapshot = cloneMatchForResponse(match);
-  const current = getRoundQuestion(snapshot);
+  let current = getRoundQuestion(snapshot);
   const isActive = current && snapshot.status === "active";
+
+  if (isActive && current && snapshot.has_ryron_reveal_by_player[playerId]) {
+    current = applyRyronRevealToQuestion(current);
+  }
 
   return {
     ...snapshot,
-    current_question: isActive ? publicQuestion(current) : null,
+    current_question: isActive && current ? publicQuestion(current) : null,
   };
 };
 
@@ -1238,8 +1283,8 @@ const emitMatchStateToPlayers = (
   match: PvPMatchState,
   event: "pvp:match-found" | "pvp:match-update" | "pvp:match-completed",
 ) => {
-  const payload = buildPublicMatchPayload(match);
   for (const player of match.players) {
+    const payload = buildPublicMatchPayloadForPlayer(match, player.player_id);
     emitToPlayer(player.player_id, event, payload as Record<string, unknown>);
   }
 };
@@ -1889,6 +1934,10 @@ const buildSubmitLikeResponse = async (
       ? currentRoundChallenge
       : null;
 
+  if (nextChallenge && match.has_ryron_reveal_by_player[playerId]) {
+    nextChallenge = applyRyronRevealToQuestion(nextChallenge);
+  }
+
   const isWrongRetryState = reason === "incorrect" || reason === "ongoing";
 
   const wasFrozen = isWrongRetryState
@@ -1996,7 +2045,8 @@ const buildSubmitLikeResponse = async (
   let enemy_attack_overlay: string | null = null;
 
   const opponentPlayerId = Number(opponentEnemy.player_id);
-if (characterShowsAttack) {
+
+  if (characterShowsAttack) {
     character_current_state = wasFrozen ? null : "attacking";
     if (wasFrozen) character_attack_overlay = OVERLAYS.FREEZE;
   } else if (enemyShowsAttack) {
@@ -2010,7 +2060,8 @@ if (characterShowsAttack) {
     enemy_current_state = wasFrozen ? null : "hurt";
   }
 
-  if (match.has_freeze_effect_by_player[opponentPlayerId]) {
+  // Set the specific state and overlays perfectly mapping viewer vs opponent.
+  if (match.has_freeze_effect_by_player[playerId]) {
     character_current_state = "Frozen";
     character_attack_overlay = OVERLAYS.FREEZE;
   }
@@ -2023,7 +2074,7 @@ if (characterShowsAttack) {
     character_attack_overlay = OVERLAYS.REVEAL;
   }
 
-  if (match.has_freeze_effect_by_player[playerId]) {
+  if (match.has_freeze_effect_by_player[opponentPlayerId]) {
     enemy_current_state = "Frozen";
     enemy_attack_overlay = OVERLAYS.FREEZE;
   }
@@ -2041,7 +2092,10 @@ if (characterShowsAttack) {
       isViewerLastAttacker &&
       match.consecutive_corrects_by_player[playerId] === 3
     ) {
-      if (viewerCharName === "Leon") character_attack_overlay = OVERLAYS.STRONG;
+      if (viewerCharName === "Leon") {
+        character_current_state = "Strong";
+        character_attack_overlay = OVERLAYS.STRONG;
+      }
       if (viewerCharName === "ShiShi") enemy_attack_overlay = OVERLAYS.FREEZE;
       if (viewerCharName === "Ryron")
         character_attack_overlay = OVERLAYS.REVEAL;
@@ -2053,7 +2107,10 @@ if (characterShowsAttack) {
       !isViewerLastAttacker &&
       match.consecutive_corrects_by_player[opponentPlayerId] === 3
     ) {
-      if (opponentCharName === "Leon") enemy_attack_overlay = OVERLAYS.STRONG;
+      if (opponentCharName === "Leon") {
+        enemy_current_state = "Strong";
+        enemy_attack_overlay = OVERLAYS.STRONG;
+      }
       if (opponentCharName === "ShiShi")
         character_attack_overlay = OVERLAYS.FREEZE;
       if (opponentCharName === "Ryron") enemy_attack_overlay = OVERLAYS.REVEAL;
@@ -2247,7 +2304,6 @@ if (characterShowsAttack) {
   }
 
   const mistakes = match.mistakes_by_player[playerId] ?? 0;
-  const opponentIndex = getOpponentIndex(getPlayerIndex(match, playerId));
   const opponentMistakes = match.mistakes_by_player[opponentPlayerId] ?? 0;
 
   const stars = isVictory
@@ -2280,6 +2336,7 @@ if (characterShowsAttack) {
     : undefined;
 
   return {
+    is_syncing: true,
     is_correct: isCorrect,
     accepted_for_attack: reason === "correct_and_first",
     reason,
@@ -2420,21 +2477,36 @@ export const submitAnswer = async (
   const normalizedGiven = answer.map((item) => item.trim());
   const normalizedCorrect = question.correct_answer.map((item) => item.trim());
   const hasRyronReveal = match.has_ryron_reveal_by_player[playerId] === true;
+
+  const isRevealConfirmed =
+    hasRyronReveal &&
+    normalizedGiven.length === 1 &&
+    normalizedGiven[0] === "Attack";
+
   const isCorrect =
-    hasRyronReveal ||
+    isRevealConfirmed ||
     (normalizedGiven.length === normalizedCorrect.length &&
       normalizedGiven.every(
         (value, index) => value === normalizedCorrect[index],
       ));
 
-  if (hasRyronReveal) {
+  if (isRevealConfirmed || (hasRyronReveal && isCorrect)) {
     match.has_ryron_reveal_by_player[playerId] = false;
   }
 
   if (!isCorrect) {
     match.mistakes_by_player[playerId] =
       (match.mistakes_by_player[playerId] ?? 0) + 1;
-    match.consecutive_corrects_by_player[playerId] = 0;
+
+    const currentStreak = match.consecutive_corrects_by_player[playerId] ?? 0;
+    match.consecutive_corrects_by_player[playerId] = Math.max(
+      0,
+      currentStreak - 1,
+    );
+
+    if (match.has_strong_effect_by_player[playerId]) {
+      match.has_strong_effect_by_player[playerId] = false;
+    }
 
     emitMatchStateToPlayers(match, "pvp:match-update");
     await persistMatchProgress(match);
@@ -2448,6 +2520,17 @@ export const submitAnswer = async (
     nextStreak > 3 ? 1 : nextStreak;
 
   const playerCharacter = await getSelectedCharacterDetails(playerId);
+  const opponentIndex = getOpponentIndex(playerIndex);
+  const opponentPlayerId = match.players[opponentIndex].player_id;
+
+  if (isFirstCorrect) {
+    const currentEnemyStreak =
+      match.consecutive_corrects_by_player[opponentPlayerId] ?? 0;
+    match.consecutive_corrects_by_player[opponentPlayerId] = Math.max(
+      0,
+      currentEnemyStreak - 1,
+    );
+  }
 
   if (match.consecutive_corrects_by_player[playerId] === 3) {
     if (playerCharacter.character_name === "Gino") {
@@ -2460,17 +2543,11 @@ export const submitAnswer = async (
         playerSnapshot.character_max_health,
         playerSnapshot.character_health + healAmount,
       );
-    }
-
-    if (playerCharacter.character_name === "ShiShi") {
-      match.has_freeze_effect_by_player[playerId] = true;
-    }
-
-    if (playerCharacter.character_name === "Ryron") {
+    } else if (playerCharacter.character_name === "ShiShi") {
+      match.has_freeze_effect_by_player[opponentPlayerId] = true;
+    } else if (playerCharacter.character_name === "Ryron") {
       match.has_ryron_reveal_by_player[playerId] = true;
-    }
-
-    if (playerCharacter.character_name === "Leon") {
+    } else if (playerCharacter.character_name === "Leon") {
       match.has_strong_effect_by_player[playerId] = true;
     }
   }
@@ -2479,7 +2556,6 @@ export const submitAnswer = async (
     round.resolved_by_player_id = playerId;
     round.resolved_at = now;
 
-    const opponentIndex = getOpponentIndex(playerIndex);
     const attacker = match.players[playerIndex];
     const opponent = match.players[opponentIndex];
     const attackerDamageArray = Array.isArray(playerCharacter.character_damage)
@@ -2505,13 +2581,19 @@ export const submitAnswer = async (
     let wasFrozen = false;
 
     if (match.has_strong_effect_by_player[playerId]) {
-      appliedDamage *= 2;
-      match.has_strong_effect_by_player[playerId] = false;
+      const isLeonSSTurn =
+        playerCharacter.character_name === "Leon" &&
+        attackType === "special_attack";
+
+      if (!isLeonSSTurn) {
+        appliedDamage *= 2;
+        match.has_strong_effect_by_player[playerId] = false;
+      }
     }
 
-    if (match.has_freeze_effect_by_player[opponent.player_id]) {
+    if (match.has_freeze_effect_by_player[playerId]) {
       appliedDamage = 0;
-      match.has_freeze_effect_by_player[opponent.player_id] = false;
+      match.has_freeze_effect_by_player[playerId] = false;
       wasFrozen = true;
     }
 
