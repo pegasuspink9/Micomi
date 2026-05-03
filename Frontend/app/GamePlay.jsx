@@ -1,11 +1,12 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { View, StyleSheet, Dimensions, ImageBackground, Text, ActivityIndicator, TouchableOpacity, ScrollView, Animated } from "react-native";
 import { StatusBar } from 'expo-status-bar';
-import ScreenPlay from '../app/Components/Actual Game/Screen Play/ScreenPlay';
-import GameQuestions from '../app/Components/Actual Game/GameQuestions/GameQuestions';
+import ScreenPlay from './Components/Actual Game/Screen Play/ScreenPlay';
+import ExpectedOutput from './Components/Actual Game/GameQuestions/Output/ExpectedOutput';
+import GameQuestions from './Components/Actual Game/GameQuestions/GameQuestions';
 import Output from './Components/Actual Game/GameQuestions/Output/Output';
-import ThirdGrid from '../app/Components/Actual Game/Third Grid/thirdGrid';
-import Card from '../app/Components/Actual Game/Card/Card';
+import ThirdGrid from './Components/Actual Game/Third Grid/thirdGrid';
+import Card from './Components/Actual Game/Card/Card';
 import { useGameData } from './hooks/useGameData';
 import { usePvpGameData } from './hooks/usePvpGameData';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -14,7 +15,7 @@ import GameOverModal from './Components/GameOver And Win/GameOver';
 import LevelCompletionModal from './Components/GameOver And Win/LevelCompletionModal';
 import { soundManager } from './Components/Actual Game/Sounds/UniversalSoundManager';
 import { gameScale } from './Components/Responsiveness/gameResponsive';
-import GamePauseModal from '../app/Components/Actual Game/Screen Play/Pauses/GamePauseModal';
+import GamePauseModal from './Components/Actual Game/Screen Play/Pauses/GamePauseModal';
 import DialogueOverlay from './Components/Actual Game/Dialogue/DialogueOverlay';
 import MainLoading from './Components/Actual Game/Loading/MainLoading';
 import Micomic from './Micomic';
@@ -54,6 +55,7 @@ export default function GamePlay() {
   const [borderColor, setBorderColor] = useState('white');
   const [activeGameTab, setActiveGameTab] = useState('code');
   const [showOutputInScreenPlay, setShowOutputInScreenPlay] = useState(false);
+  const [showExpectedOutputInScreenPlay, setShowExpectedOutputInScreenPlay] = useState(false);
   const outputAutoShowTimerRef = useRef(null);
   const [selectedBlankIndex, setSelectedBlankIndex] = useState(0); 
   const [showVSModal, setShowVSModal] = useState(false);
@@ -102,26 +104,39 @@ export default function GamePlay() {
   }, []);
 
   const handleRunPressForOutput = useCallback(() => {
-    // Only trigger this sequence if the output is actually showing
-    if (showOutputInScreenPlay) {
-      console.log('🏃 Run pressed: Hiding output overlay immediately for 5 seconds');
+    const shouldTemporarilyHideOutput = showOutputInScreenPlay;
+    const shouldTemporarilyHideExpected = showExpectedOutputInScreenPlay;
 
-      // 1. Hide immediately
-      setShowOutputInScreenPlay(false);
+    // Only trigger the sequence if at least one screenplay overlay is visible
+    if (shouldTemporarilyHideOutput || shouldTemporarilyHideExpected) {
+      console.log('🏃 Run pressed: Hiding screenplay overlays immediately for 6 seconds');
+
+      // 1. Hide currently visible overlays immediately
+      if (shouldTemporarilyHideOutput) {
+        setShowOutputInScreenPlay(false);
+      }
+      if (shouldTemporarilyHideExpected) {
+        setShowExpectedOutputInScreenPlay(false);
+      }
 
       // Clear any pending timer just in case rapid clicks happen
       if (outputAutoShowTimerRef.current) {
         clearTimeout(outputAutoShowTimerRef.current);
       }
 
-      // 2. Set timer to show it back after 5 seconds
+      // 2. Restore only overlays that were visible before Run was pressed
       outputAutoShowTimerRef.current = setTimeout(() => {
-        console.log('⏰ 5 seconds passed: Re-showing output overlay');
-        setShowOutputInScreenPlay(true);
+        console.log('⏰ 6 seconds passed: Restoring screenplay overlays');
+        if (shouldTemporarilyHideOutput) {
+          setShowOutputInScreenPlay(true);
+        }
+        if (shouldTemporarilyHideExpected) {
+          setShowExpectedOutputInScreenPlay(true);
+        }
         outputAutoShowTimerRef.current = null;
       }, 6000);
     }
-  }, [showOutputInScreenPlay]);
+  }, [showOutputInScreenPlay, showExpectedOutputInScreenPlay]);
 
 
   const {
@@ -632,6 +647,13 @@ export default function GamePlay() {
 
   const handleOutputToggle = useCallback(() => {
     setShowOutputInScreenPlay((current) => !current);
+    setShowExpectedOutputInScreenPlay(false);
+  }, []);
+
+  const handleExpectedToggle = useCallback(() => {
+    setShowExpectedOutputInScreenPlay((current) => !current);
+    // ensure output overlay doesn't unintentionally cover expected
+    // keep output visible but don't auto-close it here
   }, []);
 
   
@@ -1216,6 +1238,31 @@ export default function GamePlay() {
                   </View>
                 </View>
               )}
+              {showExpectedOutputInScreenPlay && (
+                <View style={styles.screenPlayOverlay} pointerEvents="box-none">
+                  <View style={styles.screenPlayOutputContainer}>
+                    <ExpectedOutput
+                      currentQuestion={currentChallenge}
+                      submissionResult={gameState?.submissionResult}
+                      displayMode="overlay"
+                    />
+                  </View>
+                </View>
+              )}
+
+              {(showOutputInScreenPlay || showExpectedOutputInScreenPlay) && (
+                <View style={styles.screenPlayFloatingControls} pointerEvents="box-none">
+                  <TouchableOpacity
+                    onPress={handleExpectedToggle}
+                    style={styles.expectedFloatingToggleButton}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.expectedFloatingToggleText}>
+                      {showExpectedOutputInScreenPlay ? 'Expected Output' : 'Output'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
 
             <GameQuestions 
@@ -1233,6 +1280,8 @@ export default function GamePlay() {
                 reviewGuide={reviewGuide}
                 showOutputInScreenPlay={showOutputInScreenPlay}
                 onOutputToggle={handleOutputToggle}
+                showExpectedInScreenPlay={showExpectedOutputInScreenPlay}
+                onExpectedToggle={handleExpectedToggle}
             />
 
             <View 
@@ -1406,6 +1455,41 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: 99999,
     elevation: 1000,
+  },
+
+  screenPlayFloatingControls: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 100001,
+    elevation: 1002,
+  },
+
+  expectedFloatingToggleButton: {
+    position: 'absolute',
+    bottom: gameScale(0),
+    right: gameScale(0),
+    backgroundColor: '#3c3c3c',
+    paddingVertical: gameScale(7),
+    paddingHorizontal: gameScale(14),
+    borderRadius: gameScale(20),
+    borderTopWidth: gameScale(1),
+    borderLeftWidth: gameScale(1),
+    borderRightWidth: gameScale(1),
+    borderTopColor: '#555',
+    borderLeftColor: '#555',
+    borderRightColor: '#555',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: gameScale(-1) },
+    shadowOpacity: 0.2,
+    shadowRadius: gameScale(2),
+    elevation: gameScale(4),
+    zIndex: 100002,
+  },
+
+  expectedFloatingToggleText: {
+    color: '#d1d5d9',
+    fontSize: gameScale(10),
+    fontFamily: 'DynaPuff',
+    fontWeight: '500',
   },
 
   pvpFallbackContainer: {

@@ -17,7 +17,9 @@ const Output = ({
   displayMode = 'gameQuestion',
   showWebViewInScreenPlay = false,
   onWebViewToggle = null,
-  // REMOVED runButtonClicked and onAutoHide props
+  // New: expected output toggle
+  showExpectedInScreenPlay = false,
+  onExpectedToggle = null,
 }) => {
   const [htmlOutput, setHtmlOutput] = useState('');
   // REMOVED autoHideTimerRef
@@ -94,6 +96,18 @@ const Output = ({
         >
           <Text style={styles.webViewToggleText}>
             {showWebViewInScreenPlay ? 'Hide Screen' : 'Show Screen'}
+          </Text>
+        </Pressable>
+      )}
+      {/* Expected output toggle button (same style) - show when a toggle handler provided
+          and when either in gameQuestion or overlay display so it's available on-screen */}
+      {(onExpectedToggle && displayMode === 'gameQuestion') && (
+        <Pressable 
+          onPress={onExpectedToggle}
+          style={[styles.webViewToggleButton, styles.expectedToggleButton]}
+        >
+          <Text style={styles.webViewToggleText}>
+            {showExpectedInScreenPlay ? 'Hide Expected' : 'Show Expected'}
           </Text>
         </Pressable>
       )}
@@ -196,6 +210,13 @@ const styles = StyleSheet.create({
     elevation: gameScale(3),
     zIndex: 10,
   },
+  expectedToggleButton: {
+    position: 'absolute',
+    right: gameScale(12),
+    bottom: gameScale(240),
+    zIndex: 11,
+    elevation: gameScale(4),
+  },
   webViewToggleText: {
     color: '#d1d5d9',
     fontSize: gameScale(10),
@@ -212,6 +233,7 @@ export default React.memo(Output, (prevProps, nextProps) => {
     prevProps.showLiveHTML === nextProps.showLiveHTML &&
     prevProps.displayMode === nextProps.displayMode &&
     prevProps.showWebViewInScreenPlay === nextProps.showWebViewInScreenPlay &&
+    prevProps.showExpectedInScreenPlay === nextProps.showExpectedInScreenPlay &&
     // REMOVED runButtonClicked comparison
     prevProps.currentQuestion?.question === nextProps.currentQuestion?.question &&
     prevProps.currentQuestion?.challenge_type === nextProps.currentQuestion?.challenge_type &&

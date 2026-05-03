@@ -8,8 +8,17 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const ExpectedOutput = ({ 
   currentQuestion, 
   submissionResult = null,
+  displayMode = 'gameQuestion',
 }) => {
   const [htmlOutput, setHtmlOutput] = useState('');
+
+  const containerStyle = displayMode === 'overlay'
+    ? styles.containerOverlay
+    : styles.containerGameQuestion;
+
+  const webviewContainerStyle = displayMode === 'overlay'
+    ? styles.webviewContainerOverlay
+    : styles.webviewContainerGameQuestion;
 
   const resolvedCorrectAnswers = useMemo(() => {
     const submissionAnswers = submissionResult?.correctAnswer ?? submissionResult?.correct_answer;
@@ -52,8 +61,8 @@ const ExpectedOutput = ({
   }, []);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.webviewContainer}>
+    <View style={containerStyle}>
+      <View style={webviewContainerStyle}>
         <WebView
           key={`expected-${currentQuestion?.id}-${resolvedCorrectAnswers.join('|')}`}
           source={{ html: htmlOutput, baseUrl: '' }}
@@ -71,14 +80,21 @@ const ExpectedOutput = ({
 };
 
 const styles = StyleSheet.create({
-  container: {
+  containerGameQuestion: {
     flex: 1,
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
     minHeight: SCREEN_HEIGHT * 1,
     height: '100%',
   },
-  webviewContainer: {
+  containerOverlay: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    minHeight: 0,
+    height: '100%',
+  },
+  webviewContainerGameQuestion: {
     flex: 1,
     backgroundColor: '#fff',
     borderRadius: 6,
@@ -86,6 +102,16 @@ const styles = StyleSheet.create({
     borderColor: '#e9ecef',
     overflow: 'hidden',
     minHeight: SCREEN_HEIGHT * 0.35,
+    height: '100%',
+  },
+  webviewContainerOverlay: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    overflow: 'hidden',
+    minHeight: 0,
     height: '100%',
   },
   webview: {

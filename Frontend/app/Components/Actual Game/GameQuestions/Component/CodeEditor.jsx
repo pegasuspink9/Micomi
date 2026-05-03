@@ -24,6 +24,8 @@ const CodeEditor = ({
   reviewGuide = null,
   showOutputInScreenPlay = false,
   onOutputToggle = null,
+  showExpectedInScreenPlay = false,
+  onExpectedToggle = null,
   shouldDelayAnimation = false,
 }) => {
   const [activeTab, setActiveTab] = useState('code');
@@ -156,8 +158,10 @@ const CodeEditor = ({
               showLiveHTML={true}
               style={styles.tabOutput}
               options={options}
-              showWebViewInScreenPlay={showOutputInScreenPlay}
-              onWebViewToggle={onOutputToggle}
+                showWebViewInScreenPlay={showOutputInScreenPlay}
+                onWebViewToggle={onOutputToggle}
+                showExpectedInScreenPlay={showExpectedInScreenPlay}
+                onExpectedToggle={onExpectedToggle}
            />
           </View>
         );

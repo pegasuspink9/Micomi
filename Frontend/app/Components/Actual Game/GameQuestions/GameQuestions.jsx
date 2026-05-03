@@ -23,6 +23,9 @@ const GameQuestions = ({
   reviewGuide = null,
   showOutputInScreenPlay = false,
   onOutputToggle = null,
+  // expected output props passthrough
+  showExpectedInScreenPlay = false,
+  onExpectedToggle = null,
 }) => {
   const scrollViewRef = useRef(null);
   const blankRefs = useRef({});
@@ -355,6 +358,8 @@ const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
             reviewGuide={reviewGuide}
             showOutputInScreenPlay={showOutputInScreenPlay}
             onOutputToggle={onOutputToggle}
+            showExpectedInScreenPlay={showExpectedInScreenPlay}
+            onExpectedToggle={onExpectedToggle}
             shouldDelayAnimation={isPvpMode}
           />
         ) : (
@@ -384,6 +389,7 @@ export default React.memo(GameQuestions, (prev, next) => {
     prev.submissionResult === next.submissionResult &&
     prev.reviewGuide === next.reviewGuide &&
     prev.showOutputInScreenPlay === next.showOutputInScreenPlay
+    && prev.showExpectedInScreenPlay === next.showExpectedInScreenPlay
   );
 });
 
