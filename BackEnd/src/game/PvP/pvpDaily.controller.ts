@@ -236,8 +236,17 @@ export const surrenderMatch = async (req: Request, res: Response) => {
 
 export const getMatchHistory = async (req: Request, res: Response) => {
   try {
-    const playerId = (req as any).user.id as number;
-    const result = await PvpDailyService.getPlayerMatchHistory(playerId);
+    const paramId = req.params.playerId;
+
+    const targetPlayerId = paramId
+      ? parseInt(paramId, 10)
+      : ((req as any).user.id as number);
+
+    if (isNaN(targetPlayerId) || targetPlayerId <= 0) {
+      throw new Error("Invalid player ID provided");
+    }
+
+    const result = await PvpDailyService.getPlayerMatchHistory(targetPlayerId);
 
     return successResponse(res, result, "Match history loaded successfully");
   } catch (error) {
