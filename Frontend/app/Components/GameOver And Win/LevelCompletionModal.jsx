@@ -42,11 +42,10 @@ const RANK_THRESHOLDS = [0, 1000, 2400, 4300, 6800, 9900, 13600];
 // Helper to find the current tier floor based on points
 const getTierFloor = (points) => {
   let floor = 0;
-  for (let i = 0; i < RANK_THRESHOLDS.length; i++) {
+  // Iterate backwards to find the highest threshold less than or equal to points
+  for (let i = RANK_THRESHOLDS.length - 1; i >= 0; i--) {
     if (points >= RANK_THRESHOLDS[i]) {
       floor = RANK_THRESHOLDS[i];
-    } else {
-      // Optimization: break once we pass the potential floor
       break;
     }
   }
@@ -117,39 +116,6 @@ const LevelCompletionModal = ({
   const requiredRankPointsCeiling = Math.max(1, Number(rankProgress?.rank_progress_required || 0));
   const beforeRankPointsTotal = Math.max(0, Number(rankProgress?.before_points || 0));
   const currentRankPointsTotal = Math.max(0, Number(rankProgress?.player_rank_points || 0));
-
-  // --- NEW PVP PROGRESS CALCULATION ---
-  const pvpProgressData = useMemo(() => {
-    if (!usePvpRankProgress) return { start: 0, end: 0 };
-
-    const beforeFloor = getTierFloor(beforeRankPointsTotal);
-    const currentFloor = getTierFloor(currentRankPointsTotal);
-    
-    // The span of the current tier is the ceiling (requiredRankPoints) minus the floor.
-    // Ensure span is at least 1 to avoid division by zero.
-    const tierSpan = Math.max(1, requiredRankPointsCeiling - currentFloor);
-
-    let startPercent = 0;
-    let endPercent = 0;
-
-    // Check if a threshold was crossed
-    if (currentFloor > beforeFloor) {
-      // Case 1: Crossed threshold. Start animation from 0% of the NEW tier.
-      startPercent = 0;
-    } else {
-      // Case 2: Same tier. Start animation from previous relative position.
-      const relativeBeforePoints = Math.max(0, beforeRankPointsTotal - currentFloor);
-      startPercent = Math.min(100, (relativeBeforePoints / tierSpan) * 100);
-    }
-
-    // End position is always current points relative to current floor/span
-    const relativeCurrentPoints = Math.max(0, currentRankPointsTotal - currentFloor);
-    endPercent = Math.min(100, (relativeCurrentPoints / tierSpan) * 100);
-
-    return { start: startPercent, end: endPercent };
-  }, [usePvpRankProgress, beforeRankPointsTotal, currentRankPointsTotal, requiredRankPointsCeiling]);
-  // ------------------------------------
-
 
   const playerRankImage = useMemo(() => {
     const sourceUrl = rankProgress?.player_rank_image;
@@ -323,54 +289,92 @@ const LevelCompletionModal = ({
     star2Scale.value = 1;
     star3Scale.value = 1;
 
-    // Determine target percentage based on mode
-    let targetPercentage = 0;
-    let initialPercentage = 0; // New: Track initial percentage
-
-    if (usePvpRankProgress) {
-      // Use the calculated relative values from useMemo
-      targetPercentage = pvpProgressData.end;
-      initialPercentage = pvpProgressData.start;
-    } else {
-      // PvE Star Logic
-      if (stars === 1) {
-        targetPercentage = 30;
-      } else if (stars === 2) {
-        targetPercentage = 70;
-      } else if (stars === 3) {
-        targetPercentage = 100;
-      }
-    }
-
-    // 0. Background
+    // 0. Background & 1. Sprite & 2. Progress Bar Fade In
     backgroundOpacity.value = withTiming(1, { duration: 300 });
-
-    // 1. Sprite
     spriteTranslateY.value = withDelay(100, withSpring(0, { damping: 12, stiffness: 90 }));
-
-    //  2. Progress Bar (Moved here, after sprite)
     starsOpacity.value = withDelay(400, withTiming(1, { duration: 500 }));
-    
-    // Set the starting position immediately before animating
-    progressValue.value = initialPercentage;
 
-    // Fill the bar to target
-    progressValue.value = withDelay(500, withTiming(targetPercentage, {
-      duration: 1500,
-      easing: Easing.out(Easing.cubic)
-    }));
+    // --- Progress Bar Filling Logic ---
+    if (usePvpRankProgress) {
+      const beforePoints = beforeRankPointsTotal;
+      const currentPoints = currentRankPointsTotal;
+      const rankCeiling = requiredRankPointsCeiling;
 
-    // Trigger star pops based on timing relative to fill duration
-    if (!usePvpRankProgress) {
-      if (stars >= 1) {
-        setTimeout(() => runOnJS(popStar)(star1Scale), 900); // ~30% filled
+      // Calculate floors based on thresholds
+      const beforeFloor = getTierFloor(beforePoints);
+      const currentFloor = getTierFloor(currentPoints);
+
+      // Detect if a rank threshold was crossed
+      const didRankUp = currentFloor > beforeFloor;
+
+      if (didRankUp) {
+        // --- RANK UP SCENARIO: Two-stage animation ---
+        
+        // Phase 1: Calculate progress relative to the OLD tier
+        // The old ceiling is effectively the new floor.
+        const oldTierSpan = Math.max(1, currentFloor - beforeFloor);
+        const relativeStart = Math.max(0, beforePoints - beforeFloor);
+        const startPercent = Math.min(100, (relativeStart / oldTierSpan) * 100);
+
+        // Set starting position
+        progressValue.value = startPercent;
+
+        // Animate to 100% (filling the old rank)
+        // Start delay is 500ms to match PvE timing
+        progressValue.value = withDelay(500, withTiming(100, {
+            duration: 800, // Faster fill for the first phase
+            easing: Easing.linear
+          }, (finished) => {
+            if (finished) {
+              // Phase 2: Reset and animate to new rank progress
+              progressValue.value = 0; // Instant reset
+
+              // Calculate progress relative to the NEW tier
+              const newTierSpan = Math.max(1, rankCeiling - currentFloor);
+              const relativeEnd = Math.max(0, currentPoints - currentFloor);
+              const finalPercent = Math.min(100, (relativeEnd / newTierSpan) * 100);
+
+              // Animate to final percentage
+              progressValue.value = withTiming(finalPercent, {
+                duration: 1000,
+                easing: Easing.out(Easing.cubic)
+              });
+            }
+          })
+        );
+
+      } else {
+        // --- NORMAL SCENARIO: Single-stage animation (stayed in same rank) ---
+        const span = Math.max(1, rankCeiling - currentFloor);
+        const relativeStart = Math.max(0, beforePoints - currentFloor);
+        const startPercent = Math.min(100, (relativeStart / span) * 100);
+        const relativeEnd = Math.max(0, currentPoints - currentFloor);
+        const finalPercent = Math.min(100, (relativeEnd / span) * 100);
+
+        progressValue.value = startPercent;
+        progressValue.value = withDelay(500, withTiming(finalPercent, {
+          duration: 1500,
+          easing: Easing.out(Easing.cubic)
+        }));
       }
-      if (stars >= 2) {
-        setTimeout(() => runOnJS(popStar)(star2Scale), 1300); // ~70% filled
-      }
-      if (stars >= 3) {
-        setTimeout(() => runOnJS(popStar)(star3Scale), 1700); // ~100% filled
-      }
+
+    } else {
+      // --- PvE Star Logic ---
+      let targetPercentage = 0;
+      if (stars === 1) targetPercentage = 30;
+      else if (stars === 2) targetPercentage = 70;
+      else if (stars === 3) targetPercentage = 100;
+
+      progressValue.value = 0;
+      progressValue.value = withDelay(500, withTiming(targetPercentage, {
+        duration: 1500,
+        easing: Easing.out(Easing.cubic)
+      }));
+
+      // Trigger star pops
+      if (stars >= 1) setTimeout(() => runOnJS(popStar)(star1Scale), 900);
+      if (stars >= 2) setTimeout(() => runOnJS(popStar)(star2Scale), 1300);
+      if (stars >= 3) setTimeout(() => runOnJS(popStar)(star3Scale), 1700);
     }
 
     // 3. Text (Delayed further)
