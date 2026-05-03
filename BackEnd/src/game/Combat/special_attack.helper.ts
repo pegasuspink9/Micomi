@@ -207,6 +207,7 @@ export async function updateProgressForChallenge(
     updateData = {
       ...updateData,
       wrong_challenges: wrongChallenges,
+      wrong_challenges_count: { increment: 1 },
       consecutive_corrects: consecutiveCorrects,
       consecutive_wrongs: consecutiveWrongs,
       boss_skill_activated: bossSkillActivated,
