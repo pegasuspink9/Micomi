@@ -36,6 +36,23 @@ import Reanimated, {
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
+// Defined Rank Thresholds (Floors)
+const RANK_THRESHOLDS = [0, 1000, 2400, 4300, 6800, 9900, 13600];
+
+// Helper to find the current tier floor based on points
+const getTierFloor = (points) => {
+  let floor = 0;
+  for (let i = 0; i < RANK_THRESHOLDS.length; i++) {
+    if (points >= RANK_THRESHOLDS[i]) {
+      floor = RANK_THRESHOLDS[i];
+    } else {
+      // Optimization: break once we pass the potential floor
+      break;
+    }
+  }
+  return floor;
+};
+
 //  FIXED: Smooth Reanimated Number Counter
 const NumberCounter = ({ value, start, duration = 2500 }) => {
   const animatedValue = useSharedValue(0);
@@ -96,12 +113,43 @@ const LevelCompletionModal = ({
   const rankProgress = completionRewards?.rankProgress || null;
   const usePvpRankProgress = Boolean(isPvpMode && rankProgress);
 
-  const requiredRankPoints = Math.max(1, Number(rankProgress?.rank_progress_required || 0));
-  const beforeRankPoints = Math.max(0, Number(rankProgress?.before_points || 0));
-  const currentRankPoints = Math.max(0, Number(rankProgress?.player_rank_points || 0));
+  // Basic points data needed for labels
+  const requiredRankPointsCeiling = Math.max(1, Number(rankProgress?.rank_progress_required || 0));
+  const beforeRankPointsTotal = Math.max(0, Number(rankProgress?.before_points || 0));
+  const currentRankPointsTotal = Math.max(0, Number(rankProgress?.player_rank_points || 0));
 
-  const rankBeforePercent = Math.min(100, Math.max(0, (beforeRankPoints / requiredRankPoints) * 100));
-  const rankCurrentPercent = Math.min(100, Math.max(0, (currentRankPoints / requiredRankPoints) * 100));
+  // --- NEW PVP PROGRESS CALCULATION ---
+  const pvpProgressData = useMemo(() => {
+    if (!usePvpRankProgress) return { start: 0, end: 0 };
+
+    const beforeFloor = getTierFloor(beforeRankPointsTotal);
+    const currentFloor = getTierFloor(currentRankPointsTotal);
+    
+    // The span of the current tier is the ceiling (requiredRankPoints) minus the floor.
+    // Ensure span is at least 1 to avoid division by zero.
+    const tierSpan = Math.max(1, requiredRankPointsCeiling - currentFloor);
+
+    let startPercent = 0;
+    let endPercent = 0;
+
+    // Check if a threshold was crossed
+    if (currentFloor > beforeFloor) {
+      // Case 1: Crossed threshold. Start animation from 0% of the NEW tier.
+      startPercent = 0;
+    } else {
+      // Case 2: Same tier. Start animation from previous relative position.
+      const relativeBeforePoints = Math.max(0, beforeRankPointsTotal - currentFloor);
+      startPercent = Math.min(100, (relativeBeforePoints / tierSpan) * 100);
+    }
+
+    // End position is always current points relative to current floor/span
+    const relativeCurrentPoints = Math.max(0, currentRankPointsTotal - currentFloor);
+    endPercent = Math.min(100, (relativeCurrentPoints / tierSpan) * 100);
+
+    return { start: startPercent, end: endPercent };
+  }, [usePvpRankProgress, beforeRankPointsTotal, currentRankPointsTotal, requiredRankPointsCeiling]);
+  // ------------------------------------
+
 
   const playerRankImage = useMemo(() => {
     const sourceUrl = rankProgress?.player_rank_image;
@@ -277,14 +325,21 @@ const LevelCompletionModal = ({
 
     // Determine target percentage based on mode
     let targetPercentage = 0;
+    let initialPercentage = 0; // New: Track initial percentage
+
     if (usePvpRankProgress) {
-      targetPercentage = rankCurrentPercent;
-    } else if (stars === 1) {
-      targetPercentage = 30;
-    } else if (stars === 2) {
-      targetPercentage = 70;
-    } else if (stars === 3) {
-      targetPercentage = 100;
+      // Use the calculated relative values from useMemo
+      targetPercentage = pvpProgressData.end;
+      initialPercentage = pvpProgressData.start;
+    } else {
+      // PvE Star Logic
+      if (stars === 1) {
+        targetPercentage = 30;
+      } else if (stars === 2) {
+        targetPercentage = 70;
+      } else if (stars === 3) {
+        targetPercentage = 100;
+      }
     }
 
     // 0. Background
@@ -296,10 +351,10 @@ const LevelCompletionModal = ({
     //  2. Progress Bar (Moved here, after sprite)
     starsOpacity.value = withDelay(400, withTiming(1, { duration: 500 }));
     
-    // Fill the bar
-    if (usePvpRankProgress) {
-      progressValue.value = rankBeforePercent;
-    }
+    // Set the starting position immediately before animating
+    progressValue.value = initialPercentage;
+
+    // Fill the bar to target
     progressValue.value = withDelay(500, withTiming(targetPercentage, {
       duration: 1500,
       easing: Easing.out(Easing.cubic)
@@ -399,6 +454,7 @@ const LevelCompletionModal = ({
   const levelClearText = isPvpMode
     ? (completionRewards?.isVictory === false ? 'You Lost!' : 'You Won!')
     : 'Level Cleared!';
+  const isPvpLost = isPvpMode && completionRewards?.isVictory === false;
   const renderCurvedText = () => {
     return (
       <View style={styles.curvedTextContainer}>
@@ -440,12 +496,12 @@ const LevelCompletionModal = ({
       ]}
       pointerEvents={visible ? 'auto' : 'none'}
     >
-      <ImageBackground
-        source={require('./GameOverImage/backgroundMain.png')}
-        resizeMode="cover"
-        style={styles.backgroundImageContainer}
-        imageStyle={styles.backgroundImageStyle}
-      >
+        <ImageBackground
+          source={isPvpLost ? require('./GameOverImage/backgroundMainFail.png') : require('./GameOverImage/backgroundMain.png')}
+          resizeMode="cover"
+          style={styles.backgroundImageContainer}
+          imageStyle={styles.backgroundImageStyle}
+        >
         <View style={styles.contentContainer}>
           
             {renderCurvedText()}
@@ -504,7 +560,7 @@ const LevelCompletionModal = ({
                         {rankProgress?.player_rank_name || 'Current Rank'}
                       </Text>
                       <Text style={styles.pvpRankValueText} numberOfLines={1}>
-                        {currentRankPoints}
+                        {currentRankPointsTotal}
                       </Text>
                     </View>
                   </View>
@@ -535,7 +591,7 @@ const LevelCompletionModal = ({
                         {rankProgress?.next_rank_name || 'Next Rank'}
                       </Text>
                       <Text style={styles.pvpRankValueText} numberOfLines={1}>
-                        {requiredRankPoints}
+                        {requiredRankPointsCeiling}
                       </Text>
                     </View>
                   </View>
@@ -653,57 +709,78 @@ const LevelCompletionModal = ({
 
                     <View style={styles.floatingButtonsArea}>
                       
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.floatingButton,
-                          pressed && styles.buttonPressed
-                        ]}
-                        onPress={onHome}
-                        disabled={isAnimating}
-                      >
-                        <Image
-                          source={require('./GameOverImage/Home.png')}
-                          style={[styles.buttonImage, styles.buttonImage1]}
-                          resizeMode="contain"
-                        />
-                      </Pressable>
-                      {nextLevel ? (
-                        <Pressable
-                          style={({ pressed }) => [
-                            styles.floatingButton,
-                            pressed && styles.buttonPressed
-                          ]}
-                          onPress={onNextLevel}
-                          disabled={isAnimating}
-                        >
-                          <Image
-                            source={require('./GameOverImage/NextLevel.png')}
-                            style={[styles.buttonImage, styles.buttonImage2]}
-                            resizeMode="contain"
-                          />
-                        </Pressable>
-                      ) : (
-                        <Pressable style={[styles.floatingButton, styles.disabledButton]} disabled>
-                          <LinearGradient colors={['rgba(102,102,102,0.85)','rgba(68,68,68,0.95)']} style={styles.buttonGradient}>
-                            <Text style={styles.buttonText}>NO MORE LEVELS</Text>
-                          </LinearGradient>
-                        </Pressable>
-                      )}
 
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.floatingButton,
-                          pressed && styles.buttonPressed
-                        ]}
-                        onPress={onRetry}
-                        disabled={isAnimating}
-                      >
-                        <Image
-                          source={require('./GameOverImage/Retry.png')}
-                          style={[styles.buttonImage, styles.buttonImage3]}
-                          resizeMode="contain"
-                        />
-                      </Pressable>
+                        {isPvpMode ? (
+                          // PvP: only show Home button
+                          <Pressable
+                            style={({ pressed }) => [
+                              styles.floatingButton,
+                              pressed && styles.buttonPressed
+                            ]}
+                            onPress={onHome}
+                            disabled={isAnimating}
+                          >
+                            <Image
+                              source={require('./GameOverImage/Home.png')}
+                              style={[styles.buttonImage, styles.buttonImage1]}
+                              resizeMode="contain"
+                            />
+                          </Pressable>
+                        ) : (
+                          <>
+                            <Pressable
+                              style={({ pressed }) => [
+                                styles.floatingButton,
+                                pressed && styles.buttonPressed
+                              ]}
+                              onPress={onHome}
+                              disabled={isAnimating}
+                            >
+                              <Image
+                                source={require('./GameOverImage/Home.png')}
+                                style={[styles.buttonImage, styles.buttonImage1]}
+                                resizeMode="contain"
+                              />
+                            </Pressable>
+                            {nextLevel ? (
+                              <Pressable
+                                style={({ pressed }) => [
+                                  styles.floatingButton,
+                                  pressed && styles.buttonPressed
+                                ]}
+                                onPress={onNextLevel}
+                                disabled={isAnimating}
+                              >
+                                <Image
+                                  source={require('./GameOverImage/NextLevel.png')}
+                                  style={[styles.buttonImage, styles.buttonImage2]}
+                                  resizeMode="contain"
+                                />
+                              </Pressable>
+                            ) : (
+                              <Pressable style={[styles.floatingButton, styles.disabledButton]} disabled>
+                                <LinearGradient colors={['rgba(102,102,102,0.85)','rgba(68,68,68,0.95)']} style={styles.buttonGradient}>
+                                  <Text style={styles.buttonText}>NO MORE LEVELS</Text>
+                                </LinearGradient>
+                              </Pressable>
+                            )}
+
+                            <Pressable
+                              style={({ pressed }) => [
+                                styles.floatingButton,
+                                pressed && styles.buttonPressed
+                              ]}
+                              onPress={onRetry}
+                              disabled={isAnimating}
+                            >
+                              <Image
+                                source={require('./GameOverImage/Retry.png')}
+                                style={[styles.buttonImage, styles.buttonImage3]}
+                                resizeMode="contain"
+                              />
+                            </Pressable>
+                          </>
+                        )}
 
                     </View>
             </Reanimated.View>
