@@ -457,14 +457,18 @@ const ScreenPlay = ({
 
 
   const playerAvatar = useMemo(() => (
+    gameState.submissionResult?.fightResult?.character?.player_avatar ??
     gameState.submissionResult?.fightResult?.character?.character_avatar ??
+    gameState.selectedCharacter?.player_avatar ??
     gameState.selectedCharacter?.character_avatar ??
     gameState.avatar?.player ??
     null
   ), [gameState]);
 
   const enemyAvatar = useMemo(() => (
+    gameState.submissionResult?.fightResult?.enemy?.player_avatar ??
     gameState.submissionResult?.fightResult?.enemy?.enemy_avatar ??
+    gameState.enemy?.player_avatar ??
     gameState.enemy?.enemy_avatar ??
     gameState.avatar?.enemy ??
     null
@@ -490,6 +494,12 @@ const ScreenPlay = ({
       null;
   }, [gameState.submissionResult, gameState.selectedCharacter]);
 
+  const characterPlayerRank = useMemo(() => {
+    return gameState.submissionResult?.fightResult?.character?.player_rank_name ??
+      gameState.selectedCharacter?.player_rank_name ??
+      null;
+  }, [gameState.submissionResult, gameState.selectedCharacter]);
+
    const characterAttackType = useMemo(() => 
     gameState.submissionResult?.fightResult?.character?.character_attack_type || 
     gameState.selectedCharacter?.character_attack_type,
@@ -507,6 +517,12 @@ const ScreenPlay = ({
       gameState.submissionResult?.fightResult?.enemy?.player_name ??
       gameState.enemy?.player_username ??
       gameState.enemy?.player_name ??
+      null;
+  }, [gameState.submissionResult, gameState.enemy]);
+
+  const enemyPlayerRank = useMemo(() => {
+    return gameState.submissionResult?.fightResult?.enemy?.player_rank_name ??
+      gameState.enemy?.player_rank_name ??
       null;
   }, [gameState.submissionResult, gameState.enemy]);
 
@@ -1426,6 +1442,8 @@ useEffect(() => {
           animated={true}
           position="left"
           avatarUrl={playerAvatar}
+          username={characterPlayerName}
+          playerRank={characterPlayerRank}
           isEnemy={false}
           borderColor="rgba(255, 255, 255, 0.8)"
           startDelay={1000}     // RENAMED: from healthDelay
@@ -1480,6 +1498,8 @@ useEffect(() => {
           animated={true}
           position="right"
           avatarUrl={enemyAvatar}
+          username={enemyPlayerName}
+          playerRank={enemyPlayerRank}
           isEnemy={true}
           flipEnemyAvatar={isPvpMode}
           borderColor="#ffffffff"

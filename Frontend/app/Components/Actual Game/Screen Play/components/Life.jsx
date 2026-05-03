@@ -12,6 +12,8 @@ const Life = ({
   borderColor = '#FFFFFF',
   showNumbers = true,
   avatarUrl = null,
+  username = null,
+  playerRank = null,
   isEnemy = false,
   startDelay = 0,
   trigger = 0,
@@ -220,6 +222,10 @@ const Life = ({
       }
     ]}>
       <View style={styles.lifeContainer}>
+        {/* PvP: continuous username when provided */}
+        {username ? (
+          <Text style={styles.usernameText} numberOfLines={1}>{username}</Text>
+        ) : null}
         {/* 3-Layer Avatar Border */}
         <View style={[
           styles.avatarContainer,
@@ -357,6 +363,13 @@ const Life = ({
             ]} 
           />
         </View>
+
+        {/* PvP: continuous rank when provided */}
+        {playerRank ? (
+          <View style={styles.rankContainer}>
+            <Text style={styles.rankText} numberOfLines={1}>{playerRank}</Text>
+          </View>
+        ) : null}
       </View>
     </Animated.View>
   );
@@ -528,6 +541,22 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: gameScale(12),
     color: '#FFF',
+  },
+  usernameText: {
+    color: '#fff',
+    fontSize: gameScale(10),
+    textAlign: 'center',
+    marginBottom: gameScale(4),
+    maxWidth: gameScale(140),
+  },
+  rankContainer: {
+    marginTop: gameScale(6),
+    alignItems: 'center',
+  },
+  rankText: {
+    color: '#e0e0e0',
+    fontSize: gameScale(10),
+    fontFamily: 'DynaPuff',
   },
 });
 

@@ -395,12 +395,37 @@ const mergeFightAttributes = (baseState, sourceState) => {
     nextState.energy = fightResult.energy;
   }
 
-  if (character.character_avatar) {
+  // PvP-specific avatar/username/rank mappings: prefer `player_*` fields when provided
+  if (character.player_avatar !== undefined) {
+    nextState.selectedCharacter.player_avatar = character.player_avatar;
+    nextState.avatar.player = character.player_avatar;
+  } else if (character.character_avatar !== undefined) {
+    nextState.selectedCharacter.character_avatar = character.character_avatar;
     nextState.avatar.player = character.character_avatar;
   }
 
-  if (enemy.enemy_avatar) {
+  if (character.player_username !== undefined) {
+    nextState.selectedCharacter.player_username = character.player_username;
+  }
+
+  if (character.player_rank_name !== undefined) {
+    nextState.selectedCharacter.player_rank_name = character.player_rank_name;
+  }
+
+  if (enemy.player_avatar !== undefined) {
+    nextState.enemy.player_avatar = enemy.player_avatar;
+    nextState.avatar.enemy = enemy.player_avatar;
+  } else if (enemy.enemy_avatar !== undefined) {
+    nextState.enemy.enemy_avatar = enemy.enemy_avatar;
     nextState.avatar.enemy = enemy.enemy_avatar;
+  }
+
+  if (enemy.player_username !== undefined) {
+    nextState.enemy.player_username = enemy.player_username;
+  }
+
+  if (enemy.player_rank_name !== undefined) {
+    nextState.enemy.player_rank_name = enemy.player_rank_name;
   }
 
   const combatBackground =
