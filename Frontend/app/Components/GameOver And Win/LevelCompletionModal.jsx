@@ -108,12 +108,16 @@ const LevelCompletionModal = ({
   isPvpMode = false,
 }) => {
   //  1. Placeholder Data for Stars
+  // Ensure stars are 0 if pvp mode
   const stars = isPvpMode ? 0 : (completionRewards?.stars || 0); 
   const rankProgress = completionRewards?.rankProgress || null;
+  // Note: We will use isPvpMode directly for rendering decisions now, 
+  // but keeping this for potential data checks.
   const usePvpRankProgress = Boolean(isPvpMode && rankProgress);
 
   // Basic points data needed for labels
-  const requiredRankPointsCeiling = Math.max(1, Number(rankProgress?.rank_progress_required || 0));
+  // Added safeguards in case rankProgress is missing in PvP mode
+  const requiredRankPointsCeiling = Math.max(1, Number(rankProgress?.rank_progress_required || 100));
   const beforeRankPointsTotal = Math.max(0, Number(rankProgress?.before_points || 0));
   const currentRankPointsTotal = Math.max(0, Number(rankProgress?.player_rank_points || 0));
 
@@ -295,7 +299,8 @@ const LevelCompletionModal = ({
     starsOpacity.value = withDelay(400, withTiming(1, { duration: 500 }));
 
     // --- Progress Bar Filling Logic ---
-    if (usePvpRankProgress) {
+    // We check isPvpMode and rankProgress existence here for animation logic
+    if (isPvpMode && rankProgress) {
       const beforePoints = beforeRankPointsTotal;
       const currentPoints = currentRankPointsTotal;
       const rankCeiling = requiredRankPointsCeiling;
@@ -311,7 +316,6 @@ const LevelCompletionModal = ({
         // --- RANK UP SCENARIO: Two-stage animation ---
         
         // Phase 1: Calculate progress relative to the OLD tier
-        // The old ceiling is effectively the new floor.
         const oldTierSpan = Math.max(1, currentFloor - beforeFloor);
         const relativeStart = Math.max(0, beforePoints - beforeFloor);
         const startPercent = Math.min(100, (relativeStart / oldTierSpan) * 100);
@@ -320,7 +324,6 @@ const LevelCompletionModal = ({
         progressValue.value = startPercent;
 
         // Animate to 100% (filling the old rank)
-        // Start delay is 500ms to match PvE timing
         progressValue.value = withDelay(500, withTiming(100, {
             duration: 800, // Faster fill for the first phase
             easing: Easing.linear
@@ -359,11 +362,14 @@ const LevelCompletionModal = ({
       }
 
     } else {
-      // --- PvE Star Logic ---
+      // --- PvE Star Logic (or fallback for missing PvP data) ---
       let targetPercentage = 0;
-      if (stars === 1) targetPercentage = 30;
-      else if (stars === 2) targetPercentage = 70;
-      else if (stars === 3) targetPercentage = 100;
+      // Only calculate star percentage if NOT pvp mode
+      if (!isPvpMode) {
+        if (stars === 1) targetPercentage = 30;
+        else if (stars === 2) targetPercentage = 70;
+        else if (stars === 3) targetPercentage = 100;
+      }
 
       progressValue.value = 0;
       progressValue.value = withDelay(500, withTiming(targetPercentage, {
@@ -371,10 +377,12 @@ const LevelCompletionModal = ({
         easing: Easing.out(Easing.cubic)
       }));
 
-      // Trigger star pops
-      if (stars >= 1) setTimeout(() => runOnJS(popStar)(star1Scale), 900);
-      if (stars >= 2) setTimeout(() => runOnJS(popStar)(star2Scale), 1300);
-      if (stars >= 3) setTimeout(() => runOnJS(popStar)(star3Scale), 1700);
+      // Trigger star pops only in PvE
+      if (!isPvpMode) {
+        if (stars >= 1) setTimeout(() => runOnJS(popStar)(star1Scale), 900);
+        if (stars >= 2) setTimeout(() => runOnJS(popStar)(star2Scale), 1300);
+        if (stars >= 3) setTimeout(() => runOnJS(popStar)(star3Scale), 1700);
+      }
     }
 
     // 3. Text (Delayed further)
@@ -550,7 +558,9 @@ const LevelCompletionModal = ({
 
           {/*  2. PROGRESS BAR - PvE stars / PvP rank */}
           {!isLoading && (
-            usePvpRankProgress ? (
+            // UPDATED CONDITION: Strictly check isPvpMode here.
+            // If it's PvP mode, we MUST show the PvP bar structure, never the stars.
+            isPvpMode ? (
               <Reanimated.View style={[styles.pvpRankProgressContainer, starContainerStyle]}>
                 <View style={styles.pvpRankTopRow}>
                   <View style={styles.pvpRankEndpoint}>
@@ -561,6 +571,7 @@ const LevelCompletionModal = ({
                     )}
                     <View style={styles.pvpRankLabelGroup}>
                       <Text style={styles.pvpRankNameText} numberOfLines={1}>
+                        {/* Added fallback strings for safety */}
                         {rankProgress?.player_rank_name || 'Current Rank'}
                       </Text>
                       <Text style={styles.pvpRankValueText} numberOfLines={1}>
@@ -580,6 +591,7 @@ const LevelCompletionModal = ({
                             style={StyleSheet.absoluteFill}
                           />
                         </Reanimated.View>
+                        {/* NO STARS HERE */}
                       </View>
                     </View>
                   </View>
@@ -592,6 +604,7 @@ const LevelCompletionModal = ({
                     )}
                     <View style={styles.pvpRankLabelGroup}>
                       <Text style={styles.pvpRankNameText} numberOfLines={1}>
+                         {/* Added fallback strings for safety */}
                         {rankProgress?.next_rank_name || 'Next Rank'}
                       </Text>
                       <Text style={styles.pvpRankValueText} numberOfLines={1}>
@@ -602,6 +615,7 @@ const LevelCompletionModal = ({
                 </View>
               </Reanimated.View>
             ) : (
+              // PvE Mode - Show Stars
               <Reanimated.View style={[styles.progressBarContainer, starContainerStyle]}>
                 {/* Background Track with 3D Border Effect */}
                 <View style={styles.progressTrackBorder}>

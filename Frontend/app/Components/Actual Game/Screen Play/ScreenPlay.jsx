@@ -427,7 +427,12 @@ const ScreenPlay = ({
     ?? gameState.selectedCharacter?.current_health
     ?? gameState.selectedCharacter?.character_health
     ?? 0
-  ), [gameState]);
+  ), [
+    gameState.submissionResult?.fightResult?.character?.character_health,
+    gameState.submissionResult?.levelStatus?.playerHealth,
+    gameState.selectedCharacter?.current_health,
+    gameState.selectedCharacter?.character_health
+  ]);
 
   const playerMaxHealth = useMemo(() => (
     gameState.submissionResult?.fightResult?.character?.character_max_health
@@ -435,7 +440,13 @@ const ScreenPlay = ({
     ?? gameState.selectedCharacter?.max_health
     ?? gameState.selectedCharacter?.character_max_health
     ?? playerHealth
-  ), [gameState, playerHealth]);
+  ), [
+    gameState.submissionResult?.fightResult?.character?.character_max_health,
+    gameState.submissionResult?.levelStatus?.playerMaxHealth,
+    gameState.selectedCharacter?.max_health,
+    gameState.selectedCharacter?.character_max_health,
+    playerHealth
+  ]);
 
   const enemyHealth = useMemo(() => (
     gameState.submissionResult?.fightResult?.enemy?.enemy_health ??
@@ -444,7 +455,13 @@ const ScreenPlay = ({
     gameState.enemy?.enemy_health ??
     gameState.enemy?.enemy_max_health ??
     0
-  ), [gameState]);
+  ), [
+    gameState.submissionResult?.fightResult?.enemy?.enemy_health,
+    gameState.submissionResult?.levelStatus?.enemyHealth,
+    gameState.submissionResult?.levelStatus?.enemy_health,
+    gameState.enemy?.enemy_health,
+    gameState.enemy?.enemy_max_health
+  ]);
 
   const enemyMaxHealth = useMemo(() => (
     gameState.submissionResult?.fightResult?.enemy?.enemy_max_health ??
@@ -453,7 +470,14 @@ const ScreenPlay = ({
     gameState.enemy?.enemy_max_health ??
     gameState.enemy?.enemy_health ??
     enemyHealth
-  ), [gameState, enemyHealth]);
+  ), [
+    gameState.submissionResult?.fightResult?.enemy?.enemy_max_health,
+    gameState.submissionResult?.levelStatus?.enemyMaxHealth,
+    gameState.submissionResult?.levelStatus?.enemy_max_health,
+    gameState.enemy?.enemy_max_health,
+    gameState.enemy?.enemy_health,
+    enemyHealth
+  ]);
 
 
   const playerAvatar = useMemo(() => (
@@ -463,7 +487,13 @@ const ScreenPlay = ({
     gameState.selectedCharacter?.character_avatar ??
     gameState.avatar?.player ??
     null
-  ), [gameState]);
+  ), [
+    gameState.submissionResult?.fightResult?.character?.player_avatar,
+    gameState.submissionResult?.fightResult?.character?.character_avatar,
+    gameState.selectedCharacter?.player_avatar,
+    gameState.selectedCharacter?.character_avatar,
+    gameState.avatar?.player
+  ]);
 
   const enemyAvatar = useMemo(() => (
     gameState.submissionResult?.fightResult?.enemy?.player_avatar ??
@@ -472,7 +502,13 @@ const ScreenPlay = ({
     gameState.enemy?.enemy_avatar ??
     gameState.avatar?.enemy ??
     null
-  ), [gameState]);
+  ), [
+    gameState.submissionResult?.fightResult?.enemy?.player_avatar,
+    gameState.submissionResult?.fightResult?.enemy?.enemy_avatar,
+    gameState.enemy?.player_avatar,
+    gameState.enemy?.enemy_avatar,
+    gameState.avatar?.enemy
+  ]);
 
   const enemyAttackType = useMemo(() => 
     gameState.submissionResult?.fightResult?.enemy?.enemy_attack_type ?? 
@@ -531,7 +567,10 @@ const ScreenPlay = ({
     if (!skill || !skill.special_skill_image) return null;
     
     return skill;
-  }, [gameState]);
+  }, [
+    gameState.submissionResult?.fightResult?.character?.special_skill,
+    gameState.selectedCharacter?.special_skill
+  ]);
 
   const enemySpecialSkill = useMemo(() => {
     const skill = gameState.submissionResult?.fightResult?.enemy?.special_skill ??
@@ -540,49 +579,94 @@ const ScreenPlay = ({
     if (!skill || !skill.special_skill_image) return null;
 
     return skill;
-  }, [gameState]);
+  }, [
+    gameState.submissionResult?.fightResult?.enemy?.special_skill,
+    gameState.enemy?.special_skill
+  ]);
 
-  const resolvedCharacterAttackAudio =
+  const resolvedCharacterAttackAudio = useMemo(() =>
     gameState.submissionResult?.characterAttackAudio ??
     gameState.submissionResult?.character_attack_audio ??
     gameState.selectedCharacter?.characterAttackAudio ??
     gameState.selectedCharacter?.character_attack_audio ??
-    null;
+    null,
+    [
+      gameState.submissionResult?.characterAttackAudio,
+      gameState.submissionResult?.character_attack_audio,
+      gameState.selectedCharacter?.characterAttackAudio,
+      gameState.selectedCharacter?.character_attack_audio
+    ]
+  );
 
-  const resolvedEnemyAttackAudio =
+  const resolvedEnemyAttackAudio = useMemo(() =>
     gameState.submissionResult?.enemyAttackAudio ??
     gameState.submissionResult?.enemy_attack_audio ??
     gameState.enemy?.enemyAttackAudio ??
     gameState.enemy?.enemy_attack_audio ??
-    null;
+    null,
+    [
+      gameState.submissionResult?.enemyAttackAudio,
+      gameState.submissionResult?.enemy_attack_audio,
+      gameState.enemy?.enemyAttackAudio,
+      gameState.enemy?.enemy_attack_audio
+    ]
+  );
 
-  const resolvedCharacterHurtAudio =
+  const resolvedCharacterHurtAudio = useMemo(() =>
     gameState.submissionResult?.characterHurtAudio ??
     gameState.submissionResult?.character_hurt_audio ??
     gameState.selectedCharacter?.characterHurtAudio ??
     gameState.selectedCharacter?.character_hurt_audio ??
-    null;
+    null,
+    [
+      gameState.submissionResult?.characterHurtAudio,
+      gameState.submissionResult?.character_hurt_audio,
+      gameState.selectedCharacter?.characterHurtAudio,
+      gameState.selectedCharacter?.character_hurt_audio
+    ]
+  );
 
-  const resolvedEnemyHurtAudio =
+  const resolvedEnemyHurtAudio = useMemo(() =>
     gameState.submissionResult?.enemyHurtAudio ??
     gameState.submissionResult?.enemy_hurt_audio ??
     gameState.enemy?.enemyHurtAudio ??
     gameState.enemy?.enemy_hurt_audio ??
-    null;
+    null,
+    [
+      gameState.submissionResult?.enemyHurtAudio,
+      gameState.submissionResult?.enemy_hurt_audio,
+      gameState.enemy?.enemyHurtAudio,
+      gameState.enemy?.enemy_hurt_audio
+    ]
+  );
 
-  const resolvedCharacterIdleAudio =
+  const resolvedCharacterIdleAudio = useMemo(() =>
     gameState.submissionResult?.characterIdleAudio ??
     gameState.submissionResult?.character_idle_audio ??
     gameState.selectedCharacter?.characterIdleAudio ??
     gameState.selectedCharacter?.character_idle_audio ??
-    null;
+    null,
+    [
+      gameState.submissionResult?.characterIdleAudio,
+      gameState.submissionResult?.character_idle_audio,
+      gameState.selectedCharacter?.characterIdleAudio,
+      gameState.selectedCharacter?.character_idle_audio
+    ]
+  );
 
-  const resolvedEnemyIdleAudio =
+  const resolvedEnemyIdleAudio = useMemo(() =>
     gameState.submissionResult?.enemyIdleAudio ??
     gameState.submissionResult?.enemy_idle_audio ??
     gameState.enemy?.enemyIdleAudio ??
     gameState.enemy?.enemy_idle_audio ??
-    null;
+    null,
+    [
+      gameState.submissionResult?.enemyIdleAudio,
+      gameState.submissionResult?.enemy_idle_audio,
+      gameState.enemy?.enemyIdleAudio,
+      gameState.enemy?.enemy_idle_audio
+    ]
+  );
 
   const characterAnimations = useMemo(() => {
     const base = gameState.selectedCharacter;
@@ -1412,27 +1496,6 @@ useEffect(() => {
         })}
 
       <FadeOutWrapper fadeOutAnim={fadeOutAnim} isInRunMode={isInRunMode}>
-        {isPvpMode && Boolean(characterPlayerName) && (
-          <Text
-            numberOfLines={1}
-            style={{
-              position: 'absolute',
-              top: gameScale(-4),
-              left: gameScale(42),
-              maxWidth: gameScale(120),
-              color: '#f8fcff',
-              fontSize: gameScale(10),
-              fontFamily: 'DynaPuff',
-              textShadowColor: 'rgba(0, 0, 0, 0.7)',
-              textShadowOffset: { width: gameScale(1), height: gameScale(1) },
-              textShadowRadius: gameScale(2),
-              zIndex: 50,
-            }}
-          >
-            {characterPlayerName}
-          </Text>
-        )}
-
         <Life 
           health={playerHealth}
           maxHealth={playerMaxHealth}
@@ -1445,6 +1508,7 @@ useEffect(() => {
           username={characterPlayerName}
           playerRank={characterPlayerRank}
           isEnemy={false}
+          pvpMode={isPvpMode}
           borderColor="rgba(255, 255, 255, 0.8)"
           startDelay={1000}     // RENAMED: from healthDelay
           trigger={submissionSeq}
@@ -1467,28 +1531,6 @@ useEffect(() => {
 
 
       <FadeOutWrapper fadeOutAnim={fadeOutAnim} isInRunMode={isInRunMode}>
-        {isPvpMode && Boolean(enemyPlayerName) && (
-          <Text
-            numberOfLines={1}
-            style={{
-              position: 'absolute',
-              top: gameScale(-4),
-              right: gameScale(42),
-              maxWidth: gameScale(120),
-              color: '#f8fcff',
-              fontSize: gameScale(10),
-              fontFamily: 'DynaPuff',
-              textAlign: 'right',
-              textShadowColor: 'rgba(0, 0, 0, 0.7)',
-              textShadowOffset: { width: gameScale(1), height: gameScale(1) },
-              textShadowRadius: gameScale(2),
-              zIndex: 50,
-            }}
-          >
-            {enemyPlayerName}
-          </Text>
-        )}
-
         <Life 
           health={enemyHealth}
           maxHealth={enemyMaxHealth}
@@ -1502,6 +1544,7 @@ useEffect(() => {
           playerRank={enemyPlayerRank}
           isEnemy={true}
           flipEnemyAvatar={isPvpMode}
+          pvpMode={isPvpMode}
           borderColor="#ffffffff"
           startDelay={600}     
           trigger={submissionSeq}

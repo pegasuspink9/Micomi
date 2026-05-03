@@ -179,6 +179,8 @@ const mergeAuthoritativeCombatState = (displayState, combatState, rawData = {}) 
 
   // Keep explicit null values from the server; only fallback when a key is truly missing.
   const pick = (value, fallback) => (value !== undefined ? value : fallback);
+  const rawCharacter = rawData?.character || rawData || {};
+  const rawEnemy = rawData?.enemy || rawData || {};
 
   return {
     ...displayState,
@@ -196,15 +198,19 @@ const mergeAuthoritativeCombatState = (displayState, combatState, rawData = {}) 
         displayState?.selectedCharacter?.player_name,
       player_username:
         pick(fightCharacter.player_username, combatState?.selectedCharacter?.player_username) ??
-        rawData?.character?.player_username ??
+        rawCharacter?.player_username ??
+        rawData?.player_username ??
         displayState?.selectedCharacter?.player_username,
       player_avatar:
         pick(fightCharacter.player_avatar, combatState?.selectedCharacter?.player_avatar) ??
-        rawData?.character?.player_avatar ??
+        rawCharacter?.player_avatar ??
+        rawData?.player_avatar ??
         displayState?.selectedCharacter?.player_avatar,
       player_rank_name:
         pick(fightCharacter.player_rank_name, combatState?.selectedCharacter?.player_rank_name) ??
-        rawData?.character?.player_rank_name ??
+        rawCharacter?.player_rank_name ??
+        rawData?.player_rank_name ??
+        rawData?.player_rank ??
         displayState?.selectedCharacter?.player_rank_name ??
         null,
       character_id:
@@ -287,15 +293,19 @@ const mergeAuthoritativeCombatState = (displayState, combatState, rawData = {}) 
         displayState?.enemy?.player_name,
       player_username:
         pick(fightEnemy.player_username, combatState?.enemy?.player_username) ??
-        rawData?.enemy?.player_username ??
+        rawEnemy?.player_username ??
+        rawData?.player_username ??
         displayState?.enemy?.player_username,
       player_avatar:
         pick(fightEnemy.player_avatar, combatState?.enemy?.player_avatar) ??
-        rawData?.enemy?.player_avatar ??
+        rawEnemy?.player_avatar ??
+        rawData?.player_avatar ??
         displayState?.enemy?.player_avatar,
       player_rank_name:
         pick(fightEnemy.player_rank_name, combatState?.enemy?.player_rank_name) ??
-        rawData?.enemy?.player_rank_name ??
+        rawEnemy?.player_rank_name ??
+        rawData?.player_rank_name ??
+        rawData?.player_rank ??
         displayState?.enemy?.player_rank_name ??
         null,
       enemy_id:
@@ -358,12 +368,21 @@ const mergeAuthoritativeCombatState = (displayState, combatState, rawData = {}) 
       ...(displayState.avatar || {}),
       ...(combatState.avatar || {}),
       player:
+        fightCharacter.player_avatar ||
+        rawCharacter?.player_avatar ||
+        rawData?.player_avatar ||
         fightCharacter.character_avatar ||
         combatState?.avatar?.player ||
         displayState?.avatar?.player ||
         null,
       enemy:
-        fightEnemy.enemy_avatar || combatState?.avatar?.enemy || displayState?.avatar?.enemy || null,
+        fightEnemy.player_avatar ||
+        rawEnemy?.player_avatar ||
+        rawData?.player_avatar ||
+        fightEnemy.enemy_avatar ||
+        combatState?.avatar?.enemy ||
+        displayState?.avatar?.enemy ||
+        null,
     },
     energy: fightResult?.energy ?? combatState?.energy ?? displayState?.energy,
     timeToNextEnergyRestore:

@@ -18,6 +18,7 @@ const Life = ({
   startDelay = 0,
   trigger = 0,
   flipEnemyAvatar = false,
+  pvpMode = false,
 }) => {
   const effectiveMax = Math.max(0, Math.floor(maxHealth));
   
@@ -43,11 +44,25 @@ const Life = ({
       ? {
           width: gameScale(85),
           marginTop: gameScale(-10),
+          marginLeft: pvpMode && flipEnemyAvatar ? gameScale(-20) : 0,
           transform: flipEnemyAvatar
             ? [{ scaleX: -1 }]
             : [{ translateX: gameScale(-20) }],
         }
       : null;
+
+  const characterAvatarImageStyle =
+    !isEnemy && position === 'left'
+      ? {
+        marginTop: gameScale(-10),
+          marginRight: pvpMode ? gameScale(-90) : 0,
+        }
+      : null;
+
+  const usernameCornerGapStyle =
+    position === 'left' ? styles.usernameLeftCornerGap : styles.usernameRightCornerGap;
+  const usernameAlignStyle =
+    position === 'left' ? styles.usernameLeftAlign : styles.usernameRightAlign;
 
   // 3-Layer border colors - Blue for player, Red for enemy
   const getBorderColors = () => {
@@ -224,7 +239,7 @@ const Life = ({
       <View style={styles.lifeContainer}>
         {/* PvP: continuous username when provided */}
         {username ? (
-          <Text style={styles.usernameText} numberOfLines={1}>{username}</Text>
+          <Text style={[styles.usernameText, usernameCornerGapStyle, usernameAlignStyle]} numberOfLines={1}>{username}</Text>
         ) : null}
         {/* 3-Layer Avatar Border */}
         <View style={[
@@ -263,6 +278,7 @@ const Life = ({
                     source={{ uri: getAvatarUrl() }}
                     style={[
                       styles.avatarImage,
+                      characterAvatarImageStyle,
                       enemyAvatarImageStyle
                     ]}
                     resizeMode="cover"
@@ -545,12 +561,27 @@ const styles = StyleSheet.create({
   usernameText: {
     color: '#fff',
     fontSize: gameScale(10),
-    textAlign: 'center',
-    marginBottom: gameScale(4),
+    fontFamily: 'DynaPuff',
+    
+    marginTop: gameScale(-10),
     maxWidth: gameScale(140),
   },
+  usernameLeftCornerGap: {
+    paddingLeft: gameScale(45),
+  },
+  usernameRightCornerGap: {
+    paddingRight: gameScale(45),
+  },
+  usernameLeftAlign: {
+    alignSelf: 'flex-start',
+    textAlign: 'left',
+  },
+  usernameRightAlign: {
+    alignSelf: 'flex-end',
+    textAlign: 'right',
+  },
   rankContainer: {
-    marginTop: gameScale(6),
+    marginTop: gameScale(3),
     alignItems: 'center',
   },
   rankText: {

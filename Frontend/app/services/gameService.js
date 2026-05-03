@@ -147,6 +147,9 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
       cardExists: !!data.card,
     });
 
+    const fightCharacter = data.fightResult?.character || responseData.fightResult?.character || {};
+    const fightEnemy = data.fightResult?.enemy || responseData.fightResult?.enemy || {};
+
     // Base game state structure
     const gameState = {
       level: {
@@ -165,53 +168,102 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         currentLesson: data.currentLesson || responseData.currentLesson || null,
       
       enemy: {
-        player_id: data.enemy?.player_id || responseData.enemy?.player_id || null,
-        player_name: data.enemy?.player_name || responseData.enemy?.player_name || null,
-        enemy_id: data.enemy?.enemy_id || responseData.enemy?.enemy_id || null,
-        enemy_name: data.enemy?.enemy_name || responseData.enemy?.enemy_name || null,
-        enemy_health: data.enemy?.enemy_health || responseData.enemy?.enemy_health || null,
-        enemy_damage: data.enemy?.enemy_damage || responseData.enemy?.enemy_damage || null,
-        enemy_max_health: data.enemy?.enemy_health || responseData.enemy?.enemy_health,
-        enemy_idle: data.enemy?.enemy_idle || responseData.enemy?.enemy_idle || null,
-        enemy_run: data.enemy?.enemy_run || responseData.enemy?.enemy_run || null,
-        enemy_attack: data.enemy?.enemy_attack || responseData.enemy?.enemy_attack || null,
-        enemy_range_attack: data.enemy?.enemy_range_attack || responseData.enemy?.enemy_range_attack || null,
+        player_id: data.enemy?.player_id || responseData.enemy?.player_id || fightEnemy.player_id || null,
+        player_name: data.enemy?.player_name || responseData.enemy?.player_name || fightEnemy.player_name || null,
+        player_username:
+          data.enemy?.player_username || responseData.enemy?.player_username || fightEnemy.player_username || null,
+        enemy_id: data.enemy?.enemy_id || responseData.enemy?.enemy_id || fightEnemy.enemy_id || null,
+        enemy_name: data.enemy?.enemy_name || responseData.enemy?.enemy_name || fightEnemy.enemy_name || null,
+        enemy_health:
+          data.enemy?.enemy_health || responseData.enemy?.enemy_health || fightEnemy.enemy_health || null,
+        enemy_damage:
+          data.enemy?.enemy_damage || responseData.enemy?.enemy_damage || fightEnemy.enemy_damage || null,
+        enemy_max_health: data.enemy?.enemy_health || responseData.enemy?.enemy_health || fightEnemy.enemy_health,
+        enemy_idle: data.enemy?.enemy_idle || responseData.enemy?.enemy_idle || fightEnemy.enemy_idle || null,
+        enemy_run: data.enemy?.enemy_run || responseData.enemy?.enemy_run || fightEnemy.enemy_run || null,
+        enemy_attack: data.enemy?.enemy_attack || responseData.enemy?.enemy_attack || fightEnemy.enemy_attack || null,
+        enemy_range_attack:
+          data.enemy?.enemy_range_attack || responseData.enemy?.enemy_range_attack || fightEnemy.enemy_range_attack || null,
         enemy_is_range_attack:
-          data.enemy?.enemy_is_range_attack ?? responseData.enemy?.enemy_is_range_attack ?? false,
-        enemy_hurt: data.enemy?.enemy_hurt || responseData.enemy?.enemy_hurt || null,
-        enemy_dies: data.enemy?.enemy_dies || responseData.enemy?.enemy_dies || null,
-        enemy_avatar: data.enemy?.enemy_avatar || responseData.enemy?.enemy_avatar || null, 
-        enemy_attack_type: data.enemy?.enemy_attack_type || responseData.enemy?.enemy_attack_type || null,
-        special_skill: data.enemy?.special_skill || responseData.enemy?.special_skill || null,
-        enemy_attack_overlay: data.enemy?.enemy_attack_overlay || responseData.enemy?.enemy_attack_overlay || null,
-        enemy_current_state: data.enemy?.enemy_current_state || responseData.enemy?.enemy_current_state || null,
-        enemy_reaction: data.enemy?.enemy_reaction || responseData.enemy?.enemy_reaction || null,
+          data.enemy?.enemy_is_range_attack ??
+          responseData.enemy?.enemy_is_range_attack ??
+          fightEnemy.enemy_is_range_attack ??
+          false,
+        enemy_hurt: data.enemy?.enemy_hurt || responseData.enemy?.enemy_hurt || fightEnemy.enemy_hurt || null,
+        enemy_dies: data.enemy?.enemy_dies || responseData.enemy?.enemy_dies || fightEnemy.enemy_dies || null,
+        player_avatar:
+          data.enemy?.player_avatar || responseData.enemy?.player_avatar || fightEnemy.player_avatar || null,
+        player_rank_name:
+          data.enemy?.player_rank_name ||
+          responseData.enemy?.player_rank_name ||
+          fightEnemy.player_rank_name ||
+          null,
+        enemy_avatar: data.enemy?.enemy_avatar || responseData.enemy?.enemy_avatar || fightEnemy.enemy_avatar || null, 
+        enemy_attack_type:
+          data.enemy?.enemy_attack_type || responseData.enemy?.enemy_attack_type || fightEnemy.enemy_attack_type || null,
+        special_skill: data.enemy?.special_skill || responseData.enemy?.special_skill || fightEnemy.special_skill || null,
+        enemy_attack_overlay:
+          data.enemy?.enemy_attack_overlay || responseData.enemy?.enemy_attack_overlay || fightEnemy.enemy_attack_overlay || null,
+        enemy_current_state:
+          data.enemy?.enemy_current_state || responseData.enemy?.enemy_current_state || fightEnemy.enemy_current_state || null,
+        enemy_reaction: data.enemy?.enemy_reaction || responseData.enemy?.enemy_reaction || fightEnemy.enemy_reaction || null,
       },
 
       avatar: {
-        player: data.character?.character_avatar || responseData.character?.character_avatar || null,
-        enemy: data.enemy?.enemy_avatar || responseData.enemy?.enemy_avatar || null
+        player:
+          data.character?.player_avatar ||
+          responseData.character?.player_avatar ||
+          fightCharacter.player_avatar ||
+          data.character?.character_avatar ||
+          responseData.character?.character_avatar ||
+          fightCharacter.character_avatar ||
+          null,
+        enemy:
+          data.enemy?.player_avatar ||
+          responseData.enemy?.player_avatar ||
+          fightEnemy.player_avatar ||
+          data.enemy?.enemy_avatar ||
+          responseData.enemy?.enemy_avatar ||
+          fightEnemy.enemy_avatar ||
+          null
       },
       
       selectedCharacter: {
-        player_id: data.character?.player_id || responseData.character?.player_id || null,
-        player_name: data.character?.player_name || responseData.character?.player_name || null,
-        character_id: data.character?.character_id || responseData.character?.character_id || null,
-        character_name: data.character?.character_name || responseData.character?.character_name || null,
-        current_health: data.character?.character_health || responseData.character?.character_health || null,
-        max_health: data.character?.character_health || responseData.character?.character_health || null,
-        character_damage: data.character?.character_damage || responseData.character?.character_damage || [],
-        character_idle: data.character?.character_idle || responseData.character?.character_idle || null,
-        character_run: data.character?.character_run || responseData.character?.character_run || null,
-        character_attack: data.character?.character_attack || responseData.character?.character_attack || [], character_range_attack: data.character?.character_range_attack || responseData.character?.character_range_attack || null,
-        character_is_range: data.character?.character_is_range || responseData.character?.character_is_range || false, 
-        character_hurt: data.character?.character_hurt || responseData.character?.character_hurt || null,
-        character_dies: data.character?.character_dies || responseData.character?.character_dies || null,
-        character_avatar: data.character?.character_avatar || responseData.character?.character_avatar || null,
-        special_skill: data.character?.special_skill || responseData.character?.special_skill || null,
-        character_attack_overlay: data.character?.character_attack_overlay || responseData.character?.character_attack_overlay || null,
-        character_current_state: data.character?.character_current_state || responseData.character?.character_current_state || null,
-        character_reaction: data.character?.character_reaction || responseData.character?.character_reaction || null
+        player_id: data.character?.player_id || responseData.character?.player_id || fightCharacter.player_id || null,
+        player_name: data.character?.player_name || responseData.character?.player_name || fightCharacter.player_name || null,
+        player_username:
+          data.character?.player_username || responseData.character?.player_username || fightCharacter.player_username || null,
+        player_avatar:
+          data.character?.player_avatar || responseData.character?.player_avatar || fightCharacter.player_avatar || null,
+        player_rank_name:
+          data.character?.player_rank_name ||
+          responseData.character?.player_rank_name ||
+          fightCharacter.player_rank_name ||
+          null,
+        character_id: data.character?.character_id || responseData.character?.character_id || fightCharacter.character_id || null,
+        character_name: data.character?.character_name || responseData.character?.character_name || fightCharacter.character_name || null,
+        current_health:
+          data.character?.character_health || responseData.character?.character_health || fightCharacter.character_health || null,
+        max_health:
+          data.character?.character_health || responseData.character?.character_health || fightCharacter.character_health || null,
+        character_damage:
+          data.character?.character_damage || responseData.character?.character_damage || fightCharacter.character_damage || [],
+        character_idle: data.character?.character_idle || responseData.character?.character_idle || fightCharacter.character_idle || null,
+        character_run: data.character?.character_run || responseData.character?.character_run || fightCharacter.character_run || null,
+        character_attack:
+          data.character?.character_attack || responseData.character?.character_attack || fightCharacter.character_attack || [], character_range_attack: data.character?.character_range_attack || responseData.character?.character_range_attack || fightCharacter.character_range_attack || null,
+        character_is_range:
+          data.character?.character_is_range || responseData.character?.character_is_range || fightCharacter.character_is_range || false, 
+        character_hurt: data.character?.character_hurt || responseData.character?.character_hurt || fightCharacter.character_hurt || null,
+        character_dies: data.character?.character_dies || responseData.character?.character_dies || fightCharacter.character_dies || null,
+        character_avatar: data.character?.character_avatar || responseData.character?.character_avatar || fightCharacter.character_avatar || null,
+        special_skill: data.character?.special_skill || responseData.character?.special_skill || fightCharacter.special_skill || null,
+        character_attack_overlay:
+          data.character?.character_attack_overlay || responseData.character?.character_attack_overlay || fightCharacter.character_attack_overlay || null,
+        character_current_state:
+          data.character?.character_current_state || responseData.character?.character_current_state || fightCharacter.character_current_state || null,
+        character_reaction:
+          data.character?.character_reaction || responseData.character?.character_reaction || fightCharacter.character_reaction || null
         
       },
       
@@ -468,6 +520,19 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         gameState.selectedCharacter.current_health = responseData.fightResult.character.character_health;
       }
 
+      if (responseData.fightResult?.character?.player_username !== undefined) {
+        gameState.selectedCharacter.player_username = responseData.fightResult.character.player_username;
+      }
+
+      if (responseData.fightResult?.character?.player_avatar !== undefined) {
+        gameState.selectedCharacter.player_avatar = responseData.fightResult.character.player_avatar;
+        gameState.avatar.player = responseData.fightResult.character.player_avatar;
+      }
+
+      if (responseData.fightResult?.character?.player_rank_name !== undefined) {
+        gameState.selectedCharacter.player_rank_name = responseData.fightResult.character.player_rank_name;
+      }
+
       if (responseData.fightResult?.character?.special_skill) {
         gameState.selectedCharacter.special_skill = responseData.fightResult.character.special_skill;
       }
@@ -499,6 +564,19 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
       
       if (responseData.fightResult?.enemy?.enemy_health !== undefined) {
         gameState.enemy.enemy_health = responseData.fightResult.enemy.enemy_health;
+      }
+
+      if (responseData.fightResult?.enemy?.player_username !== undefined) {
+        gameState.enemy.player_username = responseData.fightResult.enemy.player_username;
+      }
+
+      if (responseData.fightResult?.enemy?.player_avatar !== undefined) {
+        gameState.enemy.player_avatar = responseData.fightResult.enemy.player_avatar;
+        gameState.avatar.enemy = responseData.fightResult.enemy.player_avatar;
+      }
+
+      if (responseData.fightResult?.enemy?.player_rank_name !== undefined) {
+        gameState.enemy.player_rank_name = responseData.fightResult.enemy.player_rank_name;
       }
 
       if (responseData.fightResult?.enemy?.special_skill) {
