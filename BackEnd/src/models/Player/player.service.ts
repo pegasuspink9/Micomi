@@ -370,6 +370,7 @@ export const getPlayerProfile = async (player_id: number) => {
       player_required_points: rankProgress.rank_progress_required,
       player_next_rank_name: rankProgress.next_rank_name,
       player_next_rank_image: rankProgress.next_rank_image,
+      player_next_rank_points: rankProgress.next_rank_points_target,
     },
     pvp_total_matches: totalPvpMatches,
     pvp_win_rate: pvpWinRate,

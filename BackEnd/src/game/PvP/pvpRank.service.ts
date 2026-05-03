@@ -121,6 +121,7 @@ export const getRankProgressByPoints = (points: number) => {
       rank_progress_required: 0,
       next_rank_name: null,
       next_rank_image: null,
+      next_rank_points_target: null,
     };
   }
 
@@ -136,6 +137,7 @@ export const getRankProgressByPoints = (points: number) => {
     rank_progress_required: required,
     next_rank_name: nextTier?.name ?? null,
     next_rank_image: nextTier?.image ?? null,
+    next_rank_points_target: nextTier?.minPoints ?? null,
   };
 };
 
