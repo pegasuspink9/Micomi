@@ -252,7 +252,7 @@ export default function PublicPlayerProfileScreen() {
             mode={profileMode}
             playerRankName={playerData.playerRankName}
             playerRankImage={playerData.playerRankImage}
-            playerCurrentPoints={playerData.playerCurrentPoints}
+            playerTotalPoints={playerData.playerTotalPoints}
             pvpTotalMatches={playerData.pvpTotalMatches}
             pvpWinRate={playerData.pvpWinRate}
             onModeChange={setProfileMode}

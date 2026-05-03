@@ -40,7 +40,7 @@ const PvpRankPreview = () => {
         setProfile({
           playerRankName: data?.player_rank_name || 'Unranked',
           playerRankImage: data?.player_rank_image || null,
-          currentPoints: data?.player_rank_progress?.player_current_points || 0,
+          playerTotalPoints: data?.player_total_points || 0,
           requiredPoints: data?.player_rank_progress?.player_required_points || 0,
           nextRankName: data?.player_rank_progress?.player_next_rank_name || 'Unknown',
         });
@@ -109,7 +109,7 @@ const PvpRankPreview = () => {
                   {profile?.playerRankName || 'Unranked'}
                 </Text>
                 <Text style={styles.rankPointsText} numberOfLines={1}>
-                  {profile?.currentPoints || 0}
+                  {profile?.playerTotalPoints || 0}
                 </Text>
                 <Text style={styles.rankSubText}>
                   {profile?.requiredPoints || 0} more to {profile?.nextRankName || 'Unknown'}

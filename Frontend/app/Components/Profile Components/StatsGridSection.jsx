@@ -17,7 +17,7 @@ const StatsGridSection = ({
   mode = 'classic',
   playerRankName,
   playerRankImage,
-  playerCurrentPoints = 0,
+  playerTotalPoints = 0,
   pvpTotalMatches = 0,
   pvpWinRate = 0,
   onModeChange,
@@ -90,7 +90,7 @@ const StatsGridSection = ({
     ? {
         icon: require('../icons/exp.png'),
         label: 'Points',
-        value: formatCompactNumber(playerCurrentPoints),
+        value: formatCompactNumber(playerTotalPoints),
         displayValueInIcon: false,
         hideIcon: true,
       }
