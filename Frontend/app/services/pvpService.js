@@ -194,6 +194,19 @@ const mergeAuthoritativeCombatState = (displayState, combatState, rawData = {}) 
         pick(fightCharacter.player_name, combatState?.selectedCharacter?.player_name) ??
         rawData?.character?.player_name ??
         displayState?.selectedCharacter?.player_name,
+      player_username:
+        pick(fightCharacter.player_username, combatState?.selectedCharacter?.player_username) ??
+        rawData?.character?.player_username ??
+        displayState?.selectedCharacter?.player_username,
+      player_avatar:
+        pick(fightCharacter.player_avatar, combatState?.selectedCharacter?.player_avatar) ??
+        rawData?.character?.player_avatar ??
+        displayState?.selectedCharacter?.player_avatar,
+      player_rank_name:
+        pick(fightCharacter.player_rank_name, combatState?.selectedCharacter?.player_rank_name) ??
+        rawData?.character?.player_rank_name ??
+        displayState?.selectedCharacter?.player_rank_name ??
+        null,
       character_id:
         pick(fightCharacter.character_id, combatState?.selectedCharacter?.character_id) ??
         displayState?.selectedCharacter?.character_id,
@@ -272,6 +285,19 @@ const mergeAuthoritativeCombatState = (displayState, combatState, rawData = {}) 
         pick(fightEnemy.player_name, combatState?.enemy?.player_name) ??
         rawData?.enemy?.player_name ??
         displayState?.enemy?.player_name,
+      player_username:
+        pick(fightEnemy.player_username, combatState?.enemy?.player_username) ??
+        rawData?.enemy?.player_username ??
+        displayState?.enemy?.player_username,
+      player_avatar:
+        pick(fightEnemy.player_avatar, combatState?.enemy?.player_avatar) ??
+        rawData?.enemy?.player_avatar ??
+        displayState?.enemy?.player_avatar,
+      player_rank_name:
+        pick(fightEnemy.player_rank_name, combatState?.enemy?.player_rank_name) ??
+        rawData?.enemy?.player_rank_name ??
+        displayState?.enemy?.player_rank_name ??
+        null,
       enemy_id:
         pick(fightEnemy.enemy_id, combatState?.enemy?.enemy_id) ?? displayState?.enemy?.enemy_id,
       enemy_name:

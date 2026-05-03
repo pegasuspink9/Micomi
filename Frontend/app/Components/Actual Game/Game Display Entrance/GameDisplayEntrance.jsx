@@ -282,7 +282,7 @@ const CombatVSModal = ({
           <Animated.View style={[styles.characterSide, { transform: [{ translateX: characterSlideAnim }] }]}>
             <View style={styles.characterContainer}>
               {/* ... (avatar frame remains the same) ... */}
-              <View style={styles.avatarFrame}>
+              <View style={[styles.avatarFrame, styles.heroAvatarFrame]}>
                 {characterSpriteUrl ? (
                   <SpriteAnimator
                     sourceUri={characterSpriteUrl}
@@ -331,16 +331,16 @@ const CombatVSModal = ({
                           {/* Content container to correct slant */}
                           <View style={styles.playerInfoInner}>
                             <Image
-                              source={{ uri: PVP_AVATAR_PLACEHOLDER }}
+                              source={{ uri: selectedCharacter?.player_avatar || PVP_AVATAR_PLACEHOLDER }}
                               style={styles.playerInfoAvatar}
                               contentFit="cover"
                             />
                             <View style={styles.playerInfoTextColumn}>
                               <Text style={[styles.playerInfoNameText, styles.heroPlayerInfoNameText]} numberOfLines={1}>
-                                {selectedCharacter?.player_name || 'Player'}
+                                {selectedCharacter?.player_username || selectedCharacter?.player_name || 'Player'}
                               </Text>
                               <Text style={[styles.playerInfoRankText, styles.heroPlayerInfoRankText]} numberOfLines={1}>
-                                Rank: --
+                                Rank: {selectedCharacter?.player_rank_name || '--'}
                               </Text>
                             </View>
                           </View>
@@ -417,14 +417,14 @@ const CombatVSModal = ({
                           {/* Swapped order: Text first, then Avatar */}
                           <View style={[styles.playerInfoTextColumn, styles.enemyPlayerInfoTextColumn]}>
                             <Text style={[styles.playerInfoNameText, styles.enemyPlayerInfoNameText]} numberOfLines={1}>
-                              {enemy?.player_name || 'Player'}
+                              {enemy?.player_username || enemy?.player_name || 'Player'}
                             </Text>
                             <Text style={[styles.playerInfoRankText, styles.enemyPlayerInfoRankText]} numberOfLines={1}>
-                              Rank: --
+                              Rank: {enemy?.player_rank_name || '--'}
                             </Text>
                           </View>
                           <Image
-                            source={{ uri: PVP_AVATAR_PLACEHOLDER }}
+                            source={{ uri: enemy?.player_avatar || PVP_AVATAR_PLACEHOLDER }}
                             style={styles.playerInfoAvatar}
                             contentFit="cover"
                           />
@@ -502,9 +502,12 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginBottom: gameScale(-65),
   },
+  heroAvatarFrame: {
+    marginTop: gameScale(-120),
+  },
   characterAvatar: {
-    width: gameScale(500),  
-    height: gameScale(500)
+    width: gameScale(600),
+    height: gameScale(600)
   },
    enemyAvatar: {
     width: gameScale(600), 

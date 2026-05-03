@@ -483,7 +483,9 @@ const ScreenPlay = ({
   }, [gameState.submissionResult, gameState.selectedCharacter]);
 
   const characterPlayerName = useMemo(() => {
-    return gameState.submissionResult?.fightResult?.character?.player_name ??
+    return gameState.submissionResult?.fightResult?.character?.player_username ??
+      gameState.submissionResult?.fightResult?.character?.player_name ??
+      gameState.selectedCharacter?.player_username ??
       gameState.selectedCharacter?.player_name ??
       null;
   }, [gameState.submissionResult, gameState.selectedCharacter]);
@@ -501,7 +503,9 @@ const ScreenPlay = ({
   }, [gameState.submissionResult, gameState.enemy]);
 
   const enemyPlayerName = useMemo(() => {
-    return gameState.submissionResult?.fightResult?.enemy?.player_name ??
+    return gameState.submissionResult?.fightResult?.enemy?.player_username ??
+      gameState.submissionResult?.fightResult?.enemy?.player_name ??
+      gameState.enemy?.player_username ??
       gameState.enemy?.player_name ??
       null;
   }, [gameState.submissionResult, gameState.enemy]);
