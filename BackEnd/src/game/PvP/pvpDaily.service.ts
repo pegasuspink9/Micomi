@@ -125,9 +125,6 @@ const generatePvpMotivationalMessage = (
 
 const MATCHMAKING_TIMEOUT_MS = 2 * 60 * 1000;
 const MATCH_COMPLETION_CLEANUP_MS = 5 * 60 * 1000;
-const PVP_BASE_QUESTION_TIME_LIMIT_SECONDS = 40;
-const PVP_SECONDS_PER_BLANK = 8;
-const PVP_MAX_QUESTION_TIME_LIMIT_SECONDS = 120;
 const DEFAULT_FALLBACK_ATTACK_DAMAGE = 12;
 const MAX_IN_GAME_MESSAGE_LENGTH = 160;
 const WIN_REWARD: PvPCompletionRewards = {
@@ -584,6 +581,9 @@ const buildQuestionPool = async (
 
   const challenges = await prisma.challenge.findMany({
     where: {
+      challenge_type: {
+        not: "code with guide",
+      },
       level: {
         level_difficulty: "easy",
         map: {
@@ -759,10 +759,17 @@ const getQuestionTimeLimitSeconds = (
   const questionText =
     typeof question?.question === "string" ? question.question : "";
   const blankCount = countQuestionBlanks(questionText);
-  const dynamicLimit =
-    PVP_BASE_QUESTION_TIME_LIMIT_SECONDS + blankCount * PVP_SECONDS_PER_BLANK;
+  const topic = question?.topic || "Computer";
 
-  return Math.min(dynamicLimit, PVP_MAX_QUESTION_TIME_LIMIT_SECONDS);
+  const isComputer = topic === "Computer";
+
+  const baseTime = isComputer ? 40 : 60;
+  const timePerBlank = isComputer ? 8 : 12;
+  const maxTime = isComputer ? 120 : 180;
+
+  const dynamicLimit = baseTime + blankCount * timePerBlank;
+
+  return Math.min(dynamicLimit, maxTime);
 };
 
 const buildEntryLikePayload = async (
@@ -805,6 +812,12 @@ const buildEntryLikePayload = async (
   const viewerDamageArray = Array.isArray(viewerChar.character_damage)
     ? (viewerChar.character_damage as number[])
     : [viewerSnapshot.attack_damage];
+
+  let displayDamageArray = [...viewerDamageArray];
+  if (match.has_strong_effect_by_player[viewerPlayerId]) {
+    displayDamageArray = displayDamageArray.map((d) => d * 2);
+  }
+
   const correctAnswerLength = question.correct_answer.length;
   const viewerTierDamage = resolveAttackTypeAndDamage(
     correctAnswerLength,
@@ -815,7 +828,12 @@ const buildEntryLikePayload = async (
     match.consecutive_corrects_by_player[viewerPlayerId] ?? 0,
     correctAnswerLength,
   );
-  const damage = viewerTierDamage.damage;
+
+  let damage = viewerTierDamage.damage;
+  if (match.has_strong_effect_by_player[viewerPlayerId]) {
+    damage *= 2;
+  }
+
   const opponentAttackType = resolvePreviewAttackType(
     opponentChar.character_name,
     match.consecutive_corrects_by_player[opponentSnapshot.player_id] ?? 0,
@@ -980,7 +998,7 @@ const buildEntryLikePayload = async (
       character_name: viewerSnapshot.character_name,
       character_health: viewerSnapshot.character_health,
       character_max_health: viewerSnapshot.character_max_health,
-      character_damage: viewerChar.character_damage,
+      character_damage: displayDamageArray,
       character_idle: final_character_idle,
       character_run: viewerChar.character_run,
       character_attack: viewerChar.character_attacks,
@@ -1180,6 +1198,9 @@ const cloneMatchForResponse = (match: PvPMatchState): PvPMatchState => {
     last_attack_damage: match.last_attack_damage,
     ...((match as any).last_attack_was_frozen !== undefined
       ? { last_attack_was_frozen: (match as any).last_attack_was_frozen }
+      : {}),
+    ...((match as any).last_attack_was_strong !== undefined
+      ? { last_attack_was_strong: (match as any).last_attack_was_strong }
       : {}),
     pending_wrong_challenge_by_player: {
       ...match.pending_wrong_challenge_by_player,
@@ -1557,6 +1578,8 @@ const resolveExpiredRoundIfNeeded = async (
   match.last_attack_by_player_id = null;
   match.last_attack_type = null;
   match.last_attack_damage = 0;
+  delete (match as any).last_attack_was_frozen;
+  delete (match as any).last_attack_was_strong;
 
   await maybeProgressRoundOrFinish(match);
 
@@ -1905,6 +1928,7 @@ const buildSubmitLikeResponse = async (
     attackType: string;
     damage: number;
     wasFrozen?: boolean;
+    wasStrong?: boolean;
   },
 ): Promise<PvpDailySubmitAnswerResult> => {
   const entryLike = await buildEntryLikePayload(match, playerId);
@@ -1944,6 +1968,10 @@ const buildSubmitLikeResponse = async (
     ? false
     : (attackMeta?.wasFrozen ?? (match as any).last_attack_was_frozen ?? false);
 
+  const wasStrong = isWrongRetryState
+    ? false
+    : (attackMeta?.wasStrong ?? (match as any).last_attack_was_strong ?? false);
+
   const resolvedAttack = isWrongRetryState
     ? null
     : (attackMeta ??
@@ -1952,6 +1980,7 @@ const buildSubmitLikeResponse = async (
             attackType: match.last_attack_type ?? "basic_attack",
             damage: match.last_attack_damage,
             wasFrozen: (match as any).last_attack_was_frozen,
+            wasStrong: (match as any).last_attack_was_strong,
           }
         : null));
 
@@ -2047,20 +2076,56 @@ const buildSubmitLikeResponse = async (
   const opponentPlayerId = Number(opponentEnemy.player_id);
 
   if (characterShowsAttack) {
-    character_current_state = wasFrozen ? null : "attacking";
-    if (wasFrozen) character_attack_overlay = OVERLAYS.FREEZE;
+    if (wasFrozen) {
+      character_current_state = null;
+      character_attack_overlay = OVERLAYS.FREEZE;
+    } else {
+      if (
+        viewerCharName === "Gino" &&
+        resolvedAttackType === "special_attack"
+      ) {
+        character_current_state = "Revitalize";
+        character_attack_overlay = OVERLAYS.LIFE;
+      } else if (
+        viewerCharName === "Ryron" &&
+        resolvedAttackType === "special_attack"
+      ) {
+        character_current_state = "Reveal";
+        character_attack_overlay = OVERLAYS.REVEAL;
+      } else {
+        character_current_state = "attacking";
+      }
+    }
   } else if (enemyShowsAttack) {
     character_current_state = wasFrozen ? null : "hurt";
   }
 
   if (enemyShowsAttack) {
-    enemy_current_state = wasFrozen ? null : "attacking";
-    if (wasFrozen) enemy_attack_overlay = OVERLAYS.FREEZE;
+    if (wasFrozen) {
+      enemy_current_state = null;
+      enemy_attack_overlay = OVERLAYS.FREEZE;
+    } else {
+      if (
+        opponentCharName === "Gino" &&
+        resolvedAttackType === "special_attack"
+      ) {
+        enemy_current_state = "Revitalize";
+        enemy_attack_overlay = OVERLAYS.LIFE;
+      } else if (
+        opponentCharName === "Ryron" &&
+        resolvedAttackType === "special_attack"
+      ) {
+        enemy_current_state = "Reveal";
+        enemy_attack_overlay = OVERLAYS.REVEAL;
+      } else {
+        enemy_current_state = "attacking";
+      }
+    }
   } else if (characterShowsAttack) {
     enemy_current_state = wasFrozen ? null : "hurt";
   }
 
-  // Set the specific state and overlays perfectly mapping viewer vs opponent.
+  // Mid-round overrides for persistent states
   if (match.has_freeze_effect_by_player[playerId]) {
     character_current_state = "Frozen";
     character_attack_overlay = OVERLAYS.FREEZE;
@@ -2085,40 +2150,6 @@ const buildSubmitLikeResponse = async (
   if (match.has_ryron_reveal_by_player[opponentPlayerId]) {
     enemy_current_state = "Reveal";
     enemy_attack_overlay = OVERLAYS.REVEAL;
-  }
-
-  if (reason === "correct_and_first") {
-    if (
-      isViewerLastAttacker &&
-      match.consecutive_corrects_by_player[playerId] === 3
-    ) {
-      if (viewerCharName === "Leon") {
-        character_current_state = "Strong";
-        character_attack_overlay = OVERLAYS.STRONG;
-      }
-      if (viewerCharName === "ShiShi") enemy_attack_overlay = OVERLAYS.FREEZE;
-      if (viewerCharName === "Ryron")
-        character_attack_overlay = OVERLAYS.REVEAL;
-      if (viewerCharName === "Gino") {
-        character_current_state = "Revitalize";
-        character_attack_overlay = OVERLAYS.LIFE;
-      }
-    } else if (
-      !isViewerLastAttacker &&
-      match.consecutive_corrects_by_player[opponentPlayerId] === 3
-    ) {
-      if (opponentCharName === "Leon") {
-        enemy_current_state = "Strong";
-        enemy_attack_overlay = OVERLAYS.STRONG;
-      }
-      if (opponentCharName === "ShiShi")
-        character_attack_overlay = OVERLAYS.FREEZE;
-      if (opponentCharName === "Ryron") enemy_attack_overlay = OVERLAYS.REVEAL;
-      if (opponentCharName === "Gino") {
-        enemy_current_state = "Revitalize";
-        enemy_attack_overlay = OVERLAYS.LIFE;
-      }
-    }
   }
 
   let final_character_idle = viewerCharacter.character_idle as string | null;
@@ -2147,6 +2178,8 @@ const buildSubmitLikeResponse = async (
   const characterForFightResult = {
     player_id: viewerCharacter.player_id,
     player_name: viewerCharacter.player_name,
+    player_username: viewerCharacter.player_username,
+    player_avatar: viewerCharacter.player_avatar,
     character_id: viewerCharacter.character_id,
     character_name: viewerCharacter.character_name,
     character_idle: final_character_idle,
@@ -2188,6 +2221,8 @@ const buildSubmitLikeResponse = async (
   const enemyForFightResult = {
     player_id: opponentEnemy.player_id,
     player_name: opponentEnemy.player_name,
+    player_username: opponentEnemy.player_username,
+    player_avatar: opponentEnemy.player_avatar,
     enemy_id: opponentEnemy.enemy_id,
     enemy_name: opponentEnemy.enemy_name,
     enemy_idle: final_enemy_idle,
@@ -2532,26 +2567,6 @@ export const submitAnswer = async (
     );
   }
 
-  if (match.consecutive_corrects_by_player[playerId] === 3) {
-    if (playerCharacter.character_name === "Gino") {
-      const playerSnapshot = match.players[playerIndex];
-      const healAmount = Math.max(
-        1,
-        Math.floor(playerSnapshot.character_max_health * 0.25),
-      );
-      playerSnapshot.character_health = Math.min(
-        playerSnapshot.character_max_health,
-        playerSnapshot.character_health + healAmount,
-      );
-    } else if (playerCharacter.character_name === "ShiShi") {
-      match.has_freeze_effect_by_player[opponentPlayerId] = true;
-    } else if (playerCharacter.character_name === "Ryron") {
-      match.has_ryron_reveal_by_player[playerId] = true;
-    } else if (playerCharacter.character_name === "Leon") {
-      match.has_strong_effect_by_player[playerId] = true;
-    }
-  }
-
   if (isFirstCorrect) {
     round.resolved_by_player_id = playerId;
     round.resolved_at = now;
@@ -2578,16 +2593,19 @@ export const submitAnswer = async (
       tierResolution.damage > 0
         ? tierResolution.damage
         : attacker.attack_damage;
-    let wasFrozen = false;
 
+    let wasFrozen = false;
+    let wasStrong = false;
+
+    // Apply existing passives
     if (match.has_strong_effect_by_player[playerId]) {
       const isLeonSSTurn =
         playerCharacter.character_name === "Leon" &&
         attackType === "special_attack";
-
       if (!isLeonSSTurn) {
         appliedDamage *= 2;
         match.has_strong_effect_by_player[playerId] = false;
+        wasStrong = true;
       }
     }
 
@@ -2601,11 +2619,33 @@ export const submitAnswer = async (
     match.last_attack_type = attackType;
     match.last_attack_damage = appliedDamage;
     (match as any).last_attack_was_frozen = wasFrozen;
+    (match as any).last_attack_was_strong = wasStrong;
 
     opponent.character_health = Math.max(
       0,
       opponent.character_health - appliedDamage,
     );
+
+    // Trigger new passives (so they apply NEXT turn, or immediately if instantaneous)
+    if (match.consecutive_corrects_by_player[playerId] === 3) {
+      if (playerCharacter.character_name === "Gino") {
+        const playerSnapshot = match.players[playerIndex];
+        const healAmount = Math.max(
+          1,
+          Math.floor(playerSnapshot.character_max_health * 0.25),
+        );
+        playerSnapshot.character_health = Math.min(
+          playerSnapshot.character_max_health,
+          playerSnapshot.character_health + healAmount,
+        );
+      } else if (playerCharacter.character_name === "ShiShi") {
+        match.has_freeze_effect_by_player[opponentPlayerId] = true;
+      } else if (playerCharacter.character_name === "Ryron") {
+        match.has_ryron_reveal_by_player[playerId] = true;
+      } else if (playerCharacter.character_name === "Leon") {
+        match.has_strong_effect_by_player[playerId] = true;
+      }
+    }
 
     await maybeProgressRoundOrFinish(match);
     if (match.status === "active") {
@@ -2620,6 +2660,7 @@ export const submitAnswer = async (
       attackType,
       damage: appliedDamage,
       wasFrozen,
+      wasStrong,
     });
   }
 
@@ -2714,6 +2755,8 @@ export const surrenderMatch = async (
   match.last_attack_by_player_id = opponent.player_id;
   match.last_attack_type = "special_attack";
   match.last_attack_damage = match.players[playerIndex].character_health;
+  delete (match as any).last_attack_was_frozen;
+  delete (match as any).last_attack_was_strong;
 
   match.players[playerIndex].character_health = 0;
 
