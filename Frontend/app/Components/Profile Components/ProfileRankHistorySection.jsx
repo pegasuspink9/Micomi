@@ -5,6 +5,7 @@ import { universalAssetPreloader } from '../../services/preloader/universalAsset
 
 const POINTS_ICON = require('../icons/points.png');
 const COINS_ICON = require('../icons/coins.png');
+const EXP_ICON = require('../icons/exp.png');
 
 const toLabel = (value) => {
   if (value === null || value === undefined || value === '') {
@@ -26,8 +27,8 @@ const formatDate = (isoDate) => {
 
   const mm = String(parsed.getMonth() + 1).padStart(2, '0');
   const dd = String(parsed.getDate()).padStart(2, '0');
-  const yyyyy = String(parsed.getFullYear()).padStart(5, '0');
-  return `${mm}/${dd}/${yyyyy}`;
+  const yyyyy = String(parsed.getFullYear()).padStart(4, '0');
+  return `${mm}/${dd}/${yyyyy }`;
 };
 
 const resolveImageUri = (url) => {
@@ -44,146 +45,162 @@ const ProfileRankHistorySection = ({ history = [], loading = false, error = null
 
   return (
     <View style={styles.historySection}>
-      <Text style={styles.sectionTitle}>History</Text>
+      {/* New Panel Structure Wrapping contents */}
+      <View style={styles.panelOuter}>
+        <View style={styles.panelMiddle}>
+          <View style={styles.panelInner}>
+            
+            <Text style={styles.sectionTitle}>History</Text>
 
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.loadingText}>Loading history...</Text>
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#fff" />
+                <Text style={styles.loadingText}>Loading history...</Text>
+              </View>
+            ) : error ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+                <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
+                  <Text style={styles.retryButtonText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <ScrollView
+                style={styles.historyScrollView}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.historyContent}
+                nestedScrollEnabled
+              >
+                {!limitedHistory.length ? (
+                  <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>No match history yet.</Text>
+                  </View>
+                ) : (
+                  limitedHistory.map((item, index) => {
+                          const characterAvatar = resolveImageUri(item?.character?.character_avatar);
+                          const characterPlayerAvatar = resolveImageUri(item?.character?.player_avatar);
+                          const playerRankImage = resolveImageUri(item?.character?.player_rank_image);
+
+                          const enemyAvatar = resolveImageUri(item?.enemy?.enemy_avatar);
+                          const enemyPlayerAvatar = resolveImageUri(item?.enemy?.player_avatar);
+                          const enemyRankImage = resolveImageUri(item?.enemy?.player_rank_image);
+
+                          const status = toLabel(item?.match_status).toUpperCase();
+                          const isWin = status === 'WIN';
+                          const isLoss = status === 'LOSS' || status === 'LOSE';
+
+                          return (
+                            <View key={item?.match_id || `history-${index}`} style={[styles.cardOuter, isLoss && styles.cardOuterLoss]}>
+                              <View style={styles.cardBackgroundContainer}>
+                                <View style={[styles.sideBackground, styles.sideBackgroundPlayer]}>
+                                  <View style={styles.rankImageContainer}>
+                                    {playerRankImage ? (
+                                      <Image source={{ uri: playerRankImage }} style={styles.rankBackgroundImage} resizeMode="contain" />
+                                    ) : (
+                                      <View style={[styles.rankBackgroundImage, styles.avatarPlaceholder]} />
+                                    )}
+                                  </View>
+
+                                  {characterAvatar ? (
+                                    <Image source={{ uri: characterAvatar }} style={styles.characterBackgroundImage} resizeMode="cover" />
+                                  ) : (
+                                    <View style={[styles.characterBackgroundImage, styles.avatarPlaceholder]} />
+                                  )}
+                                </View>
+
+                                <View style={[styles.sideBackground, styles.sideBackgroundEnemy]}>
+                                  <View style={styles.rankImageContainer}>
+                                    {enemyRankImage ? (
+                                      <Image source={{ uri: enemyRankImage }} style={[styles.rankBackgroundImage, styles.reversedBackground]} resizeMode="contain" />
+                                    ) : (
+                                      <View style={[styles.rankBackgroundImage, styles.reversedBackground, styles.avatarPlaceholder]} />
+                                    )}
+                                  </View>
+
+                                  {enemyAvatar ? (
+                                    <Image source={{ uri: enemyAvatar }} style={[styles.characterBackgroundImage, styles.reversedBackground]} resizeMode="cover" />
+                                  ) : (
+                                    <View style={[styles.characterBackgroundImage, styles.reversedBackground, styles.avatarPlaceholder]} />
+                                  )}
+                                </View>
+                              </View>
+
+                              <View style={styles.cardContentLayer}>
+                                <View style={styles.cardHeader}>
+                                  <View style={styles.playerInfoRow}>
+                                    {characterPlayerAvatar ? (
+                                      <Image source={{ uri: characterPlayerAvatar }} style={styles.circularAvatar} resizeMode="cover" />
+                                    ) : (
+                                      <View style={[styles.circularAvatar, styles.avatarPlaceholder]} />
+                                    )}
+                                    <View>
+                                      <Text style={styles.playerName}>{toLabel(item?.character?.player_name)}</Text>
+                                      <Text style={styles.heroName}>Hero: {toLabel(item?.character?.character_name)}</Text>
+                                    </View>
+                                  </View>
+
+                                  <View style={[styles.playerInfoRow, styles.reversedPlayerInfo]}>
+                                    {enemyPlayerAvatar ? (
+                                      <Image source={{ uri: enemyPlayerAvatar }} style={styles.circularAvatar} resizeMode="cover" />
+                                    ) : (
+                                      <View style={[styles.circularAvatar, styles.avatarPlaceholder]} />
+                                    )}
+                                    <View style={{ alignItems: 'flex-end' }}>
+                                      <Text style={styles.playerName}>{toLabel(item?.enemy?.player_name)}</Text>
+                                      <Text style={styles.heroName}>Hero: {toLabel(item?.enemy?.enemy_name)}</Text>
+                                    </View>
+                                  </View>
+                                </View>
+
+                                <View style={styles.cardCenterContent}>
+                                  <View style={styles.statsContainer}>
+                                    <View style={styles.statItem}>
+                                      <Image source={POINTS_ICON} style={styles.statIcon} resizeMode="contain" />
+                                      <Text style={styles.sideText}>{toLabel(item?.character?.points)}</Text>
+                                    </View>
+                                    <View style={styles.statItem}>
+                                      <Image source={COINS_ICON} style={styles.statIcon} resizeMode="contain" />
+                                      <Text style={styles.sideText}>{toLabel(item?.character?.coins)}</Text>
+                                    </View>
+                                    <View style={styles.statItem}>
+                                      <Image source={EXP_ICON} style={styles.statIcon} resizeMode="contain" />
+                                      <Text style={styles.sideText}>{toLabel(item?.character?.exp_points)}</Text>
+                                    </View>
+                                  </View>
+
+                                  <View style={styles.statusContainer}>
+                                    <Text style={[styles.statusText, isWin && styles.statusTextWin, isLoss && styles.statusTextLoss]}>{status}</Text>
+                                  </View>
+
+                                  <View style={[styles.statsContainer, styles.reversedStats]}>
+                                    <View style={styles.statItem}>
+                                      <Image source={POINTS_ICON} style={styles.statIcon} resizeMode="contain" />
+                                      <Text style={styles.sideTextRight}>{toLabel(item?.enemy?.points)}</Text>
+                                    </View>
+                                    <View style={styles.statItem}>
+                                      <Image source={COINS_ICON} style={styles.statIcon} resizeMode="contain" />
+                                      <Text style={styles.sideTextRight}>{toLabel(item?.enemy?.coins)}</Text>
+                                    </View>
+                                    <View style={styles.statItem}>
+                                      <Image source={EXP_ICON} style={styles.statIcon} resizeMode="contain" />
+                                      <Text style={styles.sideTextRight}>{toLabel(item?.enemy?.exp_points)}</Text>
+                                    </View>
+                                  </View>
+                                </View>
+
+                                <View style={styles.cardFooter}>
+                                  <Text style={styles.dateText}>{formatDate(item?.date)}</Text>
+                                </View>
+                              </View>
+                            </View>
+                          );
+                  })
+                )}
+              </ScrollView>
+            )}
+          </View>
         </View>
-      ) : error ? (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <ScrollView
-          style={styles.historyScrollView}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.historyContent}
-          nestedScrollEnabled
-        >
-          {!limitedHistory.length ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No match history yet.</Text>
-            </View>
-          ) : (
-            limitedHistory.map((item, index) => {
-                    const characterAvatar = resolveImageUri(item?.character?.character_avatar);
-                    const characterPlayerAvatar = resolveImageUri(item?.character?.player_avatar);
-                    const playerRankImage = resolveImageUri(item?.character?.player_rank_image);
-
-                    const enemyAvatar = resolveImageUri(item?.enemy?.enemy_avatar);
-                    const enemyPlayerAvatar = resolveImageUri(item?.enemy?.player_avatar);
-                    const enemyRankImage = resolveImageUri(item?.enemy?.player_rank_image);
-
-                    const status = toLabel(item?.match_status).toUpperCase();
-                    const isWin = status === 'WIN';
-                    const isLoss = status === 'LOSS' || status === 'LOSE';
-
-                    return (
-                      <View key={item?.match_id || `history-${index}`} style={[styles.cardOuter, isLoss && styles.cardOuterLoss]}>
-                        <View style={styles.cardBackgroundContainer}>
-                          <View style={[styles.sideBackground, styles.sideBackgroundPlayer]}>
-                            <View style={styles.rankImageContainer}>
-                              {playerRankImage ? (
-                                <Image source={{ uri: playerRankImage }} style={styles.rankBackgroundImage} resizeMode="contain" />
-                              ) : (
-                                <View style={[styles.rankBackgroundImage, styles.avatarPlaceholder]} />
-                              )}
-                            </View>
-
-                            {characterAvatar ? (
-                              <Image source={{ uri: characterAvatar }} style={styles.characterBackgroundImage} resizeMode="cover" />
-                            ) : (
-                              <View style={[styles.characterBackgroundImage, styles.avatarPlaceholder]} />
-                            )}
-                          </View>
-
-                          <View style={[styles.sideBackground, styles.sideBackgroundEnemy]}>
-                            <View style={styles.rankImageContainer}>
-                              {enemyRankImage ? (
-                                <Image source={{ uri: enemyRankImage }} style={[styles.rankBackgroundImage, styles.reversedBackground]} resizeMode="contain" />
-                              ) : (
-                                <View style={[styles.rankBackgroundImage, styles.reversedBackground, styles.avatarPlaceholder]} />
-                              )}
-                            </View>
-
-                            {enemyAvatar ? (
-                              <Image source={{ uri: enemyAvatar }} style={[styles.characterBackgroundImage, styles.reversedBackground]} resizeMode="cover" />
-                            ) : (
-                              <View style={[styles.characterBackgroundImage, styles.reversedBackground, styles.avatarPlaceholder]} />
-                            )}
-                          </View>
-                        </View>
-
-                        <View style={styles.cardContentLayer}>
-                          <View style={styles.cardHeader}>
-                            <View style={styles.playerInfoRow}>
-                              {characterPlayerAvatar ? (
-                                <Image source={{ uri: characterPlayerAvatar }} style={styles.circularAvatar} resizeMode="cover" />
-                              ) : (
-                                <View style={[styles.circularAvatar, styles.avatarPlaceholder]} />
-                              )}
-                              <View>
-                                <Text style={styles.playerName}>{toLabel(item?.character?.player_name)}</Text>
-                                <Text style={styles.heroName}>Hero: {toLabel(item?.character?.character_name)}</Text>
-                              </View>
-                            </View>
-
-                            <View style={[styles.playerInfoRow, styles.reversedPlayerInfo]}>
-                              {enemyPlayerAvatar ? (
-                                <Image source={{ uri: enemyPlayerAvatar }} style={styles.circularAvatar} resizeMode="cover" />
-                              ) : (
-                                <View style={[styles.circularAvatar, styles.avatarPlaceholder]} />
-                              )}
-                              <View style={{ alignItems: 'flex-end' }}>
-                                <Text style={styles.playerName}>{toLabel(item?.enemy?.player_name)}</Text>
-                                <Text style={styles.heroName}>Hero: {toLabel(item?.enemy?.enemy_name)}</Text>
-                              </View>
-                            </View>
-                          </View>
-
-                          <View style={styles.cardCenterContent}>
-                            <View style={styles.statsContainer}>
-                              <View style={styles.statItem}>
-                                <Image source={POINTS_ICON} style={styles.statIcon} resizeMode="contain" />
-                                <Text style={styles.sideText}>{toLabel(item?.character?.points)}</Text>
-                              </View>
-                              <View style={styles.statItem}>
-                                <Image source={COINS_ICON} style={styles.statIcon} resizeMode="contain" />
-                                <Text style={styles.sideText}>{toLabel(item?.character?.coins)}</Text>
-                              </View>
-                            </View>
-
-                            <View style={styles.statusContainer}>
-                              <Text style={[styles.statusText, isWin && styles.statusTextWin, isLoss && styles.statusTextLoss]}>{status}</Text>
-                            </View>
-
-                            <View style={[styles.statsContainer, styles.reversedStats]}>
-                              <View style={styles.statItem}>
-                                <Image source={POINTS_ICON} style={styles.statIcon} resizeMode="contain" />
-                                <Text style={styles.sideTextRight}>{toLabel(item?.enemy?.points)}</Text>
-                              </View>
-                              <View style={styles.statItem}>
-                                <Image source={COINS_ICON} style={styles.statIcon} resizeMode="contain" />
-                                <Text style={styles.sideTextRight}>{toLabel(item?.enemy?.coins)}</Text>
-                              </View>
-                            </View>
-                          </View>
-
-                          <View style={styles.cardFooter}>
-                            <Text style={styles.dateText}>{formatDate(item?.date)}</Text>
-                          </View>
-                        </View>
-                      </View>
-                    );
-            })
-          )}
-        </ScrollView>
-      )}
+      </View>
     </View>
   );
 };
@@ -193,6 +210,43 @@ const styles = StyleSheet.create({
     marginBottom: gameScale(16),
     paddingHorizontal: gameScale(12),
   },
+  // --- New Panel Styles (Copied and adapted, removed flex:1) ---
+  panelOuter: {
+    borderRadius: gameScale(16),
+    borderWidth: gameScale(1),
+    borderTopColor: '#0d1f33',
+    borderLeftColor: '#0d1f33',
+    borderBottomColor: '#2d5a87',
+    borderRightColor: '#2d5a87',
+    backgroundColor: '#1e3a5f',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: gameScale(4) },
+    shadowOpacity: 0.35,
+    shadowRadius: gameScale(6),
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  panelMiddle: {
+    borderRadius: gameScale(14),
+    borderWidth: gameScale(1),
+    borderTopColor: '#4a90d9',
+    borderLeftColor: '#4a90d9',
+    borderBottomColor: '#0a1929',
+    borderRightColor: '#0a1929',
+    backgroundColor: '#152d4a',
+    padding: gameScale(1),
+    overflow: 'hidden',
+  },
+  panelInner: {
+    borderRadius: gameScale(12),
+    borderWidth: gameScale(1),
+    borderColor: 'rgba(74, 144, 217, 0.35)',
+    backgroundColor: '#0f2742',
+    overflow: 'hidden',
+    padding: gameScale(12), // Added padding for inner content
+  },
+  // ---------------------------------------------------------
+
   sectionTitle: {
     fontSize: gameScale(35),
     color: 'white',
@@ -204,11 +258,11 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   historyScrollView: {
-    maxHeight: gameScale(540),
+    maxHeight: gameScale(540), // Keeps the height constraint
   },
   historyContent: {
-    paddingHorizontal: gameScale(8),
-    paddingVertical: gameScale(10),
+    paddingHorizontal: gameScale(4), // Reduced padding slightly as panelInner has padding
+    paddingVertical: gameScale(4),
     gap: gameScale(10),
   },
   loadingContainer: {
@@ -390,7 +444,7 @@ const styles = StyleSheet.create({
     color: '#ff4d4d',
   },
   statsContainer: {
-    gap: gameScale(4),
+    marginBottom: gameScale(-25), 
     alignItems: 'flex-start',
   },
   reversedStats: {
@@ -402,7 +456,6 @@ const styles = StyleSheet.create({
   statIcon: {
     width: gameScale(24),
     height: gameScale(24),
-    marginBottom: gameScale(2),
   },
   sideText: {
     color: '#f4e7d1',

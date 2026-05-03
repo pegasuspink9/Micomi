@@ -16,6 +16,7 @@ import { universalAssetPreloader } from './services/preloader/universalAssetPrel
 // Local image assets for stats
 const POINTS_ICON = require('../app/Components/icons/points.png');
 const COINS_ICON = require('../app/Components/icons/coins.png');
+const EXP_ICON = require('../app/Components/icons/exp.png');
 
 const formatDateFiveYear = (isoDate) => {
   if (!isoDate) {
@@ -223,6 +224,10 @@ export default function PvpHistoryPage() {
                                   <Image source={COINS_ICON} style={styles.statIcon} resizeMode="contain" />
                                   <Text style={styles.sideText}>{toLabel(item?.character?.coins)}</Text>
                                 </View>
+                                <View style={styles.statItem}>
+                                  <Image source={EXP_ICON} style={styles.statIcon} resizeMode="contain" />
+                                  <Text style={styles.sideText}>{toLabel(item?.character?.exp_points)}</Text>
+                                </View>
                               </View>
 
                               {/* Status (Centered Vertically) */}
@@ -239,6 +244,10 @@ export default function PvpHistoryPage() {
                                 <View style={styles.statItem}>
                                   <Image source={COINS_ICON} style={styles.statIcon} resizeMode="contain" />
                                   <Text style={styles.sideTextRight}>{toLabel(item?.enemy?.coins)}</Text>
+                                </View>
+                                <View style={styles.statItem}>
+                                  <Image source={EXP_ICON} style={styles.statIcon} resizeMode="contain" />
+                                  <Text style={styles.sideTextRight}>{toLabel(item?.enemy?.exp_points)}</Text>
                                 </View>
                               </View>
                             </View>
@@ -541,7 +550,7 @@ const styles = StyleSheet.create({
     color: '#ff4d4d', // Red for loss
   },
   statsContainer: {
-    gap: gameScale(4),
+    marginBottom: gameScale(-25), 
     alignItems: 'flex-start',
   },
   reversedStats: {
@@ -553,7 +562,6 @@ const styles = StyleSheet.create({
   statIcon: {
     width: gameScale(24),
     height: gameScale(24),
-    marginBottom: gameScale(2),
   },
   sideText: {
     color: '#f4e7d1',
