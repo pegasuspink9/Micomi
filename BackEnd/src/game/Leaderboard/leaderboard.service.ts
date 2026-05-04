@@ -9,18 +9,26 @@ export const getLeaderboard = async (limit = 10) => {
       username, 
       total_points,
       player_avatar,
-      RANK() OVER (ORDER BY total_points DESC) AS rank
+      player_rank_name,
+      player_rank_image,
+      player_rank_points,
+      (COALESCE(total_points, 0) + COALESCE(player_rank_points, 0)) AS effective_total_points,
+      RANK() OVER (
+        ORDER BY (COALESCE(total_points, 0) + COALESCE(player_rank_points, 0)) DESC
+      ) AS rank
     FROM "Player"
-    ORDER BY total_points DESC
+    ORDER BY (COALESCE(total_points, 0) + COALESCE(player_rank_points, 0)) DESC
     LIMIT ${limit};
   `);
 
   const topPlayers = topRows.map((r) => ({
     player_id: Number(r.player_id),
     username: r.username,
-    total_points: Number(r.total_points),
+    total_points: Number(r.effective_total_points),
     rank: Number(r.rank),
     player_avatar: r.player_avatar,
+    player_rank_name: r.player_rank_name,
+    player_rank_image: r.player_rank_image,
   }));
 
   return topPlayers;
