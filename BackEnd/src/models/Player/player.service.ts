@@ -448,6 +448,7 @@ export const createPlayer = async (data: PlayerCreateInput) => {
   });
 
   await initializeNewGameState(newPlayer.player_id);
+  await assignDefaultTheme(newPlayer.player_id);
 
   try {
     console.log(
@@ -752,4 +753,45 @@ export const getFriendRecommendations = async (
     ...player,
     player_avatar: player.player_avatar || DEFAULT_AVATAR_URL,
   }));
+};
+
+export const assignDefaultTheme = async (playerId: number) => {
+  const defaultTheme = await prisma.themeShop.findUnique({
+    where: {
+      theme_name: "BluBoom",
+    },
+  });
+
+  if (!defaultTheme) {
+    console.warn(`Default theme 'BluBoom' not found for player ${playerId}`);
+    return;
+  }
+
+  const existingSelected = await prisma.playerTheme.findFirst({
+    where: {
+      player_id: playerId,
+      is_selected: true,
+    },
+  });
+
+  if (existingSelected) return;
+
+  await prisma.playerTheme.upsert({
+    where: {
+      player_id_theme_id: {
+        player_id: playerId,
+        theme_id: defaultTheme.theme_id,
+      },
+    },
+    update: {
+      is_selected: true,
+    },
+    create: {
+      player_id: playerId,
+      theme_id: defaultTheme.theme_id,
+      is_selected: true,
+    },
+  });
+
+  console.log(`Assigned default theme 'BluBoom' to player ${playerId}`);
 };
