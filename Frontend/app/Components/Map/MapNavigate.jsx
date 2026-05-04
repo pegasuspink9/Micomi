@@ -18,6 +18,7 @@ import { useMapData } from '../../hooks/useMapData';
 import { MAP_THEMES } from '../RoadMap/MapLevel/MapDatas/mapData'; 
 import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
 import { mapService } from '../../services/mapService';
+import DailyRewards from '../DailyRewards Components/DailyRewards';
 import MiniQuestPreview from './MiniQuestPreview/MiniQuestPreview';
 import { soundManager } from '../Actual Game/Sounds/UniversalSoundManager';
 import MainLoading from '../Actual Game/Loading/MainLoading';
@@ -241,11 +242,13 @@ export default function MapNavigate({ onMapChange }) {
           </View>
         )}
 
-        {/* PvP Button */}
-        <TouchableOpacity style={styles.pvpEntryButton} activeOpacity={0.9} onPress={handleOpenPvpModal}>
-          <MaterialCommunityIcons name="sword-cross" size={24} color="#E8F5FF" />
-          <Text style={styles.pvpEntryButtonText}>PvP</Text>
-        </TouchableOpacity>
+        <View style={styles.iconColumn}>
+          <DailyRewards />
+          <TouchableOpacity style={styles.pvpEntryButton} activeOpacity={0.9} onPress={handleOpenPvpModal}>
+            <MaterialCommunityIcons name="sword-cross" size={24} color="#E8F5FF" />
+            <Text style={styles.pvpEntryButtonText}>PvP</Text>
+          </TouchableOpacity>
+        </View>
 
 
         {/* --- OPTIMIZED MAIN DISPLAY AREA --- */}
@@ -345,6 +348,7 @@ export default function MapNavigate({ onMapChange }) {
         </View>
       </Modal>
 
+
       {/* Download Progress Modal (kept structure, styles omitted for brevity as they weren't changing) */}
       <Modal visible={downloadModalVisible} transparent={true} animationType="none">
           {/* ... (Download modal content remains the same as original file) ... */}
@@ -429,11 +433,15 @@ const styles = StyleSheet.create({
 
   // ... (PvP styles remain the same) ...
   pvpEntryButton: {
-    position: 'absolute', top: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 14 : 20, right: 16,
     width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(16, 36, 72, 0.88)',
-    borderWidth: 2, borderColor: '#58B5FF', alignItems: 'center', justifyContent: 'center', zIndex: 120, elevation: 10,
+    borderWidth: 2, borderColor: '#58B5FF', alignItems: 'center', justifyContent: 'center', zIndex: 120, elevation: 10, marginTop: 8,
   },
   pvpEntryButtonText: { color: '#E8F5FF', fontSize: 12, fontFamily: 'Grobold', marginTop: 2 },
+
+  iconColumn: {
+    position: 'absolute', top: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 14 : 20, right: 16,
+    zIndex: 120, alignItems: 'center'
+  },
 
   // ... (Modal styles remain largely the same, slightly cleaned up) ...
   mapModalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1000 },
@@ -451,6 +459,7 @@ const styles = StyleSheet.create({
   mapModalBtnText: { color: '#fff', fontFamily: 'Grobold', fontSize: 16 },
   disabledBtn: { backgroundColor: '#555', borderColor: '#333' },
   disabledBtnText: { color: '#999' },
+
 
   // ... (Corner dots styles) ...
   cornerDot: { position: 'absolute', width: 12, height: 12, borderRadius: 6, backgroundColor: '#4a1e00', borderColor: '#c46623', borderWidth: 1, zIndex: 2 },
