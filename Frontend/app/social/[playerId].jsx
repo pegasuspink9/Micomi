@@ -287,6 +287,7 @@ export default function PublicPlayerProfileScreen() {
               setActiveTab={setInventoryTab}
               badges={playerData.badges || []}
               potions={playerData.potions || []}
+              themes={playerData.themes || []}
               viewPlayerId={playerId}
             />
           ) : (

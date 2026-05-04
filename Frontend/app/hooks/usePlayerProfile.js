@@ -13,6 +13,16 @@ export const usePlayerProfile = () => {
   const [availableAvatars, setAvailableAvatars] = useState([]); // New state
   const [isSelectingAvatar, setIsSelectingAvatar] = useState(false)
 
+  const attachThemesToProfile = useCallback((baseData, themesPayload) => {
+    const themes = themesPayload?.themes || [];
+    const diamonds = themesPayload?.diamonds ?? baseData?.diamonds ?? 0;
+    return {
+      ...baseData,
+      themes,
+      diamonds,
+    };
+  }, [attachThemesToProfile]);
+
   // ✅ Load player profile from API with Map API cache reuse
   const loadPlayerProfile = useCallback(async () => {
     try {
@@ -30,6 +40,13 @@ export const usePlayerProfile = () => {
       
       // Get player data from API
       const apiData = await playerService.getPlayerProfile();
+      let themesPayload = null;
+
+      try {
+        themesPayload = await playerService.getThemes();
+      } catch (themesError) {
+        console.error('Failed to load themes:', themesError);
+      }
       
       // Transform API data to our format
       let transformedData = playerService.transformPlayerData(apiData);
@@ -57,13 +74,14 @@ export const usePlayerProfile = () => {
         dataWithCachedPaths = universalAssetPreloader.transformPlayerDataWithCache(transformedData);
       }
       
-      setPlayerData(dataWithCachedPaths);
+      const mergedData = attachThemesToProfile(dataWithCachedPaths, themesPayload);
+      setPlayerData(mergedData);
 
       fetchAvailableAvatars();
       
       
       console.log('✅ Player profile loaded successfully with cached assets');
-      return dataWithCachedPaths;
+      return mergedData;
     } catch (err) {
       setError(err.message);
       console.error('Failed to load player profile:', err);
@@ -77,6 +95,13 @@ export const usePlayerProfile = () => {
     try {
       const apiData = await playerService.getPlayerProfile();
       let transformedData = playerService.transformPlayerData(apiData);
+
+      let themesPayload = null;
+      try {
+        themesPayload = await playerService.getThemes();
+      } catch (themesError) {
+        console.error('Failed to load themes:', themesError);
+      }
       
       let dataWithCachedPaths = transformedData;
       if (typeof universalAssetPreloader.transformProfileDataWithMapCache === 'function') {
@@ -85,12 +110,13 @@ export const usePlayerProfile = () => {
         dataWithCachedPaths = universalAssetPreloader.transformPlayerDataWithCache(transformedData);
       }
       
-      setPlayerData(dataWithCachedPaths);
-      return dataWithCachedPaths;
+      const mergedData = attachThemesToProfile(dataWithCachedPaths, themesPayload);
+      setPlayerData(mergedData);
+      return mergedData;
     } catch (err) {
       console.error('Silent refresh failed:', err);
     }
-  }, []);
+  }, [attachThemesToProfile]);
 
   const fetchAvailableAvatars = useCallback(async () => {
     try {
@@ -114,6 +140,42 @@ export const usePlayerProfile = () => {
       setIsSelectingAvatar(false);
     }
   }, [loadPlayerProfile]);
+
+  const refreshThemes = useCallback(async () => {
+    try {
+      const themesPayload = await playerService.getThemes();
+      setPlayerData((prev) => {
+        if (!prev) return prev;
+        return attachThemesToProfile(prev, themesPayload);
+      });
+      return themesPayload;
+    } catch (err) {
+      console.error('Failed to refresh themes:', err);
+      return null;
+    }
+  }, [attachThemesToProfile]);
+
+  const selectTheme = useCallback(async (themeId) => {
+    try {
+      await playerService.selectTheme(themeId);
+      await refreshThemes();
+      return { success: true };
+    } catch (err) {
+      console.error('Select theme failed:', err);
+      return { success: false, error: err.message };
+    }
+  }, [refreshThemes]);
+
+  const purchaseTheme = useCallback(async (themeId) => {
+    try {
+      await playerService.purchaseTheme(themeId);
+      await refreshThemes();
+      return { success: true };
+    } catch (err) {
+      console.error('Purchase theme failed:', err);
+      return { success: false, error: err.message };
+    }
+  }, [refreshThemes]);
 
 
   const checkForCharacterUpdates = useCallback(async () => {
@@ -155,6 +217,10 @@ export const usePlayerProfile = () => {
 
   const getPotions = useCallback(() => {
     return playerData?.potions || [];
+  }, [playerData]);
+
+  const getThemes = useCallback(() => {
+    return playerData?.themes || [];
   }, [playerData]);
 
   const getEarnedBadges = useCallback(() => {
@@ -217,11 +283,15 @@ export const usePlayerProfile = () => {
     updateAvatar,
     clearError,
     refreshPlayerData,
+    refreshThemes,
+    selectTheme,
+    purchaseTheme,
     
     // Getters
     getBadges,
     getQuests,
     getPotions,
+    getThemes,
     getEarnedBadges,
     getCompletedQuests,
     getActiveQuests,

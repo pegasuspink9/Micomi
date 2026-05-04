@@ -35,7 +35,9 @@ export default function Profile() {
     clearError,
     availableAvatars,
     updateAvatar,
-    isSelectingAvatar
+    isSelectingAvatar,
+    selectTheme,
+    purchaseTheme
   } = usePlayerProfile();
 
   const [inventoryTab, setInventoryTab] = useState('Badges');
@@ -172,6 +174,9 @@ export default function Profile() {
               setActiveTab={setInventoryTab}
               badges={playerData.badges}
               potions={playerData.potions}
+              themes={playerData.themes || []}
+              onThemeSelect={selectTheme}
+              onThemePurchase={purchaseTheme}
             />
           ) : (
             <ProfileRankHistorySection

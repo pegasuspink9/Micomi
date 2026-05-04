@@ -24,6 +24,16 @@ export const playerService = {
     }
   },
 
+  getThemes: async () => {
+    try {
+      const response = await apiService.get('/game/themes');
+      return response.success ? response.data : response;
+    } catch (error) {
+      console.error('Failed to fetch themes:', error);
+      throw error;
+    }
+  },
+
   selectAvatar: async (avatarId) => {
     try {
       console.log(`👤 Selecting avatar ${avatarId} for player...`);
@@ -57,6 +67,38 @@ export const playerService = {
       return response;
     } catch (error) {
       console.error(`Failed to select badge ${achievementId}:`, error);
+      throw error;
+    }
+  },
+
+  selectTheme: async (themeId) => {
+    try {
+      console.log(`🎨 Selecting theme ${themeId} for player...`);
+      const response = await apiService.post(`/game/themes/${themeId}/select`);
+
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to select theme');
+      }
+
+      return response;
+    } catch (error) {
+      console.error(`Failed to select theme ${themeId}:`, error);
+      throw error;
+    }
+  },
+
+  purchaseTheme: async (themeId) => {
+    try {
+      console.log(`🛒 Purchasing theme ${themeId} for player...`);
+      const response = await apiService.post(`/game/themes/${themeId}/purchase`);
+
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to purchase theme');
+      }
+
+      return response;
+    } catch (error) {
+      console.error(`Failed to purchase theme ${themeId}:`, error);
       throw error;
     }
   },
@@ -144,6 +186,7 @@ export const playerService = {
       badges: transformedBadges,
       quests: transformedQuests,
       potions: transformedPotions,
+      themes: apiData.themes || [],
       //  Raw URLs for stats icons (same as Map API)
       statsIcons: {
         coins: "https://github.com/user-attachments/assets/cdbba724-147a-41fa-89c5-26e7252c66cd",
