@@ -155,6 +155,12 @@ router.get(
   PvPDailyController.getMatchHistory,
 );
 router.get(
+  "/pvp/daily/match/history/:playerId",
+  authenticate,
+  requirePlayer,
+  PvPDailyController.getMatchHistory,
+);
+router.get(
   "/pvp/daily/match/status",
   authenticate,
   requirePlayer,
