@@ -8,8 +8,6 @@ import {
   StyleSheet,
   ScrollView,
   Dimensions,
-  Platform,
-  StatusBar,
 } from 'react-native';
 import Reanimated, {
   useSharedValue,
@@ -23,7 +21,6 @@ import { gameScale, wp } from '../../Responsiveness/gameResponsive';
 
 
 const { width: SCREEN_WIDTH } = Dimensions.get('screen');
-const STATUS_BAR_HEIGHT = StatusBar.currentHeight || 0;
 
 const PotionDetailModal = ({ visible, potion, onClose }) => {
   if (!visible) {
@@ -32,73 +29,81 @@ const PotionDetailModal = ({ visible, potion, onClose }) => {
   if (!potion) return null;
 
   return (
-    <TouchableOpacity 
-      style={styles.fullScreenOverlay} 
-      activeOpacity={1} 
-      onPress={onClose}
+    <Modal
+      transparent
+      visible={visible}
+      animationType="fade"
+      onRequestClose={onClose}
+      statusBarTranslucent
     >
-      <View style={styles.modalContentWrapper}>
-        <TouchableOpacity 
-          activeOpacity={1} 
-          onPress={(e) => e.stopPropagation()}
-          style={styles.touchableContent}
-        >
-          <View style={styles.floatingContainer}>
-            <ModalPotionSprite icon={potion.icon} />
-            
-            <ScrollView 
-              style={styles.floatingTextScrollView} 
-              contentContainerStyle={styles.scrollContentContainer} 
-              showsVerticalScrollIndicator={false}
-            >
-              {/* Potion Name */}
-              <Text style={styles.floatingName}>{potion.name}</Text>
-              
-              {/* Potion Description */}
-              <Text style={styles.floatingDescription}>{potion.description}</Text>
-              
-              {/* Attributes Grid - 2 Columns */}
-              <View style={styles.attributesContainer}>
-                {/* Type Row */}
-                <View style={styles.attributeRow}>
-                  <View style={styles.attributeItem}>
-                    <Text style={styles.attributeLabel}>Type</Text>
-                    <Text style={styles.attributeValue}>
-                      {potion.type}
-                    </Text>
+      <TouchableOpacity
+        style={styles.fullScreenOverlay}
+        activeOpacity={1}
+        onPress={onClose}
+      >
+        <View style={styles.modalContentWrapper}>
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+            style={styles.touchableContent}
+          >
+            <View style={styles.floatingContainer}>
+              <ModalPotionSprite icon={potion.icon} />
+
+              <ScrollView
+                style={styles.floatingTextScrollView}
+                contentContainerStyle={styles.scrollContentContainer}
+                showsVerticalScrollIndicator={false}
+              >
+                {/* Potion Name */}
+                <Text style={styles.floatingName}>{potion.name}</Text>
+
+                {/* Potion Description */}
+                <Text style={styles.floatingDescription}>{potion.description}</Text>
+
+                {/* Attributes Grid - 2 Columns */}
+                <View style={styles.attributesContainer}>
+                  {/* Type Row */}
+                  <View style={styles.attributeRow}>
+                    <View style={styles.attributeItem}>
+                      <Text style={styles.attributeLabel}>Type</Text>
+                      <Text style={styles.attributeValue}>
+                        {potion.type}
+                      </Text>
+                    </View>
+
+                    {/* Price */}
+                    <View style={styles.attributeItem}>
+                      <Text style={styles.attributeLabel}>Price</Text>
+                      <Text style={styles.attributeValue}>{potion.price}</Text>
+                    </View>
                   </View>
-                  
-                  {/* Price */}
-                  <View style={styles.attributeItem}>
-                    <Text style={styles.attributeLabel}>Price</Text>
-                    <Text style={styles.attributeValue}>{potion.price}</Text>
+
+                  {/* In Stock Row */}
+                  <View style={styles.attributeRow}>
+                    <View style={styles.attributeItem}>
+                      <Text style={styles.attributeLabel}>In Stock</Text>
+                      <Text style={[
+                        styles.attributeValue
+                      ]}>
+                        {potion.count}
+                      </Text>
+                    </View>
+
+                    {/* Rarity */}
+                    <View style={styles.attributeItem}>
+                      <Text style={styles.attributeLabel}>Rarity</Text>
+                      <Text style={styles.attributeValue}>{potion.rarity || 'Common'}</Text>
+                    </View>
                   </View>
                 </View>
-                
-                {/* In Stock Row */}
-                <View style={styles.attributeRow}>
-                  <View style={styles.attributeItem}>
-                    <Text style={styles.attributeLabel}>In Stock</Text>
-                    <Text style={[
-                      styles.attributeValue
-                    ]}>
-                      {potion.count}
-                    </Text>
-                  </View>
-                  
-                  {/* Rarity */}
-                  <View style={styles.attributeItem}>
-                    <Text style={styles.attributeLabel}>Rarity</Text>
-                    <Text style={styles.attributeValue}>{potion.rarity || 'Common'}</Text>
-                  </View>
-                </View>
-              </View>
-              
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
+
+              </ScrollView>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </Modal>
   );
 };
 
@@ -157,17 +162,11 @@ const ModalPotionSprite = ({ icon }) => {
 };
 
 const styles = StyleSheet.create({
-    fullScreenOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1000, 
+  fullScreenOverlay: {
+    flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: Platform.OS === 'android' ? STATUS_BAR_HEIGHT : 0,
   },
   modalContentWrapper: {
     width: wp(90),

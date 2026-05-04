@@ -86,7 +86,7 @@ const PotionCard = ({ potion }) => {
 const styles = StyleSheet.create({
   potionCard: {
     alignItems: 'center',
-    width: '100%',
+    width: '100%'
   },
 
   cabinetLayer1: {
