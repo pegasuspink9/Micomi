@@ -17,6 +17,24 @@ export default function MapHeader() {
   const router = useRouter(); // Initialize router
   const { playerData, loadPlayerProfile, refreshPlayerData } = usePlayerProfile();
 
+  const formatCompactNumber = (value) => {
+    const numericValue = Number(value || 0);
+
+    if (Math.abs(numericValue) >= 1000000) {
+      const millions = numericValue / 1000000;
+      const roundedMillions = Math.round(millions * 10) / 10;
+      return `${Number.isInteger(roundedMillions) ? roundedMillions.toFixed(0) : roundedMillions}M`;
+    }
+
+    if (Math.abs(numericValue) >= 1000) {
+      const thousands = numericValue / 1000;
+      const roundedThousands = Math.round(thousands * 10) / 10;
+      return `${Number.isInteger(roundedThousands) ? roundedThousands.toFixed(0) : roundedThousands}K`;
+    }
+
+    return numericValue.toLocaleString();
+  };
+
   useFocusEffect(
     useCallback(() => {
       loadPlayerProfile();
@@ -46,6 +64,7 @@ export default function MapHeader() {
   const levelData = calculateLevelProgress();
   const username = playerData?.username || "Loading...";
   const coins = playerData?.coins || 0;
+  const diamonds = playerData?.diamonds || 0;
   const lives = 300;
   
   const avatarUrl = playerData?.playerAvatar || "https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif";;
@@ -134,7 +153,7 @@ export default function MapHeader() {
             <View style={styles.resourceBorderMiddle}>
               <View style={styles.resourceBorderInner}>
                 <View style={styles.resourceTrack}>
-                  <Text style={styles.resourceText}>{coins}</Text>
+                  <Text style={styles.resourceText}>{formatCompactNumber(coins)}</Text>
                 </View>
               </View>
             </View>
@@ -147,13 +166,32 @@ export default function MapHeader() {
           />
         </View>
 
+        {/* Diamonds Capsule */}
+        <View style={styles.resourceWrapper}>
+           <View style={styles.resourceBorderOuter}>
+            <View style={styles.resourceBorderMiddle}>
+              <View style={styles.resourceBorderInner}>
+                <View style={styles.resourceTrack}>
+                  <Text style={styles.resourceText}>{formatCompactNumber(diamonds)}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+          <Image
+            source={require('../icons/energy.png')}
+            style={styles.energyIconAbsolute}
+            contentFit="contain"
+            cachePolicy="memory-disk"
+          />
+        </View>
+
         {/* Energy Capsule */}
         <View style={styles.resourceWrapper}>
            <View style={styles.resourceBorderOuter}>
             <View style={styles.resourceBorderMiddle}>
               <View style={styles.resourceBorderInner}>
                 <View style={styles.resourceTrack}>
-                  <Text style={styles.resourceText}>{lives}</Text>
+                  <Text style={styles.resourceText}>{formatCompactNumber(lives)}</Text>
                 </View>
               </View>
             </View>
@@ -190,7 +228,7 @@ const styles = StyleSheet.create({
   playerInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '50%', // Adjusted width slightly to give resources more room
+    width: '40%', // CHANGED FROM 50% to 40% to balance space
     gap: gameScale(5),
   },
   
@@ -372,8 +410,8 @@ const styles = StyleSheet.create({
   // --- NEW RESOURCE STYLES ---
     resources: {
     flexDirection: 'row',
-    gap: gameScale(12), 
-    width: '40%',
+    gap: gameScale(5), 
+    width: '55%', // CHANGED FROM 40% to 50% to prevent overflow
     justifyContent: 'flex-end',
     paddingRight: gameScale(5),
   },
@@ -384,7 +422,6 @@ const styles = StyleSheet.create({
     height: gameScale(30), 
   },
   resourceBorderOuter: {
-    minWidth: gameScale(70),
     borderRadius: gameScale(15),
     borderWidth: gameScale(1),
     backgroundColor: '#1e3a5f',
@@ -449,10 +486,8 @@ const styles = StyleSheet.create({
 
   headerIcons: {
     flexDirection: 'row',
-    width: '10%',
-    justifyContent: 'flex-end',
+    width: '7%'
   },
   iconButton: {
-    padding: gameScale(5),
   },
 });

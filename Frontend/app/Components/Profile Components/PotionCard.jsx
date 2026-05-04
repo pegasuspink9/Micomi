@@ -78,7 +78,7 @@ const PotionCard = ({ potion }) => {
       </View>
       
       {/* Potion Name Below the Card */}
-      <Text style={styles.potionName}>{potion.name}</Text>
+      <Text style={styles.potionName}>{potion.potion_name || potion.name}</Text>
     </View>
   );
 };
@@ -163,8 +163,7 @@ const styles = StyleSheet.create({
     fontFamily: 'FunkySign',
     textShadowColor: '#000000',
     textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-    maxWidth: gameScale(90),
+    textShadowRadius: 3
   },
 });
 

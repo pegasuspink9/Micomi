@@ -128,7 +128,8 @@ export const playerService = {
     //  Transform potions with raw URLs
     const transformedPotions = apiData.ownedPotions?.map(item => ({
       id: item.player_potion_id,
-      name: playerService.getPotionDisplayName(item.potion.potion_type),
+      name: item.potion.potion_name || playerService.getPotionDisplayName(item.potion.potion_type),
+      potion_name: item.potion.potion_name || playerService.getPotionDisplayName(item.potion.potion_type),
       count: item.quantity,
       icon: item.potion.potion_url, //  Raw URL for cache lookup
       color: playerService.getPotionColor(item.potion.potion_type),
