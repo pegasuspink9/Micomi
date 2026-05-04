@@ -61,8 +61,27 @@ export default function PublicPlayerProfileScreen() {
     try {
       setRankHistoryLoading(true);
       setRankHistoryError(null);
-      const response = await pvpService.getDailyMatchHistory();
-      const sorted = [...(Array.isArray(response) ? response : [])].sort((a, b) => {
+
+      if (!playerId) {
+        setRankHistory([]);
+        return;
+      }
+
+      const response = await pvpService.getDailyMatchHistory(playerId);
+      const numericPlayerId = Number(playerId);
+      const filtered = Array.isArray(response)
+        ? response.filter((match) => {
+            if (!match) return false;
+            const charId = Number(match?.character?.player_id);
+            const enemyId = Number(match?.enemy?.player_id);
+            if (!Number.isNaN(numericPlayerId)) {
+              return charId === numericPlayerId || enemyId === numericPlayerId;
+            }
+            return true;
+          })
+        : [];
+
+      const sorted = [...filtered].sort((a, b) => {
         const aTime = new Date(a?.date || 0).getTime();
         const bTime = new Date(b?.date || 0).getTime();
         return bTime - aTime;
@@ -74,7 +93,7 @@ export default function PublicPlayerProfileScreen() {
     } finally {
       setRankHistoryLoading(false);
     }
-  }, []);
+  }, [playerId]);
 
   const handleOpenVisitedSocial = useCallback(() => {
     if (!playerId) return;

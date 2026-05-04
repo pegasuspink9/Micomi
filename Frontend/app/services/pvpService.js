@@ -477,8 +477,17 @@ export const pvpService = {
     return normalizeAuthoritativeMatchStatePayload(response);
   },
 
-  getDailyMatchHistory: async () => {
-    const response = await apiService.get('/game/pvp/daily/match/history');
+  getDailyMatchHistory: async (playerId = null) => {
+    const normalizedPlayerId =
+      playerId === null || playerId === undefined || playerId === ''
+        ? null
+        : String(playerId);
+
+    const path = normalizedPlayerId
+      ? `/game/pvp/daily/match/history/${encodeURIComponent(normalizedPlayerId)}`
+      : '/game/pvp/daily/match/history';
+
+    const response = await apiService.get(path);
     if (!response?.success) {
       throw new Error(response?.message || 'Failed to load match history');
     }
