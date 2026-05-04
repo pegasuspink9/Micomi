@@ -4,10 +4,10 @@ import { scale, scaleHeight, RESPONSIVE, wp } from '../../../Responsiveness/game
 import { soundManager } from '../../Sounds/UniversalSoundManager';
 
 const borderColors = {
-  outerBg: '#044160ff',
-  outerBorderTop: '#0d1f33',
-  outerBorderBottom: '#01547dff',
-  middleBg: '#152d4a',
+  outerBg: '#FFB300',
+  outerBorderTop: '#FFB300',
+  outerBorderBottom: '#FFB300',
+  middleBg: '#FFB300',
   middleBorderTop: '#01547dff',
   middleBorderBottom: '#0a1929',
   innerBg: 'rgba(74, 144, 217, 0.15)',
@@ -47,8 +47,17 @@ const specialAttackBorderColors = {
   innerBorder: 'rgba(100, 100, 100, 0.5)',
 };
 
-const AnswerOption = ({ item, index, isSelected, isDisabled, onPress, customStyles = null, isSpecialAttack = false }) => {
-  const colors = isSpecialAttack ? specialAttackBorderColors : (isDisabled ? disabledBorderColors : (isSelected ? selectedBorderColors : borderColors));
+const AnswerOption = ({ item, index, isSelected, isDisabled, onPress, customStyles = null, isSpecialAttack = false, themeColor = null }) => {
+  const resolvedThemeColor = themeColor || borderColors.outerBg;
+  const baseBorderColors = React.useMemo(() => ({
+    ...borderColors,
+    outerBg: resolvedThemeColor,
+    outerBorderTop: resolvedThemeColor,
+    outerBorderBottom: resolvedThemeColor,
+    middleBg: resolvedThemeColor,
+  }), [resolvedThemeColor]);
+
+  const colors = isSpecialAttack ? specialAttackBorderColors : (isDisabled ? disabledBorderColors : (isSelected ? selectedBorderColors : baseBorderColors));
 
   // useMemo for container style to prevent unnecessary object creation
   const dynamicBorderStyles = React.useMemo(() => ({
@@ -209,6 +218,7 @@ export default React.memo(AnswerOption, (prevProps, nextProps) => {
     prevProps.isSelected === nextProps.isSelected &&
     prevProps.isDisabled === nextProps.isDisabled &&
     prevProps.onPress === nextProps.onPress &&
-    prevProps.isSpecialAttack === nextProps.isSpecialAttack 
+    prevProps.isSpecialAttack === nextProps.isSpecialAttack &&
+    prevProps.themeColor === nextProps.themeColor
   );
 });

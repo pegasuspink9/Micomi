@@ -93,12 +93,14 @@ const CollisionOverlay = ({ color, onReset }) => {
   );
 };
 
-const GameContainer = ({ children, borderColor, setBorderColor }) => {
+const GameContainer = ({ children, borderColor, setBorderColor, gameplayThemeColor = null }) => {
+  const resolvedThemeColor = gameplayThemeColor || '#FFB300';
+
   return (
     <View style={styles.outerFrame}>
       <View style={styles.containerBorderOuter}>
         <View style={styles.containerBorderMiddle}>
-          <View style={styles.containerBorderInner}>
+          <View style={[styles.containerBorderInner, { backgroundColor: resolvedThemeColor }]}>
             
             <CollisionOverlay 
               color={borderColor} 
@@ -107,7 +109,7 @@ const GameContainer = ({ children, borderColor, setBorderColor }) => {
 
             <View style={styles.innerBorderContainer}>
               <View style={styles.contentBorderOuter}>
-                <View style={styles.contentBorderMiddle}>
+                <View style={[styles.contentBorderMiddle, { backgroundColor: resolvedThemeColor }]}>
                   <View style={styles.contentBorderInner}>
                     {children}
                   </View>
@@ -154,7 +156,7 @@ const styles = StyleSheet.create({
   },
     containerBorderInner: {
     flex: 1,
-    backgroundColor: 'rgba(74, 144, 217, 0.15)',
+    backgroundColor: '#FFB300',
     borderRadius: gameScale(14),
     padding: gameScale(4),
     borderWidth: gameScale(1),
@@ -211,7 +213,7 @@ const styles = StyleSheet.create({
   },
   contentBorderMiddle: {
     flex: 1,
-    backgroundColor: '#071c2fff',
+    backgroundColor: '#FFB300',
     borderRadius: gameScale(21),
     padding: gameScale(1),
     borderWidth: gameScale(1),

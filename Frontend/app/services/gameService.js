@@ -269,6 +269,7 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
       
       energy: data.energy || responseData.energy || 0,
       timeToNextEnergyRestore: data.timeToNextEnergyRestore || responseData.timeToNextEnergyRestore || null,
+      gameplay_theme_color: data.gameplay_theme_color || responseData.gameplay_theme_color || null,
       currentChallenge: null,
       submissionResult: null,
       combat_background: data.combat_background || responseData.combat_background || null,
@@ -559,6 +560,14 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
 
        if (responseData.fightResult?.enemy?.enemy_attack_type !== undefined) {
         gameState.enemy.enemy_attack_type = responseData.fightResult.enemy.enemy_attack_type;
+      }
+
+      if (responseData.fightResult?.gameplay_theme_color !== undefined) {
+        gameState.gameplay_theme_color = responseData.fightResult.gameplay_theme_color;
+      }
+
+      if (responseData.gameplay_theme_color !== undefined) {
+        gameState.gameplay_theme_color = responseData.gameplay_theme_color;
       }
 
       

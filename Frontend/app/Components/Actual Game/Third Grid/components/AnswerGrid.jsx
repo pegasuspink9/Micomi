@@ -13,6 +13,7 @@ const AnswerGrid = ({
   isFillInTheBlank = false,
   selectedBlankIndex = 0, 
   isSpecialAttack = false,
+  themeColor = null,
 }) => {
 
   const animations = useRef([]);
@@ -78,6 +79,7 @@ const AnswerGrid = ({
             isDisabled={isDisabled}
             onPress={() => onAnswerSelect(index)}
             isSpecialAttack={isSpecialAttack}
+            themeColor={themeColor}
           />
         </Animated.View>
       );
@@ -87,7 +89,7 @@ const AnswerGrid = ({
       console.error('❌ Error processing options:', error);
       return [];
     }
-    }, [challengeId, isSpecialAttack, maxAnswers, normalizedOptions, onAnswerSelect, selectedAnswers]);
+    }, [challengeId, isSpecialAttack, maxAnswers, normalizedOptions, onAnswerSelect, selectedAnswers, themeColor]);
 
   const animationTriggerKey = strictChallengeRender
     ? String(challengeId ?? 'none')
@@ -205,7 +207,8 @@ const MemoizedAnswerGrid = React.memo(AnswerGrid, (prev, next) => {
       prev.maxAnswers === next.maxAnswers &&
       prev.isFillInTheBlank === next.isFillInTheBlank &&
       prev.selectedBlankIndex === next.selectedBlankIndex &&
-      prev.isSpecialAttack === next.isSpecialAttack
+      prev.isSpecialAttack === next.isSpecialAttack &&
+      prev.themeColor === next.themeColor
     );
   }
 
@@ -216,7 +219,8 @@ const MemoizedAnswerGrid = React.memo(AnswerGrid, (prev, next) => {
     prev.maxAnswers === next.maxAnswers &&
     prev.isFillInTheBlank === next.isFillInTheBlank &&
     prev.selectedBlankIndex === next.selectedBlankIndex &&
-    prev.isSpecialAttack === next.isSpecialAttack
+    prev.isSpecialAttack === next.isSpecialAttack &&
+    prev.themeColor === next.themeColor
   );
 });
 

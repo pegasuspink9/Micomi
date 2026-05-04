@@ -31,6 +31,7 @@ const GridContainer = ({
   isSpecialAttack = false,
   cardDamage = null,
   pvpTimerComponent = null,
+  gameplayThemeColor = null,
 }) => {
   const [imageSource, setImageSource] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -117,6 +118,8 @@ const GridContainer = ({
     opacity: opacityAnim,
   };
 
+  const resolvedThemeColor = gameplayThemeColor || '#FFB300';
+
   const formattedAutoProceedCountdown =
     typeof autoProceedCountdown === 'number' && Number.isFinite(autoProceedCountdown)
       ? `${Math.floor(Math.max(0, autoProceedCountdown) / 60)}:${String(
@@ -182,7 +185,7 @@ const GridContainer = ({
         )}
         
         {!isProceedMode && !isAutoProceedMode && !isLevelComplete && (
-          <View style={styles.simpleFrame}>
+          <View style={[styles.simpleFrame, { backgroundColor: resolvedThemeColor }]}>
           </View>
         )}
         
@@ -195,7 +198,20 @@ const GridContainer = ({
         
          <View style={[
           styles.outerFrame,
+          {
+            borderTopColor: resolvedThemeColor,
+            borderLeftColor: resolvedThemeColor,
+            borderBottomColor: resolvedThemeColor,
+            borderRightColor: resolvedThemeColor,
+          },
           (isProceedMode || isAutoProceedMode || isLevelComplete) && styles.outerFrameProceed,
+          (isProceedMode || isAutoProceedMode || isLevelComplete) && {
+            borderTopColor: resolvedThemeColor,
+            borderLeftColor: resolvedThemeColor,
+            borderBottomColor: resolvedThemeColor,
+            borderRightColor: resolvedThemeColor,
+            shadowColor: resolvedThemeColor,
+          },
           isSpecialAttack && styles.outerFrameSpecialAttack 
         ]}>
           <View style={[
@@ -206,6 +222,7 @@ const GridContainer = ({
              <View style={[
               styles.innerBorder,
               (isProceedMode || isAutoProceedMode || isLevelComplete) && styles.innerBorderProceed,
+                (isProceedMode || isAutoProceedMode || isLevelComplete) && { borderColor: resolvedThemeColor },
               isSpecialAttack && styles.innerBorderSpecialAttack
             ]}>
               <View style={styles.backlightOverlay} />
@@ -275,10 +292,16 @@ const GridContainer = ({
 
       {/*  REMOVED FadeOutWrapper - Direct View rendering */}
        <View style={styles.lowerGrid}>
-        <View style={[
-          styles.outerFrame,
-          isSpecialAttack && styles.outerFrameSpecialAttack
-        ]}>
+         <View style={[
+            styles.outerFrame,
+            {
+              borderTopColor: resolvedThemeColor,
+              borderLeftColor: resolvedThemeColor,
+              borderBottomColor: resolvedThemeColor,
+              borderRightColor: resolvedThemeColor,
+            },
+            isSpecialAttack && styles.outerFrameSpecialAttack
+          ]}>
           <View style={[
             styles.innerContent,
             isSpecialAttack && styles.innerContentSpecialAttack
@@ -336,7 +359,7 @@ const styles = StyleSheet.create({
     width: gameScale(78),
     height: gameScale(42),
     position: 'absolute',
-    backgroundColor: '#061e52ff',
+    backgroundColor: '#FFB300',
     top: gameScale(-8),
     right: gameScale(8),
     borderRadius: gameScale(3.9),
@@ -416,21 +439,21 @@ const styles = StyleSheet.create({
     shadowRadius: gameScale(16),
     elevation: gameScale(20),
     borderTopWidth: gameScale(3),
-    borderTopColor: '#2c5282',
+    borderTopColor: '#FFB300',
     borderLeftWidth: gameScale(2),
-    borderLeftColor: '#2c5282',
+    borderLeftColor: 'red',
     borderBottomWidth: gameScale(5),
-    borderBottomColor: '#2c5282',
+    borderBottomColor: 'red',
     borderRightWidth: gameScale(4),
-    borderRightColor: '#2c5282',
+    borderRightColor: 'red',
   },
 
   outerFrameProceed: {
-    borderTopColor: '#87ceeb',
-    borderLeftColor: '#87ceeb',
-    borderBottomColor: '#87ceeb',
-    borderRightColor: '#87ceeb',
-    shadowColor: '#87ceeb',
+    borderTopColor: '#FFB300',
+    borderLeftColor: '#FFB300',
+    borderBottomColor: '#FFB300',
+    borderRightColor: '#FFB300',
+    shadowColor: '#FFB300',
     shadowOpacity: 0.8,
   },
 
@@ -482,7 +505,7 @@ const styles = StyleSheet.create({
   innerBorderProceed: {
     backgroundColor: '#1a1a2e',
     borderWidth: scale(2),
-    borderColor: '#13447196',
+    borderColor: '#FFB300',
     justifyContent: 'center',
     alignItems: 'center'
   },

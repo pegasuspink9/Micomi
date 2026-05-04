@@ -690,6 +690,15 @@ const ScreenPlay = ({
 
   const combatBackground = useMemo(() => gameState?.combat_background, [gameState?.combat_background]);
 
+  const gameplayThemeColor = useMemo(() => (
+    gameState?.submissionResult?.fightResult?.gameplay_theme_color ??
+    gameState?.gameplay_theme_color ??
+    null
+  ), [
+    gameState?.submissionResult?.fightResult?.gameplay_theme_color,
+    gameState?.gameplay_theme_color
+  ]);
+
   const handleEnemyRun = useCallback(() => {
   if (enemyRunSequenceStartedRef.current) {
     console.log('🏃 Enemy run sequence already started, skipping duplicate');
@@ -1438,7 +1447,7 @@ useEffect(() => {
 
   
   return (
-    <GameContainer borderColor={borderColor}   setBorderColor={setBorderColor}>
+    <GameContainer borderColor={borderColor} setBorderColor={setBorderColor} gameplayThemeColor={gameplayThemeColor}>
       <GameBackground 
         isPaused={isPaused} 
         isPvpMode={isPvpMode}
@@ -1621,6 +1630,9 @@ export default React.memo(ScreenPlay, (prevProps, nextProps) => {
     prevProps.gameState?.selectedCharacter?.max_health === nextProps.gameState?.selectedCharacter?.max_health &&
     prevProps.gameState?.enemy?.enemy_health === nextProps.gameState?.enemy?.enemy_health &&
     prevProps.gameState?.enemy?.enemy_max_health === nextProps.gameState?.enemy?.enemy_max_health &&
+    (prevProps.gameState?.submissionResult?.fightResult?.gameplay_theme_color ===
+     nextProps.gameState?.submissionResult?.fightResult?.gameplay_theme_color) &&
+    (prevProps.gameState?.gameplay_theme_color === nextProps.gameState?.gameplay_theme_color) &&
     (prevProps.gameState?.submissionResult?.fightResult?.enemy?.enemy_attack_type === 
      nextProps.gameState?.submissionResult?.fightResult?.enemy?.enemy_attack_type) &&
     (prevProps.gameState?.enemy?.enemy_attack_type === 

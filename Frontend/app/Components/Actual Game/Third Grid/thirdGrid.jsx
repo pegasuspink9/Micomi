@@ -108,6 +108,15 @@ const ThirdGrid = ({
       gameState?.enemy?.enemy_attack_type
     ]
   );
+
+  const gameplayThemeColor = useMemo(() => (
+    gameState?.submissionResult?.fightResult?.gameplay_theme_color ??
+    gameState?.gameplay_theme_color ??
+    null
+  ), [
+    gameState?.submissionResult?.fightResult?.gameplay_theme_color,
+    gameState?.gameplay_theme_color
+  ]);
   
   const isSpecialAttack = useMemo(() => {
     const isSpecial = enemyAttackType === 'special attack' || enemyAttackType === 'special skill';
@@ -325,6 +334,7 @@ const ThirdGrid = ({
       fadeOutAnim={fadeOutAnim}
       isInRunMode={isInRunMode}
       isSpecialAttack={isSpecialAttack}
+      gameplayThemeColor={gameplayThemeColor}
       pvpTimerComponent={
         isPvpMode && hasActivePvpTimer ? (
           <View style={styles.pvpTimerFrame}>
@@ -422,6 +432,7 @@ const ThirdGrid = ({
                 selectedBlankIndex={selectedBlankIndex} 
                 currentQuestionId={currentQuestion.id}
                 isSpecialAttack={isSpecialAttack}
+                themeColor={gameplayThemeColor}
               />
             </View>
           </>
@@ -517,10 +528,17 @@ export default React.memo(ThirdGrid, (prev, next) => {
     
     const attackTypeEqual = prevAttackType === nextAttackType;
 
+    const prevThemeColor = prev.gameState?.submissionResult?.fightResult?.gameplay_theme_color ??
+      prev.gameState?.gameplay_theme_color;
+    const nextThemeColor = next.gameState?.submissionResult?.fightResult?.gameplay_theme_color ??
+      next.gameState?.gameplay_theme_color;
+    const themeColorEqual = prevThemeColor === nextThemeColor;
+
     return (
       potionEqual &&
       answersEqual &&
-      attackTypeEqual && // Add this check
+      attackTypeEqual &&
+      themeColorEqual &&
       prev.currentQuestion?.id === next.currentQuestion?.id &&
       prev.submitting === next.submitting &&
       prev.currentQuestionIndex === next.currentQuestionIndex &&
