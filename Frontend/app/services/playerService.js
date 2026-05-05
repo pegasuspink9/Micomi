@@ -172,6 +172,7 @@ export const playerService = {
         playerNextRankImage: apiData.player_rank_progress?.player_next_rank_image || null,
       },
       playerTotalPoints: apiData.player_total_points || 0,
+      totalPoints: apiData.total_points ?? apiData.player_total_points ?? 0,
       playerCurrentPoints: apiData.player_rank_progress?.player_current_points || 0,
       pvpTotalMatches: apiData.pvp_total_matches || 0,
       pvpWinRate: apiData.pvp_win_rate || 0,
