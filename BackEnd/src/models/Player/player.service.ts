@@ -20,6 +20,7 @@ import {
   forceGenerateQuestsForPlayer,
 } from "../Quest/periodicQuests.service";
 import { getRankProgressByPoints } from "../../game/PvP/pvpRank.service";
+import { getAllThemes } from "../../game/Themes/themes.service";
 
 const prisma = new PrismaClient();
 
@@ -362,6 +363,8 @@ export const getPlayerProfile = async (player_id: number) => {
     },
   });
 
+  const themeColors = await getAllThemes(player_id);
+
   return {
     player_id: player.player_id,
     player_name: player.player_name,
@@ -386,6 +389,7 @@ export const getPlayerProfile = async (player_id: number) => {
     },
     pvp_total_matches: totalPvpMatches,
     pvp_win_rate: pvpWinRate,
+    theme_colors: themeColors,
 
     followers_count: followersCount,
     following_count: followingCount,
