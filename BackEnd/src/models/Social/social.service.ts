@@ -175,7 +175,7 @@ export const getPublicPlayerProfile = async (
     throw new Error("Player not found.");
   }
 
-  const { ownedPotions, quests, ...publicProfile } = targetProfile as any;
+  const { quests, ...publicProfile } = targetProfile as any;
 
   if (viewerId === targetPlayerId) {
     return {
