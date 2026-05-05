@@ -5,11 +5,13 @@ export interface SocialProfileResponse {
   coins: number;
   current_streak: number;
   exp_points: number;
+  total_points: number;
   player_level: number;
   followers_count: number;
   following_count: number;
   max_level_exp: number;
   ownedCharacters: any[];
+  ownedPotions: any[];
   selectedBadge: any;
   latestAchievement: any;
   playerAchievements: any[];
