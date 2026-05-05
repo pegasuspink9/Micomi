@@ -56,7 +56,7 @@ export default function PracticeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerContainer}>
-          <Text style={styles.headerTitle}>Game Modes</Text>
+          <Text style={styles.headerTitle}>Practice Modes</Text>
         </View>
         
         <View style={styles.menuContainer}>
