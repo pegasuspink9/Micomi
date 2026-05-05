@@ -201,6 +201,7 @@ export const getPlayerProfile = async (player_id: number) => {
       diamonds: true,
       current_streak: true,
       exp_points: true,
+      total_points: true,
       level: true,
       player_rank_points: true,
       player_rank_name: true,
@@ -352,6 +353,15 @@ export const getPlayerProfile = async (player_id: number) => {
 
   const rankProgress = getRankProgressByPoints(player.player_rank_points ?? 0);
 
+  const selectedTheme = await prisma.playerTheme.findFirst({
+    where: { player_id, is_selected: true },
+    include: {
+      theme: {
+        select: { theme_color: true },
+      },
+    },
+  });
+
   return {
     player_id: player.player_id,
     player_name: player.player_name,
@@ -361,6 +371,8 @@ export const getPlayerProfile = async (player_id: number) => {
     diamonds: player.diamonds,
     current_streak: player.current_streak,
     exp_points: player.exp_points,
+    total_points: player.total_points,
+    player_theme_color: selectedTheme?.theme.theme_color || null,
     player_level: calculatedLevel,
     player_rank_name: player.player_rank_name,
     player_rank_image: player.player_rank_image,
@@ -436,6 +448,7 @@ export const createPlayer = async (data: PlayerCreateInput) => {
   });
 
   await initializeNewGameState(newPlayer.player_id);
+  await assignDefaultTheme(newPlayer.player_id);
 
   try {
     console.log(
@@ -740,4 +753,45 @@ export const getFriendRecommendations = async (
     ...player,
     player_avatar: player.player_avatar || DEFAULT_AVATAR_URL,
   }));
+};
+
+export const assignDefaultTheme = async (playerId: number) => {
+  const defaultTheme = await prisma.themeShop.findUnique({
+    where: {
+      theme_name: "BluBoom",
+    },
+  });
+
+  if (!defaultTheme) {
+    console.warn(`Default theme 'BluBoom' not found for player ${playerId}`);
+    return;
+  }
+
+  const existingSelected = await prisma.playerTheme.findFirst({
+    where: {
+      player_id: playerId,
+      is_selected: true,
+    },
+  });
+
+  if (existingSelected) return;
+
+  await prisma.playerTheme.upsert({
+    where: {
+      player_id_theme_id: {
+        player_id: playerId,
+        theme_id: defaultTheme.theme_id,
+      },
+    },
+    update: {
+      is_selected: true,
+    },
+    create: {
+      player_id: playerId,
+      theme_id: defaultTheme.theme_id,
+      is_selected: true,
+    },
+  });
+
+  console.log(`Assigned default theme 'BluBoom' to player ${playerId}`);
 };

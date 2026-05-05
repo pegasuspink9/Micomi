@@ -17,9 +17,13 @@ export const getLeaderboard = async (req: Request, res: Response) => {
       currentUser: currentUserRank
         ? {
             rank: currentUserRank.rank,
-            total_points: currentUserRank.total_points,
+            total_points:
+              Number(currentUserRank.total_points || 0) +
+              Number(currentUserRank.player_rank_points || 0),
             username: currentUserRank.username,
             player_avatar: currentUserRank.player_avatar,
+            player_rank_name: currentUserRank.player_rank_name,
+            player_rank_image: currentUserRank.player_rank_image,
           }
         : null,
     };
