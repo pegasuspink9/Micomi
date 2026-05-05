@@ -19,10 +19,12 @@ import GamePauseModal from './Components/Actual Game/Screen Play/Pauses/GamePaus
 import DialogueOverlay from './Components/Actual Game/Dialogue/DialogueOverlay';
 import MainLoading from './Components/Actual Game/Loading/MainLoading';
 import Micomic from './Micomic';
+import { useConnectivity } from './store/connectivityStore';
 
 export default function GamePlay() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const isOffline = useConnectivity();
   
   // Parse parameters from Expo Router
   const rawLevelId = Number.parseInt(params.levelId, 10);
@@ -1154,20 +1156,6 @@ export default function GamePlay() {
   );
 
 
-  // Error state
-  if (error) {
-    return (
-      <View style={[styles.container, styles.centerContent]}>
-        <Text style={styles.errorText}>Error: {error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={refetchGameData}>
-          <Text style={styles.retryText}>Tap to retry</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.exitButton} onPress={handleExitGame}>
-          <Text style={styles.exitText}>Exit Game</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
 
   return (
     <>

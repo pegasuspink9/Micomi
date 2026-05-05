@@ -8,6 +8,7 @@ import * as SystemUI from 'expo-system-ui';
 import { useAuth } from './hooks/useAuth';
 import { soundManager } from './Components/Actual Game/Sounds/UniversalSoundManager';
 import MainLoadingScreen from './MainLoadingScreen';
+import UniversalLoadingOverlay from './Components/UniversalLoading/UniversalLoadingOverlay';
 
 export default function RootLayout() {
   const fontsLoaded = useFonts();
@@ -168,6 +169,7 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
+      <UniversalLoadingOverlay />
     </View>
   );
 }

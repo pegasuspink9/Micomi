@@ -1,4 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { connectivityStore } from '../store/connectivityStore';
+
+const isNetworkError = (error) => {
+  const message = error?.message || '';
+  return message.includes('Network request failed') || message.includes('Failed to fetch');
+};
 
 const POSSIBLE_BACKEND_URLS = [
   'http://localhost:3000',
@@ -21,6 +27,7 @@ class ApiService {
   
   // Test backend connectivity
   async testConnection() {
+    let sawNetworkError = false;
     for (const url of POSSIBLE_BACKEND_URLS) {
       try {
         console.log(`Testing connection to: ${url}`);
@@ -39,15 +46,20 @@ class ApiService {
         if (response.status) {
           this.baseURL = url;
           this.isBackendAvailable = true;
+          connectivityStore.setOffline(false);
           console.log(` ✅ Connected to backend at: ${url}`);
           return true;
         }
       } catch (error) {
         console.log(`❌ Failed to connect to: ${url}`, error.message);
+        if (isNetworkError(error)) sawNetworkError = true;
       }
     }
     
     this.isBackendAvailable = false;
+    if (sawNetworkError) {
+      connectivityStore.setOffline(true);
+    }
     return false;
   }
 
@@ -90,6 +102,7 @@ class ApiService {
       console.log(`Making API request to: ${url}`);
       const response = await fetch(url, config);
       clearTimeout(timeoutId);
+      connectivityStore.setOffline(false);
 
       let isJwtExpired = false;
       let errorData = null;
@@ -155,6 +168,9 @@ class ApiService {
       return data;
     } catch (error) {
       clearTimeout(timeoutId);
+      if (isNetworkError(error)) {
+        connectivityStore.setOffline(true);
+      }
       throw error;
     }
   }
