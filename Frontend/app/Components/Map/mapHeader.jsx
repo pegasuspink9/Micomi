@@ -5,17 +5,19 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { usePlayerProfile } from '../../hooks/usePlayerProfile';
 import { gameScale } from '../Responsiveness/gameResponsive';
 import { useRouter } from 'expo-router';
+import SettingsModal from '../Settings/SettingsModal';
 
 export default function MapHeader() {
   const router = useRouter(); // Initialize router
   const { playerData, loadPlayerProfile, refreshPlayerData } = usePlayerProfile();
+  const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
 
   const formatCompactNumber = (value) => {
     const numericValue = Number(value || 0);
@@ -208,10 +210,19 @@ export default function MapHeader() {
 
       {/* Settings Icon */}
       <View style={styles.headerIcons}>
-        <TouchableOpacity style={styles.iconButton}>
+        <TouchableOpacity 
+          style={styles.iconButton}
+          onPress={() => setIsSettingsModalVisible(true)}
+        >
           <Ionicons name="settings" size={gameScale(24)} color="#fff" />
         </TouchableOpacity>
       </View>
+
+      {/* Settings Modal */}
+      <SettingsModal 
+        visible={isSettingsModalVisible}
+        onClose={() => setIsSettingsModalVisible(false)}
+      />
     </View>
   );
 }

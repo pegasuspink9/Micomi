@@ -3,6 +3,12 @@ import { SOUND_CATALOG } from './soundCatalog';
 
 export const simplePlaybackMethods = {
   async _playSimpleSound(channel, url, onPlayCallback, volume = 1.0) {
+    // Don't play sounds if muted
+    if (this.isMuted && url) {
+      if (onPlayCallback) onPlayCallback();
+      return;
+    }
+
     if (this.activeSounds[channel]) {
       const soundToUnload = this.activeSounds[channel];
       this.activeSounds[channel] = null;

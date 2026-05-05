@@ -2,6 +2,11 @@ import { Audio } from 'expo-av';
 
 export const musicMethods = {
   async playVersusMusic(url, volume = 0.5) {
+    if (this.isMuted) {
+      console.log('⚔️ Versus music not playing - sound is muted');
+      return;
+    }
+
     console.log(`⚔️ Preparing to play Versus BGM: ${url ? url.slice(-30) : 'None'}`);
 
     await this.stopBackgroundMusic();
@@ -56,6 +61,10 @@ export const musicMethods = {
 
   async playVictorySound(url, volume = 0.7) {
     if (!url) return;
+    if (this.isMuted) {
+      console.log('🏆 Victory sound not playing - sound is muted');
+      return;
+    }
 
     console.log(`🏆 Playing Victory Sound: ${url.slice(-30)}`);
     await this.stopBackgroundMusic();
@@ -66,6 +75,10 @@ export const musicMethods = {
 
   async playDefeatSound(url, volume = 0.6) {
     if (!url) return;
+    if (this.isMuted) {
+      console.log('💀 Defeat sound not playing - sound is muted');
+      return;
+    }
 
     console.log(`💀 Playing Defeat Sound: ${url.slice(-30)}`);
     await this.stopBackgroundMusic();
@@ -75,6 +88,11 @@ export const musicMethods = {
   },
 
   async playBackgroundMusic(url, volume = 0.2, loop = true) {
+    if (this.isMuted) {
+      console.log('🎵 BGM not playing - sound is muted');
+      return;
+    }
+
     if (this.currentBgmUrl === url && this.activeSounds.bgm) {
       console.log(`🎵 BGM is already playing: ${url.slice(-30)}`);
       return;

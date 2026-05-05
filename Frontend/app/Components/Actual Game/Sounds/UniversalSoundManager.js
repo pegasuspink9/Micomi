@@ -3,6 +3,7 @@ import { simplePlaybackMethods } from './universalSoundManager/simplePlaybackMet
 import { musicMethods } from './universalSoundManager/musicMethods';
 import { messageQueueMethods } from './universalSoundManager/messageQueueMethods';
 import { cleanupMethods } from './universalSoundManager/cleanupMethods';
+import { muteMethods } from './universalSoundManager/muteMethods';
 
 class UniversalSoundManager {
   constructor() {
@@ -26,6 +27,9 @@ class UniversalSoundManager {
     this.isMessagePlaying = false;
     this.onMessagePlaybackStart = null;
 
+    // Global mute state
+    this.isMuted = false;
+
     this._urlCache = new Map();
   }
 }
@@ -36,7 +40,8 @@ Object.assign(
   simplePlaybackMethods,
   musicMethods,
   messageQueueMethods,
-  cleanupMethods
+  cleanupMethods,
+  muteMethods
 );
 
 export const soundManager = new UniversalSoundManager();

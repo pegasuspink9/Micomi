@@ -7,6 +7,13 @@ export const messageQueueMethods = {
       return;
     }
 
+    // Don't play message audio if muted
+    if (this.isMuted) {
+      if (onPlaybackStart) onPlaybackStart();
+      console.log('💬 Message audio not playing - sound is muted');
+      return;
+    }
+
     await this._stopMessageSound();
 
     this.onMessagePlaybackStart = onPlaybackStart || null;
