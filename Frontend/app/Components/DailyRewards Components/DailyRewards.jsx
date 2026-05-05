@@ -1,7 +1,12 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Modal, ActivityIndicator, StyleSheet, Platform, StatusBar } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, Modal, ActivityIndicator, StyleSheet, Platform, StatusBar, ImageBackground, Image } from 'react-native';
 import { useDailyReward } from '../../hooks/useDailyReward';
+import { gameScale } from '../Responsiveness/gameResponsive';
+
+const DAILY_BOARD = require('./Daily Reward Assets/dailyBoard.png');
+const DAILY_BOX = require('./Daily Reward Assets/dailyBoxes.png');
+const COINS_IMG = require('../../Components/icons/coins.png');
+const DAILY_ICON = require('../Map/Assets/daily.png');
 
 export default function DailyRewards() {
   const [isDailyRewardVisible, setIsDailyRewardVisible] = useState(false);
@@ -26,8 +31,7 @@ export default function DailyRewards() {
   return (
     <>
       <TouchableOpacity style={styles.dailyRewardButton} activeOpacity={0.9} onPress={handleOpenDailyReward}>
-        <MaterialCommunityIcons name="gift" size={22} color="#FFE7B3" />
-        <Text style={styles.dailyRewardButtonText}>Daily</Text>
+        <Image source={DAILY_ICON} style={styles.dailyRewardIcon} resizeMode="contain" />
       </TouchableOpacity>
 
       <Modal
@@ -37,62 +41,60 @@ export default function DailyRewards() {
         onRequestClose={handleClose}
       >
         <View style={styles.dailyRewardOverlay}>
-          <View style={styles.dailyRewardFrame}>
-            <View style={styles.woodySlotContent}>
-              <View style={styles.dailyRewardInner}>
-                <Text style={styles.mapModalTitleText}>Daily Rewards</Text>
+          <ImageBackground source={DAILY_BOARD} style={styles.dailyRewardBoard} resizeMode="contain" />
 
-                {dailyRewardLoading ? (
-                  <View style={styles.dailyRewardLoading}>
-                    <ActivityIndicator size="large" color="#fff" />
-                    <Text style={styles.dailyRewardLoadingText}>Loading rewards...</Text>
-                  </View>
-                ) : dailyRewardError ? (
-                  <Text style={styles.dailyRewardError}>{dailyRewardError}</Text>
-                ) : (
-                  <View style={styles.dailyRewardGrid}>
-                    {(dailyReward?.rewards || []).map((reward) => {
-                      const isDisabled = !reward.is_current || reward.is_claimed;
-                      return (
-                        <View
-                          key={reward.reward_id}
-                          style={[
-                            styles.dailyRewardCard,
-                            isDisabled && styles.dailyRewardCardDisabled,
-                            reward.is_current && styles.dailyRewardCardCurrent,
-                          ]}
-                        >
-                          <Text style={styles.dailyRewardDay}>Day {reward.day}</Text>
-                          <Text style={styles.dailyRewardValue}>+{reward.coins} coins</Text>
-                          <Text style={styles.dailyRewardValue}>+{reward.exp} exp</Text>
-                          {reward.is_claimed && <Text style={styles.dailyRewardClaimed}>Claimed</Text>}
-                        </View>
-                      );
-                    })}
-                  </View>
-                )}
+          <TouchableOpacity style={styles.dailyRewardCloseTop} onPress={handleClose}>
+            <Text style={styles.dailyRewardCloseTopText}>X</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.dailyRewardInner}>
 
-                <View style={styles.dailyRewardActions}>
-                  <TouchableOpacity style={styles.mapModalCloseBtn} onPress={handleClose}>
-                    <Text style={styles.mapModalBtnText}>Close</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.mapModalEnterBtn,
-                      (!dailyReward?.can_claim_today || dailyRewardClaiming) && styles.disabledBtn,
-                    ]}
-                    onPress={handleClaim}
-                    disabled={!dailyReward?.can_claim_today || dailyRewardClaiming}
-                  >
-                    {dailyRewardClaiming ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <Text style={styles.mapModalBtnText}>{dailyReward?.can_claim_today ? 'Claim' : 'Come back tomorrow'}</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
+            {dailyRewardLoading ? (
+              <View style={styles.dailyRewardLoading}>
+                <ActivityIndicator size="large" color="#fff" />
+                <Text style={styles.dailyRewardLoadingText}>Loading rewards...</Text>
               </View>
+            ) : dailyRewardError ? (
+              <Text style={styles.dailyRewardError}>{dailyRewardError}</Text>
+            ) : (
+              <View style={styles.dailyRewardGrid}>
+                {(dailyReward?.rewards || []).map((reward) => {
+                  const isClaimed = reward.is_claimed;
+                  return (
+                    <View
+                      key={reward.reward_id}
+                      style={[
+                        styles.dailyRewardCard,
+                        isClaimed && styles.dailyRewardCardClaimed,
+                        !isClaimed && styles.dailyRewardCardClaimable,
+                      ]}
+                    > 
+                      <ImageBackground
+                        source={DAILY_BOX}
+                        style={styles.dailyRewardCardBg}
+                        resizeMode="contain"
+                      />
+                      <Text style={styles.dailyRewardDay}>Day {reward.day}</Text>
+                      <View style={styles.rewardContent}>
+                        <ImageBackground source={COINS_IMG} style={styles.coinIcon} resizeMode="contain" />
+                        <Text style={styles.dailyRewardValue}>{reward.coins}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+
+            <View style={styles.dailyRewardClaimTextWrapper}>
+              <Text
+                style={[
+                  styles.dailyRewardClaimText,
+                  (!dailyReward?.can_claim_today || dailyRewardClaiming) && styles.dailyRewardClaimTextDisabled,
+                ]}
+                onPress={dailyReward?.can_claim_today && !dailyRewardClaiming ? handleClaim : undefined}
+              >
+                {dailyReward?.can_claim_today ? 'Claim' : 'Claimed'}
+              </Text>
             </View>
           </View>
         </View>
@@ -103,42 +105,45 @@ export default function DailyRewards() {
 
 const styles = StyleSheet.create({
   dailyRewardButton: {
-    width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(148, 63, 2, 0.9)',
-    borderWidth: 2, borderColor: '#c46623', alignItems: 'center', justifyContent: 'center', zIndex: 120, elevation: 10,
+    alignItems: 'center', justifyContent: 'center', zIndex: 120,
   },
-  dailyRewardButtonText: { color: '#FFE7B3', fontSize: 11, fontFamily: 'Grobold', marginTop: 2 },
-
-  dailyRewardOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1000 },
-  dailyRewardFrame: {
-    width: '90%', backgroundColor: '#943f02', borderRadius: 15, padding: 6, elevation: 20,
-    borderColor: '#c46623', borderWidth: 3, borderBottomColor: '#4a1e00', borderRightColor: '#6e2f01',
+  dailyRewardIcon: { width: gameScale(60), height: gameScale(60), marginBottom: gameScale(10) },
+  dailyRewardOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
+  dailyRewardBoard: {
+    marginBottom: gameScale(100),
+    position: 'absolute',
+    width: gameScale(700),
+    height: gameScale(700),
   },
-  woodySlotContent: { backgroundColor: '#7c3200', borderRadius: 10, padding: 4 },
-  dailyRewardInner: { padding: 16, alignItems: 'center' },
-  dailyRewardGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10 },
+  dailyRewardInner: { alignItems: 'center', justifyContent: 'center', },
+  dailyRewardGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginTop: gameScale(150) },
   dailyRewardCard: {
-    width: '28%',
-    backgroundColor: '#7c3200',
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#c46623',
-    paddingVertical: 10,
-    paddingHorizontal: 6,
+    position: 'relative',
+    width: gameScale(100),
+    height: gameScale(100),
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  dailyRewardCardCurrent: { backgroundColor: '#8d3f05', borderColor: '#f7c36a' },
-  dailyRewardCardDisabled: { opacity: 0.45 },
-  dailyRewardDay: { color: '#FFD700', fontFamily: 'Grobold', fontSize: 12, marginBottom: 4 },
-  dailyRewardValue: { color: '#ffffff', fontFamily: 'DynaPuff', fontSize: 11 },
-  dailyRewardClaimed: { color: '#b3f7b3', fontFamily: 'DynaPuff', fontSize: 10, marginTop: 6 },
-  dailyRewardActions: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: 16 },
+  dailyRewardCardBg: {
+    position: 'absolute',
+    width: gameScale(100),
+    height: gameScale(100),
+  },
+  dailyRewardCardClaimed: { opacity: 0.2 },
+  dailyRewardCardClaimable: { backgroundColor: 'transparent', opacity: 1 },
+  dailyRewardDay: { color: '#FFD700', fontFamily: 'Grobold', fontSize: 12, marginBottom: 4, zIndex: 10 },
+  dailyRewardValue: { color: '#ffffff', fontFamily: 'DynaPuff', fontSize: 11, zIndex: 10 },
+  rewardContent: { alignItems: 'center', justifyContent: 'center', zIndex: 10 },
+  coinIcon: { width: gameScale(30), height: gameScale(30), marginBottom: 4 },
   dailyRewardLoading: { alignItems: 'center', paddingVertical: 20 },
   dailyRewardLoadingText: { color: '#ffffff', fontFamily: 'DynaPuff', marginTop: 10 },
   dailyRewardError: { color: '#ffb3b3', fontFamily: 'DynaPuff', textAlign: 'center', marginVertical: 10 },
 
   mapModalTitleText: { color: '#FFD700', fontSize: 30, fontFamily: 'Grobold', marginBottom: 10, textAlign: 'center', textShadowOffset:{width:1, height:1}, textShadowRadius:2, textShadowColor:'black' },
-  mapModalCloseBtn: { backgroundColor: '#d9534f', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8, borderWidth: 2, borderColor: '#a94442' },
-  mapModalEnterBtn: { backgroundColor: '#5cb85c', paddingVertical: 10, paddingHorizontal: 25, borderRadius: 8, borderWidth: 2, borderColor: '#4cae4c' },
   mapModalBtnText: { color: '#fff', fontFamily: 'Grobold', fontSize: 16 },
-  disabledBtn: { backgroundColor: '#555', borderColor: '#333' },
+  dailyRewardCloseTop: { position: 'absolute', top: gameScale(260), right: gameScale(10), backgroundColor: '#d9534f', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, borderWidth: 2, borderColor: '#a94442', zIndex: 20 },
+  dailyRewardCloseTopText: { color: '#fff', fontFamily: 'Grobold', fontSize: 14 },
+  dailyRewardClaimTextWrapper: { position: 'absolute', bottom: gameScale(-49), left: 0, right: 0, alignItems: 'center' },
+  dailyRewardClaimText: { color: '#dec013', fontFamily: 'Grobold', fontSize: 23 },
+  dailyRewardClaimTextDisabled: { color: '#dec013c5' },
 });

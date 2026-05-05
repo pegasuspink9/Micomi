@@ -176,14 +176,6 @@ const GridContainer = ({
           </Animated.View>
         )}
 
-        {loading && showCardInGrid && !isProceedMode && !isAutoProceedMode && (
-          <ActivityIndicator 
-            size="large" 
-            color="#ffffff" 
-            style={styles.loaderInGrid}
-          />
-        )}
-        
         {!isProceedMode && !isAutoProceedMode && !isLevelComplete && (
           <View style={[styles.simpleFrame, { backgroundColor: resolvedThemeColor }]}>
           </View>

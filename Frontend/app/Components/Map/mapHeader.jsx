@@ -178,7 +178,7 @@ export default function MapHeader() {
             </View>
           </View>
           <Image
-            source={require('../icons/energy.png')}
+            source={require('../icons/diamonds.png')}
             style={styles.energyIconAbsolute}
             contentFit="contain"
             cachePolicy="memory-disk"

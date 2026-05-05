@@ -380,12 +380,6 @@ const Life = ({
           />
         </View>
 
-        {/* PvP: continuous rank when provided */}
-        {playerRank ? (
-          <View style={styles.rankContainer}>
-            <Text style={styles.rankText} numberOfLines={1}>{playerRank}</Text>
-          </View>
-        ) : null}
       </View>
     </Animated.View>
   );

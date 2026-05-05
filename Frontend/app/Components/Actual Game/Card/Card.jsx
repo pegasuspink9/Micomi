@@ -224,13 +224,6 @@ const Card = ({
       activeOpacity={1}
       onPress={handleClose}
     >
-      {loading && (
-        <ActivityIndicator 
-          size="large" 
-          color="#ffffff00" 
-          style={styles.loader}
-        />
-      )}
       
       <View style={styles.contentWrapper}>
 

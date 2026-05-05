@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+
 import { useMapData } from '../../hooks/useMapData'; 
 import { MAP_THEMES } from '../RoadMap/MapLevel/MapDatas/mapData'; 
 import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
@@ -30,6 +30,7 @@ const { width, height } = Dimensions.get('window');
 const ARROW_IMG = require('./Assets/right arrow.png');
 const LOCKED_IMG = { uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945939/473288860-e8a1b478-91d3-44c9-8a59-4bc46db4d1c0_jaroj9.png'};
 const DEFAULT_LOTTIE = { uri: 'https://lottie.host/9875685d-8bb8-4749-ac63-c56953f45726/UnBHY7vAPX.json' };
+const PVP_IMG = require('./Assets/pvp.png');
 
 const LEVEL_SELECTOR_IMAGES = {
   'HTML': require('./Assets/html_selector.png'),
@@ -244,9 +245,8 @@ export default function MapNavigate({ onMapChange }) {
 
         <View style={styles.iconColumn}>
           <DailyRewards />
-          <TouchableOpacity style={styles.pvpEntryButton} activeOpacity={0.9} onPress={handleOpenPvpModal}>
-            <MaterialCommunityIcons name="sword-cross" size={24} color="#E8F5FF" />
-            <Text style={styles.pvpEntryButtonText}>PvP</Text>
+          <TouchableOpacity style={styles.pvpButtonWrapper} activeOpacity={0.9} onPress={handleOpenPvpModal}>
+            <Image source={PVP_IMG} style={styles.pvpImage} resizeMode="contain" />
           </TouchableOpacity>
         </View>
 
@@ -431,15 +431,13 @@ const styles = StyleSheet.create({
   errorBanner: { backgroundColor: '#ff9800', padding: 8, position: 'absolute', top: 0, width:'100%', zIndex: 100 },
   errorBannerText: { color: '#fff', textAlign: 'center', fontFamily: 'FunkySign' },
 
-  // ... (PvP styles remain the same) ...
-  pvpEntryButton: {
-    width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(16, 36, 72, 0.88)',
-    borderWidth: 2, borderColor: '#58B5FF', alignItems: 'center', justifyContent: 'center', zIndex: 120, elevation: 10, marginTop: 8,
-  },
-  pvpEntryButtonText: { color: '#E8F5FF', fontSize: 12, fontFamily: 'Grobold', marginTop: 2 },
+  // ... (Button styles for PvP) ...
+  pvpButtonWrapper: { alignItems: 'center', justifyContent: 'center', zIndex: 120, marginTop: 2 },
+  pvpImage: { width:60, height: 60 },
+  pvpButtonText: { color: '#E8F5FF', fontSize: 12, fontFamily: 'FunkySign', marginTop: -5 },
 
   iconColumn: {
-    position: 'absolute', top: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 14 : 20, right: 16,
+    position: 'absolute', top: 5, right: 10,
     zIndex: 120, alignItems: 'center'
   },
 
