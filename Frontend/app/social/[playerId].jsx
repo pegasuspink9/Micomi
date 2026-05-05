@@ -39,6 +39,17 @@ const normalizeRelation = (relation) => {
   return 'none';
 };
 
+const attachThemesToProfile = (baseData, themesPayload) => {
+  const themes = themesPayload?.themes || [];
+  const diamonds = themesPayload?.diamonds ?? baseData?.diamonds ?? 0;
+
+  return {
+    ...baseData,
+    themes,
+    diamonds,
+  };
+};
+
 export default function PublicPlayerProfileScreen() {
   const { playerId } = useLocalSearchParams();
   const router = useRouter();
@@ -139,7 +150,9 @@ export default function PublicPlayerProfileScreen() {
           ? universalAssetPreloader.transformProfileDataWithMapCache(transformedData)
           : universalAssetPreloader.transformPlayerDataWithCache(transformedData);
 
-      setPlayerData(dataWithCachedPaths);
+      const mergedData = attachThemesToProfile(dataWithCachedPaths, apiData?.theme_colors);
+
+      setPlayerData(mergedData);
       setRelationStatus(normalizeRelation(apiData?.relation_status));
     } catch (err) {
       setError(err.message || 'Failed to load profile');
