@@ -43,14 +43,14 @@ export const pvpMethods = {
     );
 
     addAsset(
-      'https://micomi-assets.me/Pvp%20Assets/Languages/Computer.png',
+      'https://micomi-assets.me/Pvp%20Assets/Languages/CP.png',
       'pvp_topic_javascript',
       'image',
       'ui_images'
     );
 
     addAsset(
-      'https://micomi-assets.me/Pvp%20Assets/Languages/JavaScript.png',
+      'https://micomi-assets.me/Pvp%20Assets/Languages/JS.png',
       'pvp_topic_computer',
       'image',
       'ui_images'

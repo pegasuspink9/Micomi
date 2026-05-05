@@ -63,9 +63,9 @@ const StatsGridSection = ({
         hideIcon: true,
       }
     : {
-        icon: require('../icons/coins.png'),
-        label: 'Coins',
-        value: formatCompactNumber(coins),
+        icon: require('../icons/points.png'),
+        label: 'Points',
+        value: formatCompactNumber(playerTotalPoints),
         displayValueInIcon: false,
         hideIcon: false,
       };

@@ -15,15 +15,15 @@ import { gameScale } from '../Responsiveness/gameResponsive';
 const TOPIC_IMAGES = {
   HTML: 'https://micomi-assets.me/Pvp%20Assets/Languages/HTML.png',
   CSS: 'https://micomi-assets.me/Pvp%20Assets/Languages/CSSS.png',
-  JavaScript: 'https://micomi-assets.me/Pvp%20Assets/Languages/JavaScript.png',
-  Computer: 'https://micomi-assets.me/Pvp%20Assets/Languages/Computer.png',
+  JavaScript: 'https://micomi-assets.me/Pvp%20Assets/Languages/JS.png',
+  Computer: 'https://micomi-assets.me/Pvp%20Assets/Languages/CP.png',
 };
 
 const LEVEL_SELECTOR_IMAGES = {
   HTML: require('../Map/Assets/computer_selector.png'),
   CSS: require('../Map/Assets/javascript_selector.png'),
-  JavaScript: require('../Map/Assets/css_selector.png'),
-  Computer: require('../Map/Assets/html_selector.png'),
+  JavaScript: require('../Map/Assets/js_selector.png'),
+  Computer: require('../Map/Assets/css_selector.png'),
 };
 
 const ARROW_IMAGE = require('../Map/Assets/right arrow.png');
