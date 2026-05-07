@@ -4,6 +4,7 @@ import {
   cleanupExpiredQuests,
 } from "../src/models/Quest/periodicQuests.service";
 import { QuestPeriod } from "@prisma/client";
+import { restoreEnergyForDuePlayers } from "../src/game/Energy/energy.service";
 
 export function setupCronJobs() {
   cron.schedule("1 0 * * *", async () => {
@@ -73,6 +74,17 @@ export function setupCronJobs() {
       console.log("Additional cleanup completed\n");
     } catch (error) {
       console.error("Additional cleanup failed:", error);
+    }
+  });
+
+  cron.schedule("* * * * *", async () => {
+    try {
+      const count = await restoreEnergyForDuePlayers();
+      // if (Number(count) > 0) {
+      //   console.log("[Energy Cron] Restored energy for players:", count);
+      // }
+    } catch (error) {
+      console.error("[Energy Cron] Failed:", error);
     }
   });
 }

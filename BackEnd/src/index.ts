@@ -29,6 +29,8 @@ import moduleRoutes from "./models/Module/module.routes";
 import socialRoutes from "./models/Social/social.routes";
 import dailyRewardRoutes from "./models/DailyReward/dailyReward.routes";
 import themeRoutes from "./models/Theme/theme.routes";
+import adsRoutes from "./models/Ads/ads.routes";
+import paymentRoutes from "./models/Payment/payment.routes";
 
 import testRoutes from "../middleware/testing.toutes";
 
@@ -76,6 +78,8 @@ app.use("/module", moduleRoutes);
 app.use("/social", socialRoutes);
 app.use("/daily-reward", dailyRewardRoutes);
 app.use("/theme", themeRoutes);
+app.use("/payment", paymentRoutes);
+app.use("/ads", adsRoutes);
 
 //temporary
 app.get("/progress", getAllPlayerProgress);
@@ -98,6 +102,15 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, async () => {
   console.log(`\n✅ Server running on port ${PORT}\n`);
 
+  // Register cron jobs immediately (non-blocking)
+  try {
+    setupCronJobs();
+    console.log("[✅ Cron Jobs] Cron jobs registered\n");
+  } catch (error) {
+    console.error("[⚠️ Cron Jobs] Error setting up cron jobs:", error);
+  }
+
+  // Initialize quest service after a brief delay (can run in background)
   setTimeout(async () => {
     try {
       console.log(
@@ -111,17 +124,6 @@ server.listen(PORT, async () => {
       );
       await cleanupExpiredQuestsForAllPlayers();
       console.log("[✅ Quest Service] Initial cleanup complete\n");
-
-      console.log(
-        "[✅ Quest Service] Scheduled cleanup registered (every 6 hours)\n",
-      );
-
-      try {
-        setupCronJobs();
-        console.log("[✅ Cron Jobs] Cron jobs initialized\n");
-      } catch (error) {
-        console.error("[⚠️ Cron Jobs] Error setting up cron jobs:", error);
-      }
     } catch (error) {
       console.error(
         "[❌ Quest Service] Critical error during initialization:",

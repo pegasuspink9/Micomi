@@ -90,20 +90,38 @@ export const selectMap = async (playerId: number, mapId: number) => {
   const enhancedMap = {
     ...fullMap,
     levels: fullMap.levels.map((level, index) => {
+      // 1. First level is always unlocked
       let isUnlocked = index === 0;
 
       if (!isUnlocked) {
-        isUnlocked = !!level.playerProgress.length;
+        // 2. Unlocked if the player has already started/played this specific level
+        const hasStartedCurrentLevel = level.playerProgress.length > 0;
+
+        // 3. Unlocked if the PREVIOUS level was completed
+        const previousLevel = fullMap.levels[index - 1];
+        const isPreviousCompleted =
+          previousLevel.playerProgress.length > 0 &&
+          previousLevel.playerProgress[0].is_completed;
+
+        isUnlocked = hasStartedCurrentLevel || isPreviousCompleted;
       }
 
       let isCurrentUnlocked = false;
 
       if (playerId === 11 && fullMap.map_name === "HTML") {
-        isCurrentUnlocked = level.level_id === 24; //For testing purposes, unlock level 25 for player 11 on HTML map
+        isCurrentUnlocked = level.level_id === 24; //For testing purposes
       } else if (allLevelsCompleted) {
         isCurrentUnlocked = index === fullMap.levels.length - 1;
       } else if (latestUnlockedProgress) {
-        isCurrentUnlocked = level.level_id === latestUnlockedProgress.level_id;
+        // If the latest progress is completed, the "current" active level should be the NEXT one
+        if (latestUnlockedProgress.is_completed && index > 0) {
+          const previousLevel = fullMap.levels[index - 1];
+          isCurrentUnlocked =
+            previousLevel.level_id === latestUnlockedProgress.level_id;
+        } else {
+          isCurrentUnlocked =
+            level.level_id === latestUnlockedProgress.level_id;
+        }
       } else {
         isCurrentUnlocked = index === 0;
       }

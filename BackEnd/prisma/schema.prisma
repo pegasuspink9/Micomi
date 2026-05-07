@@ -119,6 +119,19 @@ model Enemy {
   levels            Level[]
 }
 
+model PurchaseTransaction {
+  transaction_id String   @id @default(uuid())
+  player_id      Int
+  product_id     String   
+  purchase_token String   @unique 
+  diamonds_added Int
+  created_at     DateTime @default(now())
+  
+  player         Player   @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
+
+  @@index([player_id])
+}
+
 model Player {
   player_id                    Int                      @id @default(autoincrement())
   username                     String                   @unique
@@ -131,15 +144,16 @@ model Player {
   coins                        Int                      @default(100)
   exp_points                   Int                      @default(0)
   level                        Int                      @default(1)
-  energy                       Int                      @default(25)
+  energy                       Int                      @default(100)
   energy_reset_at              DateTime?
+  has_infinite_energy          Boolean                  @default(false)
   player_name                  String
   current_streak               Int                      @default(0)
   longest_streak               Int                      @default(0)
   google_id                    String?                  @unique
   facebook_id                  String?                  @unique
   player_avatar                String?
-  player_rank_image            String                   @default("https://placehold.co/512x512/png?text=Pixel")
+  player_rank_image            String                   @default("https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Pixel.png")
   player_rank_name             String                   @default("Pixel")
   player_rank_points           Int                      @default(0)
   daily_reward_day             Int                      @default(0)
@@ -156,6 +170,8 @@ model Player {
   pvpProgressAsP1              PlayerVsPlayerProgress[] @relation("PvpProgressP1")
   pvpProgressAsP2              PlayerVsPlayerProgress[] @relation("PvpProgressP2")
   pvpResults                   PlayerVsPlayerResult[]
+  purchases                    PurchaseTransaction[] 
+
 
   @@index([email])
   @@index([total_points])
@@ -220,6 +236,7 @@ model PlayerProgress {
   player_answer                   Json          @default("[]")
   battle_status                   BattleStatus? @default(in_progress)
   enemy_hp                        Int           @default(0)
+  enemy_max_hp                    Int?
   player_hp                       Int           @default(0)
   challenge_start_time            DateTime?
   wrong_challenges                Json          @default("[]")
@@ -479,6 +496,11 @@ enum QuestType {
   defeat_enemy_full_hp
   perfect_level
   defeat_boss
+  pvp_matches_total
+  pvp_matches_with_friends
+  pvp_victories
+  pvp_victories_with_friends
+  pvp_perfect_matches
 }
 
 enum PotionType {

@@ -21,6 +21,7 @@ import {
 } from "../Challenges/challenges.service";
 
 const prisma = new PrismaClient();
+import { borrowChallengesForEnemyLevel } from "../Challenges/challenges.service";
 
 const MAP_ORDER = ["HTML", "CSS", "JavaScript", "Computer"] as const;
 const MAP_PROGRESSION: Record<
@@ -83,6 +84,14 @@ export const previewLevel = async (playerId: number, levelId: number) => {
     | null;
   if (!level) throw new Error("Level not found");
 
+  if (
+    level.level_type === "enemyButton" &&
+    (!level.challenges || level.challenges.length === 0)
+  ) {
+    const borrowed = await borrowChallengesForEnemyLevel(level, 12);
+    level.challenges = borrowed;
+  }
+
   const totalPoints = level.challenges.reduce(
     (sum, ch) => sum + Number(ch.points_reward ?? 0),
     0,
@@ -144,6 +153,7 @@ export const previewLevel = async (playerId: number, levelId: number) => {
 
       const character = selectedChar.character;
       const playerMaxHealth = Number(character.health ?? 0);
+
       const enemyMaxHealth = getBaseEnemyHp(level);
 
       return {
@@ -359,6 +369,16 @@ export const enterLevel = async (playerId: number, levelId: number) => {
 
   if (!level) throw new Error("Level not found");
 
+  // If this is an enemyButton level with no challenges, borrow 12 challenges
+  // from the two previous level_numbers in the same map (shared helper).
+  if (
+    level.level_type === "enemyButton" &&
+    (!level.challenges || level.challenges.length === 0)
+  ) {
+    const borrowed = await borrowChallengesForEnemyLevel(level, 12);
+    level.challenges = borrowed;
+  }
+
   level.challenges.sort((a, b) => a.challenge_id - b.challenge_id);
 
   const totalPoints = level.challenges.reduce(
@@ -563,6 +583,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         challenge_start_time: new Date(),
         player_hp: playerMaxHealth,
         enemy_hp: enemyMaxHealth,
+        enemy_max_hp: enemyMaxHealth,
         battle_status: BattleStatus.in_progress,
         is_completed: false,
         coins_earned: 0,
@@ -637,6 +658,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         challenge_start_time: new Date(),
         player_hp: playerMaxHealth,
         enemy_hp: enemyMaxHealth,
+        enemy_max_hp: enemyMaxHealth,
         battle_status: BattleStatus.in_progress,
         is_completed: false,
         wrong_challenges: [],
@@ -684,6 +706,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         challenge_start_time: new Date(),
         player_hp: playerMaxHealth,
         enemy_hp: enemyMaxHealth,
+        enemy_max_hp: enemyMaxHealth,
         battle_status: BattleStatus.in_progress,
         is_completed: false,
         coins_earned: 0,
@@ -718,6 +741,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         wrong_challenges: [],
         player_hp: playerMaxHealth,
         enemy_hp: enemyMaxHealth,
+        enemy_max_hp: enemyMaxHealth,
         battle_status: BattleStatus.in_progress,
         challenge_start_time: new Date(),
         consecutive_corrects: 0,

@@ -557,6 +557,90 @@ const getRandomPastLevelChallenge = async (
   return pickedChallenge;
 };
 
+export const borrowChallengesForEnemyLevel = async (
+  level: any,
+  requiredCount?: number,
+): Promise<Challenge[]> => {
+  if (!level) return [];
+
+  const currentNumber = Number(level.level_number ?? 0);
+  const mapId = level.map_id;
+
+  const prev1Num = currentNumber - 1;
+  const prev2Num = currentNumber - 2;
+
+  const lowerLevels = await prisma.level.findMany({
+    where: { map_id: mapId, level_number: { lt: currentNumber } },
+    include: { challenges: true },
+  });
+
+  const level1Challenges =
+    (lowerLevels.find((l) => l.level_number === prev1Num)
+      ?.challenges as Challenge[]) || [];
+  const level2Challenges =
+    (lowerLevels.find((l) => l.level_number === prev2Num)
+      ?.challenges as Challenge[]) || [];
+
+  const shuffled1 = shuffleArray([...level1Challenges]);
+  const shuffled2 = shuffleArray([...level2Challenges]);
+
+  const allLowerChallenges = lowerLevels.flatMap(
+    (l) => (l.challenges as Challenge[]) || [],
+  );
+  const effectiveRequiredCount = requiredCount ?? allLowerChallenges.length;
+
+  if (effectiveRequiredCount <= 0) return [];
+
+  const targetPerLevel = Math.floor(effectiveRequiredCount / 2);
+  let picked1 = shuffled1.slice(0, targetPerLevel);
+  let picked2 = shuffled2.slice(0, targetPerLevel);
+
+  if (picked1.length < targetPerLevel) {
+    const deficit = targetPerLevel - picked1.length;
+    const extras = shuffled2.slice(targetPerLevel, targetPerLevel + deficit);
+    picked2 = [...picked2, ...extras];
+  } else if (picked2.length < targetPerLevel) {
+    const deficit = targetPerLevel - picked2.length;
+    const extras = shuffled1.slice(targetPerLevel, targetPerLevel + deficit);
+    picked1 = [...picked1, ...extras];
+  }
+
+  let picked = [...picked1, ...picked2];
+
+  if (picked.length < effectiveRequiredCount) {
+    const pickedIds = new Set(picked.map((c) => c.challenge_id));
+
+    const remainingPool = shuffleArray(
+      allLowerChallenges.filter((c) => !pickedIds.has(c.challenge_id)),
+    );
+    const needed = effectiveRequiredCount - picked.length;
+
+    picked = [...picked, ...remainingPool.slice(0, needed)];
+  }
+
+  if (picked.length === 0) return [];
+
+  picked = shuffleArray(picked);
+
+  const globalOptionsPool = lowerLevels.flatMap(
+    (l) => (l.challenges as Challenge[]) || [],
+  );
+
+  const prepared = picked.map((ch) => {
+    const mod: any = { ...ch };
+    const correctAnswers: string[] = Array.isArray(mod.correct_answer)
+      ? (mod.correct_answer as string[])
+      : [String(mod.correct_answer ?? "")];
+
+    mod.question = dynamicBlankSetter(mod.question ?? "", correctAnswers);
+    mod.options = generateDynamicOptions(mod, globalOptionsPool as Challenge[]);
+
+    return mod as Challenge;
+  });
+
+  return prepared;
+};
+
 export const generateDynamicOptions = (
   currentChallenge: Challenge,
   allChallenges: Challenge[],
@@ -903,6 +987,7 @@ export const submitChallengeService = async (
         challenge_start_time: new Date(),
         is_completed: false,
         enemy_hp: enemyMaxHealth,
+        enemy_max_hp: enemyMaxHealth,
         player_hp: character.health,
         coins_earned: 0,
         total_points_earned: 0,
@@ -1875,9 +1960,6 @@ export const submitChallengeService = async (
   const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
 
   const rawPlayerOutputs = freshProgress?.player_expected_output;
-  const playerOutputs: string[] | null = Array.isArray(rawPlayerOutputs)
-    ? (rawPlayerOutputs as string[])
-    : null;
 
   const correctAnswerLength = Array.isArray(nextChallenge?.correct_answer)
     ? nextChallenge.correct_answer.length
@@ -2072,6 +2154,13 @@ export const submitChallengeService = async (
     console.log("- Freeze effect active: Muting all enemy audio responses.");
   }
 
+  if (isBonusRound) {
+    enemy_attack_audio = null;
+    enemy_hurt_audio = null;
+    enemy_idle_audio = null;
+    console.log("- Bonus round active: Muting all enemy audio responses.");
+  }
+
   if (character.character_name === "Leon" && attackType === "special_attack") {
     if (fightResult && fightResult.character) {
       fightResult.character.character_idle =
@@ -2098,7 +2187,6 @@ export const submitChallengeService = async (
       coinsEarned: freshProgress?.coins_earned ?? 0,
       totalPointsEarned: freshProgress?.total_points_earned ?? 0,
       totalExpPointsEarned: freshProgress?.total_exp_points_earned ?? 0,
-      playerOutputs,
     },
     completionRewards,
     nextLevel,

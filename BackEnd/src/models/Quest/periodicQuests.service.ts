@@ -216,6 +216,57 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     baseCoinReward: 1300,
     availableFor: ["monthly"],
   },
+  {
+    objective_type: QuestType.pvp_matches_total,
+    titleTemplate: "PvP Challenger",
+    descriptionTemplate: "Complete {count} PvP matches!",
+    minTarget: 3,
+    maxTarget: 8,
+    baseExpReward: 75,
+    baseCoinReward: 40,
+    availableFor: ["daily", "weekly"],
+  },
+  {
+    objective_type: QuestType.pvp_matches_with_friends,
+    titleTemplate: "Play with Friends",
+    descriptionTemplate:
+      "Complete {count} PvP matches with your followers/following!",
+    minTarget: 2,
+    maxTarget: 5,
+    baseExpReward: 100,
+    baseCoinReward: 50,
+    availableFor: ["daily", "weekly", "monthly"],
+  },
+  {
+    objective_type: QuestType.pvp_victories,
+    titleTemplate: "PvP Victor",
+    descriptionTemplate: "Win {count} PvP matches!",
+    minTarget: 2,
+    maxTarget: 6,
+    baseExpReward: 90,
+    baseCoinReward: 45,
+    availableFor: ["daily", "weekly", "monthly"],
+  },
+  {
+    objective_type: QuestType.pvp_victories_with_friends,
+    titleTemplate: "Legendary Friend",
+    descriptionTemplate: "Win {count} PvP matches against your friends!",
+    minTarget: 1,
+    maxTarget: 4,
+    baseExpReward: 120,
+    baseCoinReward: 60,
+    availableFor: ["weekly", "monthly"],
+  },
+  {
+    objective_type: QuestType.pvp_perfect_matches,
+    titleTemplate: "Flawless Fighter",
+    descriptionTemplate: "Win {count} PvP matches without making any mistakes!",
+    minTarget: 1,
+    maxTarget: 3,
+    baseExpReward: 150,
+    baseCoinReward: 75,
+    availableFor: ["weekly", "monthly"],
+  },
 ];
 
 export function generateQuestsByPeriod(
@@ -601,84 +652,75 @@ export async function checkAndGenerateMissingQuestsForAllPlayers() {
       errors: [] as Array<{ playerId: number; error: string }>,
     };
 
-    let processedCount = 0;
+    // Process in batches of 50 to avoid blocking the event loop
+    const batchSize = 50;
+    for (let i = 0; i < allPlayers.length; i += batchSize) {
+      const batch = allPlayers.slice(i, i + batchSize);
+      const batchStart = i + 1;
+      const batchEnd = Math.min(i + batchSize, allPlayers.length);
 
-    for (const player of allPlayers) {
-      processedCount++;
-      try {
-        console.log(
-          `[${processedCount}/${allPlayers.length}] Processing player ${player.player_id} (${player.player_name})...`,
-        );
+      console.log(
+        `[Quest Service] Processing batch ${batchStart}-${batchEnd}/${allPlayers.length}`,
+      );
 
-        let generatedForThisPlayer = 0;
+      // Process entire batch in parallel
+      await Promise.all(
+        batch.map(async (player) => {
+          try {
+            let generatedForThisPlayer = 0;
 
-        const hasDailyQuests = await prisma.playerQuest.findFirst({
-          where: {
-            player_id: player.player_id,
-            quest: { quest_period: "daily" },
-          },
-        });
+            // Fetch all quest periods for this player in ONE query
+            const playerQuestPeriods = await prisma.playerQuest.findMany({
+              where: { player_id: player.player_id },
+              select: { quest_period: true },
+              distinct: ["quest_period"],
+            });
 
-        if (!hasDailyQuests) {
-          console.log(`  └─ Missing daily quests. Generating...`);
-          await forceGenerateQuestsForPlayer(player.player_id, "daily");
-          generatedForThisPlayer++;
-          results.playersWithMissingQuests++;
-        } else {
-          console.log(`  └─ ✅ Has daily quests`);
-        }
+            const hasPeriods = {
+              daily: playerQuestPeriods.some((q) => q.quest_period === "daily"),
+              weekly: playerQuestPeriods.some(
+                (q) => q.quest_period === "weekly",
+              ),
+              monthly: playerQuestPeriods.some(
+                (q) => q.quest_period === "monthly",
+              ),
+            };
 
-        const hasWeeklyQuests = await prisma.playerQuest.findFirst({
-          where: {
-            player_id: player.player_id,
-            quest: { quest_period: "weekly" },
-          },
-        });
+            if (!hasPeriods.daily) {
+              await forceGenerateQuestsForPlayer(player.player_id, "daily");
+              generatedForThisPlayer++;
+            }
 
-        if (!hasWeeklyQuests) {
-          console.log(`  └─ Missing weekly quests. Generating...`);
-          await forceGenerateQuestsForPlayer(player.player_id, "weekly");
-          generatedForThisPlayer++;
-          results.playersWithMissingQuests++;
-        } else {
-          console.log(`  └─ ✅ Has weekly quests`);
-        }
+            if (!hasPeriods.weekly) {
+              await forceGenerateQuestsForPlayer(player.player_id, "weekly");
+              generatedForThisPlayer++;
+            }
 
-        const hasMonthlyQuests = await prisma.playerQuest.findFirst({
-          where: {
-            player_id: player.player_id,
-            quest: { quest_period: "monthly" },
-          },
-        });
+            if (!hasPeriods.monthly) {
+              await forceGenerateQuestsForPlayer(player.player_id, "monthly");
+              generatedForThisPlayer++;
+            }
 
-        if (!hasMonthlyQuests) {
-          console.log(`  └─ Missing monthly quests. Generating...`);
-          await forceGenerateQuestsForPlayer(player.player_id, "monthly");
-          generatedForThisPlayer++;
-          results.playersWithMissingQuests++;
-        } else {
-          console.log(`  └─ ✅ Has monthly quests`);
-        }
+            if (generatedForThisPlayer > 0) {
+              results.playersWithMissingQuests++;
+              results.questsGenerated += generatedForThisPlayer;
+            }
 
-        results.questsGenerated += generatedForThisPlayer;
-        results.playersProcessed++;
+            results.playersProcessed++;
+          } catch (error: any) {
+            console.error(
+              `[Quest Service] Error for player ${player.player_id}: ${error.message}`,
+            );
+            results.errors.push({
+              playerId: player.player_id,
+              error: error.message,
+            });
+          }
+        }),
+      );
 
-        if (generatedForThisPlayer > 0) {
-          console.log(
-            `  └─ ✅ Generated ${generatedForThisPlayer} quest types\n`,
-          );
-        } else {
-          console.log(`  └─ ✅ No generation needed\n`);
-        }
-      } catch (error: any) {
-        console.error(
-          `  └─ ❌ Error generating quests for player ${player.player_id}: ${error.message}\n`,
-        );
-        results.errors.push({
-          playerId: player.player_id,
-          error: error.message,
-        });
-      }
+      // Yield to event loop between batches
+      await new Promise((resolve) => setImmediate(resolve));
     }
 
     console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -691,12 +733,6 @@ export async function checkAndGenerateMissingQuestsForAllPlayers() {
     );
     console.log(`Total Quests Generated: ${results.questsGenerated}`);
     console.log(`Errors: ${results.errors.length}`);
-    if (results.errors.length > 0) {
-      console.log("Error Details:");
-      results.errors.forEach((err) => {
-        console.log(`  - Player ${err.playerId}: ${err.error}`);
-      });
-    }
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
     return results;
@@ -777,60 +813,60 @@ export async function cleanupExpiredQuestsForAllPlayers() {
 
     let playerWithMissingCount = 0;
 
-    for (const player of allPlayers) {
-      try {
-        const activeDaily = await prisma.playerQuest.count({
-          where: {
-            player_id: player.player_id,
-            expires_at: { gt: now },
-            quest: { quest_period: "daily" },
-          },
-        });
+    // Process players in batches to avoid blocking
+    const batchSize = 50;
+    for (let i = 0; i < allPlayers.length; i += batchSize) {
+      const batch = allPlayers.slice(i, i + batchSize);
 
-        const activeWeekly = await prisma.playerQuest.count({
-          where: {
-            player_id: player.player_id,
-            expires_at: { gt: now },
-            quest: { quest_period: "weekly" },
-          },
-        });
+      await Promise.all(
+        batch.map(async (player) => {
+          try {
+            // Get all active quest periods for this player in ONE query
+            const activeQuests = await prisma.playerQuest.findMany({
+              where: {
+                player_id: player.player_id,
+                expires_at: { gt: now },
+              },
+              select: { quest: { select: { quest_period: true } } },
+            });
 
-        const activeMonthly = await prisma.playerQuest.count({
-          where: {
-            player_id: player.player_id,
-            expires_at: { gt: now },
-            quest: { quest_period: "monthly" },
-          },
-        });
+            const activePeriods = new Set(
+              activeQuests.map((q) => q.quest.quest_period),
+            );
 
-        let regeneratedForPlayer = 0;
+            let regeneratedForPlayer = 0;
 
-        if (activeDaily === 0) {
-          await forceGenerateQuestsForPlayer(player.player_id, "daily");
-          regeneratedForPlayer++;
-        }
+            if (!activePeriods.has("daily")) {
+              await forceGenerateQuestsForPlayer(player.player_id, "daily");
+              regeneratedForPlayer++;
+            }
 
-        if (activeWeekly === 0) {
-          await forceGenerateQuestsForPlayer(player.player_id, "weekly");
-          regeneratedForPlayer++;
-        }
+            if (!activePeriods.has("weekly")) {
+              await forceGenerateQuestsForPlayer(player.player_id, "weekly");
+              regeneratedForPlayer++;
+            }
 
-        if (activeMonthly === 0) {
-          await forceGenerateQuestsForPlayer(player.player_id, "monthly");
-          regeneratedForPlayer++;
-        }
+            if (!activePeriods.has("monthly")) {
+              await forceGenerateQuestsForPlayer(player.player_id, "monthly");
+              regeneratedForPlayer++;
+            }
 
-        if (regeneratedForPlayer > 0) {
-          results.totalRegenerated += regeneratedForPlayer;
-          results.affectedPlayers.add(player.player_id);
-          playerWithMissingCount++;
-        }
-      } catch (error: any) {
-        results.errors.push({
-          playerId: player.player_id,
-          error: error.message,
-        });
-      }
+            if (regeneratedForPlayer > 0) {
+              results.totalRegenerated += regeneratedForPlayer;
+              results.affectedPlayers.add(player.player_id);
+              playerWithMissingCount++;
+            }
+          } catch (error: any) {
+            results.errors.push({
+              playerId: player.player_id,
+              error: error.message,
+            });
+          }
+        }),
+      );
+
+      // Yield to event loop between batches
+      await new Promise((resolve) => setImmediate(resolve));
     }
 
     console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");

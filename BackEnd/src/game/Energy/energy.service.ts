@@ -3,7 +3,7 @@ import { formatTimeInHours } from "../../../helper/dateTimeHelper";
 
 const prisma = new PrismaClient();
 
-const MAX_ENERGY = 25;
+const MAX_ENERGY = 100;
 const ENERGY_RESTORE_INTERVAL = 30 * 60 * 1000;
 
 export const updatePlayerEnergy = async (playerId: number) => {
@@ -13,31 +13,49 @@ export const updatePlayerEnergy = async (playerId: number) => {
 
   if (!player) return { message: "Player not found", success: false };
 
+  if (player.has_infinite_energy) {
+    return {
+      energy: MAX_ENERGY,
+      energyResetAt: null,
+      timeToNextRestore: null,
+      isInfinite: true,
+    };
+  }
+
   const now = new Date();
   let currentEnergy = player.energy;
   let energyResetAt = player.energy_reset_at;
-
   let timeToNextRestore: number | null = null;
 
   if (currentEnergy < MAX_ENERGY) {
     if (!energyResetAt) {
-      energyResetAt = new Date(now.getTime() - ENERGY_RESTORE_INTERVAL);
+      energyResetAt = new Date(now.getTime() + ENERGY_RESTORE_INTERVAL);
+
+      await prisma.player.update({
+        where: { player_id: playerId },
+        data: { energy_reset_at: energyResetAt },
+      });
     }
 
-    const timeSinceLastRestore = now.getTime() - energyResetAt.getTime();
-    const energyToRestore = Math.floor(
-      timeSinceLastRestore / ENERGY_RESTORE_INTERVAL
-    );
+    // Check if the target time has been reached or passed
+    if (energyResetAt && now.getTime() >= energyResetAt.getTime()) {
+      const timePastTarget = now.getTime() - energyResetAt.getTime();
 
-    if (energyToRestore > 0) {
+      // Calculate how many 30-minute intervals passed (minimum 1 since target is reached)
+      const ticksEarned =
+        1 + Math.floor(timePastTarget / ENERGY_RESTORE_INTERVAL);
+
+      // MULTIPLY BY 25!
+      const energyToRestore = ticksEarned * 25;
+
       currentEnergy = Math.min(MAX_ENERGY, currentEnergy + energyToRestore);
 
+      // Update the next reset time (or null if full)
       energyResetAt =
         currentEnergy >= MAX_ENERGY
           ? null
           : new Date(
-              energyResetAt.getTime() +
-                energyToRestore * ENERGY_RESTORE_INTERVAL
+              energyResetAt.getTime() + ticksEarned * ENERGY_RESTORE_INTERVAL,
             );
 
       await prisma.player.update({
@@ -49,8 +67,9 @@ export const updatePlayerEnergy = async (playerId: number) => {
       });
     }
 
+    // Calculate time left for the UI (Frontend countdown)
     if (energyResetAt) {
-      timeToNextRestore = energyResetAt.getTime() - now.getTime();
+      timeToNextRestore = Math.max(0, energyResetAt.getTime() - now.getTime());
     }
   }
 
@@ -58,6 +77,7 @@ export const updatePlayerEnergy = async (playerId: number) => {
     energy: currentEnergy,
     energyResetAt,
     timeToNextRestore,
+    isInfinite: false,
   };
 };
 
@@ -66,6 +86,16 @@ export const deductEnergy = async (playerId: number, amount: number = 5) => {
     where: { player_id: playerId },
   });
   if (!player) return { message: "Player not found", success: false };
+
+  if (player.has_infinite_energy) {
+    return {
+      energy: MAX_ENERGY,
+      energyResetAt: null,
+      timeToNextRestore: null,
+      isInfinite: true,
+      success: true,
+    };
+  }
 
   await updatePlayerEnergy(playerId);
 
@@ -106,6 +136,8 @@ export const deductEnergy = async (playerId: number, amount: number = 5) => {
     energy: newEnergy,
     energyResetAt,
     timeToNextRestore: energyResetAt.getTime() - now.getTime(),
+    isInfinite: false,
+    success: true,
   };
 };
 
@@ -118,7 +150,19 @@ export const getPlayerEnergyStatus = async (playerId: number) => {
       energyResetAt: null,
       restoreInMs: null,
       timeToNextRestore: null,
+      isInfinite: false,
       success: false,
+    };
+  }
+
+  if ("isInfinite" in status && status.isInfinite) {
+    return {
+      energy: status.energy,
+      energyResetAt: null,
+      restoreInMs: null,
+      timeToNextRestore: "Infinite",
+      isInfinite: true,
+      success: true,
     };
   }
 
@@ -129,17 +173,89 @@ export const getPlayerEnergyStatus = async (playerId: number) => {
     timeToNextRestore: status.timeToNextRestore
       ? formatTimeInHours(status.timeToNextRestore)
       : null,
+    isInfinite: false,
     success: true,
   };
 };
 
 export const hasEnoughEnergy = async (
   playerId: number,
-  required: number = 5
+  required: number = 5,
 ): Promise<boolean> => {
   const energyStatus = await updatePlayerEnergy(playerId);
+
   if ("success" in energyStatus && !energyStatus.success) {
     return false;
   }
+
+  if ("isInfinite" in energyStatus && energyStatus.isInfinite) {
+    return true;
+  }
+
   return (energyStatus.energy ?? 0) >= required;
+};
+
+export const rewardAdEnergy = async (
+  playerId: number,
+  rewardAmount: number = 25,
+) => {
+  const player = await prisma.player.findUnique({
+    where: { player_id: playerId },
+  });
+
+  if (!player) return { message: "Player not found", success: false };
+
+  if (player.has_infinite_energy) {
+    return { success: true, energy: MAX_ENERGY, isInfinite: true };
+  }
+
+  const newEnergy = Math.min(MAX_ENERGY, player.energy + rewardAmount);
+
+  const newResetAt = newEnergy >= MAX_ENERGY ? null : player.energy_reset_at;
+
+  await prisma.player.update({
+    where: { player_id: playerId },
+    data: {
+      energy: newEnergy,
+      energy_reset_at: newResetAt,
+    },
+  });
+
+  return {
+    success: true,
+    energy: newEnergy,
+    message: `Rewarded ${rewardAmount} energy!`,
+  };
+};
+
+export const restoreEnergyForDuePlayers = async (): Promise<number> => {
+  try {
+    const now = new Date();
+
+    const updatedRows = await prisma.$executeRawUnsafe(`
+      UPDATE "Player"
+      SET 
+        energy = LEAST(100, energy + ((1 + FLOOR(EXTRACT(EPOCH FROM (NOW() - energy_reset_at)) / 1800)::int) * 25)),
+        
+        energy_reset_at = CASE
+          WHEN energy + ((1 + FLOOR(EXTRACT(EPOCH FROM (NOW() - energy_reset_at)) / 1800)::int) * 25) >= 100 
+            THEN NULL
+          ELSE energy_reset_at + ((1 + FLOOR(EXTRACT(EPOCH FROM (NOW() - energy_reset_at)) / 1800)::int) * INTERVAL '30 minutes')
+        END
+        
+      WHERE has_infinite_energy = false
+        AND energy < 100
+        AND energy_reset_at IS NOT NULL
+        AND energy_reset_at <= NOW();
+    `);
+
+    // console.log(
+    //   `[Energy Restore] ${updatedRows} players had energy restored at ${now.toISOString()}`,
+    // );
+
+    return updatedRows;
+  } catch (error: any) {
+    console.error("[Energy Restore] Failed to restore energy:", error);
+    throw new Error("Failed to restore energy for due players");
+  }
 };

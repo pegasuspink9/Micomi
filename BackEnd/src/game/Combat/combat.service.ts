@@ -251,13 +251,17 @@ function getBossSpecialSkillInfo(
 }
 
 export function getBaseEnemyHp(level: {
+  level_type?: string;
   level_difficulty: string;
   challenges?: any[];
 }) {
   const isBoss =
     level.level_difficulty === "hard" || level.level_difficulty === "final";
   const base = isBoss ? BOSS_ENEMY_HEALTH : ENEMY_HEALTH;
-  return base * (level.challenges?.length ?? 1);
+
+  const challengeCount = level.challenges?.length || 1;
+
+  return base * challengeCount;
 }
 
 const safeHp = (hp: number | null | undefined, fallbackMax: number) =>
@@ -377,6 +381,7 @@ export async function getFightSetup(playerId: number, levelId: number) {
         player_answer: [],
         wrong_challenges: [],
         enemy_hp: effectiveEnemyHp,
+        enemy_max_hp: effectiveEnemyHp,
         player_hp: selectedCharacter.health,
         battle_status: BattleStatus.in_progress,
         challenge_start_time: new Date(),
@@ -394,6 +399,7 @@ export async function getFightSetup(playerId: number, levelId: number) {
     });
   }
 
+  const storedMaxHp = progress.enemy_max_hp ?? effectiveEnemyHp;
   const responseEnemyHp = safeHp(progress.enemy_hp, effectiveEnemyHp);
 
   return {
@@ -506,12 +512,13 @@ export async function getCurrentFightState(
 
   const character = setup.selectedCharacter;
   const level = setup.level;
-  const scaledEnemyMaxHealth = getBaseEnemyHp(level);
+  const scaledEnemyMaxHealth = progress.enemy_max_hp ?? getBaseEnemyHp(level);
 
   const charHealth = safeHp(progress.player_hp, character.character_max_health);
   const enemyHealth = safeHp(progress.enemy_hp, scaledEnemyMaxHealth);
 
   const answeredCount = Object.keys(progress.player_answer ?? {}).length || 0;
+
   const totalChallenges = level.challenges?.length ?? 0;
   const isInBonusRound = enemyHealth <= 0 && answeredCount < totalChallenges;
 
@@ -744,7 +751,7 @@ export async function fightEnemy(
   if (!character) throw new Error("Character not found");
 
   const challengeCount = level.challenges?.length ?? 1;
-  const scaledEnemyMaxHealth = ENEMY_HEALTH * challengeCount;
+  const scaledEnemyMaxHealth = progress.enemy_max_hp ?? getBaseEnemyHp(level);
 
   const answeredCount = Object.keys(progress.player_answer ?? {}).length || 0;
   const totalChallenges = level.challenges?.length ?? 0;
