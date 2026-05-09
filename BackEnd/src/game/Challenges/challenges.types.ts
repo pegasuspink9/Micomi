@@ -54,7 +54,6 @@ export interface CompletionRewards {
   coinsEarned?: number;
   isVictory?: boolean;
   stars?: number;
-  playerOutputs?: string[] | null;
 }
 
 export interface SubmitChallengeControllerResult extends SubmitChallengeServiceResult {
@@ -96,5 +95,4 @@ export interface LevelStatus {
   coinsEarned?: number;
   totalPointsEarned?: number;
   totalExpPointsEarned?: number;
-  playerOutputs?: string[] | null;
 }

@@ -7,7 +7,7 @@ import { calculatePlayerLevel } from "../../models/Player/player.service";
 export async function updateQuestProgress(
   playerId: number,
   type: QuestType,
-  increment: number
+  increment: number,
 ) {
   console.log("🎯 updateQuestProgress called:", { playerId, type, increment });
 
@@ -29,7 +29,7 @@ export async function updateQuestProgress(
       target_value: q.quest.target_value,
       is_completed: q.is_completed,
       is_claimed: q.is_claimed,
-    }))
+    })),
   );
 
   const playerQuests = await prisma.playerQuest.findMany({
@@ -49,7 +49,7 @@ export async function updateQuestProgress(
       title: q.quest.title,
       current_value: q.current_value,
       target_value: q.quest.target_value,
-    }))
+    })),
   );
 
   const results = [];
@@ -59,7 +59,7 @@ export async function updateQuestProgress(
     const completed = newValue >= pq.quest.target_value;
 
     console.log(
-      `Updating quest ${pq.quest.title}: ${pq.current_value} → ${newValue} (target: ${pq.quest.target_value})`
+      `Updating quest ${pq.quest.title}: ${pq.current_value} → ${newValue} (target: ${pq.quest.target_value})`,
     );
 
     const updatedPQ = await prisma.playerQuest.update({
@@ -83,7 +83,7 @@ export async function updateQuestProgress(
         reward_coins: updatedPQ.quest.reward_coins,
       });
       console.log(
-        `✅ Quest "${updatedPQ.quest.title}" completed for player ${playerId}`
+        `✅ Quest "${updatedPQ.quest.title}" completed for player ${playerId}`,
       );
     }
 
@@ -93,7 +93,7 @@ export async function updateQuestProgress(
   console.log(
     "🎯 updateQuestProgress completed, updated",
     results.length,
-    "quests"
+    "quests",
   );
   return results;
 }
@@ -161,7 +161,7 @@ export async function claimQuestReward(playerId: number, questId: number) {
       });
 
       console.log(
-        `🎉 Player ${playerId} leveled up from ${oldLevel} to ${newLevel}!`
+        `🎉 Player ${playerId} leveled up from ${oldLevel} to ${newLevel}!`,
       );
     }
 
@@ -179,4 +179,52 @@ export async function claimQuestReward(playerId: number, questId: number) {
       },
     };
   });
+}
+
+export async function isPlayerAFriend(
+  playerId: number,
+  opponentId: number,
+): Promise<boolean> {
+  const friendLink = await prisma.follow.findFirst({
+    where: {
+      OR: [
+        { follower_id: playerId, following_id: opponentId },
+        { follower_id: opponentId, following_id: playerId },
+      ],
+    },
+  });
+
+  return !!friendLink;
+}
+
+export async function updatePvPQuestProgress(
+  playerId: number,
+  opponentId: number,
+  isVictory: boolean,
+  playerMistakes: number,
+  totalQuestions: number,
+) {
+  await updateQuestProgress(playerId, QuestType.pvp_matches_total, 1);
+
+  const isFriend = await isPlayerAFriend(playerId, opponentId);
+
+  if (isFriend) {
+    await updateQuestProgress(playerId, QuestType.pvp_matches_with_friends, 1);
+  }
+
+  if (isVictory) {
+    await updateQuestProgress(playerId, QuestType.pvp_victories, 1);
+
+    if (isFriend) {
+      await updateQuestProgress(
+        playerId,
+        QuestType.pvp_victories_with_friends,
+        1,
+      );
+    }
+
+    if (playerMistakes === 0) {
+      await updateQuestProgress(playerId, QuestType.pvp_perfect_matches, 1);
+    }
+  }
 }

@@ -742,6 +742,34 @@ export const imagesUrls = [
   "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Mandiblade/run.png",
   "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Mandiblade/Mandiblade.png",
 
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Chitinlurker/idle.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Crawlnyx/attack.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Crawlnyx/death.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Crawlnyx/hurt.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Crawlnyx/run.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Crawlnyx/Crawlnyx.png",
+
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Skitterax/idle.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Skitterax/attack.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Skitterax/death.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Skitterax/hurt.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Skitterax/run.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Skitterax/Skitterax.png",
+
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Swarmant/idle.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Swarmant/attack.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Swarmant/death.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Swarmant/hurt.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Swarmant/run.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Swarmant/Swarmant.png",
+
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Vespyre/idle.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Vespyre/attack.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Vespyre/deathp.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Vespyre/hurt.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Vespyre/run.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Greenland/Vespyre/Vespyre.png",
+
   //Rank Tiers Images
   "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Pixel.png",
   "https://micomi-assets.me/Pvp%20Assets/Ranks%20badge/Byte.png",

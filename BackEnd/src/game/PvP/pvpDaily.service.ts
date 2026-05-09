@@ -38,6 +38,7 @@ import { generateDynamicMessage } from "../../../helper/gamePlayMessageHelper";
 import { applyPvpRankResult } from "./pvpRank.service";
 import { DEFAULT_AVATAR_URL } from "../../models/Player/player.service";
 import { dynamicBlankSetter } from "../../game/Challenges/challenges.service";
+import { updatePvPQuestProgress } from "../../game/Quests/quests.service";
 
 const prisma = new PrismaClient();
 
@@ -1415,6 +1416,23 @@ const completeMatch = async (
   await Promise.all([
     applyRewards(winnerPlayerId, winnerReward),
     applyRewards(loserPlayerId, loserReward),
+  ]);
+
+  await Promise.all([
+    updatePvPQuestProgress(
+      winnerPlayerId,
+      loserPlayerId,
+      true,
+      winnerMistakes,
+      QUESTIONS_PER_MATCH,
+    ),
+    updatePvPQuestProgress(
+      loserPlayerId,
+      winnerPlayerId,
+      false,
+      loserMistakes,
+      QUESTIONS_PER_MATCH,
+    ),
   ]);
 
   const rankUpdate = await applyPvpRankResult(prisma, {

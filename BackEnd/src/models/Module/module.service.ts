@@ -101,32 +101,30 @@ export const getModuleLanguages = async (req: Request, res: Response) => {
 export const getModuleTitlesByMap = async (req: Request, res: Response) => {
   const mapId = Number(req.params.mapId);
   try {
-    const data = await prisma.level.findMany({
-      where: { map_id: mapId },
+    const data = await prisma.module.findMany({
+      where: {
+        level: { map_id: mapId },
+        moduleTitle: { isNot: null },
+      },
+      orderBy: {
+        module_id: "asc",
+      },
       select: {
-        modules: {
+        module_id: true,
+        moduleTitle: {
           select: {
-            module_id: true,
-            moduleTitle: {
-              select: {
-                module_title_id: true,
-                module_title: true,
-              },
-            },
+            module_title_id: true,
+            module_title: true,
           },
         },
       },
     });
 
-    const titles = data.flatMap((level) =>
-      level.modules
-        .filter((m) => m.moduleTitle)
-        .map((m) => ({
-          module_id: m.module_id,
-          module_title_id: m.moduleTitle?.module_title_id,
-          module_title: m.moduleTitle?.module_title,
-        })),
-    );
+    const titles = data.map((m) => ({
+      module_id: m.module_id,
+      module_title_id: m.moduleTitle?.module_title_id,
+      module_title: m.moduleTitle?.module_title,
+    }));
 
     return successResponse(res, titles, "Fetched module titles for map");
   } catch (error) {
