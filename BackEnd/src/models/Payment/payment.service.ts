@@ -6,7 +6,7 @@ import { VerifyPurchaseBody } from "./payment.types";
 
 // Google Auth Setup
 const auth = new google.auth.GoogleAuth({
-  keyFile: "../../../credentials.json",
+  keyFile: "./credentials.json",
   scopes: ["https://www.googleapis.com/auth/androidpublisher"],
 });
 
