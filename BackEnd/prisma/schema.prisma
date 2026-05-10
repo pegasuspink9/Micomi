@@ -103,7 +103,6 @@ model PVPChallenge {
 model Enemy {
   enemy_id          Int     @id @default(autoincrement())
   enemy_name        String
-  enemy_description String
   enemy_difficulty  String
   enemy_avatar      String
   enemy_skills      String
