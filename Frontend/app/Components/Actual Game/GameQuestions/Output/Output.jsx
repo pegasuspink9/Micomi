@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useState, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, Pressable } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { generateCombinedHtml } from './WebViewBuilder';
+import { getPreviewLayout } from './previewMode';
 import { gameScale } from '../../../../Components/Responsiveness/gameResponsive';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -20,19 +21,14 @@ const Output = ({
   // New: expected output toggle
   showExpectedInScreenPlay = false,
   onExpectedToggle = null,
+  previewMode = 'web',
 }) => {
-  const [htmlOutput, setHtmlOutput] = useState('');
   // REMOVED autoHideTimerRef
 
-   const generateHtmlOutput = useCallback(() => {
+  const htmlOutput = useMemo(() => {
     const userAnswers = selectedAnswers.map(index => options?.[index]).filter(Boolean);
-    return generateCombinedHtml(currentQuestion, userAnswers);
-  }, [currentQuestion, selectedAnswers, options]);
-
-    useEffect(() => {
-    const newHtmlOutput = generateHtmlOutput();
-    setHtmlOutput(newHtmlOutput);
-  }, [generateHtmlOutput]);
+    return generateCombinedHtml(currentQuestion, userAnswers, previewMode);
+  }, [currentQuestion, selectedAnswers, options, previewMode]);
 
 
   //  Memoize should show HTML decision
@@ -62,24 +58,34 @@ const Output = ({
     ? styles.webviewContainerGameQuestion
     : styles.webviewContainerOverlay;
 
+  const previewLayout = useMemo(() => (
+    getPreviewLayout({
+      previewMode,
+      screenWidth: SCREEN_WIDTH,
+      screenHeight: SCREEN_HEIGHT,
+    })
+  ), [previewMode]);
+
   return (
     <View style={[containerStyle, style]}>
       {shouldShowHTML ? (
-        <View style={webviewContainerStyle}>
-          <WebView
-            key={`output-${currentQuestion?.id}-${selectedAnswers.join('-')}`} // Use key to force reload
-            source={{ html: htmlOutput, baseUrl: '' }}
-            style={styles.webview}
-            scalesPageToFit={false} 
-            startInLoadingState={false}
-            javaScriptEnabled={true}
-            domStorageEnabled={true}
-            originWhitelist={['*']}
-            allowsInlineMediaPlayback={true}
-            mediaPlaybackRequiresUserAction={false}
-            onError={handleWebViewError}
-            onLoad={handleWebViewLoad}
-          />
+        <View style={[webviewContainerStyle, previewLayout.containerStyle]}>
+          <View style={[styles.previewFrame, previewLayout.frameStyle]}>
+            <WebView
+              key={`output-${currentQuestion?.id}-${selectedAnswers.join('-')}-${previewMode}`} // Use key to force reload
+              source={{ html: htmlOutput, baseUrl: '' }}
+              style={[styles.webview, previewLayout.webViewStyle]}
+              scalesPageToFit={false} 
+              startInLoadingState={false}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+              originWhitelist={['*']}
+              allowsInlineMediaPlayback={true}
+              mediaPlaybackRequiresUserAction={false}
+              onError={handleWebViewError}
+              onLoad={handleWebViewLoad}
+            />
+          </View>
         </View>
       ) : (
         <ScrollView style={styles.outputContainer} showsVerticalScrollIndicator={false}>
@@ -189,6 +195,11 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  previewFrame: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
   webViewToggleButton: {
     position: 'absolute',
     bottom: gameScale(300),
@@ -234,6 +245,7 @@ export default React.memo(Output, (prevProps, nextProps) => {
     prevProps.displayMode === nextProps.displayMode &&
     prevProps.showWebViewInScreenPlay === nextProps.showWebViewInScreenPlay &&
     prevProps.showExpectedInScreenPlay === nextProps.showExpectedInScreenPlay &&
+    prevProps.previewMode === nextProps.previewMode &&
     // REMOVED runButtonClicked comparison
     prevProps.currentQuestion?.question === nextProps.currentQuestion?.question &&
     prevProps.currentQuestion?.challenge_type === nextProps.currentQuestion?.challenge_type &&

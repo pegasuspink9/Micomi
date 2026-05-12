@@ -26,6 +26,8 @@ const CodeEditor = ({
   onOutputToggle = null,
   showExpectedInScreenPlay = false,
   onExpectedToggle = null,
+  previewMode = 'web',
+  onPreviewModeToggle = null,
   shouldDelayAnimation = false,
 }) => {
   const [activeTab, setActiveTab] = useState('code');
@@ -162,6 +164,7 @@ const CodeEditor = ({
                 onWebViewToggle={onOutputToggle}
                 showExpectedInScreenPlay={showExpectedInScreenPlay}
                 onExpectedToggle={onExpectedToggle}
+                previewMode={previewMode}
            />
           </View>
         );
@@ -172,6 +175,7 @@ const CodeEditor = ({
             <ExpectedOutput 
               currentQuestion={currentQuestion}
               submissionResult={submissionResult}
+              previewMode={previewMode}
               style={styles.tabOutput}
             />
           </View>
@@ -180,7 +184,24 @@ const CodeEditor = ({
       default:
         return null;
     }
-  }, [activeTab, lines, renderSyntaxHighlightedLine, currentQuestion, selectedAnswers, userOutput, isCorrect, scrollViewRef]);
+  }, [
+    activeTab,
+    lines,
+    renderSyntaxHighlightedLine,
+    currentQuestion,
+    selectedAnswers,
+    userOutput,
+    isCorrect,
+    scrollViewRef,
+    options,
+    reviewGuide,
+    submissionResult,
+    showOutputInScreenPlay,
+    onOutputToggle,
+    showExpectedInScreenPlay,
+    onExpectedToggle,
+    previewMode,
+  ]);
 
  useEffect(() => {
     if (!hasAnimated && activeTab === 'code' && lines && lines.length > 0) {
@@ -361,6 +382,7 @@ const CodeEditor = ({
               {activeTab === 'expected' ? 'Expected Output' : 'Expected'} 
             </Text>
           </Pressable>
+
         </View>
 
         <View style={styles.headerSpacer} />
@@ -499,6 +521,31 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
 
+  previewTab: {
+    marginLeft: gameScale(6),
+    paddingHorizontal: gameScale(8),
+    borderRadius: gameScale(6),
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    backgroundColor: '#2b2b2b',
+  },
+
+  previewTabActive: {
+    backgroundColor: '#1b3d5c',
+    borderTopColor: '#4da6ff',
+    borderLeftColor: '#4da6ff',
+    borderRightColor: '#4da6ff',
+  },
+
+  previewTabText: {
+    fontSize: gameScale(9),
+    fontWeight: '600',
+  },
+
+  previewTabTextActive: {
+    color: '#ffffff',
+  },
+
   headerSpacer: {
     flex: 1,
   },
@@ -620,6 +667,7 @@ export default React.memo(CodeEditor, (prev, next) => {
     prev.renderSyntaxHighlightedLine === next.renderSyntaxHighlightedLine &&
     prev.userOutput === next.userOutput &&
     prev.expectedOutput === next.expectedOutput &&
-    prev.showOutputInScreenPlay === next.showOutputInScreenPlay
+    prev.showOutputInScreenPlay === next.showOutputInScreenPlay &&
+    prev.previewMode === next.previewMode
   );
 });

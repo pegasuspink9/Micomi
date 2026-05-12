@@ -58,6 +58,7 @@ export default function GamePlay() {
   const [activeGameTab, setActiveGameTab] = useState('code');
   const [showOutputInScreenPlay, setShowOutputInScreenPlay] = useState(false);
   const [showExpectedOutputInScreenPlay, setShowExpectedOutputInScreenPlay] = useState(false);
+  const [outputPreviewMode, setOutputPreviewMode] = useState('web');
   const outputAutoShowTimerRef = useRef(null);
   const [selectedBlankIndex, setSelectedBlankIndex] = useState(0); 
   const [showVSModal, setShowVSModal] = useState(false);
@@ -658,6 +659,10 @@ export default function GamePlay() {
     // keep output visible but don't auto-close it here
   }, []);
 
+  const handleOutputPreviewToggle = useCallback(() => {
+    setOutputPreviewMode((current) => (current === 'web' ? 'mobile' : 'web'));
+  }, []);
+
   
     const handleBlankSelect = useCallback((blankIndex) => {
     console.log('🎯 Blank selected in GamePlay:', blankIndex);
@@ -1071,6 +1076,7 @@ export default function GamePlay() {
       showLiveHTML={true}
       options={memoizedOptions}
       displayMode="overlay"
+      previewMode={outputPreviewMode}
       runButtonClicked={runButtonClicked}
       onAutoHide={handleAutoHideOutput}
     />
@@ -1233,6 +1239,7 @@ export default function GamePlay() {
                       currentQuestion={currentChallenge}
                       submissionResult={gameState?.submissionResult}
                       displayMode="overlay"
+                      previewMode={outputPreviewMode}
                     />
                   </View>
                 </View>
@@ -1270,6 +1277,8 @@ export default function GamePlay() {
                 onOutputToggle={handleOutputToggle}
                 showExpectedInScreenPlay={showExpectedOutputInScreenPlay}
                 onExpectedToggle={handleExpectedToggle}
+                previewMode={outputPreviewMode}
+                onPreviewModeToggle={handleOutputPreviewToggle}
             />
 
             <View 

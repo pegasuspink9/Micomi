@@ -1,4 +1,5 @@
 // WebViewBuilder.js
+import { DESKTOP_VIEWPORT_WIDTH } from './previewMode';
 
 /**
  * Replaces all blanks (_) in a template string with provided answers.
@@ -19,9 +20,17 @@ const fillBlanks = (template = '', answers = []) => {
  * This is the critical part that makes mobile behave like desktop.
  * These tags force light mode and set a standard baseline.
  */
-const MOBILE_WEBVIEW_FIXES = `
+const getViewportMeta = (previewMode) => {
+    if (previewMode === 'web') {
+        return `<meta name="viewport" content="width=${DESKTOP_VIEWPORT_WIDTH}">`;
+    }
+
+    return '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">';
+};
+
+const getWebViewFixes = (previewMode) => `
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    ${getViewportMeta(previewMode)}
     <!-- CRITICAL: Tell iOS/Android not to auto-invert colors -->
     <meta name="color-scheme" content="light only">
     <style>
@@ -55,7 +64,7 @@ const MOBILE_WEBVIEW_FIXES = `
  * 1. If the user provides a fragment, wrap it in a standard skeleton containing the fixes.
  * 2. If the user provides a full document, INJECT the fixes into their <head> so we don't break their structure, but still ensure correct rendering.
  */
-export const assemblePage = (htmlContent) => {
+export const assemblePage = (htmlContent, previewMode = 'mobile') => {
     let finalHtml = htmlContent || '';
 
     // 1. Ensure DOCTYPE exists (prevents Quirks Mode)
@@ -73,13 +82,13 @@ export const assemblePage = (htmlContent) => {
         
         if (/<head/i.test(finalHtml)) {
             // Inject fixes right after the opening <head> tag
-            finalHtml = finalHtml.replace(/<head[^>]*>/i, `$&${MOBILE_WEBVIEW_FIXES}`);
+            finalHtml = finalHtml.replace(/<head[^>]*>/i, `$&${getWebViewFixes(previewMode)}`);
         } else if (/<html/i.test(finalHtml)) {
             // No head, but has html tag. Inject head with fixes.
-            finalHtml = finalHtml.replace(/<html[^>]*>/i, `$&\n<head>${MOBILE_WEBVIEW_FIXES}</head>`);
+            finalHtml = finalHtml.replace(/<html[^>]*>/i, `$&\n<head>${getWebViewFixes(previewMode)}</head>`);
         } else {
             // Has body but no html/head wrap. Prepend right before body.
-             finalHtml = finalHtml.replace(/<body/i, `<head>${MOBILE_WEBVIEW_FIXES}</head>\n<body`);
+             finalHtml = finalHtml.replace(/<body/i, `<head>${getWebViewFixes(previewMode)}</head>\n<body`);
         }
     } else {
         // --- FRAGMENT STRATEGY ---
@@ -89,7 +98,7 @@ export const assemblePage = (htmlContent) => {
 <!DOCTYPE html>
 <html>
 <head>
-${MOBILE_WEBVIEW_FIXES}
+${getWebViewFixes(previewMode)}
 </head>
 <body>
     ${finalHtml}
@@ -106,9 +115,9 @@ ${MOBILE_WEBVIEW_FIXES}
  * Generates a complete HTML document.
  * Simplified to rely on assemblePage's robust injection logic.
  */
-export const generateCombinedHtml = (currentQuestion, answers = []) => {
+export const generateCombinedHtml = (currentQuestion, answers = [], previewMode = 'mobile') => {
     if (!currentQuestion || !currentQuestion.question) {
-        return assemblePage('<p>No question content available.</p>');
+        return assemblePage('<p>No question content available.</p>', previewMode);
     }
 
     const questionType = currentQuestion?.question_type?.toLowerCase();
@@ -156,5 +165,5 @@ export const generateCombinedHtml = (currentQuestion, answers = []) => {
         }
     }
 
-    return assemblePage(baseHtml);
+    return assemblePage(baseHtml, previewMode);
 };

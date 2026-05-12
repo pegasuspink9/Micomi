@@ -1,16 +1,17 @@
-import React, { useCallback, useEffect, useState, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { generateCombinedHtml } from './WebViewBuilder'; 
+import { getPreviewLayout } from './previewMode';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const ExpectedOutput = ({ 
   currentQuestion, 
   submissionResult = null,
   displayMode = 'gameQuestion',
+  previewMode = 'web',
 }) => {
-  const [htmlOutput, setHtmlOutput] = useState('');
 
   const containerStyle = displayMode === 'overlay'
     ? styles.containerOverlay
@@ -46,34 +47,38 @@ const ExpectedOutput = ({
       .filter((answer) => answer.length > 0);
   }, [currentQuestion?.correctAnswer, currentQuestion?.correct_answer, currentQuestion?.options, submissionResult?.correctAnswer, submissionResult?.correct_answer]);
 
-    const generateHtmlOutput = useCallback(() => {
-    return generateCombinedHtml(currentQuestion, resolvedCorrectAnswers);
-  }, [currentQuestion, resolvedCorrectAnswers]);
-
-  // Update the HTML output whenever the question changes
-  useEffect(() => {
-    const newHtmlOutput = generateHtmlOutput();
-    setHtmlOutput(newHtmlOutput);
-  }, [generateHtmlOutput]);
+  const htmlOutput = useMemo(() => (
+    generateCombinedHtml(currentQuestion, resolvedCorrectAnswers, previewMode)
+  ), [currentQuestion, resolvedCorrectAnswers, previewMode]);
 
   const handleWebViewError = useCallback((error) => {
     console.log('ExpectedOutput WebView error:', error);
   }, []);
 
+  const previewLayout = useMemo(() => (
+    getPreviewLayout({
+      previewMode,
+      screenWidth: SCREEN_WIDTH,
+      screenHeight: SCREEN_HEIGHT,
+    })
+  ), [previewMode]);
+
   return (
     <View style={containerStyle}>
-      <View style={webviewContainerStyle}>
-        <WebView
-          key={`expected-${currentQuestion?.id}-${resolvedCorrectAnswers.join('|')}`}
-          source={{ html: htmlOutput, baseUrl: '' }}
-          style={styles.webview}
-          scalesPageToFit={false}
-          startInLoadingState={false}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-          originWhitelist={['*']}
-          onError={handleWebViewError}
-        />
+      <View style={[webviewContainerStyle, previewLayout.containerStyle]}>
+        <View style={[styles.previewFrame, previewLayout.frameStyle]}>
+          <WebView
+            key={`expected-${currentQuestion?.id}-${resolvedCorrectAnswers.join('|')}-${previewMode}`}
+            source={{ html: htmlOutput, baseUrl: '' }}
+            style={[styles.webview, previewLayout.webViewStyle]}
+            scalesPageToFit={false}
+            startInLoadingState={false}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+            originWhitelist={['*']}
+            onError={handleWebViewError}
+          />
+        </View>
       </View>
     </View>
   );
@@ -117,6 +122,11 @@ const styles = StyleSheet.create({
   webview: {
     flex: 1,
     backgroundColor: '#fff',
+    width: '100%',
+    height: '100%',
+  },
+  previewFrame: {
+    flex: 1,
     width: '100%',
     height: '100%',
   },
