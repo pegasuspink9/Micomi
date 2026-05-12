@@ -176,6 +176,11 @@ const SS_BOSS_ICON_CONFIG: Record<
       "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossPyroformic_SS.png",
     special_skill_description: "Scrambles letters within each option",
   },
+  "King San Pydero": {
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/KingSanPydero_SS.png",
+    special_skill_description: "Scrambles letters within each option",
+  },
   "King Feanaly": {
     special_skill_image:
       "https://micomi-assets.me/Icons/SS%20Skill%20Icons/KingFeanaly_SS.png",

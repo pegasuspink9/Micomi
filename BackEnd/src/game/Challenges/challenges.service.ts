@@ -2698,7 +2698,8 @@ const prepareChallenge = async (
       }
     } else if (
       progress.has_permuted_ss &&
-      level.enemy?.enemy_name === "Boss Pyroformic"
+      (level.enemy?.enemy_name === "Boss Pyroformic" ||
+        level.enemy?.enemy_name === "King San Pydero")
     ) {
       const options = modifiedChallenge.options as string[];
       if (Array.isArray(options) && options.length > 0) {

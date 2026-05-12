@@ -175,6 +175,7 @@ export async function updateProgressForChallenge(
             );
             break;
           case "Boss Pyroformic":
+          case "King San Pydero":
             hasPermuted = true;
             console.log(
               "- Options words unordered after for Boss Pyroformic after multiples of 3 consecutive wrongs",

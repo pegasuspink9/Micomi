@@ -102,6 +102,65 @@ export const ENEMY_IDLE_SOUNDS: Record<string, string> = {
     "https://micomi-assets.me/Enemy%20idle%20sound/GreenLand/Dragorn.wav",
   Mandiblade:
     "https://micomi-assets.me/Enemy%20idle%20sound/GreenLand/Fleero.wav",
+  Crawlnyx: "https://micomi-assets.me/Enemy%20idle%20sound/GreenLand/Draco.wav",
+  Skitterax:
+    "https://micomi-assets.me/Enemy%20idle%20sound/GreenLand/Formica.wav",
+  Swarmant:
+    "https://micomi-assets.me/Enemy%20idle%20sound/GreenLand/Greenemy.wav",
+  Vespyre: "https://micomi-assets.me/Enemy%20idle%20sound/GreenLand/Roachy.wav",
+  //CSS Enemies Recolored
+  Ashling:
+    "https://micomi-assets.me/Enemy%20idle%20sound/LavaLand/Alipatone.wav",
+  Cataclysm:
+    "https://micomi-assets.me/Enemy%20idle%20sound/LavaLand/Ayla%20Shees.wav",
+  Cinder: "https://micomi-assets.me/Enemy%20idle%20sound/LavaLand/Bossoky.wav",
+  Ember:
+    "https://micomi-assets.me/Enemy%20idle%20sound/LavaLand/Carter%20De%20Pelar.wav",
+  Scoria: "https://micomi-assets.me/Enemy%20idle%20sound/LavaLand/Termity.wav",
+  Volcar:
+    "https://micomi-assets.me/Enemy%20idle%20sound/LavaLand/Timothymos.wav",
+  Pyron: "https://micomi-assets.me/Enemy%20idle%20sound/LavaLand/Shopper.wav",
+  Inferna:
+    "https://micomi-assets.me/Enemy%20idle%20sound/LavaLand/Celhegred.wav",
+  Obsidian:
+    "https://micomi-assets.me/Enemy%20idle%20sound/LavaLand/Krikrok.wav",
+  Magma: "https://micomi-assets.me/Enemy%20idle%20sound/LavaLand/Dahonda.wav",
+  //JavaScript Enemies Recolored
+  AbsoluteZero:
+    "https://micomi-assets.me/Enemy%20idle%20sound/IceLand/beernabee.wav",
+  Blizzard:
+    "https://micomi-assets.me/Enemy%20idle%20sound/IceLand/blububee.wav",
+  Chill:
+    "https://micomi-assets.me/Enemy%20idle%20sound/IceLand/Coldupillar.wav",
+  Cryo: "https://micomi-assets.me/Enemy%20idle%20sound/IceLand/Cooliro.wav",
+  Frost: "https://micomi-assets.me/Enemy%20idle%20sound/IceLand/Icespider.wav",
+  Glace: "https://micomi-assets.me/Enemy%20idle%20sound/IceLand/Mosicikito.wav",
+  Glacier: "https://micomi-assets.me/Enemy%20idle%20sound/IceLand/Mothier.wav",
+  Icicle: "https://micomi-assets.me/Enemy%20idle%20sound/IceLand/Spiky.wav",
+  Permafrost:
+    "https://micomi-assets.me/Enemy%20idle%20sound/IceLand/Triyaling.wav",
+  Rime: "https://micomi-assets.me/Enemy%20idle%20sound/IceLand/Winkito.wav",
+  //Computer Enemies Recolored
+  Acornelius:
+    "https://micomi-assets.me/Enemy%20idle%20sound/AutumnLand/Barbalony.wav",
+  Breezybetty:
+    "https://micomi-assets.me/Enemy%20idle%20sound/AutumnLand/Baterlomio.wav",
+  Chestnutzo:
+    "https://micomi-assets.me/Enemy%20idle%20sound/AutumnLand/Bluejudy.wav",
+  Crispy:
+    "https://micomi-assets.me/Enemy%20idle%20sound/AutumnLand/Ladybago.wav",
+  Foggymog:
+    "https://micomi-assets.me/Enemy%20idle%20sound/AutumnLand/Mosquitomas.wav",
+  Gourdigan:
+    "https://micomi-assets.me/Enemy%20idle%20sound/AutumnLand/Mostketero.wav",
+  Leafonzo:
+    "https://micomi-assets.me/Enemy%20idle%20sound/AutumnLand/Mostketero.wav",
+  Mushrump:
+    "https://micomi-assets.me/Enemy%20idle%20sound/AutumnLand/Nutsubitsu.wav",
+  Saplingo:
+    "https://micomi-assets.me/Enemy%20idle%20sound/AutumnLand/Stripy.wav",
+  Scarecraw:
+    "https://micomi-assets.me/Enemy%20idle%20sound/AutumnLand/Thumbug.wav",
 };
 
 export const getEnemyIdleAudio = (enemyName: string): string | null => {

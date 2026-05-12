@@ -209,6 +209,14 @@ export const imagesUrls = [
   "https://micomi-assets.me/Comics/Lavaland%202/L2_page4.png",
   "https://micomi-assets.me/Comics/Lavaland%202/L2_page5.png",
 
+  //Lavaland 3
+  "https://micomi-assets.me/Comics/Lavaland%20Ending/L3_page1.png",
+  "https://micomi-assets.me/Comics/Lavaland%20Ending/L3_page2.png",
+  "https://micomi-assets.me/Comics/Lavaland%20Ending/L3_page3.png",
+  "https://micomi-assets.me/Comics/Lavaland%20Ending/L3_page4.png",
+  "https://micomi-assets.me/Comics/Lavaland%20Ending/L3_page5.png",
+  "https://micomi-assets.me/Comics/Lavaland%20Ending/L3_page6.png",
+
   //Lavaland Ending
   "https://micomi-assets.me/Comics/Lavaland%20Ending/L4_page1.png",
   "https://micomi-assets.me/Comics/Lavaland%20Ending/L4_page2.png",
@@ -237,6 +245,14 @@ export const imagesUrls = [
   "https://micomi-assets.me/Comics/Iceland/I_page6.jpg",
   "https://micomi-assets.me/Comics/Iceland/I_page7.jpg",
   "https://micomi-assets.me/Comics/Iceland/I_page8.jpg",
+
+  //Iceland 2
+  "https://micomi-assets.me/Comics/Iceland%202/I2_page1.jpg",
+  "https://micomi-assets.me/Comics/Iceland%202/I2_page2.jpg",
+  "https://micomi-assets.me/Comics/Iceland%202/I2_page3.jpg",
+  "https://micomi-assets.me/Comics/Iceland%202/I2_page4.jpg",
+  "https://micomi-assets.me/Comics/Iceland%202/I2_page5.jpg",
+  "https://micomi-assets.me/Comics/Iceland%202/I2_page6.jpg",
 
   //Cover Pages
   "https://micomi-assets.me/Comics/Cover%20page/1_Intro.png",

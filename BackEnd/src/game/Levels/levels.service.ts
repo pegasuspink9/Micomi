@@ -246,6 +246,11 @@ const SS_BOSS_ICON_CONFIG: Record<
       "https://micomi-assets.me/Icons/SS%20Skill%20Icons/KingGrimnir_SS.png",
     special_skill_description: "Forces player to use only basic attacks",
   },
+  "Boss Antcool": {
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossAntcool_SS.png",
+    special_skill_description: "Reverses the text of answer options",
+  },
   "Boss Darco": {
     special_skill_image:
       "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossDarko_SS.png",
@@ -264,6 +269,11 @@ const SS_BOSS_ICON_CONFIG: Record<
   "Boss Pyroformic": {
     special_skill_image:
       "https://micomi-assets.me/Icons/SS%20Skill%20Icons/BossPyroformic_SS.png",
+    special_skill_description: "Scrambles letters within each option",
+  },
+  "King San Pydero": {
+    special_skill_image:
+      "https://micomi-assets.me/Icons/SS%20Skill%20Icons/KingSanPydero_SS.png",
     special_skill_description: "Scrambles letters within each option",
   },
   "King Feanaly": {
