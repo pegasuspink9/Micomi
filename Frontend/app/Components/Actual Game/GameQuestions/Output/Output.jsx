@@ -95,16 +95,6 @@ const Output = ({
         </ScrollView>
       )}
       
-      {displayMode === 'gameQuestion' && onWebViewToggle && (
-        <Pressable 
-          onPress={onWebViewToggle}
-          style={styles.webViewToggleButton}
-        >
-          <Text style={styles.webViewToggleText}>
-            {showWebViewInScreenPlay ? 'Hide Screen' : 'Show Screen'}
-          </Text>
-        </Pressable>
-      )}
       {/* Expected output toggle button (same style) - show when a toggle handler provided
           and when either in gameQuestion or overlay display so it's available on-screen */}
       {(onExpectedToggle && displayMode === 'gameQuestion') && (

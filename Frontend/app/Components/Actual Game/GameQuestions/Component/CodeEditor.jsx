@@ -34,6 +34,7 @@ const CodeEditor = ({
   const [hasAnimated, setHasAnimated] = useState(false); 
   const lineAnimations = useRef([]);
   const [tabsDisabled, setTabsDisabled] = useState(false); 
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   const codeText = useMemo(() => currentQuestion.question || '', [currentQuestion.question]);
   const lines = useMemo(() => codeText.split('\n'), [codeText]);
@@ -280,6 +281,14 @@ const CodeEditor = ({
   const handleExpectedTabPress = useCallback(() => handleTabChange('expected'), [handleTabChange]);
   const handleGuideTabPress = useCallback(() => handleTabChange('guide'), [handleTabChange]);
   const handleFileTabPress = useCallback((fileName) => handleTabChange(fileName), [handleTabChange]);
+  const handleMenuToggle = useCallback(() => {
+    setIsMenuOpen((current) => !current);
+  }, []);
+
+  const handleWebViewTogglePress = useCallback(() => {
+    onOutputToggle?.();
+    setIsMenuOpen(false);
+  }, [onOutputToggle]);
 
   return (
     <View style={styles.editorContainer}>
@@ -386,6 +395,27 @@ const CodeEditor = ({
         </View>
 
         <View style={styles.headerSpacer} />
+
+        <View style={styles.menuAnchor}>
+          <Pressable onPress={handleMenuToggle} style={styles.menuButton}>
+            <Text style={styles.menuButtonText}>⋮</Text>
+          </Pressable>
+
+          {isMenuOpen && (
+            <View style={styles.menuDropdown}>
+              {onOutputToggle && (
+                <Pressable
+                  onPress={handleWebViewTogglePress}
+                  style={styles.menuItem}
+                >
+                  <Text style={styles.menuItemText}>
+                    {showOutputInScreenPlay ? 'Hide Output on Screen' : 'Show Output on Screen'}
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          )}
+        </View>
       </View>
 
       <View style={styles.contentArea}>
@@ -401,7 +431,7 @@ const styles = StyleSheet.create({
     borderRadius: gameScale(12), 
     flex: 1, 
     width: '100%',
-    overflow: 'hidden',
+    overflow: 'visible',
     borderTopColor: '#4a4a4a',
     borderLeftWidth: gameScale(1),
     borderLeftColor: '#3a3a3a',
@@ -431,6 +461,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: gameScale(6),
     elevation: gameScale(8),
+    zIndex: 50,
   },
 
   windowControls: {
@@ -548,6 +579,56 @@ const styles = StyleSheet.create({
 
   headerSpacer: {
     flex: 1,
+  },
+
+  menuAnchor: {
+    zIndex: 999999,
+    position: 'relative',
+    alignItems: 'flex-end',
+    marginBottom: gameScale(6),
+  },
+
+  menuButton: {
+    width: gameScale(26),
+    height: gameScale(26),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: gameScale(6),
+    backgroundColor: '#3c3c3c',
+    borderWidth: gameScale(1),
+    borderColor: '#555',
+  },
+
+  menuButtonText: {
+    color: '#d1d5d9',
+    fontSize: gameScale(16),
+    lineHeight: gameScale(18),
+    fontFamily: 'DynaPuff',
+  },
+
+  menuDropdown: {
+    position: 'absolute',
+    top: gameScale(30),
+    right: 0,
+    backgroundColor: '#2b2b2b',
+    borderRadius: gameScale(8),
+    borderWidth: gameScale(1),
+    borderColor: '#555',
+    paddingVertical: gameScale(6),
+    minWidth: gameScale(150),
+    zIndex: 999999,
+    elevation: gameScale(12),
+  },
+
+  menuItem: {
+    paddingVertical: gameScale(6),
+    paddingHorizontal: gameScale(10),
+  },
+
+  menuItemText: {
+    color: '#d1d5d9',
+    fontSize: gameScale(10),
+    fontFamily: 'DynaPuff',
   },
 
   contentArea: {
