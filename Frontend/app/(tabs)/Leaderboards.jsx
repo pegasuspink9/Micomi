@@ -7,12 +7,14 @@ import {
   FlatList, 
   Dimensions,
   ImageBackground,
-  ActivityIndicator
+  ActivityIndicator,
+  TouchableOpacity
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { gameScale } from '../Components/Responsiveness/gameResponsive';
 import { useLeaderboard } from '../hooks/useLeaderboard'; 
+import { useRouter } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
@@ -26,6 +28,7 @@ const getOrdinalSuffix = (num) => {
 // --- End Helper function ---
 
 export default function Leaderboards() {
+  const router = useRouter();
   const { leaderboardData, currentUserRank, loading, error } = useLeaderboard(); 
   
   // Display loading state
@@ -137,6 +140,7 @@ export default function Leaderboards() {
 
   const renderLeaderboardItem = ({ item }) => {
     const theme = getRankTheme(item.rank);
+    const rankImageSource = item.player_rank_image ? { uri: item.player_rank_image } : null;
 
     // Default avatar if player_avatar is null
     const avatarSource = item.player_avatar 
@@ -205,56 +209,63 @@ export default function Leaderboards() {
               </View>
 
               {/* Avatar */}
-              <View style={styles.cardAvatarContainer}>
+              <TouchableOpacity
+                style={styles.cardAvatarContainer}
+                activeOpacity={0.85}
+                onPress={() => router.push(`/social/${item.player_id}`)}
+              >
                 <View style={[
-                    styles.avatarBorderOuter, 
-                    { 
-                        backgroundColor: theme.avatarOuterBg,
-                        borderTopColor: theme.avatarOuterBorderTop,
-                        borderLeftColor: theme.avatarOuterBorderTop,
-                        borderBottomColor: theme.avatarOuterBorderBottom,
-                        borderRightColor: theme.avatarOuterBorderBottom,
-                    }
+                  styles.avatarBorderOuter, 
+                  { 
+                    backgroundColor: theme.avatarOuterBg,
+                    borderTopColor: theme.avatarOuterBorderTop,
+                    borderLeftColor: theme.avatarOuterBorderTop,
+                    borderBottomColor: theme.avatarOuterBorderBottom,
+                    borderRightColor: theme.avatarOuterBorderBottom,
+                  }
                 ]}>
+                  <View style={[
+                    styles.avatarBorderMiddle, 
+                    { 
+                      backgroundColor: theme.avatarMiddleBg,
+                      borderTopColor: theme.avatarMiddleBorderTop,
+                      borderLeftColor: theme.avatarMiddleBorderTop,
+                      borderBottomColor: theme.avatarMiddleBorderBottom,
+                      borderRightColor: theme.avatarMiddleBorderBottom,
+                    }
+                  ]}>
                     <View style={[
-                        styles.avatarBorderMiddle, 
-                        { 
-                            backgroundColor: theme.avatarMiddleBg,
-                            borderTopColor: theme.avatarMiddleBorderTop,
-                            borderLeftColor: theme.avatarMiddleBorderTop,
-                            borderBottomColor: theme.avatarMiddleBorderBottom,
-                            borderRightColor: theme.avatarMiddleBorderBottom,
-                        }
+                      styles.avatarBorderInner,
+                      {
+                        backgroundColor: theme.avatarInnerBg,
+                        borderColor: theme.avatarInnerBorder,
+                      }
                     ]}>
-                        <View style={[
-                            styles.avatarBorderInner,
-                            {
-                                backgroundColor: theme.avatarInnerBg,
-                                borderColor: theme.avatarInnerBorder,
-                            }
-                        ]}>
-                            <Image source={avatarSource} style={styles.cardAvatar} />
-                        </View>
+                      <Image source={avatarSource} style={styles.cardAvatar} />
                     </View>
+                  </View>
                 </View>
-              </View>
+              </TouchableOpacity>
 
               {/* Name & Clan (Assuming 'username' from API maps to 'name' for now) */}
               <View style={styles.infoContainer}>
                 <Text style={[styles.cardName, { color: theme.text }]}>{item.username}</Text>
-                {/* Clan data is not directly in the API response, so keep it optional or remove if not needed */}
-                {/* {item.clan ? <Text style={[styles.cardClan, { color: 'rgba(255,255,255,0.7)' }]}>{item.clan}</Text> : null} */}
               </View>
 
-              {/* Score Pill */}
+              {/* Score Pill & Rank Image Separated */}
               <View style={styles.scoreContainer}>
-                <LinearGradient 
-                  colors={['rgba(255,255,255,0.2)', 'rgba(0,0,0,0.2)']} 
-                  style={styles.scorePill}
-                >
-                  <Image source={require('../Components/icons/points.png')} style={styles.scoreIcon}/>
-                  <Text style={[styles.scoreText, { color: '#fff' }]}>{item.total_points}</Text> 
-                </LinearGradient>
+                <View style={styles.scorePillWrapper}>
+                  {rankImageSource && (
+                    <Image source={rankImageSource} style={styles.rankImage} />
+                  )}
+                  <LinearGradient 
+                    colors={['rgba(255,255,255,0.2)', 'rgba(0,0,0,0.2)']} 
+                    style={styles.scorePill}
+                  >
+                    <Image source={require('../Components/icons/points.png')} style={styles.scoreIcon}/>
+                    <Text style={[styles.scoreText, { color: '#fff' }]}>{item.total_points}</Text> 
+                  </LinearGradient>
+                </View>
               </View>
             </LinearGradient>
           </View>
@@ -283,7 +294,11 @@ export default function Leaderboards() {
             {/* 2nd Place (Left) */}
             {topThree[1] && (
                 <View style={[styles.podiumColumn, styles.podiumSecond]}>
-                    <View style={styles.podiumAvatarContainer}>
+                    <TouchableOpacity 
+                      style={styles.podiumAvatarContainer}
+                      activeOpacity={0.85}
+                      onPress={() => router.push(`/social/${topThree[1].player_id}`)}
+                    >
                         <View style={[
                             styles.avatarBorderOuterLarge, 
                             { 
@@ -316,14 +331,18 @@ export default function Leaderboards() {
                             </View>
                         </View>
                         <Text style={styles.podiumName}>{topThree[1].username}</Text>
-                    </View>
+                    </TouchableOpacity>
                 </View>
             )}
 
             {/* 1st Place (Center - Highest) */}
             {topThree[0] && (
                 <View style={[styles.podiumColumn, styles.podiumFirst]}>
-                    <View style={styles.podiumAvatarContainer}>
+                    <TouchableOpacity 
+                      style={styles.podiumAvatarContainer}
+                      activeOpacity={0.85}
+                      onPress={() => router.push(`/social/${topThree[0].player_id}`)}
+                    >
                         <View style={styles.crownContainer}><FontAwesome5 name="crown" size={20} color="rgba(238, 179, 51, 1)" /></View>
                         <View style={[
                             styles.avatarBorderOuterExtraLarge, 
@@ -357,14 +376,18 @@ export default function Leaderboards() {
                             </View>
                         </View>
                         <Text style={styles.podiumName}>{topThree[0].username}</Text>
-                    </View>
+                    </TouchableOpacity>
                 </View>
             )}
 
             {/* 3rd Place (Right) */}
             {topThree[2] && (
                 <View style={[styles.podiumColumn, styles.podiumThird]}>
-                    <View style={styles.podiumAvatarContainer}>
+                    <TouchableOpacity 
+                      style={styles.podiumAvatarContainer}
+                      activeOpacity={0.85}
+                      onPress={() => router.push(`/social/${topThree[2].player_id}`)}
+                    >
                         <View style={[
                             styles.avatarBorderOuterLarge, 
                             { 
@@ -397,7 +420,7 @@ export default function Leaderboards() {
                             </View>
                         </View>
                         <Text style={styles.podiumName}>{topThree[2].username}</Text>
-                    </View>
+                    </TouchableOpacity>
                 </View>
             )}
           </View>
@@ -476,7 +499,6 @@ const styles = StyleSheet.create({
   podiumAvatarContainer: {
     alignItems: 'center',
     marginBottom: gameScale(5),
-    
   },
   crownContainer: {
     marginBottom: -gameScale(5),
@@ -644,7 +666,6 @@ const styles = StyleSheet.create({
     width: '10%',
     alignItems: 'center',
     justifyContent: 'center',
-
   },
   rankBadge: {
     width: gameScale(69),
@@ -666,7 +687,6 @@ const styles = StyleSheet.create({
   rankTextPlain: {
     fontSize: gameScale(20),
     fontFamily: 'Grobold',
-    
     textShadowColor: 'black',
     textShadowRadius: 1,
     textShadowOffset: { width: 1, height: 1 },
@@ -682,8 +702,6 @@ const styles = StyleSheet.create({
     width: gameScale(35),
     height: gameScale(35),
     borderRadius: gameScale(16),
-    // borderWidth: 1, // Removed, handled by 3D border
-    // borderColor: 'rgba(255,255,255,0.5)', // Removed, handled by 3D border
   },
   
   infoContainer: {
@@ -702,27 +720,48 @@ const styles = StyleSheet.create({
     fontFamily: 'Computerfont',
   },
   
+  // Adjusted Score Container & Image Separated Properties
   scoreContainer: {
-    width: '20%',
+    width: '25%', // expanded to give room for overlapping image
     alignItems: 'flex-end',
     justifyContent: 'center',
     paddingRight: gameScale(5)
   },
+  scorePillWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative', // acts as an anchor for the rank image
+  },
   scorePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: gameScale(6),
+    paddingRight: gameScale(6),
+    paddingLeft: gameScale(18), // extra padding to keep the points readable alongside the overlapping badge
     paddingVertical: gameScale(2),
     borderRadius: gameScale(8),
     gap: 4,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
   },
-  scoreText:{
-  fontSize:gameScale(10),
-  fontFamily: 'Grobold',
+  rankImage: {
+    width: gameScale(48), // Much bigger absolute sizing 
+    height: gameScale(48),
+    resizeMode: 'contain',
+    position: 'absolute',
+    left: -gameScale(25), // Positioned outside/overlapping the left side of the pill
+    zIndex: 10,
   },
-    // New 3D Avatar Border Styles (for card avatars)
+  scoreText:{
+    fontSize:gameScale(10),
+    fontFamily: 'Grobold',
+  },
+  scoreIcon: {
+    width: gameScale(12),
+    height: gameScale(12),
+    resizeMode: 'contain',
+  },
+
+  // 3D Avatar Border Styles
   avatarBorderOuter: {
     borderWidth: gameScale(1),
     padding: gameScale(1),
@@ -748,7 +787,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // New 3D Avatar Border Styles (for podium avatars - large)
+  // Podium 3D Avatar Styles (Large)
   avatarBorderOuterLarge: {
     borderWidth: gameScale(1),
     padding: gameScale(1),
@@ -774,7 +813,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // New 3D Avatar Border Styles (for podium avatars - extra large, rank 1)
+  // Podium 3D Avatar Styles (Extra Large - Rank 1)
   avatarBorderOuterExtraLarge: {
     borderWidth: gameScale(1.5),
     padding: gameScale(1.5),
@@ -799,12 +838,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  scoreIcon: {
-    width: gameScale(12),
-    height: gameScale(12),
-    resizeMode: 'contain',
-  },
-   // Add these styles for loading and error states
+
+   // Loading and Error States
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',

@@ -69,7 +69,6 @@ export default function Micomic({ isComponent = false, manualGameState = null, o
         await NavigationBar.setVisibilityAsync('hidden');
         await NavigationBar.setBackgroundColorAsync('#00000000');
       } catch (error) {
-        // console.warn('Failed to hide navigation bar:', error); // Removed console.warn
       }
     };
     hideNavigationBar();
@@ -86,7 +85,6 @@ export default function Micomic({ isComponent = false, manualGameState = null, o
             setImagesLoaded(true);
           }
         }).catch(err => {
-            // console.warn("Failed to prefetch", url, err); // Removed console.warn
             loadedCount++;
             if (loadedCount === pages.length) setImagesLoaded(true);
         });
@@ -105,8 +103,10 @@ export default function Micomic({ isComponent = false, manualGameState = null, o
     }).start(({ finished }) => {
       if (finished) {
         callback && callback();
-        isAnimating.current = false;
       }
+      // Unconditionally unlock the animation state. If an animation is interrupted 
+      // (finished === false) by fast swiping, this ensures the component doesn't freeze.
+      isAnimating.current = false;
     });
   }, [flipAnim]);
 
@@ -133,10 +133,13 @@ export default function Micomic({ isComponent = false, manualGameState = null, o
         });
       });
     }
-  }, [currentIndex, pages.length, animateTurnPage, router, flipAnim]);
+  }, [currentIndex, pages.length, animateTurnPage, router, flipAnim, isComponent, onComplete]);
 
   const handlePrev = useCallback(() => {
     if (isAnimating.current || currentIndex <= 0) return;
+    
+    // Lock immediately to prevent fast spamming from triggering multiple times before requestAnimationFrame executes
+    isAnimating.current = true;
     
     soundManager.playPageFlipSound(0.6);
 
@@ -231,7 +234,6 @@ export default function Micomic({ isComponent = false, manualGameState = null, o
             style={styles.pageImage} 
             contentFit="contain"
             cachePolicy="memory-disk" 
-            // Removed transition prop to prevent any image-specific fading
           />
         </ImageBackground>
       </Animated.View>
@@ -278,8 +280,6 @@ export default function Micomic({ isComponent = false, manualGameState = null, o
     </View>
   );
 }
-
-
 
 const styles = StyleSheet.create({
   container: {
