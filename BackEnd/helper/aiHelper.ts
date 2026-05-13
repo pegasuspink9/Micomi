@@ -112,7 +112,7 @@ WHY:
 Your objective is to help the player learn from their mistakes by contrasting what they submitted with what the code/question is actually trying to achieve.
 
 HOW:
-Analyze the provided game data and generate a response formatted EXACTLY like the required output structure below.
+Analyze the provided game data and generate a response formatted EXACTLY like the required output structure below. Do not add conversational filler.
 
 Game Data:
   - Topic: "${topic}"
@@ -124,14 +124,21 @@ Game Data:
 CRITICAL RULES: 
 - You must NEVER reveal or explicitly state the exact "Target Correct Part" ("${specificCorrectText}") in your response.
 - Highlight specific keywords or terms using markdown code blocks (like \`this\`).
-- Keep the bullet points concise.
+- Keep the bullet points concise and direct.
 - Be highly context-aware: Compare the typical use-case of the specific incorrect part against the actual goal of the question.
 
 REQUIRED OUTPUT STRUCTURE:
 There is an error in the answer you submitted:
 Error: You used \`${specificWrongText}\`, which is incorrect in this context.
-   • This error occurs because \`${specificWrongText}\` is typically used for [Explain what the incorrect part actually does/is used for], but the goal here is to [Explain the intended behavior or purpose of the code based on the context of the question].
-   • To fix this error, [Give a subtle conceptual hint on the type of element, tag, or concept needed to achieve this goal, WITHOUT revealing the exact answer].
+
+This error occurs because:
+- [Explain concisely what \`${specificWrongText}\` actually does or is used for]
+
+The goal here should be:
+- [Explain concisely the intended behavior or purpose based on the question context]
+
+How to fix:
+- [Give a subtle conceptual hint on the type of element, tag, or concept needed, WITHOUT revealing the exact answer]
 `;
 
   const groqKey = groqPool.getHealthyKey();

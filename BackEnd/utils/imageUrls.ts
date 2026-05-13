@@ -650,6 +650,14 @@ export const imagesUrls = [
   "https://micomi-assets.me/Enemies/Ice%20Land/Boss%20Cryo-Scythe%20Broolord/run.png",
   "https://micomi-assets.me/Enemies/Avatar/Ice%20Land/Boss%20Cryo-Scythe%20Broodlord.png",
   "https://micomi-assets.me/Enemies/Ice%20Land/Boss%20Cryo-Scythe%20Broolord/attack2.png",
+  //Boss Bebeetle
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Autumnland/Bebeetle/idle.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Autumnland/Bebeetle/attack1.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Autumnland/Bebeetle/death.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Autumnland/Bebeetle/hurt.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Autumnland/Bebeetle/run.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Autumnland/Bebeetle/Recolored%20Beebeetle.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Autumnland/Bebeetle/attack2.png",
 
   //Versus Background
   "https://micomi-assets.me/Versus%20Maps/Green.png",

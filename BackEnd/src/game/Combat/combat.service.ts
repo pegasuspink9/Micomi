@@ -536,6 +536,12 @@ export async function getCurrentFightState(
   const status = progress.battle_status ?? BattleStatus.in_progress;
   const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
 
+  const selectedTheme = await prisma.playerTheme.findFirst({
+    where: { player_id: playerId, is_selected: true },
+    include: { theme: true },
+  });
+  const gameplay_theme_color = selectedTheme?.theme.theme_color || "default";
+
   let displayDamageArray = Array.isArray(character.character_damage)
     ? (character.character_damage as number[])
     : [10, 15, 25];
@@ -703,6 +709,7 @@ export async function getCurrentFightState(
     },
     energy: energyStatus.energy,
     timeToNextEnergyRestore: energyStatus.timeToNextRestore,
+    gameplay_theme_color,
     combat_background: combatBackground,
     question_type: questionType,
     boss_skill_activated: progress?.boss_skill_activated || false,
