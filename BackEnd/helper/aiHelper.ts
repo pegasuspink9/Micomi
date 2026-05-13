@@ -67,7 +67,7 @@ const geminiPool = new APIKeyPool(process.env.GEMINI_API_KEY, "Gemini");
 const fetchWithTimeout = async (
   url: string,
   options: RequestInit,
-  timeoutMs = 3000,
+  timeoutMs = 8000,
 ) => {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
@@ -160,7 +160,7 @@ How to fix:
             max_tokens: 200,
           }),
         },
-        3000,
+        8000,
       );
 
       status = response.status;
