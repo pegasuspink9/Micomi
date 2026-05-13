@@ -31,6 +31,7 @@ const CodeEditor = ({
   blankLineIndexes = [],
   onUserScroll = null,
   shouldDelayAnimation = false,
+  isLevelCompletionModalVisible = false,
 }) => {
   const [activeTab, setActiveTab] = useState('code');
   const [hasAnimated, setHasAnimated] = useState(false); 
@@ -220,6 +221,7 @@ const CodeEditor = ({
                 showExpectedInScreenPlay={showExpectedInScreenPlay}
                 onExpectedToggle={onExpectedToggle}
                 previewMode={previewMode}
+                 isLevelCompletionModalVisible={isLevelCompletionModalVisible}
            />
           </View>
         );
@@ -256,6 +258,7 @@ const CodeEditor = ({
     showExpectedInScreenPlay,
     onExpectedToggle,
     previewMode,
+    isLevelCompletionModalVisible,
     blankLineSet,
     lineHeight,
     visibleRange.end,

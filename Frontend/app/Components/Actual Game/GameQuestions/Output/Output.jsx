@@ -22,6 +22,7 @@ const Output = ({
   showExpectedInScreenPlay = false,
   onExpectedToggle = null,
   previewMode = 'web',
+  isLevelCompletionModalVisible = false,
 }) => {
   // REMOVED autoHideTimerRef
   const scrollYRef = useRef(0);
@@ -131,7 +132,7 @@ const Output = ({
       
       {/* Expected output toggle button (same style) - show when a toggle handler provided
           and when either in gameQuestion or overlay display so it's available on-screen */}
-      {(onExpectedToggle && displayMode === 'gameQuestion') && (
+      {(onExpectedToggle && displayMode === 'gameQuestion' && !isLevelCompletionModalVisible) && (
         <Pressable 
           onPress={onExpectedToggle}
           style={[styles.webViewToggleButton, styles.expectedToggleButton]}
@@ -269,6 +270,7 @@ export default React.memo(Output, (prevProps, nextProps) => {
     prevProps.displayMode === nextProps.displayMode &&
     prevProps.showWebViewInScreenPlay === nextProps.showWebViewInScreenPlay &&
     prevProps.showExpectedInScreenPlay === nextProps.showExpectedInScreenPlay &&
+    prevProps.isLevelCompletionModalVisible === nextProps.isLevelCompletionModalVisible &&
     prevProps.previewMode === nextProps.previewMode &&
     // REMOVED runButtonClicked comparison
     prevProps.currentQuestion?.question === nextProps.currentQuestion?.question &&

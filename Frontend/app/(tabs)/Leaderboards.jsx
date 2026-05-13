@@ -435,8 +435,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'column',
   },
-  
-  // --- TOP SECTION ---
+
   topSection: {
     flex: 0.38, 
     width: '100%',

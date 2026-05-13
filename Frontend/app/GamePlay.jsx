@@ -1279,6 +1279,7 @@ export default function GamePlay() {
                 onExpectedToggle={handleExpectedToggle}
                 previewMode={outputPreviewMode}
                 onPreviewModeToggle={handleOutputPreviewToggle}
+                isLevelCompletionModalVisible={showLevelCompletionModal}
             />
 
             <View 

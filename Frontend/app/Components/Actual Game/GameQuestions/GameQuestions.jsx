@@ -27,6 +27,7 @@ const GameQuestions = ({
   onExpectedToggle = null,
   previewMode = 'web',
   onPreviewModeToggle = null,
+  isLevelCompletionModalVisible = false,
 }) => {
   const scrollViewRef = useRef(null);
   const blankRefs = useRef({});
@@ -454,6 +455,7 @@ const GameQuestions = ({
             blankLineIndexes={blankLineIndexes}
             onUserScroll={handleUserScroll}
             shouldDelayAnimation={isPvpMode}
+            isLevelCompletionModalVisible={isLevelCompletionModalVisible}
           />
         ) : (
           <DocumentQuestion 
@@ -483,6 +485,7 @@ export default React.memo(GameQuestions, (prev, next) => {
     prev.showOutputInScreenPlay === next.showOutputInScreenPlay
     && prev.showExpectedInScreenPlay === next.showExpectedInScreenPlay
     && prev.previewMode === next.previewMode
+    && prev.isLevelCompletionModalVisible === next.isLevelCompletionModalVisible
   );
 });
 
