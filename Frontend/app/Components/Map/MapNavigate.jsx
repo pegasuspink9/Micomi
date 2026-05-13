@@ -9,7 +9,8 @@ import {
   ImageBackground,
   Modal,
   Platform,
-  StatusBar
+  StatusBar,
+  ActivityIndicator
 } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -22,7 +23,7 @@ import DailyRewards from '../DailyRewards Components/DailyRewards';
 import MiniQuestPreview from './MiniQuestPreview/MiniQuestPreview';
 import { soundManager } from '../Actual Game/Sounds/UniversalSoundManager';
 import MainLoading from '../Actual Game/Loading/MainLoading';
-import { ActivityIndicator } from 'react-native';
+import MapDashboard from './Map Component/MapDashboard';
 
 const { width, height } = Dimensions.get('window');
 
@@ -290,7 +291,7 @@ export default function MapNavigate({ onMapChange }) {
             <Image source={ARROW_IMG} style={[styles.arrowImage, styles.flippedHorizontal]} />
           </TouchableOpacity>
           
-          <TouchableOpacity onPress={handleIslandClick} activeOpacity={0.7}> 
+          <TouchableOpacity onPress={proceedToMap} activeOpacity={0.7}> 
             <ImageBackground
               source={LEVEL_SELECTOR_IMAGES[currentMapData?.map_name] || LEVEL_SELECTOR_IMAGES['Computer']}
               style={styles.levelSelectorImage}
@@ -314,38 +315,11 @@ export default function MapNavigate({ onMapChange }) {
 
       {/* --- Map Info Woody Modal --- */}
       <Modal visible={isMapInfoVisible} transparent={true} animationType="fade" onRequestClose={() => setIsMapInfoVisible(false)}>
-        <View style={styles.mapModalOverlay}>
-          <View style={styles.mapModalWoodyFrame}>
-             {/* Dots */}
-            <View style={[styles.cornerDot, styles.dotTopLeft]} /><View style={[styles.cornerDot, styles.dotTopRight]} />
-            <View style={[styles.cornerDot, styles.dotBottomLeft]} /><View style={[styles.cornerDot, styles.dotBottomRight]} />
-
-            <View style={styles.woodySlotContent}>
-                <View style={styles.mapModalInnerContainer}>
-                  <Text style={styles.mapModalTitleText}>{currentMapData?.map_name || 'Unknown'}</Text>
-                  <Text style={styles.mapModalDescriptionText} adjustsFontSizeToFit>
-                    {currentMapData?.description || "Explore this area to learn more!"}
-                  </Text>
-
-                  <View style={styles.mapModalButtonGroup}>
-                    <TouchableOpacity style={styles.mapModalCloseBtn} onPress={() => setIsMapInfoVisible(false)}>
-                      <Text style={styles.mapModalBtnText}>Close</Text>
-                    </TouchableOpacity>
-
-                    {currentMapData?.is_active ? (
-                      <TouchableOpacity style={styles.mapModalEnterBtn} onPress={proceedToMap}>
-                        <Text style={styles.mapModalBtnText}>Enter</Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <View style={[styles.mapModalEnterBtn, styles.disabledBtn]}>
-                        <Text style={[styles.mapModalBtnText, styles.disabledBtnText]}>Locked</Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-            </View>
-          </View>
-        </View>
+        <MapDashboard
+          mapData={currentMapData}
+          onClose={() => setIsMapInfoVisible(false)}
+          onEnter={proceedToMap}
+        />
       </Modal>
 
 
@@ -441,28 +415,7 @@ const styles = StyleSheet.create({
     zIndex: 120, alignItems: 'center'
   },
 
-  // ... (Modal styles remain largely the same, slightly cleaned up) ...
-  mapModalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1000 },
-  mapModalWoodyFrame: {
-    width: '85%', backgroundColor: '#943f02', borderRadius: 15, padding: 6, elevation: 20,
-    borderColor: '#c46623', borderWidth: 3, borderBottomColor: '#4a1e00', borderRightColor: '#6e2f01',
-  },
-  woodySlotContent: { backgroundColor: '#7c3200', borderRadius: 10, padding: 4 },
-  mapModalInnerContainer: { padding: 20, alignItems: 'center' },
-  mapModalTitleText: { color: '#FFD700', fontSize: 30, fontFamily: 'Grobold', marginBottom: 10, textAlign: 'center', textShadowOffset:{width:1, height:1}, textShadowRadius:2, textShadowColor:'black' },
-  mapModalDescriptionText: { color: '#ffffff', fontSize: 16, fontFamily: 'DynaPuff', textAlign: 'center', marginBottom: 20 },
-  mapModalButtonGroup: { flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
-  mapModalCloseBtn: { backgroundColor: '#d9534f', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8, borderWidth: 2, borderColor: '#a94442' },
-  mapModalEnterBtn: { backgroundColor: '#5cb85c', paddingVertical: 10, paddingHorizontal: 25, borderRadius: 8, borderWidth: 2, borderColor: '#4cae4c' },
-  mapModalBtnText: { color: '#fff', fontFamily: 'Grobold', fontSize: 16 },
-  disabledBtn: { backgroundColor: '#555', borderColor: '#333' },
-  disabledBtnText: { color: '#999' },
-
-
-  // ... (Corner dots styles) ...
-  cornerDot: { position: 'absolute', width: 12, height: 12, borderRadius: 6, backgroundColor: '#4a1e00', borderColor: '#c46623', borderWidth: 1, zIndex: 2 },
-  dotTopLeft: { top: 6, left: 6 }, dotTopRight: { top: 6, right: 6 },
-  dotBottomLeft: { bottom: 6, left: 6 }, dotBottomRight: { bottom: 6, right: 6 },
+  // ... (Modal styles moved to MapDashboard) ...
 
   lockedOverlay: {
     position: 'absolute', width: '115%', height: '115%', zIndex: 10, left: -20, opacity: 0.9, resizeMode:'contain'
