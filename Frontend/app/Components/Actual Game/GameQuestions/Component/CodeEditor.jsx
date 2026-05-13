@@ -28,6 +28,8 @@ const CodeEditor = ({
   onExpectedToggle = null,
   previewMode = 'web',
   onPreviewModeToggle = null,
+  blankLineIndexes = [],
+  onUserScroll = null,
   shouldDelayAnimation = false,
 }) => {
   const [activeTab, setActiveTab] = useState('code');
@@ -35,9 +37,31 @@ const CodeEditor = ({
   const lineAnimations = useRef([]);
   const [tabsDisabled, setTabsDisabled] = useState(false); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 0 });
   
   const codeText = useMemo(() => currentQuestion.question || '', [currentQuestion.question]);
   const lines = useMemo(() => codeText.split('\n'), [codeText]);
+  const lineHeight = useMemo(() => gameScale(25), []);
+  const blankLineSet = useMemo(() => new Set(blankLineIndexes), [blankLineIndexes]);
+
+  const initialRange = useMemo(() => {
+    if (!lines.length) {
+      return { start: 0, end: 0 };
+    }
+
+    if (!blankLineIndexes.length) {
+      return { start: 0, end: Math.min(lines.length - 1, 20) };
+    }
+
+    const minBlank = Math.min(...blankLineIndexes);
+    const maxBlank = Math.max(...blankLineIndexes);
+    const buffer = 6;
+
+    return {
+      start: Math.max(0, minBlank - buffer),
+      end: Math.min(lines.length - 1, maxBlank + buffer),
+    };
+  }, [blankLineIndexes, lines.length]);
 
     const codeTabDetails = useMemo(() => {
     const type = currentQuestion?.question_type?.toLowerCase();
@@ -68,6 +92,10 @@ const CodeEditor = ({
     }, 3000); 
     return () => clearTimeout(timer); 
   }, []);
+
+  useEffect(() => {
+    setVisibleRange(initialRange);
+  }, [initialRange]);
 
 
   useEffect(() => {
@@ -109,6 +137,24 @@ const CodeEditor = ({
             contentContainerStyle={styles.scrollContentContainer}
             showsVerticalScrollIndicator={false}
             nestedScrollEnabled={true}
+            onScroll={(event) => {
+              const { contentOffset, layoutMeasurement } = event.nativeEvent;
+              const start = Math.max(0, Math.floor(contentOffset.y / lineHeight) - 6);
+              const end = Math.min(
+                lines.length - 1,
+                Math.ceil((contentOffset.y + layoutMeasurement.height) / lineHeight) + 6
+              );
+
+              onUserScroll?.();
+
+              setVisibleRange((current) => {
+                if (current.start === start && current.end === end) {
+                  return current;
+                }
+                return { start, end };
+              });
+            }}
+            scrollEventThrottle={16}
           >
             {lines.map((line, lineIndex) => {
               //  CRITICAL: Ensure new lines start with 0 opacity
@@ -118,6 +164,10 @@ const CodeEditor = ({
                   translateY: new Animated.Value(gameScale(-20)),
                 };
               }
+
+              const shouldRenderLine =
+                blankLineSet.has(lineIndex) ||
+                (lineIndex >= visibleRange.start && lineIndex <= visibleRange.end);
 
               return (
                 <Animated.View
@@ -132,7 +182,11 @@ const CodeEditor = ({
                       <Text style={styles.lineNumber}>{lineIndex + 1}</Text>
                     </View>
                     <View style={styles.lineContent}>
-                      {renderSyntaxHighlightedLine(line, lineIndex)}
+                      {shouldRenderLine ? (
+                        renderSyntaxHighlightedLine(line, lineIndex)
+                      ) : (
+                        <View style={styles.codeLinePlaceholder} />
+                      )}
                     </View>
                   </View>
                 </Animated.View>
@@ -202,6 +256,10 @@ const CodeEditor = ({
     showExpectedInScreenPlay,
     onExpectedToggle,
     previewMode,
+    blankLineSet,
+    lineHeight,
+    visibleRange.end,
+    visibleRange.start,
   ]);
 
  useEffect(() => {
@@ -683,6 +741,11 @@ const styles = StyleSheet.create({
   lineContent: {
     flex: 1,
     paddingHorizontal: gameScale(12),
+  },
+
+  codeLinePlaceholder: {
+    height: gameScale(25),
+    minHeight: gameScale(25),
   },
 
   scrollContentContainer: {

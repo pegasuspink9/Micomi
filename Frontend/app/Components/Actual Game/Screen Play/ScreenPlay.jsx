@@ -147,6 +147,66 @@ const ScreenPlay = ({
   const lastSubmissionReactionSignatureRef = useRef(null);
   const pvpSeenReactionIdentifiersRef = useRef(new Set());
   const pvpMaxSeenReactionNumericIdRef = useRef(null);
+  const reactionCarryOverRef = useRef({
+    character: null,
+    enemy: null,
+  });
+  const reactionCarryOverTimeoutsRef = useRef({
+    character: null,
+    enemy: null,
+  });
+
+  const scheduleReactionCarryOver = useCallback((side, text, durationMs = 5000) => {
+    if (!text) {
+      return;
+    }
+
+    const expiresAt = Date.now() + durationMs;
+    reactionCarryOverRef.current[side] = { text, expiresAt };
+
+    if (reactionCarryOverTimeoutsRef.current[side]) {
+      clearTimeout(reactionCarryOverTimeoutsRef.current[side]);
+    }
+
+    const setter = side === 'character' ? setActiveCharReaction : setActiveEnemyReaction;
+    reactionCarryOverTimeoutsRef.current[side] = setTimeout(() => {
+      const current = reactionCarryOverRef.current[side];
+      if (current && current.text === text) {
+        reactionCarryOverRef.current[side] = null;
+      }
+      setter((prev) => (prev === text ? null : prev));
+      reactionCarryOverTimeoutsRef.current[side] = null;
+    }, durationMs);
+  }, []);
+
+  const restoreCarryOverIfNeeded = useCallback((side) => {
+    const current = reactionCarryOverRef.current[side];
+    if (!current) {
+      return false;
+    }
+
+    const remainingMs = current.expiresAt - Date.now();
+    if (remainingMs <= 0) {
+      reactionCarryOverRef.current[side] = null;
+      return false;
+    }
+
+    const setter = side === 'character' ? setActiveCharReaction : setActiveEnemyReaction;
+    setter((prev) => (prev ? prev : current.text));
+
+    if (!reactionCarryOverTimeoutsRef.current[side]) {
+      reactionCarryOverTimeoutsRef.current[side] = setTimeout(() => {
+        const stored = reactionCarryOverRef.current[side];
+        if (stored && stored.text === current.text) {
+          reactionCarryOverRef.current[side] = null;
+        }
+        setter((prev) => (prev === current.text ? null : prev));
+        reactionCarryOverTimeoutsRef.current[side] = null;
+      }, remainingMs);
+    }
+
+    return true;
+  }, []);
 
   const parsePvpReactionToken = useCallback((rawReaction) => {
     if (rawReaction === null || rawReaction === undefined) {
@@ -216,9 +276,18 @@ const ScreenPlay = ({
           ].join('|')
         : null;
 
-      // Reset before replaying so identical text can show again in PvE.
-      setActiveCharReaction(null);
-      setActiveEnemyReaction(null);
+      // Keep prior reactions visible across challenge transitions until their timers expire.
+      const restoredChar = !hasSubmissionReaction && restoreCarryOverIfNeeded('character');
+      const restoredEnemy = !hasSubmissionReaction && restoreCarryOverIfNeeded('enemy');
+
+      if (hasSubmissionReaction) {
+        setActiveCharReaction(null);
+        setActiveEnemyReaction(null);
+      } else if (restoredChar || restoredEnemy) {
+        lastSubmissionReactionSignatureRef.current = null;
+        lastLiveReactionSignatureRef.current = null;
+        return undefined;
+      }
 
       if (
         hasSubmissionReaction &&
@@ -242,6 +311,7 @@ const ScreenPlay = ({
 
           if (firstText) {
             setFirst(firstText);
+            scheduleReactionCarryOver(isCorrect ? 'character' : 'enemy', firstText);
           }
 
           const step2Timeout = setTimeout(() => {
@@ -249,6 +319,7 @@ const ScreenPlay = ({
 
             if (secondText) {
               setSecond(secondText);
+              scheduleReactionCarryOver(isCorrect ? 'enemy' : 'character', secondText);
             }
 
             const step3Timeout = setTimeout(() => {
@@ -399,7 +470,20 @@ const ScreenPlay = ({
     isPvpMode,
     parsePvpReactionToken,
     pvpReactionEvent,
+    restoreCarryOverIfNeeded,
+    scheduleReactionCarryOver,
   ]);
+
+  useEffect(() => {
+    return () => {
+      if (reactionCarryOverTimeoutsRef.current.character) {
+        clearTimeout(reactionCarryOverTimeoutsRef.current.character);
+      }
+      if (reactionCarryOverTimeoutsRef.current.enemy) {
+        clearTimeout(reactionCarryOverTimeoutsRef.current.enemy);
+      }
+    };
+  }, []);
 
 
   const enemies = useMemo(() => {

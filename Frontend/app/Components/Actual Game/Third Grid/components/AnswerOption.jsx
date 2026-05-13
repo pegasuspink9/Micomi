@@ -68,6 +68,15 @@ const AnswerOption = ({ item, index, isSelected, isDisabled, onPress, customStyl
     borderRightColor: colors.outerBorderBottom,
   }), [colors]);
 
+  const handlePress = React.useCallback(() => {
+    if (isDisabled) {
+      return;
+    }
+
+    soundManager.playButtonTapSound();
+    onPress(index);
+  }, [index, isDisabled, onPress]);
+
   return (
     <View style={[styles.container, customStyles?.container]}>
       {/* 3-Layer Border - Outer */}
@@ -99,12 +108,7 @@ const AnswerOption = ({ item, index, isSelected, isDisabled, onPress, customStyl
               pressed && !isDisabled && styles.listItemPressed,
               customStyles?.listItemContainer
             ]}
-            onPress={() => {
-              if (!isDisabled) {
-                soundManager.playButtonTapSound();
-                onPress(item);    
-              }
-            }}
+            onPress={handlePress}
             disabled={isDisabled}
           >
             <View style={[

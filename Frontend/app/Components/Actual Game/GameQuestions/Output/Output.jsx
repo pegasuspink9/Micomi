@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, Pressable } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { generateCombinedHtml } from './WebViewBuilder';
@@ -24,6 +24,7 @@ const Output = ({
   previewMode = 'web',
 }) => {
   // REMOVED autoHideTimerRef
+  const scrollYRef = useRef(0);
 
   const htmlOutput = useMemo(() => {
     const userAnswers = selectedAnswers.map(index => options?.[index]).filter(Boolean);
@@ -48,6 +49,37 @@ const Output = ({
   const handleWebViewLoad = useCallback(() => {
     console.log('WebView loaded');
   }, []);
+
+  const handleWebViewMessage = useCallback((event) => {
+    try {
+      const data = JSON.parse(event.nativeEvent?.data || '{}');
+      if (data?.type === 'scroll' && Number.isFinite(data.y)) {
+        scrollYRef.current = data.y;
+      }
+    } catch (error) {
+      console.log('WebView message parse error:', error);
+    }
+  }, []);
+
+  const restoreScrollY = scrollYRef.current || 0;
+  const injectedScrollHandler = `
+    (function() {
+      var restoreY = ${restoreScrollY};
+      var getY = function() {
+        return window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+      };
+      var sendY = function() {
+        var y = getY();
+        window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'scroll', y: y }));
+      };
+      window.addEventListener('scroll', function() { requestAnimationFrame(sendY); }, { passive: true });
+      if (restoreY > 0) {
+        window.scrollTo(0, restoreY);
+      }
+      sendY();
+    })();
+    true;
+  `;
 
   // Determine container style based on display mode
   const containerStyle = displayMode === 'gameQuestion' 
@@ -82,6 +114,8 @@ const Output = ({
               originWhitelist={['*']}
               allowsInlineMediaPlayback={true}
               mediaPlaybackRequiresUserAction={false}
+              onMessage={handleWebViewMessage}
+              injectedJavaScriptBeforeContentLoaded={injectedScrollHandler}
               onError={handleWebViewError}
               onLoad={handleWebViewLoad}
             />

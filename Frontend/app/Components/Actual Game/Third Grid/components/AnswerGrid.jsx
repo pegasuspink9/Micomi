@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { View, ScrollView, StyleSheet, Dimensions, Text, Animated } from 'react-native';
 import AnswerOption from './AnswerOption';
 import { gameScale } from '../../../Responsiveness/gameResponsive';
@@ -37,6 +37,18 @@ const AnswerGrid = ({
     return [];
   }, [options]);
 
+  const selectedCount = useMemo(() => (
+    selectedAnswers.filter((answer) => answer !== null && answer !== undefined).length
+  ), [selectedAnswers]);
+
+  const selectedSet = useMemo(() => (
+    new Set(selectedAnswers.filter((answer) => answer !== null && answer !== undefined))
+  ), [selectedAnswers]);
+
+  const handleOptionPress = useCallback((index) => {
+    onAnswerSelect(index);
+  }, [onAnswerSelect]);
+
   const renderedItems = useMemo(() => {
     // Early return if no options
     if (!normalizedOptions.length) {
@@ -61,8 +73,8 @@ const AnswerGrid = ({
         }
         
             
-        const isSelected = selectedAnswers.includes(index);
-        const isDisabled = !isSelected && selectedAnswers.filter(a => a !== null).length >= maxAnswers;
+        const isSelected = selectedSet.has(index);
+        const isDisabled = !isSelected && selectedCount >= maxAnswers;
         
         return (
         <Animated.View
@@ -77,7 +89,7 @@ const AnswerGrid = ({
             index={index}
             isSelected={isSelected}
             isDisabled={isDisabled}
-            onPress={() => onAnswerSelect(index)}
+            onPress={handleOptionPress}
             isSpecialAttack={isSpecialAttack}
             themeColor={themeColor}
           />
@@ -89,7 +101,16 @@ const AnswerGrid = ({
       console.error('❌ Error processing options:', error);
       return [];
     }
-    }, [challengeId, isSpecialAttack, maxAnswers, normalizedOptions, onAnswerSelect, selectedAnswers, themeColor]);
+    }, [
+      challengeId,
+      handleOptionPress,
+      isSpecialAttack,
+      maxAnswers,
+      normalizedOptions,
+      selectedCount,
+      selectedSet,
+      themeColor,
+    ]);
 
   const animationTriggerKey = strictChallengeRender
     ? String(challengeId ?? 'none')

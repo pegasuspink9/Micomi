@@ -23,7 +23,6 @@ const GameQuestions = ({
   reviewGuide = null,
   showOutputInScreenPlay = false,
   onOutputToggle = null,
-  // expected output props passthrough
   showExpectedInScreenPlay = false,
   onExpectedToggle = null,
   previewMode = 'web',
@@ -32,6 +31,7 @@ const GameQuestions = ({
   const scrollViewRef = useRef(null);
   const blankRefs = useRef({});
   const computerQuestionTemplateRef = useRef({});
+  const lastUserScrollRef = useRef(0);
   const options = currentQuestion?.options || [];
 
   const currentChallengeId = useMemo(() => (
@@ -57,6 +57,40 @@ const GameQuestions = ({
     }
     return counts;
   }, [currentQuestion?.question]);
+
+  const lineMeta = useMemo(() => {
+    if (!currentQuestion?.question) {
+      return [];
+    }
+
+    return currentQuestion.question.split('\n').map((line) => {
+      const parts = line.split('_');
+      return {
+        line,
+        parts,
+        hasBlank: parts.length > 1,
+      };
+    });
+  }, [currentQuestion?.question]);
+
+  const blankLineIndexes = useMemo(() => (
+    lineMeta.reduce((acc, meta, index) => {
+      if (meta.hasBlank) {
+        acc.push(index);
+      }
+      return acc;
+    }, [])
+  ), [lineMeta]);
+
+  const highlightedLines = useMemo(() => {
+    if (isComputerMap) {
+      return [];
+    }
+
+    return lineMeta.map((meta) => (
+      meta.hasBlank ? null : renderHighlightedText(meta.line)
+    ));
+  }, [isComputerMap, lineMeta]);
 
   
   const getFilledQuestion = (questionText, answers) => {
@@ -86,7 +120,6 @@ const GameQuestions = ({
       return;
     }
 
-    // Persist the original blank template so Computer mode never flattens into plain text.
     if (currentQuestion.question.includes('_')) {
       computerQuestionTemplateRef.current[currentQuestion.id] = currentQuestion.question;
     }
@@ -109,18 +142,59 @@ const GameQuestions = ({
     getFilledQuestion,
   ]);
 
+  // FIX: Storing volatile data in a ref prevents unnecessary rerenders from hijacking the scroll view
+  const latestDataRef = useRef({ currentQuestion, selectedAnswers });
   useEffect(() => {
-    if (!currentQuestion) return;
+    latestDataRef.current = { currentQuestion, selectedAnswers };
+  }, [currentQuestion, selectedAnswers]);
+
+  useEffect(() => {
+    if (!currentChallengeId) return;
     
-    const challengeType = currentQuestion.challenge_type;
+    const challengeType = currentQuestion?.challenge_type;
     if (challengeType === 'fill in the blank' || challengeType === 'code with guide') {
       const timeoutId = setTimeout(() => {
-        scrollToNextBlank(scrollViewRef, blankRefs, currentQuestion, selectedAnswers, selectedBlankIndex);
+        if (Date.now() - lastUserScrollRef.current < 300) {
+          return;
+        }
+        scrollToNextBlank(
+          scrollViewRef, 
+          blankRefs, 
+          latestDataRef.current.currentQuestion, 
+          latestDataRef.current.selectedAnswers, 
+          selectedBlankIndex
+        );
       }, 200);
       
       return () => clearTimeout(timeoutId);
     }
-  }, [selectedAnswers, currentQuestion, selectedBlankIndex]);
+    // Only triggers scroll strictly on question swap or explicit blank change
+  }, [currentChallengeId, selectedBlankIndex]);
+
+  useEffect(() => {
+    if (!currentChallengeId || activeTab !== 'code') {
+      return;
+    }
+
+    const challengeType = currentQuestion?.challenge_type;
+    if (challengeType === 'fill in the blank' || challengeType === 'code with guide') {
+      const timeoutId = setTimeout(() => {
+        scrollToNextBlank(
+          scrollViewRef,
+          blankRefs,
+          latestDataRef.current.currentQuestion,
+          latestDataRef.current.selectedAnswers,
+          selectedBlankIndex
+        );
+      }, 120);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [activeTab, currentChallengeId, selectedBlankIndex, currentQuestion?.challenge_type]);
+
+  const handleUserScroll = useCallback(() => {
+    lastUserScrollRef.current = Date.now();
+  }, []);
 
   const handleTabChange = useCallback((tabName) => {
     if (onTabChange) {
@@ -128,181 +202,195 @@ const GameQuestions = ({
     }
   }, [onTabChange]);
 
-const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
-  if (!line || typeof line !== 'string') {
-    return <Text style={styles.codeText}></Text>;
-  }
+  const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
+    if (!line || typeof line !== 'string') {
+      return <Text style={styles.codeText}></Text>;
+    }
+    const meta = lineMeta[lineIndex];
+    const parts = meta?.parts || line.split('_');
+    const blanksBeforeCurrent = cumulativeBlankCounts[lineIndex] || 0;
 
-  const parts = line.split('_');
-  const blanksBeforeCurrent = cumulativeBlankCounts[lineIndex] || 0;
+    if (!isComputerMap && !(meta?.hasBlank)) {
+      const highlighted = highlightedLines[lineIndex];
+      return (
+        <Text style={styles.codeLineTextWrapper}>
+          <Text style={styles.codeText}>{highlighted || line}</Text>
+        </Text>
+      );
+    }
 
-  if (isComputerMap) {
-    const textContent = parts.join('').trim();
-    
-    return (
-      <View style={styles.codeLineContainerBookCol} key={`line-${lineIndex}`}>
-        {/* Render text on its own line above */}
-        {textContent ? (
-          <Text style={styles.codeTextBook}>{textContent}</Text>
-        ) : null}
-        
-        {/* Render all blanks belonging to this line in a single, shrinking, non-wrapping row */}
-        {parts.length > 1 && (
-          <View style={styles.blanksRowContainer}>
-            {parts.map((_, partIndex) => {
-              const isLastPart = partIndex === parts.length - 1;
-              if (isLastPart) return null; // Empties after the last blank
-              
-              const globalBlankIndex = blanksBeforeCurrent + partIndex;
-              let isWrong = false;
-              let isCorrectBlank = false;
-              
-              if ((canProceed && isAnswerCorrect === false) || (isAnswerCorrect && isComputerMap)) {
-                const selectedValueIndex = selectedAnswers[globalBlankIndex];
-                const selectedValue = selectedValueIndex != null ? options[selectedValueIndex] : null;
-                const correctValue = correctAnswersList?.[globalBlankIndex];
+    if (isComputerMap) {
+      const textContent = parts.join('').trim();
+      
+      return (
+        <View style={styles.codeLineContainerBookCol} key={`line-${lineIndex}`}>
+          {textContent ? (
+            <Text style={styles.codeTextBook}>{textContent}</Text>
+          ) : null}
+          
+          {parts.length > 1 && (
+            <View style={styles.blanksRowContainer}>
+              {parts.map((_, partIndex) => {
+                const isLastPart = partIndex === parts.length - 1;
+                if (isLastPart) return null; 
                 
-                if (selectedValue !== correctValue && !isAnswerCorrect) {
-                  isWrong = true;
-                } else if (selectedValue != null || isAnswerCorrect) {
-                  isCorrectBlank = true;
+                const globalBlankIndex = blanksBeforeCurrent + partIndex;
+                let isWrong = false;
+                let isCorrectBlank = false;
+                
+                if ((canProceed && isAnswerCorrect === false) || (isAnswerCorrect && isComputerMap)) {
+                  const selectedValueIndex = selectedAnswers[globalBlankIndex];
+                  const selectedValue = selectedValueIndex != null ? options[selectedValueIndex] : null;
+                  const correctValue = correctAnswersList?.[globalBlankIndex];
+                  
+                  if (selectedValue !== correctValue && !isAnswerCorrect) {
+                    isWrong = true;
+                  } else if (selectedValue != null || isAnswerCorrect) {
+                    isCorrectBlank = true;
+                  }
                 }
-              }
 
-              const valueToDisplay = isAnswerCorrect 
-                ? correctAnswersList?.[globalBlankIndex] 
-                : (selectedAnswers?.[globalBlankIndex] != null ? options?.[selectedAnswers[globalBlankIndex]] : '_');
+                const valueToDisplay = isAnswerCorrect 
+                  ? correctAnswersList?.[globalBlankIndex] 
+                  : (selectedAnswers?.[globalBlankIndex] != null ? options?.[selectedAnswers[globalBlankIndex]] : '_');
 
-              return (
-                <Pressable 
-                  key={`blank-${globalBlankIndex}`}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    soundManager.playBlankTapSound(1.0);
-                    if (onBlankPress) onBlankPress(globalBlankIndex);
-                  }}
-                  ref={(ref) => {
-                    if (ref) blankRefs.current[globalBlankIndex] = ref;
-                  }}
-                  hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
-                  style={[
-                    styles.codeBlankContainer,
-                    styles.codeBlankBook,
-                    globalBlankIndex === selectedBlankIndex && styles.currentBlankBook,
-                    isCorrectBlank && styles.correctBlank,
-                    isWrong && styles.wrongBlank,
-                  ]}
-                >
-                  <Text 
-                    style={styles.codeBlankTextBook}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit={true} // Shrinks text instead of wrapping!
-                    minimumFontScale={0.4}
+                return (
+                  <Pressable 
+                    key={`blank-${globalBlankIndex}`}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      soundManager.playBlankTapSound(1.0);
+                      if (onBlankPress) onBlankPress(globalBlankIndex);
+                    }}
+                    ref={(ref) => {
+                      if (ref) blankRefs.current[globalBlankIndex] = ref;
+                    }}
+                    hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
+                    style={[
+                      styles.codeBlankContainer,
+                      styles.codeBlankBook,
+                      globalBlankIndex === selectedBlankIndex && styles.currentBlankBook,
+                      isCorrectBlank && styles.correctBlank,
+                      isWrong && styles.wrongBlank,
+                    ]}
                   >
-                    {valueToDisplay}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        )}
-      </View>
-    );
-  }
-  
-  const renderedParts = parts.map((part, partIndex) => {
-    const globalBlankIndex = blanksBeforeCurrent + partIndex;
-    const isLastPart = partIndex === parts.length - 1;
-
-    // Determine blank state after submission feedback is shown
-    let isWrong = false;
-    let isCorrectBlank = false;
+                    <Text 
+                      style={styles.codeBlankTextBook}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit={true} 
+                      minimumFontScale={0.4}
+                    >
+                      {valueToDisplay}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+        </View>
+      );
+    }
     
-    // Optimization: Only compute feedback logic when actually needed
-    if (canProceed && isAnswerCorrect === false && !isLastPart) {
-      const selectedValueIndex = selectedAnswers[globalBlankIndex];
-      const selectedValue = selectedValueIndex != null 
-        ? options[selectedValueIndex] 
-        : null;
+    const renderedParts = parts.map((part, partIndex) => {
+      const globalBlankIndex = blanksBeforeCurrent + partIndex;
+      const isLastPart = partIndex === parts.length - 1;
+
+      let isWrong = false;
+      let isCorrectBlank = false;
       
-      const correctValue = correctAnswersList?.[globalBlankIndex];
-      
-      if (selectedValue !== correctValue) {
-        isWrong = true;
-      } else if (selectedValue != null) {
-        isCorrectBlank = true;
+      if (canProceed && isAnswerCorrect === false && !isLastPart) {
+        const selectedValueIndex = selectedAnswers[globalBlankIndex];
+        const selectedValue = selectedValueIndex != null 
+          ? options[selectedValueIndex] 
+          : null;
+        
+        const correctValue = correctAnswersList?.[globalBlankIndex];
+        
+        if (selectedValue !== correctValue) {
+          isWrong = true;
+        } else if (selectedValue != null) {
+          isCorrectBlank = true;
+        }
       }
+
+      return (
+        <React.Fragment key={partIndex}>
+          {part ? (
+            <Text style={[styles.codeText, isComputerMap && styles.codeTextBook]}>
+              {isComputerMap ? part : renderHighlightedText(part)}
+            </Text>
+          ) : null}
+          
+          {!isLastPart && (
+            <React.Fragment>
+              {!isComputerMap && <Text>{"\u200B"}</Text>}
+              
+              <Pressable 
+                key={`blank-${globalBlankIndex}`}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  soundManager.playBlankTapSound(1.0);
+                  if (onBlankPress) onBlankPress(globalBlankIndex);
+                }}
+                ref={(ref) => {
+                  if (ref) {
+                    blankRefs.current[globalBlankIndex] = ref;
+                  }
+                }}
+                hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
+                style={[
+                  styles.codeBlankContainer,
+                  !isComputerMap && {
+                    transform: [{ translateY: gameScale(4) }],
+                    maxWidth: '90%',
+                  },
+                  globalBlankIndex === selectedBlankIndex && styles.currentBlank,
+                  isCorrectBlank && styles.correctBlank,
+                  isWrong && styles.wrongBlank,
+                  isComputerMap && styles.codeBlankBook,
+                  isComputerMap && globalBlankIndex === selectedBlankIndex && styles.currentBlankBook,
+                ]}
+              >
+                <Text style={[styles.codeBlankText, isComputerMap && styles.codeBlankTextBook]}>
+                  {selectedAnswers?.[globalBlankIndex] != null
+                    ? options?.[selectedAnswers[globalBlankIndex]] || '_'
+                    : '_'}
+                </Text>
+              </Pressable>
+
+              {!isComputerMap && <Text>{"\u200B"}</Text>}
+            </React.Fragment>
+          )}
+        </React.Fragment>
+      );
+    });
+
+    if (isComputerMap) {
+      return (
+        <View style={styles.codeLineContainer}>
+          {renderedParts}
+        </View>
+      );
     }
 
     return (
-      <React.Fragment key={partIndex}>
-        {part ? (
-          <Text style={[styles.codeText, isComputerMap && styles.codeTextBook]}>
-            {isComputerMap ? part : renderHighlightedText(part)}
-          </Text>
-        ) : null}
-        
-        {!isLastPart && (
-          <React.Fragment>
-            {!isComputerMap && <Text>{"\u200B"}</Text>}
-            
-            <Pressable 
-              key={`blank-${globalBlankIndex}`}
-              onPress={(e) => {
-                e.stopPropagation();
-                soundManager.playBlankTapSound(1.0);
-                if (onBlankPress) onBlankPress(globalBlankIndex);
-              }}
-              ref={(ref) => {
-                if (ref) {
-                  blankRefs.current[globalBlankIndex] = ref;
-                }
-              }}
-              hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
-              style={[
-                styles.codeBlankContainer,
-                !isComputerMap && {
-                  transform: [{ translateY: gameScale(4) }],
-                  maxWidth: '90%',
-                },
-                globalBlankIndex === selectedBlankIndex && styles.currentBlank,
-                isCorrectBlank && styles.correctBlank,
-                isWrong && styles.wrongBlank,
-                isComputerMap && styles.codeBlankBook,
-                isComputerMap && globalBlankIndex === selectedBlankIndex && styles.currentBlankBook,
-              ]}
-            >
-              <Text style={[styles.codeBlankText, isComputerMap && styles.codeBlankTextBook]}>
-                {selectedAnswers?.[globalBlankIndex] != null
-                  ? options?.[selectedAnswers[globalBlankIndex]] || '_'
-                  : '_'}
-              </Text>
-            </Pressable>
-
-            {/* Zero-width space allows the text engine to wrap after the blank if needed */}
-            {!isComputerMap && <Text>{"\u200B"}</Text>}
-          </React.Fragment>
-        )}
-      </React.Fragment>
-    );
-  });
-
-  // Keep the original View wrapper for Computer map to preserve its specific layout
-  if (isComputerMap) {
-    return (
-      <View style={styles.codeLineContainer}>
+      <Text style={styles.codeLineTextWrapper}>
         {renderedParts}
-      </View>
+      </Text>
     );
-  }
-
-  // Use a Text wrapper for the Code Editor to enable perfect inline wrapping
-  return (
-    <Text style={styles.codeLineTextWrapper}>
-      {renderedParts}
-    </Text>
-  );
-}, [cumulativeBlankCounts, canProceed, isAnswerCorrect, selectedAnswers, selectedBlankIndex, options, correctAnswersList, onBlankPress, isComputerMap]);
+  }, [
+    cumulativeBlankCounts,
+    canProceed,
+    isAnswerCorrect,
+    selectedAnswers,
+    selectedBlankIndex,
+    options,
+    correctAnswersList,
+    onBlankPress,
+    isComputerMap,
+    highlightedLines,
+    lineMeta,
+  ]);
 
   if (!currentQuestion) {
     return (
@@ -343,7 +431,6 @@ const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
           currentQuestion.challenge_type === 'multiple choice') ? (
           <CodeEditor 
             key={currentQuestion.id} 
-            // Only update currentQuestion reference when actual question data or correctness changes
             currentQuestion={useMemo(() => ({
               ...currentQuestion,
               question: displayQuestion 
@@ -364,6 +451,8 @@ const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
             onExpectedToggle={onExpectedToggle}
             previewMode={previewMode}
             onPreviewModeToggle={onPreviewModeToggle}
+            blankLineIndexes={blankLineIndexes}
+            onUserScroll={handleUserScroll}
             shouldDelayAnimation={isPvpMode}
           />
         ) : (
@@ -382,14 +471,13 @@ const renderSyntaxHighlightedLine = useCallback((line, lineIndex) => {
 };
 
 export default React.memo(GameQuestions, (prev, next) => {
-  // Use faster reference or length checks instead of JSON.stringify for large arrays
   return (
     prev.currentQuestion?.id === next.currentQuestion?.id &&
     prev.activeTab === next.activeTab && 
     prev.isAnswerCorrect === next.isAnswerCorrect &&
     prev.canProceed === next.canProceed &&
     prev.selectedBlankIndex === next.selectedBlankIndex &&
-    prev.selectedAnswers === next.selectedAnswers && // Reference equality for Redux/State updates
+    prev.selectedAnswers === next.selectedAnswers && 
     prev.submissionResult === next.submissionResult &&
     prev.reviewGuide === next.reviewGuide &&
     prev.showOutputInScreenPlay === next.showOutputInScreenPlay
