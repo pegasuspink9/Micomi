@@ -16,6 +16,7 @@ import LevelCompletionModal from './Components/GameOver And Win/LevelCompletionM
 import { soundManager } from './Components/Actual Game/Sounds/UniversalSoundManager';
 import { gameScale } from './Components/Responsiveness/gameResponsive';
 import GamePauseModal from './Components/Actual Game/Screen Play/Pauses/GamePauseModal';
+import TutorialOverlay from './Components/tutorial/tutorial';
 import DialogueOverlay from './Components/Actual Game/Dialogue/DialogueOverlay';
 import MainLoading from './Components/Actual Game/Loading/MainLoading';
 import Micomic from './Micomic';
@@ -32,6 +33,7 @@ export default function GamePlay() {
   const matchId = typeof params.matchId === 'string' ? params.matchId : null;
   const isPvpMode = params.mode === 'pvp' || Boolean(matchId);
   const levelData = params.levelData ? JSON.parse(params.levelData) : null;
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
   const [thirdGridHeight, setThirdGridHeight] = useState(gameScale(844 * 0.10));
   //  Simplified card state - only track current image URL
@@ -43,6 +45,10 @@ export default function GamePlay() {
 
 
   const [showDialogue, setShowDialogue] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [screenPlayLayout, setScreenPlayLayout] = useState(null);
+  const [gameQuestionsLayout, setGameQuestionsLayout] = useState(null);
+  const [thirdGridLayout, setThirdGridLayout] = useState(null);
 
   console.log('🎮 GamePlay component mounted with:', { 
     levelId, 
@@ -83,6 +89,7 @@ export default function GamePlay() {
   const hasTriggeredGameOver = useRef(false);
   const hasTriggeredLevelCompletion = useRef(false);
   const hasShownVSModalRef = useRef(false);
+  const hasAutoShownTutorialRef = useRef(false); // Track auto tutorial so it only plays once
   const lastPvpCardChallengeIdRef = useRef(null);
   const lastSubmissionKey = useRef(null); 
   const lastPlayedAudioKey = useRef(null);
@@ -335,6 +342,26 @@ export default function GamePlay() {
     showGameplay,
     showVSModal,
   ]);
+
+  // AUTO-TUTORIAL TRIGGER FOR LEVEL 2
+  useEffect(() => {
+    if (
+      levelId === 2 && 
+      showGameplay && 
+      cardDisplaySequence === 'grid' && 
+      !hasAutoShownTutorialRef.current
+    ) {
+      console.log('🎓 Level 2 detected and attack card closed - Auto-starting tutorial');
+      hasAutoShownTutorialRef.current = true;
+      
+      // Short delay so the card modal fully dismisses before opening the tutorial
+      const timer = setTimeout(() => {
+        setShowTutorial(true);
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [levelId, showGameplay, cardDisplaySequence]);
 
   useEffect(() => {
     const submission = gameState?.submissionResult;
@@ -692,6 +719,11 @@ export default function GamePlay() {
   
   const shouldHideThirdGrid = !isInteractiveTabActive || !isInteractiveChallenge;
 
+  const startTutorial = useCallback(() => {
+    setShowPauseModal(false);
+    setShowTutorial(true);
+  }, []);
+
 
   
   const handleEnemyComplete = useCallback(() => {
@@ -891,6 +923,7 @@ export default function GamePlay() {
     hasTriggeredGameOver.current = false;
     hasTriggeredLevelCompletion.current = false;
     hasShownVSModalRef.current = false;
+    hasAutoShownTutorialRef.current = false; // Reset auto-tutorial tracking on retry
 
     setSelectedAnswers([]); 
     setBorderColor('white');
@@ -1204,7 +1237,10 @@ export default function GamePlay() {
           <View style={styles.gameLayoutContainer}>
             {isPvpMode ? null : null}
 
-            <View style={styles.screenPlayContainer}>
+            <View
+              style={styles.screenPlayContainer}
+              onLayout={(event) => setScreenPlayLayout(event.nativeEvent.layout)}
+            >
               <ScreenPlay 
                 gameState={gameState}
                 isPaused={false}
@@ -1260,27 +1296,32 @@ export default function GamePlay() {
               )}
             </View>
 
-            <GameQuestions 
-              currentQuestion={currentChallenge}
-              selectedAnswers={selectedAnswers}
-                getBlankIndex={getBlankIndex}
-                onTabChange={handleGameTabChange}
-                activeTab={activeGameTab}
-                isPvpMode={isPvpMode}
-                selectedBlankIndex={selectedBlankIndex}
-                onBlankPress={handleBlankSelect} 
-                isAnswerCorrect={resolvedSubmissionIsCorrect}
-                canProceed={canProceed}
-                submissionResult={gameState?.submissionResult}
-                reviewGuide={reviewGuide}
-                showOutputInScreenPlay={showOutputInScreenPlay}
-                onOutputToggle={handleOutputToggle}
-                showExpectedInScreenPlay={showExpectedOutputInScreenPlay}
-                onExpectedToggle={handleExpectedToggle}
-                previewMode={outputPreviewMode}
-                onPreviewModeToggle={handleOutputPreviewToggle}
-                isLevelCompletionModalVisible={showLevelCompletionModal}
-            />
+            <View
+              style={styles.gameQuestionsContainer}
+              onLayout={(event) => setGameQuestionsLayout(event.nativeEvent.layout)}
+            >
+              <GameQuestions 
+                currentQuestion={currentChallenge}
+                selectedAnswers={selectedAnswers}
+                  getBlankIndex={getBlankIndex}
+                  onTabChange={handleGameTabChange}
+                  activeTab={activeGameTab}
+                  isPvpMode={isPvpMode}
+                  selectedBlankIndex={selectedBlankIndex}
+                  onBlankPress={handleBlankSelect} 
+                  isAnswerCorrect={resolvedSubmissionIsCorrect}
+                  canProceed={canProceed}
+                  submissionResult={gameState?.submissionResult}
+                  reviewGuide={reviewGuide}
+                  showOutputInScreenPlay={showOutputInScreenPlay}
+                  onOutputToggle={handleOutputToggle}
+                  showExpectedInScreenPlay={showExpectedOutputInScreenPlay}
+                  onExpectedToggle={handleExpectedToggle}
+                  previewMode={outputPreviewMode}
+                  onPreviewModeToggle={handleOutputPreviewToggle}
+                  isLevelCompletionModalVisible={showLevelCompletionModal}
+              />
+            </View>
 
             <View 
               style={[
@@ -1290,6 +1331,7 @@ export default function GamePlay() {
                   display: shouldHideThirdGrid ? 'none' : 'flex',
                 }
               ]}
+              onLayout={(event) => setThirdGridLayout(event.nativeEvent.layout)}
             >
               <ThirdGrid 
                 currentQuestion={currentChallenge}
@@ -1349,6 +1391,18 @@ export default function GamePlay() {
               visible={showDialogue}
               dialogueData={gameState?.dialogue}
               onComplete={handleDialogueComplete}
+            />
+
+            <TutorialOverlay
+              visible={showTutorial}
+              onClose={() => setShowTutorial(false)}
+              screenPlayLayout={screenPlayLayout}
+              gameQuestionsLayout={gameQuestionsLayout}
+              thirdGridLayout={thirdGridLayout}
+              thirdGridHeight={thirdGridHeight}
+              shouldHideThirdGrid={shouldHideThirdGrid}
+              screenWidth={screenWidth}
+              screenHeight={screenHeight}
             />
            
 
@@ -1416,6 +1470,7 @@ export default function GamePlay() {
         visible={showPauseModal}
         onResume={handleResume}
         onBack={handleHome}
+        onHowToPlay={startTutorial}
         isMuted={isMuted}
         onToggleMute={handleToggleMute}
       />

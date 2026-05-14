@@ -18,6 +18,7 @@ const GamePauseModal = ({
   visible = false, 
   onResume = () => {}, 
   onBack = () => {},
+  onHowToPlay = () => {},
   isMuted = false,
   onToggleMute = () => {}
 }) => {
@@ -229,6 +230,10 @@ const GamePauseModal = ({
     handleClose(onResume);
   };
 
+  const handleHowToPlay = () => {
+    handleClose(onHowToPlay);
+  };
+
   const handleBack = () => {
     handleClose(onBack);
   };
@@ -351,24 +356,24 @@ const GamePauseModal = ({
                       }
                     ]}
                   >
-                    {/* Resume Button */}
+                    {/* How To Play Button */}
                     <Pressable 
                       style={({ pressed }) => [
                         styles.buttonWrapper,
                         pressed && styles.buttonPressed
                       ]}
-                      onPress={handleResume}
+                      onPress={handleHowToPlay}
                       disabled={isAnimating}
                     >
                       <View style={styles.buttonBorderOuter}>
                         <LinearGradient
-                          colors={['#2d8a4e', '#28a745', '#2d8a4e']}
+                          colors={['#0ea5e9', '#0284c7', '#0ea5e9']}
                           start={{ x: 0, y: 0 }}
                           end={{ x: 1, y: 1 }}
                           style={styles.buttonGradient}
                         >
-                          <Ionicons name="play" size={gameScale(24)} color="#fff" />
-                          <Text style={styles.buttonText}>Resume</Text>
+                          <Ionicons name="help-circle-outline" size={gameScale(24)} color="#fff" />
+                          <Text style={styles.buttonText}>How to Play</Text>
                         </LinearGradient>
                       </View>
                     </Pressable>
