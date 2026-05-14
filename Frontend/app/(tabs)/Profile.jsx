@@ -4,13 +4,12 @@ import {
   View, 
   ScrollView, 
   StyleSheet,
-  ActivityIndicator,
   TouchableOpacity,
   ImageBackground,
   // Modal, // Removed Modal
-  FlatList, 
-  Image 
+  
 } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -24,6 +23,7 @@ import StatsGridSection from '../Components/Profile Components/StatsGridSection'
 import InventorySection from '../Components/Profile Components/InventorySection';
 import ProfileRankHistorySection from '../Components/Profile Components/ProfileRankHistorySection';
 import { pvpService } from '../services/pvpService';
+import EditProfile from '../Components/Profile Components/EditProfile';
 
 export default function Profile() {
   const router = useRouter();
@@ -37,13 +37,14 @@ export default function Profile() {
     updateAvatar,
     isSelectingAvatar,
     selectTheme,
-    purchaseTheme
+    purchaseTheme,
+    updateProfile
   } = usePlayerProfile();
 
   const [inventoryTab, setInventoryTab] = useState('Badges');
   const [profileMode, setProfileMode] = useState('Classic');
   const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
-  const [selectedAvatarId, setSelectedAvatarId] = useState(null);
+  const [showProfileDetails, setShowProfileDetails] = useState(false);
   const [rankHistory, setRankHistory] = useState([]);
   const [rankHistoryLoading, setRankHistoryLoading] = useState(false);
   const [rankHistoryError, setRankHistoryError] = useState(null);
@@ -75,14 +76,9 @@ export default function Profile() {
     }, [loadPlayerProfile, loadRankHistory])
   );
 
-  const handleAvatarSelect = async () => {
-    if (!selectedAvatarId) return;
-    const result = await updateAvatar(selectedAvatarId);
-    if (result.success) {
-      setIsAvatarModalVisible(false);
-      setSelectedAvatarId(null);
-    }
-  };
+  const openProfileDetails = useCallback(() => {
+    setShowProfileDetails(true);
+  }, []);
 
   const handleOpenSocial = useCallback(() => {
     router.push('/social');
@@ -143,7 +139,8 @@ export default function Profile() {
             expPoints={playerData.expPoints}
             maxLevelExp={playerData.maxLevelExp}
             playerAvatar={playerData.playerAvatar}
-            onAvatarPress={() => setIsAvatarModalVisible(true)}
+            onAvatarPress={openProfileDetails}
+            onOpenAvatarChooser={() => setIsAvatarModalVisible(true)}
             friendsCount={playerData.friendsCount}
             followerCount={playerData.followerCount}
             onSocialPress={handleOpenSocial}
@@ -191,67 +188,17 @@ export default function Profile() {
           <View style={{ height: gameScale(16) }} />
         </ScrollView>
 
-        {/* CUSTOM ABSOLUTE VIEW (Replaces Modal) */}
-        {isAvatarModalVisible && (
-          <View style={styles.modalOverlay}>
-            <LinearGradient
-              colors={['#1a2a44', '#0d1625']}
-              style={styles.modalContent}
-            >
-              <Text style={styles.modalTitle}>Choose Your Avatar</Text>
-              
-              <FlatList
-                data={availableAvatars}
-                numColumns={3}
-                keyExtractor={(item) => item.id.toString()}
-                contentContainerStyle={styles.avatarGrid}
-                renderItem={({ item }) => (
-                  <TouchableOpacity 
-                    style={[
-                      styles.avatarOption,
-                      selectedAvatarId === item.id && styles.avatarOptionSelected
-                    ]}
-                    onPress={() => setSelectedAvatarId(item.id)}
-                  >
-                    <View style={styles.modalAvatarOuter}>
-                      <View style={styles.modalAvatarInner}>
-                        <Image source={{ uri: item.url }} style={styles.modalAvatarImage} />
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                )}
-              />
-
-              <View style={styles.modalButtonContainer}>
-                <TouchableOpacity 
-                  style={[styles.modalButton, styles.cancelButton]} 
-                  onPress={() => {
-                    setIsAvatarModalVisible(false);
-                    setSelectedAvatarId(null);
-                  }}
-                >
-                  <Text style={styles.buttonText}>Cancel</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={[
-                    styles.modalButton, 
-                    styles.confirmButton,
-                    (!selectedAvatarId || isSelectingAvatar) && styles.buttonDisabled
-                  ]} 
-                  onPress={handleAvatarSelect}
-                  disabled={!selectedAvatarId || isSelectingAvatar}
-                >
-                  {isSelectingAvatar ? (
-                    <ActivityIndicator color="white" size="small" />
-                  ) : (
-                    <Text style={styles.buttonText}>Use Avatar</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </LinearGradient>
-          </View>
-        )}
+        <EditProfile
+          visible={showProfileDetails}
+          onClose={() => setShowProfileDetails(false)}
+          playerData={playerData}
+          availableAvatars={availableAvatars}
+          updateProfile={updateProfile}
+          updateAvatar={updateAvatar}
+          isSelectingAvatar={isSelectingAvatar}
+          isAvatarModalVisible={isAvatarModalVisible}
+          setIsAvatarModalVisible={setIsAvatarModalVisible}
+        />
 
       </LinearGradient>
     </View>
@@ -396,5 +343,31 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: 'DynaPuff',
     fontSize: gameScale(14),
+  },
+  fieldRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: gameScale(8),
+    paddingHorizontal: gameScale(12),
+    borderRadius: gameScale(8),
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderWidth: gameScale(1),
+    borderColor: 'rgba(255,255,255,0.06)'
+  },
+  fieldText: {
+    color: '#fff',
+    fontSize: gameScale(14),
+    flex: 1,
+    marginRight: gameScale(8),
+    fontFamily: 'DynaPuff'
+  },
+  fieldInput: {
+    color: '#fff',
+    fontSize: gameScale(14),
+    flex: 1,
+    marginRight: gameScale(8),
+    fontFamily: 'DynaPuff',
+    paddingVertical: 0,
   },
 });

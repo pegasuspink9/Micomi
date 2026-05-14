@@ -141,6 +141,18 @@ export const usePlayerProfile = () => {
     }
   }, [loadPlayerProfile]);
 
+  const updateProfile = useCallback(async (payload) => {
+    try {
+      const result = await playerService.updatePlayerProfile(payload);
+      // Refresh local data after successful update
+      await loadPlayerProfile();
+      return { success: true, data: result };
+    } catch (err) {
+      console.error('Update profile failed:', err);
+      return { success: false, error: err.message };
+    }
+  }, [loadPlayerProfile]);
+
   const refreshThemes = useCallback(async () => {
     try {
       const themesPayload = await playerService.getThemes();
@@ -281,6 +293,7 @@ export const usePlayerProfile = () => {
     // Actions
     loadPlayerProfile,
     updateAvatar,
+    updateProfile,
     clearError,
     refreshPlayerData,
     refreshThemes,

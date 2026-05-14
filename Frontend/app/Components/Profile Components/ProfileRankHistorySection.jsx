@@ -353,8 +353,8 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   rankBackgroundImage: {
-    width: gameScale(300),
-    height: gameScale(300),
+    width: gameScale(200),
+    height: gameScale(200),
     opacity: 0.6,
   },
   characterBackgroundImage: {

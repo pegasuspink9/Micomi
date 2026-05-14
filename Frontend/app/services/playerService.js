@@ -103,6 +103,22 @@ export const playerService = {
     }
   },
 
+  updatePlayerProfile: async (payload) => {
+    try {
+      console.log('👤 Updating player profile with:', payload);
+      const response = await apiService.put('/player/profile', payload);
+
+      if (!response || !response.success) {
+        throw new Error((response && response.message) || 'Failed to update profile');
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Failed to update player profile:', error);
+      throw error;
+    }
+  },
+
   getLastBadgeUpdate: async () => {
     try {
       const timestamp = await AsyncStorage.getItem('badge_selection_updated');
