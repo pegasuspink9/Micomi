@@ -257,6 +257,7 @@ model PlayerProgress {
   has_permuted_ss                 Boolean?      @default(false)
   permutation_mapping             Json?
   has_ryron_reveal                Boolean?      @default(false)
+  retry_reveal_map                Json?         @default("{}")
   wrong_challenges_count          Int           @default(0)
   boss_skill_activated            Boolean?      @default(false)
   has_dollar_sign_ss              Boolean       @default(false)

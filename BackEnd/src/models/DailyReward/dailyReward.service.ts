@@ -131,11 +131,20 @@ export const claimDailyReward = async (req: Request, res: Response) => {
         differenceInCalendarDays(now, player.daily_reward_last_claimed_at) ===
           0;
 
+      const nextRewardDay = todayRewardDay >= 7 ? 1 : todayRewardDay + 1;
+
       if (alreadyClaimedToday) {
+        if (rewardId === nextRewardDay) {
+          return {
+            success: false as const,
+            status: 400,
+            message: `You have already claimed today's reward. Please come back tomorrow to claim Day ${nextRewardDay}.`,
+          };
+        }
         return {
           success: false as const,
           status: 400,
-          message: "Daily reward already claimed today",
+          message: `Daily reward already claimed today. Come back tomorrow for Day ${nextRewardDay}.`,
         };
       }
 
@@ -143,7 +152,7 @@ export const claimDailyReward = async (req: Request, res: Response) => {
         return {
           success: false as const,
           status: 400,
-          message: `Today you can only claim Day ${todayRewardDay}`,
+          message: `Today you can only claim Day ${todayRewardDay}.`,
         };
       }
 
@@ -167,7 +176,7 @@ export const claimDailyReward = async (req: Request, res: Response) => {
         data: {
           claimed_day: rewardId,
           reward,
-          next_claim_day: rewardId >= 7 ? 1 : rewardId + 1,
+          next_claim_day: nextRewardDay,
           claimed_at: now,
           level_up: newLevel > player.level,
           old_level: player.level,

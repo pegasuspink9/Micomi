@@ -34,6 +34,7 @@ export const getAllPlayerCharacter = async (req: Request, res: Response) => {
         player_id: true,
         username: true,
         coins: true,
+        diamonds: true,
       },
     });
 

@@ -25,6 +25,61 @@ function fillBlank(match: BlankMatch, answer: string): string {
   return answer;
 }
 
+function revealBlanksByIndices(
+  question: string,
+  answers: string[],
+  indicesToReveal: Set<number>,
+  blanks: BlankMatch[],
+): {
+  success: boolean;
+  filledQuestion?: string;
+  remainingAnswers?: string[];
+  error?: string;
+} {
+  if (blanks.length === 0) {
+    return {
+      success: false,
+      error: "No blanks found in question",
+    };
+  }
+
+  if (blanks.length !== answers.length) {
+    return {
+      success: false,
+      error: `Mismatch: ${blanks.length} blanks vs ${answers.length} answers`,
+    };
+  }
+
+  let filledQuestion = question;
+  let offset = 0;
+  const remainingAnswers: string[] = [];
+
+  for (let i = 0; i < blanks.length; i++) {
+    const blank = blanks[i];
+    const answer = answers[i];
+
+    if (indicesToReveal.has(i)) {
+      const replacement = fillBlank(blank, answer);
+      const actualIndex = blank.index + offset;
+
+      filledQuestion =
+        filledQuestion.substring(0, actualIndex) +
+        replacement +
+        filledQuestion.substring(actualIndex + 1);
+
+      offset += replacement.length - 1;
+    } else {
+      remainingAnswers.push(answer);
+    }
+  }
+
+  return {
+    success: true,
+    filledQuestion,
+    remainingAnswers,
+  };
+}
+
 export function revealAllBlanks(
   question: string,
   answers: string[],
@@ -113,44 +168,19 @@ export function revealRandomBlanks(
   const shuffled = allIndices.sort(() => 0.5 - Math.random());
   const indicesToReveal = new Set(shuffled.slice(0, countToReveal));
 
-  let filledQuestion = question;
-  let offset = 0;
-  const remainingAnswers: string[] = [];
-
-  for (let i = 0; i < blanks.length; i++) {
-    const blank = blanks[i];
-    const answer = answers[i];
-
-    if (indicesToReveal.has(i)) {
-      const replacement = fillBlank(blank, answer);
-      const actualIndex = blank.index + offset;
-
-      filledQuestion =
-        filledQuestion.substring(0, actualIndex) +
-        replacement +
-        filledQuestion.substring(actualIndex + 1);
-
-      offset += replacement.length - 1;
-    } else {
-      remainingAnswers.push(answer);
-    }
-  }
-
-  return {
-    success: true,
-    filledQuestion,
-    remainingAnswers,
-  };
+  return revealBlanksByIndices(question, answers, indicesToReveal, blanks);
 }
 
 export async function applyRetryReveal(
   currentChallenge: any,
   effectiveCorrectAnswer: string[],
+  persistedRevealIndices?: number[],
 ): Promise<{
   success: boolean;
   revealedChallenge?: any;
   error?: string;
   isPartialReveal: boolean;
+  revealedIndices?: number[];
 }> {
   const totalBlanks = effectiveCorrectAnswer.length;
 
@@ -165,10 +195,27 @@ export async function applyRetryReveal(
   const blanksToLeave = 5;
   const amountToReveal = totalBlanks - blanksToLeave;
 
-  const result = revealRandomBlanks(
-    currentChallenge.question ?? "",
+  const question = currentChallenge.question ?? "";
+  const blanks = parseAndValidateBlanks(question);
+
+  const existingIndices = Array.isArray(persistedRevealIndices)
+    ? persistedRevealIndices
+        .filter((index) => Number.isInteger(index))
+        .filter((index) => index >= 0 && index < blanks.length)
+    : [];
+
+  const indicesToReveal =
+    existingIndices.length > 0
+      ? existingIndices
+      : Array.from({ length: blanks.length }, (_, i) => i)
+          .sort(() => 0.5 - Math.random())
+          .slice(0, amountToReveal);
+
+  const result = revealBlanksByIndices(
+    question,
     effectiveCorrectAnswer,
-    amountToReveal,
+    new Set(indicesToReveal),
+    blanks,
   );
 
   if (!result.success) {
@@ -191,6 +238,7 @@ export async function applyRetryReveal(
     success: true,
     revealedChallenge: modifiedChallenge,
     isPartialReveal: true,
+    revealedIndices: [...new Set(indicesToReveal)].sort((a, b) => a - b),
   };
 }
 

@@ -272,6 +272,7 @@ export interface PvpDailySubmitAnswerResult {
 export interface PvpMatchHistoryCharacter {
   player_id: number;
   player_name: string;
+  player_username: string;
   player_avatar: string;
   player_rank_name: string;
   player_rank_image: string;
@@ -285,6 +286,7 @@ export interface PvpMatchHistoryCharacter {
 export interface PvpMatchHistoryEnemy {
   player_id: number;
   player_name: string;
+  player_username: string;
   player_avatar: string;
   player_rank_name: string;
   player_rank_image: string;

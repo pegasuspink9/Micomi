@@ -2796,6 +2796,7 @@ export const getPlayerMatchHistory = async (
     include: {
       player: {
         select: {
+          username: true,
           player_avatar: true,
           player_rank_name: true,
           player_rank_image: true,
@@ -2820,6 +2821,7 @@ export const getPlayerMatchHistory = async (
     include: {
       player: {
         select: {
+          username: true,
           player_avatar: true,
           player_rank_name: true,
           player_rank_image: true,
@@ -2860,6 +2862,7 @@ export const getPlayerMatchHistory = async (
       character: {
         player_id: result.player_id,
         player_name: result.player_name,
+        player_username: result.player.username,
         player_avatar: result.player.player_avatar || DEFAULT_AVATAR_URL,
         player_rank_name: result.player.player_rank_name,
         player_rank_image: result.player.player_rank_image,
@@ -2873,6 +2876,7 @@ export const getPlayerMatchHistory = async (
         ? {
             player_id: opponent.player_id,
             player_name: opponent.player_name,
+            player_username: opponent.player.username,
             player_avatar: opponent.player?.player_avatar || DEFAULT_AVATAR_URL,
             player_rank_name: opponent.player.player_rank_name,
             player_rank_image: opponent.player.player_rank_image,

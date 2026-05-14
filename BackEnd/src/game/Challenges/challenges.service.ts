@@ -1109,6 +1109,40 @@ export const submitChallengeService = async (
     finalAnswer.length === 1 &&
     finalAnswer[0] === "Attack";
 
+  if (!isRevealConfirmed) {
+    const retryRevealMap =
+      currentProgress.retry_reveal_map &&
+      typeof currentProgress.retry_reveal_map === "object"
+        ? (currentProgress.retry_reveal_map as Record<string, number[]>)
+        : {};
+    const revealIndices = Array.isArray(retryRevealMap[key])
+      ? retryRevealMap[key]
+      : [];
+    const expectedRemaining =
+      effectiveCorrectAnswer.length - revealIndices.length;
+
+    if (
+      revealIndices.length > 0 &&
+      finalAnswer.length === expectedRemaining &&
+      effectiveCorrectAnswer.length >= 8
+    ) {
+      const revealSet = new Set(revealIndices);
+      const mergedAnswer: string[] = [];
+      let remainingIdx = 0;
+
+      for (let i = 0; i < effectiveCorrectAnswer.length; i++) {
+        if (revealSet.has(i)) {
+          mergedAnswer.push(effectiveCorrectAnswer[i]);
+        } else {
+          mergedAnswer.push(finalAnswer[remainingIdx] ?? "");
+          remainingIdx += 1;
+        }
+      }
+
+      finalAnswer = mergedAnswer;
+    }
+  }
+
   const isCorrect = isRevealConfirmed
     ? true
     : multisetEqual(finalAnswer, effectiveCorrectAnswer);
@@ -1865,6 +1899,7 @@ export const submitChallengeService = async (
         enemy_hp: enemyMaxHealth,
         player_answer: {},
         wrong_challenges: [],
+        retry_reveal_map: {},
         attempts: 0,
         coins_earned: 0,
         total_points_earned: 0,
@@ -2652,13 +2687,49 @@ const prepareChallenge = async (
       }
     } else {
       if (effectiveCorrectAnswer.length >= 8) {
+        const challengeKey = challenge.challenge_id.toString();
+        const retryRevealMap =
+          progress.retry_reveal_map &&
+          typeof progress.retry_reveal_map === "object"
+            ? (progress.retry_reveal_map as Record<string, number[]>)
+            : {};
+        const existingRevealIndices = Array.isArray(
+          retryRevealMap[challengeKey],
+        )
+          ? retryRevealMap[challengeKey]
+          : undefined;
+
         const revealResult = await applyRetryReveal(
           modifiedChallenge,
           effectiveCorrectAnswer,
+          existingRevealIndices,
         );
 
         if (revealResult.success && revealResult.revealedChallenge) {
           modifiedChallenge = revealResult.revealedChallenge;
+
+          const revealedIndices = revealResult.revealedIndices || [];
+          const shouldPersist =
+            revealedIndices.length > 0 &&
+            JSON.stringify(existingRevealIndices || []) !==
+              JSON.stringify(revealedIndices);
+
+          if (shouldPersist) {
+            await prisma.playerProgress.update({
+              where: {
+                player_id_level_id: {
+                  player_id: progress.player_id,
+                  level_id: progress.level_id,
+                },
+              },
+              data: {
+                retry_reveal_map: {
+                  ...retryRevealMap,
+                  [challengeKey]: revealedIndices,
+                },
+              },
+            });
+          }
 
           console.log(
             `- Retry Reveal Applied: Partial reveal (leaving 5 blanks) for challenge ${challenge.challenge_id}`,

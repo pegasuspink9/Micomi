@@ -66,6 +66,13 @@ export async function updateProgressForChallenge(
 
   const expected_output = [""];
 
+  const retryRevealMap =
+    progress.retry_reveal_map && typeof progress.retry_reveal_map === "object"
+      ? (progress.retry_reveal_map as Record<string, number[]>)
+      : {};
+  let nextRetryRevealMap = retryRevealMap;
+  let shouldUpdateRetryRevealMap = false;
+
   if (isCorrect && !alreadyAnsweredCorrectly) {
     const challengeExpected = expected_output ?? [];
     newExpectedOutput = [
@@ -88,6 +95,13 @@ export async function updateProgressForChallenge(
     wrongChallenges = wrongChallenges.filter((id) => id !== challengeId);
     consecutiveCorrects += 1;
     consecutiveWrongs = 0;
+
+    const retryKey = challengeId.toString();
+    if (retryRevealMap && retryRevealMap[retryKey]) {
+      nextRetryRevealMap = { ...retryRevealMap };
+      delete nextRetryRevealMap[retryKey];
+      shouldUpdateRetryRevealMap = true;
+    }
 
     if (consecutiveCorrects > 3) {
       consecutiveCorrects = 1;
@@ -239,6 +253,10 @@ export async function updateProgressForChallenge(
     has_dollar_sign_ss: hasDollarSign,
     has_reverse_words_ss: hasReverseWords,
   };
+
+  if (shouldUpdateRetryRevealMap) {
+    updateData.retry_reveal_map = nextRetryRevealMap;
+  }
 
   const updatedProgress = await prisma.playerProgress.update({
     where: { progress_id: progressId },

@@ -75,6 +75,7 @@ export async function updateQuestProgress(
     console.log(`Updated successfully: ${updatedPQ.current_value}`);
 
     if (completed) {
+      //socket for newly completed quests
       io.to(playerId.toString()).emit("questCompleted", {
         quest_id: updatedPQ.quest.quest_id,
         title: updatedPQ.quest.title,

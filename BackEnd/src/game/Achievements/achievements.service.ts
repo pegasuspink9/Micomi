@@ -180,6 +180,7 @@ export const checkAchievements = async (playerId: number) => {
   }
 
   if (newlyUnlockedForEmit.length > 0) {
+    //socket for newly unlocked badges
     io.to(playerId.toString()).emit(
       "achievementUnlocked",
       newlyUnlockedForEmit,
