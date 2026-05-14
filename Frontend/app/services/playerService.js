@@ -176,6 +176,7 @@ export const playerService = {
       },
       playerId: apiData.player_id, 
       playerName: apiData.player_name,
+      email: apiData.email,
       username: apiData.username, 
       selectedBadge: selectedBadge,
       playerLevel: apiData.player_level,
