@@ -194,7 +194,7 @@ export default function PvpHistoryPage() {
                                   <View style={[styles.circularAvatar, styles.avatarPlaceholder]} />
                                 )}
                                 <View>
-                                    <Text style={styles.playerName}>{toLabel(item?.character?.player_name)}</Text>
+                                    <Text style={styles.playerName}>{toLabel(item?.character?.player_username)}</Text>
                                     <Text style={styles.heroName}>Hero: {toLabel(item?.character?.character_name)}</Text>
                                 </View>
                               </View>
@@ -206,7 +206,7 @@ export default function PvpHistoryPage() {
                                   <View style={[styles.circularAvatar, styles.avatarPlaceholder]} />
                                 )}
                                 <View style={{alignItems: 'flex-end'}}>
-                                    <Text style={styles.playerName}>{toLabel(item?.enemy?.player_name)}</Text>
+                                    <Text style={styles.playerName}>{toLabel(item?.enemy?.player_username)}</Text>
                                     <Text style={styles.heroName}>Hero: {toLabel(item?.enemy?.enemy_name)}</Text>
                                 </View>
                               </View>
@@ -451,15 +451,15 @@ const styles = StyleSheet.create({
     zIndex: 1, // Behind character avatar
   },
   rankBackgroundImage: {
-    width: gameScale(300), 
-    height: gameScale(300),
+    width: gameScale(200), 
+    height: gameScale(200),
     opacity: 0.6, 
   },
 
   // Character Avatar Styling
   characterBackgroundImage: {
     position: 'absolute', // Position absolutely within sideBackground
-    top: 0,
+    top: gameScale(-20), // Shift character avatar up slightly
     left: gameScale(-60), // Shift player avatar slightly to the right
     right: 0,
     bottom: 0,

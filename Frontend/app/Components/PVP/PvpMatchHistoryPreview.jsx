@@ -152,14 +152,14 @@ const PvpMatchHistoryPreview = () => {
             <View style={styles.playerInfoRow}>
               {renderAvatar(characterPlayerAvatar)}
               <View>
-                <Text style={styles.playerName} numberOfLines={1}>{toLabel(item?.character?.player_name)}</Text>
+                <Text style={styles.playerName} numberOfLines={1}>{toLabel(item?.character?.player_username)}</Text>
                 <Text style={styles.heroName} numberOfLines={1}>{toLabel(item?.character?.character_name)}</Text>
               </View>
             </View>
             <View style={[styles.playerInfoRow, styles.reversedPlayerInfo]}>
               {renderAvatar(enemyPlayerAvatar)}
               <View style={{ alignItems: 'flex-end' }}>
-                <Text style={styles.playerName} numberOfLines={1}>{toLabel(item?.enemy?.player_name)}</Text>
+                <Text style={styles.playerName} numberOfLines={1}>{toLabel(item?.enemy?.player_username)}</Text>
                 <Text style={styles.heroName} numberOfLines={1}>{toLabel(item?.enemy?.enemy_name)}</Text>
               </View>
             </View>

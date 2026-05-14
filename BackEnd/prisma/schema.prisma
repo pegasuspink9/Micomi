@@ -174,7 +174,6 @@ model Player {
   @@index([email])
   @@index([total_points])
   @@index([daily_reward_last_claimed_at])
-  @@index([has_infinite_energy, energy_reset_at])
 }
 
 model PlayerVsPlayerProgress {
@@ -257,7 +256,6 @@ model PlayerProgress {
   has_permuted_ss                 Boolean?      @default(false)
   permutation_mapping             Json?
   has_ryron_reveal                Boolean?      @default(false)
-  retry_reveal_map                Json?         @default("{}")
   wrong_challenges_count          Int           @default(0)
   boss_skill_activated            Boolean?      @default(false)
   has_dollar_sign_ss              Boolean       @default(false)
@@ -269,6 +267,7 @@ model PlayerProgress {
   used_enemy_correct_reactions    Json?         @default("[]")
   used_enemy_wrong_reactions      Json?         @default("[]")
   enemy_max_hp                    Int?
+  retry_reveal_map                Json?         @default("{}")
   level                           Level         @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
   player                          Player        @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
 

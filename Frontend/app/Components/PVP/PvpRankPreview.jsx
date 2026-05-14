@@ -193,11 +193,11 @@ const styles = StyleSheet.create({
   },
   rankImage: {
     position: 'absolute', // Make absolute
-    width: gameScale(180), // Much bigger dimension
-    height: gameScale(180),
-    left: gameScale(-50), 
+    width: gameScale(150), // Much bigger dimension
+    height: gameScale(150),
+    left: gameScale(-35), 
     // Center vertically roughly based on parent height
-    top: gameScale(-55), 
+    top: gameScale(-35), 
     opacity: 0.4, // Fade it out so text is readable
   },
   rankImagePlaceholder: {

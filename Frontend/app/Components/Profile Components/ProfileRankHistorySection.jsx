@@ -134,7 +134,7 @@ const ProfileRankHistorySection = ({ history = [], loading = false, error = null
                                       <View style={[styles.circularAvatar, styles.avatarPlaceholder]} />
                                     )}
                                     <View>
-                                      <Text style={styles.playerName}>{toLabel(item?.character?.player_name)}</Text>
+                                      <Text style={styles.playerName}>{toLabel(item?.character?.player_username)}</Text>
                                       <Text style={styles.heroName}>Hero: {toLabel(item?.character?.character_name)}</Text>
                                     </View>
                                   </View>
@@ -146,7 +146,7 @@ const ProfileRankHistorySection = ({ history = [], loading = false, error = null
                                       <View style={[styles.circularAvatar, styles.avatarPlaceholder]} />
                                     )}
                                     <View style={{ alignItems: 'flex-end' }}>
-                                      <Text style={styles.playerName}>{toLabel(item?.enemy?.player_name)}</Text>
+                                      <Text style={styles.playerName}>{toLabel(item?.enemy?.player_username)}</Text>
                                       <Text style={styles.heroName}>Hero: {toLabel(item?.enemy?.enemy_name)}</Text>
                                     </View>
                                   </View>

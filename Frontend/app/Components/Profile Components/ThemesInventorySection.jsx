@@ -124,7 +124,7 @@ const ThemesInventorySection = ({
                 ]}
               />
               <Text style={styles.themeModalName}>{pendingTheme?.theme_name || 'Theme'}</Text>
-              <Text style={styles.themeModalPrice}>Price: {pendingTheme?.price ?? 0} coins</Text>
+              <Text style={styles.themeModalPrice}>Price: {pendingTheme?.price ?? 0} diamonds</Text>
             </View>
 
             {!!themeActionError && (
@@ -147,7 +147,7 @@ const ThemesInventorySection = ({
                 {themeActionLoading ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={styles.themeModalButtonText}>Buy with coins</Text>
+                  <Text style={styles.themeModalButtonText}>Buy with diamonds</Text>
                 )}
               </TouchableOpacity>
             </View>
