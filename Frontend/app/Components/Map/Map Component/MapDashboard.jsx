@@ -140,7 +140,7 @@ const MapDashboard = ({ mapData, onClose, onEnter }) => {
                 </View>
                 <View style={styles.statCard}>
                   <Text style={styles.statValue}>—</Text>
-                  <Text style={styles.statLabel}>Enemies Total</Text>
+                  <Text style={styles.statLabel}>Challenges</Text>
                 </View>
               </View>
             </ScrollView>

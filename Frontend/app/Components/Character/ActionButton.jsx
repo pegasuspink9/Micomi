@@ -1,6 +1,8 @@
 import React from 'react';
 import { TouchableOpacity, Text, Image, ActivityIndicator, View } from 'react-native';
 
+const DIAMONDS_ICON = require('../../Components/icons/diamonds.png');
+
 const ActionButton = ({
   currentHero,
   onSelectCharacter,
@@ -13,6 +15,14 @@ const ActionButton = ({
   if (!currentHero) {
     return null; // Don't render anything if there's no hero data
   }
+
+  // Determine the correct icon source (local asset or URL)
+  const getIconSource = () => {
+    if (typeof coinIcon === 'number') {
+      return coinIcon; // Local require returns a number
+    }
+    return { uri: coinIcon }; // URL string needs uri wrapper
+  };
 
   // Case 1: Character is already purchased
   if (currentHero.is_purchased) {
@@ -46,7 +56,7 @@ const ActionButton = ({
       onPress={() => onShowBuyModal(true)}
       disabled={disabled}
     >
-      <Image source={{ uri: coinIcon }} style={styles.coinIcon} />
+      <Image source={getIconSource()} style={styles.coinIcon} />
       <Text style={styles.buttonText}>
          {currentHero.character_price}
       </Text>

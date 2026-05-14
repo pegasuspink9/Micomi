@@ -68,10 +68,10 @@ export const characterService = {
   transformCharacterData: (apiData) => {
 
      if (!apiData || apiData.length === 0) {
-      return { characters: {}, userCoins: 0 };
+      return { characters: {}, userDiamonds: 0 };
     }
 
-    const userCoins = apiData[0]?.player?.coins || 0;
+    const userDiamonds = apiData[0]?.player?.diamonds || 0;
     const transformedData = {};
     
     apiData.forEach(item => {
@@ -122,8 +122,8 @@ export const characterService = {
       };
     });
     
-    // Return both the characters and the user's coins.
-    return { characters: transformedData, userCoins };
+    // Return both the characters and the user's diamonds.
+    return { characters: transformedData, userDiamonds };
   },
 
   // Get role icon based on character type

@@ -26,7 +26,7 @@ export default function CharacterProfile() {
     error,
     purchasing,
     selecting,
-    userCoins,
+    userDiamonds,
     selectCharacter,
     purchaseCharacter,
     loadCharacters,
@@ -58,9 +58,14 @@ export default function CharacterProfile() {
     return { uri: cachedPath };
   };
 
-  const getCachedCoinIcon = () => universalAssetPreloader.getCachedAssetPath(URLS.coin);
+  const DIAMONDS_ICON = require('../../Components/icons/diamonds.png');
+
+  const getCachedCoinIcon = () => DIAMONDS_ICON;
   
   const getCachedHeroBoxBorder = () => universalAssetPreloader.getCachedAssetPath('https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760064111/Untitled_design_3_ghewno.png');
+
+  // Check if user has enough diamonds to purchase
+  const hasEnoughDiamonds = currentHero ? userDiamonds >= currentHero.character_price : false;
 
   const onVideoLoad = (status) => { if (status.isLoaded) setVideoReady(true); };
   const onVideoError = (error) => setVideoReady(false);
@@ -166,7 +171,7 @@ export default function CharacterProfile() {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <MapHeader coins={userCoins} />
+        <MapHeader coins={userDiamonds} />
       </View>
 
       <BackButton 
@@ -254,7 +259,7 @@ export default function CharacterProfile() {
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Buy Character</Text>
             <Text style={styles.modalText}>
-              Buy {currentHero?.character_name} for {currentHero?.character_price} coins?
+              Buy {currentHero?.character_name} for {currentHero?.character_price} diamonds?
             </Text>
 
             <View style={styles.modalButtons}>
@@ -267,16 +272,18 @@ export default function CharacterProfile() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.confirmButton}
+                style={[styles.confirmButton, !hasEnoughDiamonds && { opacity: 0.5 }]}
                 onPress={handlePurchase}
-                disabled={purchasing}
+                disabled={purchasing || !hasEnoughDiamonds}
               >
                 {purchasing ? (
                   <ActivityIndicator size="small" color="white" />
                 ) : (
                   <>
-                    <Image source={{ uri: getCachedCoinIcon() }} style={styles.modalCoinIcon} />
-                    <Text style={styles.confirmButtonText}>Confirm</Text>
+                    <Image source={getCachedCoinIcon()} style={styles.modalCoinIcon} />
+                    <Text style={styles.confirmButtonText}>
+                      {hasEnoughDiamonds ? 'Confirm' : 'Insufficient'}
+                    </Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -525,8 +532,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   coinIcon: {
-    width: gameScale(27),
-    height: gameScale(27),
+    marginTop: gameScale(-7),
+    width: gameScale(22),
+    height: gameScale(22),
     marginRight: gameScale(5),
   },
   modalOverlay: {
@@ -605,6 +613,7 @@ const styles = StyleSheet.create({
     marginLeft: gameScale(5),
   },
   modalCoinIcon: {
+    marginTop: gameScale(-3),
     width: gameScale(20),
     height: gameScale(20),
   },

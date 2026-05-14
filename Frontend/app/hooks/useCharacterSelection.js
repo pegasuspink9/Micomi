@@ -9,7 +9,7 @@ export const useCharacterSelection = () => {
   const [error, setError] = useState(null);
   const [purchasing, setPurchasing] = useState(false);
   const [selecting, setSelecting] = useState(false);
-  const [userCoins, setUserCoins] = useState(0);
+  const [userDiamonds, setUserDiamonds] = useState(0);
   
   const loadCharacters = useCallback(async () => {
     try {
@@ -31,8 +31,8 @@ export const useCharacterSelection = () => {
       
       // Get character data from API
       const apiData = await characterService.getPlayerCharacters();
-      const { characters: transformedData, userCoins: fetchedUserCoins } = characterService.transformCharacterData(apiData);
-      setUserCoins(fetchedUserCoins);
+      const { characters: transformedData, userDiamonds: fetchedUserDiamonds } = characterService.transformCharacterData(apiData);
+      setUserDiamonds(fetchedUserDiamonds);
 
       // ✅ Transform data to use cached paths (everything should already be cached from Map API preload)
       const dataWithCachedPaths = universalAssetPreloader.transformCharacterShopDataWithMapCache(transformedData);
@@ -192,7 +192,7 @@ export const useCharacterSelection = () => {
     error,
     purchasing,
     selecting,
-    userCoins,    
+    userDiamonds,    
     
     loadCharacters,
     purchaseCharacter,

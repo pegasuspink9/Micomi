@@ -44,7 +44,7 @@ export default function MapNavigate({ onMapChange }) {
   const [currentMapIndex, setCurrentMapIndex] = useState(0);
   const [isNavigating, setIsNavigating] = useState(false);
   const router = useRouter();
-  const { maps, error: mapError, refetch } = useMapData();
+  const { maps, error: mapError, refetch, refreshMapsIfChanged } = useMapData();
 
   const [downloadModalVisible, setDownloadModalVisible] = useState(false);
   const [isMapInfoVisible, setIsMapInfoVisible] = useState(false);
@@ -69,7 +69,8 @@ export default function MapNavigate({ onMapChange }) {
   useFocusEffect(
     useCallback(() => {
       setIsNavigating(false);
-    }, [])
+      refreshMapsIfChanged();
+    }, [refreshMapsIfChanged])
   );
     
   // --- PRELOADING LOGIC (Kept intact as requested) ---
