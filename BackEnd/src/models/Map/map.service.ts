@@ -25,10 +25,9 @@ export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
 
     const enhancedMaps = await Promise.all(
       maps.map(async (map) => {
-        const levelsData = await prisma.level.findMany({
+        const allMapLevels = await prisma.level.findMany({
           where: {
             map_id: map.map_id,
-            enemy_id: { not: null },
           },
           orderBy: { level_number: "asc" },
           include: {
@@ -44,8 +43,23 @@ export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
                 has_received_rewards: true,
               },
             },
+            challenges: true,
           },
         });
+
+        const lesson_count = allMapLevels.filter(
+          (lvl) => lvl.level_type === "micomiButton",
+        ).length;
+
+        const level_count = allMapLevels.filter(
+          (lvl) =>
+            lvl.level_type === "enemyButton" || lvl.level_type === "bossButton",
+        ).length;
+
+        const challenge_count = allMapLevels.reduce(
+          (sum, lvl) => sum + lvl.challenges.length,
+          0,
+        );
 
         const isDefaultUnlocked =
           map.map_name === "HTML" || map.map_name === "Computer";
@@ -60,11 +74,13 @@ export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
           select: { progress_id: true },
         });
 
-        const enemies = levelsData.map((lvl) => ({
-          enemy_name: lvl.enemy?.enemy_name,
-          avatar_enemy: lvl.enemy?.avatar_enemy,
-          is_defeated: lvl.playerProgress[0]?.has_received_rewards ?? false,
-        }));
+        const enemies = allMapLevels
+          .filter((lvl) => lvl.enemy_id !== null)
+          .map((lvl) => ({
+            enemy_name: lvl.enemy?.enemy_name,
+            avatar_enemy: lvl.enemy?.avatar_enemy,
+            is_defeated: lvl.playerProgress[0]?.has_received_rewards ?? false,
+          }));
 
         return {
           map_id: map.map_id,
@@ -76,6 +92,9 @@ export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
           map_image: map.map_image,
           player_id: playerIdNum,
           difficulty_level: map.difficulty_level,
+          lesson_count,
+          level_count,
+          challenge_count,
           enemies,
         };
       }),
