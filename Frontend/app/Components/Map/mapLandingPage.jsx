@@ -2,14 +2,18 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   View,
-  Animated
+  Animated,
+  TouchableOpacity,
+  Text
 } from 'react-native';
 import { Image } from 'expo-image';
 import MapNavigate from './MapNavigate';
 import MapHeader from './mapHeader';
+import AchievementModal from './AchievementModal';
 import LottieView from 'lottie-react-native';
 import { Dimensions } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { getSocket } from '../../services/socketService';
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
@@ -25,6 +29,11 @@ const BACKGROUND_KEYS = ['HTML', 'CSS', 'JavaScript', 'Computer'];
 export default function MapLandingPage() {
   const [currentMapName, setCurrentMapName] = useState('HTML');
   const [isFocused, setIsFocused] = useState(true);
+  const router = useRouter();
+  
+  // Achievement unlock modal state
+  const [achievementModalVisible, setAchievementModalVisible] = useState(false);
+  const [unlockedAchievement, setUnlockedAchievement] = useState(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -34,7 +43,63 @@ export default function MapLandingPage() {
       };
     }, [])
   );
-  
+
+  // ✅ Socket listener for achievement unlock
+  useEffect(() => {
+    let isMounted = true;
+    let socketInstance = null;
+
+    const setupSocketListener = async () => {
+      try {
+        socketInstance = await getSocket();
+        
+        if (!isMounted || !socketInstance) {
+          console.warn('⚠️ Socket not initialized or component unmounted');
+          return;
+        }
+
+        const handleAchievementUnlocked = (achievements) => {
+          console.log('🏆 Achievement unlocked:', achievements);
+          if (isMounted && achievements && achievements.length > 0) {
+            // Show the first unlocked achievement in the modal
+            setUnlockedAchievement(achievements[0]);
+            setAchievementModalVisible(true);
+          }
+        };
+
+        socketInstance.on('achievementUnlocked', handleAchievementUnlocked);
+
+        return () => {
+          if (socketInstance) {
+            socketInstance.off('achievementUnlocked', handleAchievementUnlocked);
+          }
+        };
+      } catch (error) {
+        console.error('❌ Failed to setup socket listener:', error);
+      }
+    };
+
+    const cleanup = setupSocketListener();
+
+    return () => {
+      isMounted = false;
+      if (cleanup && typeof cleanup === 'function') {
+        cleanup();
+      }
+    };
+  }, []);
+
+  const handleCloseAchievementModal = () => {
+    setAchievementModalVisible(false);
+    setUnlockedAchievement(null);
+  };
+
+  const handleViewAchievements = () => {
+    setAchievementModalVisible(false);
+    setUnlockedAchievement(null);
+    router.push('/Components/User Labs/BadgesView');
+  };
+
   const fadeAnims = useRef(
     BACKGROUND_KEYS.reduce((acc, key) => {
       acc[key] = new Animated.Value(key === 'HTML' ? 1 : 0);
@@ -104,8 +169,6 @@ export default function MapLandingPage() {
           pointerEvents="none"
         />
   
-
-
         {/* Header */}
         <View style={styles.headerContainer}>
           <MapHeader />
@@ -116,6 +179,14 @@ export default function MapLandingPage() {
           <MapNavigate onMapChange={handleGradientChange} />
         </View>
       </View>
+
+      {/* Achievement Unlock Modal */}
+      <AchievementModal
+        visible={achievementModalVisible}
+        unlockedAchievement={unlockedAchievement}
+        onClose={handleCloseAchievementModal}
+        onViewAchievements={handleViewAchievements}
+      />
     </View>
   );
 }
