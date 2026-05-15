@@ -129,6 +129,16 @@ export const playerService = {
     }
   },
 
+  getAllPlayers: async () => {
+    try {
+      const response = await apiService.get('/player');
+      return response.success ? response.data : [];
+    } catch (error) {
+      console.error('Failed to fetch all players:', error);
+      throw error;
+    }
+  },
+
   //  UPDATED: Include all raw URLs for cache transformation
   transformPlayerData: (apiData) => {
     const selectedCharacter = apiData.ownedCharacters?.find(char => char.is_selected);

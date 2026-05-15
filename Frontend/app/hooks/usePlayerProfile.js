@@ -252,6 +252,19 @@ export const usePlayerProfile = () => {
     setError(null);
   }, []);
 
+  const checkEmailExists = useCallback(async (email) => {
+    try {
+      const players = await playerService.getAllPlayers();
+      const emailExists = players.some(
+        (player) => player.email.toLowerCase() === email.toLowerCase()
+      );
+      return emailExists;
+    } catch (error) {
+      console.error('Failed to check email existence:', error);
+      throw error;
+    }
+  }, []);
+
   // Initialize on mount
   useEffect(() => {
     loadPlayerProfile().then(() => {
@@ -299,6 +312,7 @@ export const usePlayerProfile = () => {
     refreshThemes,
     selectTheme,
     purchaseTheme,
+    checkEmailExists,
     
     // Getters
     getBadges,

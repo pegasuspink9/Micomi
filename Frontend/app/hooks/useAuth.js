@@ -46,14 +46,16 @@ export const useAuth = () => {
   };
 
   const login = async (email, password) => {
-    updateGlobalState(globalUser, true);
+    // ❌ DO NOT call updateGlobalState(globalUser, true) here!
+    // It causes the entire screen to unmount, which resets your error texts.
+    
     try {
       const userData = await authService.login(email, password);
-      updateGlobalState(userData, false);
-      Alert.alert('Success', `Welcome back, ${userData.player_name}!`);
+      // Only update global state on SUCCESS
+      updateGlobalState(userData, false); 
     } catch (error) {
-      updateGlobalState(null, false);
-      Alert.alert('Login Failed', error.message);
+      // Throw the error so Login.js can catch it and show "Incorrect Password"
+      throw error;
     }
   };
 

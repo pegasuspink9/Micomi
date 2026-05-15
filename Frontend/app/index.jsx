@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   View, 
@@ -8,17 +7,17 @@ import {
   StyleSheet, 
   KeyboardAvoidingView, 
   Platform,
-  Dimensions,
   ScrollView,
-  ActivityIndicator, 
   ImageBackground
 } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { gameScale, scaleWidth, scaleHeight, hp } from './Components/Responsiveness/gameResponsive';
 import { useRouter } from 'expo-router';
 import { useAuth } from './hooks/useAuth';
+import { usePlayerProfile } from './hooks/usePlayerProfile';
 import * as WebBrowser from "expo-web-browser";
-import * as AuthSession from 'expo-auth-session';
+
+// Google & Facebook Auth Hooks
 import { useGoogleAuth } from './auth/useGoogleAuth';
 import { useFacebookAuth } from './auth/useFacebookAuth';
 
@@ -28,12 +27,14 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(''); // Holds inline error
+  const [isLoggingIn, setIsLoggingIn] = useState(false); // Controls button text
 
-  const { login, loginWithGoogle, loginWithFacebook, loading, user } = useAuth();
+  const { login, loginWithGoogle, loginWithFacebook, user } = useAuth();
+  const { checkEmailExists } = usePlayerProfile();
   const router = useRouter();
 
-  // Google & Facebook Auth Hooks
-  const { gRequest, handleGoogleLogin, redirectUri } = useGoogleAuth(loginWithGoogle);
+  const { gRequest, handleGoogleLogin } = useGoogleAuth(loginWithGoogle);
   const { fbRequest, handleFacebookLogin } = useFacebookAuth(loginWithFacebook);
 
   useEffect(() => {
@@ -44,9 +45,38 @@ export default function Login() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-        return;
+      setErrorMessage('Please enter both email and password.');
+      return;
     }
-    await login(email, password);
+
+    setErrorMessage(''); // Clear previous error
+    setIsLoggingIn(true); // Change button text to "Logging in"
+
+    try {
+      // 1. Check if email exists using playerService
+      const emailExists = await checkEmailExists(email);
+
+      // 2. If email doesn't exist, display error and stop
+      if (!emailExists) {
+        setErrorMessage('Incorrect Email.');
+        setIsLoggingIn(false);
+        return;
+      }
+
+      // 3. Email exists! Attempt to log in with password
+      await login(email, password);
+
+    } catch (error) {
+      // If network fails (e.g. localhost server is off)
+      if (error.message === 'Network Error' || error.name === 'TypeError') {
+        setErrorMessage('Network error. Is the server running?');
+      } else {
+        // 4. If login fails here, the email exists, so it MUST be an incorrect password
+        setErrorMessage('Incorrect Password.');
+      }
+    } finally {
+      setIsLoggingIn(false); // Revert button text to "Log In"
+    }
   };
 
   return (
@@ -75,26 +105,32 @@ export default function Login() {
             <View style={styles.formContainer}>
               
               {/* Email Input */}
-              <View style={styles.inputWrapper}>
+              <View style={[styles.inputWrapper, errorMessage.includes('Email') ? styles.inputErrorBorder : null]}>
                 <TextInput
                   style={styles.input}
                   placeholder="alphainvent@gmail.com"
                   placeholderTextColor="#6b7280"
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    setErrorMessage(''); // Clear error when user types
+                  }}
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
               </View>
 
               {/* Password Input */}
-              <View style={styles.inputWrapper}>
+              <View style={[styles.inputWrapper, errorMessage.includes('Password') ? styles.inputErrorBorder : null]}>
                 <TextInput
                   style={styles.input}
                   placeholder="••••••••"
                   placeholderTextColor="#6b7280"
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    setErrorMessage(''); // Clear error when user types
+                  }}
                   secureTextEntry={!showPassword}
                 />
                 <TouchableOpacity 
@@ -108,6 +144,11 @@ export default function Login() {
                   />
                 </TouchableOpacity>
               </View>
+
+              {/* Error Message Displayed Inline */}
+              {errorMessage ? (
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              ) : null}
 
               {/* Forgot Password */}
               <TouchableOpacity style={styles.forgotPassContainer} onPress={() => router.push('/ForgotPassword')}>
@@ -144,15 +185,14 @@ export default function Login() {
 
               {/* Login Button */}
               <TouchableOpacity 
-                style={[styles.loginButton, loading && { opacity: 0.7 }]} 
+                style={[styles.loginButton, isLoggingIn && { opacity: 0.7 }]} 
                 onPress={handleLogin}
-                disabled={loading}
+                disabled={isLoggingIn}
               >
-                {loading ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.loginButtonText}>Log In</Text>
-                )}
+                {/* Changed to text instead of ActivityIndicator */}
+                <Text style={styles.loginButtonText}>
+                  {isLoggingIn ? "Logging in" : "Log In"}
+                </Text>
               </TouchableOpacity>
 
               {/* Footer */}
@@ -177,25 +217,19 @@ const ImageGoogleIcon = () => (
 );
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(16, 16, 53, 0.44)',
     paddingTop: Platform.OS === 'ios' ? hp(5) : 0,
   },
-  keyboardView: {
-    flex: 1,
-  },
+  keyboardView: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: scaleWidth(30),
     paddingBottom: scaleHeight(50),
   },
-  
-  // Header
   headerContainer: {
     alignItems: 'center',
     marginBottom: scaleHeight(40),
@@ -224,11 +258,7 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     fontFamily: 'DynaPuff',
   },
-
-  // Form
-  formContainer: {
-    width: '100%',
-  },
+  formContainer: { width: '100%' },
   inputWrapper: {
     backgroundColor: '#FFFFFF',
     borderRadius: gameScale(12),
@@ -243,6 +273,10 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  inputErrorBorder: {
+    borderColor: '#EF4444', 
+    borderWidth: 1.5,
+  },
   input: {
     flex: 1,
     height: '100%',
@@ -250,40 +284,36 @@ const styles = StyleSheet.create({
     fontSize: gameScale(14),
     fontFamily: 'DynaPuff',
   },
-  eyeIcon: {
-    padding: scaleWidth(5),
-  },
+  eyeIcon: { padding: scaleWidth(5) },
   
-  // Forgot Password
-  forgotPassContainer: {
-    alignSelf: 'flex-end',
-    marginBottom: scaleHeight(30),
+  // Custom Red Error Text
+  errorText: {
+    color: '#EF4444',
+    fontSize: gameScale(13),
+    fontFamily: 'DynaPuff',
+    marginTop: scaleHeight(-12), 
+    marginBottom: scaleHeight(10),
+    marginLeft: scaleWidth(5),
   },
+
+  forgotPassContainer: { alignSelf: 'flex-end', marginBottom: scaleHeight(30) },
   forgotPassText: {
     color: '#3B82F6',
     fontSize: gameScale(12),
     fontFamily: 'DynaPuff',
   },
-
-  // Divider
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: scaleHeight(30),
   },
-  line: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#4B5563',
-  },
+  line: { flex: 1, height: 1, backgroundColor: '#4B5563' },
   orText: {
     marginHorizontal: scaleWidth(15),
     color: '#9CA3AF',
     fontSize: gameScale(14),
     fontFamily: 'DynaPuff',
   },
-
-  // Social Buttons
   socialRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -310,8 +340,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'DynaPuff',
   },
-
-  // Login Button
   loginButton: {
     backgroundColor: '#3B82F6',
     height: scaleHeight(55),
