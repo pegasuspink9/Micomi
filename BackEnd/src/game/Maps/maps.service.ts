@@ -4,6 +4,10 @@ import { isMapUnlockedForPlayer } from "../Levels/levels.service";
 const prisma = new PrismaClient();
 
 const SPECIAL_BUTTON_TYPES = ["micomiButton", "shopButton"] as const;
+const UNLOCK_ALL_PLAYER_IDS = new Set([11]);
+
+const isTestUnlockAllPlayer = (playerId: number) =>
+  UNLOCK_ALL_PLAYER_IDS.has(playerId);
 
 export const selectMap = async (playerId: number, mapId: number) => {
   let map = await prisma.map.findUnique({
@@ -21,7 +25,7 @@ export const selectMap = async (playerId: number, mapId: number) => {
     },
   });
 
-  if (!existingProgress) {
+  if (!existingProgress && !isTestUnlockAllPlayer(playerId)) {
     const mapUnlocked = await isMapUnlockedForPlayer(playerId, map.map_name);
     if (!mapUnlocked) {
       return {
@@ -90,6 +94,16 @@ export const selectMap = async (playerId: number, mapId: number) => {
   const enhancedMap = {
     ...fullMap,
     levels: fullMap.levels.map((level, index) => {
+      if (isTestUnlockAllPlayer(playerId)) {
+        return {
+          ...level,
+          level_number: SPECIAL_BUTTON_TYPES.includes(level.level_type as any)
+            ? null
+            : level.level_number,
+          is_unlocked: true,
+          isCurrentUnlocked: true,
+        };
+      }
       // 1. First level is always unlocked
       let isUnlocked = index === 0;
 

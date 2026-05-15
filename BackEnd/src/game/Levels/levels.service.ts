@@ -23,6 +23,11 @@ import {
 const prisma = new PrismaClient();
 import { borrowChallengesForEnemyLevel } from "../Challenges/challenges.service";
 
+const UNLOCK_ALL_PLAYER_IDS = new Set([11]);
+
+const isTestUnlockAllPlayer = (playerId: number) =>
+  UNLOCK_ALL_PLAYER_IDS.has(playerId);
+
 const MAP_ORDER = ["HTML", "CSS", "JavaScript", "Computer"] as const;
 const MAP_PROGRESSION: Record<
   (typeof MAP_ORDER)[number],
@@ -38,6 +43,7 @@ export const isMapUnlockedForPlayer = async (
   playerId: number,
   mapName: string,
 ) => {
+  if (isTestUnlockAllPlayer(playerId)) return true;
   if (mapName === "HTML" || mapName === "Computer") return true;
 
   const currentIndex = MAP_ORDER.indexOf(mapName as (typeof MAP_ORDER)[number]);
@@ -379,6 +385,30 @@ export const enterLevel = async (playerId: number, levelId: number) => {
 
   if (!level) throw new Error("Level not found");
 
+  //Temporarily disabled for unli testing puposes
+  // const energyCost =
+  //   level.level_type === "bossButton"
+  //     ? 50
+  //     : level.level_type === "enemyButton"
+  //       ? 30
+  //       : 0;
+
+  // if (energyCost > 0) {
+  //   const deductionResult = await EnergyService.deductEnergy(
+  //     playerId,
+  //     energyCost,
+  //   );
+
+  //   if (deductionResult.success === false) {
+  //     const restoreIn = deductionResult.timeToNextRestore;
+  //     throw new Error(
+  //       `Not enough energy to enter level. Next energy restore in: ${
+  //         restoreIn ?? "N/A"
+  //       }`,
+  //     );
+  //   }
+  // }
+
   // If this is an enemyButton level with no challenges, borrow 12 challenges
   // from the two previous level_numbers in the same map (shared helper).
   if (
@@ -400,7 +430,6 @@ export const enterLevel = async (playerId: number, levelId: number) => {
     0,
   );
 
-  const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
   const player = await prisma.player.findUnique({
     where: { player_id: playerId },
   });
@@ -508,6 +537,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       });
     }
 
+    const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
     return {
       level: {
         modules,
@@ -628,32 +658,38 @@ export const enterLevel = async (playerId: number, levelId: number) => {
         throw new Error("Map not unlocked yet for this player");
       }
     } else {
-      const previousLevelNumber = level.level_number - 1;
-      const previousLevel = await prisma.level.findFirst({
-        where: {
-          map_id: level.map_id,
-          level_number: previousLevelNumber,
-        },
-      });
-
-      if (previousLevel) {
-        const previousProgress = await prisma.playerProgress.findUnique({
+      if (isTestUnlockAllPlayer(playerId)) {
+        console.log(
+          `Test unlock-all enabled for player ${playerId}. Skipping previous level checks.`,
+        );
+      } else {
+        const previousLevelNumber = level.level_number - 1;
+        const previousLevel = await prisma.level.findFirst({
           where: {
-            player_id_level_id: {
-              player_id: playerId,
-              level_id: previousLevel.level_id,
-            },
+            map_id: level.map_id,
+            level_number: previousLevelNumber,
           },
-          select: { is_completed: true },
         });
 
-        if (!previousProgress || !previousProgress.is_completed) {
-          throw new Error("Previous level not completed yet for this player");
+        if (previousLevel) {
+          const previousProgress = await prisma.playerProgress.findUnique({
+            where: {
+              player_id_level_id: {
+                player_id: playerId,
+                level_id: previousLevel.level_id,
+              },
+            },
+            select: { is_completed: true },
+          });
+
+          if (!previousProgress || !previousProgress.is_completed) {
+            throw new Error("Previous level not completed yet for this player");
+          }
+        } else {
+          console.warn(
+            `No previous level found for level ${level.level_number} in map ${level.map_id}`,
+          );
         }
-      } else {
-        console.warn(
-          `No previous level found for level ${level.level_number} in map ${level.map_id}`,
-        );
       }
     }
 
@@ -954,6 +990,8 @@ export const enterLevel = async (playerId: number, levelId: number) => {
   const cleanedLessonList = lessonList.map((l) => ({
     page_url: l.page_url,
   }));
+
+  const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
 
   return {
     level: {

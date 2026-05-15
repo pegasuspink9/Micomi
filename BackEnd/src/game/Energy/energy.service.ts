@@ -151,7 +151,6 @@ export const getPlayerEnergyStatus = async (playerId: number) => {
       restoreInMs: null,
       timeToNextRestore: null,
       isInfinite: false,
-      success: false,
     };
   }
 
@@ -162,7 +161,6 @@ export const getPlayerEnergyStatus = async (playerId: number) => {
       restoreInMs: null,
       timeToNextRestore: "Infinite",
       isInfinite: true,
-      success: true,
     };
   }
 
@@ -174,7 +172,6 @@ export const getPlayerEnergyStatus = async (playerId: number) => {
       ? formatTimeInHours(status.timeToNextRestore)
       : null,
     isInfinite: false,
-    success: true,
   };
 };
 
