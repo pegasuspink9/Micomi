@@ -22,6 +22,8 @@ export const ENEMY_IDLE_SOUNDS: Record<string, string> = {
     "https://micomi-assets.me/Enemy%20idle%20sound/GreenLand/King%20Grimnr.wav",
   "Boss Antcool":
     "https://micomi-assets.me/Enemy%20idle%20sound/AutumnLand/Boss%20Antcool.wav",
+  "Boss Bebeetle":
+    "https://micomi-assets.me/Enemy%20idle%20sound/AutumnLand/Boss%20Bebeetle.wav",
   Ladyno: "https://micomi-assets.me/Enemy%20idle%20sound/GreenLand/LadyNo.wav",
   Roachy: "https://micomi-assets.me/Enemy%20idle%20sound/GreenLand/Roachy.wav",
   //CSS Enemies

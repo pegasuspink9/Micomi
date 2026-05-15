@@ -10,6 +10,7 @@ export interface PlayerCreateInput {
   password?: string;
   google_id?: string;
   facebook_id?: string;
+  player_avatar?: string;
 }
 
 export interface PlayerEditProfileInput {
