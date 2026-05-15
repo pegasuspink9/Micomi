@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { gameScale } from '../../Responsiveness/gameResponsive';
+import { universalAssetPreloader } from '../../../services/preloader/universalAssetPreloader';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -94,8 +95,11 @@ const MapDashboard = ({ mapData, onClose, onEnter }) => {
                     <View style={styles.enemyGrid}>
                       {enemies.map((enemy, index) => {
                         const isDefeated = Boolean(enemy?.is_defeated);
-                        const enemySource = enemy?.avatar_enemy
-                          ? { uri: enemy.avatar_enemy }
+                        const resolvedEnemyAvatar = enemy?.avatar_enemy
+                          ? universalAssetPreloader.getCachedAssetPath(enemy.avatar_enemy)
+                          : null;
+                        const enemySource = resolvedEnemyAvatar
+                          ? { uri: resolvedEnemyAvatar }
                           : null;
                         const tintColor = isDefeated ? undefined : 'rgba(90, 90, 90, 0.75)';
 
