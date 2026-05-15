@@ -18,13 +18,11 @@ import { gameScale, scaleWidth, scaleHeight, hp } from './Components/Responsiven
 import { useRouter } from 'expo-router';
 import { useAuth } from './hooks/useAuth';
 import * as WebBrowser from "expo-web-browser";
-import * as Google from "expo-auth-session/providers/google";
-import * as Facebook from "expo-auth-session/providers/facebook";
-import * as AuthSession from 'expo-auth-session'; 
+import * as AuthSession from 'expo-auth-session';
+import { useGoogleAuth } from './auth/useGoogleAuth';
+import { useFacebookAuth } from './auth/useFacebookAuth';
 
 WebBrowser.maybeCompleteAuthSession();
-
-const { width } = Dimensions.get('window');
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -34,21 +32,9 @@ export default function Login() {
   const { login, loginWithGoogle, loginWithFacebook, loading, user } = useAuth();
   const router = useRouter();
 
-  const googleRedirectUri = AuthSession.makeRedirectUri({
-    useProxy: true,
-  });
-
-  console.log('Expo AuthSession Generated Redirect URI:', googleRedirectUri);
-
-  const [gRequest, gResponse, gPromptAsync] = Google.useAuthRequest({
-    androidClientId: "459111764902-09uhkdrbfq1tv7gml6dbce3t05ka3jlj.apps.googleusercontent.com",
-    iosClientId: "REPLACE_WITH_YOUR_IOS_CLIENT_ID.apps.googleusercontent.com",
-    webClientId: "459111764902-09uhkdrbfq1tv7gml6dbce3t05ka3jlj.apps.googleusercontent.com",
-  });
-
-  const [fbRequest, fbResponse, fbPromptAsync] = Facebook.useAuthRequest({
-    clientId: "REPLACE_WITH_YOUR_FACEBOOK_APP_ID",
-  });
+  // Google & Facebook Auth Hooks
+  const { gRequest, handleGoogleLogin, redirectUri } = useGoogleAuth(loginWithGoogle);
+  const { fbRequest, handleFacebookLogin } = useFacebookAuth(loginWithFacebook);
 
   useEffect(() => {
     if (user) {
@@ -56,36 +42,11 @@ export default function Login() {
     }
   }, [user]);
 
-  // Listen for Google response
-  useEffect(() => {
-    if (gResponse?.type === "success") {
-      const { idToken } = gResponse.params;
-      console.log("✅ Google idToken acquired, sending to backend...");
-      loginWithGoogle(idToken);
-    }
-  }, [gResponse]);
-
-  useEffect(() => {
-    if (fbResponse?.type === "success") {
-      const { access_token } = fbResponse.params;
-      console.log("✅ Facebook accessToken acquired, sending to backend...");
-      loginWithFacebook(access_token);
-    }
-  }, [fbResponse]);
-
   const handleLogin = async () => {
     if (!email || !password) {
         return;
     }
     await login(email, password);
-  };
-
-  const handleGoogleLogin = () => {
-    if (gRequest) gPromptAsync();
-  };
-
-  const handleFacebookLogin = () => {
-    if (fbRequest) fbPromptAsync();
   };
 
   return (

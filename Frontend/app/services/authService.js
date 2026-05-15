@@ -38,7 +38,10 @@ export const authService = {
 
   async googleLogin(idToken) {
     try {
-      const response = await apiService.post('/auth/google/mobile', { idToken });
+      const response = await apiService.post('/auth/google/mobile', { 
+        idToken: idToken 
+      });
+
       if (response.success) {
         const { token, refreshToken, player } = response.data;
         await this.setSession(token, refreshToken, player);
