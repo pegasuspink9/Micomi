@@ -143,9 +143,18 @@ const EnemyCharacter = ({
     // 2. Direct prop check
     if (enemyName === 'Boss Darco' || enemy?.enemy_name === 'Boss Darco') detected = 'Boss Darco';
     else if (enemyName === 'King Grimnir' || enemy?.enemy_name === 'King Grimnir') detected = 'King Grimnir';
+    else if (enemyName === 'Boss Maggmaw' || enemy?.enemy_name === 'Boss Maggmaw') detected = 'Boss Maggmaw';
+    else if (enemyName === 'Boss Pyroformic' || enemy?.enemy_name === 'Boss Pyroformic') detected = 'Boss Pyroformic';
     else if (enemyName === 'Draco' || enemy?.enemy_name === 'Draco') detected = 'Draco';
+    else if (enemyName === 'Ladyno' || enemy?.enemy_name === 'Ladyno') detected = 'Ladyno';
+    else if (enemyName === 'Venomidge' || enemy?.enemy_name === 'Venomidge') detected = 'Venomidge';
     else if (enemyName === 'Boss Joshy' || enemy?.enemy_name === 'Boss Joshy') detected = 'Boss Joshy';
-    
+    else if (enemyName === 'King San Pydero' || enemy?.enemy_name === 'King San Pydero') detected = 'King San Pydero';
+    else if (enemyName === 'Boss Icycreamero' || enemy?.enemy_name === 'Boss Icycreamero') detected = 'Boss Icycreamero';
+    else if (enemyName === 'Boss Scythe' || enemy?.enemy_name === 'Boss Scythe') detected = 'Boss Scythe';
+    else if (enemyName === 'Boss Bebeetle' || enemy?.enemy_name === 'Boss Bebeetle') detected = 'Boss Bebeetle';
+    else if(enemyName === 'King Feanaly' || enemy?.enemy_name === 'King Feanaly') detected = 'King Feanaly';
+
     // 3. Update Ref if valid name found
     if (detected) {
       detectedNameRef.current = detected;
@@ -173,8 +182,72 @@ const EnemyCharacter = ({
     else if (effectiveEnemyName === 'Draco') {
       return { marginTop: gameScale(-5) };
     }
+    else if (effectiveEnemyName === 'Ladyno' || effectiveEnemyName === 'Venomidge' || effectiveEnemyName === 'Inferna'  || effectiveEnemyName === 'Glace' || effectiveEnemyName === 'Rime') {
+      return { marginTop: gameScale(6) };
+    }
+    else if (effectiveEnemyName === 'Termity' || effectiveEnemyName === 'Shopper') {
+      return { marginTop: gameScale(-14) };
+    }
+
+    else if (effectiveEnemyName === 'Timothymos' || effectiveEnemyName === 'Krikrok' || effectiveEnemyName === 'Obsidian' || effectiveEnemyName === 'Volcar' || effectiveEnemyName === 'Blizzard' ) {
+      return { marginTop: gameScale(-18) };
+    }
     else if (effectiveEnemyName === 'Boss Joshy') {
       return { ...baseBossStyle, marginTop: gameScale(-48) };
+    }
+    else if (effectiveEnemyName === 'Coldupillar') {
+      return { marginTop: gameScale(-7) };
+    }
+    else if (effectiveEnemyName === 'Cooliro' || effectiveEnemyName === 'Cryo') {
+      return { marginTop: gameScale(-14) };
+    }
+    else if (effectiveEnemyName === 'Boss Maggmaw') {
+      return {  marginTop: gameScale(-45) };
+    }
+    else if (effectiveEnemyName === 'Celhegred'  || effectiveEnemyName === 'Frost') {
+      return {  marginTop: gameScale(8) };
+    }
+    else if (effectiveEnemyName === 'Boss Pyroformic') {
+      return {marginTop: gameScale(-47) };
+    }
+    else if(effectiveEnemyName === 'Icespider'  || effectiveEnemyName === 'Winkito' ) {
+      return {marginTop: gameScale(-20) };
+    }
+    else if (effectiveEnemyName === 'Scoria' || effectiveEnemyName === 'Mosicikito') {
+      return { marginTop: gameScale(-14)  };
+    }
+    else if(effectiveEnemyName === 'Mothier' ){
+      return { marginTop: gameScale(-19) };
+    }
+    else if (effectiveEnemyName === 'Pyron') {
+      return { marginTop: gameScale(-14) };
+    }
+    else if (effectiveEnemyName === 'King San Pydero') {
+      return { ...baseBossStyle, marginTop: gameScale(-60) }; 
+    }
+    else if(effectiveEnemyName === 'Plumetle') {
+      return { marginTop: gameScale(-4) };
+    }
+    else if(effectiveEnemyName === 'Boss Icycreamero') {
+      return { marginTop: gameScale(-50) };
+    }
+    else if(effectiveEnemyName === 'Triyaling' || effectiveEnemyName === 'Blububee' || effectiveEnemyName === 'Permafrost') {
+      return { marginTop: gameScale(-15) };
+    }
+    else if(effectiveEnemyName === 'Boss Scythe') {
+      return { marginTop: gameScale(-73) };
+    }
+    else if(effectiveEnemyName === 'Chill'){
+      return { marginTop: gameScale(17) };
+    }
+    else if(effectiveEnemyName === 'Boss Bebeetle'){
+      return { ...baseBossStyle, marginTop: gameScale(-70) };
+    }
+    else if(effectiveEnemyName === 'King Feanaly') {
+      return { ...baseBossStyle, marginTop: gameScale(-80) };
+    }
+    else if(effectiveEnemyName === 'Barbalony' || effectiveEnemyName === 'Bluejudy') {
+      return { marginTop: gameScale(7) };
     }
 
     return {};
@@ -199,6 +272,26 @@ const EnemyCharacter = ({
     if (effectiveEnemyName === 'Boss Joshy') {
       return gameScale(200);
     }
+    if (effectiveEnemyName === 'Boss Maggmaw') {
+      return gameScale(200);
+    }
+    if (effectiveEnemyName === 'Boss Pyroformic') {
+      return gameScale(180);
+    }
+    if (effectiveEnemyName === 'King San Pydero') {
+      return gameScale(220);
+    }
+    if (effectiveEnemyName === 'Boss Icycreamero') {
+      return gameScale(200);
+    }
+    if (effectiveEnemyName === 'Boss Scythe' ) {
+      return gameScale(200);
+    }
+    else if (effectiveEnemyName === 'Boss Bebeetle' || effectiveEnemyName === 'King Feanaly') {
+      return gameScale(230);
+    }
+    
+
     return gameScale(150);
 
     

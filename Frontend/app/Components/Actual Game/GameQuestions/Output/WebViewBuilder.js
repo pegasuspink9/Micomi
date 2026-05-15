@@ -115,6 +115,10 @@ ${getWebViewFixes(previewMode)}
  * Generates a complete HTML document.
  * Simplified to rely on assemblePage's robust injection logic.
  */
+/**
+ * Generates a complete HTML document.
+ * Includes intelligent detection for "one file code" (HTML inside JS/CSS sections).
+ */
 export const generateCombinedHtml = (currentQuestion, answers = [], previewMode = 'mobile') => {
     if (!currentQuestion || !currentQuestion.question) {
         return assemblePage('<p>No question content available.</p>', previewMode);
@@ -144,24 +148,33 @@ export const generateCombinedHtml = (currentQuestion, answers = [], previewMode 
     }
 
     // If there is separate CSS or JS, inject them into the HTML string
-    // before passing to assemblePage.
     if (baseCss) {
-        // Add CSS styles to the HTML
-        const styleTag = `<style>${baseCss}</style>`;
-        if (baseHtml.includes('</head>')) {
-             baseHtml = baseHtml.replace('</head>', `${styleTag}</head>`);
+        // DETECT "ONE FILE CODE": If CSS contains HTML structure, inject directly into HTML
+        if (/^\s*</.test(baseCss) && /(<!doctype|<html|<body|<style)/i.test(baseCss)) {
+            baseHtml += '\n' + baseCss;
         } else {
-             baseHtml = styleTag + baseHtml;
+            // Add CSS styles to the HTML
+            const styleTag = `<style>\n${baseCss}\n</style>`;
+            if (baseHtml.includes('</head>')) {
+                 baseHtml = baseHtml.replace('</head>', `${styleTag}</head>`);
+            } else {
+                 baseHtml = styleTag + baseHtml;
+            }
         }
     }
 
     if (baseJs) {
-        // Add JS script to the HTML
-        const scriptTag = `<script>try{${baseJs}}catch(e){console.error(e)}</script>`;
-        if (baseHtml.includes('</body>')) {
-             baseHtml = baseHtml.replace('</body>', `${scriptTag}</body>`);
+        // DETECT "ONE FILE CODE": If JS contains HTML structure or already has <script>, inject directly
+        if (/^\s*</.test(baseJs) && /(<!doctype|<html|<body|<script)/i.test(baseJs)) {
+            baseHtml += '\n' + baseJs;
         } else {
-             baseHtml += scriptTag;
+            // Add JS script safely to the HTML (added newlines to prevent single-line comment breaks)
+            const scriptTag = `<script>\ntry{\n${baseJs}\n}catch(e){console.error(e)}\n</script>`;
+            if (baseHtml.includes('</body>')) {
+                 baseHtml = baseHtml.replace('</body>', `${scriptTag}</body>`);
+            } else {
+                 baseHtml += scriptTag;
+            }
         }
     }
 

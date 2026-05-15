@@ -1,3 +1,4 @@
+// Guide.jsx
 import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { WebView } from 'react-native-webview';
@@ -8,37 +9,26 @@ import {
   RESPONSIVE 
 } from '../../../Responsiveness/gameResponsive';
 
+// 🚀 IMPORT WEBVIEWBUILDER PIPELINE
+import { assemblePage, generateCombinedHtml } from './WebViewBuilder'; 
+
 // --- 1. MOVED OUTSIDE TO PREVENT REMOUNTING GLITCHES ---
 const generateExampleOutput = (exampleCode) => {
   if (!exampleCode) return '';
 
-  let htmlCode = exampleCode.trim();
+  // 🚀 REUSE WEBVIEWBUILDER: Feed the guide code through the exact same logic
+  // We mock an "html" question structure so the builder processes it identically 
+  // as it would a user's "one-file code" answer in the challenge screen.
+  const mockQuestion = {
+    question_type: 'html',
+    question: '_',
+    html_file: '',
+    css_file: '',
+    javascript_file: ''
+  };
 
-  if (!htmlCode.includes('<!DOCTYPE')) {
-    htmlCode = `<!DOCTYPE html>\n${htmlCode}`;
-  }
-
-  if (!htmlCode.includes('<html>')) {
-    htmlCode = `<html>\n<head>
-      <title>Example Output</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <style>
-        html, body { margin: 0; padding: 0; height: auto; }
-        body { 
-          font-family: Arial, sans-serif; 
-          font-size: 18px; 
-          line-height: 1.6; 
-          padding: 15px; 
-          color: #333;
-          overflow-wrap: break-word;
-        }
-        h1, h2, h3 { color: #2c3e50; margin-bottom: 15px; margin-top: 0; }
-        p { margin-bottom: 15px; margin-top: 0; }
-      </style>
-    </head>\n<body>\n${htmlCode}\n</body>\n</html>`;
-  }
-
-  return htmlCode;
+  // This guarantees 100% output parity between the Guide and the Game WebBuilder
+  return generateCombinedHtml(mockQuestion, [exampleCode.trim()], 'mobile');
 };
 
 const webViewInjectedJS = `
@@ -93,8 +83,8 @@ const ExampleOutput = ({ exampleCode, exampleKey, hideLabel = false }) => {
     !/^[\s<>/]*$/.test(exampleCode) && 
     exampleCode.includes('<') && 
     htmlOutput && htmlOutput.trim().length > 0 && 
-    /<body[^>]*>[\s\S]*?<\/body>/.test(htmlOutput) && 
-    /<body[^>]*>[\s\S]*?<\/body>/.exec(htmlOutput)[0].replace(/<[^>]*>/g, '').trim().length > 0;
+    /<body[^>]*>[\s\S]*?<\/body>/i.test(htmlOutput) && 
+    /<body[^>]*>[\s\S]*?<\/body>/i.exec(htmlOutput)[0].replace(/<[^>]*>/g, '').trim().length > 0;
 
   if (!hasVisibleContent) return null;
 
@@ -185,7 +175,6 @@ const InteractiveEditor = ({ initialCode }) => {
         </View>
 
         <Text style={styles.interactiveOutputLabel}>Output:</Text>
-
 
         <ExampleOutput 
           exampleCode={debouncedCode} 
@@ -296,7 +285,7 @@ const Guide = ({ currentQuestion, isFullPageLesson = false, guideOverride = null
         continue;
       }
 
-      // 🚀 NEW: Detect Image blocks
+      // 🚀 Detect Image blocks
       if (trimmedLine.startsWith('Image:')) {
         let imageUrl = trimmedLine.substring(6).trim();
 
@@ -315,18 +304,14 @@ const Guide = ({ currentQuestion, isFullPageLesson = false, guideOverride = null
         }
 
         if (imageUrl) {
-          // Wrap the image in a basic HTML skeleton to map it perfectly in the WebView
-          const imageHtml = `
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-              </head>
-              <body style="margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: transparent;">
-                <img src="${imageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;" />
-              </body>
-            </html>
+          // 🚀 REUSE WEBVIEWBUILDER: Use assemblePage to cleanly wrap the image layout perfectly
+          const imageContentFragment = `
+            <div style="display: flex; justify-content: center; align-items: center; height: 100vh; width: 100%;">
+              <img src="${imageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;" />
+            </div>
           `;
+          
+          const imageHtml = assemblePage(imageContentFragment, 'mobile');
 
           result.push(
             <View key={`image-view-${i}`} style={styles.imageWebViewContainer}>
@@ -597,7 +582,7 @@ const styles = StyleSheet.create({
   },
 
   imageWebViewContainer: {
-    height: scale(220), // Fixed consistency height
+    height: scale(220), 
     width: '100%',
     marginVertical: scale(12),
     borderRadius: scale(8),
@@ -622,10 +607,6 @@ const styles = StyleSheet.create({
     position: 'relative', 
   },
 
-   interactiveSection: {
-    marginVertical: scale(20),
-    position: 'relative', // Anchor for absolute background
-  },
   hiddenMeasureContainer: {
     position: 'absolute',
     left: -9999,
@@ -636,7 +617,6 @@ const styles = StyleSheet.create({
     pointerEvents: 'none',
   },
 
-  // Absolute background that stretches to fill parent
   interactiveBg: {
     position: 'absolute',
     top: 0,
@@ -654,7 +634,6 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 
-  // Transparent content layer - drives the size of the parent
   interactiveContent: {
     padding: scale(15),
   },
