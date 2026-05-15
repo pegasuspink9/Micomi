@@ -7,6 +7,16 @@ import { audioLinks } from "../../../utils/audioLinks";
 
 const prisma = new PrismaClient();
 
+const UNLOCK_ALL_PLAYER_IDS = new Set([11]);
+const TEMP_UNLOCK_MAP_IDS = new Set([4]);
+
+const isTestUnlockAllPlayer = (playerId: number) =>
+  UNLOCK_ALL_PLAYER_IDS.has(playerId);
+
+const isTempMapUnlockedForPlayer = (playerId: number, mapId: number) =>
+  isTestUnlockAllPlayer(playerId) ||
+  (playerId === 11 && TEMP_UNLOCK_MAP_IDS.has(mapId));
+
 export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
@@ -63,6 +73,10 @@ export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
 
         const isDefaultUnlocked =
           map.map_name === "HTML" || map.map_name === "Computer";
+        const isTempUnlocked = isTempMapUnlockedForPlayer(
+          playerIdNum,
+          map.map_id,
+        );
 
         const hasProgress = await prisma.playerProgress.findFirst({
           where: {
@@ -86,7 +100,7 @@ export const getAllMapsByPlayerId = async (req: Request, res: Response) => {
           map_id: map.map_id,
           map_name: map.map_name,
           description: map.description,
-          is_active: !!hasProgress || isDefaultUnlocked,
+          is_active: !!hasProgress || isDefaultUnlocked || isTempUnlocked,
           created_at: map.created_at,
           last_updated: map.last_updated,
           map_image: map.map_image,

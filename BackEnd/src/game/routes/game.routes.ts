@@ -8,6 +8,7 @@ import * as LeaderboardController from "../Leaderboard/leaderboard.controller";
 import * as ModelShopService from "../../models/Shop/shop.service";
 import * as LessonsController from "../Lessons/lesson.controller";
 import * as PvPDailyController from "../PvP/pvpDaily.controller";
+import * as EnergyController from "../Energy/energy.controller";
 import {
   authenticate,
   requirePlayer,
@@ -16,6 +17,12 @@ import {
 const router = express.Router();
 
 //Level routes
+router.get(
+  "/energy/status",
+  authenticate,
+  requirePlayer,
+  EnergyController.getEnergyStatusController,
+);
 router.get(
   "/entryLevel/:levelId/preview",
   authenticate,
