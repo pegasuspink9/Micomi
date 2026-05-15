@@ -7,9 +7,9 @@ const PLAYER_KEY = 'playerData';
 
 export const authService = {
   // Login function
-  async login(email, password) {
+  async login(identifier, password) {
     try {
-      const response = await apiService.post('/player/login/', { email, password });
+      const response = await apiService.post('/player/login/', { identifier, password });
       
       if (response.success) {
         const { accessToken, player } = response.data; 

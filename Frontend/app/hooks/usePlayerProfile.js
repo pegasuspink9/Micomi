@@ -256,11 +256,27 @@ export const usePlayerProfile = () => {
     try {
       const players = await playerService.getAllPlayers();
       const emailExists = players.some(
-        (player) => player.email.toLowerCase() === email.toLowerCase()
+        (player) => player.email?.toLowerCase() === email.toLowerCase()
       );
       return emailExists;
     } catch (error) {
       console.error('Failed to check email existence:', error);
+      throw error;
+    }
+  }, []);
+
+  const checkIdentifierExists = useCallback(async (identifier) => {
+    try {
+      const players = await playerService.getAllPlayers();
+      const normalizedIdentifier = identifier.toLowerCase();
+
+      return players.some(
+        (player) =>
+          player.email?.toLowerCase() === normalizedIdentifier ||
+          player.username?.toLowerCase() === normalizedIdentifier
+      );
+    } catch (error) {
+      console.error('Failed to check identifier existence:', error);
       throw error;
     }
   }, []);
@@ -313,6 +329,7 @@ export const usePlayerProfile = () => {
     selectTheme,
     purchaseTheme,
     checkEmailExists,
+    checkIdentifierExists,
     
     // Getters
     getBadges,

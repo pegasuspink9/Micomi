@@ -31,7 +31,7 @@ export default function Login() {
   const [isLoggingIn, setIsLoggingIn] = useState(false); // Controls button text
 
   const { login, loginWithGoogle, loginWithFacebook, user } = useAuth();
-  const { checkEmailExists } = usePlayerProfile();
+  const { checkIdentifierExists } = usePlayerProfile();
   const router = useRouter();
 
   const { gRequest, handleGoogleLogin } = useGoogleAuth(loginWithGoogle);
@@ -45,7 +45,7 @@ export default function Login() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      setErrorMessage('Please enter both email and password.');
+      setErrorMessage('Please enter both email or username and password.');
       return;
     }
 
@@ -53,17 +53,17 @@ export default function Login() {
     setIsLoggingIn(true); // Change button text to "Logging in"
 
     try {
-      // 1. Check if email exists using playerService
-      const emailExists = await checkEmailExists(email);
+      // 1. Check if email or username exists using playerService
+      const identifierExists = await checkIdentifierExists(email);
 
-      // 2. If email doesn't exist, display error and stop
-      if (!emailExists) {
-        setErrorMessage('Incorrect Email.');
+      // 2. If identifier doesn't exist, display error and stop
+      if (!identifierExists) {
+        setErrorMessage('Incorrect Email or Username.');
         setIsLoggingIn(false);
         return;
       }
 
-      // 3. Email exists! Attempt to log in with password
+      // 3. Identifier exists! Attempt to log in with password
       await login(email, password);
 
     } catch (error) {
@@ -71,7 +71,7 @@ export default function Login() {
       if (error.message === 'Network Error' || error.name === 'TypeError') {
         setErrorMessage('Network error. Is the server running?');
       } else {
-        // 4. If login fails here, the email exists, so it MUST be an incorrect password
+        // 4. If login fails here, the identifier exists, so it MUST be an incorrect password
         setErrorMessage('Incorrect Password.');
       }
     } finally {
@@ -108,7 +108,7 @@ export default function Login() {
               <View style={[styles.inputWrapper, errorMessage.includes('Email') ? styles.inputErrorBorder : null]}>
                 <TextInput
                   style={styles.input}
-                  placeholder="alphainvent@gmail.com"
+                  placeholder="Email or Username"
                   placeholderTextColor="#6b7280"
                   value={email}
                   onChangeText={(text) => {

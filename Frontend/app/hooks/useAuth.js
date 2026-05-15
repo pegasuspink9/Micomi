@@ -45,12 +45,12 @@ export const useAuth = () => {
     }
   };
 
-  const login = async (email, password) => {
+  const login = async (identifier, password) => {
     // ❌ DO NOT call updateGlobalState(globalUser, true) here!
     // It causes the entire screen to unmount, which resets your error texts.
     
     try {
-      const userData = await authService.login(email, password);
+      const userData = await authService.login(identifier, password);
       // Only update global state on SUCCESS
       updateGlobalState(userData, false); 
     } catch (error) {
@@ -71,17 +71,16 @@ export const useAuth = () => {
 
   // ... (keep signup, loginWithGoogle, loginWithFacebook with the same updateGlobalState pattern)
   const signup = async (userData) => {
-    updateGlobalState(globalUser, true);
+    // ❌ DO NOT call updateGlobalState(globalUser, true); here!
+    
     try {
       const result = await authService.signup(userData);
       Alert.alert('Success', 'Player created successfully! Please log in.');
       router.back();
       return result;
     } catch (error) {
-      Alert.alert('Signup Failed', error.message);
+      // Throw the error so Signup.js can catch it and display it in the UI
       throw error;
-    } finally {
-      updateGlobalState(globalUser, false);
     }
   };
 
