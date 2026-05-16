@@ -154,6 +154,8 @@ const EnemyCharacter = ({
     else if (enemyName === 'Boss Scythe' || enemy?.enemy_name === 'Boss Scythe') detected = 'Boss Scythe';
     else if (enemyName === 'Boss Bebeetle' || enemy?.enemy_name === 'Boss Bebeetle') detected = 'Boss Bebeetle';
     else if(enemyName === 'King Feanaly' || enemy?.enemy_name === 'King Feanaly') detected = 'King Feanaly';
+    else if(enemyName === 'Boss Scorcharach' || enemy?.enemy_name === 'Boss Scorcharach') detected = 'Boss Scorcharach';
+    else if(enemyName === 'Boss Antcool' || enemy?.enemy_name === 'Boss Antcool') detected = 'Boss Antcool';
 
     // 3. Update Ref if valid name found
     if (detected) {
@@ -174,7 +176,7 @@ const EnemyCharacter = ({
     const baseBossStyle = { right: gameScale(-30) };
 
     if (effectiveEnemyName === 'Boss Darco') {
-      return { ...baseBossStyle, marginTop: gameScale(-37) };
+      return { ...baseBossStyle, marginTop: gameScale(-56) };
     } 
     else if (effectiveEnemyName === 'King Grimnir') {
       return { ...baseBossStyle, marginTop: gameScale(-32) };
@@ -249,6 +251,12 @@ const EnemyCharacter = ({
     else if(effectiveEnemyName === 'Barbalony' || effectiveEnemyName === 'Bluejudy') {
       return { marginTop: gameScale(7) };
     }
+    else if(effectiveEnemyName === 'Boss Scorcharach') {
+      return { ...baseBossStyle, marginTop: gameScale(-35) }; 
+    }
+    else if(effectiveEnemyName === 'Boss Antcool' || effectiveEnemyName === 'Boss Antcool') {
+      return { ...baseBossStyle, marginTop: gameScale(-55) };
+    }
 
     return {};
   }, [effectiveEnemyName, matchCharacterStyle]);
@@ -264,7 +272,7 @@ const EnemyCharacter = ({
     }
 
     if (effectiveEnemyName === 'Boss Darco') {
-      return gameScale(190); 
+      return gameScale(210); 
     }
     if (effectiveEnemyName === 'King Grimnir') {
       return gameScale(200);
@@ -288,6 +296,12 @@ const EnemyCharacter = ({
       return gameScale(200);
     }
     else if (effectiveEnemyName === 'Boss Bebeetle' || effectiveEnemyName === 'King Feanaly') {
+      return gameScale(230);
+    }
+    else if (effectiveEnemyName === 'Boss Scorcharach') {
+      return gameScale(200);
+    }
+    else if (effectiveEnemyName === 'Boss Antcool') {
       return gameScale(230);
     }
     

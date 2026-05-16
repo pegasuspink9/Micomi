@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, StyleSheet, Dimensions, Animated, Image, ActivityIndicator, Pressable, Text } from 'react-native';
 import { scale, scaleWidth, scaleHeight, RESPONSIVE, wp, hp, gameScale} from '../../../Responsiveness/gameResponsive';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -29,6 +29,7 @@ const GridContainer = ({
   isInRunMode = false,
   fadeOutAnim = null,
   isSpecialAttack = false,
+  enemyName = null,
   cardDamage = null,
   pvpTimerComponent = null,
   gameplayThemeColor = null,
@@ -127,26 +128,178 @@ const GridContainer = ({
         ).padStart(2, '0')}`
       : null;
 
-    const CrackEffect = () => (
-    <View style={styles.crackOverlay} pointerEvents="none">
-      {/* Top Left Crack */}
-      <View style={[styles.crackLine, { top: '15%', left: '5%', width: '25%', transform: [{ rotate: '20deg' }] }]} />
-      <View style={[styles.crackLine, { top: '22%', left: '25%', width: '15%', transform: [{ rotate: '-15deg' }] }]} />
-      
-      {/* Bottom Right Crack */}
-      <View style={[styles.crackLine, { bottom: '20%', right: '10%', width: '30%', transform: [{ rotate: '-10deg' }] }]} />
-      <View style={[styles.crackLine, { bottom: '28%', right: '35%', width: '12%', transform: [{ rotate: '45deg' }] }]} />
+  const specialAttackTheme = useMemo(() => {
+    if (!isSpecialAttack) {
+      return null;
+    }
 
-      {/* Center Crack */}
-      <View style={[styles.crackLine, { top: '45%', left: '40%', width: '20%', transform: [{ rotate: '75deg' }] }]} />
-      
-      {/* Small scattered cracks */}
-      <View style={[styles.crackLine, { top: '10%', right: '15%', width: '10%', transform: [{ rotate: '-40deg' }] }]} />
-      <View style={[styles.crackLine, { bottom: '10%', left: '20%', width: '8%', transform: [{ rotate: '110deg' }] }]} />
-    </View>
-  );
+    if (enemyName === 'Boss Joshy') {
+      return {
+        outerFrameBackgroundColor: '#5a5a5a',
+        outerFrameBorderTopColor: '#7a7a7a',
+        outerFrameBorderLeftColor: '#666666',
+        outerFrameBorderBottomColor: '#3f3f3f',
+        outerFrameBorderRightColor: '#3f3f3f',
+        innerContentBackgroundColor: '#2c2c2c',
+        innerBorderBackgroundColor: '#181818',
+        innerBorderBorderColor: '#4c4c4c',
+      };
+    }
 
+    if (enemyName === 'Boss Antcool') {
+      return {
+        outerFrameBackgroundColor: '#234f24',
+        outerFrameBorderTopColor: '#3f7a42',
+        outerFrameBorderLeftColor: '#2f6131',
+        outerFrameBorderBottomColor: '#173218',
+        outerFrameBorderRightColor: '#173218',
+        innerContentBackgroundColor: '#183819',
+        innerBorderBackgroundColor: '#0f220f',
+        innerBorderBorderColor: '#2e5c30',
+      };
+    }
 
+    if (enemyName === 'King Grimnir') {
+      return {
+        outerFrameBackgroundColor: '#3b0b0b',
+        outerFrameBorderTopColor: '#5a0e0e',
+        outerFrameBorderLeftColor: '#4a0c0c',
+        outerFrameBorderBottomColor: '#260606',
+        outerFrameBorderRightColor: '#260606',
+        innerContentBackgroundColor: '#2a0707',
+        innerBorderBackgroundColor: '#120303',
+        innerBorderBorderColor: '#5c1a1a',
+      };
+    }
+
+    if (enemyName === 'Boss Darco') {
+      return {
+        outerFrameBackgroundColor: '#0b0b0b',
+        outerFrameBorderTopColor: '#1a1a1a',
+        outerFrameBorderLeftColor: '#0d0d0d',
+        outerFrameBorderBottomColor: '#030303',
+        outerFrameBorderRightColor: '#030303',
+        innerContentBackgroundColor: '#040404',
+        innerBorderBackgroundColor: '#000000',
+        innerBorderBorderColor: '#2b2b2b',
+      };
+    }
+
+    if (enemyName === 'Boss Maggmaw') {
+      return {
+        outerFrameBackgroundColor: '#2a0000',
+        outerFrameBorderTopColor: '#4b0000',
+        outerFrameBorderLeftColor: '#390000',
+        outerFrameBorderBottomColor: '#120000',
+        outerFrameBorderRightColor: '#120000',
+        innerContentBackgroundColor: '#160000',
+        innerBorderBackgroundColor: '#0b0000',
+        innerBorderBorderColor: '#3d0000',
+      };
+    }
+
+    if (enemyName === 'Boss Pyroformic') {
+      return {
+        outerFrameBackgroundColor: '#3a1c00',
+        outerFrameBorderTopColor: '#5a2b00',
+        outerFrameBorderLeftColor: '#4b2000',
+        outerFrameBorderBottomColor: '#1b0b00',
+        outerFrameBorderRightColor: '#1b0b00',
+        innerContentBackgroundColor: '#1f0b00',
+        innerBorderBackgroundColor: '#0c0400',
+        innerBorderBorderColor: '#4e2600',
+      };
+    }
+
+    if (enemyName === 'King San Pydero') {
+      return {
+        outerFrameBackgroundColor: '#3b2518',
+        outerFrameBorderTopColor: '#664337',
+        outerFrameBorderLeftColor: '#553522',
+        outerFrameBorderBottomColor: '#2c1a0f',
+        outerFrameBorderRightColor: '#2c1a0f',
+        innerContentBackgroundColor: '#2a160e',
+        innerBorderBackgroundColor: '#130a06',
+        innerBorderBorderColor: '#5b3b2a',
+      };
+    }
+
+    if (enemyName === 'Boss Scorcharach') {
+      return {
+        outerFrameBackgroundColor: '#4a1400',
+        outerFrameBorderTopColor: '#7a2000',
+        outerFrameBorderLeftColor: '#5b1800',
+        outerFrameBorderBottomColor: '#2a0f00',
+        outerFrameBorderRightColor: '#2a0f00',
+        innerContentBackgroundColor: '#2e1000',
+        innerBorderBackgroundColor: '#170700',
+        innerBorderBorderColor: '#6b2a0b',
+      };
+    }
+
+    if (enemyName === 'Boss Icycreamero') {
+      return {
+        outerFrameBackgroundColor: '#0b5f8a',
+        outerFrameBorderTopColor: '#1280a9',
+        outerFrameBorderLeftColor: '#0f6a90',
+        outerFrameBorderBottomColor: '#063b54',
+        outerFrameBorderRightColor: '#063b54',
+        innerContentBackgroundColor: '#083a50',
+        innerBorderBackgroundColor: '#021924',
+        innerBorderBorderColor: '#4ea9d6',
+      };
+    }
+
+    if (enemyName === 'Boss Scythe') {
+      return {
+        outerFrameBackgroundColor: '#00163a',
+        outerFrameBorderTopColor: '#00285d',
+        outerFrameBorderLeftColor: '#001f48',
+        outerFrameBorderBottomColor: '#000b20',
+        outerFrameBorderRightColor: '#000b20',
+        innerContentBackgroundColor: '#000f2a',
+        innerBorderBackgroundColor: '#00060f',
+        innerBorderBorderColor: '#003366',
+      };
+    }
+
+    if (enemyName === 'Boss Bebeetle') {
+      return {
+        outerFrameBackgroundColor: '#2a0036',
+        outerFrameBorderTopColor: '#4c005e',
+        outerFrameBorderLeftColor: '#3a004d',
+        outerFrameBorderBottomColor: '#15001f',
+        outerFrameBorderRightColor: '#15001f',
+        innerContentBackgroundColor: '#18001f',
+        innerBorderBackgroundColor: '#0b0010',
+        innerBorderBorderColor: '#5a1a6f',
+      };
+    }
+
+    if (enemyName === 'King Feanaly') {
+      return {
+        outerFrameBackgroundColor: '#071522',
+        outerFrameBorderTopColor: '#0f2a44',
+        outerFrameBorderLeftColor: '#09202f',
+        outerFrameBorderBottomColor: '#02080d',
+        outerFrameBorderRightColor: '#02080d',
+        innerContentBackgroundColor: '#04101a',
+        innerBorderBackgroundColor: '#000609',
+        innerBorderBorderColor: '#16314a',
+      };
+    }
+
+    return {
+      outerFrameBackgroundColor: '#3a2a1f',
+      outerFrameBorderTopColor: '#5b4434',
+      outerFrameBorderLeftColor: '#4b372a',
+      outerFrameBorderBottomColor: '#24170f',
+      outerFrameBorderRightColor: '#24170f',
+      innerContentBackgroundColor: '#24160f',
+      innerBorderBackgroundColor: '#120b07',
+      innerBorderBorderColor: '#3c2a1e',
+    };
+  }, [enemyName, isSpecialAttack]);
 
     return (
      <Animated.View style={[
@@ -204,26 +357,38 @@ const GridContainer = ({
             borderRightColor: resolvedThemeColor,
             shadowColor: resolvedThemeColor,
           },
-          isSpecialAttack && styles.outerFrameSpecialAttack 
+          isSpecialAttack && styles.outerFrameSpecialAttack,
+          isSpecialAttack && specialAttackTheme && {
+            backgroundColor: specialAttackTheme.outerFrameBackgroundColor,
+            borderTopColor: specialAttackTheme.outerFrameBorderTopColor,
+            borderLeftColor: specialAttackTheme.outerFrameBorderLeftColor,
+            borderBottomColor: specialAttackTheme.outerFrameBorderBottomColor,
+            borderRightColor: specialAttackTheme.outerFrameBorderRightColor,
+          }
         ]}>
           <View style={[
             styles.innerContent,
             (isProceedMode || isAutoProceedMode || isLevelComplete) && styles.innerContentProceed,
-            isSpecialAttack && styles.innerContentSpecialAttack
+            isSpecialAttack && styles.innerContentSpecialAttack,
+            isSpecialAttack && specialAttackTheme && {
+              backgroundColor: specialAttackTheme.innerContentBackgroundColor,
+            }
           ]}>
              <View style={[
               styles.innerBorder,
               (isProceedMode || isAutoProceedMode || isLevelComplete) && styles.innerBorderProceed,
                 (isProceedMode || isAutoProceedMode || isLevelComplete) && { borderColor: resolvedThemeColor },
-              isSpecialAttack && styles.innerBorderSpecialAttack
+              isSpecialAttack && styles.innerBorderSpecialAttack,
+              isSpecialAttack && specialAttackTheme && {
+                backgroundColor: specialAttackTheme.innerBorderBackgroundColor,
+                borderColor: specialAttackTheme.innerBorderBorderColor,
+              }
             ]}>
               <View style={styles.backlightOverlay} />
               <View style={styles.topHighlight} />
               <View style={styles.bottomShadow} />
               <View style={styles.leftHighlight} />
               <View style={styles.rightShadow} />
-
-               {isSpecialAttack && <CrackEffect />} 
               
               {/* LEVEL COMPLETE BUTTONS */}
               {isLevelComplete && showRunButton ? (
@@ -292,24 +457,35 @@ const GridContainer = ({
               borderBottomColor: resolvedThemeColor,
               borderRightColor: resolvedThemeColor,
             },
-            isSpecialAttack && styles.outerFrameSpecialAttack
+            isSpecialAttack && styles.outerFrameSpecialAttack,
+            isSpecialAttack && specialAttackTheme && {
+              backgroundColor: specialAttackTheme.outerFrameBackgroundColor,
+              borderTopColor: specialAttackTheme.outerFrameBorderTopColor,
+              borderLeftColor: specialAttackTheme.outerFrameBorderLeftColor,
+              borderBottomColor: specialAttackTheme.outerFrameBorderBottomColor,
+              borderRightColor: specialAttackTheme.outerFrameBorderRightColor,
+            }
           ]}>
           <View style={[
             styles.innerContent,
-            isSpecialAttack && styles.innerContentSpecialAttack
+            isSpecialAttack && styles.innerContentSpecialAttack,
+            isSpecialAttack && specialAttackTheme && {
+              backgroundColor: specialAttackTheme.innerContentBackgroundColor,
+            }
           ]}>
             <View style={[
               styles.innerBorder,
-              isSpecialAttack && styles.innerBorderSpecialAttack
+              isSpecialAttack && styles.innerBorderSpecialAttack,
+              isSpecialAttack && specialAttackTheme && {
+                backgroundColor: specialAttackTheme.innerBorderBackgroundColor,
+                borderColor: specialAttackTheme.innerBorderBorderColor,
+              }
             ]}>
               <View style={styles.backlightOverlay} />
               <View style={styles.topHighlight} />
               <View style={styles.bottomShadow} />
               <View style={styles.leftHighlight} />
               <View style={styles.rightShadow} />
-
-              {isSpecialAttack && <CrackEffect />}
-
 
               {lowerChildren}
             </View>
@@ -504,21 +680,6 @@ const styles = StyleSheet.create({
 
   innerBorderSpecialAttack: {
     backgroundColor: '#1a1a1a'
-  },
-
-  crackOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 5,
-    opacity: 0.7,
-  },
-  crackLine: {
-    position: 'absolute',
-    height: gameScale(1.5),
-    backgroundColor: '#000',
-    shadowColor: '#444',
-    shadowOffset: { width: gameScale(1), height: gameScale(1) },
-    shadowOpacity: 0.5,
-    shadowRadius: gameScale(1),
   },
 
   backlightOverlay: {

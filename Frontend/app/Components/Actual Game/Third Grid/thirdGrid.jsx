@@ -117,6 +117,26 @@ const ThirdGrid = ({
     gameState?.submissionResult?.fightResult?.gameplay_theme_color,
     gameState?.gameplay_theme_color
   ]);
+
+  const enemyName = useMemo(() => {
+    if (gameState?.submissionResult?.fightResult?.enemy?.enemy_name) {
+      return gameState.submissionResult.fightResult.enemy.enemy_name;
+    }
+
+    if (gameState?.enemy?.enemy_name) {
+      return gameState.enemy.enemy_name;
+    }
+
+    if (challengeData?.enemy_name) {
+      return challengeData.enemy_name;
+    }
+
+    return null;
+  }, [
+    gameState?.submissionResult?.fightResult?.enemy?.enemy_name,
+    gameState?.enemy?.enemy_name,
+    challengeData?.enemy_name,
+  ]);
   
   const isSpecialAttack = useMemo(() => {
     const isSpecial = enemyAttackType === 'special attack' || enemyAttackType === 'special skill';
@@ -334,6 +354,7 @@ const ThirdGrid = ({
       fadeOutAnim={fadeOutAnim}
       isInRunMode={isInRunMode}
       isSpecialAttack={isSpecialAttack}
+      enemyName={enemyName}
       gameplayThemeColor={gameplayThemeColor}
       pvpTimerComponent={
         isPvpMode && hasActivePvpTimer ? (
@@ -432,6 +453,7 @@ const ThirdGrid = ({
                 selectedBlankIndex={selectedBlankIndex} 
                 currentQuestionId={currentQuestion.id}
                 isSpecialAttack={isSpecialAttack}
+                enemyName={enemyName}
                 themeColor={gameplayThemeColor}
               />
             </View>

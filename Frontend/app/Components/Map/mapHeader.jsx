@@ -73,6 +73,13 @@ export default function MapHeader() {
   const energyValue = energyStatus
     ? (energyStatus.isInfinite ? '∞' : formatCompactNumber(energyStatus.energy ?? 0))
     : '...';
+
+  const openTopUpShop = (category) => {
+    router.push({
+      pathname: '/TopUp/topUpShop',
+      params: { category },
+    });
+  };
   
   const avatarUrl = playerData?.playerAvatar || "https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif";
 
@@ -163,7 +170,10 @@ export default function MapHeader() {
               <View style={styles.resourceBorderInner}>
                 <View style={styles.resourceTrack}>
                   <Text style={styles.resourceText}>{formatCompactNumber(coins)}</Text>
-                  <Text style={styles.plusSign}>+</Text>
+                  {/* Moved TouchableOpacity inside resourceTrack to keep display the same */}
+                  <TouchableOpacity activeOpacity={0.8} onPress={() => openTopUpShop('coins')}>
+                    <Text style={styles.plusSign}>+</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -183,7 +193,10 @@ export default function MapHeader() {
               <View style={styles.resourceBorderInner}>
                 <View style={styles.resourceTrack}>
                   <Text style={styles.resourceText}>{formatCompactNumber(diamonds)}</Text>
-                  <Text style={styles.plusSign}>+</Text>
+                  {/* Moved TouchableOpacity inside resourceTrack to keep display the same */}
+                  <TouchableOpacity activeOpacity={0.8} onPress={() => openTopUpShop('diamonds')}>
+                    <Text style={styles.plusSign}>+</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -203,7 +216,10 @@ export default function MapHeader() {
               <View style={styles.resourceBorderInner}>
                 <View style={styles.resourceTrack}>
                   <Text style={styles.resourceText}>{energyValue}</Text>
-                  <Text style={styles.plusSign}>+</Text>
+                  {/* Moved TouchableOpacity inside resourceTrack to keep display the same */}
+                  <TouchableOpacity activeOpacity={0.8} onPress={() => openTopUpShop('energy')}>
+                    <Text style={styles.plusSign}>+</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -495,7 +511,7 @@ const styles = StyleSheet.create({
   // Added standard style for the + Sign
   plusSign: {
     color: '#FFD700', // Yellow
-    fontSize: gameScale(18),
+    fontSize: gameScale(20),
     fontFamily: 'DynaPuff',
     marginLeft: gameScale(4), // Adds space between the number and the +
     textShadowColor: 'rgba(0, 0, 0, 0.8)',

@@ -13,6 +13,7 @@ const AnswerGrid = ({
   isFillInTheBlank = false,
   selectedBlankIndex = 0, 
   isSpecialAttack = false,
+  enemyName = null,
   themeColor = null,
 }) => {
 
@@ -91,6 +92,7 @@ const AnswerGrid = ({
             isDisabled={isDisabled}
             onPress={handleOptionPress}
             isSpecialAttack={isSpecialAttack}
+            enemyName={enemyName}
             themeColor={themeColor}
           />
         </Animated.View>
@@ -105,6 +107,7 @@ const AnswerGrid = ({
       challengeId,
       handleOptionPress,
       isSpecialAttack,
+      enemyName,
       maxAnswers,
       normalizedOptions,
       selectedCount,
