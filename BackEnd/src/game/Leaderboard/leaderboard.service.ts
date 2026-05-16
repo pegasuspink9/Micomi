@@ -1,5 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
+import { prisma } from "../../../prisma/client";
 import { DEFAULT_AVATAR_URL } from "../../models/Player/player.service";
 
 export const getLeaderboard = async (limit = 10) => {

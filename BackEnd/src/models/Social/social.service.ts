@@ -1,8 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../prisma/client";
 import { getPlayerProfile } from "../Player/player.service";
 import { SocialProfileResponse } from "./social.types";
-
-const prisma = new PrismaClient() as any;
 
 const normalizeFollowPair = (followerId: number, followingId: number) => ({
   follower_id: followerId,

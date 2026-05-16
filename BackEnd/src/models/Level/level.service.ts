@@ -1,9 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../prisma/client";
 import { Request, Response } from "express";
 import { successResponse, errorResponse } from "../../../utils/response";
 import { LevelCreateInput, LevelUpdateInput } from "./level.types";
-
-const prisma = new PrismaClient();
 
 export const getAllLevels = async (req: Request, res: Response) => {
   try {

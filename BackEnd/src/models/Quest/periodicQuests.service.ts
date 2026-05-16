@@ -1,6 +1,5 @@
-import { QuestType, QuestPeriod, PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "../../../prisma/client";
+import { QuestType, QuestPeriod } from "@prisma/client";
 
 interface QuestTemplate {
   objective_type: QuestType;

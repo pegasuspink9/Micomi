@@ -1,13 +1,14 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../prisma/client";
 import { formatTimeInHours } from "../../../helper/dateTimeHelper";
-
-const prisma = new PrismaClient();
 
 const MAX_ENERGY = 100;
 const ENERGY_RESTORE_INTERVAL = 30 * 60 * 1000;
 
 const isInfiniteEnergyActive = (
-  player: { has_infinite_energy: boolean; infinite_energy_expires_at?: Date | null },
+  player: {
+    has_infinite_energy: boolean;
+    infinite_energy_expires_at?: Date | null;
+  },
   now: Date,
 ) => {
   return (

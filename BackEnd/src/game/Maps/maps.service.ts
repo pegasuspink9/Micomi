@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../prisma/client";
 import { isMapUnlockedForPlayer } from "../Levels/levels.service";
-
-const prisma = new PrismaClient();
 
 const SPECIAL_BUTTON_TYPES = ["micomiButton", "shopButton"] as const;
 const UNLOCK_ALL_PLAYER_IDS = new Set([11]);

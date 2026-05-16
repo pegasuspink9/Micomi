@@ -1,4 +1,5 @@
-import { PrismaClient, Challenge, QuestType } from "@prisma/client";
+import { prisma } from "../../../prisma/client";
+import { Challenge, QuestType } from "@prisma/client";
 import * as LevelService from "../Levels/levels.service";
 import * as CombatService from "../Combat/combat.service";
 import * as EnergyService from "../Energy/energy.service";
@@ -32,8 +33,6 @@ import {
   ENEMY_ATTACK_SOUNDS,
   DEFAULT_ENEMY_ATTACK_AUDIO,
 } from "../../../helper/enemyAttackSounds";
-
-const prisma = new PrismaClient();
 
 type ChallengeDTO = Omit<Challenge, never> & {
   answer?: string[];

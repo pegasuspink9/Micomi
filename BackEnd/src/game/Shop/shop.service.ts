@@ -1,4 +1,5 @@
-import { PrismaClient, QuestType, Prisma } from "@prisma/client";
+import { prisma } from "../../../prisma/client";
+import { QuestType, Prisma } from "@prisma/client";
 import { updateQuestProgress } from "../Quests/quests.service";
 import * as CombatService from "../Combat/combat.service";
 import * as LevelService from "../Levels/levels.service";
@@ -15,8 +16,6 @@ import {
   errorShopResponse,
 } from "../../../utils/response";
 import { Request, Response } from "express";
-
-const prisma = new PrismaClient();
 
 const reverseString = (str: string): string => str.split("").reverse().join("");
 

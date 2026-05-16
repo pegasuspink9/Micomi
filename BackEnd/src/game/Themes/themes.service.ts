@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "../../../prisma/client";
 
 export const getAllThemes = async (playerId: number) => {
   const player = await prisma.player.findUnique({

@@ -1,4 +1,5 @@
-import { PrismaClient, QuestPeriod } from "@prisma/client";
+import { prisma } from "../../../prisma/client";
+import { QuestPeriod } from "@prisma/client";
 import { hashPassword, comparePassword } from "../../../utils/hash";
 import { generateAccessToken } from "../../../utils/token";
 import {
@@ -21,8 +22,6 @@ import {
 } from "../Quest/periodicQuests.service";
 import { getRankProgressByPoints } from "../../game/PvP/pvpRank.service";
 import { getAllThemes } from "../../game/Themes/themes.service";
-
-const prisma = new PrismaClient();
 
 export const DEFAULT_AVATAR_URL =
   "https://micomi-assets.me/Player%20Avatars%20Final/Avatar_1.png";

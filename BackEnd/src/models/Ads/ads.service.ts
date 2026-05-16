@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../prisma/client";
 import { AdRewardResult } from "./ads.types";
-
-const prisma = new PrismaClient();
 
 const MAX_ENERGY = 100;
 
