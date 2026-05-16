@@ -150,6 +150,9 @@ extractAllAssetsFromMapData(mapLevelData) {
     const staticPvpAssets = this.getStaticPvpAssets();
     staticPvpAssets.forEach(asset => addAsset(asset.url, asset.name, asset.type, asset.category));
 
+    const staticTopUpAssets = this.getStaticTopUpAssets();
+    staticTopUpAssets.forEach(asset => addAsset(asset.url, asset.name, asset.type, asset.category));
+
 
     
 

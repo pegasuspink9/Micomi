@@ -1,11 +1,67 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { gameScale } from '../Components/Responsiveness/gameResponsive';
 import { topUpShopService } from '../services/topUpShopService';
-import { TOP_UP_CATEGORIES, TOP_UP_CATEGORY_MATCHERS, formatPhpPrice, formatTopUpQuantity } from '../services/topUpShopData';
+import { TOP_UP_CATEGORIES, TOP_UP_CATEGORY_MATCHERS } from '../services/topUpShopData';
+import { TOP_UP_IMAGE_MAP } from '../services/preloader/universalAssetPreloader/topUpMethods';
+import { universalAssetPreloader } from '../services/preloader/universalAssetPreloader';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const getCategoryFromItemId = (itemId) => {
+  const id = String(itemId || '').toLowerCase();
+  if (id.includes('coins')) return 'coins';
+  if (id.includes('diamonds')) return 'diamonds';
+  if (id.includes('energy')) return 'energy';
+  return 'coins';
+};
+
+// Layout rules:
+// Coins & Diamonds: first 2 items side-by-side (row), 3rd item full-width (row)
+// Energy: each item full-width (one per row) since they're horizontal images
+const groupItemsByLayout = (items) => {
+  const coins = items.filter(i => getCategoryFromItemId(i.item_id) === 'coins');
+  const diamonds = items.filter(i => getCategoryFromItemId(i.item_id) === 'diamonds');
+  const energy = items.filter(i => getCategoryFromItemId(i.item_id) === 'energy');
+
+  const rows = [];
+
+  // Coins rows
+  if (coins.length >= 2) rows.push({ items: coins.slice(0, 2), type: 'pair' });
+  if (coins.length >= 3) rows.push({ items: [coins[2]], type: 'full' });
+  if (coins.length === 1) rows.push({ items: [coins[0]], type: 'full' });
+
+  // Diamonds rows
+  if (diamonds.length >= 2) rows.push({ items: diamonds.slice(0, 2), type: 'pair' });
+  if (diamonds.length >= 3) rows.push({ items: [diamonds[2]], type: 'full' });
+  if (diamonds.length === 1) rows.push({ items: [diamonds[0]], type: 'full' });
+
+  // Energy rows — each one is full-width
+  energy.forEach(item => rows.push({ items: [item], type: 'full' }));
+
+  return rows;
+};
+
+const groupFilteredItems = (items, category) => {
+  if (category === 'all') return groupItemsByLayout(items);
+
+  const rows = [];
+
+  if (category === 'energy') {
+    // Each energy item is full-width
+    items.forEach(item => rows.push({ items: [item], type: 'full' }));
+  } else {
+    // coins / diamonds: first 2 paired, 3rd full
+    if (items.length >= 2) rows.push({ items: items.slice(0, 2), type: 'pair' });
+    if (items.length >= 3) rows.push({ items: [items[2]], type: 'full' });
+    if (items.length === 1) rows.push({ items: [items[0]], type: 'full' });
+  }
+
+  return rows;
+};
 
 export default function TopUpShop() {
   const router = useRouter();
@@ -44,6 +100,17 @@ export default function TopUpShop() {
     if (!matcher) return catalog;
     return catalog.filter(matcher);
   }, [catalog, selectedCategory]);
+
+  const rows = useMemo(
+    () => groupFilteredItems(filteredCatalog, selectedCategory),
+    [filteredCatalog, selectedCategory]
+  );
+
+  const getImageUri = (itemId) => {
+    const remoteUrl = TOP_UP_IMAGE_MAP[itemId];
+    if (!remoteUrl) return null;
+    return universalAssetPreloader.getCachedAssetPath(remoteUrl);
+  };
 
   return (
     <View style={styles.screen}>
@@ -87,49 +154,36 @@ export default function TopUpShop() {
           </View>
         ) : (
           <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
-            {filteredCatalog.map((item) => {
-              const category = item?.item_id?.includes('coins')
-                ? 'Coins'
-                : item?.item_id?.includes('diamonds')
-                  ? 'Diamonds'
-                  : item?.item_id?.includes('energy')
-                    ? 'Energy'
-                    : item?.type || 'Item';
+            {rows.map((row, rowIndex) => (
+              <View key={`row-${rowIndex}`} style={styles.row}>
+                {row.items.map((item) => {
+                  const imageUri = getImageUri(item.item_id);
+                  const isPair = row.type === 'pair';
 
-              return (
-                <View key={item.item_id} style={styles.card}>
-                  <View style={styles.cardTopRow}>
-                    <View style={styles.cardTitleBlock}>
-                      <Text style={styles.itemName}>{item.name}</Text>
-                      <Text style={styles.itemId}>{item.item_id}</Text>
-                    </View>
-                    <View style={styles.pricePill}>
-                      <Text style={styles.priceText}>{formatPhpPrice(item.price_php)}</Text>
-                    </View>
-                  </View>
-
-                  <Text style={styles.description}>{item.description}</Text>
-
-                  <View style={styles.metaRow}>
-                    <View style={styles.metaPill}>
-                      <Text style={styles.metaText}>{category}</Text>
-                    </View>
-                    <View style={styles.metaPillSoft}>
-                      <Text style={styles.metaTextSoft}>item_id driven</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.contentsList}>
-                    {(item.contents || []).map((content) => (
-                      <View key={`${item.item_id}-${content.item_id}`} style={styles.contentRow}>
-                        <Text style={styles.contentName}>{content.item_id}</Text>
-                        <Text style={styles.contentQty}>x{formatTopUpQuantity(content.qty)}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              );
-            })}
+                  return (
+                    <Pressable
+                      key={item.item_id}
+                      style={({ pressed }) => [
+                        isPair ? styles.halfCell : styles.fullCell,
+                        pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+                      ]}
+                    >
+                      {imageUri ? (
+                        <Image
+                          source={{ uri: imageUri }}
+                          style={styles.itemImage}
+                          resizeMode="contain"
+                        />
+                      ) : (
+                        <View style={styles.imagePlaceholder}>
+                          <Text style={styles.placeholderText}>{item.name}</Text>
+                        </View>
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ))}
 
             {!filteredCatalog.length && (
               <View style={styles.stateWrap}>
@@ -235,108 +289,43 @@ const styles = StyleSheet.create({
     color: '#1d2936',
     fontFamily: 'DynaPuff',
   },
+
+  // --- Layout ---
   listContent: {
     paddingBottom: gameScale(28),
-    gap: gameScale(12),
   },
-  card: {
-    borderRadius: gameScale(18),
-    padding: gameScale(16),
-    backgroundColor: 'rgba(8, 19, 31, 0.92)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
-  },
-  cardTopRow: {
+  row: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: gameScale(10),
+    marginBottom: gameScale(-50),
   },
-  cardTitleBlock: {
+  halfCell: {
     flex: 1,
   },
-  itemName: {
-    color: '#fff',
-    fontSize: gameScale(18),
-    fontFamily: 'DynaPuff',
+  fullCell: {
+    flex: 1,
   },
-  itemId: {
-    color: 'rgba(255,255,255,0.58)',
-    fontSize: gameScale(10),
-    marginTop: gameScale(3),
-  },
-  pricePill: {
-    paddingHorizontal: gameScale(12),
-    paddingVertical: gameScale(7),
-    borderRadius: gameScale(999),
-    backgroundColor: '#ffd84a',
-    alignSelf: 'flex-start',
-  },
-  priceText: {
-    color: '#1d2936',
-    fontSize: gameScale(11),
-    fontFamily: 'DynaPuff',
-  },
-  description: {
-    color: 'rgba(255,255,255,0.84)',
-    fontSize: gameScale(12),
-    lineHeight: gameScale(18),
-    marginTop: gameScale(10),
-  },
-  metaRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: gameScale(8),
-    marginTop: gameScale(12),
-  },
-  metaPill: {
-    paddingHorizontal: gameScale(10),
-    paddingVertical: gameScale(6),
-    borderRadius: gameScale(999),
-    backgroundColor: 'rgba(255, 216, 74, 0.15)',
-  },
-  metaPillSoft: {
-    paddingHorizontal: gameScale(10),
-    paddingVertical: gameScale(6),
-    borderRadius: gameScale(999),
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
-  metaText: {
-    color: '#ffd84a',
-    fontSize: gameScale(10),
-    fontFamily: 'DynaPuff',
-  },
-  metaTextSoft: {
-    color: 'rgba(255,255,255,0.72)',
-    fontSize: gameScale(10),
-  },
-  contentsList: {
-    marginTop: gameScale(12),
-    gap: gameScale(8),
-  },
-  contentRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: gameScale(9),
-    paddingHorizontal: gameScale(12),
+
+  // --- Image ---
+  itemImage: {
+    width: '100%',
+    height: undefined,
+    aspectRatio: 1,
     borderRadius: gameScale(12),
-    backgroundColor: 'rgba(255,255,255,0.05)',
   },
-  contentName: {
-    color: '#fff',
-    fontSize: gameScale(12),
-    flex: 1,
-    paddingRight: gameScale(8),
+
+  // --- Fallback placeholder ---
+  imagePlaceholder: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: gameScale(12),
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  contentQty: {
-    color: '#ffd84a',
+  placeholderText: {
+    color: 'rgba(255,255,255,0.4)',
     fontSize: gameScale(12),
     fontFamily: 'DynaPuff',
+    textAlign: 'center',
   },
 });

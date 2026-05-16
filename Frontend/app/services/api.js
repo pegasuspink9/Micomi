@@ -16,15 +16,15 @@ const POSSIBLE_BACKEND_URLS = [
 class ApiService {
   constructor() {
     this.baseURL = POSSIBLE_BACKEND_URLS[0];
-    this.isBackendAvailable = false; 
+    this.isBackendAvailable = false;
     this.authToken = null;
   }
 
   setAuthToken(token) {
 
-  this.authToken = token;
+    this.authToken = token;
   }
-  
+
   // Test backend connectivity
   async testConnection() {
     let sawNetworkError = false;
@@ -33,15 +33,15 @@ class ApiService {
         console.log(`Testing connection to: ${url}`);
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3000);
-        
-        const response = await fetch(`${url}/`, { 
+
+        const response = await fetch(`${url}/`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
           signal: controller.signal,
         });
-        
+
         clearTimeout(timeoutId);
-        
+
         // Even 401/404 means the server IS there.
         if (response.status) {
           this.baseURL = url;
@@ -55,7 +55,7 @@ class ApiService {
         if (isNetworkError(error)) sawNetworkError = true;
       }
     }
-    
+
     this.isBackendAvailable = false;
     if (sawNetworkError) {
       connectivityStore.setOffline(true);
@@ -87,7 +87,7 @@ class ApiService {
     const url = `${this.baseURL}${cleanEndpoint}`;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
-    
+
     const config = {
       headers: {
         'Content-Type': 'application/json',
@@ -113,7 +113,7 @@ class ApiService {
         try {
           errorData = await clone.json();
           const errMsg = typeof errorData.error === 'string' ? errorData.error : errorData.message;
-          
+
           // Trigger refresh if status is 401 OR if the text explicitly says "jwt expired"
           if (response.status === 401 || (errMsg && errMsg.includes('jwt expired'))) {
             isJwtExpired = true;
@@ -122,18 +122,18 @@ class ApiService {
           if (response.status === 401) isJwtExpired = true;
         }
       }
-      
+
       // ✅ Step 2: Intercept Expired Token based on the smarter check above
       if (isJwtExpired && !isRetry && !endpoint.includes('/refresh')) {
         console.log("🔄 JWT Expired strictly detected. Attempting automatic token refresh...");
         try {
           const { authService } = require('./authService');
           const newToken = await authService.refreshAccessToken();
-          
+
           if (newToken) {
             console.log("✅ Token refreshed successfully! Retrying original request...");
             this.setAuthToken(newToken);
-            
+
             const retryConfig = {
               ...options,
               headers: {
@@ -152,7 +152,7 @@ class ApiService {
       // ✅ Step 3: Handle all other standard API errors
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
-        
+
         if (errorData) {
           if (errorData.error && typeof errorData.error === 'string') {
             errorMessage = errorData.error;
@@ -160,10 +160,10 @@ class ApiService {
             errorMessage = errorData.message;
           }
         }
-        
+
         throw new Error(errorMessage);
       }
-      
+
       const data = await response.json();
       return data;
     } catch (error) {
