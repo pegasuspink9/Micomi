@@ -374,7 +374,10 @@ model Quest {
   quest_id       Int           @id @default(autoincrement())
   created_at     DateTime      @default(now())
   quest_period   QuestPeriod?  @default(daily)
+  quest_batch_key String?
   playerQuests   PlayerQuest[]
+
+  @@index([quest_period, quest_batch_key])
 }
 
 model PlayerQuest {

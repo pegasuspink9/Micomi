@@ -268,6 +268,126 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
   },
 ];
 
+const QUEST_CONCURRENCY_LIMIT = Math.max(
+  1,
+  Number.parseInt(process.env.QUEST_CONCURRENCY_LIMIT || "", 10) || 3,
+);
+
+function getQuestCount(period: QuestPeriod) {
+  return period === "daily" ? 15 : period === "weekly" ? 10 : 7;
+}
+
+function getQuestBatchKey(period: QuestPeriod, startDate: Date) {
+  return `${period}:${startDate.getTime()}`;
+}
+
+function buildQuestPool(period: QuestPeriod, batchKey: string) {
+  return generateQuestsByPeriod(period, getQuestCount(period)).map((quest) => ({
+    ...quest,
+    quest_batch_key: batchKey,
+  }));
+}
+
+async function getOrCreateQuestPool(period: QuestPeriod) {
+  const startDate = getStartDate(period);
+  const batchKey = getQuestBatchKey(period, startDate);
+  const questCount = getQuestCount(period);
+
+  const existingQuests = await prisma.quest.findMany({
+    where: {
+      quest_period: period,
+      quest_batch_key: batchKey,
+    },
+    orderBy: { quest_id: "asc" },
+  });
+
+  if (existingQuests.length > 0) {
+    if (existingQuests.length !== questCount) {
+      throw new Error(
+        `Incomplete quest pool for ${period}: expected ${questCount}, found ${existingQuests.length}`,
+      );
+    }
+
+    return existingQuests;
+  }
+
+  return await prisma.$transaction(async (tx) => {
+    const questPoolData = buildQuestPool(period, batchKey);
+    const createdQuests = [];
+
+    for (const questData of questPoolData) {
+      const quest = await tx.quest.create({
+        data: questData,
+      });
+
+      createdQuests.push(quest);
+    }
+
+    return createdQuests;
+  });
+}
+
+async function attachQuestPoolToPlayer(
+  playerId: number,
+  period: QuestPeriod,
+  questPool: Array<{ quest_id: number }>,
+) {
+  const expirationDate = getExpirationDate(period);
+  const startDate = getStartDate(period);
+
+  await prisma.playerQuest.deleteMany({
+    where: {
+      player_id: playerId,
+      quest_period: period,
+      expires_at: { gte: startDate },
+    },
+  });
+
+  await prisma.playerQuest.createMany({
+    data: questPool.map((quest) => ({
+      player_id: playerId,
+      quest_id: quest.quest_id,
+      current_value: 0,
+      is_completed: false,
+      is_claimed: false,
+      expires_at: expirationDate,
+      quest_period: period,
+    })),
+  });
+
+  return await prisma.playerQuest.findMany({
+    where: {
+      player_id: playerId,
+      quest_period: period,
+      quest_id: { in: questPool.map((quest) => quest.quest_id) },
+    },
+    include: { quest: true },
+    orderBy: { player_quest_id: "asc" },
+  });
+}
+
+async function runWithConcurrency<T>(
+  items: T[],
+  limit: number,
+  worker: (item: T, index: number) => Promise<void>,
+) {
+  const executing = new Set<Promise<void>>();
+
+  for (let i = 0; i < items.length; i += 1) {
+    const task = worker(items[i], i);
+    executing.add(task);
+
+    const cleanup = () => executing.delete(task);
+    task.then(cleanup).catch(cleanup);
+
+    if (executing.size >= limit) {
+      await Promise.race(executing);
+    }
+  }
+
+  await Promise.all(executing);
+}
+
 export function generateQuestsByPeriod(
   period: QuestPeriod,
   count: number,
@@ -365,12 +485,12 @@ export async function generatePeriodicQuests(period: QuestPeriod) {
   console.log(`Starting ${period} quest generation for all players...`);
 
   const startTime = Date.now();
-  const expirationDate = getExpirationDate(period);
-  const startDate = getStartDate(period);
-
-  const questCount = period === "daily" ? 15 : period === "weekly" ? 10 : 7;
 
   try {
+    const startDate = getStartDate(period);
+    const expirationDate = getExpirationDate(period);
+    const questPool = await getOrCreateQuestPool(period);
+
     const allPlayers = await prisma.player.findMany({
       select: { player_id: true, player_name: true },
     });
@@ -384,8 +504,10 @@ export async function generatePeriodicQuests(period: QuestPeriod) {
     for (let i = 0; i < allPlayers.length; i += batchSize) {
       const batch = allPlayers.slice(i, i + batchSize);
 
-      await Promise.all(
-        batch.map(async (player) => {
+      await runWithConcurrency(
+        batch,
+        QUEST_CONCURRENCY_LIMIT,
+        async (player) => {
           try {
             const existingQuests = await prisma.playerQuest.findMany({
               where: {
@@ -402,27 +524,7 @@ export async function generatePeriodicQuests(period: QuestPeriod) {
               return;
             }
 
-            const questsData = generateQuestsByPeriod(period, questCount);
-
-            await prisma.$transaction(async (tx) => {
-              for (const questData of questsData) {
-                const quest = await tx.quest.create({
-                  data: questData,
-                });
-
-                await tx.playerQuest.create({
-                  data: {
-                    player_id: player.player_id,
-                    quest_id: quest.quest_id,
-                    current_value: 0,
-                    is_completed: false,
-                    is_claimed: false,
-                    expires_at: expirationDate,
-                    quest_period: period,
-                  },
-                });
-              }
-            });
+            await attachQuestPoolToPlayer(player.player_id, period, questPool);
 
             successCount++;
             console.log(`Generated ${period} quests for ${player.player_name}`);
@@ -430,7 +532,7 @@ export async function generatePeriodicQuests(period: QuestPeriod) {
             errorCount++;
             console.error(`Failed for player ${player.player_id}:`, error);
           }
-        }),
+        },
       );
     }
 
@@ -526,46 +628,9 @@ export async function forceGenerateQuestsForPlayer(
   playerId: number,
   period: QuestPeriod,
 ) {
-  const expirationDate = getExpirationDate(period);
-  const startDate = getStartDate(period);
-  const questCount = period === "daily" ? 15 : period === "weekly" ? 10 : 7;
+  const questPool = await getOrCreateQuestPool(period);
 
-  await prisma.playerQuest.deleteMany({
-    where: {
-      player_id: playerId,
-      quest_period: period,
-      expires_at: { gte: startDate },
-    },
-  });
-
-  const questsData = generateQuestsByPeriod(period, questCount);
-
-  return await prisma.$transaction(async (tx) => {
-    const createdQuests = [];
-
-    for (const questData of questsData) {
-      const quest = await tx.quest.create({
-        data: questData,
-      });
-
-      const playerQuest = await tx.playerQuest.create({
-        data: {
-          player_id: playerId,
-          quest_id: quest.quest_id,
-          current_value: 0,
-          is_completed: false,
-          is_claimed: false,
-          expires_at: expirationDate,
-          quest_period: period,
-        },
-        include: { quest: true },
-      });
-
-      createdQuests.push(playerQuest);
-    }
-
-    return createdQuests;
-  });
+  return await attachQuestPoolToPlayer(playerId, period, questPool);
 }
 
 export async function checkAndGenerateMissingQuests() {
@@ -608,8 +673,10 @@ export async function checkAndGenerateMissingQuests() {
         for (let i = 0; i < playersMissingQuests.length; i += batchSize) {
           const batch = playersMissingQuests.slice(i, i + batchSize);
 
-          await Promise.all(
-            batch.map(async (player) => {
+          await runWithConcurrency(
+            batch,
+            QUEST_CONCURRENCY_LIMIT,
+            async (player) => {
               try {
                 await forceGenerateQuestsForPlayer(player.player_id, period);
                 generatedCount++;
@@ -619,7 +686,7 @@ export async function checkAndGenerateMissingQuests() {
                   error,
                 );
               }
-            }),
+            },
           );
         }
 
@@ -663,8 +730,10 @@ export async function checkAndGenerateMissingQuestsForAllPlayers() {
       );
 
       // Process entire batch in parallel
-      await Promise.all(
-        batch.map(async (player) => {
+      await runWithConcurrency(
+        batch,
+        QUEST_CONCURRENCY_LIMIT,
+        async (player) => {
           try {
             let generatedForThisPlayer = 0;
 
@@ -715,7 +784,7 @@ export async function checkAndGenerateMissingQuestsForAllPlayers() {
               error: error.message,
             });
           }
-        }),
+        },
       );
 
       // Yield to event loop between batches
