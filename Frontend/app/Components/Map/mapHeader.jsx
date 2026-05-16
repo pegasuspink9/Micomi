@@ -50,6 +50,7 @@ export default function MapHeader() {
       return () => clearInterval(syncInterval);
     }, [loadPlayerProfile, refreshPlayerData])
   );
+  
   const calculateLevelProgress = () => {
     const currentLevel = playerData?.playerLevel || 1;
     const currentExp = playerData?.expPoints || 0;
@@ -73,80 +74,82 @@ export default function MapHeader() {
     ? (energyStatus.isInfinite ? '∞' : formatCompactNumber(energyStatus.energy ?? 0))
     : '...';
   
-  const avatarUrl = playerData?.playerAvatar || "https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif";;
+  const avatarUrl = playerData?.playerAvatar || "https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif";
 
   return (
     <View style={styles.header}>
-      {/* Player Section */}
-      <View style={styles.playerInfo}>
-        
-        {/* Avatar Image - Restyled with 3-Layer Borders from Life.jsx */}
-        <TouchableOpacity 
-          activeOpacity={0.8}
-          onPress={() => router.push('/profile')}
-          style={styles.avatarBorderOuter}
-        >
-          <View style={styles.avatarBorderMiddle}>
-            <View style={styles.avatarBorderInner}>
-              <View style={styles.avatarCircle}>
-                <Image 
-                  source={{ uri: avatarUrl }} 
-                  style={styles.avatarImage} 
-                  contentFit="cover"
-                  cachePolicy="memory-disk"
-                />
+      {/* Player Section - Wrapped with the new container */}
+      <View style={styles.playerInfoWrapper}>
+        <View style={styles.playerInfo}>
+          
+          {/* Avatar Image - Restyled with 3-Layer Borders from Life.jsx */}
+          <TouchableOpacity 
+            activeOpacity={0.8}
+            onPress={() => router.push('/profile')}
+            style={styles.avatarBorderOuter}
+          >
+            <View style={styles.avatarBorderMiddle}>
+              <View style={styles.avatarBorderInner}>
+                <View style={styles.avatarCircle}>
+                  <Image 
+                    source={{ uri: avatarUrl }} 
+                    style={styles.avatarImage} 
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                  />
+                </View>
               </View>
             </View>
-          </View>
-        </TouchableOpacity>
-        
-        {/* Column: Name Top, Level+Bar Bottom */}
-        <View style={styles.nameAndXpColumn}>
-            <Text style={styles.usernameText} numberOfLines={1}>{username}</Text>
-            
-            <View style={styles.levelAndBarRow}>
-                {/* Mini Level Badge - Restyled and Fixed Display */}
-                <View style={styles.miniBadgeLayer1}>
-                    <View style={styles.miniBadgeLayer2}>
-                      <View style={styles.miniBadgeLayer3}>
-                        <LinearGradient
-                          colors={['#1e3a5f', '#152d4a']}
-                          style={styles.levelBadgeGradient}
-                        >
-                          <Text style={styles.miniLevelText}>{levelData.currentLevel || 1}</Text>
-                        </LinearGradient>
-                      </View>
-                    </View>
-                </View>
-
-                {/* XP Bar - Restyled to match Health Bar from Life.jsx */}
-                <View style={styles.healthBorderOuter}>
-                  <View style={styles.healthBorderMiddle}>
-                    <View style={styles.healthBorderInner}>
-                      <View style={styles.healthBarTrack}>
-                        <View 
-                          style={[
-                            styles.healthBarFillContainer,
-                            { width: `${levelData.progress}%` }
-                          ]}
-                        >
+          </TouchableOpacity>
+          
+          {/* Column: Name Top, Level+Bar Bottom */}
+          <View style={styles.nameAndXpColumn}>
+              <Text style={styles.usernameText} numberOfLines={1}>{username}</Text>
+              
+              <View style={styles.levelAndBarRow}>
+                  {/* Mini Level Badge - Restyled and Fixed Display */}
+                  <View style={styles.miniBadgeLayer1}>
+                      <View style={styles.miniBadgeLayer2}>
+                        <View style={styles.miniBadgeLayer3}>
                           <LinearGradient
-                            colors={['#4a90d9', '#2d5a87']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={styles.healthBarFill}
-                          />
+                            colors={['#1e3a5f', '#152d4a']}
+                            style={styles.levelBadgeGradient}
+                          >
+                            <Text style={styles.miniLevelText}>{levelData.currentLevel || 1}</Text>
+                          </LinearGradient>
                         </View>
-                        <View style={styles.xpTextContainer}>
-                          <Text style={styles.xpText}>
-                              {levelData.currentExp}/{levelData.nextLevelExp}
-                          </Text>
+                      </View>
+                  </View>
+
+                  {/* XP Bar - Restyled to match Health Bar from Life.jsx */}
+                  <View style={styles.healthBorderOuter}>
+                    <View style={styles.healthBorderMiddle}>
+                      <View style={styles.healthBorderInner}>
+                        <View style={styles.healthBarTrack}>
+                          <View 
+                            style={[
+                              styles.healthBarFillContainer,
+                              { width: `${levelData.progress}%` }
+                            ]}
+                          >
+                            <LinearGradient
+                              colors={['#4a90d9', '#2d5a87']}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 0 }}
+                              style={styles.healthBarFill}
+                            />
+                          </View>
+                          <View style={styles.xpTextContainer}>
+                            <Text style={styles.xpText}>
+                                {levelData.currentExp}/{levelData.nextLevelExp}
+                            </Text>
+                          </View>
                         </View>
                       </View>
                     </View>
                   </View>
-                </View>
-            </View>
+              </View>
+          </View>
         </View>
       </View>
       
@@ -160,6 +163,7 @@ export default function MapHeader() {
               <View style={styles.resourceBorderInner}>
                 <View style={styles.resourceTrack}>
                   <Text style={styles.resourceText}>{formatCompactNumber(coins)}</Text>
+                  <Text style={styles.plusSign}>+</Text>
                 </View>
               </View>
             </View>
@@ -179,6 +183,7 @@ export default function MapHeader() {
               <View style={styles.resourceBorderInner}>
                 <View style={styles.resourceTrack}>
                   <Text style={styles.resourceText}>{formatCompactNumber(diamonds)}</Text>
+                  <Text style={styles.plusSign}>+</Text>
                 </View>
               </View>
             </View>
@@ -198,6 +203,7 @@ export default function MapHeader() {
               <View style={styles.resourceBorderInner}>
                 <View style={styles.resourceTrack}>
                   <Text style={styles.resourceText}>{energyValue}</Text>
+                  <Text style={styles.plusSign}>+</Text>
                 </View>
               </View>
             </View>
@@ -240,10 +246,15 @@ const styles = StyleSheet.create({
     paddingTop: gameScale(20),
     paddingBottom: gameScale(15),
   },
+  // Added the new wrapper with margin
+  playerInfoWrapper: {
+    marginLeft: gameScale(-15),
+    width: '40%', // Width moved from playerInfo to wrapper
+  },
   playerInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '40%', // CHANGED FROM 50% to 40% to balance space
+    width: '100%', // Take up full width of the wrapper
     gap: gameScale(5),
   },
   
@@ -294,6 +305,7 @@ const styles = StyleSheet.create({
   },
 
   nameAndXpColumn: {
+    marginTop: gameScale(-6),
     flex: 1,
     flexDirection: 'column',
     justifyContent: 'center',
@@ -301,7 +313,7 @@ const styles = StyleSheet.create({
   },
    usernameText: {
     color: '#fff',
-    fontSize: gameScale(13), // Slightly smaller to balance
+    fontSize: gameScale(11), 
     fontFamily: 'DynaPuff',
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 1, height: 1 },
@@ -313,17 +325,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    marginTop: gameScale(-2),
+    marginTop: gameScale(0), // Adjusted slightly for balance
     marginLeft: gameScale(4),
   },
 
-  // --- Mini Level Badge Style ---
+  // --- Mini Level Badge Style (SHRUNK) ---
   miniBadgeLayer1: {
-    width: gameScale(28), // Increased from 24
-    height: gameScale(28), // Increased from 24
-    borderRadius: gameScale(14),
+    width: gameScale(25), // Shrunk from 28
+    height: gameScale(25), // Shrunk from 28
+    borderRadius: gameScale(10), // Adjusted for new width/height
     backgroundColor: '#1e3a5f',
-    padding: gameScale(1.5),
+    padding: gameScale(1.5), // Slightly smaller padding
     borderWidth: gameScale(1),
     borderColor: '#0d1f33',
     shadowColor: '#000',
@@ -334,48 +346,49 @@ const styles = StyleSheet.create({
   },
   miniBadgeLayer2: {
     flex: 1,
-    borderRadius: gameScale(14),
+    borderRadius: gameScale(10),
     backgroundColor: '#152d4a',
-    borderWidth: gameScale(1),
+    borderWidth: gameScale(0.5), // Thinner border
     borderColor: '#4a90d9',
   },
   miniBadgeLayer3: {
     flex: 1,
-    borderRadius: gameScale(14),
-    overflow: 'visible', // Changed to visible for testing display
+    borderRadius: gameScale(10),
+    overflow: 'visible', 
   },
   levelBadgeGradient: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: gameScale(14),
+    borderRadius: gameScale(10),
   },
   miniLevelText: {
-    fontSize: gameScale(12), // Increased from 10
+    fontSize: gameScale(12), // Shrunk from 12
     fontFamily: 'DynaPuff',
     color: '#ffffff',
     textAlign: 'center',
-    textAlignVertical: 'center', // Fix for Android centering
-    includeFontPadding: false, // Prevents font metrics from pushing text down
+    textAlignVertical: 'center', 
+    includeFontPadding: false, 
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 1,
   },
 
+  // --- XP Bar Style (SHRUNK) ---
   healthBorderOuter: {
-    width: gameScale(86),
-    borderRadius: gameScale(12),
+    width: gameScale(67), // Shrunk from 86
+    borderRadius: gameScale(8), // Reduced radii
     borderWidth: gameScale(1),
     backgroundColor: '#1e3a5f',
     borderTopColor: '#0d1f33',
     borderLeftColor: '#0d1f33',
     borderBottomColor: '#2d5a87',
     borderRightColor: '#2d5a87',
-    marginLeft: gameScale(-18), // Tuck behind the level badge
+    marginLeft: gameScale(-8), // Adjusted tuck behind smaller badge (was -18)
     zIndex: 1,
   },
   healthBorderMiddle: {
-    borderRadius: gameScale(10),
+    borderRadius: gameScale(8), 
     borderWidth: gameScale(1),
     backgroundColor: '#152d4a',
     borderTopColor: '#4a90d9',
@@ -384,27 +397,27 @@ const styles = StyleSheet.create({
     borderRightColor: '#0a1929',
   },
   healthBorderInner: {
-    borderRadius: gameScale(8),
+    borderRadius: gameScale(5),
     backgroundColor: 'rgba(74, 144, 217, 0.15)',
     borderColor: 'rgba(74, 144, 217, 0.3)',
     borderWidth: gameScale(0.5),
     overflow: 'hidden',
   },
   healthBarTrack: {
-    height: gameScale(14),
+    height: gameScale(14), // Shrunk from 14
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: gameScale(6),
+    borderRadius: gameScale(4),
     position: 'relative',
     overflow: 'hidden',
   },
   healthBarFillContainer: {
     height: '100%',
-    borderRadius: gameScale(6),
+    borderRadius: gameScale(4),
     overflow: 'hidden',
   },
   healthBarFill: {
     flex: 1,
-    borderRadius: gameScale(6),
+    borderRadius: gameScale(4),
   },
 
   xpTextContainer: {
@@ -412,10 +425,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 5,
-    paddingLeft: gameScale(4),
+    paddingLeft: gameScale(4), // Accounts for tuck margin slightly
   },
   xpText: {
-    fontSize: gameScale(8),
+    fontSize: gameScale(8), // Shrunk slightly to fit smaller bar (was 8)
     fontFamily: 'DynaPuff',
     color: '#FFF',
     textShadowColor: 'rgba(0, 0, 0, 1)',
@@ -423,10 +436,10 @@ const styles = StyleSheet.create({
   },
 
   // --- NEW RESOURCE STYLES ---
-    resources: {
+  resources: {
     flexDirection: 'row',
     gap: gameScale(5), 
-    width: '55%', // CHANGED FROM 40% to 50% to prevent overflow
+    width: '60%', 
     justifyContent: 'flex-end',
     paddingRight: gameScale(5),
   },
@@ -463,8 +476,10 @@ const styles = StyleSheet.create({
   },
   resourceTrack: {
     height: gameScale(20),
-    paddingLeft: gameScale(24), // Space for the icon
-    paddingRight: gameScale(10),
+    flexDirection: 'row', // Added to line up text and + sign horizontally
+    alignItems: 'center', // Centers vertically
+    paddingLeft: gameScale(24), 
+    paddingRight: gameScale(8), // Lowered slightly to make room for the + sign
     justifyContent: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
@@ -476,6 +491,17 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
+  },
+  // Added standard style for the + Sign
+  plusSign: {
+    color: '#FFD700', // Yellow
+    fontSize: gameScale(18),
+    fontFamily: 'DynaPuff',
+    marginLeft: gameScale(4), // Adds space between the number and the +
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+    includeFontPadding: false, // Helps perfectly center it vertically
   },
   coinIconAbsolute: {
     position: 'absolute',
@@ -497,7 +523,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.4,
   },
-
 
   headerIcons: {
     flexDirection: 'row',
