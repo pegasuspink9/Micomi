@@ -97,9 +97,9 @@ io.on("connection", (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.PORT as string, 10) || 8080;
 
-server.listen(PORT, async () => {
+server.listen(PORT, "0.0.0.0", async () => {
   console.log(`\n✅ Server running on port ${PORT}\n`);
 
   // Register cron jobs immediately (non-blocking)
