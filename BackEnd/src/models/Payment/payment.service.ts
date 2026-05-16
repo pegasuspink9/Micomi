@@ -3,39 +3,34 @@ import { successResponse, errorResponse } from "../../../utils/response";
 import { google } from "googleapis";
 import { prisma } from "../../../prisma/client";
 import { VerifyPurchaseBody } from "./payment.types";
+import {
+  applyCatalogPurchase,
+  resolveCatalogItemByProductId,
+} from "./payment.fulfillment";
 
-// Google Auth Setup
-const auth = new google.auth.GoogleAuth({
-  keyFile: "./credentials.json",
-  scopes: ["https://www.googleapis.com/auth/androidpublisher"],
-});
+let playDeveloperApi: any = null;
 
-const playDeveloperApi = google.androidpublisher({
-  version: "v3",
-  auth: auth,
-});
+if (process.env.MOCK_IAP !== "true") {
+  const auth = new google.auth.GoogleAuth({
+    keyFile: "./credentials.json",
+    scopes: ["https://www.googleapis.com/auth/androidpublisher"],
+  });
 
-// Diamond packages mapping
-export const DIAMOND_PACKAGES: Record<string, number> = {
-  diamonds_60: 60,
-  diamonds_150: 150,
-  diamonds_300: 330,
-  diamonds_600: 660,
-  diamonds_1200: 1380,
-  diamonds_2500: 3000,
-  diamonds_5000: 6500,
-  diamonds_10000: 13500,
-};
-
-// Define your Infinite Energy Product ID exactly as it is in Google Play Console
-export const INFINITE_ENERGY_PRODUCT_ID = "infinite_energy_399";
+  playDeveloperApi = google.androidpublisher({
+    version: "v3",
+    auth: auth,
+  });
+}
 
 /* POST - Verify Google Play In-App Purchase */
 export const verifyPurchase = async (
-  req: Request<{}, any, VerifyPurchaseBody>,
+  req: Request<{}, any, VerifyPurchaseBody & { testPlayerId?: string }>,
   res: Response,
 ) => {
-  const playerId = (req as any).user?.id;
+  // Allow passing testPlayerId in body ONLY during testing to bypass JWT auth in Postman
+  const isMock = process.env.MOCK_IAP === "true";
+  const playerId =
+    (req as any).user?.id || (isMock ? req.body.testPlayerId : undefined);
   const { productId, purchaseToken } = req.body;
 
   if (!productId || !purchaseToken || !playerId) {
@@ -57,63 +52,78 @@ export const verifyPurchase = async (
       return errorResponse(res, null, "Purchase already processed", 400);
     }
 
-    // 2. Verify with Google Play
-    const response = await playDeveloperApi.purchases.products.get({
-      packageName: "com.micomi.app",
-      productId: productId,
-      token: purchaseToken,
-    });
+    // 2. Verify with Google Play (MOCK OR REAL)
+    let purchaseData;
 
-    const purchaseData = response.data;
+    if (isMock) {
+      console.log(
+        `[MOCK_IAP] Simulating Google Play Verification for token: ${purchaseToken}`,
+      );
+
+      // Simulate Google 404 Error
+      if (purchaseToken === "MOCK_GOOGLE_404") {
+        const error: any = new Error("Simulated Google 404 Error");
+        error.response = { status: 404 };
+        throw error;
+      }
+
+      // Simulate Pending state
+      if (purchaseToken === "MOCK_PENDING") {
+        purchaseData = { purchaseState: 1 }; // 1 = Pending/Cancelled
+      } else {
+        purchaseData = { purchaseState: 0 }; // 0 = Purchased (Success)
+      }
+
+      // Fake network delay
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    } else {
+      // REAL GOOGLE API CALL
+      const response = await playDeveloperApi.purchases.products.get({
+        packageName: "com.micomi.app",
+        productId: productId,
+        token: purchaseToken,
+      });
+      purchaseData = response.data;
+    }
 
     if (purchaseData.purchaseState !== 0) {
       return errorResponse(res, null, "Purchase not complete or pending.", 400);
     }
 
-    // 3. Determine what the player bought
-    const isInfiniteEnergy = productId === INFINITE_ENERGY_PRODUCT_ID;
-    const diamondsToAdd = DIAMOND_PACKAGES[productId] || 0;
+    // 3. Resolve catalog item using productId (google id or catalog id)
+    const catalogItem = resolveCatalogItemByProductId(productId);
 
-    // If it's neither an infinite energy pack nor a valid diamond pack, reject it
-    if (!isInfiniteEnergy && diamondsToAdd === 0) {
+    if (!catalogItem) {
       return errorResponse(res, null, "Invalid product ID", 400);
     }
 
     // 4. Atomic transaction
-    await prisma.$transaction(async (tx) => {
-      // Record the transaction (diamonds_added will just be 0 for the energy pack)
+    const fulfillment = await prisma.$transaction(async (tx) => {
+      const result = await applyCatalogPurchase(tx, playerId, catalogItem);
+
+      // Record the transaction
       await tx.purchaseTransaction.create({
         data: {
           player_id: playerId,
           product_id: productId,
           purchase_token: purchaseToken,
-          diamonds_added: diamondsToAdd,
+          diamonds_added: result.diamondsAdded,
         },
       });
 
-      // Prepare the update object based on what was purchased
-      const playerUpdateData: any = {};
-
-      if (isInfiniteEnergy) {
-        playerUpdateData.has_infinite_energy = true;
-      }
-
-      if (diamondsToAdd > 0) {
-        playerUpdateData.diamonds = { increment: diamondsToAdd };
-      }
-
-      // Update the player
-      await tx.player.update({
-        where: { player_id: playerId },
-        data: playerUpdateData,
-      });
+      return result;
     });
 
     return successResponse(
       res,
       {
-        diamondsAdded: diamondsToAdd,
-        infiniteEnergyUnlocked: isInfiniteEnergy,
+        coinsAdded: fulfillment.coinsAdded,
+        diamondsAdded: fulfillment.diamondsAdded,
+        unlockedMaps: fulfillment.unlockedMaps,
+        unlockedCharacters: fulfillment.unlockedCharacters,
+        infiniteEnergyMonthlyExpiresAt:
+          fulfillment.infiniteEnergyMonthlyExpiresAt,
+        infiniteEnergyLifetime: fulfillment.infiniteEnergyLifetime,
       },
       "Purchase processed successfully!",
     );

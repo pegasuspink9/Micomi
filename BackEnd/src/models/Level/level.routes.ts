@@ -7,10 +7,10 @@ import {
 
 const router = express.Router();
 
-router.get("/", LevelService.getAllLevels);
-router.get("/:id", LevelService.getLevelById);
-router.post("/", LevelService.createLevel);
-router.put("/:id", LevelService.updateLevel);
-router.delete("/:id", LevelService.deleteLevel);
+router.get("/", authenticate, requireAdmin, LevelService.getAllLevels);
+router.get("/:id", authenticate, requireAdmin, LevelService.getLevelById);
+router.post("/", authenticate, requireAdmin, LevelService.createLevel);
+router.put("/:id", authenticate, requireAdmin, LevelService.updateLevel);
+router.delete("/:id", authenticate, requireAdmin, LevelService.deleteLevel);
 
 export default router;

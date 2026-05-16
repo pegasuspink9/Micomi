@@ -7,10 +7,15 @@ import {
 
 const router = express.Router();
 
-router.get("/", DialogueService.getAllDialogue);
-router.get("/:id", DialogueService.getDialogueById);
-router.post("/", DialogueService.createDialogue);
-router.put("/:id", DialogueService.updateDialogue);
-router.delete("/:id", DialogueService.deleteDialogue);
+router.get("/", authenticate, requireAdmin, DialogueService.getAllDialogue);
+router.get("/:id", authenticate, requireAdmin, DialogueService.getDialogueById);
+router.post("/", authenticate, requireAdmin, DialogueService.createDialogue);
+router.put("/:id", authenticate, requireAdmin, DialogueService.updateDialogue);
+router.delete(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  DialogueService.deleteDialogue,
+);
 
 export default router;

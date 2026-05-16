@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model Admin {
@@ -146,6 +145,7 @@ model Player {
   energy                       Int                      @default(100)
   energy_reset_at              DateTime?
   has_infinite_energy          Boolean                  @default(false)
+  infinite_energy_expires_at   DateTime?
   player_name                  String
   current_streak               Int                      @default(0)
   longest_streak               Int                      @default(0)

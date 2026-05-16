@@ -163,6 +163,29 @@ export const ENEMY_IDLE_SOUNDS: Record<string, string> = {
     "https://micomi-assets.me/Enemy%20idle%20sound/AutumnLand/Stripy.wav",
   Scarecraw:
     "https://micomi-assets.me/Enemy%20idle%20sound/AutumnLand/Thumbug.wav",
+  PuddleJump:
+    "https://micomi-assets.me/Enemy%20idle%20sound/GreenLand/LadyNo.wav",
+  Chirpsalot:
+    "https://micomi-assets.me/Enemy%20idle%20sound/GreenLand/Draco.wav",
+  Gigglewing:
+    "https://micomi-assets.me/Enemy%20idle%20sound/AutumnLand/Barbalony.wav",
+  Plumetle:
+    "https://micomi-assets.me/Enemy%20idle%20sound/AutumnLand/Barbalony.wav",
+  Flutterby:
+    "https://micomi-assets.me/Enemy%20idle%20sound/IceLand/beernabee.wav",
+  Antennae: "https://micomi-assets.me/Enemy%20idle%20sound/IceLand/Winkito.wav",
+  Frostwing:
+    "https://micomi-assets.me/Enemy%20idle%20sound/IceLand/Mothier.wav",
+  Sparky:
+    "https://micomi-assets.me/Enemy%20idle%20sound/AutumnLand/Bluejudy.wav",
+  "Crystal Crawler":
+    "https://micomi-assets.me/Enemy%20idle%20sound/IceLand/Coldupillar.wav",
+  Wigglewoo:
+    "https://micomi-assets.me/Enemy%20idle%20sound/GreenLand/Formica.wav",
+  Hotfoot:
+    "https://micomi-assets.me/Enemy%20idle%20sound/AutumnLand/Nutsubitsu.wav",
+  Sparklebug:
+    "https://micomi-assets.me/Enemy%20idle%20sound/AutumnLand/Thumbug.wav",
 };
 
 export const getEnemyIdleAudio = (enemyName: string): string | null => {

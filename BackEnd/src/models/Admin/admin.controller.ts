@@ -12,7 +12,7 @@ export const getAllAdmins = async (req: Request, res: Response) => {
     const result = await AdminService.getAllAdmins();
     return successResponse(res, result, "Admins fetched successfully");
   } catch (error) {
-    return errorResponse(res, null, "Failed to fetch admins");
+    return errorResponse(res, error, "Failed to fetch admins");
   }
 };
 
@@ -25,7 +25,7 @@ export const getAdminById = async (req: Request, res: Response) => {
     }
     return successResponse(res, result, "Admin found");
   } catch (error) {
-    return errorResponse(res, null, "Failed to fetch admin");
+    return errorResponse(res, error, "Failed to fetch admin");
   }
 };
 
@@ -35,7 +35,7 @@ export const createAdmin = async (req: Request, res: Response) => {
     const data = await AdminService.createAdmin(req.body);
     return successResponse(res, data, "Admin created successfully", 201);
   } catch (error) {
-    return errorResponse(res, null, "Failed to create admin", 400);
+    return errorResponse(res, error, "Failed to create admin", 400);
   }
 };
 
@@ -44,11 +44,11 @@ export const updateAdmin = async (req: Request, res: Response) => {
   try {
     const result = await AdminService.updateAdmin(
       Number(req.params.id),
-      req.body
+      req.body,
     );
     return successResponse(res, result, "Admin updated successfully");
   } catch (error) {
-    return errorResponse(res, null, "Failed to update admin");
+    return errorResponse(res, error, "Failed to update admin");
   }
 };
 
@@ -58,7 +58,7 @@ export const deleteAdmin = async (req: Request, res: Response) => {
     const result = await AdminService.deleteAdmin(Number(req.params.id));
     return successResponse(res, result, "Admin deleted successfully");
   } catch (error) {
-    return errorResponse(res, null, "Failed to delete admin");
+    return errorResponse(res, error, "Failed to delete admin");
   }
 };
 
@@ -90,9 +90,9 @@ export const loginAdmin = async (req: Request, res: Response) => {
     return successResponse(
       res,
       { accessToken, admin: result.admin },
-      "Login successful"
+      "Login successful",
     );
   } catch (error) {
-    return errorResponse(res, null, "Failed to login");
+    return errorResponse(res, error, "Failed to login");
   }
 };

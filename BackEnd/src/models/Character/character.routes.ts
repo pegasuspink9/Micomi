@@ -7,10 +7,25 @@ import {
 
 const router = express.Router();
 
-router.get("/", CharacterService.getAllCharacters);
-router.get("/:id", CharacterService.getCharacterById);
-router.post("/", CharacterService.createCharacter);
-router.put("/:id", CharacterService.updateCharacter);
-router.delete("/:id", CharacterService.deleteCharacter);
+router.get("/", authenticate, requireAdmin, CharacterService.getAllCharacters);
+router.get(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  CharacterService.getCharacterById,
+);
+router.post("/", authenticate, requireAdmin, CharacterService.createCharacter);
+router.put(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  CharacterService.updateCharacter,
+);
+router.delete(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  CharacterService.deleteCharacter,
+);
 
 export default router;

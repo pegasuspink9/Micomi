@@ -7,9 +7,14 @@ import {
   ShopPotionUpdateInput,
   isPurchasedEdit,
 } from "./shop.types";
+import { STORE_CATALOG } from "./shop.catalog";
 import { errorResponse, successResponse } from "../../../utils/response";
 
 const prisma = new PrismaClient();
+
+export const getStoreCatalog = async (req: Request, res: Response) => {
+  return successResponse(res, STORE_CATALOG, "Store catalog fetched");
+};
 
 /* GET all characters in shop */
 export const getAllCharactersInShop = async (req: Request, res: Response) => {
