@@ -7,10 +7,10 @@ import {
 
 const router = express.Router();
 
-router.get("/", LessonService.getAllLessons);
-router.get("/:id", LessonService.getLessonById);
-router.post("/", LessonService.createLesson);
-router.put("/:id", LessonService.updateLesson);
-router.delete("/:id", LessonService.deleteLesson);
+router.get("/", authenticate, requireAdmin, LessonService.getAllLessons);
+router.get("/:id", authenticate, requireAdmin, LessonService.getLessonById);
+router.post("/", authenticate, requireAdmin, LessonService.createLesson);
+router.put("/:id", authenticate, requireAdmin, LessonService.updateLesson);
+router.delete("/:id", authenticate, requireAdmin, LessonService.deleteLesson);
 
 export default router;

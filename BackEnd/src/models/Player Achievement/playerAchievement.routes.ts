@@ -7,10 +7,35 @@ import {
 
 const router = express.Router();
 
-router.get("/", PlayerAchievementService.getAllPlayerAchievement);
-router.get("/:id", PlayerAchievementService.getPlayerAchievementById);
-router.post("/", PlayerAchievementService.createPlayerAchievement);
-router.put("/:id", PlayerAchievementService.updatePlayerAchievement);
-router.delete("/:id", PlayerAchievementService.deletePlayerAchievement);
+router.get(
+  "/",
+  authenticate,
+  requireAdmin,
+  PlayerAchievementService.getAllPlayerAchievement,
+);
+router.get(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  PlayerAchievementService.getPlayerAchievementById,
+);
+router.post(
+  "/",
+  authenticate,
+  requireAdmin,
+  PlayerAchievementService.createPlayerAchievement,
+);
+router.put(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  PlayerAchievementService.updatePlayerAchievement,
+);
+router.delete(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  PlayerAchievementService.deletePlayerAchievement,
+);
 
 export default router;

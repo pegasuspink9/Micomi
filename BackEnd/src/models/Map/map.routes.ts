@@ -10,10 +10,10 @@ import {
 
 const router = express.Router();
 
-router.get("/maps", MapService.getAllMaps);
-router.post("/", MapService.createMap);
-router.put("/:id", MapService.updateMap);
-router.delete("/:id", MapService.deleteMap);
+router.get("/maps", authenticate, requireAdmin, MapService.getAllMaps);
+router.post("/", authenticate, requireAdmin, MapService.createMap);
+router.put("/:id", authenticate, requireAdmin, MapService.updateMap);
+router.delete("/:id", authenticate, requireAdmin, MapService.deleteMap);
 
 router.get("/", authenticate, requirePlayer, MapService.getAllMapsByPlayerId); //player map display
 router.post(

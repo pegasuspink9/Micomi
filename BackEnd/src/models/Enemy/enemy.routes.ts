@@ -7,10 +7,10 @@ import {
 
 const router = express.Router();
 
-router.get("/", EnemyService.getAllEnemies);
-router.get("/:id", EnemyService.getEnemyById);
-router.post("/", EnemyService.createEnemy);
-router.put("/:id", EnemyService.updateEnemy);
-router.delete("/:id", EnemyService.deleteEnemy);
+router.get("/", authenticate, requireAdmin, EnemyService.getAllEnemies);
+router.get("/:id", authenticate, requireAdmin, EnemyService.getEnemyById);
+router.post("/", authenticate, requireAdmin, EnemyService.createEnemy);
+router.put("/:id", authenticate, requireAdmin, EnemyService.updateEnemy);
+router.delete("/:id", authenticate, requireAdmin, EnemyService.deleteEnemy);
 
 export default router;

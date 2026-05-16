@@ -7,11 +7,11 @@ import {
 
 const router = express.Router();
 
-router.get("/", ThemeShopService.getAllThemes);
-router.get("/:id", ThemeShopService.getThemeById);
+router.get("/", authenticate, requireAdmin, ThemeShopService.getAllThemes);
+router.get("/:id", authenticate, requireAdmin, ThemeShopService.getThemeById);
 
-router.post("/", ThemeShopService.createTheme);
-router.put("/:id", ThemeShopService.updateTheme);
-router.delete("/:id", ThemeShopService.deleteTheme);
+router.post("/", authenticate, requireAdmin, ThemeShopService.createTheme);
+router.put("/:id", authenticate, requireAdmin, ThemeShopService.updateTheme);
+router.delete("/:id", authenticate, requireAdmin, ThemeShopService.deleteTheme);
 
 export default router;

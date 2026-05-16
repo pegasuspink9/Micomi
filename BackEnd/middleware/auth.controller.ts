@@ -19,6 +19,12 @@ import * as PlayerService from "../src/models/Player/player.service";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_WEB_CLIENT_ID);
 
+const extractUsernameFromEmail = (email: string) => {
+  const match = email.match(/^([^@]+)/);
+  if (!match) return "";
+  return match[1].toLowerCase().replace(/[^a-z0-9_]/g, "");
+};
+
 async function handleLoginSideEffects(playerId: number) {
   // 1. Fetch the player BEFORE updating to check the previous last_active date
   // We use the PlayerService you already imported to get the data
@@ -59,11 +65,17 @@ export const googleMobileAuth = async (req: Request, res: Response) => {
     if (!payload || !payload.email)
       return errorResponse(res, null, "Invalid token", 401);
 
+    const usernameFromEmail = extractUsernameFromEmail(payload.email);
+    const avatarUrl =
+      typeof payload.picture === "string" ? payload.picture : undefined;
+
     const player = await findOrCreateOAuthPlayer({
       provider: "google",
       providerId: payload.sub,
       email: payload.email,
       name: payload.name || "Player",
+      username: usernameFromEmail,
+      avatarUrl,
     });
 
     const updatedPlayer = await handleLoginSideEffects(player.player_id);
@@ -103,6 +115,11 @@ interface FacebookProfile {
   id: string;
   name: string;
   email?: string;
+  picture?: {
+    data?: {
+      url?: string;
+    };
+  };
 }
 
 export const facebookMobileAuth = async (req: Request, res: Response) => {
@@ -111,7 +128,7 @@ export const facebookMobileAuth = async (req: Request, res: Response) => {
     if (!accessToken)
       return errorResponse(res, null, "Access token required", 400);
 
-    const fbUrl = `https://graph.facebook.com/me?fields=id,name,email&access_token=${accessToken}`;
+    const fbUrl = `https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token=${accessToken}`;
 
     let fbProfile: FacebookProfile;
     try {
@@ -132,12 +149,16 @@ export const facebookMobileAuth = async (req: Request, res: Response) => {
 
     const emailToUse =
       fbProfile.email || `fb_${fbProfile.id}@facebook.placeholder`;
+    const usernameFromEmail = extractUsernameFromEmail(emailToUse);
+    const avatarUrl = fbProfile.picture?.data?.url;
 
     const player = await findOrCreateOAuthPlayer({
       provider: "facebook",
       providerId: fbProfile.id,
       email: emailToUse,
       name: fbProfile.name || "Player",
+      username: usernameFromEmail,
+      avatarUrl,
     });
 
     const updatedPlayer = await handleLoginSideEffects(player.player_id);

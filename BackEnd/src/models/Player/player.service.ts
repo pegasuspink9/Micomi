@@ -27,6 +27,25 @@ const prisma = new PrismaClient();
 export const DEFAULT_AVATAR_URL =
   "https://micomi-assets.me/Player%20Avatars%20Final/Avatar_1.png";
 
+const normalizeUsername = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "");
+
+const ensureUniqueUsername = async (baseUsername: string) => {
+  const normalizedBase = normalizeUsername(baseUsername) || "user";
+  let candidate = normalizedBase;
+  let suffix = 0;
+
+  while (await prisma.player.findUnique({ where: { username: candidate } })) {
+    suffix += 1;
+    candidate = `${normalizedBase}${suffix}`;
+  }
+
+  return candidate;
+};
+
 const BASE_EXP_REQUIREMENT = 100;
 const EXP_EXPONENT = 1.5;
 
@@ -446,7 +465,7 @@ export const createPlayer = async (data: PlayerCreateInput) => {
       password: finalPassword,
       google_id: (data as any).google_id || null,
       facebook_id: (data as any).facebook_id || null,
-      player_avatar: DEFAULT_AVATAR_URL,
+      player_avatar: data.player_avatar || DEFAULT_AVATAR_URL,
       created_at: new Date(),
       last_active: new Date(),
       days_logged_in: 0,
@@ -480,6 +499,8 @@ interface OAuthUserParams {
   providerId: string;
   email: string;
   name: string;
+  username?: string;
+  avatarUrl?: string;
 }
 
 export const findOrCreateOAuthPlayer = async ({
@@ -487,6 +508,8 @@ export const findOrCreateOAuthPlayer = async ({
   providerId,
   email,
   name,
+  username,
+  avatarUrl,
 }: OAuthUserParams) => {
   let player = await prisma.player.findUnique({
     where:
@@ -495,18 +518,39 @@ export const findOrCreateOAuthPlayer = async ({
         : { facebook_id: providerId },
   });
 
-  if (player) return player;
+  if (player) {
+    if (
+      avatarUrl &&
+      (!player.player_avatar || player.player_avatar === DEFAULT_AVATAR_URL)
+    ) {
+      player = await prisma.player.update({
+        where: { player_id: player.player_id },
+        data: { player_avatar: avatarUrl },
+      });
+    }
+    return player;
+  }
 
   const existingPlayerByEmail = await prisma.player.findUnique({
     where: { email },
   });
 
   if (existingPlayerByEmail) {
+    const updateData: Record<string, string> = {
+      [provider === "google" ? "google_id" : "facebook_id"]: providerId,
+    };
+
+    if (
+      avatarUrl &&
+      (!existingPlayerByEmail.player_avatar ||
+        existingPlayerByEmail.player_avatar === DEFAULT_AVATAR_URL)
+    ) {
+      updateData.player_avatar = avatarUrl;
+    }
+
     player = await prisma.player.update({
       where: { player_id: existingPlayerByEmail.player_id },
-      data: {
-        [provider === "google" ? "google_id" : "facebook_id"]: providerId,
-      },
+      data: updateData,
     });
     console.log(
       `Linked ${provider} account to existing player ${player.player_id}`,
@@ -514,13 +558,17 @@ export const findOrCreateOAuthPlayer = async ({
     return player;
   }
 
-  const newUsername = `user_${provider}_${providerId.slice(0, 8)}`;
+  const fallbackUsername = `user_${provider}_${providerId.slice(0, 8)}`;
+  const uniqueUsername = await ensureUniqueUsername(
+    username && username.trim() ? username : fallbackUsername,
+  );
 
   player = await createPlayer({
     player_name: name,
     email: email,
-    username: newUsername,
+    username: uniqueUsername,
     password: "",
+    player_avatar: avatarUrl,
     ...({
       [provider === "google" ? "google_id" : "facebook_id"]: providerId,
     } as any),

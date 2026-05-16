@@ -10,8 +10,23 @@ import {
 
 const router = Router();
 
+// Get store catalog (currencies, maps, characters, bundles)
+router.get(
+  "/catalog",
+  authenticate,
+  requirePlayer,
+  requireAdmin,
+  ShopService.getStoreCatalog,
+);
+
 //Get all characters in the shop
-router.get("/character", ShopService.getAllCharactersInShop);
+router.get(
+  "/character",
+  authenticate,
+  requirePlayer,
+  requireAdmin,
+  ShopService.getAllCharactersInShop,
+);
 //Character selection
 router.post(
   "/select-character/:characterId",
@@ -21,12 +36,33 @@ router.post(
 );
 
 //CRUD for shop characters
-router.post("/create-character", ShopService.createShopCharacter);
-router.put("/update-character/:id", ShopService.updateShopCharacter);
-router.delete("/delete-character/:id", ShopService.deleteShopCharacter);
+router.post(
+  "/create-character",
+  authenticate,
+  requireAdmin,
+  ShopService.createShopCharacter,
+);
+router.put(
+  "/update-character/:id",
+  authenticate,
+  requireAdmin,
+  ShopService.updateShopCharacter,
+);
+router.delete(
+  "/delete-character/:id",
+  authenticate,
+  requireAdmin,
+  ShopService.deleteShopCharacter,
+);
 
 //Get all potions in the shop
-router.get("/potion", ShopService.getAllPotionsInShop);
+router.get(
+  "/potion",
+  authenticate,
+  requirePlayer,
+  requireAdmin,
+  ShopService.getAllPotionsInShop,
+);
 //Get all player potions (Potion Shop)
 router.get(
   "/potions",
@@ -42,8 +78,23 @@ router.post(
 );
 
 // CRUD potions in the shop
-router.post("/create-potion", ShopService.createPotion);
-router.put("/update-potion/:id", ShopService.updatePotion);
-router.delete("/delete-potion/:id", ShopService.deletePotion);
+router.post(
+  "/create-potion",
+  authenticate,
+  requireAdmin,
+  ShopService.createPotion,
+);
+router.put(
+  "/update-potion/:id",
+  authenticate,
+  requireAdmin,
+  ShopService.updatePotion,
+);
+router.delete(
+  "/delete-potion/:id",
+  authenticate,
+  requireAdmin,
+  ShopService.deletePotion,
+);
 
 export default router;

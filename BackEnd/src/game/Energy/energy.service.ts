@@ -6,6 +6,17 @@ const prisma = new PrismaClient();
 const MAX_ENERGY = 100;
 const ENERGY_RESTORE_INTERVAL = 30 * 60 * 1000;
 
+const isInfiniteEnergyActive = (
+  player: { has_infinite_energy: boolean; infinite_energy_expires_at?: Date | null },
+  now: Date,
+) => {
+  return (
+    player.has_infinite_energy ||
+    (!!player.infinite_energy_expires_at &&
+      player.infinite_energy_expires_at > now)
+  );
+};
+
 export const updatePlayerEnergy = async (playerId: number) => {
   const player = await prisma.player.findUnique({
     where: { player_id: playerId },
@@ -13,7 +24,21 @@ export const updatePlayerEnergy = async (playerId: number) => {
 
   if (!player) return { message: "Player not found", success: false };
 
-  if (player.has_infinite_energy) {
+  const now = new Date();
+  const hasInfinite = isInfiniteEnergyActive(player, now);
+
+  if (
+    !player.has_infinite_energy &&
+    player.infinite_energy_expires_at &&
+    player.infinite_energy_expires_at <= now
+  ) {
+    await prisma.player.update({
+      where: { player_id: playerId },
+      data: { infinite_energy_expires_at: null },
+    });
+  }
+
+  if (hasInfinite) {
     return {
       energy: MAX_ENERGY,
       energyResetAt: null,
@@ -22,7 +47,6 @@ export const updatePlayerEnergy = async (playerId: number) => {
     };
   }
 
-  const now = new Date();
   let currentEnergy = player.energy;
   let energyResetAt = player.energy_reset_at;
   let timeToNextRestore: number | null = null;
@@ -87,7 +111,7 @@ export const deductEnergy = async (playerId: number, amount: number = 5) => {
   });
   if (!player) return { message: "Player not found", success: false };
 
-  if (player.has_infinite_energy) {
+  if (isInfiniteEnergyActive(player, new Date())) {
     return {
       energy: MAX_ENERGY,
       energyResetAt: null,
@@ -202,7 +226,7 @@ export const rewardAdEnergy = async (
 
   if (!player) return { message: "Player not found", success: false };
 
-  if (player.has_infinite_energy) {
+  if (isInfiniteEnergyActive(player, new Date())) {
     return { success: true, energy: MAX_ENERGY, isInfinite: true };
   }
 
@@ -227,8 +251,6 @@ export const rewardAdEnergy = async (
 
 export const restoreEnergyForDuePlayers = async (): Promise<number> => {
   try {
-    const now = new Date();
-
     const updatedRows = await prisma.$executeRawUnsafe(`
       UPDATE "Player"
       SET 
@@ -241,6 +263,7 @@ export const restoreEnergyForDuePlayers = async (): Promise<number> => {
         END
         
       WHERE has_infinite_energy = false
+        AND (infinite_energy_expires_at IS NULL OR infinite_energy_expires_at <= NOW())
         AND energy < 100
         AND energy_reset_at IS NOT NULL
         AND energy_reset_at <= NOW();

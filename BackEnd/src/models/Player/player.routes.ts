@@ -25,10 +25,26 @@ router.put(
   PlayerController.updatePlayerProfile,
 );
 
-router.get("/", PlayerController.getPlayers);
-router.get("/search", PlayerController.searchPlayersByUsername);
-router.get("/:id", PlayerController.getPlayerById);
+router.get("/", authenticate, PlayerController.getPlayers);
+router.get(
+  "/search",
+  authenticate,
+  requirePlayer,
+  PlayerController.searchPlayersByUsername,
+);
+router.get(
+  "/:id",
+  authenticate,
+  requirePlayer,
+  requireAdmin,
+  PlayerController.getPlayerById,
+);
 router.put("/:id", authenticate, requireAdmin, PlayerController.updatePlayer);
-router.delete("/:id", PlayerController.deletePlayer);
+router.delete(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  PlayerController.deletePlayer,
+);
 
 export default router;

@@ -9,18 +9,44 @@ import {
 const router = express.Router();
 
 // Get all module languages
-router.get("/languages", ModuleService.getModuleLanguages);
+router.get(
+  "/languages",
+  authenticate,
+  requirePlayer,
+  requireAdmin,
+  ModuleService.getModuleLanguages,
+);
 // Get the module by :/mapId
-router.post("/languages/:mapId", ModuleService.getModuleTitlesByMap);
+router.post(
+  "/languages/:mapId",
+  authenticate,
+  requirePlayer,
+  ModuleService.getModuleTitlesByMap,
+);
 // Get module content by :/moduleId
-router.post("/languages/map/:moduleId", ModuleService.getModuleContentById);
+router.post(
+  "/languages/map/:moduleId",
+  authenticate,
+  requirePlayer,
+  ModuleService.getModuleContentById,
+);
 
-router.get("/", ModuleService.getAllModules);
-router.get("/:id", ModuleService.getModuleById);
-router.post("/", ModuleService.createModule);
-router.put("/:id", ModuleService.updateModule);
+router.get("/", authenticate, requireAdmin, ModuleService.getAllModules);
+router.get("/:id", authenticate, requireAdmin, ModuleService.getModuleById);
+router.post("/", authenticate, requireAdmin, ModuleService.createModule);
+router.put("/:id", authenticate, requireAdmin, ModuleService.updateModule);
 
-router.post("/title", ModuleService.createModuleTitle);
-router.put("/title/:id", ModuleService.updateModuleTitle);
+router.post(
+  "/title",
+  authenticate,
+  requireAdmin,
+  ModuleService.createModuleTitle,
+);
+router.put(
+  "/title/:id",
+  authenticate,
+  requireAdmin,
+  ModuleService.updateModuleTitle,
+);
 
 export default router;

@@ -647,6 +647,123 @@ export async function getCurrentFightState(
     }
   }
 
+  let card_type: string | null = null;
+  let character_attack_card: string | null = null;
+  let character_damage_card: number | null = null;
+  let correct_answer_length = 0;
+
+  try {
+    const { getNextChallengeService } =
+      await import("../Challenges/challenges.service");
+    const nextResult = await getNextChallengeService(playerId, levelId);
+    const nextChallenge = nextResult?.nextChallenge ?? null;
+
+    correct_answer_length = Array.isArray(nextChallenge?.correct_answer)
+      ? nextChallenge!.correct_answer.length
+      : 0;
+
+    if (nextChallenge) {
+      const updatedWrongChallenges = (progress.wrong_challenges ?? []) as
+        | number[]
+        | null;
+      const isRetryOfWrong =
+        updatedWrongChallenges?.includes(nextChallenge.challenge_id) ?? false;
+
+      const currentAnsweredCount = Object.keys(
+        progress.player_answer ?? {},
+      ).length;
+      const totalChallengesCount = level.challenges?.length ?? 0;
+      const isLastRemaining =
+        (updatedWrongChallenges?.length ?? 0) === 0 &&
+        currentAnsweredCount + 1 === totalChallengesCount;
+      const isLastRemainingChallenge =
+        currentAnsweredCount + 1 === totalChallengesCount;
+      const hasWrongCounts = (progress.wrong_challenges_count ?? 0) > 0;
+      const isNewBonusRound =
+        (progress.enemy_hp ?? 0) <= 0 && (progress.player_hp ?? 0) > 0;
+
+      const isSpecialReady =
+        ["Gino", "Leon", "ShiShi", "Ryron"].includes(
+          character.character_name,
+        ) && progress.consecutive_corrects === 2;
+
+      let attackType: string | null = null;
+
+      if (isRetryOfWrong) {
+        attackType = "basic_attack";
+      } else if (isSpecialReady) {
+        attackType = "special_attack";
+
+        let damageIndex = 0;
+        if (correct_answer_length >= 8) {
+          damageIndex = 2;
+        } else if (correct_answer_length >= 5) {
+          damageIndex = 1;
+        }
+
+        const damageArray = Array.isArray(character.character_damage)
+          ? (character.character_damage as number[])
+          : [10, 15, 25];
+
+        character_damage_card = damageArray[damageIndex] ?? 10;
+
+        if (progress.has_strong_effect) {
+          character_damage_card *= 2;
+        }
+
+        const cardInfo = getCardForAttackType(
+          character.character_name,
+          attackType,
+        );
+        card_type = cardInfo.card_type;
+        character_attack_card = cardInfo.character_attack_card;
+      } else if (isLastRemaining && isNewBonusRound) {
+        attackType = "special_attack";
+      } else if (
+        isLastRemainingChallenge &&
+        hasWrongCounts &&
+        isNewBonusRound
+      ) {
+        attackType = "third_attack";
+      } else if (correct_answer_length >= 8) {
+        attackType = "third_attack";
+      } else if (correct_answer_length >= 5) {
+        attackType = "second_attack";
+      } else {
+        attackType = "basic_attack";
+      }
+
+      if (!isSpecialReady || isRetryOfWrong) {
+        const damageIndexMap: Record<string, number> = {
+          basic_attack: 0,
+          second_attack: 1,
+          third_attack: 2,
+          special_attack: 2,
+        };
+
+        const damageIndex = damageIndexMap[attackType ?? "basic_attack"] ?? 0;
+        const damageArray = Array.isArray(character.character_damage)
+          ? (character.character_damage as number[])
+          : [10, 15, 25];
+
+        character_damage_card = damageArray[damageIndex] ?? 10;
+
+        if (progress.has_strong_effect) {
+          character_damage_card *= 2;
+        }
+
+        const cardInfo = getCardForAttackType(
+          character.character_name,
+          attackType ?? "basic_attack",
+        );
+        card_type = cardInfo.card_type;
+        character_attack_card = cardInfo.character_attack_card;
+      }
+    }
+  } catch (error) {
+    console.error("Failed to resolve next challenge card info:", error);
+  }
+
   return {
     status,
     enemy: {
@@ -712,6 +829,12 @@ export async function getCurrentFightState(
     gameplay_theme_color,
     combat_background: combatBackground,
     question_type: questionType,
+    correct_answer_length,
+    card: {
+      card_type,
+      character_attack_card,
+      character_damage_card,
+    },
     boss_skill_activated: progress?.boss_skill_activated || false,
     isEnemyFrozen: progress?.has_freeze_effect || false,
   };
