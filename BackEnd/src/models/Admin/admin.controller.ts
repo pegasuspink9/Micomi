@@ -5,6 +5,7 @@ import {
   generateAccessToken,
   generateRefreshToken,
 } from "../../../utils/token";
+import { setAuthCookies } from "../../../utils/authCookies";
 
 /*GET all admins*/
 export const getAllAdmins = async (req: Request, res: Response) => {
@@ -80,12 +81,7 @@ export const loginAdmin = async (req: Request, res: Response) => {
       role: "admin",
     });
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    setAuthCookies(res, { accessToken, refreshToken });
 
     return successResponse(
       res,

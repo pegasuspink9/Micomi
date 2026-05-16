@@ -7,6 +7,7 @@ import {
   generateRefreshToken,
   verifyRefreshToken,
 } from "../utils/token";
+import { setAuthCookies } from "../utils/authCookies";
 import { updateQuestProgress } from "../src/game/Quests/quests.service";
 import { checkAchievements } from "../src/game/Achievements/achievements.service";
 import {
@@ -89,11 +90,12 @@ export const googleMobileAuth = async (req: Request, res: Response) => {
       role: "player",
     });
 
+    setAuthCookies(res, { accessToken, refreshToken });
+
     return successResponse(
       res,
       {
         token: accessToken,
-        refreshToken,
         player: {
           id: player.player_id,
           email: player.email,
@@ -172,11 +174,12 @@ export const facebookMobileAuth = async (req: Request, res: Response) => {
       role: "player",
     });
 
+    setAuthCookies(res, { accessToken: jwtAccessToken, refreshToken });
+
     return successResponse(
       res,
       {
         token: jwtAccessToken,
-        refreshToken,
         player: {
           id: player.player_id,
           email: player.email,
@@ -196,7 +199,8 @@ export const facebookMobileAuth = async (req: Request, res: Response) => {
 
 export const refreshToken = async (req: Request, res: Response) => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken =
+      (req as any).cookies?.refreshToken || req.body?.refreshToken;
 
     if (!refreshToken) {
       return errorResponse(res, null, "Refresh token is required", 401);
@@ -216,11 +220,15 @@ export const refreshToken = async (req: Request, res: Response) => {
       role: decoded.role,
     });
 
+    setAuthCookies(res, {
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+    });
+
     return successResponse(
       res,
       {
         token: newAccessToken,
-        refreshToken: newRefreshToken,
       },
       "Token refreshed successfully",
     );

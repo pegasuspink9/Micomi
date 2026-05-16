@@ -13,7 +13,6 @@ router.get(
   "/languages",
   authenticate,
   requirePlayer,
-  requireAdmin,
   ModuleService.getModuleLanguages,
 );
 // Get the module by :/mapId

@@ -4,6 +4,7 @@ import {
   generateAccessToken,
   generateRefreshToken,
 } from "../../../utils/token";
+import { setAuthCookies } from "../../../utils/authCookies";
 import { PlayerEditProfileInput } from "./player.types";
 import * as PlayerService from "./player.service";
 
@@ -166,16 +167,11 @@ export const loginPlayer = async (req: Request, res: Response) => {
       role: "player",
     });
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    setAuthCookies(res, { accessToken, refreshToken });
 
     return successResponse(
       res,
-      { accessToken, refreshToken, player: result },
+      { accessToken, player: result },
       "Login successful",
     );
   } catch (error) {
