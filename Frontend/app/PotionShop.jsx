@@ -51,7 +51,7 @@ const transformPotionData = (potionShop = []) => {
     id: potion.potion_id,
     name: potion.potion_name,
     price: potion.potion_price,
-    quantity: potion.player_owned_quantity,
+    quantity: potion.player_owned_quantity || 0,
     image: potion.potion_url,
     description: potion.description,
     type: potion.potion_type,
@@ -468,7 +468,7 @@ export default function PotionShop() {
             <View style={styles.cabinetInnerBorder}>
               <View style={styles.inventoryCabinet}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.inventoryScroll}>
-                  {potions.filter(p => p.quantity > 0).map((potion, index) => (
+                  {potions.map((potion, index) => (
                     <View key={`inv-${potion.id}`} style={styles.inventorySlot}>
                       <View style={styles.inventoryImageContainer}>
                         <PotionSprite 
@@ -483,7 +483,7 @@ export default function PotionShop() {
                       <View style={styles.cabinetSeparator} />
                     </View>
                   ))}
-                  {potions.filter(p => p.quantity > 0).length === 0 && (
+                  {potions.length === 0 && (
                     <Text style={styles.emptyInventoryText}>No potions yet</Text>
                   )}
                 </ScrollView>

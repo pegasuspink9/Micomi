@@ -62,7 +62,6 @@ export default function Login() {
         setIsLoggingIn(false);
         return;
       }
-
       // 3. Identifier exists! Attempt to log in with password
       await login(email, password);
 
