@@ -12,7 +12,7 @@ interface ResetTokenPayload {
 
 export const generateAccessToken = (payload: TokenPayload): string => {
   return jwt.sign(payload, process.env.JWT_SECRET!, {
-    expiresIn: "15m",
+    expiresIn: "15d", //15m
   });
 };
 
