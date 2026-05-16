@@ -1,10 +1,8 @@
+import { prisma } from "../../../prisma/client";
 import { Request, Response } from "express";
 import { submitChallengeService } from "./challenges.service";
 import { successResponse, errorResponse } from "../../../utils/response";
-import { PrismaClient } from "@prisma/client";
 import { SubmitChallengeControllerResult } from "./challenges.types";
-
-const prisma = new PrismaClient();
 
 const reverseString = (str: string): string => str.split("").reverse().join("");
 
@@ -132,7 +130,6 @@ export const submitChallenge = async (req: Request, res: Response) => {
           totalPointsEarned: result.levelStatus?.totalPointsEarned ?? 0,
           totalExpPointsEarned: result.levelStatus?.totalExpPointsEarned ?? 0,
           stars: result.completionRewards?.stars ?? 0,
-          playerOutputs: result.levelStatus?.playerOutputs ?? [],
         };
 
         const nextLevel = await prisma.level.findFirst({

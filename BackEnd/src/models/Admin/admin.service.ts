@@ -1,9 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../prisma/client";
 import { hashPassword, comparePassword } from "../../../utils/hash";
 import { generateToken } from "../../../utils/token";
 import { AdminLoginInput, AdminCreateInput } from "./admin.types";
-
-const prisma = new PrismaClient();
 
 export const getAllAdmins = () => prisma.admin.findMany();
 export const getAdminById = (id: number) =>
@@ -24,7 +22,7 @@ export const createAdmin = async (data: AdminCreateInput) => {
 
 export const updateAdmin = async (
   admin_id: number,
-  data: Partial<AdminCreateInput>
+  data: Partial<AdminCreateInput>,
 ) => {
   const { password, ...safeData } = data;
   const updateData: any = {

@@ -5,6 +5,7 @@ import * as LevelService from "../Levels/levels.service";
 import { updateQuestProgress } from "../Quests/quests.service";
 import { grantRewards } from "../../../utils/grantRewards";
 import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
+import { getNextChallengeService } from "../Challenges/challenges.service";
 
 const ENEMY_HEALTH = 30;
 const BOSS_ENEMY_HEALTH = 30;
@@ -653,8 +654,6 @@ export async function getCurrentFightState(
   let correct_answer_length = 0;
 
   try {
-    const { getNextChallengeService } =
-      await import("../Challenges/challenges.service");
     const nextResult = await getNextChallengeService(playerId, levelId);
     const nextChallenge = nextResult?.nextChallenge ?? null;
 

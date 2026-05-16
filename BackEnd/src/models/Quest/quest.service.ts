@@ -1,5 +1,6 @@
+import { prisma } from "../../../prisma/client";
 import { Request, Response } from "express";
-import { PrismaClient, QuestPeriod, QuestType } from "@prisma/client";
+import { QuestPeriod, QuestType } from "@prisma/client";
 import { successResponse, errorResponse } from "../../../utils/response";
 import { CreateQuest, UpdateQuest } from "./quest.types";
 import {
@@ -11,8 +12,6 @@ import {
   getExpirationDate,
   checkAndGenerateMissingQuests,
 } from "./periodicQuests.service";
-
-const prisma = new PrismaClient();
 
 const formatQuestData = (playerQuests: any[]) => {
   return playerQuests.map((pq) => ({

@@ -1,15 +1,13 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../prisma/client";
 import {
   MicomiNavigationResponse,
   MicomiNavigationErrorResponse,
 } from "./lesson.types";
 
-const prisma = new PrismaClient();
-
 export const getNextLessonService = async (
   playerId: number,
   levelId: number,
-  lessonId: number
+  lessonId: number,
 ): Promise<MicomiNavigationResponse | MicomiNavigationErrorResponse> => {
   const level = await prisma.level.findUnique({
     where: { level_id: levelId },
@@ -83,7 +81,7 @@ export const getNextLessonService = async (
 export const getPreviousLessonService = async (
   playerId: number,
   levelId: number,
-  lessonId: number
+  lessonId: number,
 ): Promise<MicomiNavigationResponse | MicomiNavigationErrorResponse> => {
   const level = await prisma.level.findUnique({
     where: { level_id: levelId },

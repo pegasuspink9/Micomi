@@ -1,4 +1,5 @@
-import { Prisma, PrismaClient, PotionType } from "@prisma/client";
+import { prisma } from "../../../prisma/client";
+import { Prisma, PotionType } from "@prisma/client";
 import {
   DailyPvpQuestion,
   MatchmakingStatus,
@@ -39,8 +40,6 @@ import { applyPvpRankResult } from "./pvpRank.service";
 import { DEFAULT_AVATAR_URL } from "../../models/Player/player.service";
 import { dynamicBlankSetter } from "../../game/Challenges/challenges.service";
 import { updatePvPQuestProgress } from "../../game/Quests/quests.service";
-
-const prisma = new PrismaClient();
 
 const generatePvpMotivationalMessage = (
   isVictory: boolean,

@@ -1,12 +1,10 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../prisma/client";
 import { Request, Response } from "express";
 import { successResponse, errorResponse } from "../../../utils/response";
 import {
   playerAchievementCreateInput,
   playerAchievementUpdateInput,
 } from "./playerAchievement.types";
-
-const prisma = new PrismaClient();
 
 /* GET all player achievements */
 export const getAllPlayerAchievement = async (_req: Request, res: Response) => {
@@ -17,14 +15,14 @@ export const getAllPlayerAchievement = async (_req: Request, res: Response) => {
     return successResponse(
       res,
       playerAchievements,
-      "All player achievements fetched"
+      "All player achievements fetched",
     );
   } catch (error) {
     return errorResponse(
       res,
       error,
       "Failed to fetch player achievements",
-      500
+      500,
     );
   }
 };
@@ -58,7 +56,7 @@ export const createPlayerAchievement = async (req: Request, res: Response) => {
       res,
       error,
       "Failed to create player achievement",
-      400
+      400,
     );
   }
 };
@@ -78,7 +76,7 @@ export const updatePlayerAchievement = async (req: Request, res: Response) => {
       res,
       error,
       "Failed to update player achievement",
-      400
+      400,
     );
   }
 };
@@ -96,7 +94,7 @@ export const deletePlayerAchievement = async (req: Request, res: Response) => {
       res,
       error,
       "Failed to delete player achievement",
-      400
+      400,
     );
   }
 };

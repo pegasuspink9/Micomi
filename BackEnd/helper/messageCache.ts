@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "../prisma/client";
 
 type Pool = Record<string, any[]>;
 
@@ -46,7 +44,7 @@ export async function getMessagePool(category: string, tags: string[] = []) {
   }
 
   const filtered = categoryMessages.filter((msg) =>
-    tags.every((t) => msg.tags.includes(t))
+    tags.every((t) => msg.tags.includes(t)),
   );
 
   return filtered.length > 0 ? filtered : categoryMessages;

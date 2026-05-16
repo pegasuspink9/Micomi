@@ -1,7 +1,5 @@
 import axios from "axios";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "../../../prisma/client";
 
 export type PvpChallengeCategory = "HTML" | "CSS" | "JavaScript" | "Computer";
 export type PvpChallengeDifficulty = "Easy" | "Medium" | "Hard";

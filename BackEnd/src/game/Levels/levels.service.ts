@@ -1,5 +1,5 @@
+import { prisma } from "../../../prisma/client";
 import {
-  PrismaClient,
   Level,
   Challenge,
   PlayerProgress,
@@ -19,8 +19,6 @@ import {
   overrideChallengeGuide,
   dynamicBlankSetter,
 } from "../Challenges/challenges.service";
-
-const prisma = new PrismaClient();
 import { borrowChallengesForEnemyLevel } from "../Challenges/challenges.service";
 
 const UNLOCK_ALL_PLAYER_IDS = new Set([11]);

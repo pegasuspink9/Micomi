@@ -1,11 +1,9 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../prisma/client";
 import { Request, Response } from "express";
 import { MapCreateInput, MapUpdateInput } from "./map.types";
 import { successResponse, errorResponse } from "../../../utils/response";
 import { imagesUrls } from "../../../utils/imageUrls";
 import { audioLinks } from "../../../utils/audioLinks";
-
-const prisma = new PrismaClient();
 
 const UNLOCK_ALL_PLAYER_IDS = new Set([11]);
 const TEMP_UNLOCK_MAP_IDS = new Set([4]);

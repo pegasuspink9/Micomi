@@ -32,8 +32,6 @@ import themeRoutes from "./models/Theme/theme.routes";
 import adsRoutes from "./models/Ads/ads.routes";
 import paymentRoutes from "./models/Payment/payment.routes";
 
-import testRoutes from "../middleware/testing.toutes";
-
 import { Server } from "socket.io";
 import http from "http";
 import { setSocketServer } from "./socket";
@@ -57,7 +55,6 @@ app.use(
   }),
 );
 
-app.use("/test/auth", testRoutes);
 app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
 app.use("/player", playerRoutes);

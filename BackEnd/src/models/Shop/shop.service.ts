@@ -1,5 +1,5 @@
+import { prisma } from "../../../prisma/client";
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
 import {
   ShopCharacterCreateInput,
   ShopCharacterUpdateInput,
@@ -9,8 +9,6 @@ import {
 } from "./shop.types";
 import { STORE_CATALOG } from "./shop.catalog";
 import { errorResponse, successResponse } from "../../../utils/response";
-
-const prisma = new PrismaClient();
 
 export const getStoreCatalog = async (req: Request, res: Response) => {
   return successResponse(res, STORE_CATALOG, "Store catalog fetched");

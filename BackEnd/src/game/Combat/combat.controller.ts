@@ -1,10 +1,8 @@
+import { prisma } from "../../../prisma/client";
 import { Request, Response } from "express";
 import * as CombatService from "./combat.service";
 import * as AchievementService from "../Achievements/achievements.service";
 import { successResponse, errorResponse } from "../../../utils/response";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
 
 export const performFight = async (req: Request, res: Response) => {
   const playerId = (req as any).user.id;
@@ -16,7 +14,7 @@ export const performFight = async (req: Request, res: Response) => {
         res,
         null,
         "Player ID and Level ID are required",
-        400
+        400,
       );
     }
 
@@ -43,7 +41,7 @@ export const performFight = async (req: Request, res: Response) => {
           res,
           null,
           "isCorrect must be provided for this fight type",
-          400
+          400,
         );
       }
 
@@ -55,7 +53,7 @@ export const performFight = async (req: Request, res: Response) => {
         0,
         undefined,
         undefined,
-        undefined
+        undefined,
       );
     } else if (level_difficulty === "hard" || level_difficulty === "final") {
       if (typeof correctCount !== "number" || typeof totalCount !== "number") {
@@ -63,7 +61,7 @@ export const performFight = async (req: Request, res: Response) => {
           res,
           null,
           "correctCount and totalCount must be provided for this fight type",
-          400
+          400,
         );
       }
 
@@ -76,7 +74,7 @@ export const performFight = async (req: Request, res: Response) => {
         0,
         undefined,
         undefined,
-        undefined
+        undefined,
       );
 
       if (level_difficulty === "final" && result.status === "won") {
@@ -96,7 +94,7 @@ export const performFight = async (req: Request, res: Response) => {
         res,
         null,
         `Unknown level_difficulty: ${level_difficulty}`,
-        400
+        400,
       );
     }
 
