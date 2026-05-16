@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { usePlayerProfile } from '../../hooks/usePlayerProfile';
+import { useEnergyData } from '../../hooks/useEnergyData';
 import { gameScale } from '../Responsiveness/gameResponsive';
 import { useRouter } from 'expo-router';
 import SettingsModal from '../Settings/SettingsModal';
@@ -17,6 +18,7 @@ import SettingsModal from '../Settings/SettingsModal';
 export default function MapHeader() {
   const router = useRouter(); // Initialize router
   const { playerData, loadPlayerProfile, refreshPlayerData } = usePlayerProfile();
+  const { energyStatus } = useEnergyData();
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
 
   const formatCompactNumber = (value) => {
@@ -67,7 +69,9 @@ export default function MapHeader() {
   const username = playerData?.username || "Loading...";
   const coins = playerData?.coins || 0;
   const diamonds = playerData?.diamonds || 0;
-  const lives = 300;
+  const energyValue = energyStatus
+    ? (energyStatus.isInfinite ? '∞' : formatCompactNumber(energyStatus.energy ?? 0))
+    : '...';
   
   const avatarUrl = playerData?.playerAvatar || "https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif";;
 
@@ -193,7 +197,7 @@ export default function MapHeader() {
             <View style={styles.resourceBorderMiddle}>
               <View style={styles.resourceBorderInner}>
                 <View style={styles.resourceTrack}>
-                  <Text style={styles.resourceText}>{formatCompactNumber(lives)}</Text>
+                  <Text style={styles.resourceText}>{energyValue}</Text>
                 </View>
               </View>
             </View>

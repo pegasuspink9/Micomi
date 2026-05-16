@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Admin {
@@ -100,36 +101,36 @@ model PVPChallenge {
 }
 
 model Enemy {
-  enemy_id          Int     @id @default(autoincrement())
-  enemy_name        String
-  enemy_difficulty  String
-  enemy_avatar      String
-  enemy_skills      String
-  enemy_health      Int
-  enemy_damage      Int
-  enemy_map         String
-  enemy_attack      String?
-  enemy_dies        String?
-  enemy_hurt        String?
-  enemy_run         String?
-  avatar_enemy      String?
-  special_skill     String?
-  levels            Level[]
+  enemy_id         Int     @id @default(autoincrement())
+  enemy_name       String
+  enemy_difficulty String
+  enemy_avatar     String
+  enemy_skills     String
+  enemy_health     Int
+  enemy_damage     Int
+  enemy_map        String
+  enemy_attack     String?
+  enemy_dies       String?
+  enemy_hurt       String?
+  enemy_run        String?
+  avatar_enemy     String?
+  special_skill    String?
+  levels           Level[]
 }
 
 model PurchaseTransaction {
   transaction_id String   @id @default(uuid())
   player_id      Int
-  product_id     String   
-  purchase_token String   @unique 
+  product_id     String
+  purchase_token String   @unique
   diamonds_added Int
   created_at     DateTime @default(now())
-  
   player         Player   @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
 
   @@index([player_id])
 }
 
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model Player {
   player_id                    Int                      @id @default(autoincrement())
   username                     String                   @unique
@@ -144,8 +145,6 @@ model Player {
   level                        Int                      @default(1)
   energy                       Int                      @default(100)
   energy_reset_at              DateTime?
-  has_infinite_energy          Boolean                  @default(false)
-  infinite_energy_expires_at   DateTime?
   player_name                  String
   current_streak               Int                      @default(0)
   longest_streak               Int                      @default(0)
@@ -158,6 +157,8 @@ model Player {
   daily_reward_day             Int                      @default(0)
   daily_reward_last_claimed_at DateTime?
   diamonds                     Int                      @default(0)
+  has_infinite_energy          Boolean                  @default(false)
+  infinite_energy_expires_at   DateTime?
   following                    Follow[]                 @relation("FollowFollower")
   followers                    Follow[]                 @relation("FollowFollowing")
   playerAchievements           PlayerAchievement[]
@@ -169,8 +170,7 @@ model Player {
   pvpProgressAsP1              PlayerVsPlayerProgress[] @relation("PvpProgressP1")
   pvpProgressAsP2              PlayerVsPlayerProgress[] @relation("PvpProgressP2")
   pvpResults                   PlayerVsPlayerResult[]
-  purchases                    PurchaseTransaction[] 
-
+  purchases                    PurchaseTransaction[]
 
   @@index([email])
   @@index([total_points])
@@ -235,7 +235,6 @@ model PlayerProgress {
   player_answer                   Json          @default("[]")
   battle_status                   BattleStatus? @default(in_progress)
   enemy_hp                        Int           @default(0)
-  enemy_max_hp                    Int?
   player_hp                       Int           @default(0)
   challenge_start_time            DateTime?
   wrong_challenges                Json          @default("[]")
@@ -258,7 +257,6 @@ model PlayerProgress {
   has_permuted_ss                 Boolean?      @default(false)
   permutation_mapping             Json?
   has_ryron_reveal                Boolean?      @default(false)
-  retry_reveal_map                Json?         @default("{}")
   wrong_challenges_count          Int           @default(0)
   boss_skill_activated            Boolean?      @default(false)
   has_dollar_sign_ss              Boolean       @default(false)
@@ -269,6 +267,8 @@ model PlayerProgress {
   used_char_wrong_reactions       Json?         @default("[]")
   used_enemy_correct_reactions    Json?         @default("[]")
   used_enemy_wrong_reactions      Json?         @default("[]")
+  enemy_max_hp                    Int?
+  retry_reveal_map                Json?         @default("{}")
   level                           Level         @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
   player                          Player        @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
 
