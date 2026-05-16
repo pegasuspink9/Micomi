@@ -15,7 +15,6 @@ router.get(
   "/catalog",
   authenticate,
   requirePlayer,
-  requireAdmin,
   ShopService.getStoreCatalog,
 );
 
@@ -24,7 +23,6 @@ router.get(
   "/character",
   authenticate,
   requirePlayer,
-  requireAdmin,
   ShopService.getAllCharactersInShop,
 );
 //Character selection
@@ -60,7 +58,6 @@ router.get(
   "/potion",
   authenticate,
   requirePlayer,
-  requireAdmin,
   ShopService.getAllPotionsInShop,
 );
 //Get all player potions (Potion Shop)
