@@ -10,8 +10,8 @@ import {
   Modal,
   Platform,
   StatusBar,
-  ActivityIndicator
 } from 'react-native';
+import SpriteActivityIndicator from '../Actual Game/Loading/SpriteActivityIndicator';
 import LottieView from 'lottie-react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 
@@ -329,7 +329,7 @@ export default function MapNavigate({ onMapChange }) {
           {/* ... (Download modal content remains the same as original file) ... */}
           <View style={styles.downloadModalOverlay}>
              {/* Placeholder for download modal content to save space in this response */}
-             <ActivityIndicator size="large" color="#fff" />
+             <SpriteActivityIndicator size={50} />
              <Text style={{color:'white', marginTop: 20}}>Loading Assets: {Math.round(downloadProgress.progress * 100)}%</Text>
           </View>
       </Modal>

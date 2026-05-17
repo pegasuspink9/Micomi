@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from './hooks/useAuth';
 import { usePlayerProfile } from './hooks/usePlayerProfile';
 import * as WebBrowser from "expo-web-browser";
+import SpriteActivityIndicator from './Components/Actual Game/Loading/SpriteActivityIndicator';
 
 // Google & Facebook Auth Hooks
 import { useGoogleAuth } from './auth/useGoogleAuth';
@@ -188,10 +189,14 @@ export default function Login() {
                 onPress={handleLogin}
                 disabled={isLoggingIn}
               >
-                {/* Changed to text instead of ActivityIndicator */}
-                <Text style={styles.loginButtonText}>
-                  {isLoggingIn ? "Logging in" : "Log In"}
-                </Text>
+                {isLoggingIn ? (
+                  <View style={styles.loginButtonContent}>
+                    <SpriteActivityIndicator size={gameScale(32)} />
+                    <Text style={styles.loginButtonText}>Logging in</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.loginButtonText}>Log In</Text>
+                )}
               </TouchableOpacity>
 
               {/* Footer */}
@@ -356,6 +361,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: gameScale(18),
     fontFamily: 'Grobold',
+  },
+  loginButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scaleWidth(8),
   },
   footerContainer: {
     flexDirection: 'row',

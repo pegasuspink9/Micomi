@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Modal, ActivityIndicator, StyleSheet, Platform, StatusBar, ImageBackground, Image } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, Platform, StatusBar, ImageBackground, Image } from 'react-native';
+import SpriteActivityIndicator from '../Actual Game/Loading/SpriteActivityIndicator';
 import { useDailyReward } from '../../hooks/useDailyReward';
 import { gameScale } from '../Responsiveness/gameResponsive';
 
@@ -51,7 +52,7 @@ export default function DailyRewards() {
 
             {dailyRewardLoading ? (
               <View style={styles.dailyRewardLoading}>
-                <ActivityIndicator size="large" color="#fff" />
+                <SpriteActivityIndicator size={50} />
                 <Text style={styles.dailyRewardLoadingText}>Loading rewards...</Text>
               </View>
             ) : dailyRewardError ? (

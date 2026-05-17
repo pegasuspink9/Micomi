@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Image,
   StyleSheet,
@@ -8,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import SpriteActivityIndicator from '../Components/Actual Game/Loading/SpriteActivityIndicator';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -174,7 +174,7 @@ export default function SocialConnectionsScreen() {
 
         {loading ? (
           <View style={styles.centerContent}>
-            <ActivityIndicator size="large" color="#fff" />
+            <SpriteActivityIndicator size={gameScale(50)} />
           </View>
         ) : error ? (
           <View style={styles.centerContent}>

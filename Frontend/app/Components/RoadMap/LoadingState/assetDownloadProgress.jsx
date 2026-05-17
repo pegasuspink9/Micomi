@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, ActivityIndicator, ProgressBarAndroid, ProgressViewIOS, StyleSheet, Platform } from 'react-native';
+import { View, Text, ProgressBarAndroid, ProgressViewIOS, StyleSheet, Platform } from 'react-native';
+import SpriteActivityIndicator from '../../Actual Game/Loading/SpriteActivityIndicator';
 
 const ProgressBar = Platform.OS === 'ios' ? ProgressViewIOS : ProgressBarAndroid;
 
@@ -35,9 +36,8 @@ export default function AssetDownloadProgress({
           </Text>
         )}
 
-        <ActivityIndicator 
-          size="large" 
-          color="#4CAF50" 
+        <SpriteActivityIndicator 
+          size={50} 
           style={styles.spinner} 
         />
       </View>

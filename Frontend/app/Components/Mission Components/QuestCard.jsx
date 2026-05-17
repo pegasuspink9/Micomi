@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import SpriteActivityIndicator from '../Actual Game/Loading/SpriteActivityIndicator';
 import { LinearGradient } from 'expo-linear-gradient';
 import { gameScale } from '../Responsiveness/gameResponsive';
 import { questService } from '../../services/questService';
@@ -270,7 +271,7 @@ const QuestCard = ({ quest, onClaim, claiming = false }) => {
                   activeOpacity={0.7}
                 >
                   {claiming ? (
-                    <ActivityIndicator size="small" color="#ffffff" />
+                    <SpriteActivityIndicator size={gameScale(25)} />
                   ) : (
                     <Text style={[
                       styles.claimButtonText,

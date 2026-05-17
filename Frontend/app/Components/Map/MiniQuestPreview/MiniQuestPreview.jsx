@@ -5,10 +5,10 @@ import {
   StyleSheet,
   Dimensions,
   TouchableOpacity,
-  ActivityIndicator,
   Animated,
   Image,
 } from 'react-native';
+import SpriteActivityIndicator from '../../Actual Game/Loading/SpriteActivityIndicator';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 
@@ -146,7 +146,7 @@ const MiniQuestPreview = () => {
       >
         <View style={styles.cardHighlight} />
         <View style={styles.cardShadowOverlay} />
-        <ActivityIndicator size="small" color="#fff" />
+        <SpriteActivityIndicator size={gameScale(25)} />
       </LinearGradient>
     );
   }

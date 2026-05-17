@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
+import SpriteActivityIndicator from '../Actual Game/Loading/SpriteActivityIndicator';
 import { gameScale } from '../Responsiveness/gameResponsive';
 
 const ThemesInventorySection = ({
@@ -145,7 +146,7 @@ const ThemesInventorySection = ({
                 disabled={themeActionLoading}
               >
                 {themeActionLoading ? (
-                  <ActivityIndicator color="#fff" size="small" />
+                  <SpriteActivityIndicator size={gameScale(25)} />
                 ) : (
                   <Text style={styles.themeModalButtonText}>Buy with diamonds</Text>
                 )}

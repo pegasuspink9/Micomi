@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, SafeAreaView, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, StatusBar } from 'react-native';
+import SpriteActivityIndicator from '../Actual Game/Loading/SpriteActivityIndicator';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { gameScale } from '../Responsiveness/gameResponsive';
@@ -150,7 +151,7 @@ export default function LessonModules() {
       <View style={styles.container}>
         {loading ? (
           <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color="#4dabf7" />
+            <SpriteActivityIndicator size={gameScale(50)} />
             <Text style={styles.loadingText}>Loading modules...</Text>
           </View>
         ) : error ? (

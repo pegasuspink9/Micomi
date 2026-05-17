@@ -6,12 +6,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
   Alert,
   Platform,
   StatusBar,
   Dimensions,
 } from 'react-native';
+import SpriteActivityIndicator from '../../Actual Game/Loading/SpriteActivityIndicator';
 import { gameScale } from '../../Responsiveness/gameResponsive';
 import { playerService } from '../../../services/playerService';
 
@@ -103,7 +103,7 @@ const BadgeDetailModal = ({ visible, badge, onClose, onBadgeApplied, disableAppl
                     disabled={isApplying || disableApply}
                   >
                     {isApplying ? (
-                      <ActivityIndicator size="small" color="#ffffff" />
+                      <SpriteActivityIndicator size={gameScale(25)} />
                     ) : (
                       <Text style={styles.buttonText}>{disableApply ? 'Visit Only' : 'Apply Badge'}</Text>
                     )}

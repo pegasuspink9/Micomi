@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, FlatList, TextInput, ActivityIndicator, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Image, FlatList, TextInput, StyleSheet, ScrollView } from 'react-native';
+import SpriteActivityIndicator from '../Actual Game/Loading/SpriteActivityIndicator';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { gameScale } from '../Responsiveness/gameResponsive';
@@ -131,7 +132,7 @@ const EditProfile = ({
             </TouchableOpacity>
 
             <TouchableOpacity style={[localStyles.modalButton, localStyles.confirmButton, (!selectedAvatarId || isSelectingAvatar) && { opacity: 0.5 }]} onPress={handleUseAvatar} disabled={!selectedAvatarId || isSelectingAvatar}>
-              {isSelectingAvatar ? <ActivityIndicator color="white" size="small" /> : <Text style={localStyles.buttonText}>Use Avatar</Text>}
+              {isSelectingAvatar ? <SpriteActivityIndicator size={gameScale(25)} /> : <Text style={localStyles.buttonText}>Use Avatar</Text>}
             </TouchableOpacity>
           </View>
         </LinearGradient>
@@ -243,7 +244,7 @@ const EditProfile = ({
             </TouchableOpacity>
 
             <TouchableOpacity style={[localStyles.modalButton, localStyles.confirmButton]} onPress={handleSaveProfile} disabled={isSavingProfile}>
-              {isSavingProfile ? <ActivityIndicator color="white" size="small" /> : <Text style={localStyles.buttonText}>Save</Text>}
+              {isSavingProfile ? <SpriteActivityIndicator size={gameScale(25)} /> : <Text style={localStyles.buttonText}>Save</Text>}
             </TouchableOpacity>
           </View>
         </LinearGradient>

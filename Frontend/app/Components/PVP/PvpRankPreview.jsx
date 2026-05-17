@@ -4,10 +4,10 @@ import {
   Text,
   StyleSheet,
   Dimensions,
-  ActivityIndicator,
   Image,
   TouchableOpacity,
 } from 'react-native';
+import SpriteActivityIndicator from '../Actual Game/Loading/SpriteActivityIndicator';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { gameScale } from '../Responsiveness/gameResponsive';
@@ -90,7 +90,7 @@ const PvpRankPreview = () => {
 
           {loading ? (
             <View style={styles.loadingWrap}>
-              <ActivityIndicator size="small" color="#fff" />
+              <SpriteActivityIndicator size={gameScale(25)} />
             </View>
           ) : error ? (
             <Text style={styles.errorText}>{error}</Text>

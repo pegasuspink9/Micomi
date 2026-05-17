@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Image,
   StyleSheet,
@@ -9,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import SpriteActivityIndicator from '../Components/Actual Game/Loading/SpriteActivityIndicator';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -218,7 +218,7 @@ export default function SocialSearchScreen() {
             activeOpacity={0.85}
           >
             {actionPlayerId === item.player_id ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <SpriteActivityIndicator size={gameScale(25)} />
             ) : (
               <Text style={styles.actionButtonText}>{buttonMeta.text}</Text>
             )}
@@ -277,7 +277,7 @@ export default function SocialSearchScreen() {
 
         {loading || (!query.trim() && recommendationsLoading) ? (
           <View style={styles.centerContent}>
-            <ActivityIndicator size="large" color="#fff" />
+            <SpriteActivityIndicator size={gameScale(50)} />
           </View>
         ) : (
           <FlatList

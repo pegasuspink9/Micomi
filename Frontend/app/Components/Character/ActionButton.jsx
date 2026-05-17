@@ -1,5 +1,7 @@
 import React from 'react';
-import { TouchableOpacity, Text, Image, ActivityIndicator, View } from 'react-native';
+import { TouchableOpacity, Text, Image, View } from 'react-native';
+import SpriteActivityIndicator from '../Actual Game/Loading/SpriteActivityIndicator';
+import { gameScale } from '../Responsiveness/gameResponsive';
 
 const DIAMONDS_ICON = require('../../Components/icons/diamonds.png');
 
@@ -41,7 +43,7 @@ const ActionButton = ({
         disabled={disabled}
       >
         {selecting ? (
-          <ActivityIndicator size="small" color="white" />
+          <SpriteActivityIndicator size={gameScale(25)} />
         ) : (
           <Text style={styles.buttonText}>Select</Text>
         )}

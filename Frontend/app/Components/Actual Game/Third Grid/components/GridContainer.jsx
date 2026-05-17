@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { View, StyleSheet, Dimensions, Animated, Image, ActivityIndicator, Pressable, Text } from 'react-native';
+import { View, StyleSheet, Dimensions, Animated, Image, Pressable, Text } from 'react-native';
 import { scale, scaleWidth, scaleHeight, RESPONSIVE, wp, hp, gameScale} from '../../../Responsiveness/gameResponsive';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';

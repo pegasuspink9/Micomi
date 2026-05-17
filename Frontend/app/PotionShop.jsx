@@ -9,10 +9,10 @@ import {
   Pressable,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   Animated, 
   Easing,   
 } from "react-native";
+import SpriteActivityIndicator from './Components/Actual Game/Loading/SpriteActivityIndicator';
 import {
   scale,
   scaleWidth,
@@ -363,7 +363,7 @@ export default function PotionShop() {
         >
           <View style={styles.backgroundOverlay} />
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#fff" />
+            <SpriteActivityIndicator size={gameScale(50)} />
             <Text style={styles.loadingText}>
               {buyingPotion ? "Processing Purchase..." : "Loading Potion Shop..."}
             </Text>

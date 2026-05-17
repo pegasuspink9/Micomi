@@ -4,10 +4,10 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
   TouchableOpacity,
   Image,
 } from 'react-native';
+import SpriteActivityIndicator from './Components/Actual Game/Loading/SpriteActivityIndicator';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { gameScale } from './Components/Responsiveness/gameResponsive';
 import { pvpService } from './services/pvpService';
@@ -80,7 +80,7 @@ export default function PvpRankTiersPage() {
 
               {loading ? (
                 <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color="#fff" />
+                  <SpriteActivityIndicator size={gameScale(50)} />
                   <Text style={styles.loadingText}>Loading rank tiers...</Text>
                 </View>
               ) : error ? (

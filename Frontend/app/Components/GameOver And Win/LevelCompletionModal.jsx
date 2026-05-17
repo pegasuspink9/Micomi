@@ -3,11 +3,11 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  ActivityIndicator,
   Dimensions,
   ImageBackground,
   Pressable
 } from 'react-native';
+import SpriteActivityIndicator from '../Actual Game/Loading/SpriteActivityIndicator';
 import { LinearGradient } from 'expo-linear-gradient';
 import { 
   scale, 
@@ -549,7 +549,7 @@ const LevelCompletionModal = ({
                   />
                 ) : (
                   <View style={[styles.spriteImage, { backgroundColor: 'transparent', justifyContent: 'center', alignItems: 'center' }]}>
-                    <ActivityIndicator size="large" color="#fff" />
+              <SpriteActivityIndicator size={scale(50)} />
                   </View>
                 )}
               </Reanimated.View>
@@ -714,7 +714,7 @@ const LevelCompletionModal = ({
           {/* 5. Buttons (Slide Up) */}
           {isLoading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#ffffff" />
+              <SpriteActivityIndicator size={scale(50)} />
               <Text style={styles.loadingText}>Loading next level...</Text>
             </View>
           ) : (

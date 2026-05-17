@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useFonts } from '../assets/fonts/font';
-import { View, ActivityIndicator, Platform, AppState, StatusBar as RNStatusBar, Keyboard } from 'react-native'; 
+import { View, Platform, AppState, StatusBar as RNStatusBar, Keyboard } from 'react-native'; 
+import SpriteActivityIndicator from './Components/Actual Game/Loading/SpriteActivityIndicator';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar'; 
 import * as SystemUI from 'expo-system-ui'; 
@@ -131,7 +132,7 @@ export default function RootLayout() {
         backgroundColor: '#034251' 
       }}>
         <ExpoStatusBar hidden={true} />
-        <ActivityIndicator size="large" color="#fff" />
+        <SpriteActivityIndicator size={60} />
       </View>
     );
   }

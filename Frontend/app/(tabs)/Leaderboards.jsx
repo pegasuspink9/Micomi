@@ -7,9 +7,9 @@ import {
   FlatList, 
   Dimensions,
   ImageBackground,
-  ActivityIndicator,
   TouchableOpacity
 } from 'react-native';
+import SpriteActivityIndicator from '../Components/Actual Game/Loading/SpriteActivityIndicator';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { gameScale } from '../Components/Responsiveness/gameResponsive';
@@ -40,7 +40,7 @@ export default function Leaderboards() {
         end={{ x: 0.5, y: 1 }}
         style={styles.loadingContainer}
       >
-        <ActivityIndicator size="large" color="#ffffff" />
+        <SpriteActivityIndicator size={gameScale(50)} />
         <Text style={styles.loadingText}>Loading Leaderboards...</Text>
       </LinearGradient>
     );

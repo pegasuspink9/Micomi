@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ImageBackground, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ImageBackground, StyleSheet } from 'react-native';
+import SpriteActivityIndicator from '../Actual Game/Loading/SpriteActivityIndicator';
 import { useRouter } from 'expo-router';
 import { gameScale } from '../Responsiveness/gameResponsive';
 import StatCard from './StatCard';
@@ -159,7 +160,7 @@ const StatsGridSection = ({
                 activeOpacity={0.85}
               >
                 {relationActionLoading ? (
-                  <ActivityIndicator color="#fff" size="small" />
+                  <SpriteActivityIndicator size={gameScale(25)} />
                 ) : (
                   <Text style={styles.relationButtonText}>{relationButtonMeta.label}</Text>
                 )}

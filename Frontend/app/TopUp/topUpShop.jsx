@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Dimensions, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import SpriteActivityIndicator from '../Components/Actual Game/Loading/SpriteActivityIndicator';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { gameScale } from '../Components/Responsiveness/gameResponsive';
@@ -204,7 +205,7 @@ export default function TopUpShop() {
 
         {loading ? (
           <View style={styles.stateWrap}>
-            <ActivityIndicator size="large" color="#ffd84a" />
+            <SpriteActivityIndicator size={gameScale(50)} />
             <Text style={styles.stateText}>Loading catalog...</Text>
           </View>
         ) : error ? (

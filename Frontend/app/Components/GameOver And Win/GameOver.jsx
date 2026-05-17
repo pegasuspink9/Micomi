@@ -3,11 +3,11 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  ActivityIndicator,
   Dimensions,
   ImageBackground,
   Pressable
 } from 'react-native';
+import SpriteActivityIndicator from '../Actual Game/Loading/SpriteActivityIndicator';
 import { LinearGradient } from 'expo-linear-gradient';
 import { 
   scale, 
@@ -350,7 +350,7 @@ const GameOverModal = ({
                   />
                 ) : (
                   <View style={[styles.spriteImage, { backgroundColor: 'transparent' }]}>
-                    <ActivityIndicator size="large" color="#fff" />
+                    <SpriteActivityIndicator size={scale(50)} />
                   </View>
                 )}
               </Reanimated.View>
@@ -385,7 +385,7 @@ const GameOverModal = ({
           {/* 4. Buttons (Slide Up) */}
           {isRetrying ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#ffffff" />
+              <SpriteActivityIndicator size={scale(50)} />
               <Text style={styles.loadingText}>Restarting level...</Text>
             </View>
           ) : (

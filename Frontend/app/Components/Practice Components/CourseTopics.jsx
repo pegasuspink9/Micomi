@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, SafeAreaView, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, StatusBar } from 'react-native';
+import SpriteActivityIndicator from '../Actual Game/Loading/SpriteActivityIndicator';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { gameScale } from '../Responsiveness/gameResponsive';
@@ -41,7 +42,7 @@ export default function CourseTopics() {
       <View style={styles.container}>
         {topicsLoading ? (
           <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color="#4dabf7" />
+            <SpriteActivityIndicator size={gameScale(50)} />
             <Text style={styles.loadingText}>Loading topics...</Text>
           </View>
         ) : topicsError ? (

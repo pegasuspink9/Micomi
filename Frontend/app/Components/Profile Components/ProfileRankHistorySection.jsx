@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import SpriteActivityIndicator from '../Actual Game/Loading/SpriteActivityIndicator';
 import { gameScale } from '../Responsiveness/gameResponsive';
 import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
 
@@ -54,7 +55,7 @@ const ProfileRankHistorySection = ({ history = [], loading = false, error = null
 
             {loading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#fff" />
+                <SpriteActivityIndicator size={gameScale(50)} />
                 <Text style={styles.loadingText}>Loading history...</Text>
               </View>
             ) : error ? (

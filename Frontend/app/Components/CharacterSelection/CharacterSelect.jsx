@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
-import { Text, View, StyleSheet, Pressable, TouchableOpacity, Animated, ImageBackground, Dimensions, Modal, Image, ActivityIndicator } from "react-native";
+import { Text, View, StyleSheet, Pressable, TouchableOpacity, Animated, ImageBackground, Dimensions, Modal, Image } from "react-native";
+import SpriteActivityIndicator from '../Actual Game/Loading/SpriteActivityIndicator';
 import MapHeader from '../../Components/Map/mapHeader';
 import CharacterDisplay from '../../Components/Character/CharacterDisplay';
 import ActionButton from '../../Components/Character/ActionButton';
@@ -277,7 +278,7 @@ export default function CharacterProfile() {
                 disabled={purchasing || !hasEnoughDiamonds}
               >
                 {purchasing ? (
-                  <ActivityIndicator size="small" color="white" />
+                  <SpriteActivityIndicator size={gameScale(25)} />
                 ) : (
                   <>
                     <Image source={getCachedCoinIcon()} style={styles.modalCoinIcon} />

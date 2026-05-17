@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { View, StyleSheet, Dimensions, ImageBackground, Text, ActivityIndicator, TouchableOpacity, ScrollView, Animated } from "react-native";
+import { View, StyleSheet, Dimensions, ImageBackground, Text, TouchableOpacity, ScrollView, Animated } from "react-native";
+import SpriteActivityIndicator from './Components/Actual Game/Loading/SpriteActivityIndicator';
 import { StatusBar } from 'expo-status-bar';
 import ScreenPlay from './Components/Actual Game/Screen Play/ScreenPlay';
 import ExpectedOutput from './Components/Actual Game/GameQuestions/Output/ExpectedOutput';
@@ -1221,7 +1222,7 @@ export default function GamePlay() {
           />
         ) : (
           <View style={[styles.container, styles.centerContent]}>
-            <ActivityIndicator size="large" color="#9fd8ff" />
+            <SpriteActivityIndicator size={gameScale(50)} />
             <Text style={styles.pvpFallbackTitle}>Preparing Combat VS</Text>
             <Text style={styles.pvpFallbackSubtitle}>Loading latest match visuals...</Text>
           </View>
@@ -1440,7 +1441,7 @@ export default function GamePlay() {
           </View>
         ) : (
           <View style={styles.pvpFallbackContainer}>
-            <ActivityIndicator size="large" color="#9fd8ff" />
+            <SpriteActivityIndicator size={gameScale(50)} />
             <Text style={styles.pvpFallbackTitle}>Syncing Match State</Text>
             <Text style={styles.pvpFallbackSubtitle}>Loading latest challenge from server...</Text>
           </View>
@@ -1450,7 +1451,7 @@ export default function GamePlay() {
 
       {showPvpSyncFallback && (
         <View style={[styles.container, styles.centerContent]}>
-          <ActivityIndicator size="large" color="#9fd8ff" />
+          <SpriteActivityIndicator size={gameScale(50)} />
           <Text style={styles.pvpFallbackTitle}>Reconnecting Match</Text>
           <Text style={styles.pvpFallbackSubtitle}>Preparing Combat VS and challenge state...</Text>
         </View>

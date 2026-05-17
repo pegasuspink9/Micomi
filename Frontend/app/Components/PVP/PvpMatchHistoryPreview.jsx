@@ -3,10 +3,10 @@ import {
   View,
   Text,
   StyleSheet,
-  ActivityIndicator,
   TouchableOpacity,
   Image,
 } from 'react-native';
+import SpriteActivityIndicator from '../Actual Game/Loading/SpriteActivityIndicator';
 import { useRouter } from 'expo-router';
 import { gameScale } from '../Responsiveness/gameResponsive';
 import { pvpService } from '../../services/pvpService';
@@ -80,7 +80,7 @@ const PvpMatchHistoryPreview = () => {
   if (loading) {
     return renderPlaceholderCard(
       <>
-        <ActivityIndicator size="small" color="#fff" />
+        <SpriteActivityIndicator size={gameScale(25)} />
         <Text style={styles.placeholderText}>Loading latest match...</Text>
       </>
     );
