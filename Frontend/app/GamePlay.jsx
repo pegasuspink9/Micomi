@@ -22,6 +22,7 @@ import DialogueOverlay from './Components/Actual Game/Dialogue/DialogueOverlay';
 import MainLoading from './Components/Actual Game/Loading/MainLoading';
 import Micomic from './Micomic';
 import { useConnectivity } from './store/connectivityStore';
+import { parseQuestionBlanks } from './Components/Actual Game/GameQuestions/utils/blankHelper';
 
 export default function GamePlay() {
   const router = useRouter();
@@ -491,7 +492,12 @@ export default function GamePlay() {
   
   const allowEnemyCompletionRef = useRef(null);
   const setCorrectAnswerRef = useRef(null);
-  const maxAnswers = currentChallenge ? (currentChallenge.question?.match(/_/g) || []).length : 0;
+  const maxAnswers = useMemo(() => {
+    if (!currentChallenge?.question) return 0;
+    const correctAnswers = currentChallenge.correctAnswer || null;
+    const { totalBlanks } = parseQuestionBlanks(currentChallenge.question, correctAnswers);
+    return totalBlanks;
+  }, [currentChallenge?.question, currentChallenge?.correctAnswer]);
 
    useEffect(() => {
     if (currentChallenge) {
@@ -1070,14 +1076,15 @@ export default function GamePlay() {
   }, []);
 
   const getBlankIndex = useCallback((lineIndex, partIndex) => {
+    const correctAnswers = currentChallenge?.correctAnswer || null;
+    const { lineParts } = parseQuestionBlanks(currentChallenge?.question || '', correctAnswers);
     let blankIndex = 0;
-    const lines = currentChallenge?.question?.split('\n') || [];
-    for (let i = 0; i < lineIndex; i++) {
-      blankIndex += (lines[i].match(/_/g) || []).length;
+    for (let i = 0; i < lineIndex && i < lineParts.length; i++) {
+      blankIndex += lineParts[i].length - 1;
     }
     blankIndex += partIndex;
     return blankIndex;
-  }, [currentChallenge?.question]);
+  }, [currentChallenge?.question, currentChallenge?.correctAnswer]);
 
   const handleExitGame = useCallback(async () => {
     console.log('🚪 Exiting game...');

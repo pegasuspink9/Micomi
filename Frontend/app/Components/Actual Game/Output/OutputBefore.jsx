@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { parseQuestionBlanks } from '../GameQuestions/utils/blankHelper';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 const WEBVIEW_WIDTH = SCREEN_WIDTH * 2;
@@ -33,27 +34,37 @@ export default function Output({
       return '<html><body><h2>No question text available</h2></body></html>';
     }
 
-    let htmlCode = currentQuestion.question;
+    const correctAnswers = currentQuestion.correctAnswer || null;
+    const { lineParts, totalBlanks } = parseQuestionBlanks(currentQuestion.question, correctAnswers);
     
-    // Ensure selectedAnswers is an array before using forEach
+    // Ensure selectedAnswers is an array before using
     const answersArray = Array.isArray(selectedAnswers) ? selectedAnswers : [];
     
     console.log('🔧 Generating HTML output:', {
       questionType,
       originalQuestion: currentQuestion.question,
       selectedAnswers: answersArray,
-      blanksCount: (currentQuestion.question.match(/_/g) || []).length
+      blanksCount: totalBlanks
     });
     
-    // Replace blanks with selected answers
-    answersArray.forEach((answer, index) => {
-      if (answer && typeof answer === 'string') {
-        htmlCode = htmlCode.replace('_', answer);
+    // Build HTML by replacing blanks with selected answers using smart parsing
+    let answerIndex = 0;
+    const filledLines = lineParts.map((parts) => {
+      let lineResult = '';
+      for (let i = 0; i < parts.length; i++) {
+        lineResult += parts[i];
+        if (i < parts.length - 1) {
+          if (answerIndex < answersArray.length && answersArray[answerIndex] && typeof answersArray[answerIndex] === 'string') {
+            lineResult += answersArray[answerIndex];
+          } else {
+            lineResult += '<!-- Missing -->';
+          }
+          answerIndex++;
+        }
       }
+      return lineResult;
     });
-
-    // Replace remaining blanks with placeholder comment
-    htmlCode = htmlCode.replace(/_/g, '<!-- Missing -->');
+    let htmlCode = filledLines.join('\n');
 
     // Ensure proper HTML structure
     if (!htmlCode.includes('<!DOCTYPE')) {

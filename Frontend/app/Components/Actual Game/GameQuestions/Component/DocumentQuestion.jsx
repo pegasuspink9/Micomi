@@ -1,12 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { gameScale } from '../../../Responsiveness/gameResponsive';
+import { splitLineIntoBlanks } from '../utils/blankHelper';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const DocumentQuestion = ({ currentQuestion, selectedAnswers }) => {
   const questionText = currentQuestion.question || '';
-  const parts = questionText.split('_');
+  const correctAnswers = currentQuestion.correctAnswer || null;
+  const parts = splitLineIntoBlanks(questionText, correctAnswers?.length ?? null);
 
   return (
     <View style={styles.documentContainer}>

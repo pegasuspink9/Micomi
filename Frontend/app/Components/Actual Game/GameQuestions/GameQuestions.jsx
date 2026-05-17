@@ -4,7 +4,7 @@ import CodeEditor from './Component/CodeEditor';
 import DocumentQuestion from './Component/DocumentQuestion';
 import ComputerEditor from './Component/ComputerEditor';
 import { renderHighlightedText } from './utils/syntaxHighligther';
-import { scrollToNextBlank, calculateGlobalBlankIndex } from './utils/blankHelper';
+import { scrollToNextBlank, calculateGlobalBlankIndex, splitLineIntoBlanks, countBlanksInLine, parseQuestionBlanks } from './utils/blankHelper';
 import { soundManager } from '../Sounds/UniversalSoundManager';
 import { gameScale } from '../../Responsiveness/gameResponsive';
 
@@ -44,35 +44,38 @@ const GameQuestions = ({
 
   const correctAnswersList = submissionResult?.correctAnswer || currentQuestion?.correctAnswer;
 
+  // ✅ Smart blank parsing: excludes URLs, _blank, multi-underscores; clamps to answer count
+  const parsedBlanks = useMemo(() => {
+    if (!currentQuestion?.question) return { lineParts: [], totalBlanks: 0 };
+    const answers = currentQuestion?.correctAnswer || null;
+    return parseQuestionBlanks(currentQuestion.question, answers);
+  }, [currentQuestion?.question, currentQuestion?.correctAnswer]);
+
   const cumulativeBlankCounts = useMemo(() => {
-    if (!currentQuestion?.question) return [];
-    
-    const lines = currentQuestion.question.split('\n');
     const counts = [];
     let runningTotal = 0;
-    
-    for (const line of lines) {
+    for (const parts of parsedBlanks.lineParts) {
       counts.push(runningTotal);
-      const blanks = (line.match(/_/g) || []).length;
-      runningTotal += blanks;
+      runningTotal += parts.length - 1;
     }
     return counts;
-  }, [currentQuestion?.question]);
+  }, [parsedBlanks]);
 
   const lineMeta = useMemo(() => {
     if (!currentQuestion?.question) {
       return [];
     }
 
-    return currentQuestion.question.split('\n').map((line) => {
-      const parts = line.split('_');
+    const lines = currentQuestion.question.split('\n');
+    return lines.map((line, i) => {
+      const parts = parsedBlanks.lineParts[i] || [line];
       return {
         line,
         parts,
         hasBlank: parts.length > 1,
       };
     });
-  }, [currentQuestion?.question]);
+  }, [currentQuestion?.question, parsedBlanks]);
 
   const blankLineIndexes = useMemo(() => (
     lineMeta.reduce((acc, meta, index) => {
@@ -98,22 +101,23 @@ const GameQuestions = ({
     if (!questionText || !Array.isArray(answers) || answers.length === 0) {
       return questionText;
     }
-    const parts = questionText.split('_');
-    if (parts.length <= 1) {
-      return questionText;
-    }
-    let result = '';
+    // Use smart parsing to get the same blank positions used for rendering
+    const { lineParts } = parseQuestionBlanks(questionText, answers);
     let answerIndex = 0;
-    for (let i = 0; i < parts.length; i++) {
-        result += parts[i];
-        if (i < parts.length - 1) { 
-            if (answerIndex < answers.length) {
-                result += answers[answerIndex];
-                answerIndex++;
-            }
+    const filledLines = lineParts.map((parts) => {
+      let lineResult = '';
+      for (let i = 0; i < parts.length; i++) {
+        lineResult += parts[i];
+        if (i < parts.length - 1) {
+          if (answerIndex < answers.length) {
+            lineResult += answers[answerIndex];
+            answerIndex++;
+          }
         }
-    }
-    return result;
+      }
+      return lineResult;
+    });
+    return filledLines.join('\n');
   };
 
   useEffect(() => {
@@ -208,8 +212,17 @@ const GameQuestions = ({
       return <Text style={styles.codeText}></Text>;
     }
     const meta = lineMeta[lineIndex];
-    const parts = meta?.parts || line.split('_');
+    const parts = meta?.parts || splitLineIntoBlanks(line);
     const blanksBeforeCurrent = cumulativeBlankCounts[lineIndex] || 0;
+
+    // ✅ When answer is correct, render the filled line as plain text (no blank boxes)
+    if (isAnswerCorrect && !isComputerMap) {
+      return (
+        <Text style={styles.codeLineTextWrapper}>
+          <Text style={styles.codeText}>{renderHighlightedText(line)}</Text>
+        </Text>
+      );
+    }
 
     if (!isComputerMap && !(meta?.hasBlank)) {
       const highlighted = highlightedLines[lineIndex];
