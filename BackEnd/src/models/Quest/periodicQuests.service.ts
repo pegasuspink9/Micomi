@@ -281,8 +281,10 @@ function getQuestBatchKey(period: QuestPeriod, startDate: Date) {
   return `${period}:${startDate.getTime()}`;
 }
 
-function buildQuestPool(period: QuestPeriod, batchKey: string) {
-  return generateQuestsByPeriod(period, getQuestCount(period)).map((quest) => ({
+function buildQuestPool(period: QuestPeriod, batchKey: string, count?: number) {
+  const questCount = count ?? getQuestCount(period);
+
+  return generateQuestsByPeriod(period, questCount).map((quest) => ({
     ...quest,
     quest_batch_key: batchKey,
   }));
@@ -293,7 +295,7 @@ async function getOrCreateQuestPool(period: QuestPeriod) {
   const batchKey = getQuestBatchKey(period, startDate);
   const questCount = getQuestCount(period);
 
-  const existingQuests = await prisma.quest.findMany({
+  let existingQuests = await prisma.quest.findMany({
     where: {
       quest_period: period,
       quest_batch_key: batchKey,
@@ -301,30 +303,29 @@ async function getOrCreateQuestPool(period: QuestPeriod) {
     orderBy: { quest_id: "asc" },
   });
 
-  if (existingQuests.length > 0) {
-    if (existingQuests.length !== questCount) {
-      throw new Error(
-        `Incomplete quest pool for ${period}: expected ${questCount}, found ${existingQuests.length}`,
-      );
-    }
+  if (existingQuests.length < questCount) {
+    const missingCount = questCount - existingQuests.length;
 
-    return existingQuests;
+    await prisma.$transaction(async (tx) => {
+      const questPoolData = buildQuestPool(period, batchKey, missingCount);
+
+      for (const questData of questPoolData) {
+        await tx.quest.create({
+          data: questData,
+        });
+      }
+    });
+
+    existingQuests = await prisma.quest.findMany({
+      where: {
+        quest_period: period,
+        quest_batch_key: batchKey,
+      },
+      orderBy: { quest_id: "asc" },
+    });
   }
 
-  return await prisma.$transaction(async (tx) => {
-    const questPoolData = buildQuestPool(period, batchKey);
-    const createdQuests = [];
-
-    for (const questData of questPoolData) {
-      const quest = await tx.quest.create({
-        data: questData,
-      });
-
-      createdQuests.push(quest);
-    }
-
-    return createdQuests;
-  });
+  return existingQuests.slice(0, questCount);
 }
 
 async function attachQuestPoolToPlayer(
@@ -704,6 +705,8 @@ export async function checkAndGenerateMissingQuestsForAllPlayers() {
   try {
     console.log("[Quest Service] Checking missing quests for all players...\n");
 
+    const now = new Date();
+
     const allPlayers = await prisma.player.findMany({
       select: { player_id: true, player_name: true },
     });
@@ -739,7 +742,10 @@ export async function checkAndGenerateMissingQuestsForAllPlayers() {
 
             // Fetch all quest periods for this player in ONE query
             const playerQuestPeriods = await prisma.playerQuest.findMany({
-              where: { player_id: player.player_id },
+              where: {
+                player_id: player.player_id,
+                expires_at: { gte: now },
+              },
               select: { quest_period: true },
               distinct: ["quest_period"],
             });
