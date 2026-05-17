@@ -140,7 +140,7 @@ const MissionSection = () => {
 
               {/* Main Content with LinearGradient Background */}
               <LinearGradient
-                colors={['#0a192f', '#172b4a', '#0a192f']}
+                colors={['#3e2208', '#5a3a1e', '#3e2208']}
                 style={styles.contentContainer}
               >
                 {/* Tabs */}
@@ -215,7 +215,7 @@ const MissionSection = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a192f',
+    backgroundColor: '#2a1500',
   },
   sectionPadding: {
     flex: 1,
@@ -225,12 +225,15 @@ const styles = StyleSheet.create({
   panelOuter: {
     flex: 1,
     borderRadius: gameScale(16),
-    borderWidth: gameScale(1),
-    borderTopColor: '#0d1f33',
-    borderLeftColor: '#0d1f33',
-    borderBottomColor: '#2d5a87',
-    borderRightColor: '#2d5a87',
-    backgroundColor: '#1e3a5f',
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderBottomWidth: 3,
+    borderRightWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.3)',
+    borderLeftColor: 'rgba(255,255,255,0.3)',
+    borderBottomColor: 'rgba(0,0,0,0.4)',
+    borderRightColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: '#5a3a1e',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: gameScale(4) },
     shadowOpacity: 0.35,
@@ -241,12 +244,12 @@ const styles = StyleSheet.create({
   panelMiddle: {
     flex: 1,
     borderRadius: gameScale(14),
-    borderWidth: gameScale(1),
-    borderTopColor: '#4a90d9',
-    borderLeftColor: '#4a90d9',
-    borderBottomColor: '#0a1929',
-    borderRightColor: '#0a1929',
-    backgroundColor: '#152d4a',
+    borderWidth: gameScale(2),
+    borderTopColor: '#c4904a',
+    borderLeftColor: '#c4904a',
+    borderBottomColor: '#2a1500',
+    borderRightColor: '#2a1500',
+    backgroundColor: '#4a2c10',
     padding: gameScale(1),
     overflow: 'hidden',
   },
@@ -254,8 +257,8 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: gameScale(12),
     borderWidth: gameScale(1),
-    borderColor: 'rgba(74, 144, 217, 0.35)',
-    backgroundColor: '#0f2742',
+    borderColor: 'rgba(180, 120, 50, 0.35)',
+    backgroundColor: '#3e2208',
     overflow: 'hidden',
   },
   loadingContainer: {
@@ -283,12 +286,12 @@ const styles = StyleSheet.create({
     marginBottom: gameScale(15),
   },
   retryButton: {
-    backgroundColor: 'rgba(0, 93, 200, 0.8)',
+    backgroundColor: 'rgba(140, 80, 20, 0.8)',
     paddingHorizontal: gameScale(25),
     paddingVertical: gameScale(10),
     borderRadius: gameScale(10),
     borderWidth: gameScale(1),
-    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderColor: 'rgba(255, 215, 100, 0.5)',
   },
   retryButtonText: {
     color: 'white',
@@ -351,7 +354,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryNumber: {
-    color: '#FFD700',
+    color: '#f0c56e',
     fontSize: gameScale(18),
     fontFamily: 'Grobold',
     textShadowColor: 'rgba(0, 0, 0, 0.75)',

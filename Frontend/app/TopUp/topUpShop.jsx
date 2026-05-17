@@ -1,13 +1,13 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { ActivityIndicator, Dimensions, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { gameScale } from '../Components/Responsiveness/gameResponsive';
 import { topUpShopService } from '../services/topUpShopService';
 import { TOP_UP_CATEGORIES, TOP_UP_CATEGORY_MATCHERS } from '../services/topUpShopData';
-import { TOP_UP_IMAGE_MAP } from '../services/preloader/universalAssetPreloader/topUpMethods';
+import { TOP_UP_IMAGE_MAP, TOP_UP_COVER_URL, TOP_UP_BOARD_URL, TOP_UP_SHOP_BG_URL } from '../services/preloader/universalAssetPreloader/topUpMethods';
 import { universalAssetPreloader } from '../services/preloader/universalAssetPreloader';
+import BackButton from '../Components/Actual Game/Back/BackButton';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -46,8 +46,6 @@ const groupItemsByLayout = (items) => {
 };
 
 const groupFilteredItems = (items, category) => {
-  if (category === 'all') return groupItemsByLayout(items);
-
   const rows = [];
 
   if (category === 'energy') {
@@ -63,6 +61,21 @@ const groupFilteredItems = (items, category) => {
   return rows;
 };
 
+// Cover image aspect ratio (adjust if the actual image differs)
+const COVER_ASPECT_RATIO = 16 / 9;
+const COVER_HEIGHT = SCREEN_WIDTH / COVER_ASPECT_RATIO;
+const BOARD_HEIGHT = gameScale(90);
+
+// Brown gradient colors for tabs (matching MissionTabButton pattern)
+const getTabGradientColors = (isActive) => {
+  if (isActive) {
+    return ['#c98930', '#7a4a12']; // Bright warm brown
+  }
+  return ['#6b4420', '#3e2208']; // Dark muted brown
+};
+
+const TAB_SHADOW_COLOR = '#2a1500';
+
 export default function TopUpShop() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -70,7 +83,9 @@ export default function TopUpShop() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(
-    typeof params.category === 'string' && params.category ? params.category : 'all'
+    typeof params.category === 'string' && params.category && params.category !== 'all'
+      ? params.category
+      : 'coins'
   );
 
   const loadCatalog = useCallback(async () => {
@@ -95,7 +110,6 @@ export default function TopUpShop() {
   );
 
   const filteredCatalog = useMemo(() => {
-    if (selectedCategory === 'all') return catalog;
     const matcher = TOP_UP_CATEGORY_MATCHERS[selectedCategory];
     if (!matcher) return catalog;
     return catalog.filter(matcher);
@@ -112,30 +126,78 @@ export default function TopUpShop() {
     return universalAssetPreloader.getCachedAssetPath(remoteUrl);
   };
 
+  const coverUri = universalAssetPreloader.getCachedAssetPath(TOP_UP_COVER_URL) || TOP_UP_COVER_URL;
+  const boardUri = universalAssetPreloader.getCachedAssetPath(TOP_UP_BOARD_URL) || TOP_UP_BOARD_URL;
+  const shopBgUri = universalAssetPreloader.getCachedAssetPath(TOP_UP_SHOP_BG_URL) || TOP_UP_SHOP_BG_URL;
+
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={['#081521', '#0e2436', '#18324a']} style={styles.background}>
-        <View style={styles.header}>
-          <TouchableOpacity activeOpacity={0.8} onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={gameScale(22)} color="#fff" />
-          </TouchableOpacity>
-          <View style={styles.headerTextWrap}>
-            <Text style={styles.title}>Top Ups Shop</Text>
-            <Text style={styles.subtitle}>Choose a category and browse the catalog</Text>
-          </View>
-        </View>
+      {/* Cover image at the top edge */}
+      <View style={styles.coverContainer}>
+        <Image
+          source={{ uri: coverUri }}
+          style={styles.coverImage}
+          resizeMode="cover"
+        />
 
-        <View style={styles.filterRow}>
+        {/* Back button — BackButton component with brown tint */}
+        <BackButton
+          tintColor="#6b3a1f"
+          tintOpacity={0.7}
+          width={gameScale(60)}
+          height={gameScale(60)}
+          containerStyle={styles.backButtonContainer}
+        />
+
+        {/* Board at the bottom edge of cover */}
+        <Image
+          source={{ uri: boardUri }}
+          style={styles.boardImage}
+          resizeMode="contain"
+        />
+      </View>
+
+      {/* Shop background covering from the board downward */}
+      <ImageBackground
+        source={{ uri: shopBgUri }}
+        style={styles.shopBackground}
+        resizeMode="cover"
+      >
+        {/* Category tabs — MissionTabButton style but brown */}
+        <View style={styles.tabsContainer}>
           {TOP_UP_CATEGORIES.map((category) => {
             const active = selectedCategory === category.key;
+            const gradientColors = getTabGradientColors(active);
+
             return (
-              <Pressable
-                key={category.key}
-                onPress={() => setSelectedCategory(category.key)}
-                style={[styles.filterChip, active && styles.filterChipActive]}
-              >
-                <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{category.label}</Text>
-              </Pressable>
+              <View key={category.key} style={styles.capsuleWrapper}>
+                {/* 3D Shadow Layer */}
+                <View style={[
+                  styles.capsuleShadow,
+                  { backgroundColor: TAB_SHADOW_COLOR },
+                  active && styles.capsuleShadowActive,
+                ]} />
+
+                <TouchableOpacity
+                  activeOpacity={1}
+                  onPress={() => setSelectedCategory(category.key)}
+                  style={[styles.capsuleButton, active && styles.capsuleButtonActive]}
+                >
+                  <LinearGradient
+                    colors={gradientColors}
+                    style={styles.capsuleGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                  >
+                    {/* Highlight overlay for 3D effect */}
+                    <View style={styles.capsuleHighlight} />
+
+                    <Text style={[styles.capsuleText, active && styles.capsuleTextActive]}>
+                      {category.label}
+                    </Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
             );
           })}
         </View>
@@ -192,7 +254,7 @@ export default function TopUpShop() {
             )}
           </ScrollView>
         )}
-      </LinearGradient>
+      </ImageBackground>
     </View>
   );
 }
@@ -202,66 +264,104 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#081521',
   },
-  background: {
+
+  // --- Cover ---
+  coverContainer: {
+    width: SCREEN_WIDTH,
+    height: COVER_HEIGHT,
+    position: 'relative',
+  },
+  coverImage: {
+    width: '100%',
+    height: '100%',
+  },
+  backButtonContainer: {
+    position: 'absolute',
+    zIndex: 10,
+    left: gameScale(10)
+  },
+  boardImage: {
+    zIndex: 999999,
+    position: 'absolute',
+    bottom: gameScale(-30),
+    left: 0,
+    width: '100%',
+    height: BOARD_HEIGHT,
+  },
+
+  // --- Shop Background (from board downward) ---
+  shopBackground: {
     flex: 1,
-    paddingTop: gameScale(48),
-    paddingHorizontal: gameScale(18),
+    marginTop: gameScale(-15),
   },
-  header: {
+
+  // --- Tabs (MissionTabButton style, brownish) ---
+  tabsContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: gameScale(12),
+    justifyContent: 'space-between',
+    marginTop: gameScale(44),
     marginBottom: gameScale(16),
+    paddingHorizontal: gameScale(18),
+    gap: gameScale(10),
   },
-  backButton: {
-    width: gameScale(42),
-    height: gameScale(42),
-    borderRadius: gameScale(14),
+  capsuleWrapper: {
+    flex: 1,
+    height: gameScale(38),
+  },
+  capsuleShadow: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '100%',
+    borderRadius: gameScale(12),
+  },
+  capsuleShadowActive: {
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  capsuleButton: {
+    flex: 1,
+    marginBottom: gameScale(4),
+    borderRadius: gameScale(12),
+  },
+  capsuleButtonActive: {
+    marginBottom: 0,
+    marginTop: gameScale(4),
+  },
+  capsuleGradient: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderRadius: gameScale(12),
+    borderWidth: gameScale(1),
+    borderColor: 'rgba(255,215,100,0.25)',
+    overflow: 'hidden',
   },
-  headerTextWrap: {
-    flex: 1,
+  capsuleHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '45%',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderTopLeftRadius: gameScale(12),
+    borderTopRightRadius: gameScale(12),
   },
-  title: {
-    color: '#fff',
-    fontSize: gameScale(22),
-    fontFamily: 'DynaPuff',
-  },
-  subtitle: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: gameScale(11),
-    marginTop: gameScale(2),
-  },
-  filterRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: gameScale(8),
-    marginBottom: gameScale(14),
-  },
-  filterChip: {
-    paddingHorizontal: gameScale(14),
-    paddingVertical: gameScale(8),
-    borderRadius: gameScale(999),
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-  },
-  filterChipActive: {
-    backgroundColor: '#ffd84a',
-    borderColor: '#ffd84a',
-  },
-  filterChipText: {
-    color: '#dfe9f5',
+  capsuleText: {
+    fontFamily: 'Grobold',
     fontSize: gameScale(12),
-    fontFamily: 'DynaPuff',
+    color: 'rgba(255, 230, 180, 0.85)',
+    textShadowColor: '#000000',
+    textShadowOffset: { width: 1, height: 2 },
+    textShadowRadius: 2,
+    zIndex: 2,
   },
-  filterChipTextActive: {
-    color: '#1d2936',
+  capsuleTextActive: {
+    color: '#fff8e1',
+    textShadowOffset: { width: 1, height: 1 },
   },
+
+  // --- States ---
   stateWrap: {
     flex: 1,
     justifyContent: 'center',
@@ -287,12 +387,13 @@ const styles = StyleSheet.create({
   },
   retryText: {
     color: '#1d2936',
-    fontFamily: 'DynaPuff',
+    fontFamily: 'Grobold',
   },
 
   // --- Layout ---
   listContent: {
     paddingBottom: gameScale(28),
+    paddingHorizontal: gameScale(18),
   },
   row: {
     flexDirection: 'row',
@@ -325,7 +426,7 @@ const styles = StyleSheet.create({
   placeholderText: {
     color: 'rgba(255,255,255,0.4)',
     fontSize: gameScale(12),
-    fontFamily: 'DynaPuff',
+    fontFamily: 'Grobold',
     textAlign: 'center',
   },
 });

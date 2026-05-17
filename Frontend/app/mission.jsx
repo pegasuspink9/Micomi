@@ -27,6 +27,6 @@ export default function MissionPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a192f',
+    backgroundColor: '#2a1500',
   },
 });

@@ -12,6 +12,10 @@ export const TOP_UP_IMAGE_MAP = {
   'infinite_energy_lifetime': 'https://micomi-assets.me/Top%20ups/energy/Lifetime.png',
 };
 
+export const TOP_UP_COVER_URL = 'https://micomi-assets.me/Top%20ups/Cover/Cover.jpg';
+export const TOP_UP_BOARD_URL = 'https://micomi-assets.me/Top%20ups/Cover/Board.png';
+export const TOP_UP_SHOP_BG_URL = 'https://micomi-assets.me/Top%20ups/Cover/ShopBackground.png';
+
 export const topUpMethods = {
   getStaticTopUpAssets() {
     const assets = [];
@@ -27,6 +31,11 @@ export const topUpMethods = {
     Object.entries(TOP_UP_IMAGE_MAP).forEach(([itemId, url]) => {
       addAsset(url, `topup_${itemId}`, 'image', 'top_up_shop');
     });
+
+    // Cover, Board & Shop Background
+    addAsset(TOP_UP_COVER_URL, 'topup_cover', 'image', 'top_up_shop');
+    addAsset(TOP_UP_BOARD_URL, 'topup_board', 'image', 'top_up_shop');
+    addAsset(TOP_UP_SHOP_BG_URL, 'topup_shop_bg', 'image', 'top_up_shop');
 
     return assets;
   },

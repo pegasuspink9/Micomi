@@ -1,5 +1,4 @@
 export const TOP_UP_CATEGORIES = [
-  { key: 'all', label: 'All' },
   { key: 'coins', label: 'Coins' },
   { key: 'diamonds', label: 'Diamonds' },
   { key: 'energy', label: 'Energy' },

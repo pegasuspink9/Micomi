@@ -25,14 +25,14 @@ const MiniQuestPreview = () => {
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   const borderColors = {
-    outerBg: '#1e3a5f',
-    outerBorderTop: '#0d1f33',
-    outerBorderBottom: '#2d5a87',
-    middleBg: '#152d4a',
-    middleBorderTop: '#4a90d9',
-    middleBorderBottom: '#0a1929',
-    innerBg: 'rgba(74, 144, 217, 0.15)',
-    innerBorder: 'rgba(74, 144, 217, 0.3)',
+    outerBg: '#5a3a1e',
+    outerBorderTop: '#3e2208',
+    outerBorderBottom: '#8b6b3d',
+    middleBg: '#4a2c10',
+    middleBorderTop: '#c4904a',
+    middleBorderBottom: '#2a1500',
+    innerBg: 'rgba(180, 120, 50, 0.15)',
+    innerBorder: 'rgba(180, 120, 50, 0.3)',
   };
 
   const getAvailableQuests = () => {
@@ -91,23 +91,29 @@ const MiniQuestPreview = () => {
         style={[
           styles.cardBorderOuter,
           {
-            backgroundColor: isCompleted ? '#3d5a3d' : borderColors.outerBg,
-            borderTopColor: isCompleted ? '#2d4a2d' : borderColors.outerBorderTop,
-            borderLeftColor: isCompleted ? '#2d4a2d' : borderColors.outerBorderTop,
-            borderBottomColor: isCompleted ? '#4a6b4a' : borderColors.outerBorderBottom,
-            borderRightColor: isCompleted ? '#4a6b4a' : borderColors.outerBorderBottom,
+            backgroundColor: isCompleted ? '#4a6b2a' : borderColors.outerBg,
+            borderTopColor: isCompleted ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.3)',
+            borderLeftColor: isCompleted ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.3)',
+            borderBottomColor: isCompleted ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.4)',
+            borderRightColor: isCompleted ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.3)',
           },
         ]}
       >
+        {/* 3D Corner Dots (Brass Rivets) */}
+        <View style={[styles.cornerDot, styles.dotTopLeft]} />
+        <View style={[styles.cornerDot, styles.dotTopRight]} />
+        <View style={[styles.cornerDot, styles.dotBottomLeft]} />
+        <View style={[styles.cornerDot, styles.dotBottomRight]} />
+
         <View
           style={[
             styles.cardBorderMiddle,
             {
-              backgroundColor: isCompleted ? '#2d4a2d' : borderColors.middleBg,
-              borderTopColor: isCompleted ? '#4CAF50' : borderColors.middleBorderTop,
-              borderLeftColor: isCompleted ? '#4CAF50' : borderColors.middleBorderTop,
-              borderBottomColor: isCompleted ? '#1a2e1a' : borderColors.middleBorderBottom,
-              borderRightColor: isCompleted ? '#1a2e1a' : borderColors.middleBorderBottom,
+              backgroundColor: isCompleted ? '#3a5a1a' : borderColors.middleBg,
+              borderTopColor: isCompleted ? '#6bba30' : borderColors.middleBorderTop,
+              borderLeftColor: isCompleted ? '#6bba30' : borderColors.middleBorderTop,
+              borderBottomColor: isCompleted ? '#1a3a0a' : borderColors.middleBorderBottom,
+              borderRightColor: isCompleted ? '#1a3a0a' : borderColors.middleBorderBottom,
             },
           ]}
         >
@@ -116,7 +122,10 @@ const MiniQuestPreview = () => {
               styles.cardBorderInner,
               {
                 backgroundColor: isCompleted ? 'rgba(76, 175, 80, 0.15)' : borderColors.innerBg,
-                borderColor: isCompleted ? 'rgba(76, 175, 80, 0.3)' : borderColors.innerBorder,
+                borderTopColor: isCompleted ? 'rgba(107,186,48,0.2)' : 'rgba(255,255,255,0.1)',
+                borderLeftColor: isCompleted ? 'rgba(107,186,48,0.1)' : 'rgba(255,255,255,0.05)',
+                borderBottomColor: isCompleted ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.3)',
+                borderRightColor: isCompleted ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.2)',
               },
             ]}
           >
@@ -130,11 +139,13 @@ const MiniQuestPreview = () => {
   if (loading) {
     return renderCardWrapper(
       <LinearGradient
-        colors={['#1e3a5f', '#0d1f33']}
+        colors={['#6b4420', '#3e2208']}
         style={styles.gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
+        <View style={styles.cardHighlight} />
+        <View style={styles.cardShadowOverlay} />
         <ActivityIndicator size="small" color="#fff" />
       </LinearGradient>
     );
@@ -145,11 +156,13 @@ const MiniQuestPreview = () => {
   if (availableQuests.length === 0) {
     return renderCardWrapper(
       <LinearGradient
-        colors={['#2d5a2d', '#1a3d1a']}
+        colors={['#4a6b2a', '#2a4a12']}
         style={styles.gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
+        <View style={styles.cardHighlight} />
+        <View style={styles.cardShadowOverlay} />
         <Text style={styles.completedText}>✓ All Complete!</Text>
         <Text style={styles.tapText}>Tap to view missions</Text>
       </LinearGradient>,
@@ -165,11 +178,13 @@ const MiniQuestPreview = () => {
 
   return renderCardWrapper(
     <LinearGradient
-      colors={['#1e3a5f', '#0d1f33']}
+      colors={['#6b4420', '#3e2208']}
       style={styles.gradient}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
+      <View style={styles.cardHighlight} />
+      <View style={styles.cardShadowOverlay} />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Daily Quest</Text>
         <View style={styles.badge}>
@@ -232,25 +247,39 @@ const styles = StyleSheet.create({
   cardBorderOuter: {
     width: '100%',
     maxWidth: width * 0.9,
-    borderWidth: gameScale(1),
     borderRadius: gameScale(12),
+    padding: gameScale(2),
+    position: 'relative',
+    // Directional borders for 3D effect (PotionShop style)
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderBottomWidth: 3,
+    borderRightWidth: 2,
+    // Shadow
     shadowColor: '#000',
-    shadowOffset: { width: gameScale(1), height: gameScale(1) },
-    shadowOpacity: 0.6,
-    shadowRadius: gameScale(2),
-    elevation: 8,
-    overflow: 'hidden',
+    shadowOffset: { width: 0, height: gameScale(6) },
+    shadowOpacity: 0.4,
+    shadowRadius: gameScale(8),
+    elevation: 12,
   },
   cardBorderMiddle: {
-    borderWidth: gameScale(1),
-    padding: gameScale(1),
+    padding: gameScale(2),
     borderRadius: gameScale(10),
     overflow: 'hidden',
+    // Directional inner borders
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderBottomWidth: 3,
+    borderRightWidth: 3,
   },
   cardBorderInner: {
     borderRadius: gameScale(8),
-    borderWidth: gameScale(1),
     overflow: 'hidden',
+    // Directional innermost borders
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderBottomWidth: 1,
+    borderRightWidth: 1,
   },
   gradient: {
     width: '100%',
@@ -258,7 +287,61 @@ const styles = StyleSheet.create({
     borderRadius: gameScale(6),
     paddingHorizontal: gameScale(10),
     paddingVertical: gameScale(10),
-    backgroundColor: '#1e3a5f',
+    backgroundColor: '#5a3a1e',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  // --- Highlight & Shadow overlays (PotionShop 3D depth) ---
+  cardHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '40%',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderTopLeftRadius: gameScale(6),
+    borderTopRightRadius: gameScale(6),
+  },
+  cardShadowOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '30%',
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    borderBottomLeftRadius: gameScale(6),
+    borderBottomRightRadius: gameScale(6),
+  },
+  // --- 3D Corner Dots (Brass Rivets) ---
+  cornerDot: {
+    position: 'absolute',
+    width: gameScale(6),
+    height: gameScale(6),
+    borderRadius: gameScale(3),
+    backgroundColor: '#d4af37',
+    borderWidth: 1,
+    borderColor: '#8b4513',
+    zIndex: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.5,
+    elevation: 2,
+  },
+  dotTopLeft: {
+    top: gameScale(4),
+    left: gameScale(4),
+  },
+  dotTopRight: {
+    top: gameScale(4),
+    right: gameScale(4),
+  },
+  dotBottomLeft: {
+    bottom: gameScale(4),
+    left: gameScale(4),
+  },
+  dotBottomRight: {
+    bottom: gameScale(4),
+    right: gameScale(4),
   },
   header: {
     flexDirection: 'row',
@@ -275,15 +358,15 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   badge: {
-    backgroundColor: 'rgba(255, 215, 0, 0.3)',
+    backgroundColor: 'rgba(200, 140, 50, 0.35)',
     paddingHorizontal: gameScale(8),
     paddingVertical: gameScale(2),
     borderRadius: gameScale(10),
     borderWidth: 1,
-    borderColor: '#FFD700',
+    borderColor: '#d4a24e',
   },
   badgeText: {
-    color: '#FFD700',
+    color: '#f0c56e',
     fontSize: gameScale(10),
     fontFamily: 'Grobold',
   },
@@ -307,14 +390,19 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     flex: 1,
-    height: gameScale(6),
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: gameScale(3),
+    height: gameScale(8),
+    backgroundColor: '#2a1500',
+    borderRadius: gameScale(4),
     overflow: 'hidden',
+    borderWidth: gameScale(1),
+    borderTopColor: '#1a0e00',
+    borderLeftColor: '#1a0e00',
+    borderBottomColor: '#4a3020',
+    borderRightColor: '#4a3020',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#c98930',
     borderRadius: gameScale(3),
   },
   progressText: {
@@ -337,28 +425,28 @@ const styles = StyleSheet.create({
     height: gameScale(15),
   },
   rewardItem: {
-    color: '#FFD700',
+    color: '#f0c56e',
     fontSize: gameScale(10),
     fontFamily: 'Grobold',
-    textShadowColor: '#000',
+    textShadowColor: '#1a0e00',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
   tapIndicator: {
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(240, 220, 180, 0.5)',
     fontSize: gameScale(8),
     fontFamily: 'Grobold',
     textAlign: 'right',
   },
   completedText: {
-    color: '#4CAF50',
+    color: '#6bba30',
     fontSize: gameScale(14),
     fontFamily: 'Grobold',
     textAlign: 'center',
     marginBottom: gameScale(4),
   },
   tapText: {
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'rgba(240, 220, 180, 0.6)',
     fontSize: gameScale(10),
     fontFamily: 'Grobold',
     textAlign: 'center',

@@ -8,38 +8,38 @@ const MissionTabButton = ({ label, count, isActive, onPress }) => {
     if (isActive) {
       switch (label) {
         case 'Daily':
-          return ['#4a90d9', '#1e4a7a']; // Bright blue
+          return ['#c98930', '#7a4a12']; // Warm golden brown
         case 'Weekly':
-          return ['#5a9fd4', '#2a4a6e']; // Medium blue
+          return ['#b87a28', '#6b4010']; // Medium brown
         case 'Monthly':
-          return ['#3498db', '#1a5276']; // Teal blue
+          return ['#d49a38', '#8b5a18']; // Bright amber brown
         default:
-          return ['#4a90d9', '#1e4a7a'];
+          return ['#c98930', '#7a4a12'];
       }
     }
-    // Inactive state - darker muted blue versions
+    // Inactive state - darker muted brown versions
     switch (label) {
       case 'Daily':
-        return ['#2d5a87', '#0d1f33'];
+        return ['#6b4420', '#3e2208'];
       case 'Weekly':
-        return ['#1f3a57', '#15304d'];
+        return ['#5a3a18', '#2a1500'];
       case 'Monthly':
-        return ['#14415e', '#0e3a52'];
+        return ['#7a5020', '#4a2c10'];
       default:
-        return ['#2d5a87', '#0d1f33'];
+        return ['#6b4420', '#3e2208'];
     }
   };
 
   const getShadowColor = () => {
     switch (label) {
       case 'Daily':
-        return '#0d1f33';
+        return '#2a1500';
       case 'Weekly':
-        return '#0f2536';
+        return '#1a0e00';
       case 'Monthly':
-        return '#0a2d42';
+        return '#3e2208';
       default:
-        return '#0d1f33';
+        return '#2a1500';
     }
   };
 

@@ -46,74 +46,74 @@ const QuestCard = ({ quest, onClaim, claiming = false }) => {
   }, [player_quest_id]);
 
   const getGradientColors = () => {
-    if (is_claimed) return ['#2d4a2d', '#1a2e1a'];
-    if (isClaimable) return ['#2d5a2d', '#1a3d1a'];
+    if (is_claimed) return ['#3a5a1a', '#2a4a12'];
+    if (isClaimable) return ['#4a6b2a', '#2a4a12'];
     switch (quest_period) {
-      case 'daily': return ['#1e3a5f', '#0d1f33'];
-      case 'weekly': return ['#2a4a6e', '#15304d'];
-      case 'monthly': return ['#1a5276', '#0e3a52'];
-      default: return ['#1e3a5f', '#0d1f33'];
+      case 'daily': return ['#6b4420', '#3e2208'];
+      case 'weekly': return ['#5a3a18', '#2a1500'];
+      case 'monthly': return ['#7a5020', '#4a2c10'];
+      default: return ['#6b4420', '#3e2208'];
     }
   };
 
   const getBorderColors = () => {
     if (is_claimed) {
       return {
-        outerBg: '#3d5a3d', outerBorderTop: '#2d4a2d', outerBorderBottom: '#4a6b4a',
-        middleBg: '#2d4a2d', middleBorderTop: '#4CAF50', middleBorderBottom: '#1a2e1a',
-        innerBg: 'rgba(76, 175, 80, 0.15)', innerBorder: 'rgba(76, 175, 80, 0.3)',
+        outerBg: '#4a6b2a', outerBorderTop: '#3a5a1a', outerBorderBottom: '#6b8b3a',
+        middleBg: '#3a5a1a', middleBorderTop: '#6bba30', middleBorderBottom: '#1a3a0a',
+        innerBg: 'rgba(107, 186, 48, 0.15)', innerBorder: 'rgba(107, 186, 48, 0.3)',
       };
     }
     if (isClaimable) {
       return {
-        outerBg: '#2d5a2d', outerBorderTop: '#1a3d1a', outerBorderBottom: '#4CAF50',
-        middleBg: '#1a3d1a', middleBorderTop: '#66BB6A', middleBorderBottom: '#0d260d',
-        innerBg: 'rgba(76, 175, 80, 0.2)', innerBorder: 'rgba(102, 187, 106, 0.4)',
+        outerBg: '#4a6b2a', outerBorderTop: '#2a4a12', outerBorderBottom: '#6bba30',
+        middleBg: '#2a4a12', middleBorderTop: '#7bc840', middleBorderBottom: '#1a3a0a',
+        innerBg: 'rgba(107, 186, 48, 0.2)', innerBorder: 'rgba(123, 200, 64, 0.4)',
       };
     }
     switch (quest_period) {
       case 'daily':
         return {
-          outerBg: '#1e3a5f', outerBorderTop: '#0d1f33', outerBorderBottom: '#2d5a87',
-          middleBg: '#152d4a', middleBorderTop: '#4a90d9', middleBorderBottom: '#0a1929',
-          innerBg: 'rgba(74, 144, 217, 0.15)', innerBorder: 'rgba(74, 144, 217, 0.3)',
+          outerBg: '#5a3a1e', outerBorderTop: '#3e2208', outerBorderBottom: '#8b6b3d',
+          middleBg: '#4a2c10', middleBorderTop: '#c4904a', middleBorderBottom: '#2a1500',
+          innerBg: 'rgba(180, 120, 50, 0.15)', innerBorder: 'rgba(180, 120, 50, 0.3)',
         };
       case 'weekly':
         return {
-          outerBg: '#2a4a6e', outerBorderTop: '#15304d', outerBorderBottom: '#3d6a94',
-          middleBg: '#1f3a57', middleBorderTop: '#5a9fd4', middleBorderBottom: '#0f2536',
-          innerBg: 'rgba(90, 159, 212, 0.15)', innerBorder: 'rgba(90, 159, 212, 0.3)',
+          outerBg: '#5a3a18', outerBorderTop: '#3e2208', outerBorderBottom: '#8b6830',
+          middleBg: '#4a2c10', middleBorderTop: '#b87a28', middleBorderBottom: '#2a1500',
+          innerBg: 'rgba(184, 122, 40, 0.15)', innerBorder: 'rgba(184, 122, 40, 0.3)',
         };
       case 'monthly':
         return {
-          outerBg: '#1a5276', outerBorderTop: '#0e3a52', outerBorderBottom: '#2980b9',
-          middleBg: '#14415e', middleBorderTop: '#3498db', middleBorderBottom: '#0a2d42',
-          innerBg: 'rgba(52, 152, 219, 0.15)', innerBorder: 'rgba(52, 152, 219, 0.3)',
+          outerBg: '#6b4420', outerBorderTop: '#4a2c10', outerBorderBottom: '#a07838',
+          middleBg: '#5a3a18', middleBorderTop: '#d49a38', middleBorderBottom: '#3e2208',
+          innerBg: 'rgba(212, 154, 56, 0.15)', innerBorder: 'rgba(212, 154, 56, 0.3)',
         };
       default:
         return {
-          outerBg: '#1e3a5f', outerBorderTop: '#0d1f33', outerBorderBottom: '#2d5a87',
-          middleBg: '#152d4a', middleBorderTop: '#4a90d9', middleBorderBottom: '#0a1929',
-          innerBg: 'rgba(74, 144, 217, 0.15)', innerBorder: 'rgba(74, 144, 217, 0.3)',
+          outerBg: '#5a3a1e', outerBorderTop: '#3e2208', outerBorderBottom: '#8b6b3d',
+          middleBg: '#4a2c10', middleBorderTop: '#c4904a', middleBorderBottom: '#2a1500',
+          innerBg: 'rgba(180, 120, 50, 0.15)', innerBorder: 'rgba(180, 120, 50, 0.3)',
         };
     }
   };
 
   const getProgressBarColor = () => {
-    if (is_completed) return '#4CAF50';
-    if (progressPercent >= 75) return '#8BC34A';
-    if (progressPercent >= 50) return '#FFC107';
-    if (progressPercent >= 25) return '#FF9800';
-    return '#2196F3';
+    if (is_completed) return '#6bba30';
+    if (progressPercent >= 75) return '#a0c040';
+    if (progressPercent >= 50) return '#c98930';
+    if (progressPercent >= 25) return '#b87a28';
+    return '#8b5e2f';
   };
 
   const getButtonBorderColors = () => {
-    if (is_claimed || isClaimable) return { top: '#66BB6A', bottom: '#2d4a2d' };
+    if (is_claimed || isClaimable) return { top: '#6bba30', bottom: '#2a4a12' };
     switch (quest_period) {
-      case 'daily': return { top: '#4a90d9', bottom: '#0d1f33' };
-      case 'weekly': return { top: '#5a9fd4', bottom: '#0f2536' };
-      case 'monthly': return { top: '#3498db', bottom: '#0a2d42' };
-      default: return { top: '#4a90d9', bottom: '#0d1f33' };
+      case 'daily': return { top: '#c4904a', bottom: '#3e2208' };
+      case 'weekly': return { top: '#b87a28', bottom: '#2a1500' };
+      case 'monthly': return { top: '#d49a38', bottom: '#4a2c10' };
+      default: return { top: '#c4904a', bottom: '#3e2208' };
     }
   };
 
@@ -373,11 +373,11 @@ const styles = StyleSheet.create({
     height: gameScale(18),
   },
   rewardValue: {
-    color: '#FFD700',
+    color: '#f0c56e',
     fontSize: gameScale(11),
     fontFamily: 'Grobold',
     marginTop: gameScale(2),
-    textShadowColor: '#000000',
+    textShadowColor: '#1a0e00',
     textShadowOffset: { width: gameScale(1), height: gameScale(1) },
     textShadowRadius: gameScale(2),
   },
@@ -424,8 +424,8 @@ const styles = StyleSheet.create({
   },
   progressBarContainer: {
     flex: 1,
-    height: gameScale(6),
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    height: gameScale(8),
+    backgroundColor: '#2a1500',
     borderRadius: gameScale(4),
     overflow: 'hidden',
     borderWidth: gameScale(1),
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(76, 175, 80, 0.5)',
   },
   claimedBadgeText: {
-    color: '#4CAF50',
+    color: '#6bba30',
     fontSize: gameScale(8),
     fontFamily: 'Grobold',
   },
@@ -495,15 +495,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(100, 100, 100, 0.3)',
   },
   claimButtonActive: {
-    backgroundColor: '#4CAF50',
-    shadowColor: '#4CAF50',
+    backgroundColor: '#6bba30',
+    shadowColor: '#6bba30',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.5,
     shadowRadius: 4,
     elevation: 5,
   },
   claimButtonClaimed: {
-    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+    backgroundColor: 'rgba(107, 186, 48, 0.2)',
   },
   claimButtonText: {
     color: '#f4e7d1',
