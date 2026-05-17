@@ -92,18 +92,4 @@ export const STORE_CATALOG: StoreCatalogItem[] = [
       { item_id: "character_ryron", qty: 1 },
     ],
   },
-
-  // ==================== BUNDLES ====================
-  {
-    item_id: "bundle_starter",
-    name: "Freshman Starter Pack",
-    type: "bundle",
-    description: "Best for beginners! CSS Map + ShiShi + 2,000 Coins.",
-    price_php: 129,
-    contents: [
-      { item_id: "map_css_premium", qty: 1 },
-      { item_id: "character_shishi", qty: 1 },
-      { item_id: "coins", qty: 2000 },
-    ],
-  },
 ];
