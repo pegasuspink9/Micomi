@@ -54,7 +54,6 @@ export const selectMap = async (playerId: number, mapId: number) => {
               stars_earned: true,
             },
           },
-          challenges: true,
         },
       },
     },

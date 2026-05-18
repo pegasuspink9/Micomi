@@ -3,6 +3,7 @@ import {
   generatePeriodicQuests,
   cleanupExpiredQuests,
 } from "../src/models/Quest/periodicQuests.service";
+import { generateMissingChallengeGuides } from "../src/models/Challenge/challengeGuide.service";
 import { QuestPeriod } from "@prisma/client";
 
 export function setupCronJobs() {
@@ -76,7 +77,22 @@ export function setupCronJobs() {
     }
   });
 
-  // Energy restoration is handled on-demand via updatePlayerEnergy()
-  // when players: check status, deduct energy, or play levels
-  // No need for continuous polling
+  const guideCron = process.env.CHALLENGE_GUIDE_CRON || "*/30 * * * *";
+  cron.schedule(guideCron, async () => {
+    if (!process.env.GROQ_API_KEY && !process.env.GEMINI_API_KEY) {
+      console.warn("[Guide Cron] No AI keys configured. Skipping guide run.");
+      return;
+    }
+
+    console.log("\n" + "=".repeat(60));
+    console.log("CHALLENGE GUIDE GENERATION - Starting");
+    console.log("=".repeat(60));
+    try {
+      await generateMissingChallengeGuides();
+      console.log("CHALLENGE GUIDE GENERATION - Completed Successfully");
+      console.log("=".repeat(60) + "\n");
+    } catch (error) {
+      console.error("CHALLENGE GUIDE GENERATION - Failed:", error);
+    }
+  });
 }
