@@ -1,10 +1,13 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, ImageBackground, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { gameScale } from "../Responsiveness/gameResponsive";
 import { useAuth } from "../../hooks/useAuth";
+import { useRouter } from "expo-router";
+import SettingsModal from "../Settings/SettingsModal";
+import BackButton from "../Actual Game/Back/BackButton";
 
 const PlayerInfoSection = ({
   playerName,
@@ -23,14 +26,15 @@ const PlayerInfoSection = ({
   onHeaderAction,
 }) => {
   const { logout } = useAuth();
+  const router = useRouter();
+  const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
+  
   const isBackAction = headerAction === 'back';
-  const handleHeaderAction = () => {
-    if (isBackAction && typeof onHeaderAction === 'function') {
+  const handleBackPress = () => {
+    if (typeof onHeaderAction === 'function') {
       onHeaderAction();
-      return;
     }
-
-    logout();
+    router.push('/profile');
   };
 
   const calculateLevelProgress = () => {
@@ -83,13 +87,28 @@ const PlayerInfoSection = ({
           />
           
           {/* Header Action Button */}
-          <TouchableOpacity 
-            style={styles.logoutButton}
-            onPress={handleHeaderAction}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.logoutText}>{isBackAction ? 'Back' : 'Logout'}</Text>
-          </TouchableOpacity>
+          {isBackAction ? (
+            <BackButton
+              onPress={handleBackPress}
+              containerStyle={{ position: 'absolute', top: gameScale(-3), right: gameScale(-12), zIndex: 100 }}
+              width={120}
+              height={70}
+            />
+          ) : (
+            <>
+              <TouchableOpacity 
+                style={styles.settingsButton}
+                onPress={() => setIsSettingsModalVisible(true)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="settings" size={gameScale(25)} color="#FFFFFF" />
+              </TouchableOpacity>
+              <SettingsModal 
+                visible={isSettingsModalVisible}
+                onClose={() => setIsSettingsModalVisible(false)}
+              />
+            </>
+          )}
 
           <View style={styles.badgeNameTop}>
             <Text style={styles.badgeNameText}>
@@ -184,14 +203,28 @@ const PlayerInfoSection = ({
           style={styles.fallbackBackground}
         >
           {/* Header Action Button */}
-          <TouchableOpacity 
-            style={styles.logoutButton}
-            onPress={handleHeaderAction}
-            activeOpacity={0.7}
-          >
-            <Ionicons name={isBackAction ? "arrow-back" : "log-out-outline"} size={gameScale(20)} color="#FFFFFF" />
-            <Text style={styles.logoutText}>{isBackAction ? 'Back' : 'Logout'}</Text>
-          </TouchableOpacity>
+          {isBackAction ? (
+            <BackButton
+              onPress={handleBackPress}
+              containerStyle={{ position: 'absolute', top: gameScale(15), left: gameScale(15), zIndex: 100 }}
+              width={90}
+              height={45}
+            />
+          ) : (
+            <>
+              <TouchableOpacity 
+                style={styles.settingsButton}
+                onPress={() => setIsSettingsModalVisible(true)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="settings" size={gameScale(20)} color="#FFFFFF" />
+              </TouchableOpacity>
+              <SettingsModal 
+                visible={isSettingsModalVisible}
+                onClose={() => setIsSettingsModalVisible(false)}
+              />
+            </>
+          )}
 
           <View style={styles.badgeNameTop}>
             <Text style={[styles.badgeNameText, styles.noBadgeText]}>
@@ -301,26 +334,16 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   
-  // Logout Button
-  logoutButton: {
+  // Settings Button
+  settingsButton: {
     position: 'absolute',
     top: gameScale(15),
     right: gameScale(15),
-    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingHorizontal: gameScale(8),
-    paddingVertical: gameScale(6),
+    padding: gameScale(8),
     borderRadius: gameScale(10),
     zIndex: 100,
-    borderWidth: gameScale(1),
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  logoutText: {
-    color: '#FFFFFF',
-    fontSize: gameScale(10),
-    fontFamily: 'DynaPuff',
-    marginLeft: gameScale(5),
   },
 
   badgeNameTop: {

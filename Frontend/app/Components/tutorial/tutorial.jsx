@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
 import { gameScale } from '../../Components/Responsiveness/gameResponsive';
+import { soundManager } from '../Actual Game/Sounds/UniversalSoundManager';
 
 const TUTORIAL_STEPS = [
   // --- PART 1: ScreenPlay ---
@@ -25,6 +26,11 @@ const TUTORIAL_STEPS = [
     key: 'codeEditor',
     title: 'Code Editor',
     body: 'Tap the blue blanks to insert your code! \nThe yellow blank highlights your currently selected space.',
+  },
+  {
+    key: 'guideTab',
+    title: 'Guide Tab',
+    body: 'Click the Guide tab to see what to do and what to expect on this screen.',
   },
   {
     key: 'outputTab',
@@ -85,6 +91,7 @@ const TutorialOverlay = ({
   combatAlertsLayout = null,
   
   codeEditorLayout = null,
+  guideTabLayout = null,
   outputTabLayout = null,
   expectedOutputLayout = null,
   optionsMenuLayout = null,
@@ -109,6 +116,7 @@ const TutorialOverlay = ({
   }, [visible]);
 
   const handleAdvance = useCallback(() => {
+    soundManager.playUniversalTap();
     setTutorialStep((currentStep) => {
       const nextStep = currentStep + 1;
       if (nextStep >= TUTORIAL_STEPS.length) {
@@ -140,8 +148,9 @@ const TutorialOverlay = ({
       combatAlerts: { x: 0, y: 0, width: screenWidth, height: p1Height },
 
       codeEditor: { x: gameScale(10), y: p2Y + gameScale(10), width: screenWidth - gameScale(20), height: p2Height * 0.9 },
-      outputTab: { x: gameScale(170), y: p2Y + p2Height * 0.05, width: screenWidth * 0.10, height: gameScale(20) },
-      expectedOutput:  { x: gameScale(230), y: p2Y + p2Height * 0.05, width: screenWidth * 0.13, height: gameScale(20) },
+      guideTab: { x: gameScale(80), y: p2Y + p2Height * 0.05, width: screenWidth * 0.10, height: gameScale(20) },
+      outputTab: { x: gameScale(215), y: p2Y + p2Height * 0.05, width: screenWidth * 0.10, height: gameScale(20) },
+      expectedOutput:  { x: gameScale(270), y: p2Y + p2Height * 0.05, width: screenWidth * 0.13, height: gameScale(20) },
       optionsMenu: { x: screenWidth - gameScale(50), y: p2Y + gameScale(10), width: gameScale(40), height: gameScale(40) },
 
       keyboard: { x: 0, y: p3Y + gameScale(35), width: screenWidth, height: p3Height * gameScale(6) },
@@ -158,6 +167,7 @@ const TutorialOverlay = ({
       combatAlerts: combatAlertsLayout || staticMockLayouts.combatAlerts,
 
       codeEditor: codeEditorLayout || staticMockLayouts.codeEditor,
+      guideTab: guideTabLayout || staticMockLayouts.guideTab,
       outputTab: outputTabLayout || staticMockLayouts.outputTab,
       expectedOutput: expectedOutputLayout || staticMockLayouts.expectedOutput,
       optionsMenu: optionsMenuLayout || staticMockLayouts.optionsMenu,
@@ -189,7 +199,7 @@ const TutorialOverlay = ({
   }, [
     visible, tutorialStepData, shouldHideThirdGrid, thirdGridHeight,
     screenHeight, screenWidth, playerStatsLayout, enemyStatsLayout, combatAlertsLayout,
-    codeEditorLayout, outputTabLayout, expectedOutputLayout, optionsMenuLayout,
+    codeEditorLayout, guideTabLayout, outputTabLayout, expectedOutputLayout, optionsMenuLayout,
     keyboardLayout, attackCardLayout, clearButtonLayout, potionButtonLayout, runButtonLayout
   ]);
 

@@ -164,14 +164,14 @@ export default function Login() {
 
               {/* Social Login Buttons */}
               <View style={styles.socialRow}>
-                <TouchableOpacity 
+                {/* <TouchableOpacity 
                   style={[styles.socialButton, !fbRequest && { opacity: 0.5 }]} 
                   onPress={handleFacebookLogin}
                   disabled={!fbRequest}
                 >
                   <FontAwesome5 name="facebook" size={gameScale(20)} color="#1877F2" />
                   <Text style={styles.socialText}>Facebook</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
 
                 <TouchableOpacity 
                   style={[styles.socialButton, !gRequest && { opacity: 0.5 }]} 
@@ -321,12 +321,12 @@ const styles = StyleSheet.create({
   socialRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: scaleHeight(40),
+    marginBottom: scaleHeight(40)
   },
   socialButton: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    width: '47%',
+    width: '100%',
     height: scaleHeight(50),
     borderRadius: gameScale(12),
     alignItems: 'center',

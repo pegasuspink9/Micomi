@@ -22,6 +22,8 @@ class UniversalSoundManager {
     
     // State for sequential message audio
     this.currentBgmUrl = null;
+    this.currentBgmVolume = 0.2;
+    this.currentBgmLoop = true;
     this.messageQueue = [];
     this.preloadedMessageSound = null;
     this.isMessagePlaying = false;

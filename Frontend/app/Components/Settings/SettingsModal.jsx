@@ -328,43 +328,68 @@ const SettingsModal = ({
                       <View style={styles.iconsRow}>
                         <Pressable
                           style={({ pressed }) => [
-                            styles.circularIconButton,
-                            !isMuted && styles.soundIconActive,
-                            isMuted && styles.soundIconMuted,
+                            styles.iconButtonWrapper,
                             pressed && styles.buttonPressed,
                           ]}
                           onPress={handleSoundToggle}
                           disabled={isAnimating}
                         >
-                          <Ionicons
-                            name={isMuted ? 'volume-mute' : 'volume-high'}
-                            size={gameScale(28)}
-                            color="#fff"
-                          />
+                          <View style={styles.iconButtonBorderOuter}>
+                            <LinearGradient
+                              colors={isMuted ? ['#6c757d', '#5a6268', '#6c757d'] : ['#4a90d9', '#3a80c9', '#4a90d9']}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 1 }}
+                              style={styles.iconButtonGradient}
+                            >
+                              <Ionicons
+                                name={isMuted ? 'volume-mute' : 'volume-high'}
+                                size={gameScale(28)}
+                                color="#fff"
+                              />
+                            </LinearGradient>
+                          </View>
                         </Pressable>
 
                         <Pressable
                           style={({ pressed }) => [
-                            styles.circularIconButton,
+                            styles.iconButtonWrapper,
                             pressed && styles.buttonPressed,
                           ]}
                           onPress={() => handleSocialLink('support')}
                           disabled={isAnimating}
                         >
-                          <MaterialCommunityIcons name="headset" size={gameScale(28)} color="#fff" />
+                          <View style={styles.iconButtonBorderOuter}>
+                            <LinearGradient
+                              colors={['#0ea5e9', '#0284c7', '#0ea5e9']}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 1 }}
+                              style={styles.iconButtonGradient}
+                            >
+                              <MaterialCommunityIcons name="headset" size={gameScale(28)} color="#fff" />
+                            </LinearGradient>
+                          </View>
                         </Pressable>
                       </View>
 
                       <Pressable
                         style={({ pressed }) => [
-                          styles.logoutButton,
+                          styles.buttonWrapper,
                           pressed && styles.buttonPressed,
                         ]}
                         onPress={handleLogout}
                         disabled={isAnimating}
                       >
-                        <Ionicons name="log-out" size={gameScale(20)} color="#fff" />
-                        <Text style={styles.logoutText}>Logout</Text>
+                        <View style={styles.buttonBorderOuter}>
+                          <LinearGradient
+                            colors={['#c94040', '#dc3545', '#c94040']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.buttonGradient}
+                          >
+                            <Ionicons name="log-out" size={gameScale(20)} color="#fff" />
+                            <Text style={styles.buttonText}>Logout</Text>
+                          </LinearGradient>
+                        </View>
                       </Pressable>
 
                       <View style={styles.supportSection}>
@@ -373,35 +398,62 @@ const SettingsModal = ({
                         <View style={styles.socialIconsRow}>
                           <Pressable
                             style={({ pressed }) => [
-                              styles.socialIconButton,
+                              styles.socialButtonWrapper,
                               pressed && styles.buttonPressed,
                             ]}
                             onPress={() => handleSocialLink('youtube')}
                             disabled={isAnimating}
                           >
-                            <MaterialCommunityIcons name="youtube" size={gameScale(32)} color="#FF0000" />
+                            <View style={styles.socialButtonBorderOuter}>
+                              <LinearGradient
+                                colors={['#1e3a5f', '#0d1f33', '#1e3a5f']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={styles.socialButtonGradient}
+                              >
+                                <MaterialCommunityIcons name="youtube" size={gameScale(32)} color="#FF0000" />
+                              </LinearGradient>
+                            </View>
                           </Pressable>
 
                           <Pressable
                             style={({ pressed }) => [
-                              styles.socialIconButton,
+                              styles.socialButtonWrapper,
                               pressed && styles.buttonPressed,
                             ]}
                             onPress={() => handleSocialLink('facebook')}
                             disabled={isAnimating}
                           >
-                            <FontAwesome name="facebook" size={gameScale(32)} color="#1877F2" />
+                            <View style={styles.socialButtonBorderOuter}>
+                              <LinearGradient
+                                colors={['#1e3a5f', '#0d1f33', '#1e3a5f']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={styles.socialButtonGradient}
+                              >
+                                <FontAwesome name="facebook" size={gameScale(32)} color="#1877F2" />
+                              </LinearGradient>
+                            </View>
                           </Pressable>
 
                           <Pressable
                             style={({ pressed }) => [
-                              styles.socialIconButton,
+                              styles.socialButtonWrapper,
                               pressed && styles.buttonPressed,
                             ]}
                             onPress={() => handleSocialLink('instagram')}
                             disabled={isAnimating}
                           >
-                            <MaterialCommunityIcons name="instagram" size={gameScale(32)} color="#E1306C" />
+                            <View style={styles.socialButtonBorderOuter}>
+                              <LinearGradient
+                                colors={['#1e3a5f', '#0d1f33', '#1e3a5f']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={styles.socialButtonGradient}
+                              >
+                                <MaterialCommunityIcons name="instagram" size={gameScale(32)} color="#E1306C" />
+                              </LinearGradient>
+                            </View>
                           </Pressable>
                         </View>
                       </View>
@@ -431,7 +483,6 @@ const SettingsModal = ({
 const styles = StyleSheet.create({
   fullScreenOverlay: {
     ...StyleSheet.absoluteFillObject,
-
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 9999,
@@ -602,58 +653,74 @@ const styles = StyleSheet.create({
     marginBottom: gameScale(15),
   },
 
-  circularIconButton: {
+  iconButtonWrapper: {
     width: gameScale(70),
     height: gameScale(70),
+  },
+
+  iconButtonBorderOuter: {
+    backgroundColor: '#1e3a5f',
     borderRadius: gameScale(35),
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: gameScale(3),
     borderWidth: gameScale(2),
-    borderColor: 'rgba(74, 144, 217, 0.6)',
-    backgroundColor: 'rgba(30, 144, 255, 0.2)',
-    shadowColor: '#1e90ff',
+    borderTopColor: '#2d5a87',
+    borderLeftColor: '#2d5a87',
+    borderBottomColor: '#0d1f33',
+    borderRightColor: '#0d1f33',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: gameScale(4) },
-    shadowOpacity: 0.4,
-    shadowRadius: gameScale(10),
+    shadowOpacity: 0.3,
+    shadowRadius: gameScale(6),
+    elevation: 8,
+    width: '100%',
+    height: '100%',
+  },
+
+  iconButtonGradient: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: gameScale(32),
+  },
+
+  buttonWrapper: {
+    width: '100%',
+    marginBottom: gameScale(15),
+  },
+
+  buttonBorderOuter: {
+    backgroundColor: '#1e3a5f',
+    borderRadius: gameScale(14),
+    padding: gameScale(3),
+    borderWidth: gameScale(2),
+    borderTopColor: '#2d5a87',
+    borderLeftColor: '#2d5a87',
+    borderBottomColor: '#0d1f33',
+    borderRightColor: '#0d1f33',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: gameScale(4) },
+    shadowOpacity: 0.3,
+    shadowRadius: gameScale(6),
     elevation: 8,
   },
 
-  soundIconActive: {
-    backgroundColor: 'rgba(76, 175, 80, 0.3)',
-    borderColor: 'rgba(76, 175, 80, 0.8)',
-    shadowColor: '#4caf50',
-  },
-
-  soundIconMuted: {
-    backgroundColor: 'rgba(244, 67, 54, 0.3)',
-    borderColor: 'rgba(244, 67, 54, 0.8)',
-    shadowColor: '#f44336',
-  },
-
-  logoutButton: {
+  buttonGradient: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 68, 68, 0.7)',
-    borderRadius: gameScale(15),
-    paddingVertical: gameScale(12),
+    justifyContent: 'center',
+    paddingVertical: gameScale(14),
     paddingHorizontal: gameScale(20),
-    marginBottom: gameScale(15),
-    borderWidth: gameScale(1.5),
-    borderColor: 'rgba(255, 100, 100, 0.6)',
-    shadowColor: '#ff4444',
-    shadowOffset: { width: 0, height: gameScale(4) },
-    shadowOpacity: 0.4,
-    shadowRadius: gameScale(10),
-    elevation: 6,
+    gap: gameScale(10),
+    borderRadius: gameScale(10),
   },
 
-  logoutText: {
-    color: '#fff',
+  buttonText: {
     fontSize: gameScale(16),
-    fontFamily: 'DynaPuff',
-    marginLeft: gameScale(10),
-    fontWeight: '600',
+    fontFamily: 'Grobold',
+    color: '#fff',
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowOffset: { width: gameScale(1), height: gameScale(1) },
+    textShadowRadius: gameScale(2),
   },
 
   supportSection: {
@@ -676,20 +743,34 @@ const styles = StyleSheet.create({
     gap: gameScale(15),
   },
 
-  socialIconButton: {
+  socialButtonWrapper: {
     width: gameScale(50),
     height: gameScale(50),
+  },
+
+  socialButtonBorderOuter: {
+    backgroundColor: '#1e3a5f',
     borderRadius: gameScale(25),
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: gameScale(1.5),
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    padding: gameScale(2),
+    borderWidth: gameScale(2),
+    borderTopColor: '#2d5a87',
+    borderLeftColor: '#2d5a87',
+    borderBottomColor: '#0d1f33',
+    borderRightColor: '#0d1f33',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: gameScale(2) },
+    shadowOffset: { width: 0, height: gameScale(4) },
     shadowOpacity: 0.3,
-    shadowRadius: gameScale(5),
-    elevation: 4,
+    shadowRadius: gameScale(6),
+    elevation: 8,
+    width: '100%',
+    height: '100%',
+  },
+
+  socialButtonGradient: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: gameScale(23),
   },
 
   buttonPressed: {

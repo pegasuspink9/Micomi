@@ -89,6 +89,9 @@ export const musicMethods = {
 
   async playBackgroundMusic(url, volume = 0.2, loop = true) {
     if (this.isMuted) {
+      this.currentBgmUrl = url || null;
+      this.currentBgmVolume = volume;
+      this.currentBgmLoop = loop;
       console.log('🎵 BGM not playing - sound is muted');
       return;
     }
@@ -103,6 +106,7 @@ export const musicMethods = {
     await this.stopBackgroundMusic();
 
     if (!url) {
+      this.currentBgmUrl = null;
       return;
     }
 
@@ -114,6 +118,8 @@ export const musicMethods = {
 
     try {
       this.currentBgmUrl = url;
+      this.currentBgmVolume = volume;
+      this.currentBgmLoop = loop;
 
       const { sound } = await Audio.Sound.createAsync(
         { uri: fullUrl },
@@ -133,12 +139,14 @@ export const musicMethods = {
     }
   },
 
-  async stopBackgroundMusic() {
+  async stopBackgroundMusic(preserveUrl = false) {
+    if (!preserveUrl) {
+      this.currentBgmUrl = null;
+    }
     if (this.activeSounds.bgm) {
       console.log('🎵 Stopping current BGM...');
       const soundToUnload = this.activeSounds.bgm;
       this.activeSounds.bgm = null;
-      this.currentBgmUrl = null;
       await soundToUnload.stopAsync().catch(() => {});
       await soundToUnload.unloadAsync().catch(() => {});
       console.log('🎵 BGM stopped and unloaded.');

@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import path from "path";
 import { successResponse, errorResponse } from "../../../utils/response";
 import { google } from "googleapis";
 import { prisma } from "../../../prisma/client";
@@ -11,8 +12,11 @@ import {
 let playDeveloperApi: any = null;
 
 if (process.env.MOCK_IAP !== "true") {
+  const credentialsPath =
+    process.env.GOOGLE_APPLICATION_CREDENTIALS ||
+    path.resolve(__dirname, "credentials.json");
   const auth = new google.auth.GoogleAuth({
-    keyFile: "./credentials.json",
+    keyFile: credentialsPath,
     scopes: ["https://www.googleapis.com/auth/androidpublisher"],
   });
 

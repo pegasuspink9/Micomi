@@ -356,6 +356,28 @@ const GamePauseModal = ({
                       }
                     ]}
                   >
+                    {/* Resume Button */}
+                    <Pressable 
+                      style={({ pressed }) => [
+                        styles.buttonWrapper,
+                        pressed && styles.buttonPressed
+                      ]}
+                      onPress={handleResume}
+                      disabled={isAnimating}
+                    >
+                      <View style={styles.buttonBorderOuter}>
+                        <LinearGradient
+                          colors={['#22c55e', '#16a34a', '#22c55e']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={styles.buttonGradient}
+                        >
+                          <Ionicons name="play" size={gameScale(24)} color="#fff" />
+                          <Text style={styles.buttonText}>Resume</Text>
+                        </LinearGradient>
+                      </View>
+                    </Pressable>
+
                     {/* How To Play Button */}
                     <Pressable 
                       style={({ pressed }) => [
@@ -374,34 +396,6 @@ const GamePauseModal = ({
                         >
                           <Ionicons name="help-circle-outline" size={gameScale(24)} color="#fff" />
                           <Text style={styles.buttonText}>How to Play</Text>
-                        </LinearGradient>
-                      </View>
-                    </Pressable>
-
-                    {/* Sound Toggle Button */}
-                    <Pressable 
-                      style={({ pressed }) => [
-                        styles.buttonWrapper,
-                        pressed && styles.buttonPressed
-                      ]}
-                      onPress={handleMuteToggle}
-                      disabled={isAnimating}
-                    >
-                      <View style={styles.buttonBorderOuter}>
-                        <LinearGradient
-                          colors={isMuted ? ['#6c757d', '#5a6268', '#6c757d'] : ['#4a90d9', '#3a80c9', '#4a90d9']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={styles.buttonGradient}
-                        >
-                          <Ionicons 
-                            name={isMuted ? "volume-mute" : "volume-high"} 
-                            size={gameScale(24)} 
-                            color="#fff" 
-                          />
-                          <Text style={styles.buttonText}>
-                            {isMuted ? "Unmute" : "Mute"}
-                          </Text>
                         </LinearGradient>
                       </View>
                     </Pressable>
