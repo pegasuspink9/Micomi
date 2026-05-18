@@ -72,7 +72,7 @@ export const simplePlaybackMethods = {
     this._playSimpleSound('button', tapSoundUrl, null, v);
   },
 
-  playUniversalTap(volume = 0.1) {
+  playUniversalTap(volume = 0.2) {
     this.playGameButtonTapSound(volume);
   },
 

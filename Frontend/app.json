@@ -5,7 +5,12 @@
     "version": "1.0.0",
     "owner": "micomi-team",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/main-icon.png",
+    "splash": {
+      "image": "./assets/images/icon-micomi.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#98d4de"
+    },
     "scheme": "micomi",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,15 +19,15 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/main-icon.png",
+        "backgroundColor": "#98d4de"
       },
       "softwareKeyboardLayoutMode": "pan",
       "userInterfaceStyle": "dark",
       "statusBar": {
         "hidden": true,
         "translucent": true,
-        "backgroundColor": "#00000000"
+        "backgroundColor": "#98d4de"
       },
       "navigationBar": {
         "visible": "never"
@@ -42,10 +47,10 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/icon-micomi.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#98d4de"
         }
       ],
       "expo-font",

@@ -137,7 +137,10 @@ const CodeEditor = ({
   const renderTabContent = useCallback(() => {
     switch (activeTab) {
       case 'guide':
-         return <Guide currentQuestion={currentQuestion} guideOverride={reviewGuide} />;
+         return <Guide key={`review-${currentQuestion?.id || 'default'}`} currentQuestion={currentQuestion} guideOverride={reviewGuide} />;
+
+      case 'lesson_guide':
+         return <Guide key={`lesson-${currentQuestion?.id || 'default'}`} currentQuestion={currentQuestion} />;
 
       case 'code':
         return (
@@ -357,6 +360,7 @@ const CodeEditor = ({
   const handleCodeTabPress = useCallback(() => handleTabChange('code'), [handleTabChange]);
   const handleExpectedTabPress = useCallback(() => handleTabChange('expected'), [handleTabChange]);
   const handleGuideTabPress = useCallback(() => handleTabChange('guide'), [handleTabChange]);
+  const handleLessonGuideTabPress = useCallback(() => handleTabChange('lesson_guide'), [handleTabChange]);
   const handleFileTabPress = useCallback((fileName) => handleTabChange(fileName), [handleTabChange]);
   const handleMenuToggle = useCallback(() => {
     setIsMenuOpen((current) => !current);
@@ -397,12 +401,32 @@ const CodeEditor = ({
             </Pressable>
           )}
 
+          {Boolean(currentQuestion?.guide) && !(Boolean(reviewGuide) && isCorrect === false) && (
+            <Pressable
+              onPress={handleLessonGuideTabPress}
+              style={[
+                styles.webTab,
+                activeTab === 'lesson_guide' && styles.webTabActive,
+                styles.webTabFirst,
+                tabsDisabled && { opacity: 0.5 } 
+              ]}
+              disabled={tabsDisabled} 
+            >
+              <Text style={[
+                styles.webTabText, 
+                activeTab === 'lesson_guide' && styles.webTabTextActive
+              ]}>
+                Guide
+              </Text>
+            </Pressable>
+          )}
+
           <Pressable
             onPress={handleCodeTabPress}
             style={[
               styles.webTab,
               activeTab === 'code' && styles.webTabActive,
-              (!reviewGuide || isCorrect !== false) && styles.webTabFirst,
+              !(Boolean(reviewGuide) && isCorrect === false) && !currentQuestion?.guide && styles.webTabFirst,
               tabsDisabled && { opacity: 0.5 } 
             ]}
             disabled={tabsDisabled} 

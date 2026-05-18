@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useFonts } from '../assets/fonts/font';
-import { View, Platform, AppState, StatusBar as RNStatusBar, Keyboard } from 'react-native'; 
+import { View, Text, Platform, AppState, StatusBar as RNStatusBar, Keyboard } from 'react-native'; 
 import SpriteActivityIndicator from './Components/Actual Game/Loading/SpriteActivityIndicator';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar'; 
@@ -10,15 +10,72 @@ import { useAuth } from './hooks/useAuth';
 import { soundManager } from './Components/Actual Game/Sounds/UniversalSoundManager';
 import MainLoadingScreen from './MainLoadingScreen';
 import UniversalLoadingOverlay from './Components/UniversalLoading/UniversalLoadingOverlay';
+import { Audio } from 'expo-av';
+
+let hasPlayedOpeningSound = false;
+
+// Preload the sound immediately when the JS bundle is loaded 
+// to eliminate the delay when the Micomi text displays
+let preloadedSoundPromise = Audio.Sound.createAsync(
+  require('./Micomi_opening.wav'),
+  { shouldPlay: false }
+).catch((e) => {
+  console.log('Error preloading sound:', e);
+  return null;
+});
 
 export default function RootLayout() {
   const fontsLoaded = useFonts();
   const { user, loading } = useAuth();
   const [isMainLoading, setIsMainLoading] = useState(true);
+  const [openingSoundDone, setOpeningSoundDone] = useState(hasPlayedOpeningSound);
   const segments = useSegments();
   const router = useRouter();
   const appStateRef = useRef(AppState.currentState);
   const isKeyboardVisible = useRef(false); // Track keyboard state
+
+  useEffect(() => {
+    if (hasPlayedOpeningSound) {
+      setOpeningSoundDone(true);
+      return;
+    }
+
+    let sound;
+    const playOpeningSound = async () => {
+      hasPlayedOpeningSound = true;
+      try {
+        const result = await preloadedSoundPromise;
+        if (result && result.sound) {
+          sound = result.sound;
+          await sound.playAsync();
+        } else {
+          const { sound: newSound } = await Audio.Sound.createAsync(
+            require('./Micomi_opening.wav'),
+            { shouldPlay: true }
+          );
+          sound = newSound;
+        }
+        
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (status.didJustFinish) {
+            setOpeningSoundDone(true);
+            sound.unloadAsync();
+          }
+        });
+      } catch (error) {
+        console.error("Error playing opening sound", error);
+        setOpeningSoundDone(true);
+      }
+    };
+    
+    playOpeningSound();
+
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;
@@ -123,16 +180,16 @@ export default function RootLayout() {
 
 
   
-    if (!fontsLoaded || (loading && !user)) {
+    if (!fontsLoaded || (loading && !user) || !openingSoundDone) {
     return (
       <View style={{ 
         flex: 1, 
         justifyContent: 'center', 
         alignItems: 'center', 
-        backgroundColor: '#034251' 
+        backgroundColor: '#98d4de' 
       }}>
         <ExpoStatusBar hidden={true} />
-        <SpriteActivityIndicator size={60} />
+        <Text style={{ fontFamily: 'Grobold', fontSize: 60, color: '#ffffff' }}>Micomi</Text>
       </View>
     );
   }

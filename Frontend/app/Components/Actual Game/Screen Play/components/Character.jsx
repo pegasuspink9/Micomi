@@ -896,9 +896,9 @@ const Character = ({
           { width: SPRITE_SIZE, height: SPRITE_SIZE, zIndex: 10 },
           //  Updated to use effectiveCharacterName
           effectiveCharacterName === 'Leon' 
-            ? { marginTop: gameScale(-19), marginLeft: gameScale(-12) } 
+            ? { marginTop: gameScale(-17), marginLeft: gameScale(-12) } 
             : effectiveCharacterName === 'Ryron' 
-              ? { marginTop: gameScale(1) } // Adjust this value as needed for Ryron
+              ? { marginTop: gameScale(4) } // Adjust this value as needed for Ryron
               : null 
         ]}>
           <Animated.View style={[ styles.spriteSheet, animatedStyle, { width: SPRITE_SIZE * SPRITE_COLUMNS, height: SPRITE_SIZE * SPRITE_ROWS } ]}>

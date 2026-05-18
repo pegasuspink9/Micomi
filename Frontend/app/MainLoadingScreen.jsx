@@ -135,11 +135,12 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
     }
   };
 
-  const runFullVerification = async (preloadData, stageStart, stageSpan) => {
+  const runFullVerification = async (preloadData, stageStart, stageSpan, updateUI = true) => {
     const section = stageSpan / 4;
 
     const mapCheckPromise = preloadData
       ? universalAssetPreloader.areMapAssetsCached(preloadData, (p) => {
+          if (!updateUI) return;
           const ratio = p.total > 0 ? p.available / p.total : 1;
           setStagedProgress(stageStart + (section * 3), section, ratio, {
             isDownloading: true,
@@ -151,6 +152,7 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
 
     const [themesCacheStatus, charSelectCacheStatus, soundCacheStatus, mapCacheStatus] = await Promise.all([
       universalAssetPreloader.areMapThemeAssetsCached(MAP_THEMES, (p) => {
+        if (!updateUI) return;
         const ratio = p.total > 0 ? p.available / p.total : 1;
         setStagedProgress(stageStart, section, ratio, {
           isDownloading: true,
@@ -159,6 +161,7 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
         });
       }),
       universalAssetPreloader.areStaticCharacterSelectAssetsCached((p) => {
+        if (!updateUI) return;
         const ratio = p.total > 0 ? p.available / p.total : 1;
         setStagedProgress(stageStart + section, section, ratio, {
           isDownloading: true,
@@ -167,6 +170,7 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
         });
       }),
       universalAssetPreloader.areStaticSoundAssetsCached((p) => {
+        if (!updateUI) return;
         const ratio = p.total > 0 ? p.available / p.total : 1;
         setStagedProgress(stageStart + (section * 2), section, ratio, {
           isDownloading: true,
@@ -354,7 +358,7 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
       }
 
       // Step 3: Re-verify to ensure no partial files slipped through
-      let finalVerification = await runFullVerification(preloadData, 0.95, 0.04);
+      let finalVerification = await runFullVerification(preloadData, 0.95, 0.04, false);
       const hasMissingAfterDownload = finalVerification.totalStaticMissing > 0 || !finalVerification.mapCacheStatus.cached;
 
       if (hasMissingAfterDownload) {
@@ -373,7 +377,7 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
           await universalAssetPreloader.downloadAllMapAssets(preloadData);
         }
 
-        finalVerification = await runFullVerification(preloadData, 0.97, 0.02);
+        finalVerification = await runFullVerification(preloadData, 0.97, 0.02, false);
       }
 
       if (preloadData && finalVerification.mapCacheStatus.cached && finalVerification.totalStaticMissing === 0) {

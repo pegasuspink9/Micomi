@@ -1695,7 +1695,7 @@ useEffect(() => {
         onHide={handleBonusModalHide} 
       />
 
-      <View
+      {/* <View
         pointerEvents="none"
         style={{
           position: 'absolute',
@@ -1707,7 +1707,7 @@ useEffect(() => {
           zIndex: 999999,
           elevation: 999999,
         }}
-      />
+      /> */}
 
        
       </GameBackground>
