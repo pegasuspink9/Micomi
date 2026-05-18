@@ -222,10 +222,22 @@ export const usePotion = async (
         playerId,
         levelId,
       );
-      let currentChallenge = currentNext.nextChallenge;
-      if (!currentChallenge) throw new Error("No current challenge found");
+      const currentChallenge = currentNext.nextChallenge as any | null;
 
-      let effectiveCorrectAnswer = currentChallenge.correct_answer as string[];
+      const currentChallengeData = await prisma.challenge.findUnique({
+        where: { challenge_id: challengeId },
+      });
+      if (!currentChallenge && !currentChallengeData) {
+        throw new Error("No current challenge found");
+      }
+
+      const sourceChallenge =
+        currentChallenge && currentChallenge.challenge_id === challengeId
+          ? currentChallenge
+          : currentChallengeData;
+
+      let effectiveCorrectAnswer =
+        (sourceChallenge?.correct_answer as string[]) || [];
       const rawCorrectAnswer = [...effectiveCorrectAnswer];
 
       const level = await prisma.level.findUnique({
@@ -245,7 +257,7 @@ export const usePotion = async (
         effectiveCorrectAnswer = rawCorrectAnswer.map(reverseString);
       }
 
-      const challengeKey = currentChallenge.challenge_id.toString();
+      const challengeKey = String(challengeId);
       const currentPlayerAnswer =
         progress.player_answer && typeof progress.player_answer === "object"
           ? (progress.player_answer as Record<string, unknown>)
@@ -260,18 +272,25 @@ export const usePotion = async (
       if (isAlreadyHinted || isPending) {
         dynamicMessage = `Full hint already applied or pending confirmation—no extra reveal!`;
       } else {
-        const currentChallengeData = await prisma.challenge.findUnique({
-          where: { challenge_id: challengeId },
-        });
+        const baseQuestion = sourceChallenge?.question ?? "";
+        const normalizedQuestion = ChallengeService.dynamicBlankSetter(
+          baseQuestion,
+          effectiveCorrectAnswer,
+        );
 
-        const revealResult = revealAllBlanks(
-          currentChallenge.question ?? "",
+        let revealResult = revealAllBlanks(
+          normalizedQuestion,
           effectiveCorrectAnswer,
         );
 
         if (!revealResult.success) {
-          const fallbackResult = revealAllBlanks(
+          const fallbackQuestion = ChallengeService.dynamicBlankSetter(
             currentChallengeData?.question ?? "",
+            effectiveCorrectAnswer,
+          );
+
+          const fallbackResult = revealAllBlanks(
+            fallbackQuestion,
             effectiveCorrectAnswer,
           );
 
@@ -282,7 +301,7 @@ export const usePotion = async (
             } as unknown as SubmitChallengeControllerResult;
           }
 
-          revealResult.filledQuestion = fallbackResult.filledQuestion;
+          revealResult = fallbackResult;
         }
 
         await prisma.playerProgress.update({
@@ -296,7 +315,7 @@ export const usePotion = async (
         });
 
         nextChallengeForHint = {
-          ...currentChallenge,
+          ...sourceChallenge,
           question: revealResult.filledQuestion,
           options: ["Attack"],
           answer: effectiveCorrectAnswer,
@@ -470,11 +489,17 @@ export const usePotion = async (
     completionRewards = {
       feedbackMessage: `Level ${level?.level_number} completed! (Potion-powered!)`,
     };
-    nextLevel = await LevelService.unlockNextLevel(
-      playerId,
-      level?.map_id ?? 0,
-      level?.level_number ?? 0,
-    );
+    if (level?.map_id && level?.level_id) {
+      nextLevel = await LevelService.unlockNextLevel(
+        playerId,
+        level.map_id,
+        level.level_id,
+      );
+    } else {
+      console.warn(
+        `Skipping unlockNextLevel: level not found for levelId=${levelId}`,
+      );
+    }
   }
 
   const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
@@ -485,6 +510,96 @@ export const usePotion = async (
 
   const finalNextChallenge =
     potionType === "Reveal" ? nextChallengeForHint : nextChallenge;
+
+  const updatedWrongChallenges = (freshProgress?.wrong_challenges ??
+    []) as number[];
+  const totalChallenges = freshProgress?.level?.challenges?.length ?? 0;
+  const currentAnsweredCount = effectiveAnsweredIds.length;
+  const isLastRemaining =
+    updatedWrongChallenges.length === 0 &&
+    currentAnsweredCount + 1 === totalChallenges;
+  const isLastRemainingChallenge = currentAnsweredCount + 1 === totalChallenges;
+  const hasWrongCounts = (freshProgress?.wrong_challenges_count ?? 0) > 0;
+  const isNewBonusRound =
+    (freshProgress?.enemy_hp ?? 0) <= 0 && (freshProgress?.player_hp ?? 0) > 0;
+
+  let card_type: string | null = null;
+  let character_attack_card: string | null = null;
+  let character_damage_card: number | null = null;
+  let attackType: string | null = null;
+
+  if (finalNextChallenge) {
+    const nextCorrectAnswerLength = Array.isArray(
+      finalNextChallenge.correct_answer,
+    )
+      ? finalNextChallenge.correct_answer.length
+      : 0;
+
+    const isRetryOfWrong = updatedWrongChallenges.includes(
+      finalNextChallenge.challenge_id,
+    );
+
+    const isSpecialEligible =
+      (character.character_name === "Gino" ||
+        character.character_name === "Leon" ||
+        character.character_name === "ShiShi" ||
+        character.character_name === "Ryron") &&
+      freshProgress?.consecutive_corrects === 2;
+
+    if (isRetryOfWrong) {
+      attackType = "basic_attack";
+    } else if (isSpecialEligible) {
+      attackType = "special_attack";
+    } else if (isLastRemaining && isNewBonusRound) {
+      attackType = "special_attack";
+    } else if (isLastRemainingChallenge && hasWrongCounts && isNewBonusRound) {
+      attackType = "third_attack";
+    } else if (nextCorrectAnswerLength >= 8) {
+      attackType = "third_attack";
+    } else if (nextCorrectAnswerLength >= 5) {
+      attackType = "second_attack";
+    } else {
+      attackType = "basic_attack";
+    }
+
+    const damageArray = Array.isArray(character.character_damage)
+      ? (character.character_damage as number[])
+      : [10, 15, 25];
+
+    let damageIndex = 0;
+    if (attackType === "special_attack" && isSpecialEligible) {
+      if (nextCorrectAnswerLength >= 8) {
+        damageIndex = 2;
+      } else if (nextCorrectAnswerLength >= 5) {
+        damageIndex = 1;
+      } else {
+        damageIndex = 0;
+      }
+    } else {
+      const damageIndexMap: Record<string, number> = {
+        basic_attack: 0,
+        second_attack: 1,
+        third_attack: 2,
+        special_attack: 2,
+      };
+      damageIndex = damageIndexMap[attackType] ?? 0;
+    }
+
+    character_damage_card = damageArray[damageIndex] ?? 10;
+
+    if (freshProgress?.has_strong_effect) {
+      character_damage_card *= 2;
+    }
+
+    if (attackType) {
+      const cardInfo = CombatService.getCardForAttackType(
+        character.character_name,
+        attackType,
+      );
+      card_type = cardInfo.card_type;
+      character_attack_card = cardInfo.character_attack_card;
+    }
+  }
 
   await updateQuestProgress(playerId, QuestType.use_potion, 1);
 
@@ -506,6 +621,11 @@ export const usePotion = async (
     potionType,
     remainingQuantity: playerPotion.quantity - 1,
     appliedImmediately: true,
+    card: {
+      card_type,
+      character_attack_card,
+      character_damage_card,
+    },
   } as unknown as SubmitChallengeControllerResult;
 };
 

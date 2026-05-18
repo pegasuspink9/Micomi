@@ -2583,9 +2583,13 @@ const prepareChallenge = async (
       }
     }
 
+    const isFillInBlank =
+      (modifiedChallenge as Challenge).challenge_type === "fill in the blank";
+
     if (
       modifiedChallenge.question &&
-      (level.level_type === "enemyButton" ||
+      (isFillInBlank ||
+        level.level_type === "enemyButton" ||
         originalLevelType === "enemyButton")
     ) {
       modifiedChallenge.question = dynamicBlankSetter(

@@ -1,20 +1,43 @@
+type BlankType = "underscore" | "bracket" | "blank" | "open_tag" | "close_tag";
+
 interface BlankMatch {
   index: number;
+  length: number;
   match: string;
-  type: "underscore";
+  type: BlankType;
+  htmlAttrs?: string;
 }
+
+const UNIVERSAL_BLANK_REGEX = /<_([^>]*)>|<\/_>|\{blank\}|\[_+\]|_+/g;
 
 function parseAndValidateBlanks(question: string): BlankMatch[] {
   const matches: BlankMatch[] = [];
 
-  const regex = /_/g;
-  let match;
+  const regex = new RegExp(UNIVERSAL_BLANK_REGEX);
+  let match: RegExpExecArray | null;
 
   while ((match = regex.exec(question)) !== null) {
+    const raw = match[0];
+    let type: BlankType = "underscore";
+    let htmlAttrs: string | undefined = undefined;
+
+    if (raw.startsWith("<_")) {
+      type = "open_tag";
+      htmlAttrs = match[1] ?? "";
+    } else if (raw === "</_>") {
+      type = "close_tag";
+    } else if (raw === "{blank}") {
+      type = "blank";
+    } else if (raw.startsWith("[")) {
+      type = "bracket";
+    }
+
     matches.push({
       index: match.index,
-      match: "_",
-      type: "underscore",
+      length: raw.length,
+      match: raw,
+      type,
+      htmlAttrs,
     });
   }
 
@@ -22,6 +45,12 @@ function parseAndValidateBlanks(question: string): BlankMatch[] {
 }
 
 function fillBlank(match: BlankMatch, answer: string): string {
+  if (match.type === "open_tag") {
+    return `<${answer}${match.htmlAttrs || ""}>`;
+  }
+  if (match.type === "close_tag") {
+    return `</${answer}>`;
+  }
   return answer;
 }
 
@@ -65,9 +94,9 @@ function revealBlanksByIndices(
       filledQuestion =
         filledQuestion.substring(0, actualIndex) +
         replacement +
-        filledQuestion.substring(actualIndex + 1);
+        filledQuestion.substring(actualIndex + blank.length);
 
-      offset += replacement.length - 1;
+      offset += replacement.length - blank.length;
     } else {
       remainingAnswers.push(answer);
     }
@@ -131,9 +160,9 @@ export function revealAllBlanks(
     filledQuestion =
       filledQuestion.substring(0, actualIndex) +
       replacement +
-      filledQuestion.substring(actualIndex + 1);
+      filledQuestion.substring(actualIndex + blank.length);
 
-    offset += replacement.length - 1;
+    offset += replacement.length - blank.length;
   }
 
   return {
@@ -270,6 +299,6 @@ export function debugBlanks(question: string): void {
   const blanks = parseAndValidateBlanks(question);
   console.log(`Found ${blanks.length} blanks:`);
   blanks.forEach((b, i) => {
-    console.log(`  ${i + 1}. "_" at position ${b.index}`);
+    console.log(`  ${i + 1}. "${b.match}" at position ${b.index}`);
   });
 }
