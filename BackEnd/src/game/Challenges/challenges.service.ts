@@ -1766,23 +1766,18 @@ export const submitChallengeService = async (
   let nextChallenge = next.nextChallenge;
 
   if (!isCorrect && nextChallenge) {
-    const aiGuide = await generateWrongAnswerGuide(
+    const wrongAnswerGuide = await generateWrongAnswerGuide(
       level.map.map_name,
       challenge.question || "",
       finalAnswer,
       effectiveCorrectAnswer,
     );
 
-    nextChallenge = {
-      ...(nextChallenge as Record<string, unknown>),
-      guide: aiGuide,
-    };
-
     const nextId = nextChallenge.challenge_id;
     const currentAnswers =
       (updatedProgress?.player_answer as Record<string, string[]>) || {};
 
-    currentAnswers[`_GUIDE_${nextId}`] = [aiGuide];
+    currentAnswers[`_GUIDE_${nextId}`] = [wrongAnswerGuide];
 
     await prisma.playerProgress.update({
       where: { progress_id: currentProgress.progress_id },
