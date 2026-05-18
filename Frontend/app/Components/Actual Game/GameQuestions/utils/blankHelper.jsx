@@ -164,40 +164,36 @@ export const parseQuestionBlanks = (questionText, correctAnswers = null) => {
 };
 
 
-export const scrollToNextBlank = (scrollViewRef, blankRefs, currentQuestion, selectedAnswers, selectedBlankIndex) => {
+export const scrollToNextBlank = (scrollViewRef, blankRefs, currentQuestion, selectedAnswers, selectedBlankIndex, viewportHeight = 0) => {
   if (!scrollViewRef?.current || !blankRefs?.current) {
     return;
   }
 
-  // ✅ CHANGED: Use selectedBlankIndex instead of selectedAnswers.length
   const nextBlankRef = blankRefs.current[selectedBlankIndex];
   
   if (!nextBlankRef) {
-    console.warn(`Blank ref not found for index: ${selectedBlankIndex}`);
     return;
   }
 
-  // Add a small delay to ensure the ref is properly attached
   setTimeout(() => {
     try {
       if (nextBlankRef && scrollViewRef.current) {
         nextBlankRef.measureLayout(
           scrollViewRef.current,
           (x, y, width, height) => {
+            // Center the blank in the viewport
+            const halfViewport = viewportHeight > 0 ? viewportHeight / 2 : 120;
+            const targetY = Math.max(0, y - halfViewport + height / 2);
             scrollViewRef.current?.scrollTo({
               x: 0,
-              y: Math.max(0, y - 100), // ✅ Increased offset for better visibility
+              y: targetY,
               animated: true,
             });
           },
-          (error) => {
-            console.warn('Blank scroll measurement failed:', error);
-          }
+          () => {}
         );
       }
-    } catch (error) {
-      console.warn('Blank scroll error:', error);
-    }
+    } catch (_) {}
   }, 100);
 };
 

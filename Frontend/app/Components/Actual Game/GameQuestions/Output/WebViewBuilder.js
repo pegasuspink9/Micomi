@@ -6,13 +6,13 @@ import { DESKTOP_VIEWPORT_WIDTH } from './previewMode';
  * (Unchanged)
  */
 const fillBlanks = (template = '', answers = []) => {
-  let filledContent = template;
-  answers.forEach((answer) => {
-    if (typeof answer === 'string') {
-      filledContent = filledContent.replace('_', answer);
-    }
-  });
-  return filledContent.replace(/_/g, ''); 
+    let filledContent = template;
+    answers.forEach((answer) => {
+        if (typeof answer === 'string') {
+            filledContent = filledContent.replace('_', answer);
+        }
+    });
+    return filledContent.replace(/_/g, '');
 };
 
 
@@ -34,20 +34,22 @@ const getWebViewFixes = (previewMode) => `
     <!-- CRITICAL: Tell iOS/Android not to auto-invert colors -->
     <meta name="color-scheme" content="light only">
     <style>
-        /* CRITICAL: CSS forcing light mode and baseline colors */
+        /* Baseline: light mode defaults at low specificity — user CSS overrides these */
         :root {
             color-scheme: light only;
         }
-        html, body {
-            /* Force white background and black text like a desktop browser */
-            background-color: #ffffff !important;
-            color: #000000 !important;
+        html {
+            background-color: #ffffff;
+            color: #000000;
             margin: 0;
-            padding: 0; 
+            padding: 0;
             box-sizing: border-box;
-            /* Optional: ensure full height */
             min-height: 100%;
             width: 100%;
+        }
+        body {
+            margin: 0;
+            padding: 0;
         }
         /* Ensure box-sizing applies to everything for predictable sizing */
         *, *:before, *:after {
@@ -79,7 +81,7 @@ export const assemblePage = (htmlContent, previewMode = 'mobile') => {
         // --- FULL DOCUMENT STRATEGY ---
         // The user provided their own structure. We must inject our fixes 
         // into their existing <head> without destroying it.
-        
+
         if (/<head/i.test(finalHtml)) {
             // Inject fixes right after the opening <head> tag
             finalHtml = finalHtml.replace(/<head[^>]*>/i, `$&${getWebViewFixes(previewMode)}`);
@@ -88,7 +90,7 @@ export const assemblePage = (htmlContent, previewMode = 'mobile') => {
             finalHtml = finalHtml.replace(/<html[^>]*>/i, `$&\n<head>${getWebViewFixes(previewMode)}</head>`);
         } else {
             // Has body but no html/head wrap. Prepend right before body.
-             finalHtml = finalHtml.replace(/<body/i, `<head>${getWebViewFixes(previewMode)}</head>\n<body`);
+            finalHtml = finalHtml.replace(/<body/i, `<head>${getWebViewFixes(previewMode)}</head>\n<body`);
         }
     } else {
         // --- FRAGMENT STRATEGY ---
@@ -136,10 +138,10 @@ export const generateCombinedHtml = (currentQuestion, answers = [], previewMode 
     // Combine inputs based on type
     switch (questionType) {
         case 'css':
-             baseCss += '\n' + filledAnswer;
+            baseCss += '\n' + filledAnswer;
             break;
         case 'javascript':
-             baseJs += '\n' + filledAnswer;
+            baseJs += '\n' + filledAnswer;
             break;
         case 'html':
         default:
@@ -156,9 +158,9 @@ export const generateCombinedHtml = (currentQuestion, answers = [], previewMode 
             // Add CSS styles to the HTML
             const styleTag = `<style>\n${baseCss}\n</style>`;
             if (baseHtml.includes('</head>')) {
-                 baseHtml = baseHtml.replace('</head>', `${styleTag}</head>`);
+                baseHtml = baseHtml.replace('</head>', `${styleTag}</head>`);
             } else {
-                 baseHtml = styleTag + baseHtml;
+                baseHtml = styleTag + baseHtml;
             }
         }
     }
@@ -171,9 +173,9 @@ export const generateCombinedHtml = (currentQuestion, answers = [], previewMode 
             // Add JS script safely to the HTML (added newlines to prevent single-line comment breaks)
             const scriptTag = `<script>\ntry{\n${baseJs}\n}catch(e){console.error(e)}\n</script>`;
             if (baseHtml.includes('</body>')) {
-                 baseHtml = baseHtml.replace('</body>', `${scriptTag}</body>`);
+                baseHtml = baseHtml.replace('</body>', `${scriptTag}</body>`);
             } else {
-                 baseHtml += scriptTag;
+                baseHtml += scriptTag;
             }
         }
     }

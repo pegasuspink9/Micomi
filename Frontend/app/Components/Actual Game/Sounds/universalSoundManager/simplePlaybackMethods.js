@@ -13,8 +13,8 @@ export const simplePlaybackMethods = {
       const soundToUnload = this.activeSounds[channel];
       this.activeSounds[channel] = null;
       soundToUnload.setOnPlaybackStatusUpdate(null);
-      await soundToUnload.stopAsync().catch(() => {});
-      await soundToUnload.unloadAsync().catch(() => {});
+      await soundToUnload.stopAsync().catch(() => { });
+      await soundToUnload.unloadAsync().catch(() => { });
     }
 
     if (!url) {
@@ -40,7 +40,7 @@ export const simplePlaybackMethods = {
 
       sound.setOnPlaybackStatusUpdate((status) => {
         if (status.didJustFinish) {
-          sound.unloadAsync().catch(() => {});
+          sound.unloadAsync().catch(() => { });
           if (this.activeSounds[channel] === sound) {
             this.activeSounds[channel] = null;
           }
@@ -72,8 +72,8 @@ export const simplePlaybackMethods = {
     this._playSimpleSound('button', tapSoundUrl, null, v);
   },
 
-  playUniversalTap() {
-    this.playGameButtonTapSound(0.3);
+  playUniversalTap(volume = 0.1) {
+    this.playGameButtonTapSound(volume);
   },
 
   playLoadingSound() {

@@ -33,6 +33,7 @@ const GameQuestions = ({
   const blankRefs = useRef({});
   const computerQuestionTemplateRef = useRef({});
   const lastUserScrollRef = useRef(0);
+  const viewportHeightRef = useRef(0);
   const options = currentQuestion?.options || [];
 
   const currentChallengeId = useMemo(() => (
@@ -43,6 +44,14 @@ const GameQuestions = ({
                         currentQuestion?.question_type?.toLowerCase() === 'computer';
 
   const correctAnswersList = submissionResult?.correctAnswer || currentQuestion?.correctAnswer;
+
+  // Determine the syntax highlighting language from question_type
+  const highlightLanguage = useMemo(() => {
+    const type = currentQuestion?.question_type?.toLowerCase();
+    if (type === 'css') return 'css';
+    if (type === 'javascript') return 'javascript';
+    return 'html';
+  }, [currentQuestion?.question_type]);
 
   // ✅ Smart blank parsing: excludes URLs, _blank, multi-underscores; clamps to answer count
   const parsedBlanks = useMemo(() => {
@@ -86,15 +95,38 @@ const GameQuestions = ({
     }, [])
   ), [lineMeta]);
 
+  // Per-line language: detects <style> blocks inside HTML to use CSS highlighting
+  const lineLanguages = useMemo(() => {
+    if (!currentQuestion?.question) return [];
+    const lines = currentQuestion.question.split('\n');
+    const langs = [];
+    let insideStyle = false;
+    for (const rawLine of lines) {
+      const trimmed = rawLine.trim().toLowerCase();
+      if (/<style/i.test(trimmed)) {
+        insideStyle = true;
+        langs.push('html'); // the <style> tag itself is HTML
+      } else if (/<\/style>/i.test(trimmed)) {
+        insideStyle = false;
+        langs.push('html'); // the </style> tag itself is HTML
+      } else if (insideStyle) {
+        langs.push('css');
+      } else {
+        langs.push(highlightLanguage);
+      }
+    }
+    return langs;
+  }, [currentQuestion?.question, highlightLanguage]);
+
   const highlightedLines = useMemo(() => {
     if (isComputerMap) {
       return [];
     }
 
-    return lineMeta.map((meta) => (
-      meta.hasBlank ? null : renderHighlightedText(meta.line)
+    return lineMeta.map((meta, i) => (
+      meta.hasBlank ? null : renderHighlightedText(meta.line, lineLanguages[i] || highlightLanguage)
     ));
-  }, [isComputerMap, lineMeta]);
+  }, [isComputerMap, lineMeta, lineLanguages, highlightLanguage]);
 
   
   const getFilledQuestion = (questionText, answers) => {
@@ -153,33 +185,43 @@ const GameQuestions = ({
     latestDataRef.current = { currentQuestion, selectedAnswers };
   }, [currentQuestion, selectedAnswers]);
 
+  // Reset on new question so initial scroll can fire once
+  const hasInitialScrolledRef = useRef(false);
+  useEffect(() => {
+    hasInitialScrolledRef.current = false;
+  }, [currentChallengeId]);
+
+  // Auto-scroll ONLY on initial question load — never on blank selection
+  // This prevents the view from yanking back to blanks when the user scrolls freely
   useEffect(() => {
     if (!currentChallengeId) return;
+    if (hasInitialScrolledRef.current) return;
     
     const challengeType = currentQuestion?.challenge_type;
     if (challengeType === 'fill in the blank' || challengeType === 'code with guide') {
       const timeoutId = setTimeout(() => {
-        if (Date.now() - lastUserScrollRef.current < 300) {
-          return;
-        }
+        hasInitialScrolledRef.current = true;
         scrollToNextBlank(
           scrollViewRef, 
           blankRefs, 
           latestDataRef.current.currentQuestion, 
           latestDataRef.current.selectedAnswers, 
-          selectedBlankIndex
+          selectedBlankIndex,
+          viewportHeightRef.current
         );
-      }, 200);
+      }, 250);
       
       return () => clearTimeout(timeoutId);
     }
-    // Only triggers scroll strictly on question swap or explicit blank change
-  }, [currentChallengeId, selectedBlankIndex]);
+  }, [currentChallengeId]);
 
+  // Tab switch scroll — re-center blanks when switching back to code tab
   useEffect(() => {
     if (!currentChallengeId || activeTab !== 'code') {
       return;
     }
+    // Skip if this is the initial load (handled above)
+    if (!hasInitialScrolledRef.current) return;
 
     const challengeType = currentQuestion?.challenge_type;
     if (challengeType === 'fill in the blank' || challengeType === 'code with guide') {
@@ -189,13 +231,14 @@ const GameQuestions = ({
           blankRefs,
           latestDataRef.current.currentQuestion,
           latestDataRef.current.selectedAnswers,
-          selectedBlankIndex
+          selectedBlankIndex,
+          viewportHeightRef.current
         );
-      }, 120);
+      }, 200);
 
       return () => clearTimeout(timeoutId);
     }
-  }, [activeTab, currentChallengeId, selectedBlankIndex, currentQuestion?.challenge_type]);
+  }, [activeTab, currentChallengeId, currentQuestion?.challenge_type]);
 
   const handleUserScroll = useCallback(() => {
     lastUserScrollRef.current = Date.now();
@@ -217,9 +260,10 @@ const GameQuestions = ({
 
     // ✅ When answer is correct, render the filled line as plain text (no blank boxes)
     if (isAnswerCorrect && !isComputerMap) {
+      const lang = lineLanguages[lineIndex] || highlightLanguage;
       return (
         <Text style={styles.codeLineTextWrapper}>
-          <Text style={styles.codeText}>{renderHighlightedText(line)}</Text>
+          <Text style={styles.codeText}>{renderHighlightedText(line, lang)}</Text>
         </Text>
       );
     }
@@ -331,7 +375,7 @@ const GameQuestions = ({
         <React.Fragment key={partIndex}>
           {part ? (
             <Text style={[styles.codeText, isComputerMap && styles.codeTextBook]}>
-              {isComputerMap ? part : renderHighlightedText(part)}
+              {isComputerMap ? part : renderHighlightedText(part, lineLanguages[lineIndex] || highlightLanguage)}
             </Text>
           ) : null}
           
@@ -404,6 +448,8 @@ const GameQuestions = ({
     isComputerMap,
     highlightedLines,
     lineMeta,
+    lineLanguages,
+    highlightLanguage,
   ]);
 
   if (!currentQuestion) {
@@ -469,6 +515,7 @@ const GameQuestions = ({
             onUserScroll={handleUserScroll}
             shouldDelayAnimation={isPvpMode}
             isLevelCompletionModalVisible={isLevelCompletionModalVisible}
+            viewportHeightRef={viewportHeightRef}
           />
         ) : (
           <DocumentQuestion 

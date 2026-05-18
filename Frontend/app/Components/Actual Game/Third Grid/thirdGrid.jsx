@@ -207,12 +207,15 @@ const ThirdGrid = ({
 
   const runButtonTitle = useMemo(() => {
     if (usingPotion) return "Using...";
-    if (selectedPotion) return "Activate"; 
-    if (submitting) return "Running";
-    return "Run";
-  }, [usingPotion, selectedPotion, submitting]);
+    // Once potion was already activated, go straight to Run
+    if (potionUsed || !selectedPotion) {
+      if (submitting) return "Running";
+      return "Run";
+    }
+    return "Activate"; 
+  }, [usingPotion, selectedPotion, submitting, potionUsed]);
 
-  const runButtonVariant = useMemo(() => selectedPotion ? "info" : "primary", [selectedPotion]);
+  const runButtonVariant = useMemo(() => (selectedPotion && !potionUsed) ? "info" : "primary", [selectedPotion, potionUsed]);
 
   const runButtonDisabled = useMemo(() => {
     const hasSelectedAnswer = selectedAnswers.some(answer => answer != null);
@@ -246,12 +249,17 @@ const ThirdGrid = ({
       setPotionUsed(true);
       usePotion(selectedPotion.player_potion_id);
       setBorderColor(getPotionBorderColor(selectedPotion.name));
+      // After potion activation, switch back to answers view so Run button is ready
+      setTimeout(() => {
+        setShowPotions(false);
+        setRunDisabled(false);
+      }, 1000);
     } else {
       handleCheckAnswer();
+      setTimeout(() => {
+        setRunDisabled(false);
+      }, 5000);
     }
-    setTimeout(() => {
-      setRunDisabled(false);
-    }, 5000);
     // Add onRunPressHideOutput to dependencies
   }, [selectedPotion, usePotion, handleCheckAnswer, setBorderColor, onRunPressHideOutput]);
 

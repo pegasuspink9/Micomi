@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { Dimensions, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Dimensions, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import SpriteActivityIndicator from '../Components/Actual Game/Loading/SpriteActivityIndicator';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -77,12 +77,17 @@ const getTabGradientColors = (isActive) => {
 
 const TAB_SHADOW_COLOR = '#2a1500';
 
+// Generate a mock purchase token for testing (when backend has MOCK_IAP=true)
+const generateMockToken = () => `TEST_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
 export default function TopUpShop() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [catalog, setCatalog] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [purchasingItemId, setPurchasingItemId] = useState(null);
+  const purchaseInFlight = useRef(false);
   const [selectedCategory, setSelectedCategory] = useState(
     typeof params.category === 'string' && params.category && params.category !== 'all'
       ? params.category
@@ -109,6 +114,57 @@ export default function TopUpShop() {
       loadCatalog();
     }, [loadCatalog])
   );
+
+  const handlePurchase = useCallback((item) => {
+    if (purchaseInFlight.current) return;
+
+    const priceLabel = `PHP ${Number(item.price_php || 0).toLocaleString()}`;
+
+    Alert.alert(
+      'Confirm Purchase',
+      `Buy "${item.name}" for ${priceLabel}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Buy',
+          onPress: async () => {
+            if (purchaseInFlight.current) return;
+            purchaseInFlight.current = true;
+            setPurchasingItemId(item.item_id);
+
+            try {
+              const purchaseToken = generateMockToken();
+              const result = await topUpShopService.verifyPurchase(item.item_id, purchaseToken);
+              const d = result?.data || {};
+
+              // Build a human-friendly summary of what was granted
+              const lines = [];
+              if (d.coinsAdded)        lines.push(`💰 +${d.coinsAdded.toLocaleString()} Coins`);
+              if (d.diamondsAdded)     lines.push(`💎 +${d.diamondsAdded.toLocaleString()} Diamonds`);
+              if (d.unlockedMaps?.length)
+                lines.push(`🗺️ Maps: ${d.unlockedMaps.join(', ')}`);
+              if (d.unlockedCharacters?.length)
+                lines.push(`🧑‍🎤 Characters: ${d.unlockedCharacters.join(', ')}`);
+              if (d.infiniteEnergyLifetime)
+                lines.push('⚡ Infinite Energy (Lifetime)');
+              if (d.infiniteEnergyMonthlyExpiresAt)
+                lines.push(`⚡ Infinite Energy until ${new Date(d.infiniteEnergyMonthlyExpiresAt).toLocaleDateString()}`);
+
+              Alert.alert(
+                'Purchase Successful! 🎉',
+                lines.length ? lines.join('\n') : result?.message || 'Done!',
+              );
+            } catch (err) {
+              Alert.alert('Purchase Failed', err?.message || 'Something went wrong. Please try again.');
+            } finally {
+              purchaseInFlight.current = false;
+              setPurchasingItemId(null);
+            }
+          },
+        },
+      ],
+    );
+  }, []);
 
   const filteredCatalog = useMemo(() => {
     const matcher = TOP_UP_CATEGORY_MATCHERS[selectedCategory];
@@ -217,8 +273,10 @@ export default function TopUpShop() {
           </View>
         ) : (
           <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
-            {rows.map((row, rowIndex) => (
-              <View key={`row-${rowIndex}`} style={styles.row}>
+            {rows.map((row, rowIndex) => {
+              const isEnergyRow = row.items.some(i => String(i.item_id || '').includes('energy'));
+              return (
+              <View key={`row-${rowIndex}`} style={[styles.row, isEnergyRow && styles.energyRow]}>
                 {row.items.map((item) => {
                   const imageUri = getImageUri(item.item_id);
                   const isPair = row.type === 'pair';
@@ -226,6 +284,8 @@ export default function TopUpShop() {
                   return (
                     <Pressable
                       key={item.item_id}
+                      onPress={() => handlePurchase(item)}
+                      disabled={purchasingItemId === item.item_id}
                       style={({ pressed }) => [
                         isPair ? styles.halfCell : styles.fullCell,
                         pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
@@ -234,7 +294,10 @@ export default function TopUpShop() {
                       {imageUri ? (
                         <Image
                           source={{ uri: imageUri }}
-                          style={styles.itemImage}
+                          style={[
+                            styles.itemImage,
+                            purchasingItemId === item.item_id && { opacity: 0.5 },
+                          ]}
                           resizeMode="contain"
                         />
                       ) : (
@@ -242,11 +305,17 @@ export default function TopUpShop() {
                           <Text style={styles.placeholderText}>{item.name}</Text>
                         </View>
                       )}
+                      {purchasingItemId === item.item_id && (
+                        <View style={styles.purchaseOverlay}>
+                          <ActivityIndicator color="#ffd84a" size="large" />
+                        </View>
+                      )}
                     </Pressable>
                   );
                 })}
               </View>
-            ))}
+              );
+            })}
 
             {!filteredCatalog.length && (
               <View style={styles.stateWrap}>
@@ -400,6 +469,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: gameScale(-50),
   },
+  energyRow: {
+    marginTop: gameScale(-90),
+    marginBottom: gameScale(-80),
+  },
   halfCell: {
     flex: 1,
   },
@@ -429,5 +502,14 @@ const styles = StyleSheet.create({
     fontSize: gameScale(12),
     fontFamily: 'Grobold',
     textAlign: 'center',
+  },
+
+  // --- Purchase overlay spinner ---
+  purchaseOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    borderRadius: gameScale(12),
   },
 });

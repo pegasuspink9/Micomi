@@ -32,6 +32,7 @@ const CodeEditor = ({
   onUserScroll = null,
   shouldDelayAnimation = false,
   isLevelCompletionModalVisible = false,
+  viewportHeightRef = null,
 }) => {
   const [activeTab, setActiveTab] = useState('code');
   const [hasAnimated, setHasAnimated] = useState(false); 
@@ -45,6 +46,15 @@ const CodeEditor = ({
   const lineHeight = useMemo(() => gameScale(25), []);
   const blankLineSet = useMemo(() => new Set(blankLineIndexes), [blankLineIndexes]);
 
+  // Range covering first blank to last blank — all lines in between always render
+  const blankSpanRange = useMemo(() => {
+    if (!blankLineIndexes.length) return null;
+    return {
+      start: Math.min(...blankLineIndexes),
+      end: Math.max(...blankLineIndexes),
+    };
+  }, [blankLineIndexes]);
+
   const initialRange = useMemo(() => {
     if (!lines.length) {
       return { start: 0, end: 0 };
@@ -56,8 +66,7 @@ const CodeEditor = ({
 
     const minBlank = Math.min(...blankLineIndexes);
     const maxBlank = Math.max(...blankLineIndexes);
-    const buffer = 6;
-
+    const buffer = 4;
     return {
       start: Math.max(0, minBlank - buffer),
       end: Math.min(lines.length - 1, maxBlank + buffer),
@@ -138,6 +147,12 @@ const CodeEditor = ({
             contentContainerStyle={styles.scrollContentContainer}
             showsVerticalScrollIndicator={false}
             nestedScrollEnabled={true}
+            onLayout={(event) => {
+              const { height } = event.nativeEvent.layout;
+              if (viewportHeightRef) {
+                viewportHeightRef.current = height;
+              }
+            }}
             onScroll={(event) => {
               const { contentOffset, layoutMeasurement } = event.nativeEvent;
               const start = Math.max(0, Math.floor(contentOffset.y / lineHeight) - 6);
@@ -168,6 +183,7 @@ const CodeEditor = ({
 
               const shouldRenderLine =
                 blankLineSet.has(lineIndex) ||
+                (blankSpanRange && lineIndex >= blankSpanRange.start && lineIndex <= blankSpanRange.end) ||
                 (lineIndex >= visibleRange.start && lineIndex <= visibleRange.end);
 
               return (
@@ -753,7 +769,8 @@ const styles = StyleSheet.create({
 
   scrollContentContainer: {
     flexGrow: 1,
-    paddingBottom: gameScale(100),
+    paddingTop: gameScale(20),
+    paddingBottom: gameScale(250),
   },
 
   outputContainer: {
