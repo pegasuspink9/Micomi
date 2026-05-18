@@ -1,14 +1,15 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { connectivityStore } from '../store/connectivityStore';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { connectivityStore } from "../store/connectivityStore";
 
 const isNetworkError = (error) => {
-  const message = error?.message || '';
-  return message.includes('Network request failed') || message.includes('Failed to fetch');
+  const message = error?.message || "";
+  return (
+    message.includes("Network request failed") ||
+    message.includes("Failed to fetch")
+  );
 };
 
-const POSSIBLE_BACKEND_URLS = [
-  'https://micomi-huo8f.ondigitalocean.app'
-];
+const POSSIBLE_BACKEND_URLS = ["http://192.168.1.7:3000"];
 
 class ApiService {
   constructor() {
@@ -18,7 +19,6 @@ class ApiService {
   }
 
   setAuthToken(token) {
-
     this.authToken = token;
   }
 
@@ -32,8 +32,8 @@ class ApiService {
         const timeoutId = setTimeout(() => controller.abort(), 3000);
 
         const response = await fetch(`${url}/`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
           signal: controller.signal,
         });
 
@@ -63,7 +63,7 @@ class ApiService {
   async request(endpoint, options = {}, isRetry = false) {
     // 1. Try to recover token if missing (Fixes the race condition)
     if (!this.authToken) {
-      const storedToken = await AsyncStorage.getItem('accessToken');
+      const storedToken = await AsyncStorage.getItem("accessToken");
       if (storedToken) {
         this.authToken = storedToken;
       }
@@ -74,12 +74,12 @@ class ApiService {
     }
 
     if (!this.isBackendAvailable) {
-      throw new Error('Backend server is not available');
+      throw new Error("Backend server is not available");
     }
 
     // Ensure endpoint has a leading slash and remove trailing slash if needed
     // The backend uses /map and /player/profile
-    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
 
     const url = `${this.baseURL}${cleanEndpoint}`;
     const controller = new AbortController();
@@ -87,8 +87,10 @@ class ApiService {
 
     const config = {
       headers: {
-        'Content-Type': 'application/json',
-        ...(this.authToken ? { 'Authorization': `Bearer ${this.authToken}` } : {}),
+        "Content-Type": "application/json",
+        ...(this.authToken
+          ? { Authorization: `Bearer ${this.authToken}` }
+          : {}),
         ...options.headers,
       },
       signal: controller.signal,
@@ -109,10 +111,16 @@ class ApiService {
         const clone = response.clone(); // Clone so we don't consume the stream
         try {
           errorData = await clone.json();
-          const errMsg = typeof errorData.error === 'string' ? errorData.error : errorData.message;
+          const errMsg =
+            typeof errorData.error === "string"
+              ? errorData.error
+              : errorData.message;
 
           // Trigger refresh if status is 401 OR if the text explicitly says "jwt expired"
-          if (response.status === 401 || (errMsg && errMsg.includes('jwt expired'))) {
+          if (
+            response.status === 401 ||
+            (errMsg && errMsg.includes("jwt expired"))
+          ) {
             isJwtExpired = true;
           }
         } catch (e) {
@@ -121,28 +129,32 @@ class ApiService {
       }
 
       // ✅ Step 2: Intercept Expired Token based on the smarter check above
-      if (isJwtExpired && !isRetry && !endpoint.includes('/refresh')) {
-        console.log("🔄 JWT Expired strictly detected. Attempting automatic token refresh...");
+      if (isJwtExpired && !isRetry && !endpoint.includes("/refresh")) {
+        console.log(
+          "🔄 JWT Expired strictly detected. Attempting automatic token refresh...",
+        );
         try {
-          const { authService } = require('./authService');
+          const { authService } = require("./authService");
           const newToken = await authService.refreshAccessToken();
 
           if (newToken) {
-            console.log("✅ Token refreshed successfully! Retrying original request...");
+            console.log(
+              "✅ Token refreshed successfully! Retrying original request...",
+            );
             this.setAuthToken(newToken);
 
             const retryConfig = {
               ...options,
               headers: {
                 ...options.headers,
-                'Authorization': `Bearer ${newToken}`
-              }
+                Authorization: `Bearer ${newToken}`,
+              },
             };
             return await this.request(endpoint, retryConfig, true);
           }
         } catch (refreshError) {
           console.error("❌ Token refresh failed:", refreshError.message);
-          throw new Error('Session expired. Please log in again.');
+          throw new Error("Session expired. Please log in again.");
         }
       }
 
@@ -151,10 +163,20 @@ class ApiService {
         let errorMessage = `HTTP error! status: ${response.status}`;
 
         if (errorData) {
-          if (errorData.error && typeof errorData.error === 'string') {
+          if (errorData.error && typeof errorData.error === "string") {
             errorMessage = errorData.error;
           } else if (errorData.message) {
             errorMessage = errorData.message;
+          } else if (
+            errorData.data &&
+            typeof errorData.data.message === "string"
+          ) {
+            errorMessage = errorData.data.message;
+          } else if (
+            errorData.data &&
+            typeof errorData.data.error === "string"
+          ) {
+            errorMessage = errorData.data.error;
           }
         }
 
@@ -173,25 +195,25 @@ class ApiService {
   }
 
   async get(endpoint) {
-    return this.request(endpoint, { method: 'GET' });
+    return this.request(endpoint, { method: "GET" });
   }
 
   async post(endpoint, data) {
     return this.request(endpoint, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
     });
   }
 
   async put(endpoint, data) {
     return this.request(endpoint, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(data),
     });
   }
 
   async delete(endpoint) {
-    return this.request(endpoint, { method: 'DELETE' });
+    return this.request(endpoint, { method: "DELETE" });
   }
 }
 

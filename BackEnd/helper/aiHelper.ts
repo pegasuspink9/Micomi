@@ -84,6 +84,19 @@ const fetchWithTimeout = async (
   }
 };
 
+interface ChallengeGuideInput {
+  challenge_id: number;
+  level_id: number;
+  points_reward: number;
+  coins_reward: number;
+  challenge_type: string;
+  correct_answer: unknown;
+  question?: string | null;
+  css_file?: string | null;
+  html_file?: string | null;
+  options?: unknown;
+}
+
 export async function generateWrongAnswerGuide(
   topic: string,
   question: string,
@@ -213,4 +226,116 @@ How to fix:
   }
 
   return "Oops! That wasn't quite right. Check the correct answer and try again!";
+}
+
+export async function generateChallengeGuide(
+  challengeData: ChallengeGuideInput,
+): Promise<string> {
+  const payload = JSON.stringify(challengeData, null, 2);
+
+  const prompt = `You are an expert curriculum designer for a gamified web development platform. Your task is to write a short, beginner-friendly "guide" for HTML/CSS coding challenges based on the challenge data provided.
+
+Strictly adhere to the following rules:
+
+1. Length & Structure: The guide must be EXACTLY two sentences long. 
+   - Sentence 1 (Action): Tell the player what they need to do with the specific text or element. Use active verbs like "Wrap the text...", "Enclose...", "Embed...", or "Apply...". 
+   - Sentence 2 (Result): Describe the expected visual or structural output/result on the webpage. Start with "The output should be..." or similar phrasing.
+2. No Generic Phrases: Do NOT use mechanical phrases like "Fill in the blanks" or "Complete the code". Focus on the semantic action.
+3. No Spoon-feeding: Do NOT reveal the exact tags or attributes found in the "correct_answer". Describe them conceptually (e.g., if the answer is "h1", call it "the main heading tags" or "a top-level title").
+
+---
+
+### EXAMPLE 1 (Input)
+{
+  "challenge_id": 53,
+  "level_id": 2,
+  "points_reward": 20,
+  "coins_reward": 4,
+  "challenge_type": "fill in the blank",
+  "correct_answer": "[\"h1\", \"h1\"]",
+  "question": "<!DOCTYPE html>\n<html>\n  <head>\n    <title>My Page</title>\n  </head>\n  <body>\n    <h1>Hello Welcome to Micomi!</h1>\n  </body>\n</html>"
+}
+
+### EXAMPLE 1 (Output Guide)
+Wrap the text "Hello Welcome to Micomi!" using the correct main heading tags. The output should be a large, bold headline that serves as the main title of your webpage.
+
+---
+
+Now, generate ONLY the 2-sentence guide text for the following challenge data. Do not include any introductory or concluding remarks.
+
+### CURRENT CHALLENGE DATA:
+${payload}`;
+
+  const groqKey = groqPool.getHealthyKey();
+
+  if (groqKey) {
+    let status: number | null = null;
+    try {
+      const response = await fetchWithTimeout(
+        "https://api.groq.com/openai/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${groqKey.value}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "llama-3.1-8b-instant",
+            messages: [{ role: "user", content: prompt }],
+            max_tokens: 160,
+          }),
+        },
+        8000,
+      );
+
+      status = response.status;
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(JSON.stringify(data));
+
+      return data.choices[0].message.content.trim();
+    } catch (error: any) {
+      groqPool.reportFailure(groqKey, status);
+      console.warn(
+        `[AI Failover] Groq failed, switching to Gemini. Reason:`,
+        error.message,
+      );
+    }
+  }
+
+  const geminiKey = geminiPool.getHealthyKey();
+
+  if (geminiKey) {
+    let status: number | null = null;
+    try {
+      const model = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+      const response = await fetchWithTimeout(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey.value}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              maxOutputTokens: 160,
+            },
+          }),
+        },
+        3500,
+      );
+
+      status = response.status;
+      const data = await response.json();
+
+      if (!response.ok || data.error)
+        throw new Error(JSON.stringify(data.error || data));
+
+      return data.candidates[0].content.parts[0].text.trim();
+    } catch (error: any) {
+      geminiPool.reportFailure(geminiKey, status);
+      console.error(`[AI Failover] Gemini also failed. Reason:`, error.message);
+    }
+  }
+
+  return "Oops! Guide generation failed. Please try again later.";
 }

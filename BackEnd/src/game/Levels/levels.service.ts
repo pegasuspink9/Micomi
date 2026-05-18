@@ -10,7 +10,7 @@ import {
 } from "@prisma/client";
 import { ChallengeDTO } from "./levels.types";
 import * as EnergyService from "../Energy/energy.service";
-import { getBaseEnemyHp } from "../Combat/combat.service";
+import { getBaseEnemyHp, getDynamicEnemyDamage } from "../Combat/combat.service";
 import { updateQuestProgress } from "../Quests/quests.service";
 import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 import { getCardForAttackType } from "../Combat/combat.service";
@@ -177,7 +177,7 @@ export const previewLevel = async (playerId: number, levelId: number) => {
           enemy_health: enemyMaxHealth,
           enemy_idle: enemy.enemy_avatar,
           enemy_run: enemy.enemy_run,
-          enemy_damage: enemy.enemy_damage,
+          enemy_damage: getDynamicEnemyDamage({ ...level, challenges: level.challenges }),
           enemy_attack: enemy.enemy_attack,
           enemy_hurt: enemy.enemy_hurt,
           enemy_dies: enemy.enemy_dies,
@@ -1006,7 +1006,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       enemy_health: currentEnemyHealth,
       enemy_idle: enemy.enemy_avatar,
       enemy_run: enemy.enemy_run,
-      enemy_damage: enemy.enemy_damage,
+      enemy_damage: getDynamicEnemyDamage(level),
       enemy_attack: enemy.enemy_attack,
       enemy_hurt: enemy.enemy_hurt,
       enemy_dies: enemy.enemy_dies,
