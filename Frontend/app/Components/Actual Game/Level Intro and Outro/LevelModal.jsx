@@ -903,6 +903,7 @@ const LevelModal = ({
                 <Pressable 
                   style={({ pressed }) => [
                     styles.playButtonOuter,
+                    styles.playButtonOuterSingle,
                     pressed && styles.playButtonPressed,
                     {
                       shadowOpacity: pressed ? 0.3 : 0.6,
@@ -1536,6 +1537,9 @@ const styles = StyleSheet.create({
     borderRightWidth: gameScale(3),
     borderRightColor: '#088486ff',
     width: '100%',
+  },
+  playButtonOuterSingle: {
+    width: gameScale(170),
   },
   playButtonOuterColumn: {
     flex: 1,
