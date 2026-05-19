@@ -129,9 +129,35 @@ export const authService = {
 
   // Logout
   async logout() {
-    await AsyncStorage.removeItem(TOKEN_KEY);
-    await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
-    await AsyncStorage.removeItem(PLAYER_KEY);
-    apiService.setAuthToken(null);
+    try {
+      await apiService.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout API failed:', error);
+    } finally {
+      await AsyncStorage.removeItem(TOKEN_KEY);
+      await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
+      await AsyncStorage.removeItem(PLAYER_KEY);
+      apiService.setAuthToken(null);
+    }
+  },
+
+  // Forgot password
+  async forgotPassword(email) {
+    try {
+      const response = await apiService.post('/auth/forgot-password', { email });
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Reset password
+  async resetPassword(token, newPassword) {
+    try {
+      const response = await apiService.post('/auth/reset-password', { token, newPassword });
+      return response;
+    } catch (error) {
+      throw error;
+    }
   }
 };

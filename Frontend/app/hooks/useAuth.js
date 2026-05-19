@@ -89,7 +89,6 @@ export const useAuth = () => {
     try {
       const userData = await authService.googleLogin(idToken);
       updateGlobalState(userData, false);
-      Alert.alert('Success', `Welcome, ${userData.player_name}!`);
     } catch (error) {
       updateGlobalState(null, false);
       Alert.alert('Google Login Failed', error.message);
@@ -101,7 +100,6 @@ export const useAuth = () => {
     try {
       const userData = await authService.facebookLogin(accessToken);
       updateGlobalState(userData, false);
-      Alert.alert('Success', `Welcome, ${userData.player_name}!`);
     } catch (error) {
       updateGlobalState(null, false);
       Alert.alert('Facebook Login Failed', error.message);

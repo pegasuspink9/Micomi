@@ -8,13 +8,15 @@ import {
   KeyboardAvoidingView, 
   Platform,
   ScrollView,
-  ImageBackground
+  ImageBackground,
+  Alert
 } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { gameScale, scaleWidth, scaleHeight, hp } from './Components/Responsiveness/gameResponsive';
 import { useRouter } from 'expo-router';
 import { useAuth } from './hooks/useAuth';
 import { usePlayerProfile } from './hooks/usePlayerProfile';
+import { authService } from './services/authService';
 import * as WebBrowser from "expo-web-browser";
 import SpriteActivityIndicator from './Components/Actual Game/Loading/SpriteActivityIndicator';
 
@@ -76,6 +78,21 @@ export default function Login() {
       }
     } finally {
       setIsLoggingIn(false); // Revert button text to "Log In"
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setErrorMessage('Please enter your email.');
+      return;
+    }
+
+    setErrorMessage('');
+    try {
+      const response = await authService.forgotPassword(email);
+      Alert.alert('Forgot Password', response?.message || 'Request sent. Check your email.');
+    } catch (error) {
+      Alert.alert('Forgot Password', error?.message || 'Failed to send reset link.');
     }
   };
 
@@ -151,7 +168,7 @@ export default function Login() {
               ) : null}
 
               {/* Forgot Password */}
-              <TouchableOpacity style={styles.forgotPassContainer} onPress={() => router.push('/ForgotPassword')}>
+              <TouchableOpacity style={styles.forgotPassContainer} onPress={handleForgotPassword}>
                 <Text style={styles.forgotPassText}>Forget Password?</Text>
               </TouchableOpacity>
 
