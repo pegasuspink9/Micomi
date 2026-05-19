@@ -135,18 +135,28 @@ const MapDashboard = ({ mapData, onClose, onEnter }) => {
 
               <View style={styles.statsRow}>
                 <View style={styles.statCard}>
-                  <Text style={styles.statValue}>—</Text>
+                  <Text style={styles.statValue}>{mapData?.lesson_count ?? 0}</Text>
                   <Text style={styles.statLabel}>Lessons</Text>
                 </View>
                 <View style={styles.statCard}>
-                  <Text style={styles.statValue}>—</Text>
+                  <Text style={styles.statValue}>{mapData?.level_count ?? 0}</Text>
                   <Text style={styles.statLabel}>Levels</Text>
                 </View>
                 <View style={styles.statCard}>
-                  <Text style={styles.statValue}>—</Text>
+                  <Text style={styles.statValue}>{mapData?.challenge_count ?? 0}</Text>
                   <Text style={styles.statLabel}>Challenges</Text>
                 </View>
               </View>
+
+              {!isActive && (
+                <Text style={styles.unlockNoteText}>
+                  {mapName === 'CSS'
+                    ? 'Note: To unlocked, complete the Green Land(HTML)'
+                    : mapName === 'JavaScript'
+                      ? 'Note: To unlocked, complete the Lava Land(CSS)'
+                      : 'Note: To unlocked, complete the GreenLand(HTML)'}
+                </Text>
+              )}
             </ScrollView>
 
             <View style={styles.actionButtons}>
@@ -340,6 +350,13 @@ const styles = StyleSheet.create({
     color: '#ffd9a3',
     fontFamily: 'DynaPuff',
     fontSize: gameScale(10),
+  },
+  unlockNoteText: {
+    marginTop: gameScale(4),
+    color: '#ffd9a3',
+    fontFamily: 'DynaPuff',
+    fontSize: gameScale(10),
+    textAlign: 'flex-start'
   },
   actionButtons: {
     position: 'absolute',

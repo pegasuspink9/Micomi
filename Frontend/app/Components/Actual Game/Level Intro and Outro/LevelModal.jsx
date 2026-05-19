@@ -11,6 +11,24 @@ import {WebView} from 'react-native-webview';
 import { gameScale, BASE_HEIGHT} from '../../Responsiveness/gameResponsive';
 import { universalAssetPreloader } from '../../../services/preloader/universalAssetPreloader';
 
+const parseTimeToSeconds = (value) => {
+  if (!value || typeof value !== 'string') return null;
+  const parts = value.trim().split(':').map(Number);
+  if (parts.length !== 3 || parts.some(n => Number.isNaN(n))) return null;
+  const [hours, minutes, seconds] = parts;
+  return Math.max(hours * 3600 + minutes * 60 + seconds, 0);
+};
+
+const formatSecondsToTime = (totalSeconds) => {
+  if (typeof totalSeconds !== 'number' || Number.isNaN(totalSeconds)) return '--:--:--';
+  const safeSeconds = Math.max(Math.floor(totalSeconds), 0);
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+};
+
 const LevelModal = ({ 
   visible = false,
   onClose = () => {},
@@ -26,6 +44,7 @@ const LevelModal = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isAnimating, setIsAnimating] = useState(false); 
+  const [energyRestoreSeconds, setEnergyRestoreSeconds] = useState(null);
 
   const scaleAnim = useRef(new Animated.Value(0.3)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -351,10 +370,6 @@ const LevelModal = ({
     return transformPreviewDataWithCache(data);
   }, [previewData, levelData]);
   
-  if (!visible) {
-    return null;
-  }
-
   const mappedLevelData = displayData ? {
     level_number: displayData.level?.level_number || 1,
     level_type: displayData.enemy?.enemy_name || 'Unknown Enemy',
@@ -371,7 +386,9 @@ const LevelModal = ({
     character_name: displayData.character?.character_name || 'Unknown',
     character_health: displayData.character?.character_health || 0,
     character_avatar: displayData.character?.character_avatar || null,
-    energy_cost: displayData.energy || 0,
+    energy_cost: displayData.energy_cost ?? displayData.energy ?? 0,
+    current_energy: displayData.current_energy ?? 0,
+    time_to_next_energy_restore: displayData.timeToNextEnergyRestore ?? displayData.time_to_next_energy_restore ?? null,
     player_coins: displayData.player_info?.player_coins || 0,
     boss_output: displayData.bossLevelExpectedOutput?.[0] || null
   } : {
@@ -383,6 +400,8 @@ const LevelModal = ({
     coins_reward: 0,
     points_reward: 0,
     energy_cost: 0,
+    current_energy: 0,
+    time_to_next_energy_restore: null,
     content: 'Connecting to mission server...'
   };
 
@@ -415,6 +434,33 @@ const LevelModal = ({
   const isShopLevel = displayData?.level?.level_type === "shopButton";
   const isBossLevel = displayData?.level?.level_type === "bossButton"; 
   const potionShopData = displayData?.potionShop || [];
+  const energyCost = Number(mappedLevelData.energy_cost || 0);
+  const currentEnergy = Number(mappedLevelData.current_energy || 0);
+  const isEnergyInsufficient = !isShopLevel && energyCost > 0 && currentEnergy < energyCost;
+  const energyNeeded = Math.max(energyCost - currentEnergy, 0);
+  const playButtonColors = isEnergyInsufficient
+    ? ['rgba(90, 90, 90, 0.7)', 'rgba(70, 70, 70, 0.7)']
+    : ['rgba(0, 159, 227, 0.76)', 'rgba(0, 159, 227, 0.76)'];
+  const formattedEnergyRestore = energyRestoreSeconds === null
+    ? null
+    : formatSecondsToTime(energyRestoreSeconds);
+
+  useEffect(() => {
+    const initialSeconds = parseTimeToSeconds(mappedLevelData.time_to_next_energy_restore);
+    setEnergyRestoreSeconds(initialSeconds);
+  }, [mappedLevelData.time_to_next_energy_restore]);
+
+  useEffect(() => {
+    if (!visible || !isEnergyInsufficient || energyRestoreSeconds === null) return;
+    const timerId = setInterval(() => {
+      setEnergyRestoreSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timerId);
+  }, [visible, isEnergyInsufficient, energyRestoreSeconds]);
+
+  if (!visible) {
+    return null;
+  }
 
   return (
     <Modal
@@ -780,31 +826,106 @@ const LevelModal = ({
                 }
               ]}
             >
-              <Pressable 
-                style={({ pressed }) => [
-                  styles.playButtonOuter,
-                  pressed && styles.playButtonPressed,
-                  {
-                    shadowOpacity: pressed ? 0.3 : 0.6,
-                    transform: pressed 
-                      ? [{ translateY: gameScale(3) }, { scale: 0.98 }] 
-                      : [{ translateY: 0 }, { scale: 1 }]
-                  }
-                ]}
-                onPress={handlePlayPress}
-                disabled={isAnimating}
-              >
-                <LinearGradient
-                  colors={['rgba(0, 159, 227, 0.76)', 'rgba(0, 159, 227, 0.76)']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.playButtonMiddle}
+              {isEnergyInsufficient ? (
+                <View style={styles.buttonRow}>
+                  <Pressable 
+                    style={({ pressed }) => [
+                      styles.playButtonOuter,
+                      styles.playButtonOuterColumn,
+                      pressed && styles.playButtonPressed,
+                      {
+                        shadowOpacity: pressed ? 0.3 : 0.6,
+                        transform: pressed 
+                          ? [{ translateY: gameScale(3) }, { scale: 0.98 }] 
+                          : [{ translateY: 0 }, { scale: 1 }]
+                      }
+                    ]}
+                    onPress={handlePlayPress}
+                    disabled={isAnimating || isEnergyInsufficient}
+                  >
+                    <LinearGradient
+                      colors={playButtonColors}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.playButtonMiddle}
+                    >
+                      <View style={styles.noEnergyTextWrap}>
+                        <Animated.Text style={[styles.playButtonText, styles.noEnergyText, { opacity: glowInterpolate }]}>
+                          NO ENERGY
+                        </Animated.Text>
+                        {formattedEnergyRestore && (
+                          <Text style={styles.noEnergyTimerText}>{formattedEnergyRestore}</Text>
+                        )}
+                      </View>
+                    </LinearGradient>
+                  </Pressable>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.energyButtonOuter,
+                      pressed && styles.playButtonPressed,
+                      {
+                        shadowOpacity: pressed ? 0.25 : 0.5,
+                        transform: pressed
+                          ? [{ translateY: gameScale(3) }, { scale: 0.98 }]
+                          : [{ translateY: 0 }, { scale: 1 }]
+                      }
+                    ]}
+                    onPress={() => {
+                      handleModalClose();
+                      setTimeout(() => {
+                        router.push({
+                          pathname: '/TopUp/topUpShop',
+                          params: { category: 'energy' },
+                        });
+                      }, 200);
+                    }}
+                    disabled={isAnimating}
+                  >
+                    <LinearGradient
+                      colors={['rgba(255, 184, 76, 0.9)', 'rgba(245, 135, 43, 0.9)']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.energyButtonMiddle}
+                    >
+                      <View style={styles.energyButtonTextRow}>
+                        <Text style={styles.energyButtonText}>Need {energyNeeded}</Text>
+                        <Image
+                          source={require('../../icons/energy.png')}
+                          style={styles.energyButtonIcon}
+                          resizeMode="contain"
+                        />
+                      </View>
+                      <Text style={styles.energyButtonSubText}>Buy Energy</Text>
+                    </LinearGradient>
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable 
+                  style={({ pressed }) => [
+                    styles.playButtonOuter,
+                    pressed && styles.playButtonPressed,
+                    {
+                      shadowOpacity: pressed ? 0.3 : 0.6,
+                      transform: pressed 
+                        ? [{ translateY: gameScale(3) }, { scale: 0.98 }] 
+                        : [{ translateY: 0 }, { scale: 1 }]
+                    }
+                  ]}
+                  onPress={handlePlayPress}
+                  disabled={isAnimating}
                 >
-                  <Animated.Text style={[styles.playButtonText, { opacity: glowInterpolate }]}>
-                    {isShopLevel ? "ENTER SHOP" : "PLAY"}
-                  </Animated.Text>
-                </LinearGradient>
-              </Pressable>
+                  <LinearGradient
+                    colors={playButtonColors}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.playButtonMiddle}
+                  >
+                    <Animated.Text style={[styles.playButtonText, { opacity: glowInterpolate }]}>
+                      {isShopLevel ? "ENTER SHOP" : "PLAY"}
+                    </Animated.Text>
+                  </LinearGradient>
+                </Pressable>
+              )}
             </Animated.View>
           ) : (
             /* FIX: Invisible placeholder to maintain vertical centering during loading/error */
@@ -1384,6 +1505,15 @@ const styles = StyleSheet.create({
     marginTop: gameScale(155), 
     alignItems: 'center',
     position: 'relative', // Removed absolute
+    width: gameScale(332),
+  },
+  buttonRow: {
+    width: '100%',
+    flexDirection: 'row',
+    gap: gameScale(10),
+  },
+  buttonRowSingle: {
+    justifyContent: 'center',
   },
   playButtonOuter: {
     backgroundColor: '#d0d0d0ff',
@@ -1405,6 +1535,10 @@ const styles = StyleSheet.create({
     borderBottomColor: '#01142bff',
     borderRightWidth: gameScale(3),
     borderRightColor: '#088486ff',
+    width: '100%',
+  },
+  playButtonOuterColumn: {
+    flex: 1,
   },
   playButtonMiddle: {
     padding: gameScale(4),
@@ -1421,6 +1555,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f1f1f1a6',
     borderRightWidth: gameScale(2),
     borderRightColor: '#22c5baaf',
+    width: '100%',
   },
   playButtonText: {
     fontSize: gameScale(39),
@@ -1431,10 +1566,91 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: gameScale(1), height: gameScale(1) },
     textShadowRadius: gameScale(3),
   },
+  noEnergyText: {
+    fontSize: gameScale(22),
+  },
+  noEnergyTextWrap: {
+    alignItems: 'center',
+  },
+  noEnergyTimerText: {
+    marginTop: gameScale(2),
+    fontSize: gameScale(11),
+    color: '#e5e7eb',
+    fontFamily: 'DynaPuff',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: gameScale(1), height: gameScale(1) },
+    textShadowRadius: gameScale(2),
+  },
   playButtonPressed: {
     shadowOpacity: 0.3,
     shadowRadius: gameScale(10),
     elevation: 15,
+  },
+  energyButtonOuter: {
+    backgroundColor: '#f2b464',
+    padding: gameScale(4),
+    borderRadius: gameScale(24),
+    shadowColor: '#92400e',
+    shadowOffset: {
+      width: 0,
+      height: gameScale(10),
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: gameScale(18),
+    elevation: 22,
+    borderTopWidth: gameScale(3),
+    borderTopColor: '#ffe3b0',
+    borderLeftWidth: gameScale(2),
+    borderLeftColor: '#f59e0b',
+    borderBottomWidth: gameScale(4),
+    borderBottomColor: '#b45309',
+    borderRightWidth: gameScale(3),
+    borderRightColor: '#f59e0b',
+    flex: 1,
+  },
+  energyButtonMiddle: {
+    paddingVertical: gameScale(6),
+    paddingHorizontal: gameScale(8),
+    borderRadius: gameScale(22),
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: gameScale(54),
+    borderTopWidth: gameScale(2),
+    borderTopColor: '#fff3d1',
+    borderLeftWidth: gameScale(1),
+    borderLeftColor: '#fbbf24',
+    borderBottomWidth: gameScale(3),
+    borderBottomColor: '#ffe3b0',
+    borderRightWidth: gameScale(2),
+    borderRightColor: '#fbbf24',
+    width: '100%',
+  },
+  energyButtonTextRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: gameScale(6),
+  },
+  energyButtonIcon: {
+    width: gameScale(20),
+    height: gameScale(20),
+    marginLeft: gameScale(-4),
+  },
+  energyButtonText: {
+    fontSize: gameScale(20),
+    color: '#3b2200',
+    fontFamily: 'Grobold',
+    textAlign: 'center',
+    textShadowColor: 'rgba(255, 255, 255, 0.35)',
+    textShadowOffset: { width: gameScale(1), height: gameScale(1) },
+    textShadowRadius: gameScale(2),
+  },
+  energyButtonSubText: {
+    fontSize: gameScale(11),
+    color: '#3b2200',
+    fontFamily: 'DynaPuff',
+    textAlign: 'center',
+    marginTop: gameScale(2),
   },
   showProjectButton: {
     backgroundColor: '#088486ff',
