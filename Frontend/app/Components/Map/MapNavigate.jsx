@@ -32,6 +32,7 @@ const ARROW_IMG = require('./Assets/right arrow.png');
 const LOCKED_IMG = { uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945939/473288860-e8a1b478-91d3-44c9-8a59-4bc46db4d1c0_jaroj9.png'};
 const DEFAULT_LOTTIE = { uri: 'https://lottie.host/9875685d-8bb8-4749-ac63-c56953f45726/UnBHY7vAPX.json' };
 const PVP_IMG = require('./Assets/pvp.png');
+const MICOMI_SHOP_IMG = require('./Assets/MicomiShop.png');
 
 const LEVEL_SELECTOR_IMAGES = {
   'HTML': require('./Assets/html_selector.png'),
@@ -211,6 +212,10 @@ export default function MapNavigate({ onMapChange }) {
     router.push('/Components/PVP');
   }, [router]);
 
+  const handleOpenTopUpShop = useCallback(() => {
+    router.push('/TopUp/topUpShop');
+  }, [router]);
+
 
   // Error state
   if (mapError && maps.length === 0) {
@@ -249,6 +254,12 @@ export default function MapNavigate({ onMapChange }) {
           <DailyRewards />
           <TouchableOpacity style={styles.pvpButtonWrapper} activeOpacity={0.9} onPress={handleOpenPvpModal}>
             <Image source={PVP_IMG} style={styles.pvpImage} resizeMode="contain" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.shopColumn}>
+          <TouchableOpacity style={styles.shopButtonWrapper} activeOpacity={0.9} onPress={handleOpenTopUpShop}>
+            <Image source={MICOMI_SHOP_IMG} style={styles.shopImage} resizeMode="contain" />
           </TouchableOpacity>
         </View>
 
@@ -415,8 +426,13 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 5, right: 10,
     zIndex: 120, alignItems: 'center'
   },
+  shopColumn: {
+    position: 'absolute', top: 5, left: 14,
+    zIndex: 120, alignItems: 'center'
+  },
+  shopButtonWrapper: { alignItems: 'center', justifyContent: 'center', zIndex: 120, marginTop: 2 },
+  shopImage: { width: 50, height: 50 },
 
-  // ... (Modal styles moved to MapDashboard) ...
 
   lockedOverlay: {
     position: 'absolute', width: '115%', height: '115%', zIndex: 10, left: -20, opacity: 0.9, resizeMode:'contain'
