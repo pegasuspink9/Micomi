@@ -164,6 +164,13 @@ export const previewLevel = async (playerId: number, levelId: number) => {
 
       const enemyMaxHealth = getBaseEnemyHp(level);
 
+      const energyCost =
+        level.level_type === "bossButton"
+          ? 50
+          : level.level_type === "enemyButton"
+            ? 30
+            : 0;
+
       return {
         level: {
           level_id: level.level_id,
@@ -204,7 +211,8 @@ export const previewLevel = async (playerId: number, levelId: number) => {
           character_is_range: character.is_range,
           character_range_attack: character.range_attacks,
         },
-        energy: energyStatus.energy,
+        energy_cost: energyCost,
+        current_energy: energyStatus.energy,
         timeToNextEnergyRestore: energyStatus.timeToNextRestore,
         audio:
           "https://res.cloudinary.com/dpbocuozx/video/upload/v1760353796/Navigation_sxwh2g.mp3",
