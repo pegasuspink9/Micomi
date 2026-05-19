@@ -3,7 +3,7 @@
     "name": "Micomi",
     "slug": "Micomi",
     "version": "1.0.0",
-    "owner": "micomi-team",
+    "owner": "noelcantcode",
     "orientation": "portrait",
     "icon": "./assets/images/main-icon.png",
     "splash": {
@@ -14,10 +14,18 @@
     "scheme": "micomi",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/cd00a16f-c0f8-47c1-8e04-344ff08854bb"
+    },
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.micomi.app",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/main-icon.png",
         "backgroundColor": "#98d4de"
@@ -34,6 +42,8 @@
       },
       "edgeToEdgeEnabled": false,
       "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
         "android.permission.VIBRATE"
       ]
     },
@@ -58,6 +68,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cd00a16f-c0f8-47c1-8e04-344ff08854bb"
+      }
     }
   }
 }
