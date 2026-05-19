@@ -3,6 +3,7 @@ import { Text, View, StyleSheet, Dimensions, ScrollView, Pressable} from 'react-
 import CodeEditor from './Component/CodeEditor';
 import DocumentQuestion from './Component/DocumentQuestion';
 import ComputerEditor from './Component/ComputerEditor';
+import ComputerQuestions from './Component/ComputerQuestions';
 import { renderHighlightedText } from './utils/syntaxHighligther';
 import { scrollToNextBlank, calculateGlobalBlankIndex, splitLineIntoBlanks, countBlanksInLine, parseQuestionBlanks } from './utils/blankHelper';
 import { soundManager } from '../Sounds/UniversalSoundManager';
@@ -278,74 +279,21 @@ const GameQuestions = ({
     }
 
     if (isComputerMap) {
-      const textContent = parts.join('').trim();
-      
       return (
-        <View style={styles.codeLineContainerBookCol} key={`line-${lineIndex}`}>
-          {textContent ? (
-            <Text style={styles.codeTextBook}>{textContent}</Text>
-          ) : null}
-          
-          {parts.length > 1 && (
-            <View style={styles.blanksRowContainer}>
-              {parts.map((_, partIndex) => {
-                const isLastPart = partIndex === parts.length - 1;
-                if (isLastPart) return null; 
-                
-                const globalBlankIndex = blanksBeforeCurrent + partIndex;
-                let isWrong = false;
-                let isCorrectBlank = false;
-                
-                if ((canProceed && isAnswerCorrect === false) || (isAnswerCorrect && isComputerMap)) {
-                  const selectedValueIndex = selectedAnswers[globalBlankIndex];
-                  const selectedValue = selectedValueIndex != null ? options[selectedValueIndex] : null;
-                  const correctValue = correctAnswersList?.[globalBlankIndex];
-                  
-                  if (selectedValue !== correctValue && !isAnswerCorrect) {
-                    isWrong = true;
-                  } else if (selectedValue != null || isAnswerCorrect) {
-                    isCorrectBlank = true;
-                  }
-                }
-
-                const valueToDisplay = isAnswerCorrect 
-                  ? correctAnswersList?.[globalBlankIndex] 
-                  : (selectedAnswers?.[globalBlankIndex] != null ? options?.[selectedAnswers[globalBlankIndex]] : '_');
-
-                return (
-                  <Pressable 
-                    key={`blank-${globalBlankIndex}`}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      soundManager.playBlankTapSound(1.0);
-                      if (onBlankPress) onBlankPress(globalBlankIndex);
-                    }}
-                    ref={(ref) => {
-                      if (ref) blankRefs.current[globalBlankIndex] = ref;
-                    }}
-                    hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
-                    style={[
-                      styles.codeBlankContainer,
-                      styles.codeBlankBook,
-                      globalBlankIndex === selectedBlankIndex && styles.currentBlankBook,
-                      isCorrectBlank && styles.correctBlank,
-                      isWrong && styles.wrongBlank,
-                    ]}
-                  >
-                    <Text 
-                      style={styles.codeBlankTextBook}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit={true} 
-                      minimumFontScale={0.4}
-                    >
-                      {valueToDisplay}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          )}
-        </View>
+        <ComputerQuestions
+          parts={parts}
+          blanksBeforeCurrent={blanksBeforeCurrent}
+          lineIndex={lineIndex}
+          selectedAnswers={selectedAnswers}
+          options={options}
+          canProceed={canProceed}
+          isAnswerCorrect={isAnswerCorrect}
+          correctAnswersList={correctAnswersList}
+          selectedBlankIndex={selectedBlankIndex}
+          onBlankPress={onBlankPress}
+          blankRefs={blankRefs}
+          isComputerMap={isComputerMap}
+        />
       );
     }
     
@@ -374,14 +322,14 @@ const GameQuestions = ({
       return (
         <React.Fragment key={partIndex}>
           {part ? (
-            <Text style={[styles.codeText, isComputerMap && styles.codeTextBook]}>
-              {isComputerMap ? part : renderHighlightedText(part, lineLanguages[lineIndex] || highlightLanguage)}
+            <Text style={styles.codeText}>
+              {renderHighlightedText(part, lineLanguages[lineIndex] || highlightLanguage)}
             </Text>
           ) : null}
           
           {!isLastPart && (
             <React.Fragment>
-              {!isComputerMap && <Text>{"\u200B"}</Text>}
+              <Text>{"\u200B"}</Text>
               
               <Pressable 
                 key={`blank-${globalBlankIndex}`}
@@ -398,38 +346,28 @@ const GameQuestions = ({
                 hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
                 style={[
                   styles.codeBlankContainer,
-                  !isComputerMap && {
+                  {
                     transform: [{ translateY: gameScale(4) }],
                     maxWidth: '90%',
                   },
                   globalBlankIndex === selectedBlankIndex && styles.currentBlank,
                   isCorrectBlank && styles.correctBlank,
                   isWrong && styles.wrongBlank,
-                  isComputerMap && styles.codeBlankBook,
-                  isComputerMap && globalBlankIndex === selectedBlankIndex && styles.currentBlankBook,
                 ]}
               >
-                <Text style={[styles.codeBlankText, isComputerMap && styles.codeBlankTextBook]}>
+                <Text style={styles.codeBlankText}>
                   {selectedAnswers?.[globalBlankIndex] != null
                     ? options?.[selectedAnswers[globalBlankIndex]] || '_'
                     : '_'}
                 </Text>
               </Pressable>
 
-              {!isComputerMap && <Text>{"\u200B"}</Text>}
+              <Text>{"\u200B"}</Text>
             </React.Fragment>
           )}
         </React.Fragment>
       );
     });
-
-    if (isComputerMap) {
-      return (
-        <View style={styles.codeLineContainer}>
-          {renderedParts}
-        </View>
-      );
-    }
 
     return (
       <Text style={styles.codeLineTextWrapper}>
@@ -561,26 +499,6 @@ const styles = StyleSheet.create({
     minHeight: 0, 
     maxHeight: '100%',
   },
-    codeLineContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    minHeight: gameScale(25),
-  },
-   codeLineContainerBookCol: {
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    width: '100%',
-    marginBottom: gameScale(15), 
-  },
-  blanksRowContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    width: '100%',
-    justifyContent: 'flex-start',
-    gap: gameScale(2),
-    marginTop: gameScale(8),
-  },
   codeLineTextWrapper: {
     lineHeight: gameScale(25), 
     textAlignVertical: 'center',
@@ -589,47 +507,6 @@ const styles = StyleSheet.create({
     color: '#943232',
     fontFamily: 'monospace',
     fontSize: gameScale(14),
-  },
-  codeTextBook: {
-    color: '#000000',
-    fontFamily: 'DynaPuff', // Changed from GoldenAge
-    fontSize: gameScale(20),
-    marginBottom: gameScale(10),
-  },
-  codeBlankBook: {
-    backgroundColor: '#d6c8a1',
-    borderColor: '#8b5a2b',
-    borderWidth: gameScale(2),
-    borderRadius: gameScale(4),
-    shadowColor: '#4a331d',
-    paddingHorizontal: gameScale(6),
-    paddingVertical: gameScale(12),
-    shadowOpacity: 0.3,
-    borderBottomWidth: gameScale(4),
-    flexShrink: 1,
-    flexGrow: 0,
-    maxWidth: '48%',
-    minWidth: gameScale(52),
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: gameScale(4),
-  },
-  currentBlankBook: {
-    backgroundColor: '#ffecb3',
-    borderColor: '#ff9800',
-    shadowOpacity: 0.6,
-    shadowRadius: gameScale(6),
-  },
-   codeBlankText: {
-    color: '#ffffff', // Default for CodeEditor (Blue theme)
-    fontFamily: 'DynaPuff',
-    fontSize: gameScale(15),
-    textAlign: 'center'
-  },
-  codeBlankTextBook: {
-    color: '#000000', // Pure black for Computer map
-    fontFamily: 'DynaPuff',
-    fontSize: gameScale(20), // Increased to match question text better
   },
   codeBlankContainer: {
     backgroundColor: '#0e639c',
@@ -700,4 +577,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     margin: gameScale(20),
   },
-});
+}); 

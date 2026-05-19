@@ -60,7 +60,10 @@ const ComputerEditor = ({
   const renderTabContent = useCallback(() => {
     switch (activeTab) {
       case 'guide':
-         return <Guide currentQuestion={currentQuestion} guideOverride={reviewGuide} />;
+         return <Guide key={`review-${currentQuestion?.id || 'default'}`} currentQuestion={currentQuestion} guideOverride={reviewGuide} />;
+
+      case 'lesson_guide':
+         return <Guide key={`lesson-${currentQuestion?.id || 'default'}`} currentQuestion={currentQuestion} />;
 
       case 'code':
         return (
@@ -164,6 +167,22 @@ const ComputerEditor = ({
             >
               <Text style={[styles.bookTabText, activeTab === 'guide' && styles.bookTabTextActive]}>
                 Review
+              </Text>
+            </Pressable>
+          )}
+
+          {Boolean(currentQuestion?.guide) && !(Boolean(reviewGuide) && isCorrect === false) && (
+            <Pressable
+              onPress={() => handleTabChange('lesson_guide')}
+              style={[
+                styles.bookTab,
+                activeTab === 'lesson_guide' && styles.bookTabActive,
+                tabsDisabled && { opacity: 0.5 } 
+              ]}
+              disabled={tabsDisabled} 
+            >
+              <Text style={[styles.bookTabText, activeTab === 'lesson_guide' && styles.bookTabTextActive]}>
+                Guide
               </Text>
             </Pressable>
           )}
