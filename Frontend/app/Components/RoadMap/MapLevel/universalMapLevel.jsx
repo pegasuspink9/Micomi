@@ -46,6 +46,7 @@ export default function UniversalMapLevel({ onLevelFocus }) {
         ...baseTheme.backgrounds,
         topBackground: universalAssetPreloader.getCachedAssetPath(baseTheme.backgrounds.topBackground),
         repeatingBackground: universalAssetPreloader.getCachedAssetPath(baseTheme.backgrounds.repeatingBackground),
+        bottomEdgeImage: universalAssetPreloader.getCachedAssetPath(baseTheme.backgrounds.bottomEdgeImage),
         lottieBackground: baseTheme.backgrounds.lottieBackground, // Keep lottie as-is
       } : baseTheme.backgrounds,
       buttons: baseTheme.buttons ? {
@@ -120,6 +121,10 @@ export default function UniversalMapLevel({ onLevelFocus }) {
     
     if (theme.backgrounds?.repeatingBackground) {
       uris.push(theme.backgrounds.repeatingBackground);
+    }
+    
+    if (theme.backgrounds?.bottomEdgeImage) {
+      uris.push(theme.backgrounds.bottomEdgeImage);
     }
     
     // Level button URIs from levels (changed from lessons)
@@ -419,6 +424,30 @@ export default function UniversalMapLevel({ onLevelFocus }) {
             navigation={navigation}
           />
         </View>
+
+        {/* Bottom Edge Corner Image */}
+        {theme.backgrounds?.bottomEdgeImage && (
+          <View style={{
+            position: 'absolute',
+            top: calculateContentHeight() - gameScale(500),
+            left: 0,
+            width: '100%',
+            height: gameScale(500),
+            zIndex: 5,
+            zIndex: 99999,
+            pointerEvents: 'none',
+          }}>
+            <ImageBackground
+              source={{ 
+                uri: theme.backgrounds.bottomEdgeImage,
+                cache: 'force-cache'
+              }}
+              style={{ width: '100%', height: '100%' }}
+              resizeMode="cover"
+            />
+          </View>
+        )}
+
       </ScrollView>
 
       <SnowAndAutumnAnimations mapName={mapName} />

@@ -422,7 +422,8 @@ extractUnifiedGameState: (responseData, isSubmission = false) => {
         use_potion_effect: data.use_potion_effect || responseData.use_potion_effect || null,
         use_potion_audio: data.use_potion_audio || responseData.use_potion_audio || null,
 
-        
+        energy_cost: data.energy_cost !== undefined ? data.energy_cost : (responseData.energy_cost !== undefined ? responseData.energy_cost : 0),
+        current_energy: data.current_energy !== undefined ? data.current_energy : (responseData.current_energy !== undefined ? responseData.current_energy : 0),
 
         // FIX: Use the 'fightResult' variable we extracted above and REMOVE the duplicate key below
         fightResult: fightResult ? {

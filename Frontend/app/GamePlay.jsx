@@ -1428,6 +1428,8 @@ export default function GamePlay() {
             completionRewards={completionRewards}
             defeatAudioUrl={gameState?.submissionResult?.is_victory_audio}
             defeatImageUrl={gameState?.submissionResult?.is_victory_image} 
+            energyCost={gameState?.submissionResult?.energy_cost}
+            currentEnergy={gameState?.submissionResult?.current_energy}
           />
             
           <LevelCompletionModal
@@ -1445,6 +1447,8 @@ export default function GamePlay() {
               victoryAudioUrl={gameState?.submissionResult?.is_victory_audio}
               victoryImageUrl={gameState?.submissionResult?.is_victory_image} 
               isPvpMode={isPvpMode}
+              energyCost={gameState?.submissionResult?.energy_cost}
+              currentEnergy={gameState?.submissionResult?.current_energy}
           />
         
           </View>

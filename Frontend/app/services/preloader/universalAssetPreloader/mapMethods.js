@@ -415,10 +415,10 @@ extractMapThemeAssets(mapThemes) {
     Object.entries(mapThemes).forEach(([themeName, theme]) => {
       const prefix = themeName.toLowerCase();
 
-      // --- Backgrounds ---
       if (theme.backgrounds) {
         addAsset(theme.backgrounds.topBackground, `${prefix}_top_background`, 'image', 'map_theme_assets');
         addAsset(theme.backgrounds.repeatingBackground, `${prefix}_repeating_background`, 'image', 'map_theme_assets');
+        addAsset(theme.backgrounds.bottomEdgeImage, `${prefix}_bottom_edge_image`, 'image', 'map_theme_assets');
         // Skip lottie backgrounds - they're loaded differently
       }
 
@@ -638,6 +638,7 @@ transformMapThemesWithCache(mapThemes) {
           ...theme.backgrounds,
           topBackground: this.getCachedAssetPath(theme.backgrounds.topBackground),
           repeatingBackground: this.getCachedAssetPath(theme.backgrounds.repeatingBackground),
+          bottomEdgeImage: this.getCachedAssetPath(theme.backgrounds.bottomEdgeImage),
           // Keep lottie as-is (loaded differently)
           lottieBackground: theme.backgrounds.lottieBackground,
         } : theme.backgrounds,

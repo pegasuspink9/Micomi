@@ -4,6 +4,7 @@ const MAP_THEMES = {
       topBackground: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758946190/472267126-6b3dbdbb-1575-41a1-b1d8-4da2dd80f628_2_ojgh1u.png',
       lottieBackground: 'https://lottie.host/121dcc30-cef5-4deb-b5c7-f19eafd658f7/j8psIDjaPX.lottie',
       repeatingBackground: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758946242/470873580-a4adf43c-92c5-4e18-930d-7d0c35a49891_1_fngpqb.png',
+      bottomEdgeImage: 'https://micomi-assets.me/Clouds%20Edge/fires.png',
       backgroundPosition: {
       marginTop: 0
       }
@@ -36,6 +37,7 @@ const MAP_THEMES = {
       topBackground: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758947466/472885148-13d35fbb-4ba1-4219-b4d1-11e1b2f0cc8b_tmcoef.png',
       lottieBackground: 'https://lottie.host/ce3ef58a-1a99-4698-a754-019c318f0656/SVy2FKaq7k.lottie',
       repeatingBackground: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758947527/472879149-ce3d1a39-fff2-45a5-a6ab-8a172fdfdb80_utwa6r.png',
+      bottomEdgeImage: 'https://micomi-assets.me/Clouds%20Edge/ice.png',
       backgroundPosition: {
       marginTop: -160 
       },
@@ -103,7 +105,8 @@ const MAP_THEMES = {
     backgrounds: {
       topBackground: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758948012/472885437-89d332a9-2071-448e-bac8-32ab8f8e89f8_1_n3u5op.png',
       lottieBackground: 'https://lottie.host/YOUR_JS_LOTTIE_URL',
-      repeatingBackground: 'https://github.com/user-attachments/assets/078bf692-9bb9-4d0f-b9d4-b418d6f1bd6f'
+      repeatingBackground: 'https://github.com/user-attachments/assets/078bf692-9bb9-4d0f-b9d4-b418d6f1bd6f',
+      bottomEdgeImage: 'https://micomi-assets.me/Clouds%20Edge/autumn.png'
     },
     buttons: {
       unlockedButton: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758948164/472856085-71b944f2-9ba2-46f0-9dea-b5e8732a71ea_y9rnni.png',
@@ -137,6 +140,7 @@ const MAP_THEMES = {
       topBackground: 'https://github.com/user-attachments/assets/e40736b9-b3e1-45af-8e56-c536cc5a9e0e',
       lottieBackground: 'https://lottie.host/YOUR_COMPUTER_LOTTIE_URL',
       repeatingBackground: 'https://github.com/user-attachments/assets/eebd72c5-2d94-4430-bcef-cd48f7aeb13a',
+      bottomEdgeImage: 'https://micomi-assets.me/Clouds%20Edge/green.png',
       backgroundPosition: {
       marginTop: -210 
       },

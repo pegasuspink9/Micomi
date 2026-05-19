@@ -106,6 +106,8 @@ const LevelCompletionModal = ({
   victoryAudioUrl,
   victoryImageUrl,
   isPvpMode = false,
+  energyCost,
+  currentEnergy,
 }) => {
   //  1. Placeholder Data for Stars
   // Ensure stars are 0 if pvp mode
@@ -140,6 +142,8 @@ const LevelCompletionModal = ({
   const [startCoinCount, setStartCoinCount] = useState(false);
   const [startPointCount, setStartPointCount] = useState(false);
   const [startExpCount, setStartExpCount] = useState(false);
+
+  const isEnergyInsufficient = currentEnergy !== undefined && energyCost !== undefined && currentEnergy < energyCost;
 
   //   FIXED: Reanimated Shared Values for smooth 60fps animation
   const backgroundOpacity = useSharedValue(0);
@@ -764,10 +768,11 @@ const LevelCompletionModal = ({
                               <Pressable
                                 style={({ pressed }) => [
                                   styles.floatingButton,
-                                  pressed && styles.buttonPressed
+                                  pressed && styles.buttonPressed,
+                                  (isEnergyInsufficient) && { opacity: 0.5 }
                                 ]}
                                 onPress={onNextLevel}
-                                disabled={isAnimating}
+                                disabled={isAnimating || isEnergyInsufficient}
                               >
                                 <Image
                                   source={require('./GameOverImage/NextLevel.png')}
@@ -786,10 +791,11 @@ const LevelCompletionModal = ({
                             <Pressable
                               style={({ pressed }) => [
                                 styles.floatingButton,
-                                pressed && styles.buttonPressed
+                                pressed && styles.buttonPressed,
+                                (isEnergyInsufficient) && { opacity: 0.5 }
                               ]}
                               onPress={onRetry}
-                              disabled={isAnimating}
+                              disabled={isAnimating || isEnergyInsufficient}
                             >
                               <Image
                                 source={require('./GameOverImage/Retry.png')}

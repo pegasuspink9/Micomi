@@ -79,7 +79,9 @@ const GameOverModal = ({
   isRetrying = false,
   completionRewards = null,
   defeatAudioUrl = null,
-  defeatImageUrl = null
+  defeatImageUrl = null,
+  energyCost,
+  currentEnergy
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [imageReady, setImageReady] = useState(false);
@@ -88,6 +90,8 @@ const GameOverModal = ({
   const [startCoinCount, setStartCoinCount] = useState(false);
   const [startPointCount, setStartPointCount] = useState(false);
   const [startExpCount, setStartExpCount] = useState(false);
+
+  const isEnergyInsufficient = currentEnergy !== undefined && energyCost !== undefined && currentEnergy < energyCost;
 
   //  COPIED: Reanimated Shared Values
   const backgroundOpacity = useSharedValue(0);
@@ -399,16 +403,17 @@ const GameOverModal = ({
                 <Pressable
                   style={({ pressed }) => [
                     styles.floatingButton,
-                    pressed && styles.buttonPressed
+                    pressed && styles.buttonPressed,
+                    (isEnergyInsufficient) && { opacity: 0.5 }
                   ]}
                   onPress={onRetry}
-                  disabled={isAnimating}
+                  disabled={isAnimating || isEnergyInsufficient}
                 >
                   <Image
-                    source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760510778/Untitled_design_13_ginrqf.png' }}
-                    style={[styles.buttonImage, styles.buttonImage1]}
-                    resizeMode="contain"
-                  />
+                      source={require('./GameOverImage/Retry.png')}
+                      style={[styles.buttonImage, styles.buttonImage1]}
+                      resizeMode="contain"
+                    />
                 </Pressable>
 
                 <Pressable
