@@ -24,6 +24,7 @@ import {
 } from "../Challenges/challenges.service";
 import { borrowChallengesForEnemyLevel } from "../Challenges/challenges.service";
 import { formatTimeInHours } from "../../../helper/dateTimeHelper";
+import { generateMissingChallengeGuidesForChallenges } from "../../models/Challenge/challengeGuide.service";
 
 const UNLOCK_ALL_PLAYER_IDS = new Set([11]);
 
@@ -98,6 +99,26 @@ export const previewLevel = async (playerId: number, levelId: number) => {
   ) {
     const borrowed = await borrowChallengesForEnemyLevel(level, 12);
     level.challenges = borrowed;
+  }
+
+  if (level.challenges && level.challenges.length > 0) {
+    try {
+      const previewLimitRaw = Number(
+        process.env.CHALLENGE_GUIDE_PREVIEW_BATCH_SIZE,
+      );
+      const previewLimit =
+        Number.isFinite(previewLimitRaw) && previewLimitRaw > 0
+          ? previewLimitRaw
+          : undefined;
+
+      await generateMissingChallengeGuidesForChallenges(
+        level.challenges,
+        "Guide Preview",
+        previewLimit,
+      );
+    } catch (error) {
+      console.error("[Guide Preview] Failed to generate guides:", error);
+    }
   }
 
   const totalPoints = level.challenges.reduce(

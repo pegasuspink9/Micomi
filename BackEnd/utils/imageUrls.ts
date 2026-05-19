@@ -563,7 +563,7 @@ export const imagesUrls = [
   "https://micomi-assets.me/Enemies/Ice%20Land/blububee/attack.png",
   "https://micomi-assets.me/Enemies/Ice%20Land/blububee/death.png",
   "https://micomi-assets.me/Enemies/Ice%20Land/blububee/hurt.png",
-  "https://micomi-assets.me/Enemies/Ice%20Land/blububee/run.png",
+  "https://micomi-assets.me/Enemies/Ice%20Land/blububee/run1.png",
   "https://micomi-assets.me/Enemies/Avatar/Ice%20Land/Blububee%20(1).png",
   //Beernabee
   "https://micomi-assets.me/Enemies/Ice%20Land/beernabee/idle.png",
@@ -654,7 +654,7 @@ export const imagesUrls = [
   "https://micomi-assets.me/Enemies/Ice%20Land/Boss%20Cryo-Scythe%20Broolord/attack2.png",
   //Boss Bebeetle
   "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Autumnland/Bebeetle/idle.png",
-  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Autumnland/Bebeetle/attack1.png",
+  "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Autumnland/Bebeetle/attack11.png",
   "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Autumnland/Bebeetle/death.png",
   "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Autumnland/Bebeetle/hurt.png",
   "https://micomi-assets.me/Recolored%20Ememies%20and%20New%20Avatar/Autumnland/Bebeetle/run.png",

@@ -55,6 +55,12 @@ router.post(
   requirePlayer,
   ChallengeController.submitChallenge,
 );
+router.post(
+  "/submit-challenge/:levelId/:challengeId/report",
+  authenticate,
+  requirePlayer,
+  ChallengeController.reportChallenge,
+);
 
 router.get(
   "/submit-challenge/:levelId/:challengeId/guide",

@@ -80,6 +80,16 @@ model Challenge {
   level          Level   @relation(fields: [level_id], references: [level_id], onDelete: Cascade)
 }
 
+model ChallengeReport {
+  report_id    Int      @id @default(autoincrement())
+  level_id     Int
+  challenge_id Int
+  report       String
+  created_at   DateTime @default(now())
+
+  @@index([level_id, challenge_id])
+}
+
 model PVPChallenge {
   pvp_challenge_id      Int       @id @default(autoincrement())
   topic                 String

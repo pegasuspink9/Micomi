@@ -208,3 +208,59 @@ export const getChallengeGuide = async (req: Request, res: Response) => {
     );
   }
 };
+
+export const reportChallenge = async (req: Request, res: Response) => {
+  const levelId = Number(req.params.levelId);
+  const challengeId = Number(req.params.challengeId);
+  const { report } = req.body;
+
+  try {
+    if (!Number.isInteger(levelId) || !Number.isInteger(challengeId)) {
+      return errorResponse(res, null, "Invalid level or challenge id", 400);
+    }
+
+    if (typeof report !== "string" || !report.trim()) {
+      return errorResponse(res, null, "Report must be a non-empty string", 400);
+    }
+
+    const challenge = await prisma.challenge.findUnique({
+      where: { challenge_id: challengeId },
+      select: { challenge_id: true, level_id: true },
+    });
+
+    if (!challenge) {
+      return errorResponse(res, null, "Challenge not found", 404);
+    }
+
+    if (challenge.level_id !== levelId) {
+      return errorResponse(
+        res,
+        null,
+        "Challenge does not belong to the provided level",
+        400,
+      );
+    }
+
+    const savedReport = await prisma.challengeReport.create({
+      data: {
+        level_id: levelId,
+        challenge_id: challengeId,
+        report: report.trim(),
+      },
+    });
+
+    return successResponse(
+      res,
+      savedReport,
+      "Challenge report saved successfully.",
+    );
+  } catch (error) {
+    console.error("Error in reportChallenge:", error);
+    return errorResponse(
+      res,
+      "Failed to save challenge report.",
+      (error as Error).message,
+      500,
+    );
+  }
+};
