@@ -246,7 +246,7 @@ WHY:
 Your objective is to help the player understand the overall goal of the challenge, what specific action they need to take, and what the expected outcome will look like.
 
 HOW:
-Analyze the provided challenge data, including the overall HTML and CSS context, and generate a response formatted EXACTLY like the required output structure below. Do not add conversational filler.
+Analyze the provided challenge data, including the overall HTML and CSS context, and generate a response formatted EXACTLY like the required output structure below. Do not add conversational filler of any kind.
 
 Challenge Data:
   - Topic: "${topic}"
@@ -257,21 +257,44 @@ Challenge Data:
   - Target Correct Answer: "${correctAnswer}"
 
 CRITICAL RULES: 
-- You must NEVER reveal or explicitly state the exact "Target Correct Answer" ("${correctAnswer}") in your response. Describe the tags, attributes, or properties conceptually instead (e.g., instead of \`<h1>\`, say "the main heading tags").
-- Highlight specific keywords, text strings, or elements using markdown code blocks (like \`this\`).
-- Keep the bullet points concise, direct, and easy for a beginner to grasp.
-- Use the HTML and CSS File Context to understand the full scope of the page, but keep your instructions focused on the immediate task.
-- There is no sentence limit, but ensure the response remains punchy and actionable.
+- NO SPOILERS: You must NEVER reveal or explicitly state the exact "Target Correct Answer" ("${correctAnswer}"). Describe tags, attributes, or properties conceptually (e.g., say "the main heading tags" instead of \`<h1>\`).
+- ONE BULLET ONLY: You must provide EXACTLY ONE bullet point per section. Never create multiple bullet points.
+- NO FILLER PHRASES: Do not start bullet points with repetitive fluff like "To achieve this...", or "Once you've successfully completed...". Start the sentence directly with the concept, action, or result.
+- STAY FOCUSED: Highlight specific text strings or elements using markdown code blocks (like \`this\`). Use the HTML/CSS context to understand the page, but focus your instruction ONLY on the immediate missing code.
+
+---
+
+### FEW-SHOT EXAMPLE (HOW TO MAP INPUT TO OUTPUT)
+
+EXAMPLE INPUT CHALLENGE DATA:
+  - Topic: "HTML Structure"
+  - Challenge Type: "fill in the blank"
+  - Question/Main Code Snippet: "<!DOCTYPE html>\\n<html>\\n  <head>\\n    <title>My Page</title>\\n  </head>\\n  <body>\\n    <h1>Hello Welcome to Micomi!</h1>\\n  </body>\\n</html>"
+  - HTML File Context: "null"
+  - CSS File Context: "null"
+  - Target Correct Answer: "['h1', 'h1']"
+
+EXPECTED EXAMPLE OUTPUT:
+*The Challenge:*
+- This challenge focuses on establishing text hierarchy on a webpage by defining its main textual title using semantic HTML tags.
+
+*What to do:*
+- Enclose the greeting text \`Hello Welcome to Micomi!\` using the correct opening and closing tags for the largest, highest-priority heading level.
+
+*Expected output:*
+- A prominent, bold headline that immediately stands out as the primary title of the webpage.
+
+---
 
 REQUIRED OUTPUT STRUCTURE:
-The Challenge:
-- [Explain concisely the overall web development concept or component this challenge is focusing on]
+*The Challenge:*
+- [One concise sentence explaining the core web development concept or component being tested]
 
-What to do:
-- [Describe the specific action the player needs to take with the code or text, using active verbs like "Wrap", "Nest", "Modify", or "Apply"]
+*What to do:*
+- [One direct sentence describing the precise action the player needs to take using active verbs like "Wrap", "Add", or "Apply"]
 
-Expected output:
-- [Describe the final visual or structural result on the webpage once the challenge is successfully completed]
+*Expected output:*
+- [One concise sentence describing the final visual or structural result on the webpage]
 `;
 
   const groqKey = groqPool.getHealthyKey();
