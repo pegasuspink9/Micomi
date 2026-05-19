@@ -15,7 +15,7 @@ import {
 } from "./challenges.types";
 import { getCardForAttackType } from "../Combat/combat.service";
 import {
-  revealAllBlanks,
+  parseAndValidateBlanks,
   applyRetryReveal,
   applyRevealPotion,
 } from "../../../helper/revealPotionHelper";
@@ -145,13 +145,20 @@ export const dynamicBlankSetter = (
   question: string,
   correctAnswers: string[],
 ): string => {
-  if (!question || !correctAnswers || correctAnswers.length === 0)
+  if (!question || !correctAnswers || correctAnswers.length === 0) {
     return question;
+  }
 
-  const blankPatterns = /_|\{blank\}/;
+  // 1. Check how many blanks currently exist in the string
+  const existingBlanks = parseAndValidateBlanks(question);
 
-  if (blankPatterns.test(question)) return question;
+  // 2. If the question already has the correct amount of blanks (or more), skip it.
+  if (existingBlanks.length >= correctAnswers.length) {
+    return question;
+  }
 
+  // 3. If we are here, it means existingBlanks.length < correctAnswers.length
+  // The question is partially blanked. Let's find the missing ones!
   let modifiedQuestion = question;
   let searchStartIndex = 0;
 
@@ -160,18 +167,27 @@ export const dynamicBlankSetter = (
 
     const escapedAnswer = answer.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+    // Word boundaries to prevent partial matches (e.g., matching "span" inside "spans")
     const prefix = /^[a-zA-Z0-9_-]/.test(answer) ? "(?<![a-zA-Z0-9_-])" : "";
     const suffix = /[a-zA-Z0-9_-]$/.test(answer) ? "(?![a-zA-Z0-9_-])" : "";
 
     const regex = new RegExp(prefix + escapedAnswer + suffix, "g");
     regex.lastIndex = searchStartIndex;
 
-    const match = regex.exec(modifiedQuestion);
+    let match = regex.exec(modifiedQuestion);
+
+    // If an answer isn't found at the current offset, retry from the beginning.
+    // (Helps if the missing answer appeared earlier in the string than the offset)
+    if (!match && searchStartIndex > 0) {
+      regex.lastIndex = 0;
+      match = regex.exec(modifiedQuestion);
+    }
 
     if (match) {
       const offset = match.index;
       const replacement = "_";
 
+      // Replace the found answer with a blank
       modifiedQuestion =
         modifiedQuestion.substring(0, offset) +
         replacement +

@@ -8,11 +8,11 @@ interface BlankMatch {
   htmlAttrs?: string;
 }
 
-const UNIVERSAL_BLANK_REGEX = /<_([^>]*)>|<\/_>|\{blank\}|\[_+\]|_+/g;
+const UNIVERSAL_BLANK_REGEX =
+  /<_([^>]*)>|<\/_>|\{blank\}|(?<![a-zA-Z0-9])_(?![a-zA-Z0-9])/g;
 
-function parseAndValidateBlanks(question: string): BlankMatch[] {
+export function parseAndValidateBlanks(question: string): BlankMatch[] {
   const matches: BlankMatch[] = [];
-
   const regex = new RegExp(UNIVERSAL_BLANK_REGEX);
   let match: RegExpExecArray | null;
 
@@ -28,8 +28,8 @@ function parseAndValidateBlanks(question: string): BlankMatch[] {
       type = "close_tag";
     } else if (raw === "{blank}") {
       type = "blank";
-    } else if (raw.startsWith("[")) {
-      type = "bracket";
+    } else {
+      type = "underscore";
     }
 
     matches.push({
@@ -66,24 +66,21 @@ function revealBlanksByIndices(
   error?: string;
 } {
   if (blanks.length === 0) {
-    return {
-      success: false,
-      error: "No blanks found in question",
-    };
+    return { success: false, error: "No blanks found in question" };
   }
 
+  let errorMsg = undefined;
   if (blanks.length !== answers.length) {
-    return {
-      success: false,
-      error: `Mismatch: ${blanks.length} blanks vs ${answers.length} answers`,
-    };
+    errorMsg = `Mismatch: ${blanks.length} blanks vs ${answers.length} answers`;
   }
 
   let filledQuestion = question;
   let offset = 0;
   const remainingAnswers: string[] = [];
 
-  for (let i = 0; i < blanks.length; i++) {
+  const limit = Math.min(blanks.length, answers.length);
+
+  for (let i = 0; i < limit; i++) {
     const blank = blanks[i];
     const answer = answers[i];
 
@@ -106,6 +103,7 @@ function revealBlanksByIndices(
     success: true,
     filledQuestion,
     remainingAnswers,
+    error: errorMsg,
   };
 }
 
@@ -123,34 +121,24 @@ export function revealAllBlanks(
   const blanks = parseAndValidateBlanks(question);
 
   if (blanks.length === 0) {
-    return {
-      success: false,
-      error: "No blanks found in question",
-      blanks,
-    };
+    return { success: false, error: "No blanks found in question", blanks };
   }
 
+  let errorMsg = undefined;
   if (blanks.length !== answers.length) {
-    return {
-      success: false,
-      error: `Blank count mismatch: ${blanks.length} blanks but ${answers.length} answers`,
-      blanks,
-    };
+    errorMsg = `Blank count mismatch: ${blanks.length} blanks but ${answers.length} answers`;
   }
 
   let filledQuestion = question;
   let offset = 0;
 
-  const limit =
-    maxToReveal !== undefined
-      ? Math.min(maxToReveal, blanks.length)
-      : blanks.length;
+  const limit = Math.min(
+    maxToReveal !== undefined ? maxToReveal : blanks.length,
+    blanks.length,
+    answers.length,
+  );
 
-  for (let i = 0; i < blanks.length; i++) {
-    if (i >= limit) {
-      break;
-    }
-
+  for (let i = 0; i < limit; i++) {
     const blank = blanks[i];
     const answer = answers[i];
     const replacement = fillBlank(blank, answer);
@@ -170,6 +158,7 @@ export function revealAllBlanks(
     filledQuestion,
     blanks,
     revealedCount: limit,
+    error: errorMsg,
   };
 }
 
@@ -185,14 +174,8 @@ export function revealRandomBlanks(
 } {
   const blanks = parseAndValidateBlanks(question);
 
-  if (blanks.length !== answers.length) {
-    return {
-      success: false,
-      error: `Mismatch: ${blanks.length} blanks vs ${answers.length} answers`,
-    };
-  }
-
-  const allIndices = Array.from({ length: blanks.length }, (_, i) => i);
+  const limit = Math.min(blanks.length, answers.length);
+  const allIndices = Array.from({ length: limit }, (_, i) => i);
 
   const shuffled = allIndices.sort(() => 0.5 - Math.random());
   const indicesToReveal = new Set(shuffled.slice(0, countToReveal));
@@ -226,17 +209,18 @@ export async function applyRetryReveal(
 
   const question = currentChallenge.question ?? "";
   const blanks = parseAndValidateBlanks(question);
+  const limit = Math.min(blanks.length, effectiveCorrectAnswer.length);
 
   const existingIndices = Array.isArray(persistedRevealIndices)
     ? persistedRevealIndices
         .filter((index) => Number.isInteger(index))
-        .filter((index) => index >= 0 && index < blanks.length)
+        .filter((index) => index >= 0 && index < limit)
     : [];
 
   const indicesToReveal =
     existingIndices.length > 0
       ? existingIndices
-      : Array.from({ length: blanks.length }, (_, i) => i)
+      : Array.from({ length: limit }, (_, i) => i)
           .sort(() => 0.5 - Math.random())
           .slice(0, amountToReveal);
 
@@ -249,11 +233,7 @@ export async function applyRetryReveal(
 
   if (!result.success) {
     console.error("Retry random reveal failed:", result.error);
-    return {
-      success: false,
-      error: result.error,
-      isPartialReveal: false,
-    };
+    return { success: false, error: result.error, isPartialReveal: false };
   }
 
   let modifiedChallenge = {
@@ -280,7 +260,7 @@ export async function applyRevealPotion(
     effectiveCorrectAnswer,
   );
 
-  if (!result.success) {
+  if (!result.success && !result.filledQuestion) {
     return { success: false, error: result.error };
   }
 
