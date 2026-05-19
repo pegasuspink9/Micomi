@@ -10,7 +10,10 @@ import {
 } from "@prisma/client";
 import { ChallengeDTO } from "./levels.types";
 import * as EnergyService from "../Energy/energy.service";
-import { getBaseEnemyHp, getDynamicEnemyDamage } from "../Combat/combat.service";
+import {
+  getBaseEnemyHp,
+  getDynamicEnemyDamage,
+} from "../Combat/combat.service";
 import { updateQuestProgress } from "../Quests/quests.service";
 import { getBackgroundForLevel } from "../../../helper/combatBackgroundHelper";
 import { getCardForAttackType } from "../Combat/combat.service";
@@ -20,6 +23,7 @@ import {
   dynamicBlankSetter,
 } from "../Challenges/challenges.service";
 import { borrowChallengesForEnemyLevel } from "../Challenges/challenges.service";
+import { formatTimeInHours } from "../../../helper/dateTimeHelper";
 
 const UNLOCK_ALL_PLAYER_IDS = new Set([11]);
 
@@ -177,7 +181,10 @@ export const previewLevel = async (playerId: number, levelId: number) => {
           enemy_health: enemyMaxHealth,
           enemy_idle: enemy.enemy_avatar,
           enemy_run: enemy.enemy_run,
-          enemy_damage: getDynamicEnemyDamage({ ...level, challenges: level.challenges }),
+          enemy_damage: getDynamicEnemyDamage({
+            ...level,
+            challenges: level.challenges,
+          }),
           enemy_attack: enemy.enemy_attack,
           enemy_hurt: enemy.enemy_hurt,
           enemy_dies: enemy.enemy_dies,
@@ -383,29 +390,51 @@ export const enterLevel = async (playerId: number, levelId: number) => {
 
   if (!level) throw new Error("Level not found");
 
-  //Temporarily disabled for unli testing puposes
-  // const energyCost =
-  //   level.level_type === "bossButton"
-  //     ? 50
-  //     : level.level_type === "enemyButton"
-  //       ? 30
-  //       : 0;
+  const energyCost =
+    level.level_type === "bossButton"
+      ? 50
+      : level.level_type === "enemyButton"
+        ? 30
+        : 0;
 
-  // if (energyCost > 0) {
-  //   const deductionResult = await EnergyService.deductEnergy(
-  //     playerId,
-  //     energyCost,
-  //   );
+  if (energyCost > 0) {
+    const deductionResult = await EnergyService.deductEnergy(
+      playerId,
+      energyCost,
+    );
 
-  //   if (deductionResult.success === false) {
-  //     const restoreIn = deductionResult.timeToNextRestore;
-  //     throw new Error(
-  //       `Not enough energy to enter level. Next energy restore in: ${
-  //         restoreIn ?? "N/A"
-  //       }`,
-  //     );
-  //   }
-  // }
+    if (deductionResult.success === false) {
+      const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
+      const currentEnergy = energyStatus.energy ?? 0;
+      const energyNeeded = energyCost - currentEnergy;
+
+      const ENERGY_PER_TICK = 10;
+      const TICK_INTERVAL_MS = 10 * 60 * 1000;
+
+      const timeToNextTick = energyStatus.restoreInMs ?? TICK_INTERVAL_MS;
+      const additionalTicks = Math.max(
+        0,
+        Math.ceil((energyNeeded - ENERGY_PER_TICK) / ENERGY_PER_TICK),
+      );
+      const timeUntilEnoughEnergyMs =
+        timeToNextTick + additionalTicks * TICK_INTERVAL_MS;
+
+      return {
+        success: false,
+        errorCode: "INSUFFICIENT_ENERGY",
+        message: `System battery low! You need ${energyCost} energy to execute this task.`,
+        energyData: {
+          currentEnergy,
+          requiredEnergy: energyCost,
+          timeUntilEnoughEnergyMs,
+          timeUntilEnoughEnergyFormatted: formatTimeInHours(
+            timeUntilEnoughEnergyMs,
+          ),
+        },
+        suggestUpsell: true,
+      };
+    }
+  }
 
   // If this is an enemyButton level with no challenges, borrow 12 challenges
   // from the two previous level_numbers in the same map (shared helper).

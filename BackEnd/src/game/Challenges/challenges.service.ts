@@ -509,10 +509,14 @@ const getRandomPastLevelChallenge = async (
   const level = progress?.level;
   if (!level) return null;
 
+  const currentNumber = Number(level.level_number ?? 0);
+  const prev1Num = currentNumber - 1;
+  const prev2Num = currentNumber - 2;
+
   const lowerLevels = await prisma.level.findMany({
     where: {
       map_id: level.map_id,
-      level_number: { lt: level.level_number },
+      level_number: { in: [prev1Num, prev2Num] },
     },
     select: { level_id: true },
   });
@@ -583,6 +587,8 @@ export const borrowChallengesForEnemyLevel = async (
   const shuffled1 = shuffleArray([...level1Challenges]);
   const shuffled2 = shuffleArray([...level2Challenges]);
 
+  const prevTwoChallenges = shuffleArray([...shuffled1, ...shuffled2]);
+
   const allLowerChallenges = lowerLevels.flatMap(
     (l) => (l.challenges as Challenge[]) || [],
   );
@@ -590,31 +596,18 @@ export const borrowChallengesForEnemyLevel = async (
 
   if (effectiveRequiredCount <= 0) return [];
 
-  const targetPerLevel = Math.floor(effectiveRequiredCount / 2);
-  let picked1 = shuffled1.slice(0, targetPerLevel);
-  let picked2 = shuffled2.slice(0, targetPerLevel);
-
-  if (picked1.length < targetPerLevel) {
-    const deficit = targetPerLevel - picked1.length;
-    const extras = shuffled2.slice(targetPerLevel, targetPerLevel + deficit);
-    picked2 = [...picked2, ...extras];
-  } else if (picked2.length < targetPerLevel) {
-    const deficit = targetPerLevel - picked2.length;
-    const extras = shuffled1.slice(targetPerLevel, targetPerLevel + deficit);
-    picked1 = [...picked1, ...extras];
-  }
-
-  let picked = [...picked1, ...picked2];
+  let picked = prevTwoChallenges.slice(
+    0,
+    Math.min(effectiveRequiredCount, prevTwoChallenges.length),
+  );
 
   if (picked.length < effectiveRequiredCount) {
     const pickedIds = new Set(picked.map((c) => c.challenge_id));
-
-    const remainingPool = shuffleArray(
+    const olderPool = shuffleArray(
       allLowerChallenges.filter((c) => !pickedIds.has(c.challenge_id)),
     );
     const needed = effectiveRequiredCount - picked.length;
-
-    picked = [...picked, ...remainingPool.slice(0, needed)];
+    picked = [...picked, ...olderPool.slice(0, needed)];
   }
 
   if (picked.length === 0) return [];
