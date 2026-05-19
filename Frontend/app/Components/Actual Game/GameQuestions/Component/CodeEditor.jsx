@@ -7,6 +7,7 @@ import {
 } from '../../../Responsiveness/gameResponsive';
 import Guide from '../Output/Guide';
 import FileViewer from '../Output/FileViewer';
+import ReportModal from '../Report/ReportModal';
 
 const CodeEditor = ({
   currentQuestion,
@@ -33,6 +34,7 @@ const CodeEditor = ({
   shouldDelayAnimation = false,
   isLevelCompletionModalVisible = false,
   viewportHeightRef = null,
+  submitReport = null,
 }) => {
   const [activeTab, setActiveTab] = useState('code');
   const [hasAnimated, setHasAnimated] = useState(false); 
@@ -40,7 +42,9 @@ const CodeEditor = ({
   const [tabsDisabled, setTabsDisabled] = useState(false); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 0 });
-  
+
+  const [isReportModalVisible, setIsReportModalVisible] = useState(false);
+
   const codeText = useMemo(() => currentQuestion.question || '', [currentQuestion.question]);
   const lines = useMemo(() => codeText.split('\n'), [codeText]);
   const lineHeight = useMemo(() => gameScale(25), []);
@@ -503,16 +507,33 @@ const CodeEditor = ({
           </Pressable>
 
           {isMenuOpen && (
-            <View style={styles.menuDropdown}>
+            <View style={styles.menuDropdownContainer}>
               {onOutputToggle && (
-                <Pressable
-                  onPress={handleWebViewTogglePress}
-                  style={styles.menuItem}
-                >
-                  <Text style={styles.menuItemText}>
-                    {showOutputInScreenPlay ? 'Hide Output on Screen' : 'Show Output on Screen'}
-                  </Text>
-                </Pressable>
+                <View style={styles.menuDropdownBox}>
+                  <Pressable
+                    onPress={handleWebViewTogglePress}
+                    style={styles.menuItem}
+                  >
+                    <Text style={styles.menuItemText}>
+                      {showOutputInScreenPlay ? 'Hide Output on Screen' : 'Show Output on Screen'}
+                    </Text>
+                  </Pressable>
+                </View>
+              )}
+              {submitReport && (
+                <View style={styles.menuDropdownBox}>
+                  <Pressable
+                    onPress={() => {
+                      setIsMenuOpen(false);
+                      setIsReportModalVisible(true);
+                    }}
+                    style={styles.menuItem}
+                  >
+                    <Text style={styles.menuItemText}>
+                      Report this challenge
+                    </Text>
+                  </Pressable>
+                </View>
               )}
             </View>
           )}
@@ -522,6 +543,12 @@ const CodeEditor = ({
       <View style={styles.contentArea}>
         {renderTabContent()}
       </View>
+
+      <ReportModal
+        isVisible={isReportModalVisible}
+        onClose={() => setIsReportModalVisible(false)}
+        submitReport={submitReport}
+      />
     </View>
   );
 };
@@ -707,18 +734,23 @@ const styles = StyleSheet.create({
     fontFamily: 'DynaPuff',
   },
 
-  menuDropdown: {
+  menuDropdownContainer: {
     position: 'absolute',
     top: gameScale(30),
     right: 0,
+    zIndex: 999999,
+    alignItems: 'flex-end',
+  },
+
+  menuDropdownBox: {
     backgroundColor: '#2b2b2b',
     borderRadius: gameScale(8),
     borderWidth: gameScale(1),
     borderColor: '#555',
     paddingVertical: gameScale(6),
     minWidth: gameScale(150),
-    zIndex: 999999,
     elevation: gameScale(12),
+    marginBottom: gameScale(6),
   },
 
   menuItem: {

@@ -161,6 +161,7 @@ export default function GamePlay() {
     retryLevel,
     enterNextLevel, 
     submitAnswer,
+    submitReport,
     sendPvpMatchMessage = async () => ({ success: false, error: 'PvP chat is unavailable' }),
     waitingForAnimation, 
     onAnimationComplete,
@@ -1328,6 +1329,7 @@ export default function GamePlay() {
                   previewMode={outputPreviewMode}
                   onPreviewModeToggle={handleOutputPreviewToggle}
                   isLevelCompletionModalVisible={showLevelCompletionModal}
+                  submitReport={submitReport}
               />
             </View>
 

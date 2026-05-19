@@ -29,6 +29,7 @@ const GameQuestions = ({
   previewMode = 'web',
   onPreviewModeToggle = null,
   isLevelCompletionModalVisible = false,
+  submitReport = null,
 }) => {
   const scrollViewRef = useRef(null);
   const blankRefs = useRef({});
@@ -454,6 +455,7 @@ const GameQuestions = ({
             shouldDelayAnimation={isPvpMode}
             isLevelCompletionModalVisible={isLevelCompletionModalVisible}
             viewportHeightRef={viewportHeightRef}
+            submitReport={submitReport}
           />
         ) : (
           <DocumentQuestion 

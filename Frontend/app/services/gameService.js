@@ -102,6 +102,28 @@ export const gameService = {
     }
   },
 
+  submitReport: async (levelId, challengeId, report) => {
+    try {
+      console.log(`📝 Submitting report for level ${levelId}, challenge ${challengeId}...`);
+      
+      const payload = { report };
+      const response = await apiService.post(
+        `/game/submit-challenge/${levelId}/${challengeId}/report`,
+        payload
+      );
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to submit report');
+      }
+      
+      console.log(`✅ Report submitted successfully`);
+      return response;
+    } catch (error) {
+      console.error(`❌ Failed to submit report:`, error);
+      throw error;
+    }
+  },
+
   getChallengeGuide: async (levelId, challengeId) => {
     try {
       if (!levelId || !challengeId) {
