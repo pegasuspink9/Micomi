@@ -10,11 +10,11 @@ export const authService = {
   async login(identifier, password) {
     try {
       const response = await apiService.post('/player/login/', { identifier, password });
-      
+
       if (response.success) {
-        const { accessToken, player } = response.data; 
+        const { accessToken, player } = response.data;
         const refreshToken = response.data.refreshToken || response.refreshToken;
-        
+
         await this.setSession(accessToken, refreshToken, player);
         return player;
       }
@@ -38,8 +38,8 @@ export const authService = {
 
   async googleLogin(idToken) {
     try {
-      const response = await apiService.post('/auth/google/mobile', { 
-        idToken: idToken 
+      const response = await apiService.post('/auth/google/mobile', {
+        idToken: idToken
       });
 
       if (response.success) {
@@ -89,23 +89,23 @@ export const authService = {
       if (!refreshToken) throw new Error('No refresh token available');
 
       console.log("Sending refresh token payload to /auth/refresh");
-      
+
       // Use raw fetch to bypass ApiService logic and avoid infinite retry loops
       const response = await fetch(`${apiService.baseURL}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken })
       });
-      
+
       const result = await response.json();
-      
+
       // Map to your new backend response (result.data.token)
       if (result.success && result.data && result.data.token) {
         const newAccessToken = result.data.token;
-        
+
         await AsyncStorage.setItem(TOKEN_KEY, newAccessToken);
         apiService.setAuthToken(newAccessToken);
-        
+
         return newAccessToken;
       }
       throw new Error(result.message || 'Refresh response invalid');
@@ -119,11 +119,11 @@ export const authService = {
   async loadUser() {
     const token = await AsyncStorage.getItem(TOKEN_KEY);
     const player = await AsyncStorage.getItem(PLAYER_KEY);
-    
+
     if (token) {
       apiService.setAuthToken(token);
     }
-    
+
     return player ? JSON.parse(player) : null;
   },
 
@@ -133,11 +133,6 @@ export const authService = {
       await apiService.post('/auth/logout');
     } catch (error) {
       console.error('Logout API failed:', error);
-    } finally {
-      await AsyncStorage.removeItem(TOKEN_KEY);
-      await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
-      await AsyncStorage.removeItem(PLAYER_KEY);
-      apiService.setAuthToken(null);
     }
   },
 
