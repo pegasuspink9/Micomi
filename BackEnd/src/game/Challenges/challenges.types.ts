@@ -85,6 +85,8 @@ export interface SubmitChallengeControllerResult extends SubmitChallengeServiceR
   gameplay_audio?: string | null;
   is_victory_audio?: string | null;
   is_victory_image?: string | null;
+  energy_cost?: number;
+  current_energy?: number;
 }
 
 export interface LevelStatus {

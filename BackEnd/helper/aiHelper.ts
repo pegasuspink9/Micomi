@@ -231,40 +231,48 @@ How to fix:
 export async function generateChallengeGuide(
   challengeData: ChallengeGuideInput,
 ): Promise<string> {
-  const payload = JSON.stringify(challengeData, null, 2);
+  const topic = (challengeData as any).topic || "HTML/CSS";
+  const challengeType = challengeData.challenge_type;
+  const question = challengeData.question ?? "";
+  const htmlFile = challengeData.html_file ?? "";
+  const cssFile = challengeData.css_file ?? "";
+  const correctAnswer = JSON.stringify(challengeData.correct_answer ?? "");
 
-  const prompt = `You are an expert curriculum designer for a gamified web development platform. Your task is to write a short, beginner-friendly "guide" for HTML/CSS coding challenges based on the challenge data provided.
+  const prompt = `
+WHAT:
+You are an encouraging gaming AI tutor guiding a player through a web development challenge. 
 
-Strictly adhere to the following rules:
+WHY:
+Your objective is to help the player understand the overall goal of the challenge, what specific action they need to take, and what the expected outcome will look like.
 
-1. Length & Structure: The guide must be EXACTLY two sentences long. 
-   - Sentence 1 (Action): Tell the player what they need to do with the specific text or element. Use active verbs like "Wrap the text...", "Enclose...", "Embed...", or "Apply...". 
-   - Sentence 2 (Result): Describe the expected visual or structural output/result on the webpage. Start with "The output should be..." or similar phrasing.
-2. No Generic Phrases: Do NOT use mechanical phrases like "Fill in the blanks" or "Complete the code". Focus on the semantic action.
-3. No Spoon-feeding: Do NOT reveal the exact tags or attributes found in the "correct_answer". Describe them conceptually (e.g., if the answer is "h1", call it "the main heading tags" or "a top-level title").
+HOW:
+Analyze the provided challenge data, including the overall HTML and CSS context, and generate a response formatted EXACTLY like the required output structure below. Do not add conversational filler.
 
----
+Challenge Data:
+  - Topic: "${topic}"
+  - Challenge Type: "${challengeType}"
+  - Question/Main Code Snippet: "${question}"
+  - HTML File Context: "${htmlFile}"
+  - CSS File Context: "${cssFile}"
+  - Target Correct Answer: "${correctAnswer}"
 
-### EXAMPLE 1 (Input)
-{
-  "challenge_id": 53,
-  "level_id": 2,
-  "points_reward": 20,
-  "coins_reward": 4,
-  "challenge_type": "fill in the blank",
-  "correct_answer": "[\"h1\", \"h1\"]",
-  "question": "<!DOCTYPE html>\n<html>\n  <head>\n    <title>My Page</title>\n  </head>\n  <body>\n    <h1>Hello Welcome to Micomi!</h1>\n  </body>\n</html>"
-}
+CRITICAL RULES: 
+- You must NEVER reveal or explicitly state the exact "Target Correct Answer" ("${correctAnswer}") in your response. Describe the tags, attributes, or properties conceptually instead (e.g., instead of \`<h1>\`, say "the main heading tags").
+- Highlight specific keywords, text strings, or elements using markdown code blocks (like \`this\`).
+- Keep the bullet points concise, direct, and easy for a beginner to grasp.
+- Use the HTML and CSS File Context to understand the full scope of the page, but keep your instructions focused on the immediate task.
+- There is no sentence limit, but ensure the response remains punchy and actionable.
 
-### EXAMPLE 1 (Output Guide)
-Wrap the text "Hello Welcome to Micomi!" using the correct main heading tags. The output should be a large, bold headline that serves as the main title of your webpage.
+REQUIRED OUTPUT STRUCTURE:
+The Challenge:
+- [Explain concisely the overall web development concept or component this challenge is focusing on]
 
----
+What to do:
+- [Describe the specific action the player needs to take with the code or text, using active verbs like "Wrap", "Nest", "Modify", or "Apply"]
 
-Now, generate ONLY the 2-sentence guide text for the following challenge data. Do not include any introductory or concluding remarks.
-
-### CURRENT CHALLENGE DATA:
-${payload}`;
+Expected output:
+- [Describe the final visual or structural result on the webpage once the challenge is successfully completed]
+`;
 
   const groqKey = groqPool.getHealthyKey();
 
