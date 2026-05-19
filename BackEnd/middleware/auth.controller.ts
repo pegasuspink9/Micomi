@@ -7,7 +7,7 @@ import {
   generateRefreshToken,
   verifyRefreshToken,
 } from "../utils/token";
-import { setAuthCookies } from "../utils/authCookies";
+import { clearAuthCookies, setAuthCookies } from "../utils/authCookies";
 import { updateQuestProgress } from "../src/game/Quests/quests.service";
 import { checkAchievements } from "../src/game/Achievements/achievements.service";
 import {
@@ -289,4 +289,9 @@ export const resetPassword = async (req: Request, res: Response) => {
       400,
     );
   }
+};
+
+export const logout = async (_req: Request, res: Response) => {
+  clearAuthCookies(res);
+  return successResponse(res, null, "Logged out successfully");
 };

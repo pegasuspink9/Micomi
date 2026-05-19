@@ -12,6 +12,9 @@ router.post("/facebook/mobile", OAuthController.facebookMobileAuth);
 // Refresh Token
 router.post("/refresh", OAuthController.refreshToken);
 
+// Logout
+router.post("/logout", OAuthController.logout);
+
 // Request Reset (User enters email)
 router.post("/forgot-password", OAuthController.requestPasswordReset);
 
