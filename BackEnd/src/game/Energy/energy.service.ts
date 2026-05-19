@@ -2,7 +2,8 @@ import { prisma } from "../../../prisma/client";
 import { formatTimeInHours } from "../../../helper/dateTimeHelper";
 
 const MAX_ENERGY = 100;
-const ENERGY_RESTORE_INTERVAL = 30 * 60 * 1000;
+const ENERGY_RESTORE_INTERVAL = 60 * 60 * 1000;
+const ENERGY_RESTORE_AMOUNT = 25;
 
 const isInfiniteEnergyActive = (
   player: {
@@ -66,12 +67,11 @@ export const updatePlayerEnergy = async (playerId: number) => {
     if (energyResetAt && now.getTime() >= energyResetAt.getTime()) {
       const timePastTarget = now.getTime() - energyResetAt.getTime();
 
-      // Calculate how many 30-minute intervals passed (minimum 1 since target is reached)
+      // Calculate how many intervals passed (minimum 1 since target is reached)
       const ticksEarned =
         1 + Math.floor(timePastTarget / ENERGY_RESTORE_INTERVAL);
 
-      // MULTIPLY BY 25!
-      const energyToRestore = ticksEarned * 25;
+      const energyToRestore = ticksEarned * ENERGY_RESTORE_AMOUNT;
 
       currentEnergy = Math.min(MAX_ENERGY, currentEnergy + energyToRestore);
 
@@ -130,16 +130,31 @@ export const deductEnergy = async (playerId: number, amount: number = 5) => {
   if (!updatedPlayer)
     return { message: "Player not found after update", success: false };
 
-  if (updatedPlayer.energy <= 0) {
+  const now = new Date();
+  let energyResetAt = updatedPlayer.energy_reset_at;
+
+  if (updatedPlayer.energy < amount) {
+    if (!energyResetAt || energyResetAt.getTime() <= now.getTime()) {
+      energyResetAt = new Date(now.getTime() + ENERGY_RESTORE_INTERVAL);
+      await prisma.player.update({
+        where: { player_id: playerId },
+        data: { energy_reset_at: energyResetAt },
+      });
+    }
+
     return {
-      message: "Not enough energy to perform this action",
+      message: `System battery low! You need ${amount} energy to execute this task.`,
       success: false,
+      energy: updatedPlayer.energy,
+      energyResetAt,
+      timeToNextRestore: energyResetAt
+        ? energyResetAt.getTime() - now.getTime()
+        : null,
+      isInfinite: false,
     };
   }
 
   const newEnergy = Math.max(0, updatedPlayer.energy - amount);
-  const now = new Date();
-  let energyResetAt = updatedPlayer.energy_reset_at;
 
   if (
     !energyResetAt ||
@@ -255,12 +270,12 @@ export const restoreEnergyForDuePlayers = async (): Promise<number> => {
     const updatedRows = await prisma.$executeRawUnsafe(`
       UPDATE "Player"
       SET 
-        energy = LEAST(100, energy + ((1 + FLOOR(EXTRACT(EPOCH FROM (NOW() - energy_reset_at)) / 1800)::int) * 25)),
+        energy = LEAST(100, energy + ((1 + FLOOR(EXTRACT(EPOCH FROM (NOW() - energy_reset_at)) / 3600)::int) * 25)),
         
         energy_reset_at = CASE
-          WHEN energy + ((1 + FLOOR(EXTRACT(EPOCH FROM (NOW() - energy_reset_at)) / 1800)::int) * 25) >= 100 
+          WHEN energy + ((1 + FLOOR(EXTRACT(EPOCH FROM (NOW() - energy_reset_at)) / 3600)::int) * 25) >= 100 
             THEN NULL
-          ELSE energy_reset_at + ((1 + FLOOR(EXTRACT(EPOCH FROM (NOW() - energy_reset_at)) / 1800)::int) * INTERVAL '30 minutes')
+          ELSE energy_reset_at + ((1 + FLOOR(EXTRACT(EPOCH FROM (NOW() - energy_reset_at)) / 3600)::int) * INTERVAL '1 hour')
         END
         
       WHERE has_infinite_energy = false
@@ -269,10 +284,6 @@ export const restoreEnergyForDuePlayers = async (): Promise<number> => {
         AND energy_reset_at IS NOT NULL
         AND energy_reset_at <= NOW();
     `);
-
-    // console.log(
-    //   `[Energy Restore] ${updatedRows} players had energy restored at ${now.toISOString()}`,
-    // );
 
     return updatedRows;
   } catch (error: any) {

@@ -15,7 +15,7 @@ export const previewLevelController = async (req: Request, res: Response) => {
       res,
       "Failed to preview level",
       (error as Error).message,
-      400
+      400,
     );
   }
 };
@@ -25,27 +25,30 @@ export const enterLevelController = async (req: Request, res: Response) => {
     const playerId = (req as any).user.id;
     const levelId = Number(req.params.levelId);
 
-    // const deductionResult = await EnergyService.deductEnergy(playerId, 5);
-
-    // if (deductionResult.success === false) {
-    //    return res.status(400).json({
-    //     success: false,
-    //     message: deductionResult.message || "Not enough energy!",
-    //     error: "Insufficient energy to enter level.",
-    //     data: {
-    //          restoreInMs: deductionResult.timeToNextRestore
-    //     }
-    //   });
-    // }
-
     const result = await LevelService.enterLevel(playerId, levelId);
+
+    if ("success" in result && result.success === false) {
+      const data = result as any;
+
+      return errorResponse(
+        res,
+        data.errorCode || "INSUFFICIENT_ENERGY",
+        data.message || "Not enough energy to enter level.",
+        400,
+        {
+          energyData: data.energyData,
+          suggestUpsell: data.suggestUpsell,
+        },
+      );
+    }
+
     return successResponse(res, result, "Entered level");
   } catch (error) {
     return errorResponse(
       res,
       "Something went wrong.",
       (error as Error).message,
-      400
+      400,
     );
   }
 };
@@ -58,7 +61,7 @@ export const unlockNextLevel = async (req: Request, res: Response) => {
     const result = await LevelService.unlockNextLevel(
       playerId,
       mapId,
-      currentLevelNumber
+      currentLevelNumber,
     );
     return successResponse(res, result, "Unlocked new level");
   } catch (error) {
@@ -89,7 +92,7 @@ export const completeLevelDone = async (req: Request, res: Response) => {
       res,
       err.message || "Failed to complete level",
       err.message,
-      400
+      400,
     );
   }
 };
