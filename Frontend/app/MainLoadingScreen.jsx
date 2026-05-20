@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Dimensions, 
-  ImageBackground, 
-  Animated, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  ImageBackground,
+  Animated,
   Easing,
   Platform,
   StatusBar,
   AppState
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useMapData } from './hooks/useMapData'; 
-import { MAP_THEMES } from './Components/RoadMap/MapLevel/MapDatas/mapData'; 
+import { useMapData } from './hooks/useMapData';
+import { MAP_THEMES } from './Components/RoadMap/MapLevel/MapDatas/mapData';
 import { universalAssetPreloader } from './services/preloader/universalAssetPreloader';
 import { mapService } from './services/mapService';
 import { soundManager } from './Components/Actual Game/Sounds/UniversalSoundManager';
@@ -34,7 +34,7 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
     isComplete: false,
     mapName: ''
   });
-  
+
   const [, setCurrentAssetProgress] = useState({
     url: '',
     progress: 0,
@@ -182,14 +182,14 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
 
     const mapCheckPromise = preloadData
       ? universalAssetPreloader.areMapAssetsCached(preloadData, (p) => {
-          if (!updateUI) return;
-          const ratio = p.total > 0 ? p.available / p.total : 1;
-          setStagedProgress(stageStart + (section * 3), section, ratio, {
-            isDownloading: true,
-            isComplete: false,
-            mapName: 'Checking Game Assets',
-          });
-        })
+        if (!updateUI) return;
+        const ratio = p.total > 0 ? p.available / p.total : 1;
+        setStagedProgress(stageStart + (section * 3), section, ratio, {
+          isDownloading: true,
+          isComplete: false,
+          mapName: 'Checking Game Assets',
+        });
+      })
       : Promise.resolve({ cached: true, total: 0, available: 0, missing: 0, missingAssets: [] });
 
     const [themesCacheStatus, charSelectCacheStatus, soundCacheStatus, mapCacheStatus] = await Promise.all([
@@ -250,7 +250,7 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
         mapName: 'Preparing Cache',
         progress: 0,
       }));
-      
+
       // Load existing cache into memory
       await universalAssetPreloader.loadAllCachedAssets();
       setStagedProgress(0, 0.05, 1, {
@@ -265,7 +265,7 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
       if (!preloadData) {
         console.warn('⚠️ MainLoading: preloadData unavailable, proceeding with static verification only.');
       }
-      
+
       // Step 2: Verify all static + map assets before downloading
       const {
         themesCacheStatus,
@@ -274,7 +274,7 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
         mapCacheStatus,
         totalStaticMissing,
       } = await runFullVerification(preloadData, 0.05, 0.5);
-      
+
       const totalStaticAssets = themesCacheStatus.total + charSelectCacheStatus.total + soundCacheStatus.total;
 
       if (totalStaticMissing > 0) {
@@ -365,7 +365,7 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
         }
         soundManager.clearUrlCache();
       }
-      
+
       if (preloadData && !mapCacheStatus.cached) {
         setDownloadProgress(prev => ({
           ...prev,

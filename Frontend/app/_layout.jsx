@@ -10,6 +10,7 @@ import { useAuth } from './hooks/useAuth';
 import { soundManager } from './Components/Actual Game/Sounds/UniversalSoundManager';
 import MainLoadingScreen from './MainLoadingScreen';
 import UniversalLoadingOverlay from './Components/UniversalLoading/UniversalLoadingOverlay';
+import EnergyNotificationManager from './Components/EnergyNotification/EnergyNotificationManager';
 import { Audio } from 'expo-av';
 import { gameScale } from './Components/Responsiveness/gameResponsive';
 
@@ -232,6 +233,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
       <UniversalLoadingOverlay />
+      {user && <EnergyNotificationManager />}
     </View>
   );
 }

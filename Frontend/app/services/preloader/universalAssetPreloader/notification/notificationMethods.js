@@ -1,12 +1,23 @@
-import * as Notifications from 'expo-notifications';
+import { isRunningInExpoGo } from 'expo';
+import { Platform } from 'react-native';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-});
+const shouldDisableNotifications = isRunningInExpoGo() && Platform.OS === 'android';
+
+let Notifications = null;
+if (!shouldDisableNotifications) {
+  try {
+    Notifications = require('expo-notifications');
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+      }),
+    });
+  } catch (error) {
+    console.warn('⚠️ Failed to load expo-notifications:', error);
+  }
+}
 
 export const notificationMethods = {
   async requestNotificationPermission() {
@@ -33,6 +44,11 @@ export const notificationMethods = {
       this.lastNotificationPercent = roundedPercent;
       this.lastNotificationTime = now;
 
+      if (!Notifications) {
+        console.log(`[Preload Progress] ${roundedPercent}% - Caching ${category.replace('_', ' ')}...`);
+        return;
+      }
+
       const isGranted = await this.requestNotificationPermission();
       if (!isGranted) return;
 
@@ -58,11 +74,17 @@ export const notificationMethods = {
 
   async sendPreloadPausedNotification(currentPercent) {
     try {
+      const roundedPercent = Math.min(100, Math.max(0, Math.round(currentPercent)));
+
+      if (!Notifications) {
+        console.log(`[Preload Paused] ${roundedPercent}%`);
+        return;
+      }
+
       await Notifications.dismissNotificationAsync('micomi-preload-progress');
       const isGranted = await this.requestNotificationPermission();
       if (!isGranted) return;
 
-      const roundedPercent = Math.min(100, Math.max(0, Math.round(currentPercent)));
       const totalBlocks = 10;
       const filledBlocks = Math.min(totalBlocks, Math.max(0, Math.round((roundedPercent / 100) * totalBlocks)));
       const emptyBlocks = totalBlocks - filledBlocks;
@@ -84,6 +106,11 @@ export const notificationMethods = {
 
   async sendPreloadCompleteNotification() {
     try {
+      if (!Notifications) {
+        console.log('[Preload Complete] All game assets successfully downloaded.');
+        return;
+      }
+
       await Notifications.dismissNotificationAsync('micomi-preload-progress');
 
       const isGranted = await this.requestNotificationPermission();
@@ -104,6 +131,7 @@ export const notificationMethods = {
 
   async dismissPreloadNotification() {
     try {
+      if (!Notifications) return;
       await Notifications.dismissNotificationAsync('micomi-preload-progress');
     } catch (error) {
       console.warn('⚠️ Dismiss notification failed:', error);
