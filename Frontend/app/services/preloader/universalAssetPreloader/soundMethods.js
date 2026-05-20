@@ -26,7 +26,9 @@ getStaticSoundAssets() {
   addAsset('https://micomi-assets.me/Sounds/Final/Character%20Select%20Screen.mp3', 'character_shop_bgm', 'audio', 'static_sounds');
 
   addAsset('https://micomi-assets.me/Sounds/Final/page%20flip.mp3', 'page_flip_sound', 'audio', 'static_sounds');
-  
+
+  // PVP Battle Theme BGM
+  addAsset('https://micomi-assets.me/Sounds/pvp%20sounds/Apex%20Clash_%20PvP%20Battle%20Theme.mp3', 'pvp_battle_theme', 'audio', 'static_sounds');
 
   console.log(`🔊 Static sound assets: ${assets.length}`);
   return assets;

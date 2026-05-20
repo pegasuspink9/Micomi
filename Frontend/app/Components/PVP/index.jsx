@@ -54,10 +54,10 @@ export default function PvpLobbyPage() {
 
   const hasResumableMatch = Boolean(
     pvpStatus?.matchId &&
-      (pvpStatus?.matchFound ||
-        ['matched', 'already_matched', 'in_progress', 'round_in_progress', 'active'].includes(
-          String(pvpStatus?.status || '').toLowerCase()
-        ))
+    (pvpStatus?.matchFound ||
+      ['matched', 'already_matched', 'in_progress', 'round_in_progress', 'active'].includes(
+        String(pvpStatus?.status || '').toLowerCase()
+      ))
   );
 
   const currentTopic = pvpTopics[currentTopicIndex] || null;
@@ -171,28 +171,28 @@ export default function PvpLobbyPage() {
 
   // --------- THE FIX IS HERE ---------
   const changeTopic = useCallback(async (direction) => {
-      // Prevent double actions if already busy
-      if (!pvpTopics.length || loadingPreview || settingTopic || startingMatch || findingMatch) return;
+    // Prevent double actions if already busy
+    if (!pvpTopics.length || loadingPreview || settingTopic || startingMatch || findingMatch) return;
 
-      // 1. Calculate what the next index *will* be
-      let nextIndex;
-      if(direction === 'prev') {
-         nextIndex = currentTopicIndex > 0 ? currentTopicIndex - 1 : pvpTopics.length - 1;
-      } else {
-         nextIndex = currentTopicIndex < pvpTopics.length - 1 ? currentTopicIndex + 1 : 0;
-      }
+    // 1. Calculate what the next index *will* be
+    let nextIndex;
+    if (direction === 'prev') {
+      nextIndex = currentTopicIndex > 0 ? currentTopicIndex - 1 : pvpTopics.length - 1;
+    } else {
+      nextIndex = currentTopicIndex < pvpTopics.length - 1 ? currentTopicIndex + 1 : 0;
+    }
 
-      const topic = pvpTopics[nextIndex];
-      if (!topic) return;
+    const topic = pvpTopics[nextIndex];
+    if (!topic) return;
 
-      try {
-        await setMatchTopic(topic);
+    try {
+      await setMatchTopic(topic);
 
-        setCurrentTopicIndex(nextIndex);
+      setCurrentTopicIndex(nextIndex);
 
-      } catch (topicError) {
-        console.error('Failed to set PvP topic:', topicError);
-      }
+    } catch (topicError) {
+      console.error('Failed to set PvP topic:', topicError);
+    }
   }, [currentTopicIndex, findingMatch, loadingPreview, pvpTopics, setMatchTopic, settingTopic, startingMatch]);
   // -----------------------------------
 
@@ -225,10 +225,10 @@ export default function PvpLobbyPage() {
 
       const latestHasResumableMatch = Boolean(
         latestStatus?.matchId &&
-          (latestStatus?.matchFound ||
-            ['matched', 'already_matched', 'in_progress', 'round_in_progress', 'active'].includes(
-              latestStatusValue
-            ))
+        (latestStatus?.matchFound ||
+          ['matched', 'already_matched', 'in_progress', 'round_in_progress', 'active'].includes(
+            latestStatusValue
+          ))
       );
 
       if (latestHasResumableMatch && latestStatus?.matchId) {

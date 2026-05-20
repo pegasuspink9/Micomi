@@ -19,7 +19,7 @@ class UniversalSoundManager {
       victory: null,
       defeat: null
     };
-    
+
     // State for sequential message audio
     this.currentBgmUrl = null;
     this.currentBgmVolume = 0.2;

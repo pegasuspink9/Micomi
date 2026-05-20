@@ -1,16 +1,17 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useFonts } from '../assets/fonts/font';
-import { View, Text, Platform, AppState, StatusBar as RNStatusBar, Keyboard } from 'react-native'; 
+import { View, Text, Platform, AppState, StatusBar as RNStatusBar, Keyboard } from 'react-native';
 import SpriteActivityIndicator from './Components/Actual Game/Loading/SpriteActivityIndicator';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
-import * as NavigationBar from 'expo-navigation-bar'; 
-import * as SystemUI from 'expo-system-ui'; 
+import * as NavigationBar from 'expo-navigation-bar';
+import * as SystemUI from 'expo-system-ui';
 import { useAuth } from './hooks/useAuth';
 import { soundManager } from './Components/Actual Game/Sounds/UniversalSoundManager';
 import MainLoadingScreen from './MainLoadingScreen';
 import UniversalLoadingOverlay from './Components/UniversalLoading/UniversalLoadingOverlay';
 import { Audio } from 'expo-av';
+import { gameScale } from './Components/Responsiveness/gameResponsive';
 
 let hasPlayedOpeningSound = false;
 
@@ -55,7 +56,7 @@ export default function RootLayout() {
           );
           sound = newSound;
         }
-        
+
         sound.setOnPlaybackStatusUpdate((status) => {
           if (status.didJustFinish) {
             setOpeningSoundDone(true);
@@ -67,7 +68,7 @@ export default function RootLayout() {
         setOpeningSoundDone(true);
       }
     };
-    
+
     playOpeningSound();
 
     return () => {
@@ -102,7 +103,7 @@ export default function RootLayout() {
     const forceRehide = async () => {
       try {
         await NavigationBar.setVisibilityAsync('hidden');
-        
+
         // Briefly set to false, then true to force the OS to update
         RNStatusBar.setHidden(false, 'none');
         setTimeout(() => {
@@ -143,7 +144,7 @@ export default function RootLayout() {
       keyboardDidShowListener.remove();
       keyboardDidHideListener.remove();
     };
-  }, []); 
+  }, []);
 
   // Handle authentication routing
   useEffect(() => {
@@ -160,36 +161,39 @@ export default function RootLayout() {
 
     // --- UNIVERSAL BGM LOGIC ---
     const NAV_BGM_URL = 'https://micomi-assets.me/Sounds/Final/Navigation.mp3';
-    
-    // Check if current screen is a navigation/UI page
-    const isNavigationPage = 
-      segments.includes('map') 
-    if (isNavigationPage && user) {
-      soundManager.playBackgroundMusic(NAV_BGM_URL, 0.15);
-    } else if (isAtLoginPage) {
-      soundManager.stopBackgroundMusic();
+    const PVP_BGM_URL = 'https://micomi-assets.me/Sounds/pvp%20sounds/Apex%20Clash_%20PvP%20Battle%20Theme.mp3';
+
+    // Check if current screen is a navigation/UI page or PVP page
+    if (user) {
+      if (segments.includes('PVP')) {
+        soundManager.playBackgroundMusic(PVP_BGM_URL, 0.15);
+      } else if (segments.includes('map')) {
+        soundManager.playBackgroundMusic(NAV_BGM_URL, 0.15);
+      } else if (isAtLoginPage) {
+        soundManager.stopBackgroundMusic();
+      }
     }
   }, [user, segments, fontsLoaded, loading, isMainLoading]);
 
   // Page detection for the Universal Tap (outside useEffect for use in JSX)
-   const isNavPage = 
+  const isNavPage =
     segments.includes('roadMapLandPage') ||
     segments.includes('(tabs)') ||
+    segments.includes('map') ||
+    segments.includes('PVP');
 
-    segments.includes('map')
 
 
-  
-    if (!fontsLoaded || (loading && !user) || !openingSoundDone) {
+  if (!fontsLoaded || (loading && !user) || !openingSoundDone) {
     return (
-      <View style={{ 
-        flex: 1, 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        backgroundColor: '#98d4de' 
+      <View style={{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#98d4de'
       }}>
         <ExpoStatusBar hidden={true} />
-        <Text style={{ fontFamily: 'Grobold', fontSize: 60, color: '#ffffff' }}>Micomi</Text>
+        <Text style={{ fontFamily: 'Grobold', fontSize: gameScale(50), color: '#ffffff' }}>Micomi</Text>
       </View>
     );
   }
@@ -197,15 +201,15 @@ export default function RootLayout() {
   // Only show the preloading screen if the user is logged in
   if (user && isMainLoading) {
     return (
-      <MainLoadingScreen 
-        fontsLoaded={fontsLoaded} 
-        onComplete={() => setIsMainLoading(false)} 
+      <MainLoadingScreen
+        fontsLoaded={fontsLoaded}
+        onComplete={() => setIsMainLoading(false)}
       />
     );
   }
 
   return (
-     <View 
+    <View
       style={{ flex: 1 }}
       onStartShouldSetResponderCapture={() => {
         // Only trigger universal tap on navigation pages
@@ -217,9 +221,9 @@ export default function RootLayout() {
     >
       {/* Declarative component ensures React Native enforces the hidden state */}
       <ExpoStatusBar hidden={true} />
-      
-      <Stack 
-        screenOptions={{ 
+
+      <Stack
+        screenOptions={{
           headerShown: false,
           contentStyle: { flex: 1 }
         }}

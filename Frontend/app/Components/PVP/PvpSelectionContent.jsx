@@ -10,6 +10,7 @@ import {
   Easing,
 } from 'react-native';
 import { gameScale } from '../Responsiveness/gameResponsive';
+import { soundManager } from '../Actual Game/Sounds/UniversalSoundManager';
 
 const TOPIC_IMAGES = {
   HTML: 'https://micomi-assets.me/Pvp%20Assets/Languages/HTML.png',
@@ -199,7 +200,7 @@ const PvpSelectionContent = ({
                 <TouchableOpacity
                   style={styles.topicCard}
                   activeOpacity={0.9}
-                  onPress={onToggleMatch}
+                  onPress={() => { soundManager.playUniversalTap(); onToggleMatch(); }}
                   disabled={isActionDisabled}
                 >
                   <Image
@@ -215,14 +216,14 @@ const PvpSelectionContent = ({
           <View style={styles.levelSelector}>
             <TouchableOpacity
               style={styles.navArrow}
-              onPress={onPreviousTopic}
+              onPress={() => { soundManager.playUniversalTap(); onPreviousTopic(); }}
               activeOpacity={0.85}
               disabled={isActionDisabled}
             >
               <Image source={ARROW_IMAGE} style={[styles.arrowImage, styles.flippedHorizontal]} />
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={onToggleMatch} activeOpacity={0.8}>
+            <TouchableOpacity onPress={() => { soundManager.playUniversalTap(); onToggleMatch(); }} activeOpacity={0.8}>
               <ImageBackground
                 source={LEVEL_SELECTOR_IMAGES[currentTopic || 'HTML']}
                 style={styles.levelSelectorImage}
@@ -241,7 +242,7 @@ const PvpSelectionContent = ({
 
             <TouchableOpacity
               style={styles.navArrow}
-              onPress={onNextTopic}
+              onPress={() => { soundManager.playUniversalTap(); onNextTopic(); }}
               activeOpacity={0.85}
               disabled={isActionDisabled}
             >

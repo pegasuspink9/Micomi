@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from "expo-auth-session/providers/google";
 import * as AuthSession from 'expo-auth-session';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { OAUTH_CONFIG } from './oauthConfig';
 
 // Utility to build the Expo Proxy Start URL
@@ -23,11 +24,18 @@ export const useGoogleAuth = (onSuccess) => {
   const [googleAuthLoading, setGoogleAuthLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // 1. The URL Google will redirect to (Must exactly match Google Cloud Console)
-  const googleRedirectUri = 'https://auth.expo.io/@noelcantcode/micomi';
+  const proxyRedirectUri = 'https://auth.expo.io/@noelcantcode/micomi';
+  const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
-  // 2. The URL the proxy will redirect back to your app after success
-  const authSessionReturnUrl = AuthSession.makeRedirectUri();
+  // 1. The URL Google will redirect to (Must exactly match Google Cloud Console)
+  const googleRedirectUri = isExpoGo
+    ? proxyRedirectUri
+    : AuthSession.makeRedirectUri({ scheme: 'micomi' });
+
+  // 2. The URL the proxy/native auth will redirect back to your app after success
+  const authSessionReturnUrl = isExpoGo
+    ? AuthSession.makeRedirectUri()
+    : AuthSession.makeRedirectUri({ scheme: 'micomi' });
 
   useEffect(() => {}, []);
 
@@ -56,7 +64,9 @@ export const useGoogleAuth = (onSuccess) => {
       const returnUrl = authSessionReturnUrl;
 
       const authSessionUrl = authUrl
-        ? buildExpoProxyStartUrl(googleRedirectUri, authUrl, returnUrl)
+        ? (isExpoGo
+          ? buildExpoProxyStartUrl(proxyRedirectUri, authUrl, returnUrl)
+          : authUrl)
         : undefined;
 
       if (!authSessionUrl) {

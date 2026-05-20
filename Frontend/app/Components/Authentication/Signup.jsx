@@ -1,26 +1,24 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet, 
-  KeyboardAvoidingView, 
-  Platform, 
-  ScrollView 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { gameScale, scaleWidth, scaleHeight } from '../../Components/Responsiveness/gameResponsive';
 import { useAuth } from '../../hooks/useAuth';
-import { usePlayerProfile } from '../../hooks/usePlayerProfile';
 
 export default function Signup() {
   const router = useRouter();
   const { signup } = useAuth();
-  const { checkEmailExists } = usePlayerProfile();
-  
+
   const [formData, setFormData] = useState({
     playerName: '',
     email: '',
@@ -28,7 +26,7 @@ export default function Signup() {
     password: '',
     confirmPassword: '' // Added confirm password field
   });
-  
+
   const [errors, setErrors] = useState({}); // Tracks errors per field
   const [isSigningUp, setIsSigningUp] = useState(false); // Controls button state
 
@@ -42,7 +40,7 @@ export default function Signup() {
     // 1. Validation for empty fields
     if (!playerName.trim()) newErrors.playerName = 'Player Name is required.';
     if (!username.trim()) newErrors.username = 'Username is required.';
-    
+
     // 2. Validation for Email (must be @gmail.com)
     if (!email.trim()) {
       newErrors.email = 'Email Address is required.';
@@ -68,18 +66,6 @@ export default function Signup() {
       return;
     }
 
-    try {
-      const emailExists = await checkEmailExists(email);
-
-      if (emailExists) {
-        setErrors({ email: 'Email already existed.' });
-        return;
-      }
-    } catch (error) {
-      setErrors({ general: error.message || 'Failed to validate email. Please try again.' });
-      return;
-    }
-
     setIsSigningUp(true);
     try {
       await signup({
@@ -89,8 +75,17 @@ export default function Signup() {
         password
       });
     } catch (error) {
-      // Catch backend errors (e.g., email already exists)
-      setErrors({ general: error.message || 'Signup failed. Please try again.' });
+      const msg = (error.message || 'Signup failed. Please try again.').toLowerCase();
+      // Route the API error message to the matching field
+      if (msg.includes('email')) {
+        setErrors({ email: error.message });
+      } else if (msg.includes('username')) {
+        setErrors({ username: error.message });
+      } else if (msg.includes('password')) {
+        setErrors({ password: error.message });
+      } else {
+        setErrors({ general: error.message || 'Signup failed. Please try again.' });
+      }
     } finally {
       setIsSigningUp(false);
     }
@@ -112,7 +107,7 @@ export default function Signup() {
       colors={['#101035', '#1B1F68', '#4248B5']}
       style={styles.container}
     >
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
@@ -124,7 +119,7 @@ export default function Signup() {
           </View>
 
           <View style={styles.formContainer}>
-            
+
             {/* General Error Message (e.g., Email already exists) */}
             {errors.general ? (
               <Text style={[styles.errorText, { textAlign: 'center', marginBottom: 10 }]}>
@@ -234,8 +229,8 @@ export default function Signup() {
             </View>
 
             {/* Submit Button */}
-            <TouchableOpacity 
-              style={[styles.loginButton, isSigningUp && { opacity: 0.7 }]} 
+            <TouchableOpacity
+              style={[styles.loginButton, isSigningUp && { opacity: 0.7 }]}
               onPress={handleSignup}
               disabled={isSigningUp}
             >
@@ -282,7 +277,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   inputErrorBorder: {
-    borderColor: '#EF4444', 
+    borderColor: '#EF4444',
     borderWidth: 1.5,
   },
   input: { flex: 1, color: '#1F2937', fontSize: gameScale(14), fontFamily: 'DynaPuff' },
