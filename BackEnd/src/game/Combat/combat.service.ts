@@ -490,6 +490,7 @@ export async function handleFight(
   isCompletingBonus: boolean = false,
   bonusTotalQuestions: number = 0,
   bonusAllCorrect: boolean = false,
+  wrongAnswerCount?: number,
   overrideAttackType?: string | null,
 ) {
   const level = await prisma.level.findUnique({
@@ -517,6 +518,7 @@ export async function handleFight(
       isCompletingBonus,
       bonusTotalQuestions,
       bonusAllCorrect,
+      wrongAnswerCount,
       overrideAttackType,
     );
   } else {
@@ -534,6 +536,7 @@ export async function handleFight(
       isCompletingBonus,
       bonusTotalQuestions,
       bonusAllCorrect,
+      wrongAnswerCount,
       overrideAttackType,
     );
   }
@@ -892,6 +895,7 @@ export async function fightEnemy(
   isCompletingBonus: boolean = false,
   bonusTotalQuestions: number = 0,
   bonusAllCorrect: boolean = false,
+  wrongAnswerCount?: number,
   overrideAttackType?: string | null,
 ) {
   const enemy = await prisma.enemy.findUnique({ where: { enemy_id: enemyId } });
@@ -1276,7 +1280,9 @@ export async function fightEnemy(
 
     if (!effectiveBonusRound && enemyHealth > 0) {
       if (!freezeConsumedThisTurn) {
-        enemy_damage = getDynamicEnemyDamage(level);
+        const baseEnemyDamage = getDynamicEnemyDamage(level);
+        const wrongMultiplier = Math.max(1, wrongAnswerCount ?? 1);
+        enemy_damage = baseEnemyDamage * wrongMultiplier;
         charHealth = Math.max(charHealth - enemy_damage, 0);
         enemy_idle = enemy.enemy_avatar || null;
         enemy_run = enemy.enemy_run || null;
@@ -1286,7 +1292,11 @@ export async function fightEnemy(
         console.log(
           "- Enemy dealt",
           enemy_damage,
-          "dynamic damage, player health:",
+          "dynamic damage (base",
+          baseEnemyDamage,
+          "x wrong",
+          wrongMultiplier,
+          "), player health:",
           charHealth,
         );
 
@@ -1578,6 +1588,7 @@ export async function fightBossEnemy(
   isCompletingBonus: boolean = false,
   bonusTotalQuestions: number = 0,
   bonusAllCorrect: boolean = false,
+  wrongAnswerCount?: number,
   overrideAttackType?: string | null,
 ) {
   const enemy = await prisma.enemy.findUnique({ where: { enemy_id: enemyId } });
@@ -1923,7 +1934,9 @@ export async function fightBossEnemy(
       enemy_hurt = enemy.enemy_hurt || null;
     } else if (enemyHealth > 0) {
       if (!freezeConsumedThisTurn) {
-        enemy_damage = getDynamicEnemyDamage(level);
+        const baseEnemyDamage = getDynamicEnemyDamage(level);
+        const wrongMultiplier = Math.max(1, wrongAnswerCount ?? 1);
+        enemy_damage = baseEnemyDamage * wrongMultiplier;
         charHealth = Math.max(charHealth - enemy_damage, 0);
         enemy_idle = enemy.enemy_avatar || null;
         enemy_run = enemy.enemy_run || null;

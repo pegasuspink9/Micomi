@@ -46,6 +46,14 @@ const multisetEqual = (a: string[], b: string[]): boolean => {
   return true;
 };
 
+const countWrongAnswers = (userAnswers: string[], correctAnswers: string[]) => {
+  let wrong = 0;
+  for (let i = 0; i < correctAnswers.length; i++) {
+    if (userAnswers[i] !== correctAnswers[i]) wrong += 1;
+  }
+  return wrong;
+};
+
 const reverseString = (str: string): string => str.split("").reverse().join("");
 
 const permuteLetters = (str: string): string => {
@@ -1147,6 +1155,10 @@ export const submitChallengeService = async (
     ? true
     : multisetEqual(finalAnswer, effectiveCorrectAnswer);
 
+  const wrongAnswerCount = isCorrect
+    ? 0
+    : Math.max(1, countWrongAnswers(finalAnswer, effectiveCorrectAnswer));
+
   const questionWithBlanks = challenge.question
     ? dynamicBlankSetter(challenge.question, effectiveCorrectAnswer)
     : null;
@@ -1674,6 +1686,13 @@ export const submitChallengeService = async (
       false,
       elapsed,
       challengeId,
+      undefined,
+      undefined,
+      isBonusRound,
+      isCompletingBonus,
+      bonusChallengeIds.length,
+      bonusAllCorrect,
+      wrongAnswerCount,
     );
 
     if (character.character_name === "Gino") {
