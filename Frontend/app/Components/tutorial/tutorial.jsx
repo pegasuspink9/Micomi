@@ -13,7 +13,7 @@ const TUTORIAL_STEPS = [
   {
     key: 'enemyStats',
     title: 'Enemy Stats',
-    body: "On the right is the bug you are fighting. Keep a close eye on its health bar here!",
+    body: "On the right is the bug you are fighting. Keep a close eye on its health bar here! The damage of the enemy is depends on its base damage and the wrong answers you fill in.",
   },
   {
     key: 'combatAlerts',
@@ -78,8 +78,8 @@ const TUTORIAL_STEPS = [
 
 const TutorialOverlay = ({
   visible = false,
-  onClose = () => {},
-  
+  onClose = () => { },
+
   // Base Layouts
   screenPlayLayout = null,
   gameQuestionsLayout = null,
@@ -89,13 +89,13 @@ const TutorialOverlay = ({
   playerStatsLayout = null,
   enemyStatsLayout = null,
   combatAlertsLayout = null,
-  
+
   codeEditorLayout = null,
   guideTabLayout = null,
   outputTabLayout = null,
   expectedOutputLayout = null,
   optionsMenuLayout = null,
-  
+
   keyboardLayout = null,
   attackCardLayout = null,
   clearButtonLayout = null,
@@ -136,7 +136,7 @@ const TutorialOverlay = ({
 
     const isBottomButton = ['clearButton', 'potionButton', 'runButton'].includes(tutorialStepData.key);
 
-    const p1Height = gameScale(844 * 0.38); 
+    const p1Height = gameScale(844 * 0.38);
     const p2Y = p1Height;
     const p3Height = shouldHideThirdGrid ? 0 : (thirdGridHeight || gameScale(844 * 0.22));
     const p2Height = Math.max(0, screenHeight - p1Height - p3Height);
@@ -150,12 +150,12 @@ const TutorialOverlay = ({
       codeEditor: { x: gameScale(10), y: p2Y + gameScale(10), width: screenWidth - gameScale(20), height: p2Height * 0.9 },
       guideTab: { x: gameScale(80), y: p2Y + p2Height * 0.05, width: screenWidth * 0.10, height: gameScale(20) },
       outputTab: { x: gameScale(215), y: p2Y + p2Height * 0.05, width: screenWidth * 0.10, height: gameScale(20) },
-      expectedOutput:  { x: gameScale(270), y: p2Y + p2Height * 0.05, width: screenWidth * 0.13, height: gameScale(20) },
+      expectedOutput: { x: gameScale(270), y: p2Y + p2Height * 0.05, width: screenWidth * 0.13, height: gameScale(20) },
       optionsMenu: { x: screenWidth - gameScale(50), y: p2Y + gameScale(10), width: gameScale(40), height: gameScale(40) },
 
       keyboard: { x: 0, y: p3Y + gameScale(35), width: screenWidth, height: p3Height * gameScale(6) },
       attackCard: { x: gameScale(300), y: p3Y + p3Height * -0.15, width: screenWidth * 0.25, height: p3Height * 0.3 },
-      
+
       clearButton: { x: gameScale(42), bottom: gameScale(23), width: gameScale(78), height: gameScale(30) },
       potionButton: { x: gameScale(158), bottom: gameScale(23), width: gameScale(78), height: gameScale(30) },
       runButton: { x: gameScale(284), bottom: gameScale(23), width: gameScale(78), height: gameScale(30) },
@@ -190,8 +190,8 @@ const TutorialOverlay = ({
       const bottom = Math.max(0, baseLayout.bottom - padding);
       const height = baseLayout.height + padding * 2;
       return { isBottom: true, x, bottom, width, height };
-    } 
-    
+    }
+
     const y = Math.max(0, baseLayout.y - padding);
     const height = Math.min(screenHeight - y, baseLayout.height + padding * 2);
     return { isBottom: false, x, y, width, height };
@@ -214,7 +214,7 @@ const TutorialOverlay = ({
     const spacing = gameScale(16); // Gap between highlighted rect and card
 
     const focusCenterX = tutorialFocusRect.x + (tutorialFocusRect.width / 2);
-    
+
     // Position Pointer Horizontally relative to the Card
     let pointerLeft = focusCenterX - cardMargin - pointerHalfWidth;
     const maxPointerLeft = screenWidth - (cardMargin * 2) - (pointerHalfWidth * 2) - gameScale(12);
@@ -228,7 +228,7 @@ const TutorialOverlay = ({
       height: 0,
       zIndex: 10,
     };
-    
+
     let cardStyle = {
       position: 'absolute',
       left: cardMargin,
@@ -260,7 +260,7 @@ const TutorialOverlay = ({
       // Points DOWN to Focus Area
       pointerStyle = {
         ...pointerStyle,
-        bottom: -gameScale(16), 
+        bottom: -gameScale(16),
         borderTopColor: '#CBD5E1',
         borderTopWidth: gameScale(12),
         borderLeftWidth: pointerHalfWidth,
@@ -272,7 +272,7 @@ const TutorialOverlay = ({
       // Points UP to Focus Area
       pointerStyle = {
         ...pointerStyle,
-        top: -gameScale(11), 
+        top: -gameScale(11),
         borderBottomColor: '#FFFFFF',
         borderBottomWidth: gameScale(12),
         borderLeftWidth: pointerHalfWidth,
@@ -322,7 +322,7 @@ const TutorialOverlay = ({
       {/* Tutorial Card Wrapper (Stops ANY vertical overlapping) */}
       <View style={placementData.wrapperStyle}>
         <View style={[styles.tutorialCard, placementData.cardStyle]}>
-          
+
           {/* Dynamic Pointing Triangle */}
           {hasTutorialHighlight && (
             <View style={[styles.pointer, placementData.pointerStyle]} />
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     borderWidth: gameScale(1),
     borderColor: '#E2E8F0',
     borderBottomWidth: gameScale(6),
-    borderBottomColor: '#CBD5E1', 
+    borderBottomColor: '#CBD5E1',
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,

@@ -8,7 +8,8 @@ import {
   Animated, 
   Easing,
   Platform,
-  StatusBar
+  StatusBar,
+  AppState
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useMapData } from './hooks/useMapData'; 
@@ -48,6 +49,7 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
   const { maps } = useMapData();
   const shimmerAnim = useRef(new Animated.Value(-1)).current;
   const hasAutoPreloaded = useRef(false);
+  const isPreloadingRef = useRef(false);
 
   const uiProgress = downloadProgress.isComplete
     ? 1
@@ -98,6 +100,46 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
       }
     }
   }, [assetsReady, timerFinished, onComplete]);
+
+  // 4. Request Notification permissions and dismiss existing notifications on mount
+  useEffect(() => {
+    (async () => {
+      await universalAssetPreloader.requestNotificationPermission();
+      await universalAssetPreloader.dismissPreloadNotification();
+    })();
+  }, []);
+
+  // 5. Track latest uiPercent in a ref to avoid recreation of AppState listener
+  const uiPercentRef = useRef(uiPercent);
+  useEffect(() => {
+    uiPercentRef.current = uiPercent;
+  }, [uiPercent]);
+
+  // 6. Handle AppState backgrounding / foregrounding
+  useEffect(() => {
+    const handleAppStateChange = async (nextAppState) => {
+      if (nextAppState === 'active') {
+        console.log('📱 App returned to foreground - Dismissing notification and resuming preloader...');
+        await universalAssetPreloader.dismissPreloadNotification();
+        autoPreloadAssets();
+      } else if (nextAppState === 'background' || nextAppState === 'inactive') {
+        console.log('📱 App went to background - Sending download continuation notification...');
+        await universalAssetPreloader.sendPreloadPausedNotification(uiPercentRef.current);
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  // 7. Handle completion notification
+  useEffect(() => {
+    if (downloadProgress.isComplete) {
+      universalAssetPreloader.sendPreloadCompleteNotification();
+    }
+  }, [downloadProgress.isComplete]);
 
   const setStagedProgress = (stageStart, stageSpan, ratio, extra = {}) => {
     const normalized = clamp01(ratio);
@@ -193,6 +235,11 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
   };
 
   const autoPreloadAssets = async () => {
+    if (isPreloadingRef.current) {
+      console.log('🚀 MainLoading: Preload is already running, skipping duplicate invocation.');
+      return;
+    }
+    isPreloadingRef.current = true;
     try {
       console.log('🚀 MainLoading: Checking asset cache and updates...');
 
@@ -422,6 +469,8 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
         progress: 1,
       }));
       setAssetsReady(true); // Proceed anyway to avoid bricking the app
+    } finally {
+      isPreloadingRef.current = false;
     }
   };
 
@@ -469,6 +518,11 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
               ? `${downloadProgress.mapName || 'Preloading Game Data'}... ${uiPercent}%`
               : 'Preloading Game Data...'}
           </Text>
+          {downloadProgress.isDownloading && (
+            <Text style={[styles.noteText, !fontsLoaded && styles.fallbackFont]}>
+              Note: You can safely minimize the app; downloading will continue in the background.
+            </Text>
+          )}
         </View>
       </ImageBackground>
     </View>
@@ -570,6 +624,16 @@ const styles = StyleSheet.create({
   fallbackFont: {
     fontFamily: Platform.OS === 'ios' ? 'Avenir' : 'Roboto',
     fontWeight: 'bold'
+  },
+  noteText: {
+    marginTop: gameScale(8),
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: gameScale(11),
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+    maxWidth: '80%',
   }
 });
 

@@ -295,25 +295,15 @@ async downloadGameVisualAssets(gameState, onProgress = null) {
       const startTime = Date.now();
       let successCount = 0;
       const results = [];
-      for (let i = 0; i < assets.length; i += this.maxConcurrentDownloads) {
-        const batch = assets.slice(i, i + this.maxConcurrentDownloads);
-        const batchPromises = batch.map(async (asset) => {
-          const result = await this.downloadSingleAsset(asset.url, asset.category);
-          if (result.success) {
-            successCount++;
-          }
-          results.push({ asset, result });
-          if (onProgress) {
-            onProgress({
-              loaded: results.length,
-              total: assets.length,
-              progress: results.length / assets.length,
-              category: 'game_visuals'
-            });
-          }
-        });
-        await Promise.all(batchPromises);
-      }
+      const poolResult = await this.downloadAssetsInPool(
+        assets,
+        this.maxConcurrentDownloads,
+        onProgress,
+        null,
+        'game_visuals'
+      );
+      successCount = poolResult.successCount;
+      results.push(...poolResult.results);
       const totalTime = Date.now() - startTime;
       console.log(`🖼️ Visual asset download completed: ${successCount}/${assets.length} in ${totalTime}ms`);
       return { success: true, downloaded: successCount, total: assets.length, results };
@@ -334,25 +324,15 @@ async downloadGameImageAssets(levelData, onProgress = null) {
       const startTime = Date.now();
       let successCount = 0;
       const results = [];
-      for (let i = 0; i < assets.length; i += this.maxConcurrentDownloads) {
-        const batch = assets.slice(i, i + this.maxConcurrentDownloads);
-        const batchPromises = batch.map(async (asset) => {
-          const result = await this.downloadSingleAsset(asset.url, asset.category);
-          if (result.success) {
-            successCount++;
-          }
-          results.push({ asset, result });
-          if (onProgress) {
-            onProgress({
-              loaded: results.length,
-              total: assets.length,
-              progress: results.length / assets.length,
-              category: 'game_images'
-            });
-          }
-        });
-        await Promise.all(batchPromises);
-      }
+      const poolResult = await this.downloadAssetsInPool(
+        assets,
+        this.maxConcurrentDownloads,
+        onProgress,
+        null,
+        'game_images'
+      );
+      successCount = poolResult.successCount;
+      results.push(...poolResult.results);
       const totalTime = Date.now() - startTime;
       
       try {
@@ -390,25 +370,15 @@ async downloadAudioAssets(levelData, onProgress = null) {
       const startTime = Date.now();
       let successCount = 0;
       const results = [];
-      for (let i = 0; i < assets.length; i += this.maxConcurrentDownloads) {
-        const batch = assets.slice(i, i + this.maxConcurrentDownloads);
-        const batchPromises = batch.map(async (asset) => {
-          const result = await this.downloadSingleAsset(asset.url, asset.category);
-          if (result.success) {
-            successCount++;
-          }
-          results.push({ asset, result });
-          if (onProgress) {
-            onProgress({
-              loaded: results.length,
-              total: assets.length,
-              progress: results.length / assets.length,
-              category: 'game_audio'
-            });
-          }
-        });
-        await Promise.all(batchPromises);
-      }
+      const poolResult = await this.downloadAssetsInPool(
+        assets,
+        this.maxConcurrentDownloads,
+        onProgress,
+        null,
+        'game_audio'
+      );
+      successCount = poolResult.successCount;
+      results.push(...poolResult.results);
       const totalTime = Date.now() - startTime;
       console.log(`🎵 Audio asset download completed: ${successCount}/${assets.length} in ${totalTime}ms`);
       return { success: true, downloaded: successCount, total: assets.length, results };
@@ -442,76 +412,15 @@ async downloadGameAnimationAssets(gameState, onProgress = null, onAssetComplete 
       let successCount = 0;
       const results = [];
 
-      // Download assets with controlled concurrency
-      for (let i = 0; i < assets.length; i += this.maxConcurrentDownloads) {
-        const batch = assets.slice(i, i + this.maxConcurrentDownloads);
-        
-        const batchPromises = batch.map(async (asset, batchIndex) => {
-          const globalIndex = i + batchIndex;
-          
-          // Individual asset progress callback
-          if (onAssetComplete) {
-            onAssetComplete({
-              url: asset.url,
-              name: asset.name,
-              type: asset.type,
-              category: asset.category,
-              characterName: asset.characterName,
-              enemyName: asset.enemyName,
-              progress: 0,
-              currentIndex: globalIndex,
-              totalAssets: assets.length
-            });
-          }
-
-          const result = await this.downloadSingleAsset(
-            asset.url, 
-            asset.category, 
-            (downloadProgress) => {
-              // Individual asset download progress
-              if (onAssetComplete) {
-                onAssetComplete({
-                  url: asset.url,
-                  name: asset.name,
-                  type: asset.type,
-                  category: asset.category,
-                  characterName: asset.characterName,
-                  enemyName: asset.enemyName,
-                  progress: downloadProgress.progress,
-                  currentIndex: globalIndex,
-                  totalAssets: assets.length,
-                  bytesWritten: downloadProgress.bytesWritten,
-                  totalBytes: downloadProgress.totalBytes
-                });
-              }
-            }
-          );
-          
-          if (result.success) {
-            successCount++;
-          }
-          
-          const assetResult = { asset, result };
-          results.push(assetResult);
-          
-          // Overall progress callback
-          if (onProgress) {
-            onProgress({
-              loaded: results.length,
-              total: assets.length,
-              progress: results.length / assets.length,
-              successCount,
-              currentAsset: asset,
-              category: 'game_animations'
-            });
-          }
-
-          return assetResult;
-        });
-
-        // Wait for current batch to complete before starting next batch
-        await Promise.all(batchPromises);
-      }
+      const poolResult = await this.downloadAssetsInPool(
+        assets,
+        this.maxConcurrentDownloads,
+        onProgress,
+        onAssetComplete,
+        'game_animations'
+      );
+      successCount = poolResult.successCount;
+      results.push(...poolResult.results);
 
       const totalTime = Date.now() - startTime;
       this.isDownloading = false;

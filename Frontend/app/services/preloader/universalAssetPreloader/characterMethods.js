@@ -83,7 +83,6 @@ async downloadCharacterAssets(charactersData, onProgress = null, onAssetComplete
       const startTime = Date.now();
       let successCount = 0;
       const results = [];
-      const downloadPromises = [];
 
       // Group assets by character for better organization
       const assetsByCharacter = {};
@@ -96,72 +95,15 @@ async downloadCharacterAssets(charactersData, onProgress = null, onAssetComplete
 
       console.log(`📦 Downloading assets for ${Object.keys(assetsByCharacter).length} characters`);
 
-      // Download assets with controlled concurrency
-      for (let i = 0; i < assets.length; i += this.maxConcurrentDownloads) {
-        const batch = assets.slice(i, i + this.maxConcurrentDownloads);
-        
-        const batchPromises = batch.map(async (asset, batchIndex) => {
-          const globalIndex = i + batchIndex;
-          
-          // Individual asset progress callback
-          if (onAssetComplete) {
-            onAssetComplete({
-              url: asset.url,
-              name: asset.name,
-              type: asset.type,
-              characterName: asset.characterName,
-              progress: 0,
-              currentIndex: globalIndex,
-              totalAssets: assets.length
-            });
-          }
-
-          const result = await this.downloadSingleAsset(
-            asset.url, 
-            asset.category, 
-            (downloadProgress) => {
-              // Individual asset download progress
-              if (onAssetComplete) {
-                onAssetComplete({
-                  url: asset.url,
-                  name: asset.name,
-                  type: asset.type,
-                  characterName: asset.characterName,
-                  progress: downloadProgress.progress,
-                  currentIndex: globalIndex,
-                  totalAssets: assets.length,
-                  bytesWritten: downloadProgress.bytesWritten,
-                  totalBytes: downloadProgress.totalBytes
-                });
-              }
-            }
-          );
-          
-          if (result.success) {
-            successCount++;
-          }
-          
-          const assetResult = { asset, result };
-          results.push(assetResult);
-          
-          // Overall progress callback
-          if (onProgress) {
-            onProgress({
-              loaded: results.length,
-              total: assets.length,
-              progress: results.length / assets.length,
-              successCount,
-              currentAsset: asset,
-              category: 'characters'
-            });
-          }
-
-          return assetResult;
-        });
-
-        // Wait for current batch to complete before starting next batch
-        await Promise.all(batchPromises);
-      }
+      const poolResult = await this.downloadAssetsInPool(
+        assets,
+        this.maxConcurrentDownloads,
+        onProgress,
+        onAssetComplete,
+        'characters'
+      );
+      successCount = poolResult.successCount;
+      results.push(...poolResult.results);
 
       const totalTime = Date.now() - startTime;
       this.isDownloading = false;

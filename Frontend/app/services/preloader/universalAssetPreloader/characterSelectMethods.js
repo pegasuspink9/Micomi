@@ -1,5 +1,3 @@
-import * as FileSystem from 'expo-file-system/legacy';
-
 export const characterSelectMethods = {
 extractAllCharacterSelectAssets(charactersData) {
     const assets = [];
@@ -179,81 +177,60 @@ async downloadStaticCharacterSelectAssets(onProgress = null, onAssetComplete = n
       const results = [];
       const downloadConcurrency = this.getAdaptiveConcurrency(otherAssets.length, 'character_select_ui');
 
-      // Download non-video assets first
-      for (let i = 0; i < otherAssets.length; i += downloadConcurrency) {
-        const batch = otherAssets.slice(i, i + downloadConcurrency);
+      const otherAssetsWithIndex = otherAssets.map((asset, index) => ({
+        ...asset,
+        customIndex: index,
+        customTotalAssets: assets.length
+      }));
 
-        const batchPromises = batch.map(async (asset, batchIndex) => {
-          const globalIndex = i + batchIndex;
-
-          if (onAssetComplete) {
-            onAssetComplete({
-              url: asset.url,
-              name: asset.name,
-              type: asset.type,
-              category: asset.category,
-              progress: 0,
-              currentIndex: globalIndex,
-              totalAssets: assets.length,
-            });
-          }
-
-          const result = await this.downloadSingleAsset(asset.url, asset.category);
-
-          if (result.success) {
-            successCount++;
-          }
-
-          results.push({ asset, result });
-
+      const otherResults = await this.downloadAssetsInPool(
+        otherAssetsWithIndex,
+        downloadConcurrency,
+        (progress) => {
           if (onProgress) {
             onProgress({
-              loaded: results.length,
+              loaded: progress.loaded,
               total: assets.length,
-              progress: results.length / assets.length,
-              successCount,
-              currentAsset: asset,
+              progress: progress.loaded / assets.length,
+              successCount: progress.successCount,
+              currentAsset: progress.currentAsset,
             });
           }
+        },
+        onAssetComplete,
+        'character_select_ui'
+      );
+      
+      successCount += otherResults.successCount;
+      results.push(...otherResults.results);
 
-          return { asset, result };
-        });
+      const videoAssetsWithIndex = videoAssets.map((asset, index) => ({
+        ...asset,
+        customIndex: otherAssets.length + index,
+        customTotalAssets: assets.length
+      }));
 
-        await Promise.all(batchPromises);
-      }
-
-      // Download video assets
-      for (const videoAsset of videoAssets) {
-        if (onAssetComplete) {
-          onAssetComplete({
-            url: videoAsset.url,
-            name: videoAsset.name,
-            type: 'video',
-            category: videoAsset.category,
-            progress: 0,
-            currentIndex: results.length,
-            totalAssets: assets.length,
-          });
-        }
-
-        const result = await this.downloadSingleAsset(videoAsset.url, videoAsset.category);
-
-        if (result.success) {
-          successCount++;
-        }
-
-        results.push({ asset: videoAsset, result });
-
-        if (onProgress) {
-          onProgress({
-            loaded: results.length,
-            total: assets.length,
-            progress: results.length / assets.length,
-            successCount,
-            currentAsset: videoAsset,
-          });
-        }
-      }
+      // Download video assets using pool (maintaining controlled concurrency for videos)
+      const videoResults = await this.downloadAssetsInPool(
+        videoAssetsWithIndex,
+        1, // Concurrency 1 for videos (or video-specific limit)
+        (progress) => {
+          if (onProgress) {
+            onProgress({
+              loaded: otherAssets.length + progress.loaded,
+              total: assets.length,
+              progress: (otherAssets.length + progress.loaded) / assets.length,
+              successCount: successCount + progress.successCount,
+              currentAsset: progress.currentAsset,
+            });
+          }
+        },
+        onAssetComplete,
+        'ui_videos'
+      );
+      
+      successCount += videoResults.successCount;
+      results.push(...videoResults.results);
 
       const totalTime = Date.now() - startTime;
       this.isDownloading = wasDownloading;
@@ -300,7 +277,7 @@ async areStaticCharacterSelectAssetsCached(onProgress = null) {
           } else {
             this.downloadedAssets.delete(asset.url);
           }
-        } catch (e) {
+        } catch (_e) {
           // File check failed
         }
       }
@@ -320,7 +297,7 @@ async areStaticCharacterSelectAssetsCached(onProgress = null) {
             });
             isAvailable = true;
           }
-        } catch (e) {
+        } catch (_e) {
           // File not found
         }
       }

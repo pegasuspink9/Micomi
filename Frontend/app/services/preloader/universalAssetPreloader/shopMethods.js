@@ -146,7 +146,7 @@ async areCharacterShopAssetsCachedFromMap(charactersData) {
             isAvailable = true;
             cachedFromMap.push(asset.name);
           }
-        } catch (e) {
+        } catch (_e) {
           // File check failed, will try disk check
         }
       }
@@ -170,7 +170,7 @@ async areCharacterShopAssetsCachedFromMap(charactersData) {
             isAvailable = true;
             cachedFromMap.push(asset.name);
           }
-        } catch (e) {
+        } catch (_e) {
           // Not in game_animations
         }
 
@@ -191,7 +191,7 @@ async areCharacterShopAssetsCachedFromMap(charactersData) {
               isAvailable = true;
               cachedFromMap.push(asset.name);
             }
-          } catch (e) {
+          } catch (_e) {
             // Not in game_images
           }
         }
@@ -211,7 +211,7 @@ async areCharacterShopAssetsCachedFromMap(charactersData) {
               });
               isAvailable = true;
             }
-          } catch (e) {
+          } catch (_e) {
             // Not in characters
           }
         }
@@ -259,61 +259,15 @@ async downloadMissingCharacterShopAssets(missingAssets, onProgress = null, onAss
       let successCount = 0;
       const results = [];
 
-      for (let i = 0; i < missingAssets.length; i += this.maxConcurrentDownloads) {
-        const batch = missingAssets.slice(i, i + this.maxConcurrentDownloads);
-
-        const batchPromises = batch.map(async (asset, batchIndex) => {
-          const globalIndex = i + batchIndex;
-
-          if (onAssetComplete) {
-            onAssetComplete({
-              url: asset.url,
-              name: asset.name,
-              type: asset.type,
-              category: asset.category,
-              progress: 0,
-              currentIndex: globalIndex,
-              totalAssets: missingAssets.length,
-            });
-          }
-
-          const result = await this.downloadSingleAsset(
-            asset.url,
-            asset.category,
-            (downloadProgress) => {
-              if (onAssetComplete) {
-                onAssetComplete({
-                  ...asset,
-                  progress: downloadProgress.progress,
-                  currentIndex: globalIndex,
-                  totalAssets: missingAssets.length,
-                });
-              }
-            }
-          );
-
-          if (result.success) {
-            successCount++;
-          }
-
-          const assetResult = { asset, result };
-          results.push(assetResult);
-
-          if (onProgress) {
-            onProgress({
-              loaded: results.length,
-              total: missingAssets.length,
-              progress: results.length / missingAssets.length,
-              successCount,
-              currentAsset: asset,
-            });
-          }
-
-          return assetResult;
-        });
-
-        await Promise.all(batchPromises);
-      }
+      const poolResult = await this.downloadAssetsInPool(
+        missingAssets,
+        this.maxConcurrentDownloads,
+        onProgress,
+        onAssetComplete,
+        'characters'
+      );
+      successCount = poolResult.successCount;
+      results.push(...poolResult.results);
 
       const totalTime = Date.now() - startTime;
       this.isDownloading = wasDownloading;
@@ -359,74 +313,15 @@ async downloadPotionShopAssets(levelPreviewData, onProgress = null, onAssetCompl
     let successCount = 0;
     const results = [];
 
-    // Download assets with controlled concurrency
-    for (let i = 0; i < assets.length; i += this.maxConcurrentDownloads) {
-      const batch = assets.slice(i, i + this.maxConcurrentDownloads);
-      
-      const batchPromises = batch.map(async (asset, batchIndex) => {
-        const globalIndex = i + batchIndex;
-        
-        // Individual asset progress callback
-        if (onAssetComplete) {
-          onAssetComplete({
-            url: asset.url,
-            name: asset.name,
-            type: asset.type,
-            category: asset.category,
-            potionType: asset.potionType,
-            progress: 0,
-            currentIndex: globalIndex,
-            totalAssets: assets.length
-          });
-        }
-
-        const result = await this.downloadSingleAsset(
-          asset.url, 
-          asset.category, 
-          (downloadProgress) => {
-            // Individual asset download progress
-            if (onAssetComplete) {
-              onAssetComplete({
-                url: asset.url,
-                name: asset.name,
-                type: asset.type,
-                category: asset.category,
-                potionType: asset.potionType,
-                progress: downloadProgress.progress,
-                currentIndex: globalIndex,
-                totalAssets: assets.length,
-                bytesWritten: downloadProgress.bytesWritten,
-                totalBytes: downloadProgress.totalBytes
-              });
-            }
-          }
-        );
-        
-        if (result.success) {
-          successCount++;
-        }
-        
-        const assetResult = { asset, result };
-        results.push(assetResult);
-        
-        // Overall progress callback
-        if (onProgress) {
-          onProgress({
-            loaded: results.length,
-            total: assets.length,
-            progress: results.length / assets.length,
-            successCount,
-            currentAsset: asset,
-            category: 'potion_shop'
-          });
-        }
-
-        return assetResult;
-      });
-
-      // Wait for current batch to complete before starting next batch
-      await Promise.all(batchPromises);
-    }
+    const poolResult = await this.downloadAssetsInPool(
+      assets,
+      this.maxConcurrentDownloads,
+      onProgress,
+      onAssetComplete,
+      'potion_shop'
+    );
+    successCount = poolResult.successCount;
+    results.push(...poolResult.results);
 
     const totalTime = Date.now() - startTime;
     this.isDownloading = false;

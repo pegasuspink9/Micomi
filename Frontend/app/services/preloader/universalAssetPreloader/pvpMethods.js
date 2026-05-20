@@ -1,6 +1,3 @@
-import * as FileSystem from 'expo-file-system/legacy';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
 export const pvpMethods = {
   getStaticPvpAssets() {
     const assets = [];

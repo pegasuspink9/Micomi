@@ -215,7 +215,7 @@ async areProfileAssetsCachedFromMap(profileData) {
           if (fileInfo.exists && fileInfo.size > 0) {
             isAvailable = true;
           }
-        } catch (e) {
+        } catch (_e) {
           // File check failed
         }
       }
@@ -241,7 +241,7 @@ async areProfileAssetsCachedFromMap(profileData) {
               console.log(`📦 Found profile asset in ${category} cache: ${asset.name}`);
               break;
             }
-          } catch (e) {
+          } catch (_e) {
             // Continue checking other categories
           }
         }
@@ -282,27 +282,14 @@ async downloadMissingProfileAssets(missingAssets, onProgress = null) {
     const startTime = Date.now();
     let successCount = 0;
 
-    for (let i = 0; i < missingAssets.length; i += this.maxConcurrentDownloads) {
-      const batch = missingAssets.slice(i, i + this.maxConcurrentDownloads);
-      
-      const results = await Promise.all(
-        batch.map(asset => 
-          this.downloadSingleAsset(asset.url, 'game_images', null, 2)
-        )
-      );
-
-      results.forEach(result => {
-        if (result.success) successCount++;
-      });
-
-      if (onProgress) {
-        onProgress({
-          loaded: Math.min(i + batch.length, missingAssets.length),
-          total: missingAssets.length,
-          progress: Math.min(i + batch.length, missingAssets.length) / missingAssets.length
-        });
-      }
-    }
+    const poolResult = await this.downloadAssetsInPool(
+      missingAssets,
+      this.maxConcurrentDownloads,
+      onProgress,
+      null,
+      'game_images'
+    );
+    successCount = poolResult.successCount;
 
     const totalTime = Date.now() - startTime;
     console.log(`📦 Missing profile assets download completed: ${successCount}/${missingAssets.length} in ${totalTime}ms`);
@@ -339,72 +326,15 @@ async downloadPlayerProfileAssets(playerData, onProgress = null, onAssetComplete
       let successCount = 0;
       const results = [];
 
-      // Download assets with controlled concurrency
-      for (let i = 0; i < assets.length; i += this.maxConcurrentDownloads) {
-        const batch = assets.slice(i, i + this.maxConcurrentDownloads);
-        
-        const batchPromises = batch.map(async (asset, batchIndex) => {
-          const globalIndex = i + batchIndex;
-          
-          // Individual asset progress callback
-          if (onAssetComplete) {
-            onAssetComplete({
-              url: asset.url,
-              name: asset.name,
-              type: asset.type,
-              category: asset.category,
-              progress: 0,
-              currentIndex: globalIndex,
-              totalAssets: assets.length
-            });
-          }
-
-          const result = await this.downloadSingleAsset(
-            asset.url, 
-            asset.category, 
-            (downloadProgress) => {
-              // Individual asset download progress
-              if (onAssetComplete) {
-                onAssetComplete({
-                  url: asset.url,
-                  name: asset.name,
-                  type: asset.type,
-                  category: asset.category,
-                  progress: downloadProgress.progress,
-                  currentIndex: globalIndex,
-                  totalAssets: assets.length,
-                  bytesWritten: downloadProgress.bytesWritten,
-                  totalBytes: downloadProgress.totalBytes
-                });
-              }
-            }
-          );
-          
-          if (result.success) {
-            successCount++;
-          }
-          
-          const assetResult = { asset, result };
-          results.push(assetResult);
-          
-          // Overall progress callback
-          if (onProgress) {
-            onProgress({
-              loaded: results.length,
-              total: assets.length,
-              progress: results.length / assets.length,
-              successCount,
-              currentAsset: asset,
-              category: 'player_profile'
-            });
-          }
-
-          return assetResult;
-        });
-
-        // Wait for current batch to complete before starting next batch
-        await Promise.all(batchPromises);
-      }
+      const poolResult = await this.downloadAssetsInPool(
+        assets,
+        this.maxConcurrentDownloads,
+        onProgress,
+        onAssetComplete,
+        'player_profile'
+      );
+      successCount = poolResult.successCount;
+      results.push(...poolResult.results);
 
       const totalTime = Date.now() - startTime;
       this.isDownloading = false;

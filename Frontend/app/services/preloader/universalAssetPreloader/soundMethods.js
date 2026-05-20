@@ -1,4 +1,3 @@
-import * as FileSystem from 'expo-file-system/legacy';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const soundMethods = {
@@ -88,33 +87,15 @@ async downloadStaticSoundAssets(onProgress = null) {
     let successCount = 0;
     const results = [];
 
-    for (let i = 0; i < assets.length; i += this.maxConcurrentDownloads) {
-      const batch = assets.slice(i, i + this.maxConcurrentDownloads);
-
-      const batchPromises = batch.map(async (asset, batchIndex) => {
-        const result = await this.downloadSingleAsset(asset.url, asset.category);
-
-        if (result.success) {
-          successCount++;
-        }
-
-        results.push({ asset, result });
-
-        if (onProgress) {
-          onProgress({
-            loaded: results.length,
-            total: assets.length,
-            progress: results.length / assets.length,
-            successCount,
-            currentAsset: asset,
-          });
-        }
-
-        return { asset, result };
-      });
-
-      await Promise.all(batchPromises);
-    }
+    const poolResult = await this.downloadAssetsInPool(
+      assets,
+      this.maxConcurrentDownloads,
+      onProgress,
+      null,
+      'static_sounds'
+    );
+    successCount = poolResult.successCount;
+    results.push(...poolResult.results);
 
     const cacheKey = 'static_soundsAssets';
     const assetsToSave = [];

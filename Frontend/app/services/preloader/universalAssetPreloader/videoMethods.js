@@ -128,75 +128,15 @@ async downloadVideoAssets(videoAssets, onProgress = null, onAssetComplete = null
     // Download videos with controlled concurrency (videos are larger, so fewer concurrent downloads)
     const videoConcurrency = Math.min(this.maxConcurrentDownloads, 2); // Limit to 2 concurrent video downloads
     
-    for (let i = 0; i < sortedAssets.length; i += videoConcurrency) {
-      const batch = sortedAssets.slice(i, i + videoConcurrency);
-      
-      const batchPromises = batch.map(async (asset, batchIndex) => {
-        const globalIndex = i + batchIndex;
-        
-        // Individual asset progress callback
-        if (onAssetComplete) {
-          onAssetComplete({
-            url: asset.url,
-            name: asset.name,
-            type: asset.type,
-            category: asset.category,
-            characterName: asset.characterName,
-            priority: asset.priority,
-            progress: 0,
-            currentIndex: globalIndex,
-            totalAssets: sortedAssets.length
-          });
-        }
-
-        const result = await this.downloadSingleAsset(
-          asset.url, 
-          asset.category, 
-          (downloadProgress) => {
-            // Individual asset download progress
-            if (onAssetComplete) {
-              onAssetComplete({
-                url: asset.url,
-                name: asset.name,
-                type: asset.type,
-                category: asset.category,
-                characterName: asset.characterName,
-                priority: asset.priority,
-                progress: downloadProgress.progress,
-                currentIndex: globalIndex,
-                totalAssets: sortedAssets.length,
-                bytesWritten: downloadProgress.bytesWritten,
-                totalBytes: downloadProgress.totalBytes
-              });
-            }
-          }
-        );
-        
-        if (result.success) {
-          successCount++;
-        }
-        
-        const assetResult = { asset, result };
-        results.push(assetResult);
-        
-        // Overall progress callback
-        if (onProgress) {
-          onProgress({
-            loaded: results.length,
-            total: sortedAssets.length,
-            progress: results.length / sortedAssets.length,
-            successCount,
-            currentAsset: asset,
-            category: 'videos'
-          });
-        }
-
-        return assetResult;
-      });
-
-      // Wait for current batch to complete before starting next batch
-      await Promise.all(batchPromises);
-    }
+    const poolResult = await this.downloadAssetsInPool(
+      sortedAssets,
+      videoConcurrency,
+      onProgress,
+      onAssetComplete,
+      'videos'
+    );
+    successCount = poolResult.successCount;
+    results.push(...poolResult.results);
 
     const totalTime = Date.now() - startTime;
     this.isDownloading = false;

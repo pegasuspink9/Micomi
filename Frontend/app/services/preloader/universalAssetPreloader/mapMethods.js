@@ -226,61 +226,15 @@ async downloadAllMapAssets(mapLevelData, onProgress = null, onAssetComplete = nu
       const results = [];
       const downloadConcurrency = this.getAdaptiveConcurrency(assets.length, 'map_assets');
 
-      for (let i = 0; i < assets.length; i += downloadConcurrency) {
-        const batch = assets.slice(i, i + downloadConcurrency);
-
-        const batchPromises = batch.map(async (asset, batchIndex) => {
-          const globalIndex = i + batchIndex;
-
-          if (onAssetComplete) {
-            onAssetComplete({
-              url: asset.url,
-              name: asset.name,
-              type: asset.type,
-              category: asset.category,
-              progress: 0,
-              currentIndex: globalIndex,
-              totalAssets: assets.length,
-            });
-          }
-
-          const result = await this.downloadSingleAsset(
-            asset.url,
-            asset.category,
-            (downloadProgress) => {
-              if (onAssetComplete) {
-                onAssetComplete({
-                  ...asset,
-                  progress: downloadProgress.progress,
-                  currentIndex: globalIndex,
-                  totalAssets: assets.length,
-                });
-              }
-            }
-          );
-
-          if (result.success) {
-            successCount++;
-          }
-
-          const assetResult = { asset, result };
-          results.push(assetResult);
-
-          if (onProgress) {
-            onProgress({
-              loaded: results.length,
-              total: assets.length,
-              progress: results.length / assets.length,
-              successCount,
-              currentAsset: asset,
-              category: 'map_assets',
-            });
-          }
-          return assetResult;
-        });
-
-        await Promise.all(batchPromises);
-      }
+      const poolResult = await this.downloadAssetsInPool(
+        assets,
+        downloadConcurrency,
+        onProgress,
+        onAssetComplete,
+        'map_assets'
+      );
+      successCount = poolResult.successCount;
+      results.push(...poolResult.results);
 
       const totalTime = Date.now() - startTime;
       this.isDownloading = wasDownloading;
@@ -339,7 +293,7 @@ async areMapAssetsCached(mapLevelData, onProgress = null) {
           } else {
             this.downloadedAssets.delete(asset.url);
           }
-        } catch (e) {
+        } catch (_e) {
           // File check failed, continue to disk check
         }
       }
@@ -360,7 +314,7 @@ async areMapAssetsCached(mapLevelData, onProgress = null) {
             });
             isAvailable = true;
           }
-        } catch (e) {
+        } catch (_e) {
           // File doesn't exist
         }
       }
@@ -472,61 +426,15 @@ async downloadMapThemeAssets(mapThemes, onProgress = null, onAssetComplete = nul
       const results = [];
       const downloadConcurrency = this.getAdaptiveConcurrency(assets.length, 'map_theme_assets');
 
-      for (let i = 0; i < assets.length; i += downloadConcurrency) {
-        const batch = assets.slice(i, i + downloadConcurrency);
-
-        const batchPromises = batch.map(async (asset, batchIndex) => {
-          const globalIndex = i + batchIndex;
-
-          if (onAssetComplete) {
-            onAssetComplete({
-              url: asset.url,
-              name: asset.name,
-              type: asset.type,
-              category: asset.category,
-              progress: 0,
-              currentIndex: globalIndex,
-              totalAssets: assets.length,
-            });
-          }
-
-          const result = await this.downloadSingleAsset(
-            asset.url,
-            asset.category,
-            (downloadProgress) => {
-              if (onAssetComplete) {
-                onAssetComplete({
-                  ...asset,
-                  progress: downloadProgress.progress,
-                  currentIndex: globalIndex,
-                  totalAssets: assets.length,
-                });
-              }
-            }
-          );
-
-          if (result.success) {
-            successCount++;
-          }
-
-          const assetResult = { asset, result };
-          results.push(assetResult);
-
-          if (onProgress) {
-            onProgress({
-              loaded: results.length,
-              total: assets.length,
-              progress: results.length / assets.length,
-              successCount,
-              currentAsset: asset,
-              category: 'map_theme_assets',
-            });
-          }
-          return assetResult;
-        });
-
-        await Promise.all(batchPromises);
-      }
+      const poolResult = await this.downloadAssetsInPool(
+        assets,
+        downloadConcurrency,
+        onProgress,
+        onAssetComplete,
+        'map_theme_assets'
+      );
+      successCount = poolResult.successCount;
+      results.push(...poolResult.results);
 
       const totalTime = Date.now() - startTime;
       this.isDownloading = wasDownloading;
@@ -574,7 +482,7 @@ async areMapThemeAssetsCached(mapThemes, onProgress = null) {
           } else {
             this.downloadedAssets.delete(asset.url);
           }
-        } catch (e) {
+        } catch (_e) {
           // File check failed
         }
       }
@@ -594,7 +502,7 @@ async areMapThemeAssetsCached(mapThemes, onProgress = null) {
             });
             isAvailable = true;
           }
-        } catch (e) {
+        } catch (_e) {
           // File doesn't exist
         }
       }
