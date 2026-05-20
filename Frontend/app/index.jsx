@@ -15,7 +15,6 @@ import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { gameScale, scaleWidth, scaleHeight, hp } from './Components/Responsiveness/gameResponsive';
 import { useRouter } from 'expo-router';
 import { useAuth } from './hooks/useAuth';
-import { usePlayerProfile } from './hooks/usePlayerProfile';
 import { authService } from './services/authService';
 import * as WebBrowser from "expo-web-browser";
 import SpriteActivityIndicator from './Components/Actual Game/Loading/SpriteActivityIndicator';
@@ -34,7 +33,6 @@ export default function Login() {
   const [isLoggingIn, setIsLoggingIn] = useState(false); // Controls button text
 
   const { login, loginWithGoogle, loginWithFacebook, user } = useAuth();
-  const { checkIdentifierExists } = usePlayerProfile();
   const router = useRouter();
 
   const { gRequest, handleGoogleLogin } = useGoogleAuth(loginWithGoogle);
@@ -56,25 +54,13 @@ export default function Login() {
     setIsLoggingIn(true); // Change button text to "Logging in"
 
     try {
-      // 1. Check if email or username exists using playerService
-      const identifierExists = await checkIdentifierExists(email);
-
-      // 2. If identifier doesn't exist, display error and stop
-      if (!identifierExists) {
-        setErrorMessage('Incorrect Email or Username.');
-        setIsLoggingIn(false);
-        return;
-      }
-      // 3. Identifier exists! Attempt to log in with password
       await login(email, password);
-
     } catch (error) {
       // If network fails (e.g. localhost server is off)
       if (error.message === 'Network Error' || error.name === 'TypeError') {
         setErrorMessage('Network error. Is the server running?');
       } else {
-        // 4. If login fails here, the identifier exists, so it MUST be an incorrect password
-        setErrorMessage('Incorrect Password.');
+        setErrorMessage('Incorrect Email/Username or Password.');
       }
     } finally {
       setIsLoggingIn(false); // Revert button text to "Log In"
