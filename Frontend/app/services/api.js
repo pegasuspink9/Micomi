@@ -142,6 +142,13 @@ class ApiService {
           }
         } catch (refreshError) {
           console.error("❌ Token refresh failed:", refreshError.message);
+          try {
+            const { authService } = require('./authService');
+            await authService.logout();
+            authService.triggerSessionExpired();
+          } catch (logoutError) {
+            console.error("❌ Failed to perform logout cleanup:", logoutError.message);
+          }
           throw new Error('Session expired. Please log in again.');
         }
       }

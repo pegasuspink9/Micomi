@@ -5,7 +5,19 @@ const TOKEN_KEY = 'accessToken';
 const REFRESH_TOKEN_KEY = 'refreshToken';
 const PLAYER_KEY = 'playerData';
 
+let sessionExpiredCallback = null;
+
 export const authService = {
+  onSessionExpired(callback) {
+    sessionExpiredCallback = callback;
+  },
+
+  triggerSessionExpired() {
+    if (sessionExpiredCallback) {
+      sessionExpiredCallback();
+    }
+  },
+
   // Login function
   async login(identifier, password) {
     try {
@@ -133,6 +145,15 @@ export const authService = {
       await apiService.post('/auth/logout');
     } catch (error) {
       console.error('Logout API failed:', error);
+    } finally {
+      try {
+        await AsyncStorage.removeItem(TOKEN_KEY);
+        await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
+        await AsyncStorage.removeItem(PLAYER_KEY);
+        apiService.setAuthToken(null);
+      } catch (storageError) {
+        console.error('Failed to clear session storage:', storageError);
+      }
     }
   },
 

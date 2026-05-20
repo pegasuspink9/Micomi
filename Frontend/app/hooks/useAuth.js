@@ -14,6 +14,11 @@ const updateGlobalState = (user, loading) => {
   listeners.forEach((listener) => listener({ user, loading }));
 };
 
+// Register callback on authService to handle automatic logout on session expiration
+authService.onSessionExpired(() => {
+  updateGlobalState(null, false);
+});
+
 export const useAuth = () => {
   const [user, setUser] = useState(globalUser);
   const [loading, setLoading] = useState(globalLoading);

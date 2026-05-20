@@ -1,33 +1,33 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  StyleSheet,
   Dimensions,
   ImageBackground,
   Pressable
 } from 'react-native';
 import SpriteActivityIndicator from '../Actual Game/Loading/SpriteActivityIndicator';
 import { LinearGradient } from 'expo-linear-gradient';
-import { 
-  scale, 
+import {
+  scale,
   hp,
   SCREEN
 } from '../Responsiveness/gameResponsive';
 import { Image } from 'expo-image';
 import { Image as RNImage } from 'react-native';
-import { soundManager } from '../Actual Game/Sounds/UniversalSoundManager'; 
+import { soundManager } from '../Actual Game/Sounds/UniversalSoundManager';
 import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
 
 // Import Reanimated
-import Reanimated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming, 
+import Reanimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
   withSpring,
   withDelay,
-  withRepeat, 
-  Easing, 
+  withRepeat,
+  Easing,
   cancelAnimation,
   runOnJS,
   interpolate,
@@ -52,10 +52,32 @@ const getTierFloor = (points) => {
   return floor;
 };
 
+// Helper to find current rank tier name
+const getRankTierName = (points) => {
+  if (points >= 13600) return 'Nexus';
+  if (points >= 9900) return 'Root';
+  if (points >= 6800) return 'Cipher';
+  if (points >= 4300) return 'Widget';
+  if (points >= 2400) return 'Sprite';
+  if (points >= 1000) return 'Byte';
+  return 'Pixel';
+};
+
+// Helper to find current rank tier's details (min points, max points, and span)
+const getTierSpan = (points) => {
+  if (points >= 13600) return { min: 13600, max: null, span: 1 };
+  if (points >= 9900) return { min: 9900, max: 13599, span: 3700 };
+  if (points >= 6800) return { min: 6800, max: 9899, span: 3100 };
+  if (points >= 4300) return { min: 4300, max: 6799, span: 2500 };
+  if (points >= 2400) return { min: 2400, max: 4299, span: 1900 };
+  if (points >= 1000) return { min: 1000, max: 2399, span: 1400 };
+  return { min: 0, max: 999, span: 1000 };
+};
+
 //  FIXED: Smooth Reanimated Number Counter
 const NumberCounter = ({ value, start, duration = 2500 }) => {
   const animatedValue = useSharedValue(0);
-  
+
   useEffect(() => {
     if (!start) {
       animatedValue.value = 0;
@@ -102,7 +124,7 @@ const LevelCompletionModal = ({
   onNextLevel,
   completionRewards,
   nextLevel,
-  isLoading, 
+  isLoading,
   victoryAudioUrl,
   victoryImageUrl,
   isPvpMode = false,
@@ -111,7 +133,7 @@ const LevelCompletionModal = ({
 }) => {
   //  1. Placeholder Data for Stars
   // Ensure stars are 0 if pvp mode
-  const stars = isPvpMode ? 0 : (completionRewards?.stars || 0); 
+  const stars = isPvpMode ? 0 : (completionRewards?.stars || 0);
   const rankProgress = completionRewards?.rankProgress || null;
   // Note: We will use isPvpMode directly for rendering decisions now, 
   // but keeping this for potential data checks.
@@ -122,6 +144,9 @@ const LevelCompletionModal = ({
   const requiredRankPointsCeiling = Math.max(1, Number(rankProgress?.rank_progress_required || 100));
   const beforeRankPointsTotal = Math.max(0, Number(rankProgress?.before_points || 0));
   const currentRankPointsTotal = Math.max(0, Number(rankProgress?.player_rank_points || 0));
+  const nextRankPointsTargetText = rankProgress?.next_rank_points_target !== undefined && rankProgress?.next_rank_points_target !== null
+    ? String(rankProgress.next_rank_points_target)
+    : 'Max';
 
   const playerRankImage = useMemo(() => {
     const sourceUrl = rankProgress?.player_rank_image;
@@ -150,19 +175,19 @@ const LevelCompletionModal = ({
   const spriteTranslateY = useSharedValue(SCREEN_HEIGHT);
   const textScale = useSharedValue(3);
   const textOpacity = useSharedValue(0);
-  
+
   const reward1Scale = useSharedValue(0);
   const reward2Scale = useSharedValue(0);
   const reward3Scale = useSharedValue(0);
-  
+
   const buttonsTranslateY = useSharedValue(SCREEN_HEIGHT);
 
   //  2. New Shared Values for Progress Bar & Stars
   const progressValue = useSharedValue(0);
   const starsOpacity = useSharedValue(0); // To fade the bar in
-  
+
   // Star pop animations
-  const star1Scale = useSharedValue(1); 
+  const star1Scale = useSharedValue(1);
   const star2Scale = useSharedValue(1);
   const star3Scale = useSharedValue(1);
 
@@ -187,11 +212,11 @@ const LevelCompletionModal = ({
   //  FIXED: Set image URL from backend prop
   useEffect(() => {
     console.log('🏆 LevelCompletion victoryImageUrl received:', victoryImageUrl);
-    
+
     if (victoryImageUrl && typeof victoryImageUrl === 'string') {
       const cached = universalAssetPreloader.getCachedAssetPath(victoryImageUrl);
       setAnimationUrl(cached);
-      
+
       if (cached && cached.startsWith('file://')) {
         setImageReady(true);
       } else {
@@ -217,7 +242,7 @@ const LevelCompletionModal = ({
 
     let mounted = true;
     setImageReady(false);
-    
+
     (async () => {
       try {
         await RNImage.prefetch(animationUrl);
@@ -228,7 +253,7 @@ const LevelCompletionModal = ({
         if (mounted) setImageReady(true);
       }
     })();
-    
+
     return () => { mounted = false; };
   }, [animationUrl]);
 
@@ -281,7 +306,7 @@ const LevelCompletionModal = ({
 
   const startEntranceAnimation = () => {
     setIsAnimating(true);
-    
+
     // Reset Values
     backgroundOpacity.value = 0;
     spriteTranslateY.value = SCREEN_HEIGHT;
@@ -303,60 +328,64 @@ const LevelCompletionModal = ({
     starsOpacity.value = withDelay(400, withTiming(1, { duration: 500 }));
 
     // --- Progress Bar Filling Logic ---
-    // We check isPvpMode and rankProgress existence here for animation logic
     if (isPvpMode && rankProgress) {
-      const beforePoints = beforeRankPointsTotal;
-      const currentPoints = currentRankPointsTotal;
-      const rankCeiling = requiredRankPointsCeiling;
+      const beforePoints = Math.max(0, Number(rankProgress.before_points || 0));
+      const currentPoints = Math.max(0, Number(rankProgress.player_rank_points || 0));
+      const delta = Number(rankProgress.delta || 0);
+      const currentProgress = Math.max(0, Number(rankProgress.rank_progress_current || 0));
+      const requiredProgress = Math.max(1, Number(rankProgress.rank_progress_required || 100));
 
-      // Calculate floors based on thresholds
-      const beforeFloor = getTierFloor(beforePoints);
-      const currentFloor = getTierFloor(currentPoints);
+      const oldTierName = getRankTierName(beforePoints);
+      const newTierName = rankProgress.player_rank_name;
 
-      // Detect if a rank threshold was crossed
-      const didRankUp = currentFloor > beforeFloor;
+      const didRankUp = delta > 0 && oldTierName !== newTierName;
+      const didRankDown = delta < 0 && oldTierName !== newTierName;
 
       if (didRankUp) {
-        // --- RANK UP SCENARIO: Two-stage animation ---
-        
-        // Phase 1: Calculate progress relative to the OLD tier
-        const oldTierSpan = Math.max(1, currentFloor - beforeFloor);
-        const relativeStart = Math.max(0, beforePoints - beforeFloor);
-        const startPercent = Math.min(100, (relativeStart / oldTierSpan) * 100);
+        // --- RANK UP SCENARIO: Two-stage animation (fills old tier to 100%, then new tier from 0% to final) ---
+        const oldTier = getTierSpan(beforePoints);
+        const relativeStart = Math.max(0, beforePoints - oldTier.min);
+        const startPercent = Math.min(100, (relativeStart / oldTier.span) * 100);
+        const finalPercent = Math.min(100, (currentProgress / requiredProgress) * 100);
 
-        // Set starting position
         progressValue.value = startPercent;
-
-        // Animate to 100% (filling the old rank)
         progressValue.value = withDelay(500, withTiming(100, {
-            duration: 800, // Faster fill for the first phase
-            easing: Easing.linear
-          }, (finished) => {
-            if (finished) {
-              // Phase 2: Reset and animate to new rank progress
-              progressValue.value = 0; // Instant reset
+          duration: 800,
+          easing: Easing.linear
+        }, (finished) => {
+          if (finished) {
+            progressValue.value = 0;
+            progressValue.value = withTiming(finalPercent, {
+              duration: 1000,
+              easing: Easing.out(Easing.cubic)
+            });
+          }
+        }));
+      } else if (didRankDown) {
+        // --- RANK DOWN SCENARIO: Two-stage animation (drains old tier to 0%, then new tier from 100% to final) ---
+        const oldTier = getTierSpan(beforePoints);
+        const relativeStart = Math.max(0, beforePoints - oldTier.min);
+        const startPercent = Math.min(100, (relativeStart / oldTier.span) * 100);
+        const finalPercent = Math.min(100, (currentProgress / requiredProgress) * 100);
 
-              // Calculate progress relative to the NEW tier
-              const newTierSpan = Math.max(1, rankCeiling - currentFloor);
-              const relativeEnd = Math.max(0, currentPoints - currentFloor);
-              const finalPercent = Math.min(100, (relativeEnd / newTierSpan) * 100);
-
-              // Animate to final percentage
-              progressValue.value = withTiming(finalPercent, {
-                duration: 1000,
-                easing: Easing.out(Easing.cubic)
-              });
-            }
-          })
-        );
-
+        progressValue.value = startPercent;
+        progressValue.value = withDelay(500, withTiming(0, {
+          duration: 800,
+          easing: Easing.linear
+        }, (finished) => {
+          if (finished) {
+            progressValue.value = 100;
+            progressValue.value = withTiming(finalPercent, {
+              duration: 1000,
+              easing: Easing.out(Easing.cubic)
+            });
+          }
+        }));
       } else {
-        // --- NORMAL SCENARIO: Single-stage animation (stayed in same rank) ---
-        const span = Math.max(1, rankCeiling - currentFloor);
-        const relativeStart = Math.max(0, beforePoints - currentFloor);
-        const startPercent = Math.min(100, (relativeStart / span) * 100);
-        const relativeEnd = Math.max(0, currentPoints - currentFloor);
-        const finalPercent = Math.min(100, (relativeEnd / span) * 100);
+        // --- NORMAL SCENARIO: Single-stage animation ---
+        const oldProgress = currentProgress - delta;
+        const startPercent = Math.min(100, Math.max(0, (oldProgress / requiredProgress) * 100));
+        const finalPercent = Math.min(100, Math.max(0, (currentProgress / requiredProgress) * 100));
 
         progressValue.value = startPercent;
         progressValue.value = withDelay(500, withTiming(finalPercent, {
@@ -434,9 +463,9 @@ const LevelCompletionModal = ({
   // Animated Styles
   const backgroundStyle = useAnimatedStyle(() => ({ opacity: backgroundOpacity.value }));
   const spriteContainerStyle = useAnimatedStyle(() => ({ transform: [{ translateY: spriteTranslateY.value }] }));
-  const textStyle = useAnimatedStyle(() => ({ 
+  const textStyle = useAnimatedStyle(() => ({
     opacity: textOpacity.value,
-    transform: [{ scale: textScale.value }] 
+    transform: [{ scale: textScale.value }]
   }));
   const reward1Style = useAnimatedStyle(() => ({ transform: [{ scale: reward1Scale.value }] }));
   const reward2Style = useAnimatedStyle(() => ({ transform: [{ scale: reward2Scale.value }] }));
@@ -447,7 +476,7 @@ const LevelCompletionModal = ({
   const progressBarStyle = useAnimatedStyle(() => ({
     width: `${progressValue.value}%`
   }));
-  
+
   const starContainerStyle = useAnimatedStyle(() => ({
     opacity: starsOpacity.value,
     transform: [{ translateY: interpolate(starsOpacity.value, [0, 1], [20, 0]) }]
@@ -481,7 +510,7 @@ const LevelCompletionModal = ({
           const maxRotation = 7;
           const rotationAngle = (distanceFromCenter / centerIndex) * maxRotation;
           const radiusOffset = Math.abs(distanceFromCenter) * -2;
-          
+
           return (
             <Text
               key={index}
@@ -505,28 +534,28 @@ const LevelCompletionModal = ({
   };
 
   return (
-    <Reanimated.View 
+    <Reanimated.View
       style={[
         styles.modalOverlay,
         backgroundStyle
       ]}
       pointerEvents={visible ? 'auto' : 'none'}
     >
-        <ImageBackground
-          source={isPvpLost ? require('./GameOverImage/backgroundMainFail.png') : require('./GameOverImage/backgroundMain.png')}
-          resizeMode="cover"
-          style={styles.backgroundImageContainer}
-          imageStyle={styles.backgroundImageStyle}
-        >
+      <ImageBackground
+        source={isPvpLost ? require('./GameOverImage/backgroundMainFail.png') : require('./GameOverImage/backgroundMain.png')}
+        resizeMode="cover"
+        style={styles.backgroundImageContainer}
+        imageStyle={styles.backgroundImageStyle}
+      >
         <View style={styles.contentContainer}>
-          
-            {renderCurvedText()}
+
+          {renderCurvedText()}
           {/* 1. Sprite Animation (Slides Up) */}
-          <Reanimated.View 
+          <Reanimated.View
             style={[
               styles.spriteContainerWrapper,
               spriteContainerStyle,
-              { marginTop: scale(30) } 
+              { marginTop: scale(30) }
             ]}
           >
             <View style={[styles.spriteContainer, { width: SPRITE_SIZE, height: SPRITE_SIZE }]}>
@@ -553,7 +582,7 @@ const LevelCompletionModal = ({
                   />
                 ) : (
                   <View style={[styles.spriteImage, { backgroundColor: 'transparent', justifyContent: 'center', alignItems: 'center' }]}>
-              <SpriteActivityIndicator size={scale(50)} />
+                    <SpriteActivityIndicator size={scale(50)} />
                   </View>
                 )}
               </Reanimated.View>
@@ -608,11 +637,11 @@ const LevelCompletionModal = ({
                     )}
                     <View style={styles.pvpRankLabelGroup}>
                       <Text style={styles.pvpRankNameText} numberOfLines={1}>
-                         {/* Added fallback strings for safety */}
+                        {/* Added fallback strings for safety */}
                         {rankProgress?.next_rank_name || 'Next Rank'}
                       </Text>
                       <Text style={styles.pvpRankValueText} numberOfLines={1}>
-                        {requiredRankPointsCeiling}
+                        {nextRankPointsTargetText}
                       </Text>
                     </View>
                   </View>
@@ -673,8 +702,8 @@ const LevelCompletionModal = ({
             <View style={styles.rewardsDisplay}>
               {/* Coins */}
               <Reanimated.View style={[styles.rewardItem, reward1Style]}>
-                <Image 
-                  source={require('../icons/coins.png')} 
+                <Image
+                  source={require('../icons/coins.png')}
                   style={styles.rewardIcon}
                   resizeMode="contain"
                 />
@@ -687,8 +716,8 @@ const LevelCompletionModal = ({
 
               {/* Points */}
               <Reanimated.View style={[styles.rewardItem, reward2Style]}>
-                <Image 
-                  source={require('../icons/points.png')} 
+                <Image
+                  source={require('../icons/points.png')}
                   style={styles.rewardIcon}
                   resizeMode="contain"
                 />
@@ -701,8 +730,8 @@ const LevelCompletionModal = ({
 
               {/* EXP */}
               <Reanimated.View style={[styles.rewardItem, reward3Style]}>
-                <Image 
-                  source={require('../icons/exp.png')} 
+                <Image
+                  source={require('../icons/exp.png')}
                   style={styles.rewardIcon}
                   resizeMode="contain"
                 />
@@ -722,91 +751,91 @@ const LevelCompletionModal = ({
               <Text style={styles.loadingText}>Loading next level...</Text>
             </View>
           ) : (
-            <Reanimated.View 
+            <Reanimated.View
               style={[
                 styles.lowerGridWrapper,
                 buttonsStyle
               ]}
             >
 
-                    <View style={styles.floatingButtonsArea}>
-                      
+              <View style={styles.floatingButtonsArea}>
 
-                        {isPvpMode ? (
-                          // PvP: only show Home button
-                          <Pressable
-                            style={({ pressed }) => [
-                              styles.floatingButton,
-                              pressed && styles.buttonPressed
-                            ]}
-                            onPress={onHome}
-                            disabled={isAnimating}
-                          >
-                            <Image
-                              source={require('./GameOverImage/Home.png')}
-                              style={[styles.buttonImage, styles.buttonImage1]}
-                              resizeMode="contain"
-                            />
-                          </Pressable>
-                        ) : (
-                          <>
-                            <Pressable
-                              style={({ pressed }) => [
-                                styles.floatingButton,
-                                pressed && styles.buttonPressed
-                              ]}
-                              onPress={onHome}
-                              disabled={isAnimating}
-                            >
-                              <Image
-                                source={require('./GameOverImage/Home.png')}
-                                style={[styles.buttonImage, styles.buttonImage1]}
-                                resizeMode="contain"
-                              />
-                            </Pressable>
-                            {nextLevel ? (
-                              <Pressable
-                                style={({ pressed }) => [
-                                  styles.floatingButton,
-                                  pressed && styles.buttonPressed,
-                                  (isEnergyInsufficient) && { opacity: 0.5 }
-                                ]}
-                                onPress={onNextLevel}
-                                disabled={isAnimating || isEnergyInsufficient}
-                              >
-                                <Image
-                                  source={require('./GameOverImage/NextLevel.png')}
-                                  style={[styles.buttonImage, styles.buttonImage2]}
-                                  resizeMode="contain"
-                                />
-                              </Pressable>
-                            ) : (
-                              <Pressable style={[styles.floatingButton, styles.disabledButton]} disabled>
-                                <LinearGradient colors={['rgba(102,102,102,0.85)','rgba(68,68,68,0.95)']} style={styles.buttonGradient}>
-                                  <Text style={styles.buttonText}>NO MORE LEVELS</Text>
-                                </LinearGradient>
-                              </Pressable>
-                            )}
 
-                            <Pressable
-                              style={({ pressed }) => [
-                                styles.floatingButton,
-                                pressed && styles.buttonPressed,
-                                (isEnergyInsufficient) && { opacity: 0.5 }
-                              ]}
-                              onPress={onRetry}
-                              disabled={isAnimating || isEnergyInsufficient}
-                            >
-                              <Image
-                                source={require('./GameOverImage/Retry.png')}
-                                style={[styles.buttonImage, styles.buttonImage3]}
-                                resizeMode="contain"
-                              />
-                            </Pressable>
-                          </>
-                        )}
+                {isPvpMode ? (
+                  // PvP: only show Home button
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.floatingButton,
+                      pressed && styles.buttonPressed
+                    ]}
+                    onPress={onHome}
+                    disabled={isAnimating}
+                  >
+                    <Image
+                      source={require('./GameOverImage/Home.png')}
+                      style={[styles.buttonImage, styles.buttonImage1]}
+                      resizeMode="contain"
+                    />
+                  </Pressable>
+                ) : (
+                  <>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.floatingButton,
+                        pressed && styles.buttonPressed
+                      ]}
+                      onPress={onHome}
+                      disabled={isAnimating}
+                    >
+                      <Image
+                        source={require('./GameOverImage/Home.png')}
+                        style={[styles.buttonImage, styles.buttonImage1]}
+                        resizeMode="contain"
+                      />
+                    </Pressable>
+                    {nextLevel ? (
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.floatingButton,
+                          pressed && styles.buttonPressed,
+                          (isEnergyInsufficient) && { opacity: 0.5 }
+                        ]}
+                        onPress={onNextLevel}
+                        disabled={isAnimating || isEnergyInsufficient}
+                      >
+                        <Image
+                          source={require('./GameOverImage/NextLevel.png')}
+                          style={[styles.buttonImage, styles.buttonImage2]}
+                          resizeMode="contain"
+                        />
+                      </Pressable>
+                    ) : (
+                      <Pressable style={[styles.floatingButton, styles.disabledButton]} disabled>
+                        <LinearGradient colors={['rgba(102,102,102,0.85)', 'rgba(68,68,68,0.95)']} style={styles.buttonGradient}>
+                          <Text style={styles.buttonText}>NO MORE LEVELS</Text>
+                        </LinearGradient>
+                      </Pressable>
+                    )}
 
-                    </View>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.floatingButton,
+                        pressed && styles.buttonPressed,
+                        (isEnergyInsufficient) && { opacity: 0.5 }
+                      ]}
+                      onPress={onRetry}
+                      disabled={isAnimating || isEnergyInsufficient}
+                    >
+                      <Image
+                        source={require('./GameOverImage/Retry.png')}
+                        style={[styles.buttonImage, styles.buttonImage3]}
+                        resizeMode="contain"
+                      />
+                    </Pressable>
+                  </>
+                )}
+
+              </View>
             </Reanimated.View>
           )}
 
@@ -830,13 +859,13 @@ const styles = StyleSheet.create({
   },
   backgroundImageStyle: {
     resizeMode: 'cover',
-    opacity:0.5
+    opacity: 0.5
   },
   modalOverlay: {
     position: 'absolute',
-    top: 0, 
-    left: 0, 
-    right: 0, 
+    top: 0,
+    left: 0,
+    right: 0,
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
@@ -925,7 +954,7 @@ const styles = StyleSheet.create({
     width: '70%',
     alignSelf: 'center',
     backgroundColor: 'transparent',
-    marginBottom: scale(10), 
+    marginBottom: scale(10),
   },
   floatingButtonsArea: {
     width: '100%',
@@ -949,15 +978,15 @@ const styles = StyleSheet.create({
     width: scale(80),
     height: scale(80),
   },
-  buttonImage1:{
-     width: scale(60),
+  buttonImage1: {
+    width: scale(60),
     height: scale(60),
   },
-  buttonImage2:{
+  buttonImage2: {
     width: scale(120),
     height: scale(120),
   },
-  buttonImage3:{
+  buttonImage3: {
     width: scale(60),
     height: scale(60),
   },
@@ -992,11 +1021,11 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 3,
   },
-  
+
   //  UPDATED: Cartoonish 3D Progress Bar Styles
   progressBarContainer: {
     width: '60%',
-    height: scale(50), 
+    height: scale(50),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1018,7 +1047,7 @@ const styles = StyleSheet.create({
   },
   pvpRankEndpoint: {
     width: scale(14),
-    zIndex: 10, 
+    zIndex: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1087,7 +1116,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffffff', // Darker inner track
     borderRadius: scale(8),
-    overflow: 'visible', 
+    overflow: 'visible',
     justifyContent: 'center',
   },
   progressFill: {
@@ -1115,7 +1144,7 @@ const styles = StyleSheet.create({
     top: scale(-15), // Pull star slightly above to center on thicker bar
     width: scale(34),
     height: scale(34),
-    marginLeft: scale(-17), 
+    marginLeft: scale(-17),
     zIndex: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
