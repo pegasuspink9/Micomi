@@ -109,8 +109,10 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
     })();
   }, []);
 
-  // 5. Track latest uiPercent in a ref to avoid recreation of AppState listener
+  // 5. Track latest uiPercent and AppState in refs to avoid recreation of AppState listener
   const uiPercentRef = useRef(uiPercent);
+  const appStateRef = useRef(AppState.currentState);
+
   useEffect(() => {
     uiPercentRef.current = uiPercent;
   }, [uiPercent]);
@@ -118,13 +120,14 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
   // 6. Handle AppState backgrounding / foregrounding
   useEffect(() => {
     const handleAppStateChange = async (nextAppState) => {
+      appStateRef.current = nextAppState;
       if (nextAppState === 'active') {
         console.log('📱 App returned to foreground - Dismissing notification and resuming preloader...');
         await universalAssetPreloader.dismissPreloadNotification();
         autoPreloadAssets();
       } else if (nextAppState === 'background' || nextAppState === 'inactive') {
         console.log('📱 App went to background - Sending download continuation notification...');
-        await universalAssetPreloader.sendPreloadPausedNotification(uiPercentRef.current);
+        await universalAssetPreloader.updatePreloadNotification(uiPercentRef.current, downloadProgress.mapName || 'System Assets');
       }
     };
 
@@ -132,9 +135,16 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
     return () => {
       subscription.remove();
     };
-  }, []);
+  }, [downloadProgress.mapName]);
 
-  // 7. Handle completion notification
+  // 7. Sync background notification progress in real time as downloads proceed
+  useEffect(() => {
+    if (appStateRef.current !== 'active' && downloadProgress.isDownloading && uiPercent > 0 && uiPercent < 100) {
+      universalAssetPreloader.updatePreloadNotification(uiPercent, downloadProgress.mapName || 'System Assets');
+    }
+  }, [uiPercent, downloadProgress.isDownloading, downloadProgress.mapName]);
+
+  // 8. Handle completion notification
   useEffect(() => {
     if (downloadProgress.isComplete) {
       universalAssetPreloader.sendPreloadCompleteNotification();

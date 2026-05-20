@@ -21,8 +21,21 @@ if (!shouldDisableNotifications) {
 
 export const notificationMethods = {
   async requestNotificationPermission() {
-    // Auto-allow: Return true directly without calling requestPermissionsAsync() to prevent prompting the user.
-    return true;
+    if (!Notifications) {
+      return false;
+    }
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (finalStatus !== 'granted') {
+        const { status: askStatus } = await Notifications.requestPermissionsAsync();
+        finalStatus = askStatus;
+      }
+      return finalStatus === 'granted';
+    } catch (error) {
+      console.warn('⚠️ Failed to check/request notification permission:', error);
+      return false;
+    }
   },
 
   async updatePreloadNotification(progressPercent, category = 'general') {
@@ -44,8 +57,10 @@ export const notificationMethods = {
       this.lastNotificationPercent = roundedPercent;
       this.lastNotificationTime = now;
 
+      const categoryStr = String(category || 'general').replace(/_/g, ' ');
+
       if (!Notifications) {
-        console.log(`[Preload Progress] ${roundedPercent}% - Caching ${category.replace('_', ' ')}...`);
+        console.log(`[Preload Progress] ${roundedPercent}% - Caching ${categoryStr}...`);
         return;
       }
 
@@ -61,7 +76,7 @@ export const notificationMethods = {
         identifier: 'micomi-preload-progress',
         content: {
           title: 'Downloading Micomi Assets',
-          body: `[${progressBarText}] ${roundedPercent}% - Caching ${category.replace('_', ' ')}...`,
+          body: `[${progressBarText}] ${roundedPercent}% - Caching ${categoryStr}...`,
           sticky: true,
           ongoing: true,
         },
