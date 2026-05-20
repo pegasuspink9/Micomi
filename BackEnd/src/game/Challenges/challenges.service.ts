@@ -16,7 +16,7 @@ import {
 import { getCardForAttackType } from "../Combat/combat.service";
 import {
   parseAndValidateBlanks,
-  applyRetryReveal,
+  // applyRetryReveal,
   applyRevealPotion,
 } from "../../../helper/revealPotionHelper";
 import {
@@ -2726,11 +2726,11 @@ const prepareChallenge = async (
           ? retryRevealMap[challengeKey]
           : undefined;
 
-        const revealResult = await applyRetryReveal(
-          modifiedChallenge,
-          effectiveCorrectAnswer,
-          existingRevealIndices,
-        );
+        // const revealResult = await applyRetryReveal(
+        //   modifiedChallenge,
+        //   effectiveCorrectAnswer,
+        //   existingRevealIndices,
+        // );
 
         if (revealResult.success && revealResult.revealedChallenge) {
           modifiedChallenge = revealResult.revealedChallenge;
