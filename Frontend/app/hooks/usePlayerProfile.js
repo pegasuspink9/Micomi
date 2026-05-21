@@ -3,15 +3,25 @@ import { playerService } from '../services/playerService';
 import { AppState } from 'react-native';
 import { characterService } from '../services/characterService';
 import { universalAssetPreloader } from '../services/preloader/universalAssetPreloader';
+import { useAuth } from './useAuth';
 
 export const usePlayerProfile = () => {
+  const { user } = useAuth();
   const [playerData, setPlayerData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastSelectionCheck, setLastSelectionCheck] = useState(0);
   const [lastBadgeCheck, setLastBadgeCheck] = useState(0);
   const [availableAvatars, setAvailableAvatars] = useState([]); // New state
-  const [isSelectingAvatar, setIsSelectingAvatar] = useState(false)
+  const [isSelectingAvatar, setIsSelectingAvatar] = useState(false);
+
+  // Sync state and clear playerData instantly on logout
+  useEffect(() => {
+    if (!user) {
+      setPlayerData(null);
+      setLoading(false);
+    }
+  }, [user]);
 
   const attachThemesToProfile = useCallback((baseData, themesPayload) => {
     const themes = themesPayload?.themes || [];
@@ -25,6 +35,10 @@ export const usePlayerProfile = () => {
 
   // ✅ Load player profile from API with Map API cache reuse
   const loadPlayerProfile = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return null;
+    }
     try {
       setLoading(true);
       setError(null);
@@ -92,6 +106,7 @@ export const usePlayerProfile = () => {
   }, []);
 
    const refreshPlayerData = useCallback(async () => {
+    if (!user) return null;
     try {
       const apiData = await playerService.getPlayerProfile();
       let transformedData = playerService.transformPlayerData(apiData);
@@ -283,13 +298,15 @@ export const usePlayerProfile = () => {
 
   // Initialize on mount
   useEffect(() => {
+    if (!user) return;
     loadPlayerProfile().then(() => {
       characterService.getLastSelectionUpdate().then(setLastSelectionCheck);
       playerService.getLastBadgeUpdate().then(setLastBadgeCheck); 
     });
-  }, [loadPlayerProfile]);
+  }, [loadPlayerProfile, user]);
 
   useEffect(() => {
+    if (!user || !playerData) return;
     const handleAppStateChange = (nextAppState) => {
       if (nextAppState === 'active') {
         checkForCharacterUpdates();
@@ -299,16 +316,17 @@ export const usePlayerProfile = () => {
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription?.remove();
-  }, [checkForCharacterUpdates, checkForBadgeUpdates]);
+  }, [checkForCharacterUpdates, checkForBadgeUpdates, user, playerData]);
 
   useEffect(() => {
+    if (!user || !playerData) return;
     const interval = setInterval(() => {
       checkForCharacterUpdates();
       checkForBadgeUpdates();
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [checkForCharacterUpdates, checkForBadgeUpdates]);
+  }, [checkForCharacterUpdates, checkForBadgeUpdates, user, playerData]);
 
   return {
     // Data

@@ -15,11 +15,12 @@ class ApiService {
     this.baseURL = POSSIBLE_BACKEND_URLS[0];
     this.isBackendAvailable = false;
     this.authToken = null;
+    this.explicitlyLoggedOut = false;
   }
 
   setAuthToken(token) {
-
     this.authToken = token;
+    this.explicitlyLoggedOut = (token === null);
   }
 
   // Test backend connectivity
@@ -62,7 +63,7 @@ class ApiService {
 
   async request(endpoint, options = {}, isRetry = false) {
     // 1. Try to recover token if missing (Fixes the race condition)
-    if (!this.authToken) {
+    if (!this.authToken && !this.explicitlyLoggedOut) {
       const storedToken = await AsyncStorage.getItem('accessToken');
       if (storedToken) {
         this.authToken = storedToken;

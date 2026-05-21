@@ -1,12 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { energyService } from '../services/energyService';
+import { useAuth } from './useAuth';
 
 export const useEnergyData = () => {
+  const { user } = useAuth();
   const [energyStatus, setEnergyStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const lastEnergySignature = useRef('');
+
+  // Sync state and clear energyStatus instantly on logout
+  useEffect(() => {
+    if (!user) {
+      setEnergyStatus(null);
+      setLoading(false);
+    }
+  }, [user]);
 
   const getEnergySignature = useCallback((status) => {
     if (!status) return 'none';
@@ -21,6 +31,7 @@ export const useEnergyData = () => {
   }, []);
 
   const refreshEnergyStatus = useCallback(async (showLoading = false) => {
+    if (!user) return null;
     try {
       if (showLoading) {
         setLoading(true);
@@ -45,17 +56,23 @@ export const useEnergyData = () => {
         setLoading(false);
       }
     }
-  }, [getEnergySignature]);
+  }, [getEnergySignature, user]);
 
   const loadEnergyStatus = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return null;
+    }
     return refreshEnergyStatus(true);
-  }, [refreshEnergyStatus]);
+  }, [refreshEnergyStatus, user]);
 
   useEffect(() => {
+    if (!user) return;
     loadEnergyStatus();
-  }, [loadEnergyStatus]);
+  }, [loadEnergyStatus, user]);
 
   useEffect(() => {
+    if (!user) return;
     const handleAppStateChange = (nextAppState) => {
       if (nextAppState === 'active') {
         refreshEnergyStatus(false);
@@ -64,15 +81,16 @@ export const useEnergyData = () => {
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription?.remove();
-  }, [refreshEnergyStatus]);
+  }, [refreshEnergyStatus, user]);
 
   useEffect(() => {
+    if (!user) return;
     const interval = setInterval(() => {
       refreshEnergyStatus(false);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [refreshEnergyStatus]);
+  }, [refreshEnergyStatus, user]);
 
   return {
     energyStatus,

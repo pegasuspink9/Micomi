@@ -147,10 +147,26 @@ export const authService = {
       console.error('Logout API failed:', error);
     } finally {
       try {
-        await AsyncStorage.removeItem(TOKEN_KEY);
-        await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
-        await AsyncStorage.removeItem(PLAYER_KEY);
+        // 1. Immediately clear in-memory auth token to block stale token recovery
         apiService.setAuthToken(null);
+
+        // 2. Disconnect socket services to halt any real-time traffic
+        try {
+          const { socketService } = require('./socketService');
+          socketService.disconnect();
+        } catch (e) {
+          console.warn('Socket disconnect failed:', e);
+        }
+        try {
+          const { pvpRealtimeService } = require('./pvpRealtimeService');
+          pvpRealtimeService.disconnect();
+        } catch (e) {
+          console.warn('PvP disconnect failed:', e);
+        }
+
+        // 3. Atomically remove auth credentials from AsyncStorage
+        await AsyncStorage.multiRemove([TOKEN_KEY, REFRESH_TOKEN_KEY, PLAYER_KEY]);
+        console.log('✅ Session successfully and fully cleared.');
       } catch (storageError) {
         console.error('Failed to clear session storage:', storageError);
       }
