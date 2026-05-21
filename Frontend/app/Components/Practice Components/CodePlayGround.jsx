@@ -17,13 +17,13 @@ const FileTab = React.memo(({ file, isActive, isFirst, onTabPress, onDeletePress
     ]}
   >
     <Text style={[
-      styles.webTabText, 
+      styles.webTabText,
       isActive && styles.webTabTextActive
     ]}>
       {file.label}
     </Text>
-    
-    <TouchableOpacity 
+
+    <TouchableOpacity
       style={styles.deleteButton}
       onPress={() => onDeletePress(file.id)}
     >
@@ -32,9 +32,9 @@ const FileTab = React.memo(({ file, isActive, isFirst, onTabPress, onDeletePress
   </Pressable>
 ), (prev, next) => {
   return prev.file.id === next.file.id &&
-         prev.file.label === next.file.label &&
-         prev.isActive === next.isActive &&
-         prev.isFirst === next.isFirst;
+    prev.file.label === next.file.label &&
+    prev.isActive === next.isActive &&
+    prev.isFirst === next.isFirst;
 });
 
 const OutputTab = React.memo(({ isActive, onTabPress }) => (
@@ -47,7 +47,7 @@ const OutputTab = React.memo(({ isActive, onTabPress }) => (
     ]}
   >
     <Text style={[
-      styles.webTabText, 
+      styles.webTabText,
       isActive && styles.webTabTextActive
     ]}>
       Output
@@ -62,15 +62,15 @@ const FileEditor = React.memo(({ initialCode, fileId, lang, onCodeChange }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       onCodeChange(fileId, code);
-    }, 500); 
+    }, 500);
     return () => clearTimeout(timer);
-  },[code, fileId, onCodeChange]);
+  }, [code, fileId, onCodeChange]);
 
   const lines = code.split('\n');
 
-   const renderedLineNumbers = ( 
+  const renderedLineNumbers = (
     <View style={styles.interactiveLineNumbers}>
-      {Array.from({ length: lines.length + 1 }).map((_, i) => (
+      {Array.from({ length: lines.length }).map((_, i) => (
         <Text key={i} style={styles.interactiveLineNumberText}>{i + 1}</Text>
       ))}
     </View>
@@ -90,34 +90,43 @@ const FileEditor = React.memo(({ initialCode, fileId, lang, onCodeChange }) => {
   ), [lines, lang]);
 
   return (
-    <View style={styles.interactiveBody}>
-      {renderedLineNumbers}
-      
-      <View style={styles.interactiveInputWrapper}>
-        {renderedHighlights}
-        
-        <TextInput
-          style={styles.interactiveInput}
-          multiline={true}
-          value={code}
-          onChangeText={setCode}
-          autoCapitalize="none"
-          autoCorrect={false}
-          spellCheck={false}
-          cursorColor="#f8f8f2"
-        />
+    <ScrollView
+      style={styles.editorScroll}
+      contentContainerStyle={styles.editorScrollContent}
+      keyboardShouldPersistTaps="handled"
+      nestedScrollEnabled={true}
+      showsVerticalScrollIndicator={true}
+    >
+      <View style={styles.interactiveBody}>
+        {renderedLineNumbers}
+
+        <View style={styles.interactiveInputWrapper}>
+          {renderedHighlights}
+
+          <TextInput
+            style={styles.interactiveInput}
+            multiline={true}
+            scrollEnabled={false}
+            value={code}
+            onChangeText={setCode}
+            autoCapitalize="none"
+            autoCorrect={false}
+            spellCheck={false}
+            cursorColor="#f8f8f2"
+          />
+        </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }, (prevProps, nextProps) => {
-  return prevProps.fileId === nextProps.fileId && 
-         prevProps.lang === nextProps.lang &&
-         prevProps.onCodeChange === nextProps.onCodeChange;
+  return prevProps.fileId === nextProps.fileId &&
+    prevProps.lang === nextProps.lang &&
+    prevProps.onCodeChange === nextProps.onCodeChange;
 });
 
 export default function CodePlayGround() {
   const router = useRouter();
-  
+
   // Loading States
   const [isLoading, setIsLoading] = useState(true);
   const [isExiting, setIsExiting] = useState(false);
@@ -135,10 +144,10 @@ export default function CodePlayGround() {
     // Wait for the closing animation (300ms) before routing back
     setTimeout(() => {
       router.back();
-    }, 400); 
+    }, 400);
   };
 
-  const[files, setFiles] = useState([
+  const [files, setFiles] = useState([
     { id: 'html_1', label: 'index.html', lang: 'html', code: '<!DOCTYPE html>\n<html>\n<head>\n  <title>Playground</title>\n</head>\n<body>\n  <h1 id="greeting">Hello World!</h1>\n  <p>Welcome to the Micomi Code Playground.</p>\n</body>\n</html>' },
     { id: 'css_1', label: 'style.css', lang: 'css', code: '#greeting {\n  color: #ff5f56;\n  text-align: center;\n  margin-top: 50px;\n  font-family: "DynaPuff", sans-serif;\n}\n\np {\n  text-align: center;\n  color: #495057;\n  font-family: monospace;\n}' },
     { id: 'js_1', label: 'script.js', lang: 'javascript', code: '// Add your JavaScript here\nconsole.log("Playground ready!");\n\n// Example:\n// document.getElementById("greeting").style.color = "#27ca3f";' },
@@ -147,11 +156,23 @@ export default function CodePlayGround() {
 
   const [activeTab, setActiveTab] = useState('html_1');
   const [showDropdown, setShowDropdown] = useState(false);
-  const[fileToDelete, setFileToDelete] = useState(null); 
-  
+  const [fileToDelete, setFileToDelete] = useState(null);
+
   const [isNamingModalVisible, setIsNamingModalVisible] = useState(false);
   const [newFileLang, setNewFileLang] = useState(null);
   const [newFileName, setNewFileName] = useState('');
+  const [showLiveScreen, setShowLiveScreen] = useState(false);
+
+  const toggleLiveScreen = useCallback(() => {
+    setShowLiveScreen(prev => {
+      const nextVal = !prev;
+      if (nextVal && activeTab === 'output') {
+        const firstFile = files[0]?.id || 'html_1';
+        setActiveTab(firstFile);
+      }
+      return nextVal;
+    });
+  }, [activeTab, files]);
 
   const combinedHtml = useMemo(() => {
     const allHtml = files.filter(f => f.lang === 'html').map(f => f.code).join('\n');
@@ -159,11 +180,11 @@ export default function CodePlayGround() {
     const allJs = files.filter(f => f.lang === 'javascript').map(f => f.code).join('\n');
 
     let finalHtml = allHtml;
-    
+
     if (!finalHtml.includes('<head>')) {
       finalHtml = `<head></head><body>${finalHtml}</body>`;
     }
-    
+
     const styleTag = `<style>${allCss}</style>`;
     const scriptTag = `<script>${allJs}</script>`;
 
@@ -178,20 +199,20 @@ export default function CodePlayGround() {
     } else {
       finalHtml = `${finalHtml}${scriptTag}`;
     }
-    
+
     return finalHtml;
   }, [files]);
 
   const updateFileCode = useCallback((id, newCode) => {
     setFiles(prevFiles => prevFiles.map(f => f.id === id ? { ...f, code: newCode } : f));
-  },[]);
+  }, []);
 
   const openNamingModal = useCallback((lang) => {
     setNewFileLang(lang);
     setNewFileName('');
     setIsNamingModalVisible(true);
     setShowDropdown(false);
-  },[]);
+  }, []);
 
   const confirmAddFile = useCallback(() => {
     if (!newFileName.trim()) return;
@@ -217,7 +238,7 @@ export default function CodePlayGround() {
   const confirmDelete = useCallback(() => {
     const updatedFiles = files.filter(f => f.id !== fileToDelete);
     setFiles(updatedFiles);
-    
+
     if (activeTab === fileToDelete) {
       setActiveTab(updatedFiles.length > 0 ? updatedFiles[0].id : 'output');
     }
@@ -226,22 +247,22 @@ export default function CodePlayGround() {
 
   const toggleDropdown = useCallback(() => {
     setShowDropdown(prev => !prev);
-  },[]);
+  }, []);
 
   const handleTabPress = useCallback((id) => {
     setActiveTab(id);
     setShowDropdown(false);
-  },[]);
+  }, []);
 
   const handleOutputTabPress = useCallback(() => {
     setActiveTab('output');
     setShowDropdown(false);
     Keyboard.dismiss();
-  },[]);
+  }, []);
 
   const handleDeletePress = useCallback((id) => {
     setFileToDelete(id);
-  },[]);
+  }, []);
 
   const activeFile = useMemo(() => files.find(f => f.id === activeTab), [files, activeTab]);
 
@@ -265,7 +286,7 @@ export default function CodePlayGround() {
   const renderedContentArea = useMemo(() => {
     if (activeTab !== 'output' && activeFile) {
       return (
-        <FileEditor 
+        <FileEditor
           key={activeFile.id}
           initialCode={activeFile.code}
           fileId={activeFile.id}
@@ -289,7 +310,7 @@ export default function CodePlayGround() {
       );
     }
     return null;
-  },[activeTab, activeFile, combinedHtml, updateFileCode]);
+  }, [activeTab, activeFile, combinedHtml, updateFileCode]);
 
   const renderedDeleteModal = useMemo(() => (
     <Modal
@@ -305,14 +326,14 @@ export default function CodePlayGround() {
             Are you sure you want to delete this file? This action cannot be undone.
           </Text>
           <View style={styles.modalButtonRow}>
-            <TouchableOpacity 
-              style={[styles.modalButton, styles.modalCancelButton]} 
+            <TouchableOpacity
+              style={[styles.modalButton, styles.modalCancelButton]}
               onPress={() => setFileToDelete(null)}
             >
               <Text style={styles.modalButtonText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.modalButton, styles.modalDeleteButton]} 
+            <TouchableOpacity
+              style={[styles.modalButton, styles.modalDeleteButton]}
               onPress={confirmDelete}
             >
               <Text style={styles.modalButtonText}>Delete</Text>
@@ -344,14 +365,14 @@ export default function CodePlayGround() {
             autoCorrect={false}
           />
           <View style={styles.modalButtonRow}>
-            <TouchableOpacity 
-              style={[styles.modalButton, styles.modalCancelButton]} 
+            <TouchableOpacity
+              style={[styles.modalButton, styles.modalCancelButton]}
               onPress={() => setIsNamingModalVisible(false)}
             >
               <Text style={styles.modalButtonText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.modalButton, styles.modalConfirmButton]} 
+            <TouchableOpacity
+              style={[styles.modalButton, styles.modalConfirmButton]}
               onPress={confirmAddFile}
             >
               <Text style={styles.modalButtonText}>Create</Text>
@@ -360,40 +381,67 @@ export default function CodePlayGround() {
         </View>
       </View>
     </Modal>
-  ),[isNamingModalVisible, newFileName, newFileLang, confirmAddFile]);
+  ), [isNamingModalVisible, newFileName, newFileLang, confirmAddFile]);
 
   return (
     <>
       <SafeAreaView style={styles.safeArea}>
         <StatusBar hidden={true} />
-        
+
         <View style={styles.container}>
           <View style={styles.headerTitleContainer}>
             <TouchableOpacity onPress={handleBack} style={styles.backButton}>
               <Text style={styles.backButtonText}>{'Back'}</Text>
             </TouchableOpacity>
             <Text style={styles.title}>Code Playground</Text>
-            <View style={styles.placeholder} />
+
+            <TouchableOpacity onPress={toggleLiveScreen} style={styles.liveScreenButton}>
+              <Text style={styles.liveScreenButtonText}>
+                {showLiveScreen ? 'Full Editor' : 'Live Screen'}
+              </Text>
+            </TouchableOpacity>
           </View>
+
+          {showLiveScreen && (
+            <View style={styles.livePreviewContainer}>
+              <View style={styles.livePreviewHeader}>
+                <View style={styles.livePreviewDotContainer}>
+                  <View style={[styles.windowButton, { backgroundColor: '#ff5f56', marginRight: gameScale(4) }]} />
+                  <View style={[styles.windowButton, { backgroundColor: '#ffbd2e', marginRight: gameScale(4) }]} />
+                  <View style={[styles.windowButton, { backgroundColor: '#27ca3f', marginRight: gameScale(4) }]} />
+                </View>
+                <Text style={styles.livePreviewHeaderText}>Live Preview Screen</Text>
+                <View style={{ width: gameScale(40) }} />
+              </View>
+              <WebView
+                source={{ html: combinedHtml }}
+                style={styles.liveWebview}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                originWhitelist={['*']}
+                scalesPageToFit={false}
+              />
+            </View>
+          )}
 
           <View style={styles.editorContainer}>
             <View style={styles.editorHeader}>
-              
-              <Pressable 
-                style={styles.addButton} 
+
+              <Pressable
+                style={styles.addButton}
                 onPress={toggleDropdown}
               >
                 <Text style={styles.addButtonText}>+</Text>
               </Pressable>
 
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false} 
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
                 style={styles.tabsScrollContainer}
                 contentContainerStyle={styles.tabsContainer}
               >
                 {files.map((file, index) => (
-                  <FileTab 
+                  <FileTab
                     key={file.id}
                     file={file}
                     isActive={activeTab === file.id}
@@ -402,10 +450,10 @@ export default function CodePlayGround() {
                     onDeletePress={handleDeletePress}
                   />
                 ))}
-                
-                <OutputTab 
-                  isActive={activeTab === 'output'} 
-                  onTabPress={handleOutputTabPress} 
+
+                <OutputTab
+                  isActive={activeTab === 'output'}
+                  onTabPress={handleOutputTabPress}
                 />
               </ScrollView>
 
@@ -450,12 +498,12 @@ const styles = StyleSheet.create({
     fontSize: gameScale(14),
   },
   placeholder: {
-    width: gameScale(50), 
+    width: gameScale(50),
   },
   title: { fontSize: gameScale(20), fontFamily: 'DynaPuff', color: '#ffffff' },
   editorContainer: {
     backgroundColor: '#1e1e1e',
-    flex: 1, 
+    flex: 1,
     width: '100%',
     overflow: 'hidden',
   },
@@ -534,18 +582,25 @@ const styles = StyleSheet.create({
     fontSize: gameScale(15),
     lineHeight: gameScale(22),
     textAlignVertical: 'top',
-    includeFontPadding: false, 
+    includeFontPadding: false,
   },
   interactiveInput: {
-    flex: 1,
-    color: 'rgba(255, 255, 255, 0)', 
+    width: '100%',
+    minHeight: '100%',
+    color: 'rgba(255, 255, 255, 0)',
     backgroundColor: 'transparent',
     fontFamily: 'monospace',
     fontSize: gameScale(15),
     padding: gameScale(12),
     textAlignVertical: 'top',
     lineHeight: gameScale(22),
-    includeFontPadding: false, 
+    includeFontPadding: false,
+  },
+  editorScroll: {
+    flex: 1,
+  },
+  editorScrollContent: {
+    flexGrow: 1,
   },
   outputContainer: { flex: 1, backgroundColor: '#ffffff' },
   webview: { flex: 1, backgroundColor: '#ffffff' },
@@ -576,4 +631,69 @@ const styles = StyleSheet.create({
   modalDeleteButton: { backgroundColor: '#ff5f56', borderColor: '#cc4c45' },
   modalConfirmButton: { backgroundColor: '#4caf50', borderColor: '#388e3c' },
   modalButtonText: { color: '#ffffff', fontFamily: 'Grobold', fontSize: gameScale(14) },
+  liveScreenButton: {
+    paddingVertical: gameScale(6),
+    paddingHorizontal: gameScale(12),
+    borderRadius: gameScale(15),
+    backgroundColor: '#1177bb',
+    borderWidth: gameScale(1),
+    borderColor: '#4da6ff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: gameScale(2) },
+    shadowOpacity: 0.3,
+    shadowRadius: gameScale(2),
+    elevation: 3,
+  },
+  liveScreenButtonText: {
+    color: '#ffffff',
+    fontFamily: 'Grobold',
+    fontSize: gameScale(11),
+  },
+  livePreviewContainer: {
+    height: gameScale(350),
+    width: '100%',
+    backgroundColor: '#ffffff',
+    borderBottomWidth: gameScale(4),
+    borderBottomColor: '#0a0a0a',
+    borderTopWidth: gameScale(1),
+    borderTopColor: '#3a3a3a',
+    overflow: 'hidden',
+  },
+  livePreviewHeader: {
+    height: gameScale(28),
+    backgroundColor: '#2d2d30',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: gameScale(10),
+    borderBottomWidth: gameScale(1),
+    borderBottomColor: '#1a1a1a',
+  },
+  livePreviewDotContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  livePreviewHeaderText: {
+    color: '#ffffff',
+    fontSize: gameScale(10),
+    fontFamily: 'DynaPuff',
+  },
+  liveWebview: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  windowButton: {
+    width: gameScale(10),
+    height: gameScale(10),
+    borderRadius: gameScale(6),
+    borderTopWidth: gameScale(1),
+    borderTopColor: 'rgba(255, 255, 255, 0.3)',
+    borderBottomWidth: gameScale(1),
+    borderBottomColor: 'rgba(0, 0, 0, 0.5)',
+    shadowColor: '#000',
+    shadowOffset: { width: gameScale(1), height: gameScale(2) },
+    shadowOpacity: 0.4,
+    shadowRadius: gameScale(2),
+    elevation: gameScale(4),
+  },
 });

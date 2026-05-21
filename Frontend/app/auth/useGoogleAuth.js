@@ -12,7 +12,7 @@ const buildExpoProxyStartUrl = (proxyRedirectUri, authUrl, returnUrl) => {
     const parsedProxyUrl = new URL(proxyRedirectUri);
     // This creates: https://auth.expo.io/@noelcantcode/micomi
     const proxyBaseUrl = `${parsedProxyUrl.origin}${parsedProxyUrl.pathname}`.replace(/\/$/, '');
-    
+
     // Appends /start?authUrl=...&returnUrl=...
     return `${proxyBaseUrl}/start?authUrl=${encodeURIComponent(authUrl)}&returnUrl=${encodeURIComponent(returnUrl)}`;
   } catch {
@@ -37,13 +37,13 @@ export const useGoogleAuth = (onSuccess) => {
     ? AuthSession.makeRedirectUri()
     : AuthSession.makeRedirectUri({ scheme: 'micomi' });
 
-  useEffect(() => {}, []);
+  useEffect(() => { }, []);
 
   // ⚠️ ADDED: responseType: "id_token" so Google gives us the JWT the backend wants!
   const [gRequest] = Google.useAuthRequest({
     clientId: OAUTH_CONFIG.GOOGLE.clientId,
     scopes: OAUTH_CONFIG.GOOGLE.scopes,
-    redirectUri: googleRedirectUri, 
+    redirectUri: googleRedirectUri,
     responseType: "id_token",
   });
 
@@ -59,7 +59,7 @@ export const useGoogleAuth = (onSuccess) => {
 
     try {
       setGoogleAuthLoading(true);
-      
+
       const authUrl = gRequest?.url;
       const returnUrl = authSessionReturnUrl;
 
@@ -111,11 +111,11 @@ export const useGoogleAuth = (onSuccess) => {
     }
   };
 
-  return { 
-    gRequest, 
+  return {
+    gRequest,
     googleAuthLoading,
-    errorMessage, 
-    handleGoogleLogin, 
-    redirectUri: googleRedirectUri 
+    errorMessage,
+    handleGoogleLogin,
+    redirectUri: googleRedirectUri
   };
 };

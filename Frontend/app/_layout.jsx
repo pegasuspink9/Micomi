@@ -194,7 +194,7 @@ export default function RootLayout() {
         backgroundColor: '#98d4de'
       }}>
         <ExpoStatusBar hidden={true} />
-        <Text style={{ fontFamily: 'Grobold', fontSize: gameScale(50), color: '#ffffff' }}>Micomi</Text>
+        <Text style={{ fontFamily: 'FunkySign', fontSize: gameScale(60), color: '#ffffff' }}>Micomi</Text>
       </View>
     );
   }
