@@ -28,20 +28,21 @@ export const useGoogleAuth = (onSuccess) => {
   const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
   // 1. The URL Google will redirect to (Must exactly match Google Cloud Console)
-  const googleRedirectUri = isExpoGo
-    ? proxyRedirectUri
-    : AuthSession.makeRedirectUri({ scheme: 'micomi' });
+  // Always use the Expo Proxy redirect URI so Google sees a valid HTTPS redirect
+  const googleRedirectUri = proxyRedirectUri;
 
   // 2. The URL the proxy/native auth will redirect back to your app after success
-  const authSessionReturnUrl = isExpoGo
-    ? AuthSession.makeRedirectUri()
-    : AuthSession.makeRedirectUri({ scheme: 'micomi' });
+  // We explicitly add a path ('redirect') to ensure the resulting URI (micomi://redirect) has a valid URI structure.
+  // Standard Joi/URL validators reject empty hosts/paths (like 'micomi://'), which causes the Expo Auth Proxy to throw a "returnUrl must be a valid url" validation error.
+  const authSessionReturnUrl = AuthSession.makeRedirectUri({ scheme: 'micomi', path: 'redirect' });
 
   useEffect(() => { }, []);
 
-  // ⚠️ ADDED: responseType: "id_token" so Google gives us the JWT the backend wants!
+  // ⚠️ Always use the Web Client ID for browser-based OAuth flows (which expo-auth-session uses)
+  const googleClientId = OAUTH_CONFIG.GOOGLE.webClientId;
+
   const [gRequest] = Google.useAuthRequest({
-    clientId: OAUTH_CONFIG.GOOGLE.clientId,
+    clientId: googleClientId,
     scopes: OAUTH_CONFIG.GOOGLE.scopes,
     redirectUri: googleRedirectUri,
     responseType: "id_token",
@@ -63,10 +64,9 @@ export const useGoogleAuth = (onSuccess) => {
       const authUrl = gRequest?.url;
       const returnUrl = authSessionReturnUrl;
 
+      // Always route through the Expo Proxy Start URL so it properly handles deep-linking
       const authSessionUrl = authUrl
-        ? (isExpoGo
-          ? buildExpoProxyStartUrl(proxyRedirectUri, authUrl, returnUrl)
-          : authUrl)
+        ? buildExpoProxyStartUrl(proxyRedirectUri, authUrl, returnUrl)
         : undefined;
 
       if (!authSessionUrl) {

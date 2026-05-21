@@ -15,8 +15,8 @@ import SpriteActivityIndicator from '../Actual Game/Loading/SpriteActivityIndica
 import LottieView from 'lottie-react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 
-import { useMapData } from '../../hooks/useMapData'; 
-import { MAP_THEMES } from '../RoadMap/MapLevel/MapDatas/mapData'; 
+import { useMapData } from '../../hooks/useMapData';
+import { MAP_THEMES } from '../RoadMap/MapLevel/MapDatas/mapData';
 import { universalAssetPreloader } from '../../services/preloader/universalAssetPreloader';
 import { mapService } from '../../services/mapService';
 import DailyRewards from '../DailyRewards Components/DailyRewards';
@@ -29,7 +29,7 @@ const { width, height } = Dimensions.get('window');
 
 // Preload static images
 const ARROW_IMG = require('./Assets/right arrow.png');
-const LOCKED_IMG = { uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945939/473288860-e8a1b478-91d3-44c9-8a59-4bc46db4d1c0_jaroj9.png'};
+const LOCKED_IMG = { uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1758945939/473288860-e8a1b478-91d3-44c9-8a59-4bc46db4d1c0_jaroj9.png' };
 const DEFAULT_LOTTIE = { uri: 'https://lottie.host/9875685d-8bb8-4749-ac63-c56953f45726/UnBHY7vAPX.json' };
 const PVP_IMG = require('./Assets/pvp.png');
 const MICOMI_SHOP_IMG = require('./Assets/MicomiShop.png');
@@ -51,7 +51,7 @@ export default function MapNavigate({ onMapChange }) {
   const [isMapInfoVisible, setIsMapInfoVisible] = useState(false);
   // eslint-disable-next-line no-unused-vars
   const [assetsReady, setAssetsReady] = useState(false);
-  
+
   const [downloadProgress, setDownloadProgress] = useState({
     loaded: 0, total: 0, progress: 0, successCount: 0, currentAsset: null, isDownloading: false, isComplete: false, mapName: ''
   });
@@ -59,7 +59,7 @@ export default function MapNavigate({ onMapChange }) {
   const [currentAssetProgress, setCurrentAssetProgress] = useState({
     url: '', progress: 0, currentIndex: 0, totalAssets: 0, category: '', name: ''
   });
-  
+
   // Track if auto-preload has been done
   const hasAutoPreloaded = useRef(false);
 
@@ -73,9 +73,9 @@ export default function MapNavigate({ onMapChange }) {
       refreshMapsIfChanged();
     }, [refreshMapsIfChanged])
   );
-    
+
   // --- PRELOADING LOGIC (Kept intact as requested) ---
- useEffect(() => {
+  useEffect(() => {
     const autoPreloadAssets = async () => {
       if (hasAutoPreloaded.current || maps.length === 0) return;
 
@@ -85,13 +85,13 @@ export default function MapNavigate({ onMapChange }) {
         console.log('🗺️ Map screen displayed - checking asset cache...');
         await universalAssetPreloader.loadAllCachedAssets();
         soundManager.clearUrlCache();
-        
+
         const [themesCacheStatus, charSelectCacheStatus, soundCacheStatus] = await Promise.all([
           universalAssetPreloader.areMapThemeAssetsCached(MAP_THEMES),
           universalAssetPreloader.areStaticCharacterSelectAssetsCached(),
           universalAssetPreloader.areStaticSoundAssetsCached()
         ]);
-        
+
         const totalStaticMissing = themesCacheStatus.missing + charSelectCacheStatus.missing + soundCacheStatus.missing;
         const totalStaticAssets = themesCacheStatus.total + charSelectCacheStatus.total + soundCacheStatus.total;
 
@@ -104,15 +104,15 @@ export default function MapNavigate({ onMapChange }) {
           let downloadedSoFar = 0;
           // (Simplified tracking callbacks for brevity, logic remains same)
           if (themesCacheStatus.missing > 0) {
-             await universalAssetPreloader.downloadMapThemeAssets(MAP_THEMES, (p) => setDownloadProgress(prev => ({...prev, loaded: p.loaded, progress: p.loaded / totalStaticMissing * 0.4})));
-             downloadedSoFar += themesCacheStatus.missing;
+            await universalAssetPreloader.downloadMapThemeAssets(MAP_THEMES, (p) => setDownloadProgress(prev => ({ ...prev, loaded: p.loaded, progress: p.loaded / totalStaticMissing * 0.4 })));
+            downloadedSoFar += themesCacheStatus.missing;
           }
           if (charSelectCacheStatus.missing > 0) {
-             await universalAssetPreloader.downloadStaticCharacterSelectAssets((p) => setDownloadProgress(prev => ({...prev, loaded: downloadedSoFar + p.loaded, progress: 0.4 + (p.loaded / totalStaticMissing * 0.4)})));
-             downloadedSoFar += charSelectCacheStatus.missing;
+            await universalAssetPreloader.downloadStaticCharacterSelectAssets((p) => setDownloadProgress(prev => ({ ...prev, loaded: downloadedSoFar + p.loaded, progress: 0.4 + (p.loaded / totalStaticMissing * 0.4) })));
+            downloadedSoFar += charSelectCacheStatus.missing;
           }
           if (soundCacheStatus.missing > 0) {
-             await universalAssetPreloader.downloadStaticSoundAssets((p) => setDownloadProgress(prev => ({...prev, loaded: downloadedSoFar + p.loaded, progress: 0.8 + (p.loaded / totalStaticMissing * 0.2)})));
+            await universalAssetPreloader.downloadStaticSoundAssets((p) => setDownloadProgress(prev => ({ ...prev, loaded: downloadedSoFar + p.loaded, progress: 0.8 + (p.loaded / totalStaticMissing * 0.2) })));
           }
           soundManager.clearUrlCache();
         }
@@ -121,7 +121,7 @@ export default function MapNavigate({ onMapChange }) {
         if (!preloadData) throw new Error("Failed preload data");
 
         const mapCacheStatus = await universalAssetPreloader.areMapAssetsCached(preloadData);
-        
+
         if (mapCacheStatus.cached && totalStaticMissing === 0) {
           // Load cached assets into memory
           await Promise.all([
@@ -139,9 +139,9 @@ export default function MapNavigate({ onMapChange }) {
         }
 
         if (!mapCacheStatus.cached) {
-           setDownloadProgress(prev => ({ ...prev, isDownloading: true, mapName: 'Game Assets', total: mapCacheStatus.total, successCount: mapCacheStatus.available }));
-           setDownloadModalVisible(true);
-           await universalAssetPreloader.downloadAllMapAssets(preloadData, (p) => setDownloadProgress(prev => ({...prev, loaded: p.loaded, total: p.total, progress: p.progress})));
+          setDownloadProgress(prev => ({ ...prev, isDownloading: true, mapName: 'Game Assets', total: mapCacheStatus.total, successCount: mapCacheStatus.available }));
+          setDownloadModalVisible(true);
+          await universalAssetPreloader.downloadAllMapAssets(preloadData, (p) => setDownloadProgress(prev => ({ ...prev, loaded: p.loaded, total: p.total, progress: p.progress })));
         }
 
         await universalAssetPreloader.saveCacheInfoToStorage();
@@ -194,18 +194,18 @@ export default function MapNavigate({ onMapChange }) {
     if (!currentMapData?.is_active) return;
     setIsMapInfoVisible(false);
     setIsNavigating(true);
-    
+
     // Slight delay to allow modal to close smoothly
     setTimeout(() => {
-        router.push({
-          pathname: '/Components/RoadMap/roadMapLandPage',
-          params: {
-            mapName: currentMapData.map_name,
-            mapType: currentMapData.map_name,
-            mapId: currentMapData.map_id,
-          },
-        });
-    }, 300); 
+      router.push({
+        pathname: '/Components/RoadMap/roadMapLandPage',
+        params: {
+          mapName: currentMapData.map_name,
+          mapType: currentMapData.map_name,
+          mapId: currentMapData.map_id,
+        },
+      });
+    }, 300);
   }, [currentMapData, router]);
 
   const handleOpenPvpModal = useCallback(() => {
@@ -213,7 +213,9 @@ export default function MapNavigate({ onMapChange }) {
   }, [router]);
 
   const handleOpenTopUpShop = useCallback(() => {
-    router.push('/TopUp/topUpShop');
+    router.push({
+      pathname: '/TopUp/topUpShop',
+    });
   }, [router]);
 
 
@@ -239,9 +241,9 @@ export default function MapNavigate({ onMapChange }) {
     return mapData.map_image.uri ? mapData.map_image : DEFAULT_LOTTIE;
   };
 
-   return (
+  return (
     <>
-     <StatusBar hidden={true} translucent={true} backgroundColor="transparent" /> 
+      <StatusBar hidden={true} translucent={true} backgroundColor="transparent" />
       <View style={styles.scrollContent}>
         {/* Error Banner */}
         {mapError && maps.length > 0 && (
@@ -302,8 +304,8 @@ export default function MapNavigate({ onMapChange }) {
           <TouchableOpacity style={styles.navArrow} onPress={handlePrevious}>
             <Image source={ARROW_IMG} style={[styles.arrowImage, styles.flippedHorizontal]} />
           </TouchableOpacity>
-          
-          <TouchableOpacity onPress={proceedToMap} activeOpacity={0.7}> 
+
+          <TouchableOpacity onPress={proceedToMap} activeOpacity={0.7}>
             <ImageBackground
               source={LEVEL_SELECTOR_IMAGES[currentMapData?.map_name] || LEVEL_SELECTOR_IMAGES['Computer']}
               style={styles.levelSelectorImage}
@@ -316,12 +318,12 @@ export default function MapNavigate({ onMapChange }) {
               </View>
             </ImageBackground>
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.navArrow} onPress={handleNext}>
             <Image source={ARROW_IMG} style={styles.arrowImage} />
           </TouchableOpacity>
         </View>
-        
+
         <MiniQuestPreview />
       </View>
 
@@ -337,15 +339,15 @@ export default function MapNavigate({ onMapChange }) {
 
       {/* Download Progress Modal (kept structure, styles omitted for brevity as they weren't changing) */}
       <Modal visible={downloadModalVisible} transparent={true} animationType="none">
-          {/* ... (Download modal content remains the same as original file) ... */}
-          <View style={styles.downloadModalOverlay}>
-             {/* Placeholder for download modal content to save space in this response */}
-             <SpriteActivityIndicator size={50} />
-             <Text style={{color:'white', marginTop: 20}}>Loading Assets: {Math.round(downloadProgress.progress * 100)}%</Text>
-          </View>
+        {/* ... (Download modal content remains the same as original file) ... */}
+        <View style={styles.downloadModalOverlay}>
+          {/* Placeholder for download modal content to save space in this response */}
+          <SpriteActivityIndicator size={50} />
+          <Text style={{ color: 'white', marginTop: 20 }}>Loading Assets: {Math.round(downloadProgress.progress * 100)}%</Text>
+        </View>
       </Modal>
 
-      <MainLoading visible={isNavigating}/>
+      <MainLoading visible={isNavigating} />
     </>
   );
 }
@@ -360,11 +362,11 @@ const styles = StyleSheet.create({
     height: height * 0.55,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: -30, 
+    marginBottom: -30,
   },
   activeIslandWrapper: {
     // Fixed dimensions matching the previous "active" state (width * 1)
-    width: width, 
+    width: width,
     aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -379,7 +381,7 @@ const styles = StyleSheet.create({
   },
   islandLottie: {
     // Slight scale up to fill space nicely
-    width: '120%', 
+    width: '120%',
     height: '120%',
   },
   // --------------------------
@@ -391,7 +393,7 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 20,
     // Adjust margin to sit tightly under the island container
-    marginTop: 0, 
+    marginTop: 0,
     zIndex: 20,
   },
   levelSelectorImage: {
@@ -408,18 +410,18 @@ const styles = StyleSheet.create({
   currentLevelText: {
     color: '#fff', fontSize: 28, textAlign: 'center', fontFamily: 'FunkySign',
   },
-  
+
   // ... (Error styles remain the same) ...
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.8)' },
   errorText: { color: '#ff6b6b', fontSize: 18, fontFamily: 'FunkySign' },
   retryButton: { backgroundColor: '#4CAF50', padding: 15, borderRadius: 25, marginTop: 20 },
   retryText: { color: '#fff', fontFamily: 'FunkySign' },
-  errorBanner: { backgroundColor: '#ff9800', padding: 8, position: 'absolute', top: 0, width:'100%', zIndex: 100 },
+  errorBanner: { backgroundColor: '#ff9800', padding: 8, position: 'absolute', top: 0, width: '100%', zIndex: 100 },
   errorBannerText: { color: '#fff', textAlign: 'center', fontFamily: 'FunkySign' },
 
   // ... (Button styles for PvP) ...
   pvpButtonWrapper: { alignItems: 'center', justifyContent: 'center', zIndex: 120, marginTop: 2 },
-  pvpImage: { width:60, height: 60 },
+  pvpImage: { width: 60, height: 60 },
   pvpButtonText: { color: '#E8F5FF', fontSize: 12, fontFamily: 'FunkySign', marginTop: -5 },
 
   iconColumn: {
@@ -435,7 +437,7 @@ const styles = StyleSheet.create({
 
 
   lockedOverlay: {
-    position: 'absolute', width: '115%', height: '115%', zIndex: 10, left: -20, opacity: 0.9, resizeMode:'contain'
+    position: 'absolute', width: '115%', height: '115%', zIndex: 10, left: -20, opacity: 0.9, resizeMode: 'contain'
   },
   downloadModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' },
 });

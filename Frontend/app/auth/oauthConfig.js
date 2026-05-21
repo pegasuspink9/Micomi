@@ -8,8 +8,10 @@
 
 export const OAUTH_CONFIG = {
   GOOGLE: {
-    // Web Client ID from Google Cloud Console
-    clientId: "459111764902-09uhkdrbfq1tv7gml6dbce3t05ka3jlj.apps.googleusercontent.com",
+    // Web Client ID from Google Cloud Console (Expo Go / proxy)
+    webClientId: "459111764902-09uhkdrbfq1tv7gml6dbce3t05ka3jlj.apps.googleusercontent.com",
+    // Android Client ID from Google Cloud Console (standalone APK/AAB)
+    androidClientId: "459111764902-ajuaosn8js2lseq5j1ovrl1n9gknd768.apps.googleusercontent.com",
     scopes: ['profile', 'email'],
   },
   FACEBOOK: {
