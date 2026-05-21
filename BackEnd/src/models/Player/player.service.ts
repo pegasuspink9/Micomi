@@ -1,5 +1,5 @@
 import { prisma } from "../../../prisma/client";
-import { QuestPeriod } from "@prisma/client";
+import { QuestPeriod, QuestType, Prisma } from "@prisma/client";
 import { hashPassword, comparePassword } from "../../../utils/hash";
 import { generateAccessToken } from "../../../utils/token";
 import {
@@ -10,7 +10,6 @@ import {
 import { checkAchievements } from "../../game/Achievements/achievements.service";
 import { updateQuestProgress } from "../../game/Quests/quests.service";
 import { getAllPlayerQuests } from "../Quest/quest.service";
-import { QuestType } from "@prisma/client";
 import { differenceInCalendarDays } from "date-fns";
 import { io } from "../../index";
 import { sendPasswordResetEmail } from "../../../utils/email";
@@ -25,6 +24,27 @@ import { getAllThemes } from "../../game/Themes/themes.service";
 
 export const DEFAULT_AVATAR_URL =
   "https://micomi-assets.me/Player%20Avatars%20Final/Avatar_1.png";
+
+const formatPrismaCreatePlayerError = (error: unknown) => {
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  ) {
+    const target = (error.meta?.target as string[]) || [];
+
+    if (target.includes("username")) {
+      return "Username is already taken.";
+    }
+
+    if (target.includes("email")) {
+      return "Email is already currently in use.";
+    }
+
+    return "Player already exists with the provided details.";
+  }
+
+  return null;
+};
 
 const normalizeUsername = (value: string) =>
   value
@@ -456,20 +476,31 @@ export const createPlayer = async (data: PlayerCreateInput) => {
     ? await hashPassword(data.password)
     : null;
 
-  const newPlayer = await prisma.player.create({
-    data: {
-      player_name: data.player_name,
-      email: data.email,
-      username: data.username,
-      password: finalPassword,
-      google_id: (data as any).google_id || null,
-      facebook_id: (data as any).facebook_id || null,
-      player_avatar: data.player_avatar || DEFAULT_AVATAR_URL,
-      created_at: new Date(),
-      last_active: new Date(),
-      days_logged_in: 0,
-    },
-  });
+  let newPlayer;
+
+  try {
+    newPlayer = await prisma.player.create({
+      data: {
+        player_name: data.player_name,
+        email: data.email,
+        username: data.username,
+        password: finalPassword,
+        google_id: (data as any).google_id || null,
+        facebook_id: (data as any).facebook_id || null,
+        player_avatar: data.player_avatar || DEFAULT_AVATAR_URL,
+        created_at: new Date(),
+        last_active: new Date(),
+        days_logged_in: 0,
+      },
+    });
+  } catch (error) {
+    const friendlyMessage = formatPrismaCreatePlayerError(error);
+    if (friendlyMessage) {
+      throw new Error(friendlyMessage);
+    }
+
+    throw error;
+  }
 
   await initializeNewGameState(newPlayer.player_id);
   await assignDefaultTheme(newPlayer.player_id);

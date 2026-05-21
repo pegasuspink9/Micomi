@@ -16,7 +16,7 @@ import {
 import { getCardForAttackType } from "../Combat/combat.service";
 import {
   parseAndValidateBlanks,
-  applyRetryReveal,
+  // applyRetryReveal,
   applyRevealPotion,
 } from "../../../helper/revealPotionHelper";
 import {
@@ -2712,61 +2712,61 @@ const prepareChallenge = async (
       } else {
         console.error(`- Ryron's Passive Failed: ${revealResult.error}`);
       }
-    } else {
-      if (effectiveCorrectAnswer.length >= 8) {
-        const challengeKey = challenge.challenge_id.toString();
-        const retryRevealMap =
-          progress.retry_reveal_map &&
-          typeof progress.retry_reveal_map === "object"
-            ? (progress.retry_reveal_map as Record<string, number[]>)
-            : {};
-        const existingRevealIndices = Array.isArray(
-          retryRevealMap[challengeKey],
-        )
-          ? retryRevealMap[challengeKey]
-          : undefined;
+      // } else {
+      //   if (effectiveCorrectAnswer.length >= 8) {
+      //     const challengeKey = challenge.challenge_id.toString();
+      //     const retryRevealMap =
+      //       progress.retry_reveal_map &&
+      //       typeof progress.retry_reveal_map === "object"
+      //         ? (progress.retry_reveal_map as Record<string, number[]>)
+      //         : {};
+      //     const existingRevealIndices = Array.isArray(
+      //       retryRevealMap[challengeKey],
+      //     )
+      //       ? retryRevealMap[challengeKey]
+      //       : undefined;
 
-        const revealResult = await applyRetryReveal(
-          modifiedChallenge,
-          effectiveCorrectAnswer,
-          existingRevealIndices,
-        );
+      //     const revealResult = await applyRetryReveal(
+      //       modifiedChallenge,
+      //       effectiveCorrectAnswer,
+      //       existingRevealIndices,
+      //     );
 
-        if (revealResult.success && revealResult.revealedChallenge) {
-          modifiedChallenge = revealResult.revealedChallenge;
+      //     if (revealResult.success && revealResult.revealedChallenge) {
+      //       modifiedChallenge = revealResult.revealedChallenge;
 
-          const revealedIndices = revealResult.revealedIndices || [];
-          const shouldPersist =
-            revealedIndices.length > 0 &&
-            JSON.stringify(existingRevealIndices || []) !==
-              JSON.stringify(revealedIndices);
+      //       const revealedIndices = revealResult.revealedIndices || [];
+      //       const shouldPersist =
+      //         revealedIndices.length > 0 &&
+      //         JSON.stringify(existingRevealIndices || []) !==
+      //           JSON.stringify(revealedIndices);
 
-          if (shouldPersist) {
-            await prisma.playerProgress.update({
-              where: {
-                player_id_level_id: {
-                  player_id: progress.player_id,
-                  level_id: progress.level_id,
-                },
-              },
-              data: {
-                retry_reveal_map: {
-                  ...retryRevealMap,
-                  [challengeKey]: revealedIndices,
-                },
-              },
-            });
-          }
+      //       if (shouldPersist) {
+      //         await prisma.playerProgress.update({
+      //           where: {
+      //             player_id_level_id: {
+      //               player_id: progress.player_id,
+      //               level_id: progress.level_id,
+      //             },
+      //           },
+      //           data: {
+      //             retry_reveal_map: {
+      //               ...retryRevealMap,
+      //               [challengeKey]: revealedIndices,
+      //             },
+      //           },
+      //         });
+      //       }
 
-          console.log(
-            `- Retry Reveal Applied: Partial reveal (leaving 5 blanks) for challenge ${challenge.challenge_id}`,
-          );
-        }
-      } else {
-        console.log(
-          `- Retry of wrong challenge ${challenge.challenge_id}: Blanks count (${effectiveCorrectAnswer.length}) < 8. No reveal applied.`,
-        );
-      }
+      //       console.log(
+      //         `- Retry Reveal Applied: Partial reveal (leaving 5 blanks) for challenge ${challenge.challenge_id}`,
+      //       );
+      //     }
+      //   } else {
+      //     console.log(
+      //       `- Retry of wrong challenge ${challenge.challenge_id}: Blanks count (${effectiveCorrectAnswer.length}) < 8. No reveal applied.`,
+      //     );
+      //   }
     }
   }
 
