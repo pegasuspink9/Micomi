@@ -42,16 +42,16 @@ export const usePlayerProfile = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       console.log(`👤 Loading player profile...`);
-      
+
       // ✅ Load cached assets from Map API preload into memory
       await Promise.all([
         universalAssetPreloader.loadCachedAssets('game_images'),
         universalAssetPreloader.loadCachedAssets('game_animations'),
         universalAssetPreloader.loadCachedAssets('map_assets'),
       ]);
-      
+
       // Get player data from API
       const apiData = await playerService.getPlayerProfile();
       let themesPayload = null;
@@ -61,14 +61,14 @@ export const usePlayerProfile = () => {
       } catch (themesError) {
         console.error('Failed to load themes:', themesError);
       }
-      
+
       // Transform API data to our format
       let transformedData = playerService.transformPlayerData(apiData);
-      
+
       // ✅ Check if profile assets are already cached (from Map API preload)
       const cacheStatus = await universalAssetPreloader.areProfileAssetsCachedFromMap(transformedData);
       console.log(`📦 Profile asset cache status:`, cacheStatus);
-      
+
       if (!cacheStatus.cached && cacheStatus.missing > 0) {
         // Only download truly missing assets (most should be cached from Map API)
         console.log(`📦 Need to download ${cacheStatus.missing} missing profile assets`);
@@ -76,10 +76,10 @@ export const usePlayerProfile = () => {
       } else {
         console.log(`✅ All ${cacheStatus.total} profile assets already cached from Map API`);
       }
-      
+
       // ✅ Transform data to use cached paths (reusing Map API cache)
       let dataWithCachedPaths = transformedData;
-      
+
       if (typeof universalAssetPreloader.transformProfileDataWithMapCache === 'function') {
         dataWithCachedPaths = universalAssetPreloader.transformProfileDataWithMapCache(transformedData);
       } else {
@@ -87,13 +87,13 @@ export const usePlayerProfile = () => {
         console.warn('⚠️ transformProfileDataWithMapCache not found, using transformPlayerDataWithCache');
         dataWithCachedPaths = universalAssetPreloader.transformPlayerDataWithCache(transformedData);
       }
-      
+
       const mergedData = attachThemesToProfile(dataWithCachedPaths, themesPayload);
       setPlayerData(mergedData);
 
       fetchAvailableAvatars();
-      
-      
+
+
       console.log('✅ Player profile loaded successfully with cached assets');
       return mergedData;
     } catch (err) {
@@ -105,7 +105,7 @@ export const usePlayerProfile = () => {
     }
   }, []);
 
-   const refreshPlayerData = useCallback(async () => {
+  const refreshPlayerData = useCallback(async () => {
     if (!user) return null;
     try {
       const apiData = await playerService.getPlayerProfile();
@@ -117,14 +117,14 @@ export const usePlayerProfile = () => {
       } catch (themesError) {
         console.error('Failed to load themes:', themesError);
       }
-      
+
       let dataWithCachedPaths = transformedData;
       if (typeof universalAssetPreloader.transformProfileDataWithMapCache === 'function') {
         dataWithCachedPaths = universalAssetPreloader.transformProfileDataWithMapCache(transformedData);
       } else {
         dataWithCachedPaths = universalAssetPreloader.transformPlayerDataWithCache(transformedData);
       }
-      
+
       const mergedData = attachThemesToProfile(dataWithCachedPaths, themesPayload);
       setPlayerData(mergedData);
       return mergedData;
@@ -208,7 +208,7 @@ export const usePlayerProfile = () => {
   const checkForCharacterUpdates = useCallback(async () => {
     try {
       const lastUpdate = await characterService.getLastSelectionUpdate();
-      
+
       if (lastUpdate > lastSelectionCheck) {
         console.log('🔄 Character selection updated, refreshing player data...');
         setLastSelectionCheck(lastUpdate);
@@ -222,7 +222,7 @@ export const usePlayerProfile = () => {
   const checkForBadgeUpdates = useCallback(async () => {
     try {
       const lastUpdate = await playerService.getLastBadgeUpdate();
-      
+
       if (lastUpdate > lastBadgeCheck) {
         console.log('🔄 Badge selection updated, refreshing player data...');
         setLastBadgeCheck(lastUpdate);
@@ -301,7 +301,7 @@ export const usePlayerProfile = () => {
     if (!user) return;
     loadPlayerProfile().then(() => {
       characterService.getLastSelectionUpdate().then(setLastSelectionCheck);
-      playerService.getLastBadgeUpdate().then(setLastBadgeCheck); 
+      playerService.getLastBadgeUpdate().then(setLastBadgeCheck);
     });
   }, [loadPlayerProfile, user]);
 
@@ -336,7 +336,7 @@ export const usePlayerProfile = () => {
     loading,
     error,
     isSelectingAvatar,
-    
+
     // Actions
     loadPlayerProfile,
     updateAvatar,
@@ -348,7 +348,7 @@ export const usePlayerProfile = () => {
     purchaseTheme,
     checkEmailExists,
     checkIdentifierExists,
-    
+
     // Getters
     getBadges,
     getQuests,
