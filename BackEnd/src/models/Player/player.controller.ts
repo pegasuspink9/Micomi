@@ -1,5 +1,9 @@
 import { Request, Response } from "express";
-import { successResponse, errorResponse } from "../../../utils/response";
+import {
+  successResponse,
+  errorResponse,
+  errorShopResponse,
+} from "../../../utils/response";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -79,7 +83,7 @@ export const createPlayer = async (req: Request, res: Response) => {
     const data = await PlayerService.createPlayer(req.body);
     return successResponse(res, data, "Player created successfully", 201);
   } catch (error) {
-    return errorResponse(res, error, "Failed to create player", 400);
+    return errorShopResponse(res, error, "Failed to create player", 400);
   }
 };
 
