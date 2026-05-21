@@ -2,12 +2,13 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { View, Text, ScrollView, StyleSheet, Pressable, Keyboard, Animated } from 'react-native';
 import Output from '../Output/Output';
 import ExpectedOutput from '../Output/ExpectedOutput';
-import { 
- gameScale
+import {
+  gameScale
 } from '../../../Responsiveness/gameResponsive';
 import Guide from '../Output/Guide';
 import FileViewer from '../Output/FileViewer';
 import ReportModal from '../Report/ReportModal';
+import { scrollToNextBlank } from '../utils/blankHelper';
 
 const CodeEditor = ({
   currentQuestion,
@@ -16,6 +17,7 @@ const CodeEditor = ({
   scrollViewRef,
   blankRefs,
   renderSyntaxHighlightedLine,
+  selectedBlankIndex,
   userOutput = "",
   expectedOutput = "",
   isCorrect = null,
@@ -37,9 +39,9 @@ const CodeEditor = ({
   submitReport = null,
 }) => {
   const [activeTab, setActiveTab] = useState('code');
-  const [hasAnimated, setHasAnimated] = useState(false); 
+  const [hasAnimated, setHasAnimated] = useState(false);
   const lineAnimations = useRef([]);
-  const [tabsDisabled, setTabsDisabled] = useState(false); 
+  const [tabsDisabled, setTabsDisabled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 0 });
 
@@ -77,7 +79,7 @@ const CodeEditor = ({
     };
   }, [blankLineIndexes, lines.length]);
 
-    const codeTabDetails = useMemo(() => {
+  const codeTabDetails = useMemo(() => {
     const type = currentQuestion?.question_type?.toLowerCase();
     switch (type) {
       case 'html':
@@ -87,7 +89,7 @@ const CodeEditor = ({
       case 'javascript':
         return { long: 'script.js', short: 'JS' };
       default:
-        return { long: 'index.html', short: 'File' }; 
+        return { long: 'index.html', short: 'File' };
     }
   }, [currentQuestion?.question_type]);
 
@@ -99,12 +101,12 @@ const CodeEditor = ({
     { key: 'computer_file', short: 'File', long: 'file.txt' },
   ], []);
 
-   useEffect(() => {
-    setTabsDisabled(true); 
+  useEffect(() => {
+    setTabsDisabled(true);
     const timer = setTimeout(() => {
       setTabsDisabled(false);
-    }, 3000); 
-    return () => clearTimeout(timer); 
+    }, 3000);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -121,6 +123,19 @@ const CodeEditor = ({
     }
   }, [externalActiveTab, activeTab]);
 
+  useEffect(() => {
+    if (activeTab === 'code' && selectedBlankIndex !== undefined && selectedBlankIndex !== null) {
+      scrollToNextBlank(
+        scrollViewRef,
+        blankRefs,
+        currentQuestion,
+        selectedAnswers,
+        selectedBlankIndex,
+        viewportHeightRef?.current || 0
+      );
+    }
+  }, [selectedBlankIndex, activeTab, scrollViewRef, blankRefs, currentQuestion, selectedAnswers, viewportHeightRef]);
+
   const handleTabChange = useCallback((tabName) => {
     if (tabsDisabled) return;
 
@@ -128,11 +143,11 @@ const CodeEditor = ({
       Keyboard.dismiss();
     }
     setActiveTab(tabName);
-    
+
     if (onTabChange) {
       onTabChange(tabName);
     }
-  }, [onTabChange, tabsDisabled]); 
+  }, [onTabChange, tabsDisabled]);
 
   const handleOutputTabPress = useCallback(() => handleTabChange('output'), [handleTabChange]);
 
@@ -141,10 +156,10 @@ const CodeEditor = ({
   const renderTabContent = useCallback(() => {
     switch (activeTab) {
       case 'guide':
-         return <Guide key={`review-${currentQuestion?.id || 'default'}`} currentQuestion={currentQuestion} guideOverride={reviewGuide} />;
+        return <Guide key={`review-${currentQuestion?.id || 'default'}`} currentQuestion={currentQuestion} guideOverride={reviewGuide} />;
 
       case 'lesson_guide':
-         return <Guide key={`lesson-${currentQuestion?.id || 'default'}`} currentQuestion={currentQuestion} />;
+        return <Guide key={`lesson-${currentQuestion?.id || 'default'}`} currentQuestion={currentQuestion} />;
 
       case 'code':
         return (
@@ -218,7 +233,7 @@ const CodeEditor = ({
             })}
           </ScrollView>
         );
-       case 'css_file':
+      case 'css_file':
         return <FileViewer fileContent={currentQuestion.css_file} language="css" />;
       case 'javascript_file':
         return <FileViewer fileContent={currentQuestion.javascript_file} language="javascript" />;
@@ -227,11 +242,11 @@ const CodeEditor = ({
       case 'computer_file':
         return <FileViewer fileContent={currentQuestion.computer_file} />;
 
-        
+
       case 'output':
         return (
           <View style={styles.outputContainer}>
-            <Output 
+            <Output
               currentQuestion={currentQuestion}
               selectedAnswers={selectedAnswers}
               actualResult={userOutput}
@@ -239,20 +254,20 @@ const CodeEditor = ({
               showLiveHTML={true}
               style={styles.tabOutput}
               options={options}
-                showWebViewInScreenPlay={showOutputInScreenPlay}
-                onWebViewToggle={onOutputToggle}
-                showExpectedInScreenPlay={showExpectedInScreenPlay}
-                onExpectedToggle={onExpectedToggle}
-                previewMode={previewMode}
-                 isLevelCompletionModalVisible={isLevelCompletionModalVisible}
-           />
+              showWebViewInScreenPlay={showOutputInScreenPlay}
+              onWebViewToggle={onOutputToggle}
+              showExpectedInScreenPlay={showExpectedInScreenPlay}
+              onExpectedToggle={onExpectedToggle}
+              previewMode={previewMode}
+              isLevelCompletionModalVisible={isLevelCompletionModalVisible}
+            />
           </View>
         );
 
       case 'expected':
         return (
           <View style={styles.outputContainer}>
-            <ExpectedOutput 
+            <ExpectedOutput
               currentQuestion={currentQuestion}
               submissionResult={submissionResult}
               previewMode={previewMode}
@@ -288,9 +303,9 @@ const CodeEditor = ({
     visibleRange.start,
   ]);
 
- useEffect(() => {
+  useEffect(() => {
     if (!hasAnimated && activeTab === 'code' && lines && lines.length > 0) {
-      
+
       lineAnimations.current.forEach(anim => {
         if (anim) {
           anim.opacity.setValue(0);
@@ -306,8 +321,8 @@ const CodeEditor = ({
 
       // Calculate the approximate total duration with original settings
       // This considers the last line's opacity animation to be the latest finishing point
-      const originalTotalDuration = 
-        (lines.length > 0 ? (lines.length - 1) * (BASE_STAGGER_DELAY + BASE_LINE_OPACITY_DELAY) : 0) 
+      const originalTotalDuration =
+        (lines.length > 0 ? (lines.length - 1) * (BASE_STAGGER_DELAY + BASE_LINE_OPACITY_DELAY) : 0)
         + INDIVIDUAL_ANIMATION_DURATION;
 
       let actualLineOpacityDelay = BASE_LINE_OPACITY_DELAY;
@@ -324,19 +339,19 @@ const CodeEditor = ({
         actualLineTranslateYDelay = 0;
         actualStaggerDelay = 0;
       }
-      
+
       const anims = lineAnimations.current.slice(0, lines.length).map((anim, index) =>
         Animated.parallel([
           Animated.timing(anim.opacity, {
             toValue: 1,
             duration: INDIVIDUAL_ANIMATION_DURATION,
-            delay: index * actualLineOpacityDelay, 
+            delay: index * actualLineOpacityDelay,
             useNativeDriver: true,
           }),
           Animated.timing(anim.translateY, {
             toValue: 0,
             duration: INDIVIDUAL_ANIMATION_DURATION,
-            delay: index * actualLineTranslateYDelay, 
+            delay: index * actualLineTranslateYDelay,
             useNativeDriver: true,
           }),
         ])
@@ -345,16 +360,16 @@ const CodeEditor = ({
       // DELAYED START: Wait 2 seconds before entrance animation begins in PvP mode
       // This allows tab switching to complete before animation interrupts rendering
       const startAnimationDelay = shouldDelayAnimation ? 2000 : 0;
-      
+
       if (startAnimationDelay > 0) {
         setTimeout(() => {
-          Animated.stagger(actualStaggerDelay, anims).start(() => { 
-            setHasAnimated(true); 
+          Animated.stagger(actualStaggerDelay, anims).start(() => {
+            setHasAnimated(true);
           });
         }, startAnimationDelay);
       } else {
-        Animated.stagger(actualStaggerDelay, anims).start(() => { 
-          setHasAnimated(true); 
+        Animated.stagger(actualStaggerDelay, anims).start(() => {
+          setHasAnimated(true);
         });
       }
     }
@@ -392,12 +407,12 @@ const CodeEditor = ({
                 styles.webTab,
                 activeTab === 'guide' && styles.webTabActive,
                 styles.webTabFirst,
-                tabsDisabled && { opacity: 0.5 } 
+                tabsDisabled && { opacity: 0.5 }
               ]}
-              disabled={tabsDisabled} 
+              disabled={tabsDisabled}
             >
               <Text style={[
-                styles.webTabText, 
+                styles.webTabText,
                 activeTab === 'guide' && styles.webTabTextActive
               ]}>
                 Review
@@ -412,12 +427,12 @@ const CodeEditor = ({
                 styles.webTab,
                 activeTab === 'lesson_guide' && styles.webTabActive,
                 styles.webTabFirst,
-                tabsDisabled && { opacity: 0.5 } 
+                tabsDisabled && { opacity: 0.5 }
               ]}
-              disabled={tabsDisabled} 
+              disabled={tabsDisabled}
             >
               <Text style={[
-                styles.webTabText, 
+                styles.webTabText,
                 activeTab === 'lesson_guide' && styles.webTabTextActive
               ]}>
                 Guide
@@ -431,19 +446,19 @@ const CodeEditor = ({
               styles.webTab,
               activeTab === 'code' && styles.webTabActive,
               !(Boolean(reviewGuide) && isCorrect === false) && !currentQuestion?.guide && styles.webTabFirst,
-              tabsDisabled && { opacity: 0.5 } 
+              tabsDisabled && { opacity: 0.5 }
             ]}
-            disabled={tabsDisabled} 
+            disabled={tabsDisabled}
           >
-              <Text style={[
-              styles.webTabText, 
+            <Text style={[
+              styles.webTabText,
               activeTab === 'code' && styles.webTabTextActive
             ]}>
               {activeTab === 'code' ? codeTabDetails.long : codeTabDetails.short}
             </Text>
           </Pressable>
 
-           {fileTabs.map(tab => (
+          {fileTabs.map(tab => (
             currentQuestion?.[tab.key] != null && (
               <Pressable
                 key={tab.key}
@@ -451,9 +466,9 @@ const CodeEditor = ({
                 style={[
                   styles.webTab,
                   activeTab === tab.key && styles.webTabActive,
-                  tabsDisabled && { opacity: 0.5 } 
+                  tabsDisabled && { opacity: 0.5 }
                 ]}
-                disabled={tabsDisabled} 
+                disabled={tabsDisabled}
               >
                 <Text style={[styles.webTabText, activeTab === tab.key && styles.webTabTextActive]}>
                   {currentQuestion[`${tab.key}_name`] || (activeTab === tab.key ? tab.long : tab.short)}
@@ -467,15 +482,15 @@ const CodeEditor = ({
             style={[
               styles.webTab,
               activeTab === 'output' && styles.webTabActive,
-              tabsDisabled && { opacity: 0.5 } 
+              tabsDisabled && { opacity: 0.5 }
             ]}
-            disabled={tabsDisabled} 
+            disabled={tabsDisabled}
           >
             <Text style={[
-              styles.webTabText, 
+              styles.webTabText,
               activeTab === 'output' && styles.webTabTextActive
             ]}>
-              {activeTab === 'output' ? 'Output' : 'Output'} 
+              {activeTab === 'output' ? 'Output' : 'Output'}
             </Text>
           </Pressable>
 
@@ -485,15 +500,15 @@ const CodeEditor = ({
               styles.webTab,
               activeTab === 'expected' && styles.webTabActive,
               styles.webTabLast,
-              tabsDisabled && { opacity: 0.5 } 
+              tabsDisabled && { opacity: 0.5 }
             ]}
-            disabled={tabsDisabled} 
+            disabled={tabsDisabled}
           >
             <Text style={[
-              styles.webTabText, 
+              styles.webTabText,
               activeTab === 'expected' && styles.webTabTextActive
             ]}>
-              {activeTab === 'expected' ? 'Expected Output' : 'Expected'} 
+              {activeTab === 'expected' ? 'Expected Output' : 'Expected'}
             </Text>
           </Pressable>
 
@@ -556,8 +571,8 @@ const CodeEditor = ({
 const styles = StyleSheet.create({
   editorContainer: {
     backgroundColor: '#1e1e1e32',
-    borderRadius: gameScale(12), 
-    flex: 1, 
+    borderRadius: gameScale(12),
+    flex: 1,
     width: '100%',
     overflow: 'visible',
     borderTopColor: '#4a4a4a',
@@ -572,7 +587,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: gameScale(12),
     elevation: gameScale(16),
-    minHeight: 0, 
+    minHeight: 0,
   },
 
   editorHeader: {
@@ -617,8 +632,8 @@ const styles = StyleSheet.create({
   tabsContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    marginLeft: gameScale(10), 
-    flex: 1, 
+    marginLeft: gameScale(10),
+    flex: 1,
   },
 
   webTab: {
@@ -844,7 +859,7 @@ const styles = StyleSheet.create({
   },
 
   outputTitle: {
-    fontSize: gameScale(14), 
+    fontSize: gameScale(14),
     fontWeight: '600',
     color: '#495057',
   },
@@ -872,7 +887,7 @@ export default React.memo(CodeEditor, (prev, next) => {
   if (prev.currentQuestion?.id !== next.currentQuestion?.id) return false;
   if (prev.activeTab !== next.activeTab) return false;
   if (prev.isCorrect !== next.isCorrect) return false;
-  
+
   // Use length or shallow comparison for answers instead of deep stringify
   const prevAns = prev.selectedAnswers;
   const nextAns = next.selectedAnswers;
@@ -880,10 +895,11 @@ export default React.memo(CodeEditor, (prev, next) => {
     if (prevAns?.length !== nextAns?.length) return false;
     // If they have same length, check only changed indexes if necessary, 
     // but usually a simple reference change is enough to trigger false here
-    return false; 
+    return false;
   }
 
   return (
+    prev.selectedBlankIndex === next.selectedBlankIndex &&
     prev.renderSyntaxHighlightedLine === next.renderSyntaxHighlightedLine &&
     prev.userOutput === next.userOutput &&
     prev.expectedOutput === next.expectedOutput &&

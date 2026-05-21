@@ -435,6 +435,7 @@ const GameQuestions = ({
               question: displayQuestion 
             }), [currentQuestion.id, displayQuestion])}
             selectedAnswers={selectedAnswers}
+            selectedBlankIndex={selectedBlankIndex}
             getBlankIndex={getBlankIndex}
             scrollViewRef={scrollViewRef}
             blankRefs={blankRefs}

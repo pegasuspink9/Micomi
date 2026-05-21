@@ -7,12 +7,12 @@ import Animated, {
   withRepeat,
   withTiming,
   withSpring,
-  withDelay, 
+  withDelay,
   cancelAnimation,
   runOnJS,
   Easing,
-  interpolate,  
-  Extrapolate,  
+  interpolate,
+  Extrapolate,
 } from 'react-native-reanimated';
 import { universalAssetPreloader } from '../../../../services/preloader/universalAssetPreloader';
 import { soundManager } from '../../Sounds/UniversalSoundManager';
@@ -32,7 +32,7 @@ const EnemyCharacter = ({
   fightStatus = null,
   attackAudioUrl = null,
   enemyName = '',
-  attackOverlayUrl = null, 
+  attackOverlayUrl = null,
   enemyCurrentState = null,
   reactionText = null,
   hurtAudioUrl = null,
@@ -67,26 +67,26 @@ const EnemyCharacter = ({
   const OVERLAY_ROWS = 4;
   const OVERLAY_TOTAL_FRAMES = 24;
 
-    useEffect(() => {
+  useEffect(() => {
     if (attackOverlayUrl) {
       overlayScale.value = 1.6;
       overlayOpacity.value = 0;
 
       overlayOpacity.value = withTiming(1, { duration: 600 });
-      overlayScale.value = withTiming(1, { 
-        duration: 700, 
-        easing: Easing.out(Easing.back(1.5)) 
+      overlayScale.value = withTiming(1, {
+        duration: 700,
+        easing: Easing.out(Easing.back(1.5))
       });
 
       overlayFrameIndex.value = 0;
       overlayFrameIndex.value = withRepeat(
-        withTiming(OVERLAY_TOTAL_FRAMES - 1, { 
-          duration: 1200, 
-          easing: Easing.linear 
+        withTiming(OVERLAY_TOTAL_FRAMES - 1, {
+          duration: 1200,
+          easing: Easing.linear
         }),
         -1,
         false
-      ); 
+      );
     } else {
       overlayOpacity.value = withTiming(0, { duration: 400 });
       cancelAnimation(overlayFrameIndex);
@@ -153,9 +153,9 @@ const EnemyCharacter = ({
     else if (enemyName === 'Boss Icycreamero' || enemy?.enemy_name === 'Boss Icycreamero') detected = 'Boss Icycreamero';
     else if (enemyName === 'Boss Scythe' || enemy?.enemy_name === 'Boss Scythe') detected = 'Boss Scythe';
     else if (enemyName === 'Boss Bebeetle' || enemy?.enemy_name === 'Boss Bebeetle') detected = 'Boss Bebeetle';
-    else if(enemyName === 'King Feanaly' || enemy?.enemy_name === 'King Feanaly') detected = 'King Feanaly';
-    else if(enemyName === 'Boss Scorcharach' || enemy?.enemy_name === 'Boss Scorcharach') detected = 'Boss Scorcharach';
-    else if(enemyName === 'Boss Antcool' || enemy?.enemy_name === 'Boss Antcool') detected = 'Boss Antcool';
+    else if (enemyName === 'King Feanaly' || enemy?.enemy_name === 'King Feanaly') detected = 'King Feanaly';
+    else if (enemyName === 'Boss Scorcharach' || enemy?.enemy_name === 'Boss Scorcharach') detected = 'Boss Scorcharach';
+    else if (enemyName === 'Boss Antcool' || enemy?.enemy_name === 'Boss Antcool') detected = 'Boss Antcool';
 
     // 3. Update Ref if valid name found
     if (detected) {
@@ -168,7 +168,7 @@ const EnemyCharacter = ({
   }, [enemyName, enemy?.enemy_name]);
 
 
-    const bossLayout = useMemo(() => {
+  const bossLayout = useMemo(() => {
     if (matchCharacterStyle) {
       return {};
     }
@@ -177,21 +177,21 @@ const EnemyCharacter = ({
 
     if (effectiveEnemyName === 'Boss Darco') {
       return { ...baseBossStyle, marginTop: gameScale(-56) };
-    } 
+    }
     else if (effectiveEnemyName === 'King Grimnir') {
       return { ...baseBossStyle, marginTop: gameScale(-32) };
     }
     else if (effectiveEnemyName === 'Draco') {
       return { marginTop: gameScale(-5) };
     }
-    else if (effectiveEnemyName === 'Ladyno' || effectiveEnemyName === 'Venomidge' || effectiveEnemyName === 'Inferna'  || effectiveEnemyName === 'Glace' || effectiveEnemyName === 'Rime') {
+    else if (effectiveEnemyName === 'Ladyno' || effectiveEnemyName === 'Venomidge' || effectiveEnemyName === 'Inferna' || effectiveEnemyName === 'Glace' || effectiveEnemyName === 'Rime') {
       return { marginTop: gameScale(6) };
     }
     else if (effectiveEnemyName === 'Termity' || effectiveEnemyName === 'Shopper') {
       return { marginTop: gameScale(-14) };
     }
 
-    else if (effectiveEnemyName === 'Timothymos' || effectiveEnemyName === 'Krikrok' || effectiveEnemyName === 'Obsidian' || effectiveEnemyName === 'Volcar' || effectiveEnemyName === 'Blizzard' ) {
+    else if (effectiveEnemyName === 'Timothymos' || effectiveEnemyName === 'Krikrok' || effectiveEnemyName === 'Obsidian' || effectiveEnemyName === 'Volcar' || effectiveEnemyName === 'Blizzard') {
       return { marginTop: gameScale(-18) };
     }
     else if (effectiveEnemyName === 'Boss Joshy') {
@@ -204,57 +204,57 @@ const EnemyCharacter = ({
       return { marginTop: gameScale(-14) };
     }
     else if (effectiveEnemyName === 'Boss Maggmaw') {
-      return {  marginTop: gameScale(-45) };
+      return { marginTop: gameScale(-45) };
     }
-    else if (effectiveEnemyName === 'Celhegred'  || effectiveEnemyName === 'Frost') {
-      return {  marginTop: gameScale(8) };
+    else if (effectiveEnemyName === 'Celhegred' || effectiveEnemyName === 'Frost') {
+      return { marginTop: gameScale(8) };
     }
     else if (effectiveEnemyName === 'Boss Pyroformic') {
-      return {marginTop: gameScale(-47) };
+      return { marginTop: gameScale(-47) };
     }
-    else if(effectiveEnemyName === 'Icespider'  || effectiveEnemyName === 'Winkito' ) {
-      return {marginTop: gameScale(-20) };
+    else if (effectiveEnemyName === 'Icespider' || effectiveEnemyName === 'Winkito') {
+      return { marginTop: gameScale(-20) };
     }
     else if (effectiveEnemyName === 'Scoria' || effectiveEnemyName === 'Mosicikito') {
-      return { marginTop: gameScale(-14)  };
+      return { marginTop: gameScale(-14) };
     }
-    else if(effectiveEnemyName === 'Mothier' ){
+    else if (effectiveEnemyName === 'Mothier') {
       return { marginTop: gameScale(-19) };
     }
     else if (effectiveEnemyName === 'Pyron') {
       return { marginTop: gameScale(-14) };
     }
     else if (effectiveEnemyName === 'King San Pydero') {
-      return { ...baseBossStyle, marginTop: gameScale(-60) }; 
+      return { ...baseBossStyle, marginTop: gameScale(-60) };
     }
-    else if(effectiveEnemyName === 'Plumetle') {
+    else if (effectiveEnemyName === 'Plumetle') {
       return { marginTop: gameScale(-4) };
     }
-    else if(effectiveEnemyName === 'Boss Icycreamero') {
+    else if (effectiveEnemyName === 'Boss Icycreamero') {
       return { marginTop: gameScale(-50) };
     }
-    else if(effectiveEnemyName === 'Triyaling' || effectiveEnemyName === 'Blububee' || effectiveEnemyName === 'Permafrost') {
+    else if (effectiveEnemyName === 'Triyaling' || effectiveEnemyName === 'Blububee' || effectiveEnemyName === 'Permafrost') {
       return { marginTop: gameScale(-15) };
     }
-    else if(effectiveEnemyName === 'Boss Scythe') {
+    else if (effectiveEnemyName === 'Boss Scythe') {
       return { marginTop: gameScale(-73) };
     }
-    else if(effectiveEnemyName === 'Chill'){
+    else if (effectiveEnemyName === 'Chill') {
       return { marginTop: gameScale(17) };
     }
-    else if(effectiveEnemyName === 'Boss Bebeetle'){
+    else if (effectiveEnemyName === 'Boss Bebeetle') {
       return { ...baseBossStyle, marginTop: gameScale(-70) };
     }
-    else if(effectiveEnemyName === 'King Feanaly') {
+    else if (effectiveEnemyName === 'King Feanaly') {
       return { ...baseBossStyle, marginTop: gameScale(-80) };
     }
-    else if(effectiveEnemyName === 'Barbalony' || effectiveEnemyName === 'Bluejudy') {
+    else if (effectiveEnemyName === 'Barbalony' || effectiveEnemyName === 'Bluejudy') {
       return { marginTop: gameScale(7) };
     }
-    else if(effectiveEnemyName === 'Boss Scorcharach') {
-      return { ...baseBossStyle, marginTop: gameScale(-35) }; 
+    else if (effectiveEnemyName === 'Boss Scorcharach') {
+      return { ...baseBossStyle, marginTop: gameScale(-35) };
     }
-    else if(effectiveEnemyName === 'Boss Antcool' || effectiveEnemyName === 'Boss Antcool') {
+    else if (effectiveEnemyName === 'Boss Antcool' || effectiveEnemyName === 'Boss Antcool') {
       return { ...baseBossStyle, marginTop: gameScale(-55) };
     }
 
@@ -266,13 +266,13 @@ const EnemyCharacter = ({
   const wasBonusRound = useRef(false);
 
   // ========== Animation Configuration ==========
-   const SPRITE_SIZE = useMemo(() => {
+  const SPRITE_SIZE = useMemo(() => {
     if (matchCharacterStyle) {
       return gameScale(128);
     }
 
     if (effectiveEnemyName === 'Boss Darco') {
-      return gameScale(210); 
+      return gameScale(210);
     }
     if (effectiveEnemyName === 'King Grimnir') {
       return gameScale(200);
@@ -292,7 +292,7 @@ const EnemyCharacter = ({
     if (effectiveEnemyName === 'Boss Icycreamero') {
       return gameScale(200);
     }
-    if (effectiveEnemyName === 'Boss Scythe' ) {
+    if (effectiveEnemyName === 'Boss Scythe') {
       return gameScale(200);
     }
     else if (effectiveEnemyName === 'Boss Bebeetle' || effectiveEnemyName === 'King Feanaly') {
@@ -304,13 +304,13 @@ const EnemyCharacter = ({
     else if (effectiveEnemyName === 'Boss Antcool') {
       return gameScale(230);
     }
-    
+
 
     return gameScale(150);
 
-    
+
   }, [effectiveEnemyName, matchCharacterStyle]);
-  
+
   const SPRITE_COLUMNS = 6;
   const SPRITE_ROWS = 4;
   const TOTAL_FRAMES = 24;
@@ -326,12 +326,12 @@ const EnemyCharacter = ({
   }), []);
 
   const RUN_DISTANCE = useMemo(() => {
-    return -(SCREEN.width - gameScale(200)); 
+    return -(SCREEN.width - gameScale(200));
   }, []);
 
   const RUN_AWAY_DISTANCE = useMemo(() => {
     // Moves to the right (off-screen)
-    return -(SCREEN.width - gameScale(200)); 
+    return -(SCREEN.width - gameScale(200));
   }, []);
 
   const isUrlCached = useCallback((url) => {
@@ -394,7 +394,7 @@ const EnemyCharacter = ({
   }, [enemy, normalizedAnimations, getDisplayUrl]);
 
   const onAnimationCompleteRef = useRef(onAnimationComplete);
-  
+
   useEffect(() => {
     onAnimationCompleteRef.current = onAnimationComplete;
   }, [onAnimationComplete]);
@@ -484,14 +484,14 @@ const EnemyCharacter = ({
       // const prevStateStr = prevParts[14] === 'na' ? 'idle' : prevParts[14]; // <-- REMOVED
 
       const isNewRound = currentId !== prevId;
-      
+
       // ---------- CRITICAL FIX ----------
       // Relaxed condition: If it's a new round AND the *new* intended state is 'idle',
       // we skip the hard reset, regardless of what the previous state was.
       if (isNewRound && currentStateStr === 'idle') {
         console.log('🔄 PvP: New round with idle state detected. Flagging to skip frame reset to prevent freeze.');
         shouldSkipNextFrameResetRef.current = true; // Set flag for main animation effect
-        
+
         // Ensure URL is up to date without killing animation
         if (resetUrl && currentAnimationUrlRef.current !== resetUrl) {
           currentAnimationUrlRef.current = resetUrl;
@@ -543,10 +543,10 @@ const EnemyCharacter = ({
   const [currentAnimationUrl, setCurrentAnimationUrl] = useState(initialUrl);
   const currentAnimationUrlRef = useRef(initialUrl);
   const attackSequenceRef = useRef({ runUrl: null, attackUrl: null });
-  
 
 
-   const [displayReaction, setDisplayReaction] = useState(null);
+
+  const [displayReaction, setDisplayReaction] = useState(null);
   const reactionOpacity = useSharedValue(0);
 
   useEffect(() => {
@@ -588,7 +588,7 @@ const EnemyCharacter = ({
   }, [currentState, animationConfig.url, animationConfig.runUrl, animationConfig.attackUrl, animationConfig.isCompound]);
 
 
-    useEffect(() => {
+  useEffect(() => {
     if (currentState !== 'hurt') {
       blinkOpacity.value = 0;
     }
@@ -603,7 +603,7 @@ const EnemyCharacter = ({
   useEffect(() => {
     if (!hasInitialized.current) {
       hasInitialized.current = true;
-      
+
       let cachedCount = 0;
       allAnimationUrls.forEach(url => {
         if (isUrlCached(url)) {
@@ -611,7 +611,7 @@ const EnemyCharacter = ({
           cachedCount++;
         }
       });
-      
+
       if (cachedCount > 0) {
         console.log(`🎬 Enemy ${index}: ${cachedCount}/${allAnimationUrls.length} animations pre-cached, ready immediately`);
         setImageReady(true);
@@ -625,23 +625,23 @@ const EnemyCharacter = ({
   // ========== Image Preloading ==========
   useEffect(() => {
     if (!currentAnimationUrl) return;
-    
+
     // FIX: Check cache status synchronously
     const isCached = isUrlCached(currentAnimationUrl);
-    
+
     if (isCached || preloadedImages.has(currentAnimationUrl)) {
       console.log(`🎬 Enemy ${index}: Animation ready:`, currentAnimationUrl.slice(-40));
       preloadedImages.set(currentAnimationUrl, true);
       if (!imageReady) setImageReady(true);
       return;
     }
-    
+
     // Only prefetch if not cached (fallback for missing assets)
     let mounted = true;
     setImageReady(false);
-    
+
     console.log(`🎬 Enemy ${index}: Prefetching uncached animation:`, currentAnimationUrl.slice(-40));
-    
+
     (async () => {
       try {
         await RNImage.prefetch(currentAnimationUrl);
@@ -665,263 +665,307 @@ const EnemyCharacter = ({
     }
   }, [currentState]);
 
+  const playEnemyAttackSound = useCallback((audioUrl) => {
+    if (audioUrl) {
+      console.log('🔊 EnemyCharacter: Playing attack sound:', audioUrl);
+      soundManager.playCachedSound(audioUrl, 'combat', 1.0);
+    }
+  }, []);
+
   const isFrozen = enemyCurrentState === 'Frozen';
   const shouldFlipRangeAttack = matchCharacterStyle || animationConfig.isRange;
 
   // ========== Main Animation Effect ==========
   useEffect(() => {
-  if (currentState === 'attack' && attackInitiated.value && animationConfig.isCompound) {
-    const sequenceUnchanged =
-      attackSequenceRef.current.runUrl === animationConfig.runUrl &&
-      attackSequenceRef.current.attackUrl === animationConfig.attackUrl;
+    if (currentState === 'attack' && attackInitiated.value && animationConfig.isCompound) {
+      const sequenceUnchanged =
+        attackSequenceRef.current.runUrl === animationConfig.runUrl &&
+        attackSequenceRef.current.attackUrl === animationConfig.attackUrl;
 
-    if (sequenceUnchanged) {
+      if (sequenceUnchanged) {
+        return;
+      }
+
+      attackInitiated.value = false;
+    }
+
+    const config = animationConfig;
+    const targetUrl = config.isCompound ? config.runUrl : config.url;
+
+    // FIX: Sync URL immediately via ref instead of returning early
+    if (targetUrl && currentAnimationUrlRef.current !== targetUrl) {
+      currentAnimationUrlRef.current = targetUrl;
+      setCurrentAnimationUrl(targetUrl);
+      // DON'T return — continue to start the animation below
+    }
+
+    if (currentState !== 'attack' && currentState !== 'run') {
+      attackInitiated.value = false;
+      attackSequenceRef.current = { runUrl: null, attackUrl: null };
+    }
+
+    const activeUrl = currentAnimationUrlRef.current;
+
+    const isActiveUrlCached = isUrlCached(activeUrl) || preloadedImages.has(activeUrl);
+    const isTargetUrlCached = targetUrl ? (isUrlCached(targetUrl) || preloadedImages.has(targetUrl)) : true;
+    const hasActiveUrl = hasUsableAnimationUrl(activeUrl);
+    const hasTargetUrl = hasUsableAnimationUrl(targetUrl);
+
+    if (isPaused || isFrozen) {
+      cancelAnimation(frameIndex);
+      cancelAnimation(positionX);
+      cancelAnimation(rangeProjectileX);
+      cancelAnimation(opacity);
+      cancelAnimation(blinkOpacity);
+      blinkOpacity.value = 0;
       return;
     }
 
-    attackInitiated.value = false;
-  }
-
-  const config = animationConfig;
-  const targetUrl = config.isCompound ? config.runUrl : config.url;
-
-  // FIX: Sync URL immediately via ref instead of returning early
-  if (targetUrl && currentAnimationUrlRef.current !== targetUrl) {
-    currentAnimationUrlRef.current = targetUrl;
-    setCurrentAnimationUrl(targetUrl);
-    // DON'T return — continue to start the animation below
-  }
-
-  if (currentState !== 'attack' && currentState !== 'run') {
-    attackInitiated.value = false;
-    attackSequenceRef.current = { runUrl: null, attackUrl: null };
-  }
-
-  const activeUrl = currentAnimationUrlRef.current;
-
-  const isActiveUrlCached = isUrlCached(activeUrl) || preloadedImages.has(activeUrl);
-  const isTargetUrlCached = targetUrl ? (isUrlCached(targetUrl) || preloadedImages.has(targetUrl)) : true;
-  const hasActiveUrl = hasUsableAnimationUrl(activeUrl);
-  const hasTargetUrl = hasUsableAnimationUrl(targetUrl);
-  
-  if (isPaused || isFrozen) {
-    cancelAnimation(frameIndex);
-    cancelAnimation(positionX);
-    cancelAnimation(rangeProjectileX);
-    cancelAnimation(opacity);
-    cancelAnimation(blinkOpacity);
-    blinkOpacity.value = 0;
-    return;
-  }
-
-  let compoundReady = true;
-  if (config.isCompound && currentState === 'attack') {
+    let compoundReady = true;
+    if (config.isCompound && currentState === 'attack') {
       const { runUrl, attackUrl } = config;
       const runCached = isUrlCached(runUrl) || preloadedImages.has(runUrl);
       const attackCached = isUrlCached(attackUrl) || preloadedImages.has(attackUrl);
       const runUsable = hasUsableAnimationUrl(runUrl);
       const attackUsable = hasUsableAnimationUrl(attackUrl);
       compoundReady = (runCached || runUsable) && (attackCached || attackUsable);
-  }
+    }
 
-  const isCriticalState = currentState === 'attack' || currentState === 'hurt' || currentState === 'dies' || currentState === 'run';
-    const canProceed = isCriticalState 
-      ? (isActiveUrlCached || isTargetUrlCached || hasActiveUrl || hasTargetUrl) && compoundReady 
+    const isCriticalState = currentState === 'attack' || currentState === 'hurt' || currentState === 'dies' || currentState === 'run';
+    const canProceed = isCriticalState
+      ? (isActiveUrlCached || isTargetUrlCached || hasActiveUrl || hasTargetUrl) && compoundReady
       : (imageReady || isActiveUrlCached || isTargetUrlCached || hasActiveUrl || hasTargetUrl);
 
-  // 🚀 FIX: Hold all movement and frame logic until sprite-sheet is in memory
-  if (!canProceed) {
-    return; 
-  }
-  
-  cancelAnimation(frameIndex);
-  cancelAnimation(positionX);
-  cancelAnimation(opacity);
-  cancelAnimation(blinkOpacity);
-  blinkOpacity.value = 0;
-  
-  // ✅ FIX: Check flag before resetting frame to 0. This ensures continuous animation.
-  if (shouldSkipNextFrameResetRef.current) {
-       console.log('⏩ PvP: Skipping frame reset for seamless transition.');
-       shouldSkipNextFrameResetRef.current = false; // Reset flag immediately
-       // Do NOT set frameIndex.value = 0 here. Reanimated will pick up from current frame.
-  } else {
-       // Normal behavior for actual state changes (attack, run, etc.)
-       frameIndex.value = 0;
-  }
-
-  positionX.value = 0; 
-  opacity.value = 1;
-
-  if (config.isRange && currentState === 'attack') {
-    const attackUrl = config.attackUrl;
-    const rangeUrl = config.rangeUrl;
-    const attackReady = isUrlCached(attackUrl) || preloadedImages.has(attackUrl);
-    const rangeReady = !rangeUrl || isUrlCached(rangeUrl) || preloadedImages.has(rangeUrl);
-    const attackUsable = hasUsableAnimationUrl(attackUrl);
-    const rangeUsable = !rangeUrl || hasUsableAnimationUrl(rangeUrl);
-
-    if ((!attackReady && !attackUsable) || (!rangeReady && !rangeUsable)) {
+    // 🚀 FIX: Hold all movement and frame logic until sprite-sheet is in memory
+    if (!canProceed) {
       return;
     }
 
-    attackSequenceRef.current = { runUrl: null, attackUrl };
-    attackInitiated.value = true;
+    cancelAnimation(frameIndex);
+    cancelAnimation(positionX);
+    cancelAnimation(opacity);
+    cancelAnimation(blinkOpacity);
+    blinkOpacity.value = 0;
 
-    currentAnimationUrlRef.current = attackUrl;
-    setCurrentAnimationUrl(attackUrl);
-
-    const duration = ANIMATION_DURATIONS.attack;
-    const ATTACK_RUN_DISTANCE = RUN_DISTANCE;
-
-    if (effectiveEnemyName === 'Ryron') {
-      rangeProjectileX.value = 0;
-      rangeProjectileX.value = withDelay(
-        900,
-        withTiming(ATTACK_RUN_DISTANCE, {
-          duration: duration * 0.3,
-          easing: Easing.linear,
-        })
-      );
+    // ✅ FIX: Check flag before resetting frame to 0. This ensures continuous animation.
+    if (shouldSkipNextFrameResetRef.current) {
+      console.log('⏩ PvP: Skipping frame reset for seamless transition.');
+      shouldSkipNextFrameResetRef.current = false; // Reset flag immediately
+      // Do NOT set frameIndex.value = 0 here. Reanimated will pick up from current frame.
     } else {
-      rangeProjectileX.value = ATTACK_RUN_DISTANCE + gameScale(-50);
+      // Normal behavior for actual state changes (attack, run, etc.)
+      frameIndex.value = 0;
     }
 
-    frameIndex.value = withTiming(
-      TOTAL_FRAMES - 1,
-      { duration: ANIMATION_DURATIONS.attack, easing: Easing.linear },
-      (finished) => {
-        if (finished) {
-          runOnJS(notifyAnimationComplete)();
-        }
-      }
-    );
-
-    return;
-  }
-
-  if (config.isCompound && currentState === 'attack') {
-    const { runUrl, attackUrl } = config;
-
-    const hasNewCompoundUrls =
-      attackSequenceRef.current.runUrl !== runUrl ||
-      attackSequenceRef.current.attackUrl !== attackUrl;
-
-    if (attackInitiated.value && !hasNewCompoundUrls) return;
-    if (attackInitiated.value && hasNewCompoundUrls) {
-      attackInitiated.value = false;
-    }
-
-    // Double check BOTH urls are cached before authorizing movement.
-    const isRunReady = isUrlCached(runUrl) || preloadedImages.has(runUrl);
-    const isAttackReady = isUrlCached(attackUrl) || preloadedImages.has(attackUrl);
-    if ((!isRunReady && !hasUsableAnimationUrl(runUrl)) || (!isAttackReady && !hasUsableAnimationUrl(attackUrl))) return;
-    
-    attackSequenceRef.current = { runUrl, attackUrl };
-    attackInitiated.value = true;
-
-    if (!runUrl || !attackUrl) {
-      runOnJS(notifyAnimationComplete)();
-      return;
-    }
-
-    if (isUrlCached(runUrl)) preloadedImages.set(runUrl, true);
-    if (isUrlCached(attackUrl)) preloadedImages.set(attackUrl, true);
-
-    // Ensure run URL is active before starting.
-    currentAnimationUrlRef.current = runUrl;
-    setCurrentAnimationUrl(runUrl);
-
-    const RUN_DURATION = 700;
-    const ATTACK_DURATION = ANIMATION_DURATIONS.attack;
-
-    positionX.value = 0; 
+    positionX.value = 0;
     opacity.value = 1;
 
-    frameIndex.value = withRepeat(
-      withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false
-    );
+    if (config.isRange && currentState === 'attack') {
+      const attackUrl = config.attackUrl;
+      const rangeUrl = config.rangeUrl;
+      const attackReady = isUrlCached(attackUrl) || preloadedImages.has(attackUrl);
+      const rangeReady = !rangeUrl || isUrlCached(rangeUrl) || preloadedImages.has(rangeUrl);
+      const attackUsable = hasUsableAnimationUrl(attackUrl);
+      const rangeUsable = !rangeUrl || hasUsableAnimationUrl(rangeUrl);
 
-    positionX.value = withTiming(RUN_DISTANCE, { duration: RUN_DURATION, easing: Easing.in(Easing.quad) }, (finished) => {
-      if (!finished) return;
+      if ((!attackReady && !attackUsable) || (!rangeReady && !rangeUsable)) {
+        return;
+      }
 
-      cancelAnimation(frameIndex);
-      frameIndex.value = 0;
+      attackSequenceRef.current = { runUrl: null, attackUrl };
+      attackInitiated.value = true;
+
       currentAnimationUrlRef.current = attackUrl;
-      runOnJS(setCurrentAnimationUrl)(attackUrl);
+      setCurrentAnimationUrl(attackUrl);
 
-      frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration: ATTACK_DURATION, easing: Easing.linear }, (attackFinished) => {
-        if (attackFinished) {
-          // 🐌 Slower: Increase return (jumping back) duration
-          positionX.value = withTiming(0, { duration: 500, easing: Easing.quad }, (returnFinished) => {
-            if (returnFinished) {
-              runOnJS(notifyAnimationComplete)();
+      if (attackAudioUrl) {
+        playEnemyAttackSound(attackAudioUrl);
+      }
+
+      const duration = ANIMATION_DURATIONS.attack;
+      const ATTACK_RUN_DISTANCE = RUN_DISTANCE;
+
+      if (effectiveEnemyName === 'Ryron') {
+        rangeProjectileX.value = 0;
+        rangeProjectileX.value = withDelay(
+          900,
+          withTiming(ATTACK_RUN_DISTANCE, {
+            duration: duration * 0.3,
+            easing: Easing.linear,
+          })
+        );
+      } else {
+        rangeProjectileX.value = ATTACK_RUN_DISTANCE + gameScale(-50);
+      }
+
+      frameIndex.value = withTiming(
+        TOTAL_FRAMES - 1,
+        { duration: ANIMATION_DURATIONS.attack, easing: Easing.linear },
+        (finished) => {
+          if (finished) {
+            runOnJS(notifyAnimationComplete)();
+          }
+        }
+      );
+
+      return;
+    }
+
+    if (config.isCompound && currentState === 'attack') {
+      const { runUrl, attackUrl } = config;
+
+      const hasNewCompoundUrls =
+        attackSequenceRef.current.runUrl !== runUrl ||
+        attackSequenceRef.current.attackUrl !== attackUrl;
+
+      if (attackInitiated.value && !hasNewCompoundUrls) return;
+      if (attackInitiated.value && hasNewCompoundUrls) {
+        attackInitiated.value = false;
+      }
+
+      // Double check BOTH urls are cached before authorizing movement.
+      const isRunReady = isUrlCached(runUrl) || preloadedImages.has(runUrl);
+      const isAttackReady = isUrlCached(attackUrl) || preloadedImages.has(attackUrl);
+      if ((!isRunReady && !hasUsableAnimationUrl(runUrl)) || (!isAttackReady && !hasUsableAnimationUrl(attackUrl))) return;
+
+      attackSequenceRef.current = { runUrl, attackUrl };
+      attackInitiated.value = true;
+
+      if (!runUrl || !attackUrl) {
+        runOnJS(notifyAnimationComplete)();
+        return;
+      }
+
+      if (isUrlCached(runUrl)) preloadedImages.set(runUrl, true);
+      if (isUrlCached(attackUrl)) preloadedImages.set(attackUrl, true);
+
+      // Ensure run URL is active before starting.
+      if (currentAnimationUrl !== runUrl) {
+        currentAnimationUrlRef.current = runUrl;
+        setCurrentAnimationUrl(runUrl);
+      }
+
+      const RUN_DURATION = 700;
+      const ATTACK_DURATION = ANIMATION_DURATIONS.attack;
+
+      positionX.value = 0;
+      opacity.value = 1;
+
+      setTimeout(() => {
+        // 1. Start SPRITE animation immediately
+        frameIndex.value = withRepeat(
+          withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }),
+          -1,
+          false
+        );
+
+        // 2. Start MOVEMENT immediately
+        positionX.value = withTiming(RUN_DISTANCE, { duration: RUN_DURATION, easing: Easing.in(Easing.quad) }, (finished) => {
+          if (!finished) return;
+
+          // Movement finished, switch to attack part
+          cancelAnimation(frameIndex);
+          frameIndex.value = 0;
+          currentAnimationUrlRef.current = attackUrl;
+          runOnJS(setCurrentAnimationUrl)(attackUrl);
+
+          if (attackAudioUrl) {
+            runOnJS(playEnemyAttackSound)(attackAudioUrl);
+          }
+
+          // No delay needed here, we are just switching sprites in place
+          frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration: ATTACK_DURATION, easing: Easing.linear }, (attackFinished) => {
+            if (attackFinished) {
+              // 🐌 Slower: Increase return (jumping back) duration
+              positionX.value = withTiming(0, { duration: 500, easing: Easing.quad }, (returnFinished) => {
+                if (returnFinished) runOnJS(notifyAnimationComplete)();
+              });
             }
           });
-        }
-      });
-    });
-    return;
-  }
-
-  if (currentState === 'run' && !config.isCompound) {
-    attackInitiated.value = true;
-
-    frameIndex.value = withRepeat(withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), -1, false);
-    positionX.value = withTiming(RUN_AWAY_DISTANCE, { duration: ANIMATION_DURATIONS.run, easing: Easing.linear }, (finished) => {
-      if (finished) {
-        cancelAnimation(frameIndex);
-        runOnJS(notifyAnimationComplete)();
-      }
-    });
-    return;
-  }
-
-  // --- LOOPING LOGIC ---
-  if (config.shouldLoop) {
-    if (currentState === 'hurt' && isBonusRound) {
-      blinkOpacity.value = withRepeat(withTiming(0.7, { duration: 100 }), -1, true);
-    }
-
-    const shouldPingPong = currentState === 'idle' || currentState === 'hurt';
-
-    frameIndex.value = withRepeat(
-      withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }), 
-      -1, 
-      shouldPingPong
-    );
-    return;
-  }
-
-  if (currentState === 'hurt') {
-    blinkOpacity.value = withRepeat(
-      withTiming(0.7, { duration: 100 }), Math.floor(ANIMATION_DURATIONS.hurt / 200), true
-    );
-  } else {
-    blinkOpacity.value = 0;
-  }
-
-  const duration = ANIMATION_DURATIONS[currentState] || (FRAME_DURATION * TOTAL_FRAMES);
-  frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration, easing: Easing.inOut(Easing.ease) }, (finished) => {
-    if (finished) {
-      if (currentState === 'dies') {
-        opacity.value = withTiming(0, { duration: ANIMATION_DURATIONS.diesOutro }, (fadeFinished) => {
-          if (fadeFinished) runOnJS(notifyAnimationComplete)();
         });
-      } else {
-        runOnJS(notifyAnimationComplete)();
-        frameIndex.value = 0;
-      }
+      }, 200);
+      return;
     }
-  });
-}, [
-  currentState, isPaused, isFrozen, currentAnimationUrl,
-  animationConfig.isCompound, animationConfig.shouldLoop, animationConfig.url,
-  animationConfig.runUrl, animationConfig.attackUrl, notifyAnimationComplete, isUrlCached, hasUsableAnimationUrl, imageReady, animationTriggerKey
-]);
+
+    if (currentState === 'run' && !config.isCompound) {
+      attackInitiated.value = true;
+
+      // Ensure run URL is active
+      if (currentAnimationUrl !== config.url) {
+        currentAnimationUrlRef.current = config.url;
+        setCurrentAnimationUrl(config.url);
+      }
+
+      // Wrap in setTimeout(400) to allow image swap before movement.
+      setTimeout(() => {
+        // 1. Start sprite frames immediately
+        frameIndex.value = withRepeat(
+          withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }),
+          -1,
+          false
+        );
+
+        // 2. Start movement immediately
+        positionX.value = withTiming(RUN_AWAY_DISTANCE, { duration: ANIMATION_DURATIONS.run, easing: Easing.linear }, (finished) => {
+          if (finished) {
+            cancelAnimation(frameIndex);
+            runOnJS(notifyAnimationComplete)();
+          }
+        });
+      }, 200);
+      return;
+    }
+
+    if (currentState === 'attack' && !config.isCompound && !config.isRange) {
+      playEnemyAttackSound(attackAudioUrl);
+    }
+
+    // --- LOOPING LOGIC ---
+    if (config.shouldLoop) {
+      if (currentState === 'hurt' && isBonusRound) {
+        blinkOpacity.value = withRepeat(withTiming(0.7, { duration: 100 }), -1, true);
+      }
+
+      const shouldPingPong = currentState === 'idle' || currentState === 'hurt';
+
+      frameIndex.value = withRepeat(
+        withTiming(TOTAL_FRAMES - 1, { duration: FRAME_DURATION * TOTAL_FRAMES, easing: Easing.linear }),
+        -1,
+        shouldPingPong
+      );
+      return;
+    }
+
+    if (currentState === 'hurt') {
+      blinkOpacity.value = withRepeat(
+        withTiming(0.7, { duration: 100 }), Math.floor(ANIMATION_DURATIONS.hurt / 200), true
+      );
+    } else {
+      blinkOpacity.value = 0;
+    }
+
+    const duration = ANIMATION_DURATIONS[currentState] || (FRAME_DURATION * TOTAL_FRAMES);
+    frameIndex.value = withTiming(TOTAL_FRAMES - 1, { duration, easing: Easing.inOut(Easing.ease) }, (finished) => {
+      if (finished) {
+        if (currentState === 'dies') {
+          opacity.value = withTiming(0, { duration: ANIMATION_DURATIONS.diesOutro }, (fadeFinished) => {
+            if (fadeFinished) runOnJS(notifyAnimationComplete)();
+          });
+        } else {
+          runOnJS(notifyAnimationComplete)();
+          frameIndex.value = 0;
+        }
+      }
+    });
+  }, [
+    currentState, isPaused, isFrozen, currentAnimationUrl,
+    animationConfig.isCompound, animationConfig.shouldLoop, animationConfig.url,
+    animationConfig.runUrl, animationConfig.attackUrl, notifyAnimationComplete, isUrlCached, hasUsableAnimationUrl, imageReady, animationTriggerKey,
+    attackAudioUrl, playEnemyAttackSound
+  ]);
 
   // ========== Animated Styles ==========
-    const animatedStyle = useAnimatedStyle(() => {
+  const animatedStyle = useAnimatedStyle(() => {
     const frame = Math.floor(frameIndex.value) % TOTAL_FRAMES;
     const column = frame % SPRITE_COLUMNS;
     const row = Math.floor(frame / SPRITE_COLUMNS);
@@ -949,8 +993,8 @@ const EnemyCharacter = ({
   const isFront = useMemo(() => currentState === 'attack' || isAttacking, [currentState, isAttacking]);
 
   const shouldApplyHurtTint = useMemo(() => {
-      return characterAnimations.character_hurt != null;
-    }, [characterAnimations.character_hurt]);
+    return characterAnimations.character_hurt != null;
+  }, [characterAnimations.character_hurt]);
 
   const showRangeAttack = currentState === 'attack' && animationConfig.isRange && animationConfig.rangeUrl;
 
@@ -979,16 +1023,16 @@ const EnemyCharacter = ({
   };
 
   // ========== Render ==========
-    return (
-    <Animated.View 
-      style={[ 
-        styles.enemyContainer, 
+  return (
+    <Animated.View
+      style={[
+        styles.enemyContainer,
         matchCharacterStyle && styles.enemyContainerCharacterStyle,
-        bossLayout, 
-        containerStyle, 
+        bossLayout,
+        containerStyle,
         isFront && styles.front,
-        displayReaction && { zIndex: 1000005 } 
-      ]} 
+        displayReaction && { zIndex: 1000005 }
+      ]}
     >
 
       {displayReaction && (
@@ -1003,7 +1047,7 @@ const EnemyCharacter = ({
           </View>
         </Animated.View>
       )}
-      
+
       {attackOverlayUrl && (
         <Animated.View
           style={[
@@ -1015,13 +1059,13 @@ const EnemyCharacter = ({
         >
           <View style={styles.overlaySpriteContainer}>
             <Animated.View style={[
-              styles.overlaySpriteSheet, 
+              styles.overlaySpriteSheet,
               overlaySpriteStyle,
               { width: OVERLAY_SIZE * OVERLAY_COLUMNS, height: OVERLAY_SIZE * OVERLAY_ROWS }
             ]}>
-              <Image 
-                source={{ uri: attackOverlayUrl }} 
-                style={styles.spriteImage} 
+              <Image
+                source={{ uri: attackOverlayUrl }}
+                style={styles.spriteImage}
                 contentFit="contain"
               />
             </Animated.View>
@@ -1036,7 +1080,7 @@ const EnemyCharacter = ({
           matchCharacterStyle && styles.flipHorizontal,
         ]}
       >
-        <Animated.View style={[ styles.spriteSheet, animatedStyle, { width: SPRITE_SIZE * SPRITE_COLUMNS, height: SPRITE_SIZE * SPRITE_ROWS }]} >
+        <Animated.View style={[styles.spriteSheet, animatedStyle, { width: SPRITE_SIZE * SPRITE_COLUMNS, height: SPRITE_SIZE * SPRITE_ROWS }]} >
           {currentAnimationUrl ? (
             <Image
               source={{ uri: currentAnimationUrl }}
@@ -1054,7 +1098,7 @@ const EnemyCharacter = ({
             <Animated.View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
               <Image
                 source={{ uri: currentAnimationUrl }}
-                style={[ styles.spriteImage, { tintColor: '#00ccff80' } ]}
+                style={[styles.spriteImage, { tintColor: '#00ccff80' }]}
                 contentFit="cover"
                 cachePolicy="memory-disk"
                 priority="high"
@@ -1066,7 +1110,7 @@ const EnemyCharacter = ({
             <Animated.View style={[StyleSheet.absoluteFill, redFlashStyle, { pointerEvents: 'none' }]}>
               <Image
                 source={{ uri: currentAnimationUrl }}
-                style={[ styles.spriteImage, { tintColor: wasBonusRound.current ? 'rgba(218, 200, 0, 0.88)' : '#760404a2' } ]}
+                style={[styles.spriteImage, { tintColor: wasBonusRound.current ? 'rgba(218, 200, 0, 0.88)' : '#760404a2' }]}
                 contentFit="cover"
                 cachePolicy="memory-disk"
                 priority="high"
@@ -1127,15 +1171,15 @@ const styles = StyleSheet.create({
   reactionContainer: {
     position: 'absolute',
     bottom: '90%',
-    right: gameScale(30), 
+    right: gameScale(30),
     alignItems: 'center',
     zIndex: 1000000,
   },
-    reactionBubble: {
+  reactionBubble: {
     backgroundColor: 'white',
     paddingHorizontal: gameScale(8),
     paddingVertical: gameScale(8),
-    borderRadius: gameScale(8), 
+    borderRadius: gameScale(8),
     borderWidth: gameScale(1.5),
     borderColor: '#d4d4d4',
     width: gameScale(220), // Fixed width
@@ -1229,8 +1273,8 @@ const styles = StyleSheet.create({
   },
   overlayImage: {
     width: '100%',
-    
-    opacity: 0.7, 
+
+    opacity: 0.7,
     height: '100%',
   },
 });
@@ -1245,9 +1289,9 @@ export default React.memo(EnemyCharacter, (prev, next) => {
     prev.isAttacking === next.isAttacking &&
     prev.isBonusRound === next.isBonusRound &&
     prev.fightStatus === next.fightStatus &&
-    prev.enemyName === next.enemyName && 
-    prev.index === next.index &&      
-    prev.attackOverlayUrl === next.attackOverlayUrl && 
+    prev.enemyName === next.enemyName &&
+    prev.index === next.index &&
+    prev.attackOverlayUrl === next.attackOverlayUrl &&
     prev.enemyCurrentState === next.enemyCurrentState &&
     prev.characterAnimations === next.characterAnimations &&
     prev.matchCharacterStyle === next.matchCharacterStyle

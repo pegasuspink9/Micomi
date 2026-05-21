@@ -195,7 +195,7 @@ const StatsGridSection = ({
 
       <View style={styles.profileModeTabsContainer}>
         <InventoryTabButton
-          label="Classic"
+          label="PVE"
           isActive={!isRankMode}
           onPress={() => onModeChange?.('Classic')}
         />
@@ -203,7 +203,7 @@ const StatsGridSection = ({
         <View style={{ width: gameScale(12) }} />
 
         <InventoryTabButton
-          label="Rank"
+          label="PVP"
           isActive={isRankMode}
           onPress={() => onModeChange?.('Rank')}
         />

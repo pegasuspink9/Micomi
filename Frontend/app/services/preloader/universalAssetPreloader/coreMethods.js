@@ -245,6 +245,7 @@ export const coreMethods = {
       await this.ensureCacheDirectory(category);
 
       const localPath = this.getLocalFilePath(url, category);
+      const tmpPath = `${localPath}.tmp`;
 
       // Check if already downloaded and file exists
       const existingValidation = await this.validateCachedFile(localPath, url);
@@ -260,12 +261,12 @@ export const coreMethods = {
         return { success: true, localPath, cached: true, url, category };
       }
 
-      console.log(`📦 Downloading ${category} asset: ${url.slice(-50)}`);
+      console.log(`📦 Downloading ${category} asset to temp: ${url.slice(-50)}`);
       const startTime = Date.now();
 
       const downloadResumable = FileSystem.createDownloadResumable(
         fullUrl,
-        localPath,
+        tmpPath,
         {
           headers: {
             'User-Agent': 'MicomoGame/1.0',
@@ -283,16 +284,22 @@ export const coreMethods = {
       const downloadTime = Date.now() - startTime;
 
       if (result && result.uri) {
-        const downloadedLocalPath = this.normalizeLocalUri(result.uri);
+        const downloadedTmpPath = this.normalizeLocalUri(result.uri);
         const expectedBytes = Number(result.headers?.['content-length'] || result.headers?.['Content-Length'] || 0);
-        const downloadedValidation = await this.validateCachedFile(downloadedLocalPath, url, expectedBytes);
+        const downloadedValidation = await this.validateCachedFile(downloadedTmpPath, url, expectedBytes);
 
         if (!downloadedValidation.valid) {
           throw new Error(`Downloaded file is invalid: ${downloadedValidation.reason}`);
         }
 
+        const normalizedLocalPath = this.normalizeLocalUri(localPath);
+        await FileSystem.moveAsync({
+          from: downloadedTmpPath,
+          to: normalizedLocalPath
+        });
+
         this.downloadedAssets.set(url, {
-          localPath: downloadedLocalPath,
+          localPath: normalizedLocalPath,
           category,
           url,
           downloadedAt: Date.now(),
@@ -300,8 +307,8 @@ export const coreMethods = {
           fileSize: downloadedValidation.size
         });
 
-        console.log(` Asset downloaded in ${downloadTime}ms: ${url.slice(-50)}`);
-        return { success: true, localPath: downloadedLocalPath, downloadTime, url, category };
+        console.log(` Asset downloaded and verified in ${downloadTime}ms: ${url.slice(-50)}`);
+        return { success: true, localPath: normalizedLocalPath, downloadTime, url, category };
       } else {
         throw new Error('Download failed - no result URI');
       }
@@ -311,6 +318,20 @@ export const coreMethods = {
         code: error.code,
         statusCode: error.statusCode
       });
+
+      // Cleanup temporary file if it exists
+      try {
+        const localPath = this.getLocalFilePath(url, category);
+        const tmpPath = `${localPath}.tmp`;
+        const normalizedTmpPath = this.normalizeLocalUri(tmpPath);
+        const tmpFileInfo = await FileSystem.getInfoAsync(normalizedTmpPath);
+        if (tmpFileInfo.exists) {
+          await FileSystem.deleteAsync(normalizedTmpPath, { idempotent: true });
+          console.log(`🧹 Cleaned up temporary file: ${tmpPath.slice(-50)}`);
+        }
+      } catch (cleanupError) {
+        console.warn('⚠️ Failed to clean up temporary file during download failure:', cleanupError.message);
+      }
 
       // Retry logic
       if (retries > 0) {
