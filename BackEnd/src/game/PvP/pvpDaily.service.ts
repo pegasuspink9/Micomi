@@ -39,6 +39,7 @@ import { generateDynamicMessage } from "../../../helper/gamePlayMessageHelper";
 import { applyPvpRankResult } from "./pvpRank.service";
 import { DEFAULT_AVATAR_URL } from "../../models/Player/player.service";
 import { dynamicBlankSetter } from "../../game/Challenges/challenges.service";
+import { revealAllBlanks } from "../../../helper/revealPotionHelper";
 import { updatePvPQuestProgress } from "../../game/Quests/quests.service";
 
 const generatePvpMotivationalMessage = (
@@ -397,26 +398,20 @@ const applyRyronRevealToQuestion = (
 ): DailyPvpQuestion => {
   if (!question.question) return { ...question, options: ["Attack"] };
 
-  let filledQuestion = question.question;
-  const answersToFill = [...question.correct_answer];
-  const universalBlankRegex = /<_([^>]*)>|<\/_>|\{blank\}|\[_+\]|_+/g;
+  const effectiveCorrectAnswer = question.correct_answer;
+  const normalizedQuestion = dynamicBlankSetter(
+    question.question,
+    effectiveCorrectAnswer,
+  );
 
-  filledQuestion = filledQuestion.replace(
-    universalBlankRegex,
-    (match: string, htmlAttrs?: string) => {
-      const nextAnswer = answersToFill.shift();
-      if (!nextAnswer) return match;
-      if (match.startsWith("<_")) return `<${nextAnswer}${htmlAttrs || ""}>`;
-      if (match === "</_>") return `</${nextAnswer}>`;
-      if (match === "{blank}") return nextAnswer;
-      if (match.startsWith("[")) return nextAnswer;
-      return nextAnswer;
-    },
+  const revealResult = revealAllBlanks(
+    normalizedQuestion,
+    effectiveCorrectAnswer,
   );
 
   return {
     ...question,
-    question: filledQuestion,
+    question: revealResult.filledQuestion ?? normalizedQuestion,
     options: ["Attack"],
   };
 };

@@ -18,6 +18,7 @@ import {
   parseAndValidateBlanks,
   // applyRetryReveal,
   applyRevealPotion,
+  revealAllBlanks,
 } from "../../../helper/revealPotionHelper";
 import {
   ENEMY_WRONG_LINES,
@@ -2345,36 +2346,20 @@ const getNextChallengeEasy = async (progress: any) => {
     const challengeKey = nextChallenge.challenge_id.toString();
     const existing = playerAnswer[challengeKey];
     if (existing && existing[0] === "_REVEAL_PENDING_") {
-      let effectiveCorrectAnswer = nextChallenge.correct_answer as string[];
+      const effectiveCorrectAnswer = nextChallenge.correct_answer as string[];
+      const normalizedQuestion = dynamicBlankSetter(
+        nextChallenge.question ?? "",
+        effectiveCorrectAnswer,
+      );
 
-      let filledQuestion = nextChallenge.question ?? "";
-      const answersToFill = [...effectiveCorrectAnswer];
-
-      const universalBlankRegex = /<_([^>]*)>|<\/_>|\{blank\}|\[_+\]|_+/g;
-
-      filledQuestion = filledQuestion.replace(
-        universalBlankRegex,
-        (match: string, htmlAttrs?: string) => {
-          const nextAnswer = answersToFill.shift();
-          if (!nextAnswer) return match;
-
-          if (match.startsWith("<_")) {
-            return `<${nextAnswer}${htmlAttrs || ""}>`;
-          } else if (match === "</_>") {
-            return `</${nextAnswer}>`;
-          } else if (match === "{blank}") {
-            return nextAnswer;
-          } else if (match.startsWith("[")) {
-            return nextAnswer;
-          } else {
-            return nextAnswer;
-          }
-        },
+      const revealResult = revealAllBlanks(
+        normalizedQuestion,
+        effectiveCorrectAnswer,
       );
 
       nextChallenge = {
         ...(nextChallenge as Challenge),
-        question: filledQuestion,
+        question: revealResult.filledQuestion ?? normalizedQuestion,
         options: ["Attack"],
         answer: effectiveCorrectAnswer,
       } as ChallengeDTO;
@@ -2433,36 +2418,20 @@ const getNextChallengeHard = async (progress: any) => {
     const challengeKey = nextChallenge.challenge_id.toString();
     const existing = playerAnswer[challengeKey];
     if (existing && existing[0] === "_REVEAL_PENDING_") {
-      let effectiveCorrectAnswer = nextChallenge.correct_answer as string[];
+      const effectiveCorrectAnswer = nextChallenge.correct_answer as string[];
+      const normalizedQuestion = dynamicBlankSetter(
+        nextChallenge.question ?? "",
+        effectiveCorrectAnswer,
+      );
 
-      let filledQuestion = nextChallenge.question ?? "";
-      const answersToFill = [...effectiveCorrectAnswer];
-
-      const universalBlankRegex = /<_([^>]*)>|<\/_>|\{blank\}|\[_+\]|_+/g;
-
-      filledQuestion = filledQuestion.replace(
-        universalBlankRegex,
-        (match: string, htmlAttrs?: string) => {
-          const nextAnswer = answersToFill.shift();
-          if (!nextAnswer) return match;
-
-          if (match.startsWith("<_")) {
-            return `<${nextAnswer}${htmlAttrs || ""}>`;
-          } else if (match === "</_>") {
-            return `</${nextAnswer}>`;
-          } else if (match === "{blank}") {
-            return nextAnswer;
-          } else if (match.startsWith("[")) {
-            return nextAnswer;
-          } else {
-            return nextAnswer;
-          }
-        },
+      const revealResult = revealAllBlanks(
+        normalizedQuestion,
+        effectiveCorrectAnswer,
       );
 
       nextChallenge = {
         ...(nextChallenge as Challenge),
-        question: filledQuestion,
+        question: revealResult.filledQuestion ?? normalizedQuestion,
         options: ["Attack"],
         answer: effectiveCorrectAnswer,
       } as ChallengeDTO;

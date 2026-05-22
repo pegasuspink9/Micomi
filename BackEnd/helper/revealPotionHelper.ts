@@ -9,7 +9,7 @@ interface BlankMatch {
 }
 
 const COMBINED_BLANK_REGEX =
-  /(?:["']https?:\/\/[^"']*["'])|(?:https?:\/\/[^\s"'<>]+)|(?:_blank)|(<_([^>]*)>)|(<\/_>)|(\{blank\})|(_+)/g;
+  /(?:["']https?:\/\/[^"']*["'])|(?:https?:\/\/[^\s"'<>]+)|(?:_blank)|(_+)/g;
 
 export function parseAndValidateBlanks(question: string): BlankMatch[] {
   const matches: BlankMatch[] = [];
@@ -17,36 +17,18 @@ export function parseAndValidateBlanks(question: string): BlankMatch[] {
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(question)) !== null) {
-    if (
-      match[1] === undefined &&
-      match[3] === undefined &&
-      match[4] === undefined &&
-      match[5] === undefined
-    ) {
+    if (match[1] === undefined) {
       continue;
     }
 
     const raw = match[0];
-    let type: BlankType = "underscore";
-    let htmlAttrs: string | undefined = undefined;
-
-    if (match[1] !== undefined) {
-      type = "open_tag";
-      htmlAttrs = match[2] ?? "";
-    } else if (match[3] !== undefined) {
-      type = "close_tag";
-    } else if (match[4] !== undefined) {
-      type = "blank";
-    } else {
-      type = "underscore";
-    }
+    const type: BlankType = "underscore";
 
     matches.push({
       index: match.index,
       length: raw.length,
       match: raw,
       type,
-      htmlAttrs,
     });
   }
 
