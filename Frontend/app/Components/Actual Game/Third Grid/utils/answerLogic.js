@@ -3,11 +3,11 @@ import { soundManager } from '../../Sounds/UniversalSoundManager';
 import { parseQuestionBlanks } from '../../GameQuestions/utils/blankHelper';
 
 
-export const getBlankCount = (questionText, correctAnswers = null) => {
+export const getBlankCount = (questionText) => {
   if (!questionText || typeof questionText !== 'string') {
     return 1;
   }
-  const { totalBlanks } = parseQuestionBlanks(questionText, correctAnswers);
+  const { totalBlanks } = parseQuestionBlanks(questionText);
   return totalBlanks || 1;
 };
 
@@ -21,8 +21,7 @@ export const getMaxAnswers = (currentQuestion) => {
 
   if (challengeType === 'fill in the blank' || challengeType === 'code with guide') {
     const question = currentQuestion.question || '';
-    const correctAnswers = currentQuestion.correctAnswer || null;
-    const { totalBlanks } = parseQuestionBlanks(question, correctAnswers);
+    const { totalBlanks } = parseQuestionBlanks(question);
     return totalBlanks > 0 ? totalBlanks : 1;
   }
 

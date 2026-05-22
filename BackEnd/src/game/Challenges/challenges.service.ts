@@ -93,39 +93,26 @@ const reverseThreeRandomWords = (text: string): string => {
     .join(" ");
 };
 
+const COMBINED_BLANK_REGEX =
+  /(?:["']https?:\/\/[^"']*["'])|(?:https?:\/\/[^\s"'<>]+)|(?:_blank)|(<_([^>]*)>)|(<\/_>)|(\{blank\})|(_+)/g;
+
 const keepOnlyBlanks = (text: string): string => {
   if (!text) return "";
 
-  const patterns = [
-    /<\/_>/g,
-    /<_>/g,
-
-    /"(_+)"/g,
-    /'(_+)'/g,
-    /`(_+)`/g,
-    /\{blank\}/g,
-    /\[_+\]/g,
-    /_{2,}/g, // FIX: Avoid matching single underscores in code variables like 'my_var'
-  ];
-
-  const occupiedRanges: { start: number; end: number }[] = [];
+  const regex = new RegExp(COMBINED_BLANK_REGEX);
   const matches: { start: number; end: number; text: string }[] = [];
 
-  for (const regex of patterns) {
-    regex.lastIndex = 0;
-    let match;
-    while ((match = regex.exec(text)) !== null) {
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (
+      match[1] !== undefined ||
+      match[3] !== undefined ||
+      match[4] !== undefined ||
+      match[5] !== undefined
+    ) {
       const start = match.index;
       const end = start + match[0].length;
-
-      const isOccupied = occupiedRanges.some(
-        (range) => start < range.end && end > range.start,
-      );
-
-      if (!isOccupied) {
-        matches.push({ start, end, text: match[0] });
-        occupiedRanges.push({ start, end });
-      }
+      matches.push({ start, end, text: match[0] });
     }
   }
 
@@ -137,9 +124,7 @@ const keepOnlyBlanks = (text: string): string => {
   for (const match of matches) {
     const textBefore = text.substring(lastIndex, match.start);
     result += textBefore.replace(/[^\n]/g, "");
-
     result += match.text;
-
     lastIndex = match.end;
   }
 
@@ -790,17 +775,13 @@ export const generateMotivationalMessage = (
   if (isBonusRound) {
     if (mistakeCount <= 2) {
       return random([
-        `Great job completing Level ${levelNumber}'s bonus round! ${mistakeCount} ${
-          mistakeCount === 1 ? "mistake" : "mistakes"
+        `Great job completing Level ${levelNumber}'s bonus round! ${mistakeCount} ${mistakeCount === 1 ? "mistake" : "mistakes"
         } along the way—remember, it's not bad to make mistakes. They help you grow stronger!`,
-        `Bonus round conquered in Level ${levelNumber}! Only ${mistakeCount} ${
-          mistakeCount === 1 ? "error" : "errors"
+        `Bonus round conquered in Level ${levelNumber}! Only ${mistakeCount} ${mistakeCount === 1 ? "error" : "errors"
         }—that's impressive! You're learning and improving with every challenge!`,
-        `Victory in Level ${levelNumber}'s bonus challenge! ${mistakeCount} ${
-          mistakeCount === 1 ? "slip" : "slips"
+        `Victory in Level ${levelNumber}'s bonus challenge! ${mistakeCount} ${mistakeCount === 1 ? "slip" : "slips"
         }, but you pushed through! That's the mark of a determined learner!`,
-        `Level ${levelNumber} bonus round complete! Just ${mistakeCount} ${
-          mistakeCount === 1 ? "mistake" : "mistakes"
+        `Level ${levelNumber} bonus round complete! Just ${mistakeCount} ${mistakeCount === 1 ? "mistake" : "mistakes"
         }—you handled that extra challenge beautifully! Well earned!`,
       ]);
     } else if (mistakeCount === 3) {
@@ -911,9 +892,8 @@ export const submitChallengeService = async (
   if (!hasEnergy) {
     const energyStatus = await EnergyService.getPlayerEnergyStatus(playerId);
     return {
-      message: `Not enough energy! Next energy restore in: ${
-        energyStatus.timeToNextRestore ?? "N/A"
-      }`,
+      message: `Not enough energy! Next energy restore in: ${energyStatus.timeToNextRestore ?? "N/A"
+        }`,
       success: false,
     } as any;
   }
@@ -1120,7 +1100,7 @@ export const submitChallengeService = async (
   if (!isRevealConfirmed) {
     const retryRevealMap =
       currentProgress.retry_reveal_map &&
-      typeof currentProgress.retry_reveal_map === "object"
+        typeof currentProgress.retry_reveal_map === "object"
         ? (currentProgress.retry_reveal_map as Record<string, number[]>)
         : {};
     const revealIndices = Array.isArray(retryRevealMap[key])
@@ -1182,10 +1162,10 @@ export const submitChallengeService = async (
 
   const finalWrongAnswerDescription = mismatch
     ? formatWrongAnswersDescription(
-        finalAnswer,
-        effectiveCorrectAnswer,
-        mismatch,
-      )
+      finalAnswer,
+      effectiveCorrectAnswer,
+      mismatch,
+    )
     : answerDisplay;
 
   const reactionContext = {
@@ -1659,8 +1639,8 @@ export const submitChallengeService = async (
       elapsed,
       enemy.enemy_name,
       fightResult.enemyHealth ??
-        fightResult.enemy?.enemy_health ??
-        currentProgress.enemy_hp,
+      fightResult.enemy?.enemy_health ??
+      currentProgress.enemy_hp,
       false,
     );
     message = text;
@@ -1735,14 +1715,14 @@ export const submitChallengeService = async (
       false,
       0,
       fightResult.charHealth ??
-        fightResult.character?.character_health ??
-        currentProgress.player_hp,
+      fightResult.character?.character_health ??
+      currentProgress.player_hp,
       character.health,
       elapsed,
       enemy.enemy_name,
       fightResult.enemyHealth ??
-        fightResult.enemy?.enemy_health ??
-        currentProgress.enemy_hp,
+      fightResult.enemy?.enemy_health ??
+      currentProgress.enemy_hp,
       false,
     );
 
@@ -2148,8 +2128,8 @@ export const submitChallengeService = async (
       elapsed,
       enemy.enemy_name,
       fightResult.enemyHealth ??
-        fightResult.enemy?.enemy_health ??
-        currentProgress.enemy_hp,
+      fightResult.enemy?.enemy_health ??
+      currentProgress.enemy_hp,
       true,
     );
     message = text;

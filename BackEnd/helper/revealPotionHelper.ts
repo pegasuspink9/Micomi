@@ -8,25 +8,34 @@ interface BlankMatch {
   htmlAttrs?: string;
 }
 
-const UNIVERSAL_BLANK_REGEX =
-  /<_([^>]*)>|<\/_>|\{blank\}|(?<![a-zA-Z0-9])_(?![a-zA-Z0-9])/g;
+const COMBINED_BLANK_REGEX =
+  /(?:["']https?:\/\/[^"']*["'])|(?:https?:\/\/[^\s"'<>]+)|(?:_blank)|(<_([^>]*)>)|(<\/_>)|(\{blank\})|(_+)/g;
 
 export function parseAndValidateBlanks(question: string): BlankMatch[] {
   const matches: BlankMatch[] = [];
-  const regex = new RegExp(UNIVERSAL_BLANK_REGEX);
+  const regex = new RegExp(COMBINED_BLANK_REGEX);
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(question)) !== null) {
+    if (
+      match[1] === undefined &&
+      match[3] === undefined &&
+      match[4] === undefined &&
+      match[5] === undefined
+    ) {
+      continue;
+    }
+
     const raw = match[0];
     let type: BlankType = "underscore";
     let htmlAttrs: string | undefined = undefined;
 
-    if (raw.startsWith("<_")) {
+    if (match[1] !== undefined) {
       type = "open_tag";
-      htmlAttrs = match[1] ?? "";
-    } else if (raw === "</_>") {
+      htmlAttrs = match[2] ?? "";
+    } else if (match[3] !== undefined) {
       type = "close_tag";
-    } else if (raw === "{blank}") {
+    } else if (match[4] !== undefined) {
       type = "blank";
     } else {
       type = "underscore";
@@ -213,16 +222,16 @@ export async function applyRetryReveal(
 
   const existingIndices = Array.isArray(persistedRevealIndices)
     ? persistedRevealIndices
-        .filter((index) => Number.isInteger(index))
-        .filter((index) => index >= 0 && index < limit)
+      .filter((index) => Number.isInteger(index))
+      .filter((index) => index >= 0 && index < limit)
     : [];
 
   const indicesToReveal =
     existingIndices.length > 0
       ? existingIndices
       : Array.from({ length: limit }, (_, i) => i)
-          .sort(() => 0.5 - Math.random())
-          .slice(0, amountToReveal);
+        .sort(() => 0.5 - Math.random())
+        .slice(0, amountToReveal);
 
   const result = revealBlanksByIndices(
     question,

@@ -8,7 +8,7 @@ import PvpChatInputBox from './components/Potions/PvpChatInputBox';
 import { gameScale, BASE_HEIGHT } from '../../Responsiveness/gameResponsive';
 import { soundManager } from '../Sounds/UniversalSoundManager';
 
-import { 
+import {
   getMaxAnswers,
   createAnswerSelectHandler,
   createNextQuestionHandler,
@@ -19,8 +19,8 @@ import {
 
 const CHALLENGE_TIMER_FALLBACK_SECONDS = 300;
 
-const ThirdGrid = ({ 
-  currentQuestion, 
+const ThirdGrid = ({
+  currentQuestion,
   selectedAnswers = [],
   setSelectedAnswers,
   currentQuestionIndex = 0,
@@ -34,12 +34,12 @@ const ThirdGrid = ({
   submitting = false,
   onCorrectAnswer,
   potions = [],
-  selectedPotion = null, 
-  onPotionPress, 
+  selectedPotion = null,
+  onPotionPress,
   loadingPotions = false,
   usingPotion = false,
   setThirdGridHeight,
-  selectedBlankIndex = 0, 
+  selectedBlankIndex = 0,
   usePotion,
   cardImageUrl,
   cardDamage,
@@ -55,7 +55,7 @@ const ThirdGrid = ({
   onHome = null,
   onNextLevel = null,
   hasNextLevel = false,
-  onCharacterRun = null, 
+  onCharacterRun = null,
   fadeOutAnim = null,
   isInRunMode = false,
   setSelectedBlankIndex,
@@ -64,14 +64,14 @@ const ThirdGrid = ({
   onSendPvpMessage = null,
   sendingPvpMessage = false,
   pvpChallengeCountdown = null,
-    onRunPressHideOutput = null,
+  onRunPressHideOutput = null,
 }) => {
 
   if (!currentQuestion) {
     console.warn('No currentQuestion provided to ThirdGrid');
     return null;
   }
-  
+
   const currentQuestionId = currentQuestion?.id;
   const activeChallengeId = useMemo(() => {
     if (!isPvpMode) {
@@ -100,11 +100,11 @@ const ThirdGrid = ({
   const isFillInTheBlank = (currentQuestion.type || currentQuestion.challenge_type) === 'fill in the blank';
   const options = useMemo(() => currentQuestion.options || [], [currentQuestion.options]);
 
-  const enemyAttackType = useMemo(() => 
-    gameState?.submissionResult?.fightResult?.enemy?.enemy_attack_type ?? 
+  const enemyAttackType = useMemo(() =>
+    gameState?.submissionResult?.fightResult?.enemy?.enemy_attack_type ??
     gameState?.enemy?.enemy_attack_type,
     [
-      gameState?.submissionResult?.fightResult?.enemy?.enemy_attack_type, 
+      gameState?.submissionResult?.fightResult?.enemy?.enemy_attack_type,
       gameState?.enemy?.enemy_attack_type
     ]
   );
@@ -137,17 +137,17 @@ const ThirdGrid = ({
     gameState?.enemy?.enemy_name,
     challengeData?.enemy_name,
   ]);
-  
+
   const isSpecialAttack = useMemo(() => {
     const isSpecial = enemyAttackType === 'special attack' || enemyAttackType === 'special skill';
-    
+
     console.log('🎯 ThirdGrid Special Attack Detection:', {
       enemyAttackType,
       isSpecialAttack: isSpecial,
     });
-    
+
     return isSpecial;
-  }, [enemyAttackType]); 
+  }, [enemyAttackType]);
 
 
   const getPotionBorderColor = (potionName) => {
@@ -160,16 +160,16 @@ const ThirdGrid = ({
     }
   };
 
-  const handleAnswerSelect = useMemo(() => 
-  createAnswerSelectHandler(
-    currentQuestion, 
-    selectedAnswers, 
-    setSelectedAnswers,
-    selectedBlankIndex,
-    setSelectedBlankIndex 
-  ), [currentQuestionId, currentQuestion?.type, currentQuestion?.challenge_type, selectedAnswers, setSelectedAnswers, selectedBlankIndex, setSelectedBlankIndex]);
+  const handleAnswerSelect = useMemo(() =>
+    createAnswerSelectHandler(
+      currentQuestion,
+      selectedAnswers,
+      setSelectedAnswers,
+      selectedBlankIndex,
+      setSelectedBlankIndex
+    ), [currentQuestionId, currentQuestion?.type, currentQuestion?.challenge_type, selectedAnswers, setSelectedAnswers, selectedBlankIndex, setSelectedBlankIndex]);
 
-  const handleCheckAnswer = useMemo(() => 
+  const handleCheckAnswer = useMemo(() =>
     createCheckAnswerHandler(
       currentQuestion,
       selectedAnswers,
@@ -191,7 +191,7 @@ const ThirdGrid = ({
       setIsPvpChatActive(false);
     }
   }, [isPvpMode, showPotions]);
-  
+
   const togglePotions = useCallback(() => {
     soundManager.playGameButtonTapSound();
     setShowPotions(!showPotions);
@@ -212,16 +212,16 @@ const ThirdGrid = ({
       if (submitting) return "Running";
       return "Run";
     }
-    return "Activate"; 
+    return "Activate";
   }, [usingPotion, selectedPotion, submitting, potionUsed]);
 
   const runButtonVariant = useMemo(() => (selectedPotion && !potionUsed) ? "info" : "primary", [selectedPotion, potionUsed]);
 
   const runButtonDisabled = useMemo(() => {
     const hasSelectedAnswer = selectedAnswers.some(answer => answer != null);
-    
+
     if (submitting || usingPotion || runDisabled) return true;
-    
+
     // If potion is selected, button should be ENABLED (return false)
     if (selectedPotion) return false;
 
@@ -266,7 +266,7 @@ const ThirdGrid = ({
 
   const handleClearAll = useCallback(() => {
     soundManager.playGameButtonTapSound();
-    setSelectedAnswers([]); 
+    setSelectedAnswers([]);
     setSelectedBlankIndex(0);
   }, [setSelectedAnswers, setSelectedBlankIndex]);
 
@@ -275,7 +275,7 @@ const ThirdGrid = ({
 
   const onContentLayout = useCallback((event) => {
     const { height } = event.nativeEvent.layout;
-    setContentHeight(height + gameScale(20)); 
+    setContentHeight(height + gameScale(20));
   }, []);
 
   const isManualProceedMode = canProceed && !isLevelComplete && !isAutoProceed;
@@ -340,7 +340,7 @@ const ThirdGrid = ({
     return () => pulse?.stop();
   }, [isCrtiticalTime]);
 
-  
+
   return (
     <GridContainer
       key={`grid-v2-${currentQuestion?.id}-${shouldShowProceedState}-${isAutoProceedMode}`}
@@ -352,9 +352,9 @@ const ThirdGrid = ({
       autoProceedCountdown={autoProceedCountdown}
       onProceed={onProceed}
       cardDamage={cardDamage}
-      isLevelComplete={isLevelComplete} 
+      isLevelComplete={isLevelComplete}
       showRunButton={showRunButton}
-      onRetry={onRetry} 
+      onRetry={onRetry}
       onHome={onHome}
       onNextLevel={onNextLevel}
       hasNextLevel={hasNextLevel}
@@ -368,7 +368,7 @@ const ThirdGrid = ({
         isPvpMode && hasActivePvpTimer ? (
           <View style={styles.pvpTimerFrame}>
             <View style={styles.pvpTimerInner}>
-              <Animated.Text 
+              <Animated.Text
                 style={[
                   styles.pvpTimerValue,
                   isCrtiticalTime && styles.pvpTimerValueCritical,
@@ -390,21 +390,21 @@ const ThirdGrid = ({
             <View />
           ) : (
             <>
-              <GameButton 
+              <GameButton
                 title={runButtonTitle}
                 position="right"
                 variant={runButtonVariant}
                 onPress={handleRunPress}
                 disabled={runButtonDisabled}
               />
-              <GameButton 
+              <GameButton
                 title={centerButtonTitle}
                 position="center"
                 variant="secondary"
                 onPress={togglePotions}
                 disabled={submitting || usingPotion}
               />
-              <GameButton 
+              <GameButton
                 title="Clear"
                 position="left"
                 variant="danger"
@@ -416,11 +416,11 @@ const ThirdGrid = ({
         </View>
       }
     >
-      <View 
-        onLayout={onContentLayout} 
+      <View
+        onLayout={onContentLayout}
         style={[
-            styles.gridContentWrapper, 
-            { minHeight: gameScale(80) } 
+          styles.gridContentWrapper,
+          { minHeight: gameScale(80) }
         ]}
       >
         {showContent && (
@@ -436,13 +436,13 @@ const ThirdGrid = ({
                   onInputActivityChange={setIsPvpChatActive}
                 />
               ) : (
-                <PotionGrid 
+                <PotionGrid
                   potions={potions}
-                  onPotionPress={onPotionPress} 
-                  selectedPotion={selectedPotion} 
+                  onPotionPress={onPotionPress}
+                  selectedPotion={selectedPotion}
                   loadingPotions={loadingPotions}
-                  potionUsed={potionUsed} 
-                  currentQuestionId={currentQuestion.id} 
+                  potionUsed={potionUsed}
+                  currentQuestionId={currentQuestion.id}
                 />
               )}
             </View>
@@ -458,7 +458,7 @@ const ThirdGrid = ({
                 maxAnswers={maxAnswers}
                 onAnswerSelect={handleAnswerSelect}
                 isFillInTheBlank={isFillInTheBlank}
-                selectedBlankIndex={selectedBlankIndex} 
+                selectedBlankIndex={selectedBlankIndex}
                 currentQuestionId={currentQuestion.id}
                 isSpecialAttack={isSpecialAttack}
                 enemyName={enemyName}
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
   gridContentWrapper: {
     width: '100%',
     flexGrow: 1,
-    paddingBottom: gameScale(10), 
+    paddingBottom: gameScale(10),
   },
   overlayButtons: {
     position: 'absolute',
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     zIndex: 10,
-    justifyContent: 'center', 
+    justifyContent: 'center',
   },
   pvpTimerFrame: {
     alignSelf: 'flex-start',
@@ -547,47 +547,47 @@ const areArraysEqual = (a, b) => {
 
 // Memo comparison
 export default React.memo(ThirdGrid, (prev, next) => {
-    const potionEqual = prev.selectedPotion?.id === next.selectedPotion?.id;
-    const answersEqual = areArraysEqual(prev.selectedAnswers, next.selectedAnswers);
+  const potionEqual = prev.selectedPotion?.id === next.selectedPotion?.id;
+  const answersEqual = areArraysEqual(prev.selectedAnswers, next.selectedAnswers);
 
-    // Check if the attack type changed
-    const prevAttackType = prev.gameState?.submissionResult?.fightResult?.enemy?.enemy_attack_type ?? 
-                          prev.gameState?.enemy?.enemy_attack_type;
-    const nextAttackType = next.gameState?.submissionResult?.fightResult?.enemy?.enemy_attack_type ?? 
-                          next.gameState?.enemy?.enemy_attack_type;
-    
-    const attackTypeEqual = prevAttackType === nextAttackType;
+  // Check if the attack type changed
+  const prevAttackType = prev.gameState?.submissionResult?.fightResult?.enemy?.enemy_attack_type ??
+    prev.gameState?.enemy?.enemy_attack_type;
+  const nextAttackType = next.gameState?.submissionResult?.fightResult?.enemy?.enemy_attack_type ??
+    next.gameState?.enemy?.enemy_attack_type;
 
-    const prevThemeColor = prev.gameState?.submissionResult?.fightResult?.gameplay_theme_color ??
-      prev.gameState?.gameplay_theme_color;
-    const nextThemeColor = next.gameState?.submissionResult?.fightResult?.gameplay_theme_color ??
-      next.gameState?.gameplay_theme_color;
-    const themeColorEqual = prevThemeColor === nextThemeColor;
+  const attackTypeEqual = prevAttackType === nextAttackType;
 
-    return (
-      potionEqual &&
-      answersEqual &&
-      attackTypeEqual &&
-      themeColorEqual &&
-      prev.currentQuestion?.id === next.currentQuestion?.id &&
-      prev.submitting === next.submitting &&
-      prev.currentQuestionIndex === next.currentQuestionIndex &&
-      prev.canProceed === next.canProceed &&
-      prev.isAutoProceed === next.isAutoProceed &&
-      prev.autoProceedCountdown === next.autoProceedCountdown &&
-      prev.forceAutoProceedUi === next.forceAutoProceedUi &&
-      prev.showRunButton === next.showRunButton &&
-      prev.isInRunMode === next.isInRunMode &&
-      prev.selectedBlankIndex === next.selectedBlankIndex &&
-      prev.usingPotion === next.usingPotion &&
-      prev.isLevelComplete === next.isLevelComplete &&
-      prev.cardImageUrl === next.cardImageUrl &&
-      prev.cardDamage === next.cardDamage &&
-      prev.cardDisplaySequence === next.cardDisplaySequence &&
-      prev.isPvpMode === next.isPvpMode &&
-      prev.pvpMatchId === next.pvpMatchId &&
-      prev.sendingPvpMessage === next.sendingPvpMessage &&
-      prev.pvpChallengeCountdown === next.pvpChallengeCountdown &&
-      prev.onRunPressHideOutput === next.onRunPressHideOutput
-    );
+  const prevThemeColor = prev.gameState?.submissionResult?.fightResult?.gameplay_theme_color ??
+    prev.gameState?.gameplay_theme_color;
+  const nextThemeColor = next.gameState?.submissionResult?.fightResult?.gameplay_theme_color ??
+    next.gameState?.gameplay_theme_color;
+  const themeColorEqual = prevThemeColor === nextThemeColor;
+
+  return (
+    potionEqual &&
+    answersEqual &&
+    attackTypeEqual &&
+    themeColorEqual &&
+    prev.currentQuestion?.id === next.currentQuestion?.id &&
+    prev.submitting === next.submitting &&
+    prev.currentQuestionIndex === next.currentQuestionIndex &&
+    prev.canProceed === next.canProceed &&
+    prev.isAutoProceed === next.isAutoProceed &&
+    prev.autoProceedCountdown === next.autoProceedCountdown &&
+    prev.forceAutoProceedUi === next.forceAutoProceedUi &&
+    prev.showRunButton === next.showRunButton &&
+    prev.isInRunMode === next.isInRunMode &&
+    prev.selectedBlankIndex === next.selectedBlankIndex &&
+    prev.usingPotion === next.usingPotion &&
+    prev.isLevelComplete === next.isLevelComplete &&
+    prev.cardImageUrl === next.cardImageUrl &&
+    prev.cardDamage === next.cardDamage &&
+    prev.cardDisplaySequence === next.cardDisplaySequence &&
+    prev.isPvpMode === next.isPvpMode &&
+    prev.pvpMatchId === next.pvpMatchId &&
+    prev.sendingPvpMessage === next.sendingPvpMessage &&
+    prev.pvpChallengeCountdown === next.pvpChallengeCountdown &&
+    prev.onRunPressHideOutput === next.onRunPressHideOutput
+  );
 });

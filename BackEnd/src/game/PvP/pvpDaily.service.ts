@@ -1994,11 +1994,11 @@ const buildSubmitLikeResponse = async (
     : (attackMeta ??
       (match.last_attack_by_player_id
         ? {
-            attackType: match.last_attack_type ?? "basic_attack",
-            damage: match.last_attack_damage,
-            wasFrozen: (match as any).last_attack_was_frozen,
-            wasStrong: (match as any).last_attack_was_strong,
-          }
+          attackType: match.last_attack_type ?? "basic_attack",
+          damage: match.last_attack_damage,
+          wasFrozen: (match as any).last_attack_was_frozen,
+          wasStrong: (match as any).last_attack_was_strong,
+        }
         : null));
 
   const isViewerLastAttacker =
@@ -2073,9 +2073,9 @@ const buildSubmitLikeResponse = async (
   const final_enemy_attack_audio =
     enemyShowsAttack && !wasFrozen
       ? getHeroAttackAudio(
-          opponentCharName,
-          resolvedAttackType ?? "basic_attack",
-        )
+        opponentCharName,
+        resolvedAttackType ?? "basic_attack",
+      )
       : null;
 
   const final_enemy_idle_audio = enemyShowsAttack
@@ -2180,14 +2180,14 @@ const buildSubmitLikeResponse = async (
   if (
     viewerCharName === "Leon" &&
     resolvePreviewAttackType(viewerCharName, viewerStreak, nextLength) ===
-      "special_attack"
+    "special_attack"
   ) {
     final_character_idle = "https://micomi-assets.me/Hero/Leon/UltIdle.png";
   }
   if (
     opponentCharName === "Leon" &&
     resolvePreviewAttackType(opponentCharName, opponentStreak, nextLength) ===
-      "special_attack"
+    "special_attack"
   ) {
     final_enemy_idle = "https://micomi-assets.me/Hero/Leon/UltIdle.png";
   }
@@ -2203,11 +2203,11 @@ const buildSubmitLikeResponse = async (
     character_run: isVictory
       ? viewerRunAsset
       : isWrongRetryState ||
-          enemyShowsAttack ||
-          isCharacterDead ||
-          (characterShowsAttack && wasFrozen) ||
-          (characterShowsAttack &&
-            (viewerCharName === "ShiShi" || viewerCharName === "Ryron"))
+        enemyShowsAttack ||
+        isCharacterDead ||
+        (characterShowsAttack && wasFrozen) ||
+        (characterShowsAttack &&
+          (viewerCharName === "ShiShi" || viewerCharName === "Ryron"))
         ? null
         : viewerRunAsset,
     character_attack_type: characterShowsAttack ? resolvedAttackType : null,
@@ -2247,9 +2247,9 @@ const buildSubmitLikeResponse = async (
       isCompleted && !isVictory
         ? opponentRunAsset
         : enemyShowsAttack &&
-            !wasFrozen &&
-            opponentCharName !== "ShiShi" &&
-            opponentCharName !== "Ryron"
+          !wasFrozen &&
+          opponentCharName !== "ShiShi" &&
+          opponentCharName !== "Ryron"
           ? opponentRunAsset
           : null,
     enemy_attack_type: enemyShowsAttack ? resolvedAttackType : null,
@@ -2364,27 +2364,27 @@ const buildSubmitLikeResponse = async (
 
   const completionRewards = isCompleted
     ? {
-        feedbackMessage: generatePvpMotivationalMessage(
-          isVictory,
-          mistakes,
-          opponentMistakes,
-          match.questions.length,
-          String(
-            (entryLike.character as Record<string, unknown>).player_name ||
-              "Player",
-          ),
-        ),
-        totalPointsEarned: match.rewards_by_player[playerId]?.points ?? 0,
-        totalExpPointsEarned: match.rewards_by_player[playerId]?.exp ?? 0,
-        coinsEarned: match.rewards_by_player[playerId]?.coins ?? 0,
+      feedbackMessage: generatePvpMotivationalMessage(
         isVictory,
-        stars,
-        playerOutputs: [],
-        rankProgress:
-          match.completion_stats?.winner_player_id === playerId
-            ? match.completion_stats?.winner_rank
-            : match.completion_stats?.loser_rank,
-      }
+        mistakes,
+        opponentMistakes,
+        match.questions.length,
+        String(
+          (entryLike.character as Record<string, unknown>).player_name ||
+          "Player",
+        ),
+      ),
+      totalPointsEarned: match.rewards_by_player[playerId]?.points ?? 0,
+      totalExpPointsEarned: match.rewards_by_player[playerId]?.exp ?? 0,
+      coinsEarned: match.rewards_by_player[playerId]?.coins ?? 0,
+      isVictory,
+      stars,
+      playerOutputs: [],
+      rankProgress:
+        match.completion_stats?.winner_player_id === playerId
+          ? match.completion_stats?.winner_rank
+          : match.completion_stats?.loser_rank,
+    }
     : undefined;
 
   return {
@@ -2460,11 +2460,11 @@ const buildSubmitLikeResponse = async (
     is_victory_image: isCompleted
       ? isVictory
         ? VICTORY_IMAGES[
-            deterministicHash(match.match_id) % VICTORY_IMAGES.length
-          ]
+        deterministicHash(match.match_id) % VICTORY_IMAGES.length
+        ]
         : DEFEAT_IMAGES[
-            deterministicHash(match.match_id) % DEFEAT_IMAGES.length
-          ]
+        deterministicHash(match.match_id) % DEFEAT_IMAGES.length
+        ]
       : null,
   } as PvpDailySubmitAnswerResult;
 };
@@ -2873,18 +2873,18 @@ export const getPlayerMatchHistory = async (
       },
       enemy: opponent
         ? {
-            player_id: opponent.player_id,
-            player_name: opponent.player_name,
-            player_username: opponent.player.username,
-            player_avatar: opponent.player?.player_avatar || DEFAULT_AVATAR_URL,
-            player_rank_name: opponent.player.player_rank_name,
-            player_rank_image: opponent.player.player_rank_image,
-            enemy_name: opponent.character_name,
-            enemy_avatar: opponent.character_avatar ?? null,
-            coins: enemyCoins,
-            points: enemyPoints,
-            exp_points: enemyExp,
-          }
+          player_id: opponent.player_id,
+          player_name: opponent.player_name,
+          player_username: opponent.player.username,
+          player_avatar: opponent.player?.player_avatar || DEFAULT_AVATAR_URL,
+          player_rank_name: opponent.player.player_rank_name,
+          player_rank_image: opponent.player.player_rank_image,
+          enemy_name: opponent.character_name,
+          enemy_avatar: opponent.character_avatar ?? null,
+          coins: enemyCoins,
+          points: enemyPoints,
+          exp_points: enemyExp,
+        }
         : null,
     };
   });

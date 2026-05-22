@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
-import { Text, View, StyleSheet, Dimensions, ScrollView, Pressable} from 'react-native';
+import { Text, View, StyleSheet, Dimensions, ScrollView, Pressable } from 'react-native';
 import CodeEditor from './Component/CodeEditor';
 import DocumentQuestion from './Component/DocumentQuestion';
 import ComputerEditor from './Component/ComputerEditor';
@@ -9,14 +9,14 @@ import { scrollToNextBlank, calculateGlobalBlankIndex, splitLineIntoBlanks, coun
 import { soundManager } from '../Sounds/UniversalSoundManager';
 import { gameScale } from '../../Responsiveness/gameResponsive';
 
-const GameQuestions = ({ 
-  currentQuestion, 
-  selectedAnswers, 
+const GameQuestions = ({
+  currentQuestion,
+  selectedAnswers,
   getBlankIndex,
   onTabChange,
   activeTab,
   isPvpMode = false,
-  isAnswerCorrect, 
+  isAnswerCorrect,
   selectedBlankIndex,
   onBlankPress,
   canProceed,
@@ -42,8 +42,8 @@ const GameQuestions = ({
     currentQuestion?.challenge_id ?? currentQuestion?.id ?? null
   ), [currentQuestion?.challenge_id, currentQuestion?.id]);
 
-  const isComputerMap = currentQuestion?.map_name === 'Computer' || 
-                        currentQuestion?.question_type?.toLowerCase() === 'computer';
+  const isComputerMap = currentQuestion?.map_name === 'Computer' ||
+    currentQuestion?.question_type?.toLowerCase() === 'computer';
 
   const correctAnswersList = submissionResult?.correctAnswer || currentQuestion?.correctAnswer;
 
@@ -55,12 +55,11 @@ const GameQuestions = ({
     return 'html';
   }, [currentQuestion?.question_type]);
 
-  // ✅ Smart blank parsing: excludes URLs, _blank, multi-underscores; clamps to answer count
+  // ✅ Smart blank parsing: excludes URLs, _blank, multi-underscores
   const parsedBlanks = useMemo(() => {
     if (!currentQuestion?.question) return { lineParts: [], totalBlanks: 0 };
-    const answers = currentQuestion?.correctAnswer || null;
-    return parseQuestionBlanks(currentQuestion.question, answers);
-  }, [currentQuestion?.question, currentQuestion?.correctAnswer]);
+    return parseQuestionBlanks(currentQuestion.question);
+  }, [currentQuestion?.question]);
 
   const cumulativeBlankCounts = useMemo(() => {
     const counts = [];
@@ -130,13 +129,13 @@ const GameQuestions = ({
     ));
   }, [isComputerMap, lineMeta, lineLanguages, highlightLanguage]);
 
-  
+
   const getFilledQuestion = (questionText, answers) => {
     if (!questionText || !Array.isArray(answers) || answers.length === 0) {
       return questionText;
     }
     // Use smart parsing to get the same blank positions used for rendering
-    const { lineParts } = parseQuestionBlanks(questionText, answers);
+    const { lineParts } = parseQuestionBlanks(questionText);
     let answerIndex = 0;
     const filledLines = lineParts.map((parts) => {
       let lineResult = '';
@@ -198,21 +197,21 @@ const GameQuestions = ({
   useEffect(() => {
     if (!currentChallengeId) return;
     if (hasInitialScrolledRef.current) return;
-    
+
     const challengeType = currentQuestion?.challenge_type;
     if (challengeType === 'fill in the blank' || challengeType === 'code with guide') {
       const timeoutId = setTimeout(() => {
         hasInitialScrolledRef.current = true;
         scrollToNextBlank(
-          scrollViewRef, 
-          blankRefs, 
-          latestDataRef.current.currentQuestion, 
-          latestDataRef.current.selectedAnswers, 
+          scrollViewRef,
+          blankRefs,
+          latestDataRef.current.currentQuestion,
+          latestDataRef.current.selectedAnswers,
           selectedBlankIndex,
           viewportHeightRef.current
         );
       }, 250);
-      
+
       return () => clearTimeout(timeoutId);
     }
   }, [currentChallengeId]);
@@ -297,22 +296,22 @@ const GameQuestions = ({
         />
       );
     }
-    
+
     const renderedParts = parts.map((part, partIndex) => {
       const globalBlankIndex = blanksBeforeCurrent + partIndex;
       const isLastPart = partIndex === parts.length - 1;
 
       let isWrong = false;
       let isCorrectBlank = false;
-      
+
       if (canProceed && isAnswerCorrect === false && !isLastPart) {
         const selectedValueIndex = selectedAnswers[globalBlankIndex];
-        const selectedValue = selectedValueIndex != null 
-          ? options[selectedValueIndex] 
+        const selectedValue = selectedValueIndex != null
+          ? options[selectedValueIndex]
           : null;
-        
+
         const correctValue = correctAnswersList?.[globalBlankIndex];
-        
+
         if (selectedValue !== correctValue) {
           isWrong = true;
         } else if (selectedValue != null) {
@@ -327,12 +326,12 @@ const GameQuestions = ({
               {renderHighlightedText(part, lineLanguages[lineIndex] || highlightLanguage)}
             </Text>
           ) : null}
-          
+
           {!isLastPart && (
             <React.Fragment>
               <Text>{"\u200B"}</Text>
-              
-              <Pressable 
+
+              <Pressable
                 key={`blank-${globalBlankIndex}`}
                 onPress={(e) => {
                   e.stopPropagation();
@@ -405,34 +404,34 @@ const GameQuestions = ({
     <View style={styles.secondGrid}>
       <View style={styles.questionContainer}>
         {isComputerMap ? (
-            <ComputerEditor 
-              key={currentQuestion.id} 
-              currentQuestion={useMemo(() => ({
-                ...currentQuestion,
-                question: displayQuestion 
-              }), [currentQuestion.id, displayQuestion])}
-              selectedAnswers={selectedAnswers}
-              getBlankIndex={getBlankIndex}
-              scrollViewRef={scrollViewRef}
-              blankRefs={blankRefs}
-              renderSyntaxHighlightedLine={renderSyntaxHighlightedLine}
-              onTabChange={handleTabChange}
-              activeTab={activeTab}
-              isCorrect={isAnswerCorrect} 
-              submissionResult={submissionResult}
-              reviewGuide={reviewGuide}
-              showOutputInScreenPlay={showOutputInScreenPlay}
-              onOutputToggle={onOutputToggle}
-              shouldDelayAnimation={isPvpMode}
-            />
-        ) : (currentQuestion.challenge_type === 'fill in the blank' || 
-          currentQuestion.challenge_type === 'code with guide' || 
-          currentQuestion.challenge_type === 'multiple choice') ? (
-          <CodeEditor 
-            key={currentQuestion.id} 
+          <ComputerEditor
+            key={currentQuestion.id}
             currentQuestion={useMemo(() => ({
               ...currentQuestion,
-              question: displayQuestion 
+              question: displayQuestion
+            }), [currentQuestion.id, displayQuestion])}
+            selectedAnswers={selectedAnswers}
+            getBlankIndex={getBlankIndex}
+            scrollViewRef={scrollViewRef}
+            blankRefs={blankRefs}
+            renderSyntaxHighlightedLine={renderSyntaxHighlightedLine}
+            onTabChange={handleTabChange}
+            activeTab={activeTab}
+            isCorrect={isAnswerCorrect}
+            submissionResult={submissionResult}
+            reviewGuide={reviewGuide}
+            showOutputInScreenPlay={showOutputInScreenPlay}
+            onOutputToggle={onOutputToggle}
+            shouldDelayAnimation={isPvpMode}
+          />
+        ) : (currentQuestion.challenge_type === 'fill in the blank' ||
+          currentQuestion.challenge_type === 'code with guide' ||
+          currentQuestion.challenge_type === 'multiple choice') ? (
+          <CodeEditor
+            key={currentQuestion.id}
+            currentQuestion={useMemo(() => ({
+              ...currentQuestion,
+              question: displayQuestion
             }), [currentQuestion.id, displayQuestion])}
             selectedAnswers={selectedAnswers}
             selectedBlankIndex={selectedBlankIndex}
@@ -459,11 +458,11 @@ const GameQuestions = ({
             submitReport={submitReport}
           />
         ) : (
-          <DocumentQuestion 
+          <DocumentQuestion
             key={currentQuestion.id}
             currentQuestion={useMemo(() => ({
               ...currentQuestion,
-              question: displayQuestion 
+              question: displayQuestion
             }), [currentQuestion, displayQuestion])}
             selectedAnswers={selectedAnswers}
           />
@@ -476,11 +475,11 @@ const GameQuestions = ({
 export default React.memo(GameQuestions, (prev, next) => {
   return (
     prev.currentQuestion?.id === next.currentQuestion?.id &&
-    prev.activeTab === next.activeTab && 
+    prev.activeTab === next.activeTab &&
     prev.isAnswerCorrect === next.isAnswerCorrect &&
     prev.canProceed === next.canProceed &&
     prev.selectedBlankIndex === next.selectedBlankIndex &&
-    prev.selectedAnswers === next.selectedAnswers && 
+    prev.selectedAnswers === next.selectedAnswers &&
     prev.submissionResult === next.submissionResult &&
     prev.reviewGuide === next.reviewGuide &&
     prev.showOutputInScreenPlay === next.showOutputInScreenPlay
@@ -493,17 +492,17 @@ export default React.memo(GameQuestions, (prev, next) => {
 
 const styles = StyleSheet.create({
   secondGrid: {
-    flex: 1, 
-    minHeight: 0, 
+    flex: 1,
+    minHeight: 0,
   },
-   questionContainer: {
+  questionContainer: {
     flex: 1,
     width: '100%',
-    minHeight: 0, 
+    minHeight: 0,
     maxHeight: '100%',
   },
   codeLineTextWrapper: {
-    lineHeight: gameScale(25), 
+    lineHeight: gameScale(25),
     textAlignVertical: 'center',
   },
   codeText: {

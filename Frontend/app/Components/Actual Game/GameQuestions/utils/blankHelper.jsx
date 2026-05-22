@@ -4,12 +4,9 @@
  * Rules for what is NOT a blank:
  * 1. URLs – any token that starts with http:// or https:// (the underscores
  *    inside a URL must be preserved verbatim, not turned into input blanks).
- * 2. _blank – a common HTML attribute value (e.g. target="_blank").
- * 3. Standalone underscores that are part of identifiers like __init__, __name__,
- *    __main__ etc. – consecutive underscores (2+) are never blanks.
  *
  * A "blank" is defined as a SINGLE standalone underscore `_` that does NOT
- * fall inside one of the protected patterns above.
+ * fall inside the protected URL pattern above.
  */
 
 // ── Regex that matches things we want to PROTECT (not treat as blanks) ──────
@@ -17,17 +14,13 @@
 //
 // 1. Quoted URLs:  "https://..." or 'https://...'  (greedy up to closing quote)
 // 2. Unquoted URLs that start with http(s):// and run until whitespace / quote / >
-// 3. _blank (with optional surrounding quotes)
-// 4. Dunder / multi-underscore identifiers like __init__, __name__, etc.
+// 3. HTML/JS target attribute: _blank
 const PROTECTED_PATTERN =
-  /(?:["']https?:\/\/[^"']*["'])|(?:https?:\/\/[^\s"'<>]+)|(?:_blank)|(?:_{2,}\w*_{0,})/g;
+  /(?:["']https?:\/\/[^"']*["'])|(?:https?:\/\/[^\s"'<>]+)|(?:_blank)/g;
 
 /**
  * Replace every protected region with a same-length placeholder that contains
- * NO underscores, so a naive `split('_')` afterwards only sees real blanks.
- *
- * Returns { masked, restorations } where `restorations` is an array of
- * { index, length, original } so we can put the originals back.
+ * NO underscores, so a naive check only sees real blanks.
  */
 const maskProtectedRegions = (line) => {
   const restorations = [];
@@ -40,121 +33,78 @@ const maskProtectedRegions = (line) => {
   return { masked, restorations };
 };
 
-/**
- * Restore the protected regions back into an array of parts.
- * `parts` comes from `masked.split('_')` — we walk through each part and
- * replace any placeholder chars with the original text.
- */
-const restoreParts = (parts, restorations, masked) => {
-  if (restorations.length === 0) return parts;
-
-  // Rebuild the full string with blanks marked, then swap placeholders back
-  // Strategy: join parts with '_', replace placeholders, then re-split.
-  let joined = parts.join('_');
-  // Sort restorations by index descending so replacements don't shift offsets
-  const sorted = [...restorations].sort((a, b) => b.index - a.index);
-  for (const r of sorted) {
-    const placeholder = '\x00'.repeat(r.length);
-    const pos = joined.indexOf(placeholder);
-    if (pos !== -1) {
-      joined = joined.slice(0, pos) + r.original + joined.slice(pos + r.length);
-    }
-  }
-  // Now re-split on '_' but ONLY on real blanks.
-  // We know where real blanks are: they are at the positions in `masked` that have '_'.
-  // Easiest: walk the masked string, collect split positions.
-  return smartSplit(joined, masked);
-};
-
-/**
- * Split `original` at positions where `masked` has a lone `_`.
- * This gives us the exact same split boundaries as masked.split('_'),
- * but applied to the restored (un-masked) text.
- */
-const smartSplit = (original, masked) => {
-  const result = [];
-  let lastSplit = 0;
-
-  for (let i = 0; i < masked.length; i++) {
-    if (masked[i] === '_') {
-      result.push(original.slice(lastSplit, i));
-      lastSplit = i + 1;
-    }
-  }
-  result.push(original.slice(lastSplit));
-  return result;
-};
-
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 /**
  * Split a single line of question text into parts around blank placeholders,
- * ignoring underscores inside URLs, _blank, and multi-underscore identifiers.
- *
- * If `expectedBlankCount` is provided, the result is clamped so that
- * (parts.length - 1) never exceeds `expectedBlankCount`. Extra underscores
- * beyond the expected count are left as literal text.
+ * ignoring underscores inside URLs and _blank.
  *
  * @param {string} line - One line of the question template
- * @param {number|null} expectedBlankCount - Optional cap from correctAnswer.length
  * @returns {string[]} Array of text parts (blanks sit between consecutive parts)
  */
-export const splitLineIntoBlanks = (line, expectedBlankCount = null) => {
+export const splitLineIntoBlanks = (line) => {
   if (!line || typeof line !== 'string') return [line || ''];
 
-  const { masked, restorations } = maskProtectedRegions(line);
+  const { restorations } = maskProtectedRegions(line);
 
-  // Split the masked string on single underscores (real blanks)
-  const rawParts = masked.split('_');
+  let restoredWithMarkers = '';
+  let i = 0;
+  const BLANK_MARKER = '\x01';
 
-  // Restore protected text back into each part
-  const parts = restoreParts(rawParts, restorations, masked);
+  while (i < line.length) {
+    // Check if this position is at the start of a protected region
+    const activeRestoration = restorations.find(r => i === r.index);
 
-  // If no cap requested, return as-is
-  if (expectedBlankCount == null || parts.length - 1 <= expectedBlankCount) {
-    return parts;
+    if (activeRestoration) {
+      restoredWithMarkers += activeRestoration.original;
+      i += activeRestoration.length;
+    } else if (line[i] === '_') {
+      // We found a non-protected underscore.
+      // Consume all consecutive underscores that are not protected.
+      while (
+        i < line.length &&
+        line[i] === '_' &&
+        !restorations.some(r => i >= r.index && i < r.index + r.length)
+      ) {
+        i++;
+      }
+      restoredWithMarkers += BLANK_MARKER;
+    } else {
+      restoredWithMarkers += line[i];
+      i++;
+    }
   }
 
-  // Clamp: merge excess blanks back into text (re-insert literal '_')
-  const clamped = parts.slice(0, expectedBlankCount + 1);
-  // Join the remaining excess parts with '_' (they are not real blanks)
-  const excess = parts.slice(expectedBlankCount + 1).join('_');
-  clamped[clamped.length - 1] += '_' + excess;
-  return clamped;
+  // Split on the single blank marker
+  return restoredWithMarkers.split(BLANK_MARKER);
 };
 
 /**
  * Count how many real blanks exist in a line (excludes URLs, _blank, etc.).
  *
  * @param {string} line
- * @param {number|null} expectedTotalBlanks - Optional cap
  * @returns {number}
  */
-export const countBlanksInLine = (line, expectedTotalBlanks = null) => {
-  const parts = splitLineIntoBlanks(line, expectedTotalBlanks);
+export const countBlanksInLine = (line) => {
+  const parts = splitLineIntoBlanks(line);
   return parts.length - 1;
 };
 
 /**
- * Given a full multi-line question and an answer array, compute the
- * split parts for every line, clamping total blanks to answer count.
+ * Given a full multi-line question, compute the split parts for every line.
  *
  * @param {string} questionText - Full question with \n separators
- * @param {Array} correctAnswers - Array of correct answers (for clamping)
  * @returns {{ lineParts: string[][], totalBlanks: number }}
  */
-export const parseQuestionBlanks = (questionText, correctAnswers = null) => {
+export const parseQuestionBlanks = (questionText) => {
   if (!questionText) return { lineParts: [], totalBlanks: 0 };
 
   const lines = questionText.split('\n');
-  const maxBlanks = correctAnswers?.length ?? Infinity;
   const lineParts = [];
   let totalBlanks = 0;
 
   for (const line of lines) {
-    // How many blanks can this line contribute?
-    const remainingBudget = maxBlanks - totalBlanks;
-    const parts = splitLineIntoBlanks(line, remainingBudget);
+    const parts = splitLineIntoBlanks(line);
     const blanksInLine = parts.length - 1;
     totalBlanks += blanksInLine;
     lineParts.push(parts);
@@ -170,7 +120,7 @@ export const scrollToNextBlank = (scrollViewRef, blankRefs, currentQuestion, sel
   }
 
   const nextBlankRef = blankRefs.current[selectedBlankIndex];
-  
+
   if (!nextBlankRef) {
     return;
   }
@@ -190,10 +140,10 @@ export const scrollToNextBlank = (scrollViewRef, blankRefs, currentQuestion, sel
               animated: true,
             });
           },
-          () => {}
+          () => { }
         );
       }
-    } catch (_) {}
+    } catch (_) { }
   }, 100);
 };
 
@@ -203,13 +153,12 @@ export const calculateGlobalBlankIndex = (currentQuestion, lineIndex) => {
     return 0;
   }
 
-  const correctAnswers = currentQuestion.correctAnswer || null;
-  const { lineParts } = parseQuestionBlanks(currentQuestion.question, correctAnswers);
+  const { lineParts } = parseQuestionBlanks(currentQuestion.question);
 
   let blankIndex = 0;
   for (let i = 0; i < lineIndex && i < lineParts.length; i++) {
     blankIndex += lineParts[i].length - 1;
   }
-  
+
   return blankIndex;
 };
