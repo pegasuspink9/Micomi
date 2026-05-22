@@ -776,6 +776,7 @@ export const imagesUrls = [
 
   //Micomi Avatar
   "https://micomi-assets.me/Hero%20Portraits/Micomi.png",
+  "https://micomi-assets.me/Hero%20Portraits/Micomi%20Talk.png",
 
   //Star (not used in the backend)
   "https://micomi-assets.me/Icons/Miscellaneous/Micomi%20Star2.png",

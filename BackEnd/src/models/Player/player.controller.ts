@@ -77,6 +77,19 @@ export const getPlayerProfile = async (req: Request, res: Response) => {
   }
 };
 
+export const getPlayerHeaderDetails = async (req: Request, res: Response) => {
+  try {
+    const playerId = (req as any).user.id;
+    const result = await PlayerService.getPlayerHeaderDetails(playerId);
+    if (!result) {
+      return errorResponse(res, null, "Player not found", 404);
+    }
+    return successResponse(res, result, "Player found");
+  } catch (error) {
+    return errorResponse(res, error, "Failed to fetch player");
+  }
+};
+
 /*POST a player*/
 export const createPlayer = async (req: Request, res: Response) => {
   try {

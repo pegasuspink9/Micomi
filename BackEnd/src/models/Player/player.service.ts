@@ -448,6 +448,45 @@ export const getPlayerProfile = async (player_id: number) => {
   };
 };
 
+export const getPlayerHeaderDetails = async (player_id: number) => {
+  await ensureDefaultCharacter(player_id);
+
+  const player = await prisma.player.findUnique({
+    where: { player_id },
+    select: {
+      player_id: true,
+      username: true,
+      player_avatar: true,
+      coins: true,
+      diamonds: true,
+      exp_points: true,
+      level: true,
+    },
+  });
+
+  if (!player) return null;
+
+  const calculatedLevel = calculatePlayerLevel(player.exp_points);
+
+  let maxLevelExp = 0;
+  for (let i = 2; i <= calculatedLevel + 1; i++) {
+    maxLevelExp += Math.floor(
+      BASE_EXP_REQUIREMENT * Math.pow(i - 1, EXP_EXPONENT),
+    );
+  }
+
+  return {
+    player_id: player.player_id,
+    player_avatar: player.player_avatar || DEFAULT_AVATAR_URL,
+    username: player.username,
+    coins: player.coins,
+    diamonds: player.diamonds,
+    exp_points: player.exp_points,
+    max_level_exp: maxLevelExp,
+    player_level: calculatedLevel,
+  };
+};
+
 const initializeNewGameState = async (playerId: number) => {
   await prisma.playerAchievement.create({
     data: {
