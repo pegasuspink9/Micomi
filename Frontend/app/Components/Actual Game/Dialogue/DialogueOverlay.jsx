@@ -11,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { gameScale } from '../../Responsiveness/gameResponsive';
 import { soundManager } from '../Sounds/UniversalSoundManager';
+import { universalAssetPreloader } from '../../../services/preloader/universalAssetPreloader';
 
 const DialogueOverlay = ({ visible, dialogueData, onComplete }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -56,7 +57,9 @@ const DialogueOverlay = ({ visible, dialogueData, onComplete }) => {
     }
 
     const isMicomi = rawSpeaker === 'Micomi';
-    const imageUri = isMicomi ? dialogueData.micomi_image : dialogueData.enemy_image;
+    const rawImageUri = isMicomi ? dialogueData.micomi_image : dialogueData.enemy_image;
+    const cachedPath = universalAssetPreloader.getCachedAssetPath(rawImageUri);
+    const imageUri = cachedPath || rawImageUri;
     const alignment = isMicomi ? 'left' : 'right';
 
     return { speakerName, text, imageUri, alignment };

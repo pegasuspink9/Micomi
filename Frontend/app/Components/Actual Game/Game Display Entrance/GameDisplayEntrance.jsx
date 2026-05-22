@@ -6,6 +6,7 @@ import { Image, ImageBackground } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 import { soundManager } from '../Sounds/UniversalSoundManager';
+import { universalAssetPreloader } from '../../../services/preloader/universalAssetPreloader';
 
 const PVP_AVATAR_PLACEHOLDER = 'https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif';
 
@@ -62,7 +63,7 @@ const SpriteAnimator = ({
         { width: frameWidth * columns, height: frameHeight * rows }
       ]}>
         <Image
-          source={{ uri: sourceUri }}
+          source={{ uri: universalAssetPreloader.getCachedAssetPath(sourceUri) || sourceUri }}
           style={{ width: '100%', height: '100%' }}
           contentFit="cover"
           cachePolicy="disk"
@@ -271,7 +272,7 @@ const CombatVSModal = ({
     ]}>
     <View style={styles.modalOverlay}>
     <ImageBackground 
-      source={{ uri: versusBackground }} 
+      source={{ uri: universalAssetPreloader.getCachedAssetPath(versusBackground) || versusBackground }} 
       style={styles.modalBackground}
       onLoad={() => setIsBackgroundLoaded(true)}
     >
@@ -292,7 +293,7 @@ const CombatVSModal = ({
                   />
                 ) : (
                   <Image 
-                    source={{ uri: selectedCharacter.character_avatar }}
+                    source={{ uri: universalAssetPreloader.getCachedAssetPath(selectedCharacter.character_avatar) || selectedCharacter.character_avatar }}
                     style={styles.characterAvatar}
                     resizeMode="contain"
                   />
@@ -331,7 +332,7 @@ const CombatVSModal = ({
                           {/* Content container to correct slant */}
                           <View style={styles.playerInfoInner}>
                             <Image
-                              source={{ uri: selectedCharacter?.player_avatar || PVP_AVATAR_PLACEHOLDER }}
+                              source={{ uri: universalAssetPreloader.getCachedAssetPath(selectedCharacter?.player_avatar || PVP_AVATAR_PLACEHOLDER) || selectedCharacter?.player_avatar || PVP_AVATAR_PLACEHOLDER }}
                               style={styles.playerInfoAvatar}
                               contentFit="cover"
                             />
@@ -357,7 +358,7 @@ const CombatVSModal = ({
           <Animated.View style={[styles.vsContainer, { transform: [{ scale: vsScaleAnim }] }]}>
             <View style={styles.vsBackground}>
               <Image 
-                source={{ uri: 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1761043746/Untitled_design_16_sixivj.png' }}
+                source={{ uri: universalAssetPreloader.getCachedAssetPath('https://res.cloudinary.com/dm8i9u1pk/image/upload/v1761043746/Untitled_design_16_sixivj.png') || 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1761043746/Untitled_design_16_sixivj.png' }}
                 style={styles.vsImage}
               />
             </View>
@@ -378,7 +379,7 @@ const CombatVSModal = ({
                   />
                 ) : (
                   <Image 
-                    source={{ uri: enemy.enemy_avatar }}
+                    source={{ uri: universalAssetPreloader.getCachedAssetPath(enemy.enemy_avatar) || enemy.enemy_avatar }}
                     style={[styles.enemyAvatar, isPvpMode && styles.enemyFacingLeft]}
                     resizeMode="contain" 
                   />
@@ -424,7 +425,7 @@ const CombatVSModal = ({
                             </Text>
                           </View>
                           <Image
-                            source={{ uri: enemy?.player_avatar || PVP_AVATAR_PLACEHOLDER }}
+                            source={{ uri: universalAssetPreloader.getCachedAssetPath(enemy?.player_avatar || PVP_AVATAR_PLACEHOLDER) || enemy?.player_avatar || PVP_AVATAR_PLACEHOLDER }}
                             style={styles.playerInfoAvatar}
                             contentFit="cover"
                           />

@@ -18,6 +18,22 @@ export const pvpMethods = {
       'ui_videos'
     );
 
+    // PVP fallback background image
+    addAsset(
+      'https://micomi-assets.me/Pvp%20Assets/Landing%20Image/pvpfallback.png',
+      'pvp_fallback_image',
+      'image',
+      'ui_images'
+    );
+
+    // PVP default avatar placeholder
+    addAsset(
+      'https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif',
+      'pvp_avatar_placeholder',
+      'image',
+      'ui_images'
+    );
+
     addAsset(
       'https://micomi-assets.me/Pvp%20Assets/Landing%20Image/PvP%20Logo.png',
       'pvp_logo_image',

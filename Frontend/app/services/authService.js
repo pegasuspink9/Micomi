@@ -42,7 +42,8 @@ export const authService = {
       if (response.success) {
         return response.data;
       }
-      throw new Error(response.message || 'Signup failed');
+      const errorMsg = response.data?.error || response.data?.message || response.message || 'Signup failed';
+      throw new Error(errorMsg);
     } catch (error) {
       throw error;
     }

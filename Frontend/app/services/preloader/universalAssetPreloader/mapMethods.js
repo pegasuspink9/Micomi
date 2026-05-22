@@ -41,6 +41,9 @@ extractAllAssetsFromMapData(mapLevelData) {
         if (enemy.enemy_attack_overlay) {
           addAsset(enemy.enemy_attack_overlay, `${enemy.enemy_name}_attack_overlay`, 'image', 'game_visuals');
         }
+        if (enemy.avatar_enemy) {
+          addAsset(enemy.avatar_enemy, `${enemy.enemy_name}_avatar_enemy`, 'image', 'game_images');
+        }
         
       }
 
@@ -152,6 +155,10 @@ extractAllAssetsFromMapData(mapLevelData) {
 
     const staticTopUpAssets = this.getStaticTopUpAssets();
     staticTopUpAssets.forEach(asset => addAsset(asset.url, asset.name, asset.type, asset.category));
+
+    // Static Dialogue and Combat Entrance UI Assets
+    addAsset('https://micomi-assets.me/Hero%20Portraits/Micomi%20Talk.png', 'micomi_talk_portrait', 'image', 'game_images');
+    addAsset('https://res.cloudinary.com/dm8i9u1pk/image/upload/v1761043746/Untitled_design_16_sixivj.png', 'vs_battle_logo', 'image', 'game_visuals');
 
 
     

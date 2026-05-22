@@ -159,10 +159,13 @@ class ApiService {
         let errorMessage = `HTTP error! status: ${response.status}`;
 
         if (errorData) {
-          if (errorData.error && typeof errorData.error === 'string') {
-            errorMessage = errorData.error;
-          } else if (errorData.message) {
-            errorMessage = errorData.message;
+          const apiError = errorData.data?.error || errorData.error;
+          const apiMessage = errorData.data?.message || errorData.message;
+
+          if (apiError && typeof apiError === 'string') {
+            errorMessage = apiError;
+          } else if (apiMessage && typeof apiMessage === 'string') {
+            errorMessage = apiMessage;
           }
         }
 
