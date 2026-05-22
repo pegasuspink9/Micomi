@@ -97,7 +97,7 @@ export const imagesUrls = [
   "https://micomi-assets.me/Top%20ups/coins/pounce.png",
   "https://micomi-assets.me/Top%20ups/diamonds/chest.png",
   "https://micomi-assets.me/Top%20ups/diamonds/handful.png",
-  "https://micomi-assets.me/Top%20ups/diamonds/pounce.png",
+  "https://micomi-assets.me/Top%20ups/diamonds/pounces.png",
   "https://micomi-assets.me/Top%20ups/energy/Lifetime.png",
   "https://micomi-assets.me/Top%20ups/energy/Monthly.png",
 
