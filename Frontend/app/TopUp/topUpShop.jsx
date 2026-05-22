@@ -1,12 +1,12 @@
 import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
-import { ActivityIndicator, Alert, Dimensions, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View, Platform, Modal } from 'react-native';
+import { ActivityIndicator, Dimensions, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View, Platform, Modal } from 'react-native';
 import SpriteActivityIndicator from '../Components/Actual Game/Loading/SpriteActivityIndicator';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { gameScale } from '../Components/Responsiveness/gameResponsive';
 import { topUpShopService } from '../services/topUpShopService';
 import { TOP_UP_CATEGORIES, TOP_UP_CATEGORY_MATCHERS } from '../services/topUpShopData';
-import { TOP_UP_IMAGE_MAP, TOP_UP_COVER_URL, TOP_UP_BOARD_URL, TOP_UP_SHOP_BG_URL } from '../services/preloader/universalAssetPreloader/topUpMethods';
+import { TOP_UP_COVER_URL, TOP_UP_BOARD_URL, TOP_UP_SHOP_BG_URL } from '../services/preloader/universalAssetPreloader/topUpMethods';
 import { universalAssetPreloader } from '../services/preloader/universalAssetPreloader';
 import BackButton from '../Components/Actual Game/Back/BackButton';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
@@ -18,13 +18,6 @@ const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreCl
 // Conditionally require react-native-iap to prevent crashing on Expo Go
 const IAP = !isExpoGo ? require('react-native-iap') : null;
 
-const getCategoryFromItemId = (itemId) => {
-  const id = String(itemId || '').toLowerCase();
-  if (id.includes('coins')) return 'coins';
-  if (id.includes('diamonds')) return 'diamonds';
-  if (id.includes('energy')) return 'energy';
-  return 'coins';
-};
 
 const groupFilteredItems = (items, category) => {
   const rows = [];
@@ -175,7 +168,7 @@ export default function TopUpShop() {
       if (purchaseErrorSubscription) purchaseErrorSubscription.remove();
       IAP.endConnection();
     };
-  }, []);
+  }, [showAlert]);
 
   const loadCatalog = useCallback(async () => {
     try {
@@ -253,7 +246,7 @@ export default function TopUpShop() {
         setPurchasingItemId(null);
       }
     }
-  }, []);
+  }, [showAlert]);
 
   const filteredCatalog = useMemo(() => {
     const matcher = TOP_UP_CATEGORY_MATCHERS[selectedCategory];
@@ -266,10 +259,9 @@ export default function TopUpShop() {
     [filteredCatalog, selectedCategory]
   );
 
-  const getImageUri = (itemId) => {
-    const remoteUrl = TOP_UP_IMAGE_MAP[itemId];
-    if (!remoteUrl) return null;
-    return universalAssetPreloader.getCachedAssetPath(remoteUrl);
+  const getImageUri = (productImage) => {
+    if (!productImage) return null;
+    return universalAssetPreloader.getCachedAssetPath(productImage);
   };
 
   const coverUri = universalAssetPreloader.getCachedAssetPath(TOP_UP_COVER_URL) || TOP_UP_COVER_URL;
@@ -367,7 +359,7 @@ export default function TopUpShop() {
               return (
                 <View key={`row-${rowIndex}`} style={[styles.row, isEnergyRow && styles.energyRow]}>
                   {row.items.map((item) => {
-                    const imageUri = getImageUri(item.item_id);
+                    const imageUri = getImageUri(item.product_image);
                     const isPair = row.type === 'pair';
 
                     return (

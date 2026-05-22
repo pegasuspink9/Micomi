@@ -14,6 +14,18 @@ export const playerService = {
     }
   },
 
+  // Get player profile header (lightweight)
+  getPlayerProfileHeader: async () => {
+    try {
+      const response = await apiService.get('/player/profile/header');
+      console.log('👤 Player profile header fetched:', response);
+      return response.success ? response.data : response;
+    } catch (error) {
+      console.error('Failed to fetch player profile header:', error);
+      throw error;
+    }
+  },
+
   getAvailableAvatars: async () => {
     try {
       const response = await apiService.get('/avatar');
@@ -137,6 +149,20 @@ export const playerService = {
       console.error('Failed to fetch all players:', error);
       throw error;
     }
+  },
+
+  // Transform profile header data to local UI camelCase structure
+  transformPlayerHeaderData: (apiData) => {
+    return {
+      playerId: apiData.player_id,
+      playerAvatar: apiData.player_avatar,
+      username: apiData.username,
+      coins: apiData.coins,
+      diamonds: apiData.diamonds,
+      expPoints: apiData.exp_points,
+      playerLevel: apiData.player_level,
+      maxLevelExp: apiData.max_level_exp,
+    };
   },
 
   //  UPDATED: Include all raw URLs for cache transformation

@@ -2,10 +2,10 @@ export const TOP_UP_IMAGE_MAP = {
   // Coins
   'currency_coins_1000': 'https://micomi-assets.me/Top%20ups/coins/handful.png',
   'currency_coins_4000': 'https://micomi-assets.me/Top%20ups/coins/pounce.png',
-  'currency_coins_10000': 'https://micomi-assets.me/Top%20ups/coins/chest.png',
+  'currency_coins_10000': 'https://micomi-assets.me/Top%20ups/coins/pounce.png',
   // Diamonds
   'currency_diamonds_50': 'https://micomi-assets.me/Top%20ups/diamonds/handful.png',
-  'currency_diamonds_160': 'https://micomi-assets.me/Top%20ups/diamonds/pounch.png',
+  'currency_diamonds_160': 'https://micomi-assets.me/Top%20ups/diamonds/pounces.png',
   'currency_diamonds_360': 'https://micomi-assets.me/Top%20ups/diamonds/chest.png',
   // Energy
   'infinite_energy_monthly': 'https://micomi-assets.me/Top%20ups/energy/Monthly.png',

@@ -5,7 +5,8 @@ import { characterService } from '../services/characterService';
 import { universalAssetPreloader } from '../services/preloader/universalAssetPreloader';
 import { useAuth } from './useAuth';
 
-export const usePlayerProfile = () => {
+export const usePlayerProfile = (options = {}) => {
+  const { lightweight = false } = options;
   const { user } = useAuth();
   const [playerData, setPlayerData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -132,6 +133,41 @@ export const usePlayerProfile = () => {
       console.error('Silent refresh failed:', err);
     }
   }, [attachThemesToProfile]);
+
+  const loadPlayerHeader = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return null;
+    }
+    try {
+      setLoading(true);
+      setError(null);
+
+      const apiData = await playerService.getPlayerProfileHeader();
+      const transformedData = playerService.transformPlayerHeaderData(apiData);
+
+      setPlayerData(transformedData);
+      return transformedData;
+    } catch (err) {
+      setError(err.message);
+      console.error('Failed to load player profile header:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const refreshPlayerHeader = useCallback(async () => {
+    if (!user) return null;
+    try {
+      const apiData = await playerService.getPlayerProfileHeader();
+      const transformedData = playerService.transformPlayerHeaderData(apiData);
+      setPlayerData(transformedData);
+      return transformedData;
+    } catch (err) {
+      console.error('Silent header refresh failed:', err);
+    }
+  }, [user]);
 
   const fetchAvailableAvatars = useCallback(async () => {
     try {
@@ -298,15 +334,15 @@ export const usePlayerProfile = () => {
 
   // Initialize on mount
   useEffect(() => {
-    if (!user) return;
+    if (!user || lightweight) return;
     loadPlayerProfile().then(() => {
       characterService.getLastSelectionUpdate().then(setLastSelectionCheck);
       playerService.getLastBadgeUpdate().then(setLastBadgeCheck);
     });
-  }, [loadPlayerProfile, user]);
+  }, [loadPlayerProfile, user, lightweight]);
 
   useEffect(() => {
-    if (!user || !playerData) return;
+    if (!user || !playerData || lightweight) return;
     const handleAppStateChange = (nextAppState) => {
       if (nextAppState === 'active') {
         checkForCharacterUpdates();
@@ -316,17 +352,17 @@ export const usePlayerProfile = () => {
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription?.remove();
-  }, [checkForCharacterUpdates, checkForBadgeUpdates, user, playerData]);
+  }, [checkForCharacterUpdates, checkForBadgeUpdates, user, playerData, lightweight]);
 
   useEffect(() => {
-    if (!user || !playerData) return;
+    if (!user || !playerData || lightweight) return;
     const interval = setInterval(() => {
       checkForCharacterUpdates();
       checkForBadgeUpdates();
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [checkForCharacterUpdates, checkForBadgeUpdates, user, playerData]);
+  }, [checkForCharacterUpdates, checkForBadgeUpdates, user, playerData, lightweight]);
 
   return {
     // Data
@@ -339,6 +375,8 @@ export const usePlayerProfile = () => {
 
     // Actions
     loadPlayerProfile,
+    loadPlayerHeader,
+    refreshPlayerHeader,
     updateAvatar,
     updateProfile,
     clearError,

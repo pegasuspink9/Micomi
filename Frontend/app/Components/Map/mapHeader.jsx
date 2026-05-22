@@ -17,7 +17,7 @@ import SettingsModal from '../Settings/SettingsModal';
 
 export default function MapHeader() {
   const router = useRouter(); // Initialize router
-  const { playerData, loadPlayerProfile, refreshPlayerData } = usePlayerProfile();
+  const { playerData, loadPlayerHeader, refreshPlayerHeader } = usePlayerProfile({ lightweight: true });
   const { energyStatus } = useEnergyData();
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
 
@@ -41,23 +41,23 @@ export default function MapHeader() {
 
   useFocusEffect(
     useCallback(() => {
-      loadPlayerProfile();
+      loadPlayerHeader();
 
       const syncInterval = setInterval(() => {
-        refreshPlayerData();
-      }, 5000); 
+        refreshPlayerHeader();
+      }, 5000);
 
       return () => clearInterval(syncInterval);
-    }, [loadPlayerProfile, refreshPlayerData])
+    }, [loadPlayerHeader, refreshPlayerHeader])
   );
-  
+
   const calculateLevelProgress = () => {
     const currentLevel = playerData?.playerLevel || 1;
     const currentExp = playerData?.expPoints || 0;
     const nextLevelExp = playerData?.maxLevelExp || 100;
-    
+
     const progress = Math.min((currentExp / nextLevelExp) * 100, 100);
-    
+
     return {
       currentLevel,
       currentExp,
@@ -80,7 +80,7 @@ export default function MapHeader() {
       params: { category },
     });
   };
-  
+
   const avatarUrl = playerData?.playerAvatar || "https://micomi-assets.me/Player%20Avatars/cute-astronaut-playing-vr-game-with-controller-cartoon-vector-icon-illustration-science-technology_138676-13977.avif";
 
   return (
@@ -88,9 +88,9 @@ export default function MapHeader() {
       {/* Player Section - Wrapped with the new container */}
       <View style={styles.playerInfoWrapper}>
         <View style={styles.playerInfo}>
-          
+
           {/* Avatar Image - Restyled with 3-Layer Borders from Life.jsx */}
-          <TouchableOpacity 
+          <TouchableOpacity
             activeOpacity={0.8}
             onPress={() => router.push('/profile')}
             style={styles.avatarBorderOuter}
@@ -98,9 +98,9 @@ export default function MapHeader() {
             <View style={styles.avatarBorderMiddle}>
               <View style={styles.avatarBorderInner}>
                 <View style={styles.avatarCircle}>
-                  <Image 
-                    source={{ uri: avatarUrl }} 
-                    style={styles.avatarImage} 
+                  <Image
+                    source={{ uri: avatarUrl }}
+                    style={styles.avatarImage}
                     contentFit="cover"
                     cachePolicy="memory-disk"
                   />
@@ -108,61 +108,61 @@ export default function MapHeader() {
               </View>
             </View>
           </TouchableOpacity>
-          
+
           {/* Column: Name Top, Level+Bar Bottom */}
           <View style={styles.nameAndXpColumn}>
-              <Text style={styles.usernameText} numberOfLines={1}>{username}</Text>
-              
-              <View style={styles.levelAndBarRow}>
-                  {/* Mini Level Badge - Restyled and Fixed Display */}
-                  <View style={styles.miniBadgeLayer1}>
-                      <View style={styles.miniBadgeLayer2}>
-                        <View style={styles.miniBadgeLayer3}>
-                          <LinearGradient
-                            colors={['#1e3a5f', '#152d4a']}
-                            style={styles.levelBadgeGradient}
-                          >
-                            <Text style={styles.miniLevelText}>{levelData.currentLevel || 1}</Text>
-                          </LinearGradient>
-                        </View>
-                      </View>
-                  </View>
+            <Text style={styles.usernameText} numberOfLines={1}>{username}</Text>
 
-                  {/* XP Bar - Restyled to match Health Bar from Life.jsx */}
-                  <View style={styles.healthBorderOuter}>
-                    <View style={styles.healthBorderMiddle}>
-                      <View style={styles.healthBorderInner}>
-                        <View style={styles.healthBarTrack}>
-                          <View 
-                            style={[
-                              styles.healthBarFillContainer,
-                              { width: `${levelData.progress}%` }
-                            ]}
-                          >
-                            <LinearGradient
-                              colors={['#4a90d9', '#2d5a87']}
-                              start={{ x: 0, y: 0 }}
-                              end={{ x: 1, y: 0 }}
-                              style={styles.healthBarFill}
-                            />
-                          </View>
-                          <View style={styles.xpTextContainer}>
-                            <Text style={styles.xpText}>
-                                {levelData.currentExp}/{levelData.nextLevelExp}
-                            </Text>
-                          </View>
-                        </View>
+            <View style={styles.levelAndBarRow}>
+              {/* Mini Level Badge - Restyled and Fixed Display */}
+              <View style={styles.miniBadgeLayer1}>
+                <View style={styles.miniBadgeLayer2}>
+                  <View style={styles.miniBadgeLayer3}>
+                    <LinearGradient
+                      colors={['#1e3a5f', '#152d4a']}
+                      style={styles.levelBadgeGradient}
+                    >
+                      <Text style={styles.miniLevelText}>{levelData.currentLevel || 1}</Text>
+                    </LinearGradient>
+                  </View>
+                </View>
+              </View>
+
+              {/* XP Bar - Restyled to match Health Bar from Life.jsx */}
+              <View style={styles.healthBorderOuter}>
+                <View style={styles.healthBorderMiddle}>
+                  <View style={styles.healthBorderInner}>
+                    <View style={styles.healthBarTrack}>
+                      <View
+                        style={[
+                          styles.healthBarFillContainer,
+                          { width: `${levelData.progress}%` }
+                        ]}
+                      >
+                        <LinearGradient
+                          colors={['#4a90d9', '#2d5a87']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          style={styles.healthBarFill}
+                        />
+                      </View>
+                      <View style={styles.xpTextContainer}>
+                        <Text style={styles.xpText}>
+                          {levelData.currentExp}/{levelData.nextLevelExp}
+                        </Text>
                       </View>
                     </View>
                   </View>
+                </View>
               </View>
+            </View>
           </View>
         </View>
       </View>
-      
+
       {/* Resources Section (UPDATED with 3-Layer Blue Style) */}
       <View style={styles.resources}>
-        
+
         {/* Coins Capsule */}
         <View style={styles.resourceWrapper}>
           <View style={styles.resourceBorderOuter}>
@@ -178,9 +178,9 @@ export default function MapHeader() {
               </View>
             </View>
           </View>
-          <Image 
-            source={require('../icons/coins.png')} 
-            style={styles.coinIconAbsolute} 
+          <Image
+            source={require('../icons/coins.png')}
+            style={styles.coinIconAbsolute}
             contentFit="contain"
             cachePolicy="memory-disk"
           />
@@ -188,7 +188,7 @@ export default function MapHeader() {
 
         {/* Diamonds Capsule */}
         <View style={styles.resourceWrapper}>
-           <View style={styles.resourceBorderOuter}>
+          <View style={styles.resourceBorderOuter}>
             <View style={styles.resourceBorderMiddle}>
               <View style={styles.resourceBorderInner}>
                 <View style={styles.resourceTrack}>
@@ -211,7 +211,7 @@ export default function MapHeader() {
 
         {/* Energy Capsule */}
         <View style={styles.resourceWrapper}>
-           <View style={styles.resourceBorderOuter}>
+          <View style={styles.resourceBorderOuter}>
             <View style={styles.resourceBorderMiddle}>
               <View style={styles.resourceBorderInner}>
                 <View style={styles.resourceTrack}>
@@ -224,9 +224,9 @@ export default function MapHeader() {
               </View>
             </View>
           </View>
-          <Image 
-            source={require('../icons/energy.png')} 
-            style={styles.energyIconAbsolute} 
+          <Image
+            source={require('../icons/energy.png')}
+            style={styles.energyIconAbsolute}
             contentFit="contain"
             cachePolicy="memory-disk"
           />
@@ -236,7 +236,7 @@ export default function MapHeader() {
 
       {/* Settings Icon */}
       <View style={styles.headerIcons}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.iconButton}
           onPress={() => setIsSettingsModalVisible(true)}
         >
@@ -245,7 +245,7 @@ export default function MapHeader() {
       </View>
 
       {/* Settings Modal */}
-      <SettingsModal 
+      <SettingsModal
         visible={isSettingsModalVisible}
         onClose={() => setIsSettingsModalVisible(false)}
       />
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
     width: '100%', // Take up full width of the wrapper
     gap: gameScale(5),
   },
-  
+
   // Avatar Styles
   avatarBorderOuter: {
     width: gameScale(46),
@@ -325,18 +325,18 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'column',
     justifyContent: 'center',
-    marginLeft: gameScale(-9), 
+    marginLeft: gameScale(-9),
   },
-   usernameText: {
+  usernameText: {
     color: '#fff',
-    fontSize: gameScale(11), 
+    fontSize: gameScale(11),
     fontFamily: 'DynaPuff',
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
-    marginLeft: gameScale(10), 
+    marginLeft: gameScale(10),
   },
-  
+
   levelAndBarRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -357,8 +357,8 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.5,
-    elevation: 10, 
-    zIndex: 10,    
+    elevation: 10,
+    zIndex: 10,
   },
   miniBadgeLayer2: {
     flex: 1,
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
   miniBadgeLayer3: {
     flex: 1,
     borderRadius: gameScale(10),
-    overflow: 'visible', 
+    overflow: 'visible',
   },
   levelBadgeGradient: {
     flex: 1,
@@ -383,8 +383,8 @@ const styles = StyleSheet.create({
     fontFamily: 'DynaPuff',
     color: '#ffffff',
     textAlign: 'center',
-    textAlignVertical: 'center', 
-    includeFontPadding: false, 
+    textAlignVertical: 'center',
+    includeFontPadding: false,
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 1,
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   healthBorderMiddle: {
-    borderRadius: gameScale(8), 
+    borderRadius: gameScale(8),
     borderWidth: gameScale(1),
     backgroundColor: '#152d4a',
     borderTopColor: '#4a90d9',
@@ -454,8 +454,8 @@ const styles = StyleSheet.create({
   // --- NEW RESOURCE STYLES ---
   resources: {
     flexDirection: 'row',
-    gap: gameScale(5), 
-    width: '60%', 
+    gap: gameScale(5),
+    width: '60%',
     justifyContent: 'flex-end',
     paddingRight: gameScale(5),
   },
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
-    height: gameScale(30), 
+    height: gameScale(30),
   },
   resourceBorderOuter: {
     borderRadius: gameScale(15),
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
     height: gameScale(20),
     flexDirection: 'row', // Added to line up text and + sign horizontally
     alignItems: 'center', // Centers vertically
-    paddingLeft: gameScale(24), 
+    paddingLeft: gameScale(24),
     paddingRight: gameScale(8), // Lowered slightly to make room for the + sign
     justifyContent: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
@@ -522,10 +522,10 @@ const styles = StyleSheet.create({
   },
   coinIconAbsolute: {
     position: 'absolute',
-    left: gameScale(-5), 
+    left: gameScale(-5),
     width: gameScale(30),
     height: gameScale(30),
-    zIndex: 10, 
+    zIndex: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.4,
