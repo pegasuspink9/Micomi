@@ -91,6 +91,16 @@ export const imagesUrls = [
   "https://micomi-assets.me/Micomi%20Celebrating/Failed2.png",
   "https://micomi-assets.me/Micomi%20Celebrating/Failed3.png",
 
+  //Shop Catalog Images
+  "https://micomi-assets.me/Top%20ups/coins/chest.png",
+  "https://micomi-assets.me/Top%20ups/coins/handful.png",
+  "https://micomi-assets.me/Top%20ups/coins/pounce.png",
+  "https://micomi-assets.me/Top%20ups/diamonds/chest.png",
+  "https://micomi-assets.me/Top%20ups/diamonds/handful.png",
+  "https://micomi-assets.me/Top%20ups/diamonds/pounce.png",
+  "https://micomi-assets.me/Top%20ups/energy/Lifetime.png",
+  "https://micomi-assets.me/Top%20ups/energy/Monthly.png",
+
   //Combat backgrounds (all islands)
   "https://micomi-assets.me/Maps/Greenland/1.png",
   "https://micomi-assets.me/Maps/Greenland/2.png",
@@ -777,6 +787,8 @@ export const imagesUrls = [
   //Micomi Avatar
   "https://micomi-assets.me/Hero%20Portraits/Micomi.png",
   "https://micomi-assets.me/Hero%20Portraits/Micomi%20Talk.png",
+  "https://micomi-assets.me/Hero%20Portraits/Micomi%20Ready.png",
+  "https://micomi-assets.me/Hero%20Portraits/Micomi%20Angry.png",
 
   //Star (not used in the backend)
   "https://micomi-assets.me/Icons/Miscellaneous/Micomi%20Star2.png",
