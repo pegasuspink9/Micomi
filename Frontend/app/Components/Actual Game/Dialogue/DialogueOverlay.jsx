@@ -3,10 +3,10 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg'; // Added SVG for Radial Gradient
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring, 
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
   withTiming
 } from 'react-native-reanimated';
 import { gameScale } from '../../Responsiveness/gameResponsive';
@@ -17,10 +17,10 @@ const DialogueOverlay = ({ visible, dialogueData, onComplete }) => {
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef(null);
-  const isSpammingRef = useRef(false); 
-  
+  const isSpammingRef = useRef(false);
+
   // Shared values for animations
-  const slideAnim = useSharedValue(0); 
+  const slideAnim = useSharedValue(0);
   const scaleAnim = useSharedValue(0.9);
 
   useEffect(() => {
@@ -67,7 +67,7 @@ const DialogueOverlay = ({ visible, dialogueData, onComplete }) => {
     if (parsedContent?.text) {
       setDisplayedText('');
       setIsTyping(true);
-      
+
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
 
       let charIndex = 0;
@@ -92,14 +92,14 @@ const DialogueOverlay = ({ visible, dialogueData, onComplete }) => {
 
   const handlePress = () => {
     if (isSpammingRef.current) return;
-    
+
     isSpammingRef.current = true;
     setTimeout(() => {
       isSpammingRef.current = false;
     }, 300); // 300ms delay
 
     soundManager.playGameButtonTapSound();
-    
+
     if (isTyping) {
       // Instant finish typing
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
@@ -121,7 +121,7 @@ const DialogueOverlay = ({ visible, dialogueData, onComplete }) => {
   if (!visible || !parsedContent) return null;
 
   const isLeft = parsedContent.alignment === 'left';
-  
+
   // Dynamic Theme Colors
   const themeColor = isLeft ? '#4dabf7' : '#9c1515ff'; // Blue vs Red
   const themeDark = isLeft ? '#1e3a5f' : '#9c1515ff';   // Dark Blue vs Dark Red
@@ -132,24 +132,24 @@ const DialogueOverlay = ({ visible, dialogueData, onComplete }) => {
     <View style={styles.overlayContainer} pointerEvents="box-none">
       <View style={styles.backdrop} />
 
-      <TouchableOpacity 
-        style={styles.touchLayer} 
-        activeOpacity={1} 
+      <TouchableOpacity
+        style={styles.touchLayer}
+        activeOpacity={1}
         onPress={handlePress}
       >
         <Animated.View style={[
-          styles.dialogueRow, 
+          styles.dialogueRow,
           isLeft ? styles.rowLeft : styles.rowRight,
           { opacity: slideAnim, transform: [{ scale: scaleAnim }] }
         ]}>
-          
+
           {/* === 3D LAYERED IMAGE BOX === */}
           <View style={[
-            styles.imageFrameOuter, 
+            styles.imageFrameOuter,
             isLeft ? styles.skewLeft : styles.skewRight,
-            { 
-              backgroundColor: themeDark, 
-              borderColor: themeColor 
+            {
+              backgroundColor: themeDark,
+              borderColor: themeColor
             }
           ]}>
             <View style={[styles.imageFrameMiddle, { backgroundColor: themeColor }]}>
@@ -181,8 +181,8 @@ const DialogueOverlay = ({ visible, dialogueData, onComplete }) => {
                   styles.imageWrapper,
                   isLeft ? styles.counterSkewLeft : styles.counterSkewRight
                 ]}>
-                  <Image 
-                    source={{ uri: parsedContent.imageUri }} 
+                  <Image
+                    source={{ uri: parsedContent.imageUri }}
                     style={styles.characterImage}
                     contentFit="cover"
                   />
@@ -193,38 +193,38 @@ const DialogueOverlay = ({ visible, dialogueData, onComplete }) => {
 
           {/* === TURBO SCRIPT BOX === */}
           <View style={[
-            styles.scriptBox, 
+            styles.scriptBox,
             isLeft ? styles.scriptBoxLeft : styles.scriptBoxRight,
             isLeft ? styles.skewLeft : styles.skewRight,
             { borderColor: themeColor }
           ]}>
-            
+
             {/* Text Content (Counter-skewed) */}
             <View style={[
               styles.textWrapper,
               isLeft ? styles.counterSkewLeft : styles.counterSkewRight
             ]}>
-              
+
               {/* Name Tag Header (Inside the box now) */}
-               <View style={[
+              <View style={[
                 styles.nameTagHeader,
                 isLeft ? styles.nameTagHeaderLeft : styles.nameTagHeaderRight,
-                !isLeft && { backgroundColor: '#a73f3fff', marginRight: gameScale(-15) } 
+                !isLeft && { backgroundColor: '#a73f3fff', marginRight: gameScale(-15) }
               ]}>
                 <Text style={styles.nameText}>{parsedContent.speakerName}</Text>
               </View>
 
               <Text style={styles.dialogueText}>
                 {displayedText}
-                {isTyping && <Text style={{color: themeColor}}>|</Text>}
+                {isTyping && <Text style={{ color: themeColor }}>|</Text>}
               </Text>
-              
-                 {!isTyping && (
+
+              {!isTyping && (
                 <Text style={[
-                  styles.tapHint, 
-                  { 
+                  styles.tapHint,
+                  {
                     color: themeColor,
-                    textAlign: isLeft ? 'right' : 'left' 
+                    textAlign: isLeft ? 'right' : 'left'
                   }
                 ]}>
                   {isLeft ? 'Tap to continue ►' : '◄ Tap to continue'}
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
   },
   dialogueRow: {
     flexDirection: 'row',
-    alignItems: 'stretch', 
+    alignItems: 'stretch',
     paddingHorizontal: gameScale(2),
     marginBottom: gameScale(60),
     width: '100%',
@@ -282,14 +282,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.6,
     shadowRadius: 6,
     elevation: 10,
-    padding: gameScale(2), 
+    padding: gameScale(2),
     borderRadius: gameScale(8),
   },
   imageFrameMiddle: {
     flex: 1,
     borderRadius: gameScale(8),
     width: '100%',
-    padding: gameScale(2), 
+    padding: gameScale(2),
   },
   imageFrameInner: {
     flex: 1,
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   characterImage: {
-    width: '200%', 
+    width: '200%',
     height: '200%',
     alignSelf: 'center',
     left: gameScale(-2),
@@ -328,14 +328,14 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   scriptBoxLeft: {
-    marginLeft: gameScale(-13), 
-    borderLeftWidth: 0, 
+    marginLeft: gameScale(-13),
+    borderLeftWidth: 0,
     borderTopLeftRadius: 0,
     borderBottomLeftRadius: 0,
   },
   scriptBoxRight: {
-    marginRight: gameScale(-13), 
-    borderRightWidth: 0, 
+    marginRight: gameScale(-13),
+    borderRightWidth: 0,
     borderTopRightRadius: 0,
     borderBottomRightRadius: 0,
   },
@@ -344,12 +344,12 @@ const styles = StyleSheet.create({
   textWrapper: {
     width: '100%',
   },
-   nameTagHeader: {
+  nameTagHeader: {
     paddingHorizontal: gameScale(19),
     paddingVertical: gameScale(3),
-    marginBottom: gameScale(20), 
+    marginBottom: gameScale(20),
     marginLeft: gameScale(-15),
-    backgroundColor: '#4dabf7b1', 
+    backgroundColor: '#4dabf7b1',
 
   },
 
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     fontSize: gameScale(16),
     lineHeight: gameScale(20),
     fontWeight: '600',
-    marginBottom: gameScale(19), 
+    marginBottom: gameScale(19),
   },
   tapHint: {
     fontSize: gameScale(10),
