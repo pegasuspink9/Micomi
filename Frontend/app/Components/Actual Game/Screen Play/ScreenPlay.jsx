@@ -147,6 +147,7 @@ const ScreenPlay = ({
   const lastSubmissionReactionSignatureRef = useRef(null);
   const pvpSeenReactionIdentifiersRef = useRef(new Set());
   const pvpMaxSeenReactionNumericIdRef = useRef(null);
+  const pvpReactionTimeoutRef = useRef(null);
   const reactionCarryOverRef = useRef({
     character: null,
     enemy: null,
@@ -428,40 +429,52 @@ const ScreenPlay = ({
       return undefined;
     }
 
+    // Cancel any active PvP timer, clear the previous bubble, and prepare to show the new one
+    if (pvpReactionTimeoutRef.current) {
+      clearTimeout(pvpReactionTimeoutRef.current);
+      pvpReactionTimeoutRef.current = null;
+    }
+
     const playLiveReaction = (index) => {
       if (index >= liveQueue.length) {
         return;
       }
 
       const item = liveQueue[index];
-      const showReaction = item.side === 'character' ? setActiveCharReaction : setActiveEnemyReaction;
-      const clearReaction = item.side === 'character' ? setActiveCharReaction : setActiveEnemyReaction;
 
-      showReaction(item.text);
+      // Enforce mutual exclusion: display one and clear the other
+      if (item.side === 'character') {
+        setActiveEnemyReaction(null);
+        setActiveCharReaction(item.text);
+      } else {
+        setActiveCharReaction(null);
+        setActiveEnemyReaction(item.text);
+      }
 
-      const hideTimeout = setTimeout(() => {
-        clearReaction(null);
+      // Display for exactly 5 seconds, then undisplay
+      pvpReactionTimeoutRef.current = setTimeout(() => {
+        if (item.side === 'character') {
+          setActiveCharReaction(null);
+        } else {
+          setActiveEnemyReaction(null);
+        }
+        pvpReactionTimeoutRef.current = null;
 
+        // If there are more reactions queued together, play the next one after a short delay
         if (index + 1 < liveQueue.length) {
-          const nextTimeout = setTimeout(() => {
+          pvpReactionTimeoutRef.current = setTimeout(() => {
             playLiveReaction(index + 1);
           }, 160);
-          sequenceTimeouts.push(nextTimeout);
         }
-      }, 2600);
-
-      sequenceTimeouts.push(hideTimeout);
+      }, 5000);
     };
 
-    const startLiveTimeout = setTimeout(() => {
+    // Delay start slightly to align with transition
+    pvpReactionTimeoutRef.current = setTimeout(() => {
       playLiveReaction(0);
     }, 80);
 
-    sequenceTimeouts.push(startLiveTimeout);
-
-    return () => {
-      sequenceTimeouts.forEach(clearTimeout);
-    };
+    return undefined;
   }, [
     gameState.currentChallenge?.id,
     gameState.submissionResult,
@@ -481,6 +494,9 @@ const ScreenPlay = ({
       }
       if (reactionCarryOverTimeoutsRef.current.enemy) {
         clearTimeout(reactionCarryOverTimeoutsRef.current.enemy);
+      }
+      if (pvpReactionTimeoutRef.current) {
+        clearTimeout(pvpReactionTimeoutRef.current);
       }
     };
   }, []);
