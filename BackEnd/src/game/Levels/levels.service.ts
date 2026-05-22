@@ -390,7 +390,8 @@ function getBossSpecialSkillInfo(
   };
 }
 
-const MICOMI_AVATAR = "https://micomi-assets.me/Hero%20Portraits/Micomi.png";
+const MICOMI_TALK =
+  "https://micomi-assets.me/Hero%20Portraits/Micomi%20Talk.png";
 
 export const enterLevel = async (playerId: number, levelId: number) => {
   const level:
@@ -1018,7 +1019,7 @@ export const enterLevel = async (playerId: number, levelId: number) => {
       dialogue_id: level.dialogue[0].dialogue_id,
       level_id: level.dialogue[0].level_id,
       character_name: character.character_name,
-      micomi_image: MICOMI_AVATAR,
+      micomi_image: MICOMI_TALK,
       enemy_name: enemy.enemy_name,
       enemy_image: enemy.avatar_enemy ?? "",
       script: scriptArray,

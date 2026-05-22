@@ -18,6 +18,13 @@ router.get(
   PlayerController.getPlayerProfile,
 );
 
+router.get(
+  "/profile/header",
+  authenticate,
+  requirePlayer,
+  PlayerController.getPlayerHeaderDetails,
+);
+
 router.put(
   "/profile",
   authenticate,
