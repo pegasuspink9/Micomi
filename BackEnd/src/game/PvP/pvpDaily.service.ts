@@ -169,6 +169,16 @@ const gameplayFeedbackCache = new Map<
   { text: string; audio: string[] }
 >();
 
+const getMatchmakingCount = (): number => {
+  const uniquePlayers = new Set<number>();
+  for (const players of queueByTopic.values()) {
+    for (const playerId of players) {
+      uniquePlayers.add(playerId);
+    }
+  }
+  return uniquePlayers.size;
+};
+
 const formatInGameReaction = (
   entry: PvpInGameMessageEntry | null | undefined,
 ): string | null => {
@@ -1805,6 +1815,7 @@ export const getDailyPreview = async (
       description:
         "Choose one topic, then race another player to solve PvP challenges.",
       topics_covered: topics,
+      match_count: getMatchmakingCount(),
     },
     status: state,
   };

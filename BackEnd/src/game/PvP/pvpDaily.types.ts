@@ -127,6 +127,7 @@ export interface PvpDailyPreviewResponse {
     title: string;
     description: string;
     topics_covered: PvpChallengeTopic[];
+    match_count: number;
   };
   status: PlayerMatchmakingState;
 }
