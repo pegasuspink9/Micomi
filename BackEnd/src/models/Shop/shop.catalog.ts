@@ -25,7 +25,7 @@ export const STORE_CATALOG: StoreCatalogItem[] = [
     description: "1,000 Coins. Perfect for a quick upgrade.",
     price_php: 19,
     contents: [{ item_id: "coins", qty: 1000 }],
-    product_image: "https://micomi-assets.me/Top%20ups/coins/handful.png"
+    product_image: "https://micomi-assets.me/Top%20ups/coins/handful.png",
   },
   {
     item_id: "currency_coins_4000",
@@ -34,7 +34,7 @@ export const STORE_CATALOG: StoreCatalogItem[] = [
     description: "4,000 Coins. Great value for unlocking map nodes.",
     price_php: 59,
     contents: [{ item_id: "coins", qty: 4000 }],
-    product_image: "https://micomi-assets.me/Top%20ups/coins/pounce.png"
+    product_image: "https://micomi-assets.me/Top%20ups/coins/pounce.png",
   },
   {
     item_id: "currency_coins_10000",
@@ -43,7 +43,7 @@ export const STORE_CATALOG: StoreCatalogItem[] = [
     description: "10,000 Coins. Best value for long-term progression.",
     price_php: 119,
     contents: [{ item_id: "coins", qty: 10000 }],
-    product_image: "https://micomi-assets.me/Top%20ups/coins/pounce.png"
+    product_image: "https://micomi-assets.me/Top%20ups/coins/chest.png",
   },
 
   // ==================== DIAMONDS ====================
@@ -54,7 +54,7 @@ export const STORE_CATALOG: StoreCatalogItem[] = [
     description: "50 Diamonds for premium perks.",
     price_php: 29,
     contents: [{ item_id: "diamonds", qty: 50 }],
-    product_image: "https://micomi-assets.me/Top%20ups/diamonds/handful.png"
+    product_image: "https://micomi-assets.me/Top%20ups/diamonds/handful.png",
   },
   {
     item_id: "currency_diamonds_160",
@@ -63,7 +63,7 @@ export const STORE_CATALOG: StoreCatalogItem[] = [
     description: "160 Diamonds. Enough to unlock ShiShi in-game!",
     price_php: 89,
     contents: [{ item_id: "diamonds", qty: 160 }],
-    product_image: "https://micomi-assets.me/Top%20ups/diamonds/pounce.png"
+    product_image: "https://micomi-assets.me/Top%20ups/diamonds/pounces.png",
   },
   {
     item_id: "currency_diamonds_360",
@@ -72,7 +72,7 @@ export const STORE_CATALOG: StoreCatalogItem[] = [
     description: "360 Diamonds. Enough to unlock the mighty Leon!",
     price_php: 189,
     contents: [{ item_id: "diamonds", qty: 360 }],
-    product_image: "https://micomi-assets.me/Top%20ups/diamonds/chest.png"
+    product_image: "https://micomi-assets.me/Top%20ups/diamonds/chest.png",
   },
 
   // ==================== ENERGY & SUBSCRIPTIONS ====================
@@ -84,7 +84,7 @@ export const STORE_CATALOG: StoreCatalogItem[] = [
       "Unlimited energy for 30 days. Learn and practice without limits for a whole month!",
     price_php: 149,
     contents: [{ item_id: "infinite_energy_monthly", qty: 1 }],
-    product_image: "https://micomi-assets.me/Top%20ups/energy/Monthly.png"
+    product_image: "https://micomi-assets.me/Top%20ups/energy/Monthly.png",
   },
   {
     item_id: "infinite_energy_lifetime",
@@ -99,6 +99,6 @@ export const STORE_CATALOG: StoreCatalogItem[] = [
       { item_id: "map_js_premium", qty: 1 },
       { item_id: "character_ryron", qty: 1 },
     ],
-    product_image: "https://micomi-assets.me/Top%20ups/energy/Lifetime.png"
+    product_image: "https://micomi-assets.me/Top%20ups/energy/Lifetime.png",
   },
 ];
