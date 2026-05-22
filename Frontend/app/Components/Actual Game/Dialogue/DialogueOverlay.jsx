@@ -305,11 +305,11 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   characterImage: {
-    width: '200%',
-    height: '200%',
+    width: '170%',
+    height: '170%',
     alignSelf: 'center',
     left: gameScale(-2),
-    marginTop: gameScale(-70),
+    marginTop: gameScale(-50),
   },
 
   // === SCRIPT BOX ===

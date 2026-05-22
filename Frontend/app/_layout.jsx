@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useFonts } from '../assets/fonts/font';
 import { View, Text, Platform, AppState, StatusBar as RNStatusBar, Keyboard } from 'react-native';
-import SpriteActivityIndicator from './Components/Actual Game/Loading/SpriteActivityIndicator';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as SystemUI from 'expo-system-ui';
@@ -94,6 +93,7 @@ export default function RootLayout() {
       try {
         RNStatusBar.setHidden(true, 'none');
         await NavigationBar.setVisibilityAsync('hidden');
+        await NavigationBar.setBehaviorAsync('immersive');
         await SystemUI.setBackgroundColorAsync('transparent');
       } catch (error) {
         console.log('Immersive mode setup failed:', error);
@@ -104,6 +104,7 @@ export default function RootLayout() {
     const forceRehide = async () => {
       try {
         await NavigationBar.setVisibilityAsync('hidden');
+        await NavigationBar.setBehaviorAsync('immersive');
 
         // Briefly set to false, then true to force the OS to update
         RNStatusBar.setHidden(false, 'none');
