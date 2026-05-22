@@ -327,12 +327,12 @@ export const getPlayerProfile = async (player_id: number) => {
 
   const latestAchievementFormatted = latestAchievement
     ? {
-      achievement_id: latestAchievement.achievement_id,
-      achievement_name: latestAchievement.achievement.achievement_name,
-      description: latestAchievement.achievement.description,
-      landscape_image: latestAchievement.achievement.landscape_image,
-      earned_at: latestAchievement.earned_at,
-    }
+        achievement_id: latestAchievement.achievement_id,
+        achievement_name: latestAchievement.achievement.achievement_name,
+        description: latestAchievement.achievement.description,
+        landscape_image: latestAchievement.achievement.landscape_image,
+        earned_at: latestAchievement.earned_at,
+      }
     : null;
 
   const progress = await prisma.playerProgress.findMany({
@@ -369,17 +369,17 @@ export const getPlayerProfile = async (player_id: number) => {
     (pa) => pa.is_selected && pa.is_owned,
   )
     ? (() => {
-      const selected = player.playerAchievements.find(
-        (pa) => pa.is_selected && pa.is_owned,
-      )!;
-      return {
-        achievement_id: selected.achievement_id,
-        achievement_name: selected.achievement.achievement_name,
-        description: selected.achievement.description,
-        landscape_image: selected.achievement.landscape_image,
-        earned_at: selected.earned_at,
-      };
-    })()
+        const selected = player.playerAchievements.find(
+          (pa) => pa.is_selected && pa.is_owned,
+        )!;
+        return {
+          achievement_id: selected.achievement_id,
+          achievement_name: selected.achievement.achievement_name,
+          description: selected.achievement.description,
+          landscape_image: selected.achievement.landscape_image,
+          earned_at: selected.earned_at,
+        };
+      })()
     : null;
 
   const calculatedLevel = calculatePlayerLevel(player.exp_points);
@@ -461,7 +461,7 @@ export const getPlayerHeaderDetails = async (player_id: number) => {
       diamonds: true,
       exp_points: true,
       level: true,
-    }
+    },
   });
 
   if (!player) return null;
@@ -482,6 +482,7 @@ export const getPlayerHeaderDetails = async (player_id: number) => {
     coins: player.coins,
     diamonds: player.diamonds,
     exp_points: player.exp_points,
+    max_level_exp: maxLevelExp,
     player_level: calculatedLevel,
   };
 };
