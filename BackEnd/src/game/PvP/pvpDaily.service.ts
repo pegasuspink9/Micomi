@@ -169,14 +169,13 @@ const gameplayFeedbackCache = new Map<
   { text: string; audio: string[] }
 >();
 
-const getMatchmakingCount = (): number => {
-  const uniquePlayers = new Set<number>();
-  for (const players of queueByTopic.values()) {
-    for (const playerId of players) {
-      uniquePlayers.add(playerId);
-    }
-  }
-  return uniquePlayers.size;
+const getMatchmakingCountsByTopic = () => {
+  return {
+    html_match_count: getQueueForTopic("HTML").size,
+    css_match_count: getQueueForTopic("CSS").size,
+    js_match_count: getQueueForTopic("JavaScript").size,
+    computer_match_count: getQueueForTopic("Computer").size,
+  };
 };
 
 const formatInGameReaction = (
@@ -1815,7 +1814,7 @@ export const getDailyPreview = async (
       description:
         "Choose one topic, then race another player to solve PvP challenges.",
       topics_covered: topics,
-      match_count: getMatchmakingCount(),
+      ...getMatchmakingCountsByTopic(),
     },
     status: state,
   };
