@@ -73,9 +73,24 @@ const PvpSelectionContent = ({
   onPreviousTopic,
   onNextTopic,
   onToggleMatch,
+  previewTask,
 }) => {
   const isBusy = startingMatch || settingTopic;
   const isActionDisabled = !pvpTopicsLength || findingMatch || isBusy;
+
+  const matchCountText = useMemo(() => {
+    if (findingMatch || startingMatch || settingTopic || hasResumableMatch) return null;
+    if (!previewTask || !currentTopic) return null;
+
+    let count = 0;
+    const topicUpper = String(currentTopic).toUpperCase();
+    if (topicUpper === 'HTML') count = previewTask.htmlMatchCount;
+    else if (topicUpper === 'CSS') count = previewTask.cssMatchCount;
+    else if (topicUpper === 'JAVASCRIPT' || topicUpper === 'JS') count = previewTask.jsMatchCount;
+    else if (topicUpper === 'COMPUTER') count = previewTask.computerMatchCount;
+
+    return `Matches: ${count}`;
+  }, [findingMatch, startingMatch, settingTopic, hasResumableMatch, previewTask, currentTopic]);
 
   const [animations, setAnimations] = useState([]);
   // New Animated Value for the floating effect
@@ -144,8 +159,8 @@ const PvpSelectionContent = ({
             useNativeDriver: true,
           }),
           Animated.timing(floatAnim, {
-            toValue: 0,             
-            duration: 1500,      
+            toValue: 0,
+            duration: 1500,
             easing: Easing.inOut(Easing.sin),
             useNativeDriver: true,
           }),
@@ -235,7 +250,9 @@ const PvpSelectionContent = ({
                   </Text>
                   {findingMatch ? (
                     <Text style={styles.matchmakingTimerText}>{matchmakingTimerLabel}</Text>
-                  ) : null}
+                  ) : (
+                    matchCountText ? <Text style={styles.matchCountText}>{matchCountText}</Text> : null
+                  )}
                 </View>
               </ImageBackground>
             </TouchableOpacity>
@@ -335,6 +352,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: gameScale(-8),
     fontFamily: 'DynaPuff'
+  },
+  matchCountText: {
+    color: '#DFF2FF',
+    fontSize: gameScale(11),
+    textAlign: 'center',
+    marginTop: gameScale(-2),
+    fontFamily: 'DynaPuff',
   },
   topicCardWrap: {
     position: 'absolute',

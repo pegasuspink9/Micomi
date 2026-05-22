@@ -81,6 +81,10 @@ const normalizePreview = (payload = {}) => {
       description: data.preview_task?.description || 'Queue up and race an opponent in the daily challenge.',
       topicsCovered,
       difficulty: data.preview_task?.difficulty || 'unknown',
+      htmlMatchCount: Number(data.preview_task?.html_match_count ?? data.preview_task?.htmlMatchCount ?? 0),
+      cssMatchCount: Number(data.preview_task?.css_match_count ?? data.preview_task?.cssMatchCount ?? 0),
+      jsMatchCount: Number(data.preview_task?.js_match_count ?? data.preview_task?.jsMatchCount ?? 0),
+      computerMatchCount: Number(data.preview_task?.computer_match_count ?? data.preview_task?.computerMatchCount ?? 0),
     },
     status: normalizeMatchStatus(data),
   };

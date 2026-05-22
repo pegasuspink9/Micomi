@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Image,
   StyleSheet,
@@ -45,6 +45,16 @@ export default function PvpLobbyPage() {
     clearMatchReadyState,
     clearError: clearPvpError,
   } = usePvpMatchmaking();
+
+  const findingMatchRef = useRef(findingMatch);
+  const startingMatchRef = useRef(startingMatch);
+  const settingTopicRef = useRef(settingTopic);
+
+  useEffect(() => {
+    findingMatchRef.current = findingMatch;
+    startingMatchRef.current = startingMatch;
+    settingTopicRef.current = settingTopic;
+  }, [findingMatch, startingMatch, settingTopic]);
 
   // --- derived state ---
   const pvpTopics = Array.isArray(preview?.previewTask?.topicsCovered)
@@ -116,8 +126,15 @@ export default function PvpLobbyPage() {
         console.warn('Failed to load cached UI videos for PvP page:', error);
       });
 
+      const syncIntervalId = setInterval(() => {
+        if (!findingMatchRef.current && !startingMatchRef.current && !settingTopicRef.current) {
+          loadPreview().catch((err) => console.warn('Sync failed:', err));
+        }
+      }, 5000);
+
       return () => {
         clearTimeout(loadingTimeoutId);
+        clearInterval(syncIntervalId);
       };
     }, [clearMatchReadyState, clearPvpError, loadPreview])
   );
@@ -297,6 +314,7 @@ export default function PvpLobbyPage() {
         onPreviousTopic={handlePreviousTopic}
         onNextTopic={handleNextTopic}
         onToggleMatch={handleToggleMatch}
+        previewTask={preview?.previewTask}
       />
 
       <View style={styles.bottomCardsRow}>
