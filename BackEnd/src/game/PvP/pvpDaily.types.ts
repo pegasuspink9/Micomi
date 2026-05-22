@@ -127,7 +127,10 @@ export interface PvpDailyPreviewResponse {
     title: string;
     description: string;
     topics_covered: PvpChallengeTopic[];
-    match_count: number;
+    html_match_count: number;
+    css_match_count: number;
+    js_match_count: number;
+    computer_match_count: number;
   };
   status: PlayerMatchmakingState;
 }
