@@ -28,7 +28,7 @@ export default function GamePlay() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const isOffline = useConnectivity();
-  
+
   // Parse parameters from Expo Router
   const rawLevelId = Number.parseInt(params.levelId, 10);
   const levelId = Number.isFinite(rawLevelId) ? rawLevelId : null;
@@ -52,8 +52,8 @@ export default function GamePlay() {
   const [gameQuestionsLayout, setGameQuestionsLayout] = useState(null);
   const [thirdGridLayout, setThirdGridLayout] = useState(null);
 
-  console.log('🎮 GamePlay component mounted with:', { 
-    levelId, 
+  console.log('🎮 GamePlay component mounted with:', {
+    levelId,
     matchId,
     mode: isPvpMode ? 'pvp' : 'pve',
     levelData: levelData ? 'Loaded' : 'None',
@@ -68,7 +68,7 @@ export default function GamePlay() {
   const [showExpectedOutputInScreenPlay, setShowExpectedOutputInScreenPlay] = useState(false);
   const [outputPreviewMode, setOutputPreviewMode] = useState('web');
   const outputAutoShowTimerRef = useRef(null);
-  const [selectedBlankIndex, setSelectedBlankIndex] = useState(0); 
+  const [selectedBlankIndex, setSelectedBlankIndex] = useState(0);
   const [showVSModal, setShowVSModal] = useState(false);
   const [showMicomic, setShowMicomic] = useState(false);
   const hasFinishedMicomic = useRef(false);
@@ -77,15 +77,15 @@ export default function GamePlay() {
   const [showGameOverModal, setShowGameOverModal] = useState(false);
   const [showLevelCompletion, setShowLevelCompletion] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
-  const [isLoadingNextLevel, setIsLoadingNextLevel] = useState(false); 
+  const [isLoadingNextLevel, setIsLoadingNextLevel] = useState(false);
   const [cardDisplaySequence, setCardDisplaySequence] = useState('modal');
   const [completionRewards, setCompletionRewards] = useState(null);
-  
+
   const [runButtonClicked, setRunButtonClicked] = useState(false);
   const [showRunButton, setShowRunButton] = useState(true);
 
   const [showLevelCompletionModal, setShowLevelCompletionModal] = useState(false);
-  const [isMessageVisible, setIsMessageVisible] = useState(false); 
+  const [isMessageVisible, setIsMessageVisible] = useState(false);
   const [messageText, setMessageText] = useState('');
   const gameOverTimeoutRef = useRef(null);
   const hasTriggeredGameOver = useRef(false);
@@ -93,7 +93,7 @@ export default function GamePlay() {
   const hasShownVSModalRef = useRef(false);
   const hasAutoShownTutorialRef = useRef(false); // Track auto tutorial so it only plays once
   const lastPvpCardChallengeIdRef = useRef(null);
-  const lastSubmissionKey = useRef(null); 
+  const lastSubmissionKey = useRef(null);
   const lastPlayedAudioKey = useRef(null);
   const messageDelayTimeoutRef = useRef(null);
 
@@ -152,20 +152,20 @@ export default function GamePlay() {
 
 
   const {
-    gameState,   
-    loading, 
-    error, 
+    gameState,
+    loading,
+    error,
     submitting,
     sendingPvpMessage = false,
     refetchGameData,
     retryLevel,
-    enterNextLevel, 
+    enterNextLevel,
     submitAnswer,
     submitReport,
     sendPvpMatchMessage = async () => ({ success: false, error: 'PvP chat is unavailable' }),
-    waitingForAnimation, 
+    waitingForAnimation,
     onAnimationComplete,
-    animationsLoading, 
+    animationsLoading,
     animationProgress,
     downloadProgress,
     individualAnimationProgress,
@@ -190,7 +190,7 @@ export default function GamePlay() {
 
   const dialogueData = useMemo(() => gameState?.dialogue, [gameState?.dialogue]);
 
-   useEffect(() => {
+  useEffect(() => {
     const bgmUrl = gameState?.gameplay_audio;
 
     if (showGameplay && bgmUrl && !showLevelCompletion && !showLevelCompletionModal) {
@@ -267,7 +267,7 @@ export default function GamePlay() {
     setShowGameplay(false);
     setShowDialogue(false);
   }, [isPvpMode, matchId]);
-  
+
   //  Get character attack card from gameState
   const characterAttackCard = gameState?.card?.character_attack_card;
   const cardType = gameState?.card?.card_type;
@@ -281,7 +281,7 @@ export default function GamePlay() {
     if (isInRunMode) {
       Animated.timing(fadeOutAnim, {
         toValue: 0,
-        duration: 2000, 
+        duration: 2000,
         useNativeDriver: true,
       }).start(() => {
         fadeOutAnim.setValue(1);
@@ -349,14 +349,14 @@ export default function GamePlay() {
   // AUTO-TUTORIAL TRIGGER FOR LEVEL 2
   useEffect(() => {
     if (
-      levelId === 2 && 
-      showGameplay && 
-      cardDisplaySequence === 'grid' && 
+      levelId === 2 &&
+      showGameplay &&
+      cardDisplaySequence === 'grid' &&
       !hasAutoShownTutorialRef.current
     ) {
       console.log('🎓 Level 2 detected and attack card closed - Auto-starting tutorial');
       hasAutoShownTutorialRef.current = true;
-      
+
       // Short delay so the card modal fully dismisses before opening the tutorial
       const timer = setTimeout(() => {
         setShowTutorial(true);
@@ -401,21 +401,21 @@ export default function GamePlay() {
     }
     lastSubmissionKey.current = submissionKey;
 
-     if (!submission?.message) {
+    if (!submission?.message) {
       setIsMessageVisible(false);
       return;
     }
 
     // This function will be called to trigger the message animation.
-     const showMessage = () => {
+    const showMessage = () => {
       console.log('🎬 Sync: Setting message text and triggering visibility');
-      setMessageText(submission.message); 
+      setMessageText(submission.message);
       setIsMessageVisible(true);
-    }; 
+    };
 
     // Hide any previous message before starting the new sequence.
     setIsMessageVisible(false);
-    
+
     // Use a short timeout to allow the UI to register the "hide" before we "show" again.
     messageDelayTimeoutRef.current = setTimeout(() => {
       if (audioUrl) {
@@ -441,56 +441,56 @@ export default function GamePlay() {
 
   const handleCharacterRun = useCallback(() => {
     console.log('🏃 Character run triggered');
-  
+
     setRunButtonClicked(true);
     setIsInRunMode(true);
     setShowRunButton(false);
-    
+
     // Trigger the character run animation
     setCharacterRunState(true);
-    
+
     // Set a single timer that ends the run animation and immediately shows the modal.
     levelCompletionTimeoutRef.current = setTimeout(() => {
       console.log('🏃 Character run animation completed, now showing modal.');
       setCharacterRunState(false);
       setIsInRunMode(false);
       setShowLevelCompletionModal(true);
-    }, 1000); 
+    }, 1000);
   }, []);
-  
+
 
 
   useEffect(() => {
-  if (isRetrying || isLoadingNextLevel) {
+    if (isRetrying || isLoadingNextLevel) {
 
-    if (levelCompletionTimeoutRef.current) {
-      clearTimeout(levelCompletionTimeoutRef.current);
-      levelCompletionTimeoutRef.current = null;
+      if (levelCompletionTimeoutRef.current) {
+        clearTimeout(levelCompletionTimeoutRef.current);
+        levelCompletionTimeoutRef.current = null;
+      }
+
+      setIsInRunMode(false);
+      setShowLevelCompletion(false);
+      setShowLevelCompletionModal(false);
+      setRunButtonClicked(false);
+      setShowRunButton(false);
     }
-
-    setIsInRunMode(false);
-    setShowLevelCompletion(false);
-    setShowLevelCompletionModal(false);
-    setRunButtonClicked(false);
-    setShowRunButton(false);
-  }
   }, [isRetrying, isLoadingNextLevel]);
 
   const handleCloseAttackCard = useCallback(() => {
     console.log('📸 Closing modal card - transitioning to grid display');
     setShowAttackCard(false);
-    setCardDisplaySequence('grid'); 
+    setCardDisplaySequence('grid');
   }, []);
 
   useEffect(() => {
-  if (isRetrying || isLoadingNextLevel) {
-    console.log('📸 Resetting card display sequence');
-    setPreviousImageUrl(null);
-    setShowAttackCard(false);
-    setCardDisplaySequence('none');
-  }
-}, [isRetrying, isLoadingNextLevel]);
-  
+    if (isRetrying || isLoadingNextLevel) {
+      console.log('📸 Resetting card display sequence');
+      setPreviousImageUrl(null);
+      setShowAttackCard(false);
+      setCardDisplaySequence('none');
+    }
+  }, [isRetrying, isLoadingNextLevel]);
+
   const allowEnemyCompletionRef = useRef(null);
   const setCorrectAnswerRef = useRef(null);
   const maxAnswers = useMemo(() => {
@@ -500,19 +500,19 @@ export default function GamePlay() {
     return totalBlanks;
   }, [currentChallenge?.question, currentChallenge?.correctAnswer]);
 
-   useEffect(() => {
+  useEffect(() => {
     if (currentChallenge) {
-      console.log('🔄 Refreshing challenge UI:', { 
-        challengeId: currentChallenge.id, 
-        attemptId: gameState?.attemptId 
+      console.log('🔄 Refreshing challenge UI:', {
+        challengeId: currentChallenge.id,
+        attemptId: gameState?.attemptId
       });
-      
+
       setSelectedAnswers(new Array(maxAnswers).fill(null));
       setBorderColor('white');
       setActiveGameTab('code');
       setSelectedBlankIndex(0);
     }
-  }, [currentChallenge?.id, maxAnswers, gameState?.attemptId]);   
+  }, [currentChallenge?.id, maxAnswers, gameState?.attemptId]);
 
   useEffect(() => {
     if (!currentChallenge || loading || animationsLoading || hasShownVSModalRef.current) {
@@ -612,7 +612,7 @@ export default function GamePlay() {
     console.log('📖 Micomic finished, transitioning to VS Modal');
     hasFinishedMicomic.current = true;
     setShowMicomic(false);
-    
+
     // Trigger the next step in the sequence
     setShowVSModal(true);
     hasShownVSModalRef.current = true;
@@ -628,7 +628,7 @@ export default function GamePlay() {
   //     hasTriggeredGameOver.current = false;
   //     hasTriggeredLevelCompletion.current = false;
   //     hasShownVSModalRef.current = false;
-      
+
   //     if (gameOverTimeoutRef.current) {
   //       clearTimeout(gameOverTimeoutRef.current);
   //       gameOverTimeoutRef.current = null;
@@ -636,13 +636,13 @@ export default function GamePlay() {
   //   }
   // }, [currentChallenge?.id, loading, animationsLoading, isRetrying, isLoadingNextLevel]);
 
-    useEffect(() => {
+  useEffect(() => {
     if (currentChallenge && !loading && !animationsLoading) {
-       if (hasTriggeredGameOver.current && !showGameOver) hasTriggeredGameOver.current = false;
+      if (hasTriggeredGameOver.current && !showGameOver) hasTriggeredGameOver.current = false;
     }
   }, [currentChallenge?.id, loading, animationsLoading, showGameOver]);
 
-  
+
 
 
   const handlePotionPress = useCallback((potion) => {
@@ -656,16 +656,16 @@ export default function GamePlay() {
     }
   }, [selectedPotion, clearSelectedPotion, selectPotion]);
 
-   const handleVSComplete = useCallback(() => {
+  const handleVSComplete = useCallback(() => {
     console.log('handleVSComplete called, setting showVSModal to false');
     setShowVSModal(false);
-    
+
     setShowGameplay(true);
 
     if (gameState?.dialogue?.script && gameState.dialogue.script.length > 0) {
       setShowDialogue(true);
     } else {
-      setShowDialogue(false); 
+      setShowDialogue(false);
     }
   }, [gameState?.dialogue]);
 
@@ -698,10 +698,10 @@ export default function GamePlay() {
     setOutputPreviewMode((current) => (current === 'web' ? 'mobile' : 'web'));
   }, []);
 
-  
-    const handleBlankSelect = useCallback((blankIndex) => {
+
+  const handleBlankSelect = useCallback((blankIndex) => {
     console.log('🎯 Blank selected in GamePlay:', blankIndex);
-    
+
     //  ADDED: Toggle logic for the blank itself
     // If clicking the blank that is ALREADY selected, clear its answer
     if (selectedBlankIndex === blankIndex) {
@@ -719,12 +719,12 @@ export default function GamePlay() {
     setSelectedBlankIndex(blankIndex);
   }, [selectedBlankIndex]);
 
-   const interactiveTabs = ['code']; 
+  const interactiveTabs = ['code'];
   const interactiveChallengeTypes = ['fill in the blank', 'code with guide', 'multiple choice'];
 
   const isInteractiveTabActive = interactiveTabs.includes(activeGameTab);
   const isInteractiveChallenge = currentChallenge && interactiveChallengeTypes.includes(currentChallenge.challenge_type);
-  
+
   const shouldHideThirdGrid = !isInteractiveTabActive || !isInteractiveChallenge;
 
   const startTutorial = useCallback(() => {
@@ -733,10 +733,10 @@ export default function GamePlay() {
   }, []);
 
 
-  
+
   const handleEnemyComplete = useCallback(() => {
     setSelectedAnswers(new Array(maxAnswers).fill(null));
-    setBorderColor('white'); 
+    setBorderColor('white');
     setActiveGameTab('code');
     setSelectedBlankIndex(0);
   }, [maxAnswers]);
@@ -745,9 +745,9 @@ export default function GamePlay() {
   useEffect(() => {
     const submissionResult = gameState?.submissionResult;
     const fightResult = submissionResult?.fightResult;
-    
+
     console.log('💀 Game Over Check:', {
-      status: fightResult?.status, 
+      status: fightResult?.status,
       characterHealth: fightResult?.character?.character_health,
       showGameOver: showGameOver,
       hasTriggered: hasTriggeredGameOver.current,
@@ -756,14 +756,14 @@ export default function GamePlay() {
       canProceed: canProceed,
       runButtonClicked: runButtonClicked
     });
-    
+
     if (fightResult?.status === 'lost' &&
-        fightResult?.character?.character_health === 0 &&
-        !hasTriggeredGameOver.current && 
-        !showGameOverModal && 
-        !isRetrying &&
-        !waitingForAnimation) { 
-      
+      fightResult?.character?.character_health === 0 &&
+      !hasTriggeredGameOver.current &&
+      !showGameOverModal &&
+      !isRetrying &&
+      !waitingForAnimation) {
+
       console.log('💀 Character died - all animations complete, showing GameOver modal');
       hasTriggeredGameOver.current = true;
 
@@ -787,8 +787,8 @@ export default function GamePlay() {
 
 
       setShowGameOver(true);
-      
-       gameOverTimeoutRef.current = setTimeout(() => {
+
+      gameOverTimeoutRef.current = setTimeout(() => {
         console.log('💀 Showing GameOver modal after delay');
         setShowGameOverModal(true);
       }, 500);
@@ -809,9 +809,9 @@ export default function GamePlay() {
   useEffect(() => {
     const submissionResult = gameState?.submissionResult;
     const fightResult = submissionResult?.fightResult;
-    
+
     console.log('🎉 Level Completion Check:', {
-      status: fightResult?.status, 
+      status: fightResult?.status,
       enemyHealth: fightResult?.enemy?.enemy_health,
       canProceed: canProceed,
       showLevelCompletion: showLevelCompletion,
@@ -824,15 +824,15 @@ export default function GamePlay() {
 
     // Show completion buttons when enemy is defeated
     if (fightResult?.status === 'won' &&
-        fightResult?.enemy?.enemy_health === 0 &&
-        !hasTriggeredLevelCompletion.current && 
-        !showLevelCompletion && 
-        !isLoadingNextLevel &&
-        !waitingForAnimation &&
-        !canProceed &&
-        !isRetrying
-      ) {
-      
+      fightResult?.enemy?.enemy_health === 0 &&
+      !hasTriggeredLevelCompletion.current &&
+      !showLevelCompletion &&
+      !isLoadingNextLevel &&
+      !waitingForAnimation &&
+      !canProceed &&
+      !isRetrying
+    ) {
+
       console.log('🎉 Level completed - showing completion buttons');
       hasTriggeredLevelCompletion.current = true;
 
@@ -854,7 +854,7 @@ export default function GamePlay() {
       setShowLevelCompletion(true);
       setShowRunButton(true);
       setRunButtonClicked(false);
-    
+
     }
   }, [gameState?.submissionResult?.fightResult, showLevelCompletion, isLoadingNextLevel, waitingForAnimation, canProceed, isRetrying]);
 
@@ -894,7 +894,7 @@ export default function GamePlay() {
     gameState?.submissionResult?.fightResult?.status,
   ]);
 
-   useEffect(() => {
+  useEffect(() => {
     if (runButtonClicked && !showRunButton && showLevelCompletion) {
       console.log('🎉 Modal should show now');
     }
@@ -907,13 +907,13 @@ export default function GamePlay() {
 
   const handleRetry = useCallback(async () => {
     console.log('🔄 Retrying level - calling entryLevel API to reset data...');
-    
-       
+
+
     if (gameOverTimeoutRef.current) {
       clearTimeout(gameOverTimeoutRef.current);
       gameOverTimeoutRef.current = null;
     }
-    
+
     setShowGameOver(false);
     setShowGameOverModal(false);
     setShowVSModal(false);
@@ -921,26 +921,26 @@ export default function GamePlay() {
     setShowLevelCompletion(false);
     setShowLevelCompletionModal(false);
     setShowOutputInScreenPlay(false);
-    
+
     setIsRetrying(true);
 
     setRunButtonClicked(false);
-    setShowRunButton(false); 
-    
+    setShowRunButton(false);
+
 
     hasTriggeredGameOver.current = false;
     hasTriggeredLevelCompletion.current = false;
     hasShownVSModalRef.current = false;
     hasAutoShownTutorialRef.current = false; // Reset auto-tutorial tracking on retry
 
-    setSelectedAnswers([]); 
+    setSelectedAnswers([]);
     setBorderColor('white');
     setActiveGameTab('code');
     setSelectedBlankIndex(0);
     setCardDisplaySequence('modal');
-    
 
-    try{
+
+    try {
       if (isPvpMode) {
         await refetchGameData();
       } else {
@@ -959,28 +959,28 @@ export default function GamePlay() {
     }
 
     const nextLevelId = gameState?.submissionResult?.nextLevel?.level_id;
-    
+
     if (!nextLevelId) {
       console.error('❌ No next level ID available');
       return;
     }
 
     console.log(`🚀 Loading next level: ${nextLevelId}`);
-    
+
     if (gameOverTimeoutRef.current) {
       clearTimeout(gameOverTimeoutRef.current);
       gameOverTimeoutRef.current = null;
     }
-    
+
     setIsLoadingNextLevel(true);
-    setShowVSModal(false); 
-    setShowLevelCompletion(false); 
+    setShowVSModal(false);
+    setShowLevelCompletion(false);
     setShowGameplay(false);
     setShowOutputInScreenPlay(false);
     hasTriggeredLevelCompletion.current = false;
     hasShownVSModalRef.current = false;
     soundManager.stopAllSounds();
-    
+
     try {
       await enterNextLevel(nextLevelId);
       console.log(' Next level loaded successfully');
@@ -996,7 +996,7 @@ export default function GamePlay() {
     console.log('🏠 Going home...');
 
     await surrenderPvpOnExit('pause_or_home_exit');
-    
+
     if (gameOverTimeoutRef.current) {
       clearTimeout(gameOverTimeoutRef.current);
       gameOverTimeoutRef.current = null;
@@ -1006,11 +1006,11 @@ export default function GamePlay() {
       clearTimeout(levelCompletionTimeoutRef.current);
       levelCompletionTimeoutRef.current = null;
     }
-    
+
     soundManager.stopAllSounds();
     setShowGameOver(false);
     setShowGameOverModal(false);
-    setShowLevelCompletion(false); 
+    setShowLevelCompletion(false);
     setIsRetrying(false);
     setIsLoadingNextLevel(false);
     setShowOutputInScreenPlay(false);
@@ -1022,7 +1022,7 @@ export default function GamePlay() {
     router.back();
   }, [router, surrenderPvpOnExit]);
 
-    useEffect(() => {
+  useEffect(() => {
     return () => {
       if (levelCompletionTimeoutRef.current) {
         clearTimeout(levelCompletionTimeoutRef.current);
@@ -1043,7 +1043,7 @@ export default function GamePlay() {
         vsWatchdogTimeoutRef.current = null;
       }
 
-     soundManager.stopAllSounds();
+      soundManager.stopAllSounds();
     };
   }, []);
 
@@ -1066,7 +1066,7 @@ export default function GamePlay() {
       return newMuted;
     });
   }, [gameState?.gameplay_audio]);
-  
+
 
   const handleAllowEnemyCompletion = useCallback((allowCompletionFn) => {
     allowEnemyCompletionRef.current = allowCompletionFn;
@@ -1099,16 +1099,16 @@ export default function GamePlay() {
     setSelectedAnswers(answers);
   }, []);
 
-  
+
   const memoizedOptions = useMemo(() => currentChallenge?.options || [], [currentChallenge?.options]);
 
 
-    const handleAutoHideOutput = useCallback(() => {
+  const handleAutoHideOutput = useCallback(() => {
     console.log('🕒 Auto-hiding screenplay output overlay');
     setShowOutputInScreenPlay(false);
   }, []);
 
-  
+
   const outputView = (
     <Output
       currentQuestion={currentChallenge}
@@ -1136,71 +1136,24 @@ export default function GamePlay() {
   // Extract the specific loading text/progress bars to a variable
   // We will render this ON TOP of the MainLoading doors
   const loadingProgressOverlay = (
-      <View style={[styles.container, styles.centerContent, { position: 'absolute', width: '100%', height: '100%', zIndex: 100000, backgroundColor: 'transparent' }]}>
+    <View style={[styles.container, styles.centerContent, { position: 'absolute', width: '100%', height: '100%', zIndex: 100000, backgroundColor: 'transparent' }]}>
 
-        {isRetrying ? (
-          <Text style={styles.loadingText}></Text>
-        ) : isLoadingNextLevel ? (
-          <Text style={styles.loadingText}></Text>
-        ) : loading ? (
-          <Text style={styles.loadingText}></Text>
-        ) : (
-          <View style={styles.downloadContainer}>
-            <Text style={styles.loadingText}>Downloading animations...</Text>
-            
-            {downloadProgress.total > 0 && (
-              <View style={styles.progressSection}>
-                <Text style={styles.progressLabel}>
-                  Overall Progress: {downloadProgress.loaded}/{downloadProgress.total}
-                </Text>
-                <View style={styles.progressBar}>
-                  <View 
-                    style={[
-                      styles.progressFill, 
-                      { width: `${Math.round(downloadProgress.progress * 100)}%` }
-                    ]} 
-                  />
-                </View>
-                <Text style={styles.progressPercentage}>
-                  {Math.round(downloadProgress.progress * 100)}%
-                </Text>
-              </View>
-            )}
-            
-            {individualAnimationProgress.url && (
-              <View style={styles.progressSection}>
-                <Text style={styles.currentAnimationText}>
-                  Downloading: ...{individualAnimationProgress.url}
-                </Text>
-                <View style={styles.progressBar}>
-                  <View 
-                    style={[
-                      styles.progressFill, 
-                      { 
-                        width: `${Math.round(individualAnimationProgress.progress * 100)}%`,
-                        backgroundColor: '#4dabf7' 
-                      }
-                    ]} 
-                  />
-                </View>
-                <Text style={styles.progressPercentage}>
-                  {Math.round(individualAnimationProgress.progress * 100)}%
-                </Text>
-              </View>
-            )}
-            
-            {downloadProgress.currentUrl && (
-              <Text style={styles.currentUrlText}>
-                Current: ...{downloadProgress.currentUrl}
-              </Text>
-            )}
-            
-            <Text style={styles.downloadHint}>
-              📥 Downloading animations for smooth gameplay...
-            </Text>
-          </View>
-        )}
-      </View>
+      {downloadProgress.total > 0 ? (
+        <View style={styles.downloadContainer}>
+
+          <SpriteActivityIndicator size={gameScale(100)} style={{ marginBottom: gameScale(15) }} />
+          <Text style={styles.loadingPercentText}>Loading {Math.round(downloadProgress.progress * 100)}%</Text>
+        </View>
+      ) : isRetrying ? (
+        <Text style={styles.loadingText}></Text>
+      ) : isLoadingNextLevel ? (
+        <Text style={styles.loadingText}></Text>
+      ) : loading ? (
+        <Text style={styles.loadingText}></Text>
+      ) : (
+        <Text style={styles.loadingText}></Text>
+      )}
+    </View>
   );
 
 
@@ -1209,10 +1162,10 @@ export default function GamePlay() {
     <>
       {showMicomic && (
         <View style={StyleSheet.absoluteFill}>
-          <Micomic 
-            isComponent={true} 
-            manualGameState={gameState} 
-            onComplete={handleMicomicComplete} 
+          <Micomic
+            isComponent={true}
+            manualGameState={gameState}
+            onComplete={handleMicomicComplete}
           />
         </View>
       )}
@@ -1238,86 +1191,86 @@ export default function GamePlay() {
       )}
 
       {showGameplay && (
-      <ImageBackground 
-        source={require('./gamebackgroundmain.png')}
-        style={styles.container}
-      >
-        {currentChallenge ? (
-          <View style={styles.gameLayoutContainer}>
-            {isPvpMode ? null : null}
+        <ImageBackground
+          source={require('./gamebackgroundmain.png')}
+          style={styles.container}
+        >
+          {currentChallenge ? (
+            <View style={styles.gameLayoutContainer}>
+              {isPvpMode ? null : null}
 
-            <View
-              style={styles.screenPlayContainer}
-              onLayout={(event) => setScreenPlayLayout(event.nativeEvent.layout)}
-            >
-              <ScreenPlay 
-                gameState={gameState}
-                isPaused={false}
-                borderColor={borderColor}
-                characterRunState={characterRunState}
-                onEnemyComplete={handleEnemyComplete}
-                currentQuestionIndex={0}
-                onAllowEnemyCompletion={handleAllowEnemyCompletion}
-                onSetCorrectAnswer={handleSetCorrectAnswer}
-                onSubmissionAnimationComplete={handleAnimationComplete}
-                isInRunMode={isInRunMode}
-                fadeOutAnim={fadeOutAnim}
-                isMessageVisible={isMessageVisible}
-                messageText={messageText}
-                onPausePress={handlePausePress}
-                setBorderColor={setBorderColor}
-                isPvpMode={isPvpMode}
-                pvpReactionEvent={chatReactionEvent}
-              />
+              <View
+                style={styles.screenPlayContainer}
+                onLayout={(event) => setScreenPlayLayout(event.nativeEvent.layout)}
+              >
+                <ScreenPlay
+                  gameState={gameState}
+                  isPaused={false}
+                  borderColor={borderColor}
+                  characterRunState={characterRunState}
+                  onEnemyComplete={handleEnemyComplete}
+                  currentQuestionIndex={0}
+                  onAllowEnemyCompletion={handleAllowEnemyCompletion}
+                  onSetCorrectAnswer={handleSetCorrectAnswer}
+                  onSubmissionAnimationComplete={handleAnimationComplete}
+                  isInRunMode={isInRunMode}
+                  fadeOutAnim={fadeOutAnim}
+                  isMessageVisible={isMessageVisible}
+                  messageText={messageText}
+                  onPausePress={handlePausePress}
+                  setBorderColor={setBorderColor}
+                  isPvpMode={isPvpMode}
+                  pvpReactionEvent={chatReactionEvent}
+                />
 
-              {showOutputInScreenPlay && (
-                <View style={styles.screenPlayOverlay} pointerEvents="box-none">
-                  <View style={styles.screenPlayOutputContainer}>
-                    {outputView}
+                {showOutputInScreenPlay && (
+                  <View style={styles.screenPlayOverlay} pointerEvents="box-none">
+                    <View style={styles.screenPlayOutputContainer}>
+                      {outputView}
+                    </View>
                   </View>
-                </View>
-              )}
-              {showExpectedOutputInScreenPlay && (
-                <View style={styles.screenPlayOverlay} pointerEvents="box-none">
-                  <View style={styles.screenPlayOutputContainer}>
-                    <ExpectedOutput
-                      currentQuestion={currentChallenge}
-                      submissionResult={gameState?.submissionResult}
-                      displayMode="overlay"
-                      previewMode={outputPreviewMode}
-                    />
+                )}
+                {showExpectedOutputInScreenPlay && (
+                  <View style={styles.screenPlayOverlay} pointerEvents="box-none">
+                    <View style={styles.screenPlayOutputContainer}>
+                      <ExpectedOutput
+                        currentQuestion={currentChallenge}
+                        submissionResult={gameState?.submissionResult}
+                        displayMode="overlay"
+                        previewMode={outputPreviewMode}
+                      />
+                    </View>
                   </View>
-                </View>
-              )}
+                )}
 
-              {(showOutputInScreenPlay || showExpectedOutputInScreenPlay) && (
-                <View style={styles.screenPlayFloatingControls} pointerEvents="box-none">
-                  <TouchableOpacity
-                    onPress={handleExpectedToggle}
-                    style={styles.expectedFloatingToggleButton}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={styles.expectedFloatingToggleText}>
-                      {showExpectedOutputInScreenPlay ? 'Expected Output' : 'Output'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
+                {(showOutputInScreenPlay || showExpectedOutputInScreenPlay) && (
+                  <View style={styles.screenPlayFloatingControls} pointerEvents="box-none">
+                    <TouchableOpacity
+                      onPress={handleExpectedToggle}
+                      style={styles.expectedFloatingToggleButton}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={styles.expectedFloatingToggleText}>
+                        {showExpectedOutputInScreenPlay ? 'Expected Output' : 'Output'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
 
-            <View
-              style={styles.gameQuestionsContainer}
-              onLayout={(event) => setGameQuestionsLayout(event.nativeEvent.layout)}
-            >
-              <GameQuestions 
-                currentQuestion={currentChallenge}
-                selectedAnswers={selectedAnswers}
+              <View
+                style={styles.gameQuestionsContainer}
+                onLayout={(event) => setGameQuestionsLayout(event.nativeEvent.layout)}
+              >
+                <GameQuestions
+                  currentQuestion={currentChallenge}
+                  selectedAnswers={selectedAnswers}
                   getBlankIndex={getBlankIndex}
                   onTabChange={handleGameTabChange}
                   activeTab={activeGameTab}
                   isPvpMode={isPvpMode}
                   selectedBlankIndex={selectedBlankIndex}
-                  onBlankPress={handleBlankSelect} 
+                  onBlankPress={handleBlankSelect}
                   isAnswerCorrect={resolvedSubmissionIsCorrect}
                   canProceed={canProceed}
                   submissionResult={gameState?.submissionResult}
@@ -1330,136 +1283,136 @@ export default function GamePlay() {
                   onPreviewModeToggle={handleOutputPreviewToggle}
                   isLevelCompletionModalVisible={showLevelCompletionModal}
                   submitReport={submitReport}
-              />
-            </View>
+                />
+              </View>
 
-            <View 
-              style={[
-                styles.thirdGridContainer, 
-                { 
-                  height: thirdGridHeight,
-                  display: shouldHideThirdGrid ? 'none' : 'flex',
-                }
-              ]}
-              onLayout={(event) => setThirdGridLayout(event.nativeEvent.layout)}
-            >
-              <ThirdGrid 
-                currentQuestion={currentChallenge}
-                selectedAnswers={selectedAnswers}
-                setSelectedAnswers={memoizedSetSelectedAnswers}
-                currentQuestionIndex={0}
-                setCurrentQuestionIndex={() => {}}
-                setBorderColor={setBorderColor}
-                setCorrectAnswerRef={setCorrectAnswerRef}
-                getBlankIndex={getBlankIndex}
-                challengeData={currentChallenge}
-                gameState={gameState}
-                submitAnswer={submitAnswer}
-                submitting={submitting}
-                selectedBlankIndex={selectedBlankIndex} 
-                potions={potions}
-                selectedPotion={selectedPotion}
-                onPotionPress={handlePotionPress}
-                loadingPotions={loadingPotions}
-                usingPotion={usingPotion}
-                setThirdGridHeight={setThirdGridHeight}
-                usePotion={usePotion}
-                cardImageUrl={characterAttackCard}
-                cardDamage={characterDamageCard}
-                cardDisplaySequence={cardDisplaySequence}
-                canProceed={canProceed}
-                onProceed={handleProceed}
-                isAutoProceed={isPvpMode && canProceed}
-                autoProceedCountdown={isPvpMode ? autoProceedCountdown : null}
-                pvpChallengeCountdown={isPvpMode ? challengeStallCountdown : null}
-                forceAutoProceedUi={
-                  isPvpMode &&
-                  resolvedSubmissionIsCorrect === true &&
-                  waitingForAnimation &&
-                  !canProceed
-                }
-                isLevelComplete={showLevelCompletion}
-                showRunButton={showRunButton}
-                onCharacterRun={handleCharacterRun}
-                onHome={handleHome}
+              <View
+                style={[
+                  styles.thirdGridContainer,
+                  {
+                    height: thirdGridHeight,
+                    display: shouldHideThirdGrid ? 'none' : 'flex',
+                  }
+                ]}
+                onLayout={(event) => setThirdGridLayout(event.nativeEvent.layout)}
+              >
+                <ThirdGrid
+                  currentQuestion={currentChallenge}
+                  selectedAnswers={selectedAnswers}
+                  setSelectedAnswers={memoizedSetSelectedAnswers}
+                  currentQuestionIndex={0}
+                  setCurrentQuestionIndex={() => { }}
+                  setBorderColor={setBorderColor}
+                  setCorrectAnswerRef={setCorrectAnswerRef}
+                  getBlankIndex={getBlankIndex}
+                  challengeData={currentChallenge}
+                  gameState={gameState}
+                  submitAnswer={submitAnswer}
+                  submitting={submitting}
+                  selectedBlankIndex={selectedBlankIndex}
+                  potions={potions}
+                  selectedPotion={selectedPotion}
+                  onPotionPress={handlePotionPress}
+                  loadingPotions={loadingPotions}
+                  usingPotion={usingPotion}
+                  setThirdGridHeight={setThirdGridHeight}
+                  usePotion={usePotion}
+                  cardImageUrl={characterAttackCard}
+                  cardDamage={characterDamageCard}
+                  cardDisplaySequence={cardDisplaySequence}
+                  canProceed={canProceed}
+                  onProceed={handleProceed}
+                  isAutoProceed={isPvpMode && canProceed}
+                  autoProceedCountdown={isPvpMode ? autoProceedCountdown : null}
+                  pvpChallengeCountdown={isPvpMode ? challengeStallCountdown : null}
+                  forceAutoProceedUi={
+                    isPvpMode &&
+                    resolvedSubmissionIsCorrect === true &&
+                    waitingForAnimation &&
+                    !canProceed
+                  }
+                  isLevelComplete={showLevelCompletion}
+                  showRunButton={showRunButton}
+                  onCharacterRun={handleCharacterRun}
+                  onHome={handleHome}
+                  onRetry={handleRetry}
+                  onNextLevel={handleNextLevel}
+                  hasNextLevel={!isPvpMode && !!gameState?.submissionResult?.nextLevel}
+                  fadeOutAnim={fadeOutAnim}
+                  isInRunMode={isInRunMode}
+                  setSelectedBlankIndex={setSelectedBlankIndex}
+                  options={memoizedOptions}
+                  isPvpMode={isPvpMode}
+                  pvpMatchId={resolvedMatchId || matchId || null}
+                  onSendPvpMessage={sendPvpMatchMessage}
+                  sendingPvpMessage={sendingPvpMessage}
+                  onRunPressHideOutput={handleRunPressForOutput}
+                />
+              </View>
+
+              <DialogueOverlay
+                visible={showDialogue}
+                dialogueData={gameState?.dialogue}
+                onComplete={handleDialogueComplete}
+              />
+
+              <TutorialOverlay
+                visible={showTutorial}
+                onClose={() => setShowTutorial(false)}
+                screenPlayLayout={screenPlayLayout}
+                gameQuestionsLayout={gameQuestionsLayout}
+                thirdGridLayout={thirdGridLayout}
+                thirdGridHeight={thirdGridHeight}
+                shouldHideThirdGrid={shouldHideThirdGrid}
+                screenWidth={screenWidth}
+                screenHeight={screenHeight}
+              />
+
+
+
+
+              <GameOverModal
+                visible={!isPvpMode && showGameOverModal}
                 onRetry={handleRetry}
-                onNextLevel={handleNextLevel}
-                hasNextLevel={!isPvpMode && !!gameState?.submissionResult?.nextLevel}
-                fadeOutAnim={fadeOutAnim}
-                isInRunMode={isInRunMode}
-                setSelectedBlankIndex={setSelectedBlankIndex}
-                options={memoizedOptions}
-                isPvpMode={isPvpMode}
-                pvpMatchId={resolvedMatchId || matchId || null}
-                onSendPvpMessage={sendPvpMatchMessage}
-                sendingPvpMessage={sendingPvpMessage}
-                onRunPressHideOutput={handleRunPressForOutput}
+                onHome={handleHome}
+                characterName={gameState?.submissionResult?.fightResult?.character?.character_name || 'Character'}
+                enemyName={gameState?.submissionResult?.fightResult?.enemy?.enemy_name || 'Enemy'}
+                isRetrying={isRetrying}
+                completionRewards={completionRewards}
+                defeatAudioUrl={gameState?.submissionResult?.is_victory_audio}
+                defeatImageUrl={gameState?.submissionResult?.is_victory_image}
+                energyCost={gameState?.submissionResult?.energy_cost}
+                currentEnergy={gameState?.submissionResult?.current_energy}
               />
+
+              <LevelCompletionModal
+                visible={
+                  isPvpMode
+                    ? (showGameOverModal || (showLevelCompletionModal && runButtonClicked && !showRunButton))
+                    : (showLevelCompletionModal && runButtonClicked && !showRunButton)
+                }
+                onRetry={handleRetry}
+                onHome={handleHome}
+                onNextLevel={handleNextLevel}
+                completionRewards={completionRewards}
+                nextLevel={!isPvpMode && !!gameState?.submissionResult?.nextLevel}
+                isLoading={isLoadingNextLevel}
+                victoryAudioUrl={gameState?.submissionResult?.is_victory_audio}
+                victoryImageUrl={gameState?.submissionResult?.is_victory_image}
+                isPvpMode={isPvpMode}
+                energyCost={gameState?.submissionResult?.energy_cost}
+                currentEnergy={gameState?.submissionResult?.current_energy}
+              />
+
             </View>
-
-            <DialogueOverlay 
-              visible={showDialogue}
-              dialogueData={gameState?.dialogue}
-              onComplete={handleDialogueComplete}
-            />
-
-            <TutorialOverlay
-              visible={showTutorial}
-              onClose={() => setShowTutorial(false)}
-              screenPlayLayout={screenPlayLayout}
-              gameQuestionsLayout={gameQuestionsLayout}
-              thirdGridLayout={thirdGridLayout}
-              thirdGridHeight={thirdGridHeight}
-              shouldHideThirdGrid={shouldHideThirdGrid}
-              screenWidth={screenWidth}
-              screenHeight={screenHeight}
-            />
-           
-
-
-
-          <GameOverModal
-            visible={!isPvpMode && showGameOverModal}
-            onRetry={handleRetry}
-            onHome={handleHome}
-           characterName={gameState?.submissionResult?.fightResult?.character?.character_name || 'Character'}
-            enemyName={gameState?.submissionResult?.fightResult?.enemy?.enemy_name || 'Enemy'}
-            isRetrying={isRetrying} 
-            completionRewards={completionRewards}
-            defeatAudioUrl={gameState?.submissionResult?.is_victory_audio}
-            defeatImageUrl={gameState?.submissionResult?.is_victory_image} 
-            energyCost={gameState?.submissionResult?.energy_cost}
-            currentEnergy={gameState?.submissionResult?.current_energy}
-          />
-            
-          <LevelCompletionModal
-              visible={
-                isPvpMode
-                  ? (showGameOverModal || (showLevelCompletionModal && runButtonClicked && !showRunButton))
-                  : (showLevelCompletionModal && runButtonClicked && !showRunButton)
-              }
-              onRetry={handleRetry}
-              onHome={handleHome}
-              onNextLevel={handleNextLevel}
-              completionRewards={completionRewards}
-              nextLevel={!isPvpMode && !!gameState?.submissionResult?.nextLevel}
-              isLoading={isLoadingNextLevel}
-              victoryAudioUrl={gameState?.submissionResult?.is_victory_audio}
-              victoryImageUrl={gameState?.submissionResult?.is_victory_image} 
-              isPvpMode={isPvpMode}
-              energyCost={gameState?.submissionResult?.energy_cost}
-              currentEnergy={gameState?.submissionResult?.current_energy}
-          />
-        
-          </View>
-        ) : (
-          <View style={styles.pvpFallbackContainer}>
-            <SpriteActivityIndicator size={gameScale(50)} />
-            <Text style={styles.pvpFallbackTitle}>Syncing Match State</Text>
-            <Text style={styles.pvpFallbackSubtitle}>Loading latest challenge from server...</Text>
-          </View>
-        )}
-      </ImageBackground>
+          ) : (
+            <View style={styles.pvpFallbackContainer}>
+              <SpriteActivityIndicator size={gameScale(50)} />
+              <Text style={styles.pvpFallbackTitle}>Syncing Match State</Text>
+              <Text style={styles.pvpFallbackSubtitle}>Loading latest challenge from server...</Text>
+            </View>
+          )}
+        </ImageBackground>
       )}
 
       {showPvpSyncFallback && (
@@ -1480,7 +1433,7 @@ export default function GamePlay() {
         autoCloseDuration={10000}
       />
 
-      <GamePauseModal 
+      <GamePauseModal
         visible={showPauseModal}
         onResume={handleResume}
         onBack={handleHome}
@@ -1498,18 +1451,18 @@ export default function GamePlay() {
 
 
 const styles = StyleSheet.create({
-  container: { 
+  container: {
     flex: 1,
     paddingTop: 0,
   },
-  
+
   gameLayoutContainer: {
     flex: 1,
     flexDirection: 'column',
   },
 
   screenPlayContainer: {
-    height: gameScale(844 * 0.38), 
+    height: gameScale(844 * 0.38),
     position: 'relative',
   },
 
@@ -1588,45 +1541,56 @@ const styles = StyleSheet.create({
     minHeight: 0,
   },
 
-   gameQuestionsContainerExpanded: {
-    maxHeight: gameScale(844 * 0.75), 
+  gameQuestionsContainerExpanded: {
+    maxHeight: gameScale(844 * 0.75),
   },
 
-  centerContent: { 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    backgroundColor: 'rgba(0,0,0,0.8)' 
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.8)'
   },
-  
-  loadingText: { 
-    color: '#fff', 
-    fontSize: gameScale(18), 
-    marginTop: gameScale(10), 
-    fontWeight: '600' 
+
+  loadingPercentText: {
+    color: '#00D1FF',
+    fontSize: gameScale(28),
+    fontFamily: 'FunkySign',
+    textShadowColor: 'rgba(0,0,0,0.9)',
+    textShadowOffset: { width: 1.5, height: 1.5 },
+    textShadowRadius: 4,
+    marginBottom: gameScale(12),
+    textAlign: 'center',
   },
-  
-  errorText: { 
-    color: '#ff6b6b', 
-    fontSize: gameScale(18), 
-    textAlign: 'center', 
-    marginHorizontal: gameScale(20), 
-    fontWeight: '600' 
+
+  loadingText: {
+    color: '#fff',
+    fontSize: gameScale(18),
+    marginTop: gameScale(10),
+    fontWeight: '600'
   },
-  
-  retryText: { 
-    color: '#fff', 
-    fontSize: gameScale(16), 
-    fontWeight: 'bold', 
-    textAlign: 'center' 
+
+  errorText: {
+    color: '#ff6b6b',
+    fontSize: gameScale(18),
+    textAlign: 'center',
+    marginHorizontal: gameScale(20),
+    fontWeight: '600'
   },
-  
-  exitText: { 
-    color: '#fff', 
-    fontSize: gameScale(16), 
-    fontWeight: 'bold', 
-    textAlign: 'center' 
+
+  retryText: {
+    color: '#fff',
+    fontSize: gameScale(16),
+    fontWeight: 'bold',
+    textAlign: 'center'
   },
-  
+
+  exitText: {
+    color: '#fff',
+    fontSize: gameScale(16),
+    fontWeight: 'bold',
+    textAlign: 'center'
+  },
+
   retryButton: {
     backgroundColor: '#4dabf7',
     paddingHorizontal: gameScale(20),
@@ -1634,7 +1598,7 @@ const styles = StyleSheet.create({
     borderRadius: gameScale(10),
     marginTop: gameScale(15),
   },
-  
+
   exitButton: {
     backgroundColor: '#ff6b6b',
     paddingHorizontal: gameScale(20),
@@ -1645,7 +1609,7 @@ const styles = StyleSheet.create({
 
   exitGameButton: {
     position: 'absolute',
-    top: gameScale(20), 
+    top: gameScale(20),
     left: gameScale(20),
     width: gameScale(40),
     height: gameScale(40),
@@ -1662,7 +1626,7 @@ const styles = StyleSheet.create({
     shadowRadius: gameScale(4),
     elevation: gameScale(5),
   },
-  
+
   exitGameText: {
     color: '#fff',
     fontSize: gameScale(20),
@@ -1670,15 +1634,15 @@ const styles = StyleSheet.create({
   },
 
   // Debug styles
-  debugToggle: { 
-    position: 'absolute', 
+  debugToggle: {
+    position: 'absolute',
     top: gameScale(20),
-    right: gameScale(10), 
-    backgroundColor: 'rgba(0,0,0,0.8)', 
-    paddingHorizontal: gameScale(12), 
-    paddingVertical: gameScale(8), 
-    borderRadius: gameScale(20), 
-    borderWidth: gameScale(1), 
+    right: gameScale(10),
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    paddingHorizontal: gameScale(12),
+    paddingVertical: gameScale(8),
+    borderRadius: gameScale(20),
+    borderWidth: gameScale(1),
     borderColor: '#4dabf7',
     zIndex: 999,
     shadowColor: '#000',
@@ -1687,56 +1651,56 @@ const styles = StyleSheet.create({
     shadowRadius: gameScale(4),
     elevation: gameScale(5),
   },
-  debugToggleText: { 
-    color: '#4dabf7', 
-    fontSize: gameScale(12), 
-    fontWeight: 'bold' 
+  debugToggleText: {
+    color: '#4dabf7',
+    fontSize: gameScale(12),
+    fontWeight: 'bold'
   },
-  debugPanel: { 
-    position: 'absolute', 
+  debugPanel: {
+    position: 'absolute',
     top: gameScale(20),
-    left: gameScale(10), 
-    right: gameScale(10), 
+    left: gameScale(10),
+    right: gameScale(10),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: gameScale(10) },
     shadowOpacity: 0.5,
     shadowRadius: gameScale(20),
     elevation: gameScale(20),
-    bottom: gameScale(100), 
-    backgroundColor: 'rgba(0,0,0,0.95)', 
-    borderRadius: gameScale(10), 
-    borderWidth: gameScale(1), 
-    borderColor: '#4dabf7' 
+    bottom: gameScale(100),
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    borderRadius: gameScale(10),
+    borderWidth: gameScale(1),
+    borderColor: '#4dabf7'
   },
-  debugHeader: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    padding: gameScale(12), 
-    borderBottomWidth: gameScale(1), 
-    borderBottomColor: '#333' 
+  debugHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: gameScale(12),
+    borderBottomWidth: gameScale(1),
+    borderBottomColor: '#333'
   },
-  debugTitle: { 
-    color: '#fff', 
-    fontSize: gameScale(16), 
-    fontWeight: 'bold' 
+  debugTitle: {
+    color: '#fff',
+    fontSize: gameScale(16),
+    fontWeight: 'bold'
   },
-  debugClose: { 
-    padding: gameScale(4) 
+  debugClose: {
+    padding: gameScale(4)
   },
-  debugCloseText: { 
-    color: '#ff6b6b', 
-    fontSize: gameScale(16), 
-    fontWeight: 'bold' 
+  debugCloseText: {
+    color: '#ff6b6b',
+    fontSize: gameScale(16),
+    fontWeight: 'bold'
   },
-  debugScrollView: { 
-    flex: 1, 
-    padding: gameScale(12) 
+  debugScrollView: {
+    flex: 1,
+    padding: gameScale(12)
   },
-  debugText: { 
-    color: '#fff', 
-    fontSize: gameScale(12), 
-    lineHeight: gameScale(18) 
+  debugText: {
+    color: '#fff',
+    fontSize: gameScale(12),
+    lineHeight: gameScale(18)
   },
 
   progressContainer: {
@@ -1744,7 +1708,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '80%',
   },
-  
+
   progressBar: {
     width: '100%',
     height: gameScale(8),
@@ -1752,13 +1716,13 @@ const styles = StyleSheet.create({
     borderRadius: gameScale(4),
     overflow: 'hidden',
   },
-  
+
   progressFill: {
     height: '100%',
     backgroundColor: '#4dabf7',
     borderRadius: gameScale(4),
   },
-  
+
   progressText: {
     color: '#fff',
     fontSize: gameScale(14),
@@ -1766,18 +1730,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-   downloadContainer: {
+  downloadContainer: {
     alignItems: 'center',
     width: '90%',
     paddingHorizontal: gameScale(20),
   },
-  
+
   progressSection: {
     marginTop: gameScale(20),
     alignItems: 'center',
     width: '100%',
   },
-  
+
   progressLabel: {
     color: '#fff',
     fontSize: gameScale(16),
@@ -1785,7 +1749,7 @@ const styles = StyleSheet.create({
     marginBottom: gameScale(8),
     textAlign: 'center',
   },
-  
+
   progressBar: {
     width: '100%',
     height: gameScale(12),
@@ -1794,33 +1758,33 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: gameScale(8),
   },
-  
+
   progressFill: {
     height: '100%',
     backgroundColor: '#4CAF50',
     borderRadius: gameScale(6),
   },
-  
+
   progressPercentage: {
     color: '#fff',
     fontSize: gameScale(14),
     fontWeight: 'bold',
   },
-  
+
   currentAnimationText: {
     color: '#4dabf7',
     fontSize: gameScale(12),
     marginBottom: gameScale(4),
     textAlign: 'center',
   },
-  
+
   currentUrlText: {
     color: '#ffeb3b',
     fontSize: gameScale(10),
     marginTop: gameScale(8),
     textAlign: 'center',
   },
-  
+
   downloadHint: {
     color: '#fff',
     fontSize: gameScale(14),

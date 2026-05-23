@@ -136,19 +136,6 @@ export const coreMethods = {
   },
 
   getAcceptHeader(url = '', category = 'general') {
-    const lowerCategory = (category || '').toLowerCase();
-    if (this.isAudioFile(url) || lowerCategory.includes('audio') || lowerCategory.includes('sound')) {
-      return 'audio/*,*/*;q=0.9';
-    }
-
-    if (this.isVideoFile(url) || lowerCategory.includes('video')) {
-      return 'video/*,*/*;q=0.9';
-    }
-
-    if (this.isImageFile(url) || lowerCategory.includes('image') || lowerCategory.includes('visual')) {
-      return 'image/*,*/*;q=0.9';
-    }
-
     return '*/*';
   },
 
@@ -219,6 +206,12 @@ export const coreMethods = {
     if (!url || typeof url !== 'string') {
       console.warn('⚠️ Invalid URL provided to downloadSingleAsset:', url);
       return { success: false, error: 'Invalid URL', url, category };
+    }
+
+    const cleanUrl = url.split('?')[0].trim();
+    if (/^https?:\/\/[^/]+\/?$/.test(cleanUrl)) {
+      console.warn('⚠️ Rejecting base domain URL as asset download:', url);
+      return { success: false, error: 'Base domain is not a valid asset URL', url, category };
     }
 
     if (url.startsWith('file://') || url.startsWith('/data/')) {
@@ -464,6 +457,11 @@ export const coreMethods = {
   },
 
   isImageFile(url) {
+    if (!url || typeof url !== 'string') return false;
+    const cleanUrl = url.split('?')[0].trim();
+    if (/^https?:\/\/[^/]+\/?$/.test(cleanUrl)) {
+      return false;
+    }
     const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'];
     const lowerUrl = url.toLowerCase();
 

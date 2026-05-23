@@ -1,19 +1,41 @@
 import * as FileSystem from 'expo-file-system/legacy';
 
 export const mapMethods = {
-extractAllAssetsFromMapData(mapLevelData) {
+extractAllAssetsFromMapData(mapLevelData, options = {}) {
     const assets = [];
     const addedUrls = new Set(); 
+
+    const isBackgroundUrl = (url) => {
+      if (!url || typeof url !== 'string') return false;
+      const lowerUrl = url.toLowerCase();
+      return lowerUrl.includes('attack') || 
+             lowerUrl.includes('idle') || 
+             lowerUrl.includes('die') || 
+             lowerUrl.includes('hurt') || 
+             lowerUrl.includes('run') ||
+             lowerUrl.includes('death');
+    };
 
     const addAsset = (url, name, type, category) => {
       if (url && 
           typeof url === 'string' && 
           !addedUrls.has(url) &&
           !url.startsWith('file://') &&
-          !url.startsWith('/data/') &&
-          (url.startsWith('http://') || url.startsWith('https://') || url.includes('.'))) {
-        addedUrls.add(url);
-        assets.push({ url, name, type, category });
+          !url.startsWith('/data/')) {
+        
+        const cleanUrl = url.split('?')[0].trim();
+        if (/^https?:\/\/[^/]+\/?$/.test(cleanUrl)) {
+          return; // Ignore base domains
+        }
+
+        if (url.startsWith('http://') || url.startsWith('https://') || url.includes('.')) {
+          const isBg = isBackgroundUrl(url);
+          if (options.excludeBackground && isBg) return;
+          if (options.onlyBackground && !isBg) return;
+
+          addedUrls.add(url);
+          assets.push({ url, name, type, category });
+        }
       }
     };
 
@@ -213,14 +235,14 @@ extractLevelModalAssets(levelPreviewData) {
     return assets;
   },
 
-async downloadAllMapAssets(mapLevelData, onProgress = null, onAssetComplete = null) {
+async downloadAllMapAssets(mapLevelData, onProgress = null, onAssetComplete = null, options = {}) {
     // Allow concurrent downloads for map preloading
     const wasDownloading = this.isDownloading;
     this.isDownloading = true;
 
     try {
-      console.log('🗺️ Starting comprehensive map asset download...');
-      const assets = this.extractAllAssetsFromMapData(mapLevelData);
+      console.log('🗺️ Starting comprehensive map asset download...', options);
+      const assets = this.extractAllAssetsFromMapData(mapLevelData, options);
 
       if (assets.length === 0) {
         console.log('🗺️ No assets to download from map data.');
@@ -264,8 +286,8 @@ async downloadAllMapAssets(mapLevelData, onProgress = null, onAssetComplete = nu
     }
   },
 
-async areMapAssetsCached(mapLevelData, onProgress = null) {
-    const assets = this.extractAllAssetsFromMapData(mapLevelData);
+async areMapAssetsCached(mapLevelData, onProgress = null, options = {}) {
+    const assets = this.extractAllAssetsFromMapData(mapLevelData, options);
 
     if (assets.length === 0) {
       return { cached: true, total: 0, available: 0, missing: 0, missingAssets: [] };

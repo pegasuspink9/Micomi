@@ -39,21 +39,41 @@ export const gameService = {
         }
       }
 
-      
-      console.log(`🎮 Level ${levelId} data received, transforming with cache...`);
+      console.log(`🎮 Level ${levelId} data received. Checking animation cache status...`);
+
+      const cacheStatus = await universalAssetPreloader.areGameAnimationAssetsCached(response.data);
+      let downloadStats = {
+        downloaded: 0,
+        total: cacheStatus.total,
+        fromCache: true,
+        skippedDownload: true
+      };
+
+      if (!cacheStatus.cached) {
+        console.log(`📦 Gameplay alert: Combat assets not fully cached yet (${cacheStatus.available}/${cacheStatus.total}). Prioritizing download...`);
+        const downloadResult = await universalAssetPreloader.downloadGameAnimationAssets(
+          response.data,
+          onDownloadProgress,
+          onAnimationProgress,
+          true
+        );
+        
+        downloadStats = {
+          downloaded: downloadResult.downloaded || 0,
+          total: downloadResult.total || 0,
+          fromCache: false,
+          skippedDownload: false,
+          failedUrls: downloadResult.failedAssets?.map(a => a.url)
+        };
+      }
 
       const gameStateWithCache = universalAssetPreloader.transformGameStateWithCache(response.data);
       
-      console.log(`✅ Level ${levelId} ready with cached assets from Map API`);
+      console.log(`✅ Level ${levelId} ready and fully cached for active gameplay`);
 
       return {
         ...gameStateWithCache,
-        downloadStats: { 
-          downloaded: 0, 
-          total: 0, 
-          fromCache: true,
-          skippedDownload: true
-        },
+        downloadStats,
       };
     } catch (error) {
       console.error(`Failed to enter level ${levelId}:`, error);

@@ -60,6 +60,10 @@ export default function MapNavigate({ onMapChange }) {
     url: '', progress: 0, currentIndex: 0, totalAssets: 0, category: '', name: ''
   });
 
+  const [bgDownloadProgress, setBgDownloadProgress] = useState({
+    isDownloading: false, progress: 0, percent: 0, isComplete: false
+  });
+
   // Track if auto-preload has been done
   const hasAutoPreloaded = useRef(false);
 
@@ -74,7 +78,56 @@ export default function MapNavigate({ onMapChange }) {
     }, [refreshMapsIfChanged])
   );
 
-  // --- PRELOADING LOGIC (Kept intact as requested) ---
+  // --- PRELOADING LOGIC (Optimized & Prioritized) ---
+  const startBgDownload = async (preloadData) => {
+    try {
+      console.log('📥 Mapscreen background: Checking combat asset downloads (attack, idle, die, hurt, run)...');
+      const bgCacheStatus = await universalAssetPreloader.areMapAssetsCached(preloadData, null, { onlyBackground: true });
+
+      if (bgCacheStatus.cached) {
+        console.log('✅ Background assets are already cached.');
+        setBgDownloadProgress({ isDownloading: false, progress: 1, percent: 100, isComplete: true });
+        setTimeout(() => {
+          setBgDownloadProgress(prev => ({ ...prev, isComplete: false }));
+        }, 3000);
+        return;
+      }
+
+      console.log(`📥 Background assets missing: ${bgCacheStatus.missing}/${bgCacheStatus.total}. Starting background download...`);
+      setBgDownloadProgress({
+        isDownloading: true,
+        progress: bgCacheStatus.available / bgCacheStatus.total,
+        percent: Math.round((bgCacheStatus.available / bgCacheStatus.total) * 100),
+        isComplete: false
+      });
+
+      await universalAssetPreloader.downloadAllMapAssets(
+        preloadData,
+        (progress) => {
+          const loadedRatio = progress.total > 0 ? progress.loaded / progress.total : 0;
+          setBgDownloadProgress({
+            isDownloading: true,
+            progress: loadedRatio,
+            percent: Math.round(loadedRatio * 100),
+            isComplete: false
+          });
+        },
+        null,
+        { onlyBackground: true }
+      );
+
+      await universalAssetPreloader.saveCacheInfoToStorage();
+      console.log('✅ Background assets download complete!');
+      setBgDownloadProgress({ isDownloading: false, progress: 1, percent: 100, isComplete: true });
+      setTimeout(() => {
+        setBgDownloadProgress(prev => ({ ...prev, isComplete: false }));
+      }, 4000);
+    } catch (error) {
+      console.error('❌ Background asset preloading failed:', error);
+      setBgDownloadProgress(prev => ({ ...prev, isDownloading: false }));
+    }
+  };
+
   useEffect(() => {
     const autoPreloadAssets = async () => {
       if (hasAutoPreloaded.current || maps.length === 0) return;
@@ -102,7 +155,6 @@ export default function MapNavigate({ onMapChange }) {
           setDownloadModalVisible(true);
 
           let downloadedSoFar = 0;
-          // (Simplified tracking callbacks for brevity, logic remains same)
           if (themesCacheStatus.missing > 0) {
             await universalAssetPreloader.downloadMapThemeAssets(MAP_THEMES, (p) => setDownloadProgress(prev => ({ ...prev, loaded: p.loaded, progress: p.loaded / totalStaticMissing * 0.4 })));
             downloadedSoFar += themesCacheStatus.missing;
@@ -120,7 +172,7 @@ export default function MapNavigate({ onMapChange }) {
         const preloadData = await mapService.getMapPreloadData();
         if (!preloadData) throw new Error("Failed preload data");
 
-        const mapCacheStatus = await universalAssetPreloader.areMapAssetsCached(preloadData);
+        const mapCacheStatus = await universalAssetPreloader.areMapAssetsCached(preloadData, null, { excludeBackground: true });
 
         if (mapCacheStatus.cached && totalStaticMissing === 0) {
           // Load cached assets into memory
@@ -135,20 +187,28 @@ export default function MapNavigate({ onMapChange }) {
             universalAssetPreloader.loadCachedAssets('static_sounds'),
           ]);
           soundManager.clearUrlCache();
-          setAssetsReady(true); setDownloadModalVisible(false); return;
+          setAssetsReady(true);
+          setDownloadModalVisible(false);
+          startBgDownload(preloadData);
+          return;
         }
 
         if (!mapCacheStatus.cached) {
           setDownloadProgress(prev => ({ ...prev, isDownloading: true, mapName: 'Game Assets', total: mapCacheStatus.total, successCount: mapCacheStatus.available }));
           setDownloadModalVisible(true);
-          await universalAssetPreloader.downloadAllMapAssets(preloadData, (p) => setDownloadProgress(prev => ({ ...prev, loaded: p.loaded, total: p.total, progress: p.progress })));
+          await universalAssetPreloader.downloadAllMapAssets(preloadData, (p) => setDownloadProgress(prev => ({ ...prev, loaded: p.loaded, total: p.total, progress: p.progress })), null, { excludeBackground: true });
         }
 
         await universalAssetPreloader.saveCacheInfoToStorage();
         soundManager.clearUrlCache();
 
         setDownloadProgress(prev => ({ ...prev, isDownloading: false, isComplete: true }));
-        setTimeout(() => { setDownloadModalVisible(false); resetDownloadProgress(); setAssetsReady(true); }, 1500);
+        setTimeout(() => {
+          setDownloadModalVisible(false);
+          resetDownloadProgress();
+          setAssetsReady(true);
+          startBgDownload(preloadData);
+        }, 1500);
 
       } catch (error) {
         console.error('❌ Auto-preload failed:', error);
@@ -263,6 +323,16 @@ export default function MapNavigate({ onMapChange }) {
           <TouchableOpacity style={styles.shopButtonWrapper} activeOpacity={0.9} onPress={handleOpenTopUpShop}>
             <Image source={MICOMI_SHOP_IMG} style={styles.shopImage} resizeMode="contain" />
           </TouchableOpacity>
+          {(bgDownloadProgress.isDownloading && !bgDownloadProgress.isComplete && bgDownloadProgress.percent < 100) && (
+            <View style={{ alignItems: 'center', marginTop: 6 }}>
+              <Text style={{ fontFamily: 'DynaPuff', color: '#00D1FF', fontSize: 14, fontWeight: 'bold' }}>
+                {bgDownloadProgress.percent}%
+              </Text>
+              <Text style={{ fontFamily: 'DynaPuff', color: '#ffffff', fontSize: 9, marginTop: 2 }}>
+                Downloading...
+              </Text>
+            </View>
+          )}
         </View>
 
 
@@ -440,4 +510,42 @@ const styles = StyleSheet.create({
     position: 'absolute', width: '115%', height: '115%', zIndex: 10, left: -20, opacity: 0.9, resizeMode: 'contain'
   },
   downloadModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' },
+  bgDownloadWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginTop: 6,
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 209, 255, 0.4)',
+    shadowColor: '#00D1FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  bgDownloadLottie: {
+    width: 20,
+    height: 20,
+  },
+  bgDownloadText: {
+    color: '#00D1FF',
+    fontSize: 13,
+    fontFamily: 'FunkySign',
+    marginLeft: 3,
+  },
+  bgDownloadComplete: {
+    borderColor: 'rgba(76, 175, 80, 0.6)',
+    shadowColor: '#4CAF50',
+  },
+  bgDownloadCompleteText: {
+    color: '#4CAF50',
+  },
+  checkIcon: {
+    color: '#4CAF50',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
 });

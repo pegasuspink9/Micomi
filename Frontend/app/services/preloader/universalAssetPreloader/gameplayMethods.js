@@ -201,11 +201,15 @@ extractGameAnimationAssets(gameState) {
 
     //  Helper to validate URL before adding
     const isValidRemoteUrl = (url) => {
-      return url && 
-             typeof url === 'string' && 
-             !url.startsWith('file://') && 
-             !url.startsWith('/data/') &&
-             (url.startsWith('http://') || url.startsWith('https://'));
+      if (!url || typeof url !== 'string') return false;
+      if (url.startsWith('file://') || url.startsWith('/data/')) return false;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) return false;
+      
+      const cleanUrl = url.split('?')[0].trim();
+      if (/^https?:\/\/[^/]+\/?$/.test(cleanUrl)) {
+        return false;
+      }
+      return true;
     };
 
     // Character animations
@@ -388,8 +392,8 @@ async downloadAudioAssets(levelData, onProgress = null) {
     }
   },
 
-async downloadGameAnimationAssets(gameState, onProgress = null, onAssetComplete = null) {
-    if (this.isDownloading) {
+async downloadGameAnimationAssets(gameState, onProgress = null, onAssetComplete = null, force = false) {
+    if (this.isDownloading && !force) {
       console.warn('⚠️ Asset downloading already in progress');
       return { success: false, reason: 'already_downloading' };
     }
@@ -397,7 +401,7 @@ async downloadGameAnimationAssets(gameState, onProgress = null, onAssetComplete 
     this.isDownloading = true;
     
     try {
-      console.log('📦 Starting game animation asset download...');
+      console.log('📦 Starting game animation asset download...', { force });
       
       const assets = this.extractGameAnimationAssets(gameState);
       console.log(`📦 Found ${assets.length} game animation assets to download`);
@@ -471,27 +475,67 @@ async areGameAnimationAssetsCached(gameState) {
     }
 
     let availableCount = 0;
-    for (const asset of assets) {
+    const missingAssets = [];
+    const totalCount = assets.length;
+
+    for (let i = 0; i < totalCount; i++) {
+      const asset = assets[i];
+      let isAvailable = false;
+
+      // Skip file:// URLs - they're already local
+      if (asset.url.startsWith('file://') || asset.url.startsWith('/data/')) {
+        isAvailable = true;
+        availableCount++;
+        continue;
+      }
+
+      // Check memory cache
       const assetInfo = this.downloadedAssets.get(asset.url);
       if (assetInfo && assetInfo.localPath) {
-        const fileInfo = await FileSystem.getInfoAsync(assetInfo.localPath);
-        if (fileInfo.exists && fileInfo.size > 0) {
-          availableCount++;
-        }
+        try {
+          const validation = await this.validateCachedFile(assetInfo.localPath, asset.url, assetInfo.fileSize || 0);
+          if (validation.valid) {
+            isAvailable = true;
+          } else {
+            this.downloadedAssets.delete(asset.url);
+          }
+        } catch (_e) { }
+      }
+
+      // Check disk if not in memory
+      if (!isAvailable) {
+        const localPath = this.getLocalFilePath(asset.url, asset.category || 'game_animations');
+        try {
+          const validation = await this.validateCachedFile(localPath, asset.url);
+          if (validation.valid) {
+            this.downloadedAssets.set(asset.url, {
+              localPath,
+              category: asset.category || 'game_animations',
+              url: asset.url,
+              downloadedAt: Date.now(),
+              fileSize: validation.size
+            });
+            isAvailable = true;
+          }
+        } catch (_e) { }
+      }
+
+      if (isAvailable) {
+        availableCount++;
+      } else {
+        missingAssets.push(asset);
       }
     }
 
-    const cached = availableCount === assets.length;
-    console.log(`🔍 Game animation assets cache check: ${availableCount}/${assets.length} available`);
+    const cached = availableCount === totalCount;
+    console.log(`🔍 Game animation assets cache check: ${availableCount}/${totalCount} available`);
     
     return {
       cached,
-      total: assets.length,
+      total: totalCount,
       available: availableCount,
-      missing: assets.length - availableCount,
-      missingAssets: assets
-        .filter(asset => !this.downloadedAssets.has(asset.url))
-        .map(asset => ({ url: asset.url, name: asset.name, type: asset.type }))
+      missing: totalCount - availableCount,
+      missingAssets
     };
   },
 

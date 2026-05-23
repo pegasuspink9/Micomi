@@ -199,7 +199,7 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
           isComplete: false,
           mapName: 'Checking Game Assets',
         });
-      })
+      }, { excludeBackground: true })
       : Promise.resolve({ cached: true, total: 0, available: 0, missing: 0, missingAssets: [] });
 
     const [themesCacheStatus, charSelectCacheStatus, soundCacheStatus, mapCacheStatus] = await Promise.all([
@@ -410,7 +410,8 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
               category: assetProgress.category,
               name: assetProgress.name,
             });
-          }
+          },
+          { excludeBackground: true }
         );
       }
 
@@ -431,7 +432,7 @@ const MainLoadingScreen = ({ onComplete, fontsLoaded }) => {
           await universalAssetPreloader.downloadStaticSoundAssets();
         }
         if (preloadData && !finalVerification.mapCacheStatus.cached) {
-          await universalAssetPreloader.downloadAllMapAssets(preloadData);
+          await universalAssetPreloader.downloadAllMapAssets(preloadData, null, null, { excludeBackground: true });
         }
 
         finalVerification = await runFullVerification(preloadData, 0.97, 0.02, false);
