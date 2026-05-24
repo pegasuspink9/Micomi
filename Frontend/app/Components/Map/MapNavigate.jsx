@@ -325,7 +325,7 @@ export default function MapNavigate({ onMapChange }) {
           </TouchableOpacity>
           {(bgDownloadProgress.isDownloading && !bgDownloadProgress.isComplete && bgDownloadProgress.percent < 100) && (
             <View style={{ alignItems: 'center', marginTop: 6 }}>
-              <Text style={{ fontFamily: 'DynaPuff', color: '#00D1FF', fontSize: 14, fontWeight: 'bold' }}>
+              <Text style={{ fontFamily: 'DynaPuff', color: '#00D1FF', fontSize: 14 }}>
                 {bgDownloadProgress.percent}%
               </Text>
               <Text style={{ fontFamily: 'DynaPuff', color: '#ffffff', fontSize: 9, marginTop: 2 }}>

@@ -1007,7 +1007,7 @@ export default function GamePlay() {
       levelCompletionTimeoutRef.current = null;
     }
 
-    soundManager.stopAllSounds();
+    soundManager.stopAllSounds({ stopBgm: false });
     setShowGameOver(false);
     setShowGameOverModal(false);
     setShowLevelCompletion(false);
@@ -1043,7 +1043,7 @@ export default function GamePlay() {
         vsWatchdogTimeoutRef.current = null;
       }
 
-      soundManager.stopAllSounds();
+      soundManager.stopAllSounds({ stopBgm: false });
     };
   }, []);
 

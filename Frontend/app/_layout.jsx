@@ -169,7 +169,11 @@ export default function RootLayout() {
     if (user) {
       if (segments.includes('PVP')) {
         soundManager.playBackgroundMusic(PVP_BGM_URL, 0.15);
-      } else if (segments.includes('map')) {
+      } else if (
+        segments.includes('map') || 
+        segments.includes('(tabs)') || 
+        segments.includes('roadMapLandPage')
+      ) {
         soundManager.playBackgroundMusic(NAV_BGM_URL, 0.15);
       } else if (isAtLoginPage) {
         soundManager.stopBackgroundMusic();

@@ -135,6 +135,37 @@ export const coreMethods = {
     return path;
   },
 
+  getOptimizedAssetUrl(url) {
+    if (!url || typeof url !== 'string') return url;
+
+    // Only compress remote HTTP/HTTPS images
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      const lowerUrl = url.toLowerCase();
+
+      // Skip audio, video, lottie json, or already optimized URLs
+      if (
+        lowerUrl.includes('wsrv.nl') || 
+        lowerUrl.endsWith('.json') || 
+        lowerUrl.endsWith('.lottie') || 
+        lowerUrl.endsWith('.mp3') || 
+        lowerUrl.endsWith('.wav') || 
+        lowerUrl.endsWith('.ogg') || 
+        lowerUrl.endsWith('.m4a') || 
+        lowerUrl.endsWith('.mp4') || 
+        lowerUrl.endsWith('.mov') ||
+        lowerUrl.endsWith('.webm')
+      ) {
+        return url;
+      }
+
+      // Wrap the URL to compress it on-the-fly to a lightweight WebP format at 80% quality!
+      const encodedUrl = encodeURIComponent(url);
+      return `https://wsrv.nl/?url=${encodedUrl}&output=webp&q=80`;
+    }
+
+    return url;
+  },
+
   getAcceptHeader(url = '', category = 'general') {
     return '*/*';
   },
@@ -143,22 +174,22 @@ export const coreMethods = {
     const lowerUrl = (url || '').toLowerCase().split('?')[0];
 
     if (lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.mov') || lowerUrl.endsWith('.webm')) {
-      return 2048;
-    }
-
-    if (lowerUrl.endsWith('.mp3') || lowerUrl.endsWith('.wav') || lowerUrl.endsWith('.ogg') || lowerUrl.endsWith('.m4a')) {
       return 512;
     }
 
-    if (lowerUrl.endsWith('.json') || lowerUrl.includes('.lottie')) {
+    if (lowerUrl.endsWith('.mp3') || lowerUrl.endsWith('.wav') || lowerUrl.endsWith('.ogg') || lowerUrl.endsWith('.m4a')) {
       return 128;
     }
 
-    if (this.isImageFile(lowerUrl)) {
-      return 256;
+    if (lowerUrl.endsWith('.json') || lowerUrl.includes('.lottie')) {
+      return 32;
     }
 
-    return 128;
+    if (this.isImageFile(lowerUrl)) {
+      return 32; // Safe lower limit for highly compressed WebP icons/images
+    }
+
+    return 32;
   },
 
   async validateCachedFile(localPath, url = '', expectedBytes = 0) {
@@ -231,6 +262,9 @@ export const coreMethods = {
       console.warn(`⚠️ URL missing scheme, prepending 'https://': ${url}`);
       fullUrl = `https://${fullUrl}`;
     }
+
+    // Apply free dynamic WebP compression using wsrv.nl proxy
+    fullUrl = this.getOptimizedAssetUrl(fullUrl);
 
     try {
       console.log(`📥 Starting download: ${url.slice(-60)}`);
