@@ -1551,6 +1551,14 @@ export async function fightEnemy(
       "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
   }
 
+  if (status === BattleStatus.won && character.is_range && !character_run) {
+    character_run =
+      runArray[0] ||
+      character.avatar_image ||
+      character.character_avatar ||
+      "ranged_victory_run";
+  }
+
   console.log("Final result:");
   console.log("- Enemy health:", enemyHealth);
   console.log("- Enemy max health:", scaledEnemyMaxHealth);
@@ -2230,6 +2238,14 @@ export async function fightBossEnemy(
     character_current_state = "Reveal";
     character_attack_overlay =
       "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
+  }
+
+  if (status === BattleStatus.won && character.is_range && !character_run) {
+    character_run =
+      runArray[0] ||
+      character.avatar_image ||
+      character.character_avatar ||
+      "ranged_victory_run";
   }
 
   return {
