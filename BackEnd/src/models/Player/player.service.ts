@@ -580,6 +580,7 @@ export const findOrCreateOAuthPlayer = async ({
   username,
   avatarUrl,
 }: OAuthUserParams) => {
+  // Avatar from provider is only set on account creation.
   let player = await prisma.player.findUnique({
     where:
       provider === "google"
@@ -588,15 +589,6 @@ export const findOrCreateOAuthPlayer = async ({
   });
 
   if (player) {
-    if (
-      avatarUrl &&
-      (!player.player_avatar || player.player_avatar === DEFAULT_AVATAR_URL)
-    ) {
-      player = await prisma.player.update({
-        where: { player_id: player.player_id },
-        data: { player_avatar: avatarUrl },
-      });
-    }
     return player;
   }
 
@@ -608,14 +600,6 @@ export const findOrCreateOAuthPlayer = async ({
     const updateData: Record<string, string> = {
       [provider === "google" ? "google_id" : "facebook_id"]: providerId,
     };
-
-    if (
-      avatarUrl &&
-      (!existingPlayerByEmail.player_avatar ||
-        existingPlayerByEmail.player_avatar === DEFAULT_AVATAR_URL)
-    ) {
-      updateData.player_avatar = avatarUrl;
-    }
 
     player = await prisma.player.update({
       where: { player_id: existingPlayerByEmail.player_id },

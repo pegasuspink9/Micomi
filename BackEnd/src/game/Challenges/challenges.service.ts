@@ -877,6 +877,14 @@ const OVERLAYS = {
   LIFE: "https://micomi-assets.me/Icons/Miscellaneous/Gino's%20Lightning.png",
 };
 
+const REPLAY_COMPLETION_REWARD_PERCENT = 0.35;
+
+const scaleReplayReward = (value: number): number => {
+  if (value <= 0) return 0;
+
+  return Math.max(1, Math.round(value * REPLAY_COMPLETION_REWARD_PERCENT));
+};
+
 export const submitChallengeService = async (
   playerId: number,
   levelId: number,
@@ -946,21 +954,18 @@ export const submitChallengeService = async (
     where: { player_id_level_id: { player_id: playerId, level_id: levelId } },
   });
 
-  const isReplayingCompletedLevel = currentProgress?.is_completed === true;
+  const isReplayingCompletedLevel =
+    currentProgress?.has_received_rewards === true;
+  const replayRewardBase = isReplayingCompletedLevel
+    ? {
+        coinsEarned: currentProgress?.coins_earned ?? 0,
+        totalPointsEarned: currentProgress?.total_points_earned ?? 0,
+        totalExpPointsEarned: currentProgress?.total_exp_points_earned ?? 0,
+      }
+    : null;
 
   if (isReplayingCompletedLevel && currentProgress) {
-    await prisma.playerProgress.update({
-      where: { progress_id: currentProgress.progress_id },
-      data: {
-        coins_earned: 0,
-        total_points_earned: 0,
-        total_exp_points_earned: 0,
-        has_received_rewards: false,
-      },
-    });
-    console.log(
-      `🔄 Replaying completed level ${levelId} - reset coins/points tracking`,
-    );
+    console.log(`🔄 Replaying completed level ${levelId}`);
   }
 
   if (!currentProgress) {
@@ -987,7 +992,6 @@ export const submitChallengeService = async (
         has_reversed_curse: false,
         has_boss_shield: false,
         has_force_character_attack_type: false,
-        has_received_rewards: false,
       },
     });
   }
@@ -1960,7 +1964,7 @@ export const submitChallengeService = async (
         level.level_id,
       );
     } else {
-      console.log(`🔄 REPLAYING LEVEL - No rewards given`);
+      console.log(`🔄 REPLAYING LEVEL - Reduced rewards granted`);
 
       const currentStars = freshProgress?.stars_earned ?? 0;
       const improved = stars > currentStars;
@@ -1977,10 +1981,14 @@ export const submitChallengeService = async (
       completionRewards = {
         feedbackMessage:
           motivationalMessage +
-          "\nAlready completed—no extra rewards. Great practice!",
-        coinsEarned: 0,
-        totalPointsEarned: 0,
-        totalExpPointsEarned: 0,
+          "\nReplay rewards granted at a reduced rate. Great practice!",
+        coinsEarned: scaleReplayReward(replayRewardBase?.coinsEarned ?? 0),
+        totalPointsEarned: scaleReplayReward(
+          replayRewardBase?.totalPointsEarned ?? 0,
+        ),
+        totalExpPointsEarned: scaleReplayReward(
+          replayRewardBase?.totalExpPointsEarned ?? 0,
+        ),
         isVictory: true,
         stars,
       };

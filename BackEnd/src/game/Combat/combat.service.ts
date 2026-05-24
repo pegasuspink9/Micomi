@@ -9,6 +9,7 @@ import { getNextChallengeService } from "../Challenges/challenges.service";
 
 const ENEMY_HEALTH = 30;
 const BOSS_ENEMY_HEALTH = 30;
+const BORROWED_CHALLENGE_COUNT = 12;
 
 const CARD_CONFIG: Record<
   string,
@@ -285,11 +286,14 @@ export function getBaseEnemyHp(level: {
  *   easy : several wrong answers before dying — forgiving but not free
  *   hard : 2-8 wrong answers depending on character — high stakes
  */
-export function getDynamicEnemyDamage(level: {
-  level_number: number | null;
-  level_difficulty: string;
-  challenges?: any[];
-}): number {
+export function getDynamicEnemyDamage(
+  level: {
+    level_number: number | null;
+    level_difficulty: string;
+    challenges?: any[];
+  },
+  overrideChallengeCount?: number,
+): number {
   const isBoss =
     level.level_difficulty === "hard" || level.level_difficulty === "final";
 
@@ -300,7 +304,8 @@ export function getDynamicEnemyDamage(level: {
   // Gentler scaling: 2% per level to avoid runaway damage at high level numbers
   const levelScale = 1 + (levelNumber - 1) * 0.02;
 
-  const questionCount = level.challenges?.length || 1;
+  const questionCount =
+    (overrideChallengeCount ?? level.challenges?.length) || 1;
   // Square-root inverse: more questions → less damage per wrong, but not linearly
   const MIN_QUESTIONS = 7;
   const questionFactor = Math.sqrt(MIN_QUESTIONS / questionCount);
@@ -308,6 +313,29 @@ export function getDynamicEnemyDamage(level: {
   const damage = Math.round(baseDamage * levelScale * questionFactor);
   return Math.max(1, damage);
 }
+
+const resolveChallengeCount = (
+  level: {
+    level_difficulty: string;
+    level_type?: string;
+    challenges?: any[];
+  },
+  progress?: { enemy_max_hp?: number | null } | null,
+) => {
+  const levelCount = level.challenges?.length ?? 0;
+  if (levelCount > 0) return levelCount;
+
+  const isBoss =
+    level.level_difficulty === "hard" || level.level_difficulty === "final";
+  const baseHp = isBoss ? BOSS_ENEMY_HEALTH : ENEMY_HEALTH;
+  const maxHp = progress?.enemy_max_hp ?? 0;
+  const derivedCount = baseHp > 0 ? Math.round(maxHp / baseHp) : 0;
+  if (derivedCount > 0) return derivedCount;
+
+  if (level.level_type === "enemyButton") return BORROWED_CHALLENGE_COUNT;
+
+  return 1;
+};
 
 const safeHp = (hp: number | null | undefined, fallbackMax: number) =>
   typeof hp === "number" && !Number.isNaN(hp)
@@ -446,13 +474,14 @@ export async function getFightSetup(playerId: number, levelId: number) {
 
   const storedMaxHp = progress.enemy_max_hp ?? effectiveEnemyHp;
   const responseEnemyHp = safeHp(progress.enemy_hp, effectiveEnemyHp);
+  const effectiveChallengeCount = resolveChallengeCount(level, progress);
 
   return {
     enemy: {
       enemy_id: enemy.enemy_id,
       enemy_name: enemy.enemy_name,
       enemy_idle: enemy.enemy_avatar,
-      enemy_damage: getDynamicEnemyDamage(level),
+      enemy_damage: getDynamicEnemyDamage(level, effectiveChallengeCount),
       enemy_health: responseEnemyHp,
       enemy_max_health: effectiveEnemyHp,
       enemy_avatar: enemy.avatar_enemy,
@@ -570,7 +599,8 @@ export async function getCurrentFightState(
   const totalChallenges = level.challenges?.length ?? 0;
   const isInBonusRound = enemyHealth <= 0 && answeredCount < totalChallenges;
 
-  let enemyDamage = getDynamicEnemyDamage(level);
+  const effectiveChallengeCount = resolveChallengeCount(level, progress);
+  let enemyDamage = getDynamicEnemyDamage(level, effectiveChallengeCount);
   console.log("- Dynamic enemy damage (getCurrentFightState):", enemyDamage);
   if (progress.has_freeze_effect) {
     enemyDamage = 0;
@@ -1280,7 +1310,10 @@ export async function fightEnemy(
 
     if (!effectiveBonusRound && enemyHealth > 0) {
       if (!freezeConsumedThisTurn) {
-        const baseEnemyDamage = getDynamicEnemyDamage(level);
+        const baseEnemyDamage = getDynamicEnemyDamage(
+          level,
+          resolveChallengeCount(level, progress),
+        );
         const wrongMultiplier = Math.max(1, wrongAnswerCount ?? 1);
         enemy_damage = baseEnemyDamage * wrongMultiplier;
         charHealth = Math.max(charHealth - enemy_damage, 0);
@@ -1516,6 +1549,14 @@ export async function fightEnemy(
     character_current_state = "Reveal";
     character_attack_overlay =
       "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
+  }
+
+  if (status === BattleStatus.won && character.is_range && !character_run) {
+    character_run =
+      runArray[0] ||
+      character.avatar_image ||
+      character.character_avatar ||
+      "ranged_victory_run";
   }
 
   console.log("Final result:");
@@ -1934,7 +1975,10 @@ export async function fightBossEnemy(
       enemy_hurt = enemy.enemy_hurt || null;
     } else if (enemyHealth > 0) {
       if (!freezeConsumedThisTurn) {
-        const baseEnemyDamage = getDynamicEnemyDamage(level);
+        const baseEnemyDamage = getDynamicEnemyDamage(
+          level,
+          resolveChallengeCount(level, progress),
+        );
         const wrongMultiplier = Math.max(1, wrongAnswerCount ?? 1);
         enemy_damage = baseEnemyDamage * wrongMultiplier;
         charHealth = Math.max(charHealth - enemy_damage, 0);
@@ -2194,6 +2238,14 @@ export async function fightBossEnemy(
     character_current_state = "Reveal";
     character_attack_overlay =
       "https://micomi-assets.me/Icons/Miscellaneous/Ryron's%20Flapping%20Wings.png";
+  }
+
+  if (status === BattleStatus.won && character.is_range && !character_run) {
+    character_run =
+      runArray[0] ||
+      character.avatar_image ||
+      character.character_avatar ||
+      "ranged_victory_run";
   }
 
   return {

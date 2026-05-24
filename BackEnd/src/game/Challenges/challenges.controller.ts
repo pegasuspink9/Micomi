@@ -123,13 +123,10 @@ export const submitChallenge = async (req: Request, res: Response) => {
 
       if (level) {
         enhancedResult.completionRewards = {
+          ...(result.completionRewards ?? {}),
           feedbackMessage:
             result.completionRewards?.feedbackMessage ??
             `Level ${level.level_number} completed!`,
-          coinsEarned: result.levelStatus?.coinsEarned ?? 0,
-          totalPointsEarned: result.levelStatus?.totalPointsEarned ?? 0,
-          totalExpPointsEarned: result.levelStatus?.totalExpPointsEarned ?? 0,
-          stars: result.completionRewards?.stars ?? 0,
         };
 
         const nextLevel = await prisma.level.findFirst({
