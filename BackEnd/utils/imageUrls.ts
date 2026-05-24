@@ -13,7 +13,7 @@ export const imagesUrls = [
   "https://micomi-assets.me/Hero/Gino/RunImprove3.png",
   "https://micomi-assets.me/Hero%20Portraits/Gino.png",
   "https://micomi-assets.me/Hero/Gino/attack1.png",
-  "https://micomi-assets.me/Hero/Gino/Attack2Enhanced.png",
+  "https://micomi-assets.me/Hero/Gino/attack2.png",
   "https://micomi-assets.me/Hero/Gino/attack3.png",
   "https://micomi-assets.me/Hero/Gino/attack4.png",
   "https://micomi-assets.me/Hero%20Selection%20Components/gino_entrance.png",
