@@ -17,7 +17,7 @@ export const map = [{
 }, {
     map_id: 'map4',
     map_name: 'Computer',
-    map_image: { uri: 'https://lottie.host/579e4cde-c389-4957-bef0-840e07980830/HxCX628pxI.lottie' },
+    map_image: { uri: 'https://micomi-assets.me/Lottie/Autumn/Islands.lottie' },
     is_active: true,
 }];
 
