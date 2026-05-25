@@ -1,23 +1,12 @@
 import { prisma } from "../../../prisma/client";
 import { getPlayerProfile } from "../Player/player.service";
 import { SocialProfileResponse } from "./social.types";
+import { getSocketServer } from "../../socket";
 
 const normalizeFollowPair = (followerId: number, followingId: number) => ({
   follower_id: followerId,
   following_id: followingId,
 });
-
-const getFollowersCount = async (playerId: number) => {
-  return prisma.follow.count({
-    where: { following_id: playerId },
-  });
-};
-
-const getFollowingCount = async (playerId: number) => {
-  return prisma.follow.count({
-    where: { follower_id: playerId },
-  });
-};
 
 const ensurePlayerExists = async (playerId: number) => {
   const player = await prisma.player.findUnique({
@@ -30,6 +19,23 @@ const ensurePlayerExists = async (playerId: number) => {
   }
 };
 
+const emitNewFollower = (followingId: number, follow: any) => {
+  const io = getSocketServer();
+
+  if (!io) {
+    return;
+  }
+
+  //socket for player's new follower
+  io.to(followingId.toString()).emit("social:new-follower", {
+    follow_id: follow.follow_id,
+    created_at: follow.created_at,
+    follower_id: follow.follower_id,
+    following_id: follow.following_id,
+    follower: follow.follower,
+  });
+};
+
 const createFollow = async (followerId: number, followingId: number) => {
   if (followerId === followingId) {
     throw new Error("You cannot follow yourself.");
@@ -37,7 +43,14 @@ const createFollow = async (followerId: number, followingId: number) => {
 
   await ensurePlayerExists(followingId);
 
-  return prisma.follow.upsert({
+  const existingFollow = await prisma.follow.findUnique({
+    where: {
+      follower_id_following_id: normalizeFollowPair(followerId, followingId),
+    },
+    select: { follow_id: true },
+  });
+
+  const follow = await prisma.follow.upsert({
     where: {
       follower_id_following_id: normalizeFollowPair(followerId, followingId),
     },
@@ -62,6 +75,12 @@ const createFollow = async (followerId: number, followingId: number) => {
       },
     },
   });
+
+  if (!existingFollow) {
+    emitNewFollower(followingId, follow);
+  }
+
+  return follow;
 };
 
 export const followPlayer = async (followerId: number, followingId: number) => {
