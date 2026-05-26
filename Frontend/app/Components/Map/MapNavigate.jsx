@@ -347,7 +347,10 @@ export default function MapNavigate({ onMapChange }) {
               >
                 <LottieView
                   source={getMapImageSource(currentMapData)}
-                  style={styles.islandLottie}
+                  style={[
+                    styles.islandLottie,
+                    currentMapData?.map_name === 'Computer' && styles.computerIslandLottie
+                  ]}
                   autoPlay
                   loop
                   // Only play animation if active
@@ -453,6 +456,11 @@ const styles = StyleSheet.create({
     // Slight scale up to fill space nicely
     width: '120%',
     height: '120%',
+  },
+  computerIslandLottie: {
+    width: '105%',
+    height: '105%',
+    marginTop: -25
   },
   // --------------------------
 

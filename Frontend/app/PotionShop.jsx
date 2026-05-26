@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { 
-  Text, 
-  View, 
-  StyleSheet, 
+import {
+  Text,
+  View,
+  StyleSheet,
   ImageBackground,
   Dimensions,
   Image,
   Pressable,
   ScrollView,
   TouchableOpacity,
-  Animated, 
-  Easing,   
+  Animated,
+  Easing,
 } from "react-native";
 import SpriteActivityIndicator from './Components/Actual Game/Loading/SpriteActivityIndicator';
 import {
@@ -34,16 +34,16 @@ import Reanimated, {
   Easing as ReanimatedEasing,
   cancelAnimation
 } from 'react-native-reanimated';
-import BackButton from './Components/Actual Game/Back/BackButton'; 
+import BackButton from './Components/Actual Game/Back/BackButton';
 import { soundManager } from './Components/Actual Game/Sounds/UniversalSoundManager';
 import { usePlayerProfile } from '../app/hooks/usePlayerProfile';
 import { useFocusEffect } from '@react-navigation/native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-  const SHOP_BG = 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760334965/shop_holder_deydxu.png';
-  const SHOP_VIDEO = 'https://micomi-assets.me/Hero%20Selection%20Components/Shi-Shi%20Shop.mp4';
-  const SHOP_HOLDER = 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760334965/shop_holder_deydxu.png';
+const SHOP_BG = 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760334965/shop_holder_deydxu.png';
+const SHOP_VIDEO = 'https://micomi-assets.me/Hero%20Selection%20Components/Shi-Shi%20Shop.mp4';
+const SHOP_HOLDER = 'https://res.cloudinary.com/dm8i9u1pk/image/upload/v1760334965/shop_holder_deydxu.png';
 
 
 const transformPotionData = (potionShop = []) => {
@@ -109,7 +109,7 @@ const PotionSprite = ({ icon, disabled = false, frameSize = gameScale(120) }) =>
   });
 
   return (
-    <View style={[styles.spriteContainer, { width: frameSize, height: frameSize, opacity: disabled ? 0.3 : 1, transform: [{ translateX: -frameSize/2 }, { translateY: -frameSize/2 }] }]}>
+    <View style={[styles.spriteContainer, { width: frameSize, height: frameSize, opacity: disabled ? 0.3 : 1, transform: [{ translateX: -frameSize / 2 }, { translateY: -frameSize / 2 }] }]}>
       <Reanimated.View style={[
         styles.spriteSheet,
         {
@@ -146,12 +146,12 @@ const PotionDropAnimation = ({ imageUri, onAnimationComplete }) => {
   }, []);
 
   // STARTING POSITION: Approximate center of the Detail Modal Potion Image
-  const startX = SCREEN_WIDTH * 0.5 - scaleWidth(60); 
-  const startY = SCREEN_HEIGHT * 0.35; 
+  const startX = SCREEN_WIDTH * 0.5 - scaleWidth(60);
+  const startY = SCREEN_HEIGHT * 0.35;
 
   // END POSITION: Center of the Inventory Cabinet at bottom
   const endY = SCREEN_HEIGHT - scaleHeight(5);
-  const endX = SCREEN_WIDTH / 2 - scaleWidth(30); 
+  const endX = SCREEN_WIDTH / 2 - scaleWidth(30);
 
   const translateY = animatedValue.interpolate({
     inputRange: [0, 1],
@@ -194,11 +194,11 @@ const PotionDropAnimation = ({ imageUri, onAnimationComplete }) => {
 // --------------------------------------------------
 
 export default function PotionShop() {
-  const params = useLocalSearchParams(); 
+  const params = useLocalSearchParams();
   const router = useRouter();
-  
-  const levelId = parseInt(params.levelId) || 5; 
-  const levelData = params.levelData ? JSON.parse(params.levelData) : null; 
+
+  const levelId = parseInt(params.levelId) || 5;
+  const levelData = params.levelData ? JSON.parse(params.levelData) : null;
 
   const [selected, setSelected] = useState(null);
   const [potions, setPotions] = useState([]);
@@ -206,8 +206,8 @@ export default function PotionShop() {
   const [error, setError] = useState(null);
   const [playerCoins, setPlayerCoins] = useState(0);
   const [assetsLoading, setAssetsLoading] = useState(false);
-  const [buyingPotion, setBuyingPotion] = useState(false); 
-  
+  const [buyingPotion, setBuyingPotion] = useState(false);
+
   // State for dropping animation
   const [droppingPotion, setDroppingPotion] = useState(null);
 
@@ -224,7 +224,7 @@ export default function PotionShop() {
 
 
   const { playerData, loadPlayerProfile, refreshPlayerData } = usePlayerProfile();
-  const currentPlayerCoins = playerData?.coins || 0; 
+  const currentPlayerCoins = playerData?.coins || 0;
 
   useFocusEffect(
     useCallback(() => {
@@ -232,7 +232,7 @@ export default function PotionShop() {
 
       const syncInterval = setInterval(() => {
         refreshPlayerData();
-      }, 5000); 
+      }, 5000);
 
       return () => clearInterval(syncInterval);
     }, [loadPlayerProfile, refreshPlayerData])
@@ -242,21 +242,21 @@ export default function PotionShop() {
   const fetchPotionData = async () => {
     try {
       // Only set main loading on initial load to avoid flickering during drops
-      if(potions.length === 0) setLoading(true);
+      if (potions.length === 0) setLoading(true);
       setError(null);
-      
+
       const response = await gameService.getShopPotions();
-      
+
       if (!response.success) {
         throw new Error(response.message || 'Failed to fetch potion shop');
       }
 
       const { potionShop, player_info } = response.data;
-      
+
       const transformedPotions = transformPotionData(potionShop);
       setPotions(transformedPotions);
       setPlayerCoins(player_info?.coins || 0);
-      
+
       if (transformedPotions.length > 0 && !assetsLoading) {
         setAssetsLoading(true);
         await preloadPotionAssets(transformedPotions);
@@ -272,16 +272,16 @@ export default function PotionShop() {
 
   useEffect(() => {
     fetchPotionData();
-  }, [levelId]); 
+  }, [levelId]);
 
   const handleBuyPotion = async (potion) => {
-    if (buyingPotion) return; 
+    if (buyingPotion) return;
 
     setBuyingPotion(true);
     setError(null);
 
     try {
-      const response = await gameService.buyPotion(potion.potion_id); 
+      const response = await gameService.buyPotion(potion.potion_id);
       if (response.success) {
         // 1. Trigger Animation BEFORE fetching new data
         const cachedImage = getCachedImagePath(potion.image);
@@ -321,11 +321,11 @@ export default function PotionShop() {
       if (assets.length === 0) return;
 
       await Promise.allSettled(
-        assets.map(asset => 
+        assets.map(asset =>
           universalAssetPreloader.downloadSingleAsset(
             asset.url,
             asset.category,
-            () => {}
+            () => { }
           )
         )
       );
@@ -356,9 +356,9 @@ export default function PotionShop() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <ImageBackground 
-          source={{ uri: getCachedShopBG() }} 
-          style={styles.ImageBackgroundContainer} 
+        <ImageBackground
+          source={{ uri: getCachedShopBG() }}
+          style={styles.ImageBackgroundContainer}
           resizeMode="cover"
         >
           <View style={styles.backgroundOverlay} />
@@ -376,9 +376,9 @@ export default function PotionShop() {
   if (error) {
     return (
       <View style={styles.container}>
-        <ImageBackground 
-          source={{ uri: getCachedShopBG() }} 
-          style={styles.ImageBackgroundContainer} 
+        <ImageBackground
+          source={{ uri: getCachedShopBG() }}
+          style={styles.ImageBackgroundContainer}
           resizeMode="cover"
         >
           <View style={styles.backgroundOverlay} />
@@ -395,24 +395,23 @@ export default function PotionShop() {
 
   return (
     <View style={styles.container}>
-      <ImageBackground 
-        source={{ uri: getCachedShopBG() }} 
-        style={styles.ImageBackgroundContainer} 
+      <ImageBackground
+        source={{ uri: getCachedShopBG() }}
+        style={styles.ImageBackgroundContainer}
         resizeMode="cover"
       >
         <View style={styles.backgroundOverlay} />
 
-        <BackButton 
-          width={scaleWidth(100)} 
+        <BackButton
+          width={scaleWidth(100)}
           height={scaleHeight(80)}
-          tintColor="#ff670eab" 
-          tintOpacity={0.9} 
-          containerStyle={styles.backButtonContainer} 
+          tintOpacity={0.9}
+          containerStyle={styles.backButtonContainer}
         />
-        
+
         <View style={styles.topFrame}>
-        <Video
-          source={getCachedVideoSource()}
+          <Video
+            source={getCachedVideoSource()}
             style={styles.ImageBackgroundTop}
             shouldPlay
             isLooping
@@ -421,10 +420,10 @@ export default function PotionShop() {
             isMuted={true}
           />
         </View>
-        
+
         <View style={styles.bottomFrame}>
-        <ImageBackground 
-          source={{ uri: getCachedShopHolder() }} 
+          <ImageBackground
+            source={{ uri: getCachedShopHolder() }}
             style={styles.ImageBackgroundBottom}
             resizeMode="contain"
           >
@@ -436,9 +435,9 @@ export default function PotionShop() {
               <View style={styles.resourceCapsuleCompact}>
                 <Text style={styles.resourceTextCompact}>{currentPlayerCoins}</Text>
               </View>
-              <Image 
-                source={require('../app/Components/icons/coins.png')} 
-                style={styles.coinIconAbsoluteCompact} 
+              <Image
+                source={require('../app/Components/icons/coins.png')}
+                style={styles.coinIconAbsoluteCompact}
                 contentFit="contain"
                 cachePolicy="memory-disk"
               />
@@ -446,16 +445,16 @@ export default function PotionShop() {
           </View>
 
           <View style={styles.potionsOverlay}>
-             <PotionsGrid data={potions} onSelect={setSelected} getCachedImagePath={getCachedImagePath} />
-            
+            <PotionsGrid data={potions} onSelect={setSelected} getCachedImagePath={getCachedImagePath} />
+
             {selected && (
               <View style={styles.detailOverlay}>
-                <DetailView 
-                  selected={selected} 
+                <DetailView
+                  selected={selected}
                   onBack={() => setSelected(null)}
                   playerCoins={playerCoins} // Use existing playerCoins from PotionShop state
                   getCachedImagePath={getCachedImagePath}
-                  onBuy={handleBuyPotion} 
+                  onBuy={handleBuyPotion}
                   buyingPotion={buyingPotion}
                 />
               </View>
@@ -471,8 +470,8 @@ export default function PotionShop() {
                   {potions.map((potion, index) => (
                     <View key={`inv-${potion.id}`} style={styles.inventorySlot}>
                       <View style={styles.inventoryImageContainer}>
-                        <PotionSprite 
-                          icon={getCachedImagePath(potion.image)} 
+                        <PotionSprite
+                          icon={getCachedImagePath(potion.image)}
                           frameSize={gameScale(70)}
                         />
                       </View>
@@ -493,8 +492,8 @@ export default function PotionShop() {
         </View>
 
         {droppingPotion && (
-          <PotionDropAnimation 
-            imageUri={droppingPotion} 
+          <PotionDropAnimation
+            imageUri={droppingPotion}
             onAnimationComplete={() => setDroppingPotion(null)}
           />
         )}
@@ -506,34 +505,34 @@ export default function PotionShop() {
 
 function PotionsGrid({ data, onSelect, getCachedImagePath }) {
   return (
-    <ScrollView 
+    <ScrollView
       contentContainerStyle={styles.gridWrap}
       showsVerticalScrollIndicator={false}
     >
       {data.map((potion) => {
         const colors = getPotionColors(potion.name);
         const cachedImagePath = getCachedImagePath(potion.image);
-        
+
         return (
           <View key={potion.id} style={styles.cardCell}>
             <Pressable
-              onPress={() => onSelect(potion)} 
+              onPress={() => onSelect(potion)}
               style={({ pressed }) => [
                 styles.potionFrame,
                 { backgroundColor: colors.frameColor },
                 pressed && { transform: [{ translateY: 1 }] },
               ]}
             >
-               {/* --- CHANGED: Name Tag Moved to Header --- */}
-               <View style={styles.nameTagHeader}>
-                  <Text style={styles.nameText}>{potion.name}</Text>
-               </View>
-               
-               {/* --- 3D DOTS (Bolts/Rivets) --- */}
-               <View style={[styles.cornerDot, styles.dotTopLeft]} />
-               <View style={[styles.cornerDot, styles.dotTopRight]} />
-               <View style={[styles.cornerDot, styles.dotBottomLeft]} />
-               <View style={[styles.cornerDot, styles.dotBottomRight]} />
+              {/* --- CHANGED: Name Tag Moved to Header --- */}
+              <View style={styles.nameTagHeader}>
+                <Text style={styles.nameText}>{potion.name}</Text>
+              </View>
+
+              {/* --- 3D DOTS (Bolts/Rivets) --- */}
+              <View style={[styles.cornerDot, styles.dotTopLeft]} />
+              <View style={[styles.cornerDot, styles.dotTopRight]} />
+              <View style={[styles.cornerDot, styles.dotBottomLeft]} />
+              <View style={[styles.cornerDot, styles.dotBottomRight]} />
 
               <View
                 style={[
@@ -551,11 +550,11 @@ function PotionsGrid({ data, onSelect, getCachedImagePath }) {
                   <View style={styles.potionSlotContent}>
                     <View style={styles.potionHighlight} />
                     <View style={styles.potionShadow} />
-                    
-                    <PotionSprite 
-                      icon={cachedImagePath} 
+
+                    <PotionSprite
+                      icon={cachedImagePath}
                     />
-                    
+
                     {/* Name container removed from bottom */}
                   </View>
                 </View>
@@ -572,7 +571,7 @@ function DetailView({ selected, onBack, playerCoins, getCachedImagePath, onBuy, 
   const colors = getPotionColors(selected.name);
   const cannotBuy = playerCoins < selected.price;
   const cachedImagePath = getCachedImagePath(selected.image);
-  
+
 
   const buttonBorderColors = {
     outerBg: '#01547dff',
@@ -607,7 +606,7 @@ function DetailView({ selected, onBack, playerCoins, getCachedImagePath, onBuy, 
     innerBorder: 'rgba(158, 158, 161, 0.3)',
   };
 
-  
+
   const renderButton = (title, onPress, isDisabled, isBuyButton = false) => {
     const buttonColors = isDisabled ? buttonDisabledBorderColors : buttonSelectedBorderColors;
 
@@ -636,7 +635,7 @@ function DetailView({ selected, onBack, playerCoins, getCachedImagePath, onBuy, 
             }
           ]}>
             {/* 3-Layer Border - Inner (Touchable) */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.buttonBorderInner,
                 {
@@ -665,18 +664,18 @@ function DetailView({ selected, onBack, playerCoins, getCachedImagePath, onBuy, 
   };
 
 
-   return (
+  return (
     <View style={[styles.detailCard, { borderColor: colors.border }]}>
-      <View style={[styles.potionFrame, { 
-        backgroundColor: colors.frameColor, 
-        width: SCREEN_WIDTH * 0.45, 
-        height: SCREEN_WIDTH * 0.55 
+      <View style={[styles.potionFrame, {
+        backgroundColor: colors.frameColor,
+        width: SCREEN_WIDTH * 0.45,
+        height: SCREEN_WIDTH * 0.55
       }]}>
-         {/* --- 3D DOTS for Detail View too --- */}
-         <View style={[styles.cornerDot, styles.dotTopLeft]} />
-         <View style={[styles.cornerDot, styles.dotTopRight]} />
-         <View style={[styles.cornerDot, styles.dotBottomLeft]} />
-         <View style={[styles.cornerDot, styles.dotBottomRight]} />
+        {/* --- 3D DOTS for Detail View too --- */}
+        <View style={[styles.cornerDot, styles.dotTopLeft]} />
+        <View style={[styles.cornerDot, styles.dotTopRight]} />
+        <View style={[styles.cornerDot, styles.dotBottomLeft]} />
+        <View style={[styles.cornerDot, styles.dotBottomRight]} />
 
         <View
           style={[
@@ -694,9 +693,9 @@ function DetailView({ selected, onBack, playerCoins, getCachedImagePath, onBuy, 
             <View style={styles.potionSlotContent}>
               <View style={styles.potionHighlight} />
               <View style={styles.potionShadow} />
-              
-              <PotionSprite 
-                icon={cachedImagePath} 
+
+              <PotionSprite
+                icon={cachedImagePath}
                 frameSize={gameScale(200)}
               />
             </View>
@@ -728,12 +727,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1
   },
-  
+
   droppingPotionContainer: {
     position: 'absolute',
     top: 0,
     left: 0,
-    zIndex: 9999, 
+    zIndex: 9999,
     elevation: 20,
     width: gameScale(100),
     height: gameScale(100),
@@ -750,7 +749,7 @@ const styles = StyleSheet.create({
     height: '100%',
     alignContent: 'center',
   },
-  ImageBackgroundTop:{
+  ImageBackgroundTop: {
     width: scaleWidth(460),
     height: scaleHeight(400),
   },
@@ -762,7 +761,7 @@ const styles = StyleSheet.create({
   },
   backgroundOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.54)', 
+    backgroundColor: 'rgba(0, 0, 0, 0.54)',
   },
   topFrame: {
     height: hp(40),
@@ -771,32 +770,32 @@ const styles = StyleSheet.create({
     borderBottomWidth: scale(20),
     borderBottomColor: 'rgba(255, 255, 255, 0.3)',
   },
-    bottomFrame: {
+  bottomFrame: {
     height: hp(60),
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative', 
+    position: 'relative',
   },
-  
+
   bottomFrameCoinContainer: {
     position: 'absolute',
     top: gameScale(-20), // Adjust as needed for padding from the top edge of bottomFrame
-    right: gameScale(20), 
+    right: gameScale(20),
   },
   resourceWrapperCompact: {
-    
+
     position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
-    height: gameScale(30), 
+    height: gameScale(30),
   },
   resourceCapsuleCompact: {
     backgroundColor: 'rgb(190, 113, 11)', // Same as MapHeader's default
     borderRadius: gameScale(15),
     paddingVertical: gameScale(1),
     paddingRight: gameScale(10),
-    paddingLeft: gameScale(20), 
-    minWidth: gameScale(60), 
+    paddingLeft: gameScale(20),
+    minWidth: gameScale(60),
     justifyContent: 'center',
   },
   resourceTextCompact: {
@@ -838,7 +837,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scaleWidth(30),
   },
   cardCell: {
-    width: '30%',    
+    width: '30%',
     marginBottom: scaleHeight(20),
     alignItems: 'center',
   },
@@ -861,7 +860,7 @@ const styles = StyleSheet.create({
     borderRightWidth: 2,
     borderRightColor: 'rgba(0, 0, 0, 0.3)',
     // Needed for positioning dots and header
-    position: 'relative', 
+    position: 'relative',
     marginTop: scaleHeight(15), // Add space for the header tag
   },
   potionSlot: {
@@ -921,7 +920,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: SCREEN_WIDTH * 0.015,
     borderBottomRightRadius: SCREEN_WIDTH * 0.015,
   },
-  
+
   nameText: {
     color: '#ffffffff',
     fontSize: SCREEN_WIDTH * 0.026,
@@ -962,10 +961,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: RESPONSIVE.margin.sm,
   },
   buttonHighlight: {
-    position: 'absolute', 
-    top: 0, 
-    left: 0, 
-    right: 0, 
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     height: '40%',
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderTopLeftRadius: RESPONSIVE.borderRadius.xs,
@@ -973,21 +972,21 @@ const styles = StyleSheet.create({
     pointerEvents: 'none',
   },
   buttonShadow: {
-    position: 'absolute', 
-    bottom: 0, 
-    left: 0, 
-    right: 0, 
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     height: '30%',
-    backgroundColor: 'rgba(0, 0, 0, 0.15)', 
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
     borderBottomLeftRadius: RESPONSIVE.borderRadius.xs,
     borderBottomRightRadius: RESPONSIVE.borderRadius.xs,
     pointerEvents: 'none',
   },
   buttonText: {
     fontSize: RESPONSIVE.fontSize.sm,
-    color: '#ffffff', 
+    color: '#ffffff',
     textAlign: 'center',
-    fontFamily: 'DynaPuff', 
+    fontFamily: 'DynaPuff',
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: scale(1), height: scale(1) },
     textShadowRadius: scale(2),
@@ -998,7 +997,7 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.2)',
   },
 
-  
+
   // --- NEW 3D DOTS STYLES ---
   cornerDot: {
     position: 'absolute',
@@ -1073,18 +1072,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
     width: scaleWidth(180),
     alignSelf: 'center',
-    gap:10
+    gap: 10
   },
   keyActive: {
-    backgroundColor: '#ffffffff',          
+    backgroundColor: '#ffffffff',
     borderColor: '#8f0000ff',
     borderWidth: 2,
     shadowColor: '#000',
-    shadowOffset: { width: -1, height: 3 }, 
+    shadowOffset: { width: -1, height: 3 },
     shadowOpacity: 0.12,
     shadowRadius: 3,
     elevation: 4,
-    transform: [{ translateY: 0 }],        
+    transform: [{ translateY: 0 }],
   },
   keyDisabled: {
     backgroundColor: '#e1e1e1',
@@ -1092,7 +1091,7 @@ const styles = StyleSheet.create({
   },
   keyText: {
     fontFamily: 'DynaPuff',
-    color: '#111827',   
+    color: '#111827',
   },
   buyButton: {
     flex: 1,
@@ -1103,9 +1102,9 @@ const styles = StyleSheet.create({
   },
   backButtonContainer: {
     position: 'absolute',
-    top: scaleHeight(20), 
+    top: scaleHeight(20),
     left: scaleWidth(-10),
-    zIndex: 1000, 
+    zIndex: 1000,
   },
   actionText: {
     color: '#fff',
@@ -1132,10 +1131,10 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#943f02ff', 
+    backgroundColor: '#943f02ff',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    padding: 3, 
+    padding: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.6,
@@ -1146,11 +1145,11 @@ const styles = StyleSheet.create({
   cabinetMiddleBorder: {
     flex: 1,
     backgroundColor: '#8b371eff',
-    padding: 3,   
+    padding: 3,
   },
   cabinetInnerBorder: {
     flex: 1,
-    backgroundColor: '#3e2723', 
+    backgroundColor: '#3e2723',
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
     borderBottomLeftRadius: 10,
@@ -1159,7 +1158,7 @@ const styles = StyleSheet.create({
   },
   inventoryCabinet: {
     flex: 1,
-    backgroundColor: '#58362eff', 
+    backgroundColor: '#58362eff',
     justifyContent: 'center',
   },
   inventoryScroll: {
@@ -1200,9 +1199,9 @@ const styles = StyleSheet.create({
     bottom: 15,
     width: 2,
     height: '100%',
-    backgroundColor: '#3E2723', 
+    backgroundColor: '#3E2723',
     borderRightWidth: 1,
-    borderRightColor: '#5D4037', 
+    borderRightColor: '#5D4037',
   },
   emptyInventoryText: {
     color: '#a1887f',
