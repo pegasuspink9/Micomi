@@ -6,13 +6,13 @@ import { io } from "../../index";
 import { calculatePlayerLevel } from "../Player/player.service";
 
 const DAILY_REWARDS = [
-  { day: 1, coins: 50, exp: 20 },
-  { day: 2, coins: 75, exp: 30 },
-  { day: 3, coins: 100, exp: 40 },
-  { day: 4, coins: 125, exp: 50 },
-  { day: 5, coins: 150, exp: 60 },
-  { day: 6, coins: 200, exp: 80 },
-  { day: 7, coins: 300, exp: 120 },
+  { day: 1, coins: 300, exp: 120 },
+  { day: 2, coins: 450, exp: 180 },
+  { day: 3, coins: 600, exp: 240 },
+  { day: 4, coins: 750, exp: 300 },
+  { day: 5, coins: 900, exp: 360 },
+  { day: 6, coins: 1200, exp: 480 },
+  { day: 7, coins: 1800, exp: 720 },
 ] as const;
 
 const getCurrentRewardDay = (

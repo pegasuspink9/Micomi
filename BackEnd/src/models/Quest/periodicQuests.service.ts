@@ -274,6 +274,8 @@ const QUEST_CONCURRENCY_LIMIT = Math.max(
   Number.parseInt(process.env.QUEST_CONCURRENCY_LIMIT || "", 10) || 3,
 );
 
+const MIN_COIN_REWARD = 300;
+
 function getQuestCount(period: QuestPeriod) {
   return period === "daily" ? 15 : period === "weekly" ? 10 : 7;
 }
@@ -416,12 +418,23 @@ export function generateQuestsByPeriod(
     if (period === "monthly") periodMultiplier = 1.5;
 
     const difficultyMultiplier = targetValue / template.minTarget;
-    const rewardExp = Math.round(
+    let rewardExp = Math.round(
       template.baseExpReward * difficultyMultiplier * periodMultiplier,
     );
-    const rewardCoins = Math.round(
+    let rewardCoins = Math.round(
       template.baseCoinReward * difficultyMultiplier * periodMultiplier,
     );
+
+    if (rewardCoins < MIN_COIN_REWARD) {
+      const scale = rewardCoins > 0 ? MIN_COIN_REWARD / rewardCoins : 1;
+      rewardCoins = MIN_COIN_REWARD;
+      if (scale > 1) {
+        const scaledExp = Math.round(rewardExp * scale);
+        if (scaledExp > rewardExp) {
+          rewardExp = scaledExp;
+        }
+      }
+    }
 
     return {
       title: template.titleTemplate.replace("{count}", targetValue.toString()),
