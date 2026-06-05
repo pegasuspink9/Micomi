@@ -19,8 +19,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Defeat {count} enemies in any level!",
     minTarget: 3,
     maxTarget: 10,
-    baseExpReward: 50,
-    baseCoinReward: 25,
+    baseExpReward: 100,
+    baseCoinReward: 50,
     availableFor: ["daily", "weekly", "monthly"],
   },
   {
@@ -29,8 +29,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Successfully solve {count} challenges!",
     minTarget: 2,
     maxTarget: 8,
-    baseExpReward: 60,
-    baseCoinReward: 30,
+    baseExpReward: 120,
+    baseCoinReward: 60,
     availableFor: ["daily", "weekly", "monthly"],
   },
   {
@@ -39,8 +39,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Purchase {count} potions from the shop!",
     minTarget: 1,
     maxTarget: 3,
-    baseExpReward: 30,
-    baseCoinReward: 15,
+    baseExpReward: 100,
+    baseCoinReward: 150,
     availableFor: ["daily"],
   },
   {
@@ -49,8 +49,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Use {count} potions strategically in battle!",
     minTarget: 2,
     maxTarget: 5,
-    baseExpReward: 40,
-    baseCoinReward: 20,
+    baseExpReward: 110,
+    baseCoinReward: 55,
     availableFor: ["daily"],
   },
   {
@@ -59,8 +59,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Complete {count} Micomi lessons!",
     minTarget: 1,
     maxTarget: 3,
-    baseExpReward: 70,
-    baseCoinReward: 35,
+    baseExpReward: 150,
+    baseCoinReward: 75,
     availableFor: ["daily", "weekly"],
   },
 
@@ -70,8 +70,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Defeat {count} enemies this week!",
     minTarget: 3,
     maxTarget: 8,
-    baseExpReward: 300,
-    baseCoinReward: 150,
+    baseExpReward: 400,
+    baseCoinReward: 200,
     availableFor: ["weekly"],
   },
   {
@@ -80,8 +80,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Solve {count} challenges this week!",
     minTarget: 15,
     maxTarget: 40,
-    baseExpReward: 350,
-    baseCoinReward: 175,
+    baseExpReward: 500,
+    baseCoinReward: 250,
     availableFor: ["weekly"],
   },
   {
@@ -90,8 +90,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Earn {count} experience points this week!",
     minTarget: 500,
     maxTarget: 1500,
-    baseExpReward: 400,
-    baseCoinReward: 200,
+    baseExpReward: 450,
+    baseCoinReward: 225,
     availableFor: ["weekly"],
   },
   {
@@ -100,8 +100,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Complete {count} levels with perfect scores!",
     minTarget: 3,
     maxTarget: 7,
-    baseExpReward: 500,
-    baseCoinReward: 250,
+    baseExpReward: 600,
+    baseCoinReward: 300,
     availableFor: ["weekly"],
   },
   {
@@ -110,8 +110,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Defeat {count} bosses this week!",
     minTarget: 1,
     maxTarget: 3,
-    baseExpReward: 600,
-    baseCoinReward: 300,
+    baseExpReward: 800,
+    baseCoinReward: 400,
     availableFor: ["weekly"],
   },
   {
@@ -120,8 +120,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Login for {count} days this week!",
     minTarget: 4,
     maxTarget: 7,
-    baseExpReward: 450,
-    baseCoinReward: 225,
+    baseExpReward: 500,
+    baseCoinReward: 250,
     availableFor: ["weekly"],
   },
 
@@ -131,8 +131,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Defeat {count} enemies this month!",
     minTarget: 30,
     maxTarget: 52,
-    baseExpReward: 1500,
-    baseCoinReward: 750,
+    baseExpReward: 2000,
+    baseCoinReward: 1000,
     availableFor: ["monthly"],
   },
   {
@@ -141,8 +141,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Solve {count} challenges this month!",
     minTarget: 80,
     maxTarget: 150,
-    baseExpReward: 1800,
-    baseCoinReward: 900,
+    baseExpReward: 2500,
+    baseCoinReward: 1250,
     availableFor: ["monthly"],
   },
   {
@@ -151,8 +151,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Earn {count} experience points this month!",
     minTarget: 3000,
     maxTarget: 7000,
-    baseExpReward: 2000,
-    baseCoinReward: 1000,
+    baseExpReward: 2500,
+    baseCoinReward: 1250,
     availableFor: ["monthly"],
   },
   {
@@ -161,8 +161,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Reach level {count} this month!",
     minTarget: 10,
     maxTarget: 25,
-    baseExpReward: 2500,
-    baseCoinReward: 1250,
+    baseExpReward: 3000,
+    baseCoinReward: 1500,
     availableFor: ["monthly"],
   },
   {
@@ -171,8 +171,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Unlock {count} characters this month!",
     minTarget: 2,
     maxTarget: 4,
-    baseExpReward: 3000,
-    baseCoinReward: 1500,
+    baseExpReward: 4000,
+    baseCoinReward: 2000,
     availableFor: ["monthly"],
   },
   {
@@ -181,8 +181,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Defeat {count} bosses this month!",
     minTarget: 3,
     maxTarget: 12,
-    baseExpReward: 2800,
-    baseCoinReward: 1400,
+    baseExpReward: 3500,
+    baseCoinReward: 1750,
     availableFor: ["monthly"],
   },
   {
@@ -191,8 +191,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Spend {count} coins this month!",
     minTarget: 500,
     maxTarget: 1500,
-    baseExpReward: 1200,
-    baseCoinReward: 600,
+    baseExpReward: 1500,
+    baseCoinReward: 750,
     availableFor: ["monthly"],
   },
   {
@@ -201,8 +201,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Complete {count} challenges without hints!",
     minTarget: 15,
     maxTarget: 30,
-    baseExpReward: 2200,
-    baseCoinReward: 1100,
+    baseExpReward: 2800,
+    baseCoinReward: 1400,
     availableFor: ["monthly"],
   },
   {
@@ -211,18 +211,19 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Win {count} battles without taking damage!",
     minTarget: 10,
     maxTarget: 20,
-    baseExpReward: 2600,
-    baseCoinReward: 1300,
+    baseExpReward: 3000,
+    baseCoinReward: 1500,
     availableFor: ["monthly"],
   },
+
   {
     objective_type: QuestType.pvp_matches_total,
     titleTemplate: "PvP Challenger",
     descriptionTemplate: "Complete {count} PvP matches!",
     minTarget: 3,
     maxTarget: 8,
-    baseExpReward: 75,
-    baseCoinReward: 40,
+    baseExpReward: 120,
+    baseCoinReward: 60,
     availableFor: ["daily", "weekly"],
   },
   {
@@ -232,8 +233,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
       "Complete {count} PvP matches with your followers/following!",
     minTarget: 2,
     maxTarget: 5,
-    baseExpReward: 100,
-    baseCoinReward: 50,
+    baseExpReward: 150,
+    baseCoinReward: 75,
     availableFor: ["daily", "weekly", "monthly"],
   },
   {
@@ -242,8 +243,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Win {count} PvP matches!",
     minTarget: 2,
     maxTarget: 6,
-    baseExpReward: 90,
-    baseCoinReward: 45,
+    baseExpReward: 160,
+    baseCoinReward: 80,
     availableFor: ["daily", "weekly", "monthly"],
   },
   {
@@ -252,8 +253,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Win {count} PvP matches against your friends!",
     minTarget: 1,
     maxTarget: 4,
-    baseExpReward: 120,
-    baseCoinReward: 60,
+    baseExpReward: 300,
+    baseCoinReward: 150,
     availableFor: ["weekly", "monthly"],
   },
   {
@@ -262,8 +263,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     descriptionTemplate: "Win {count} PvP matches without making any mistakes!",
     minTarget: 1,
     maxTarget: 3,
-    baseExpReward: 150,
-    baseCoinReward: 75,
+    baseExpReward: 400,
+    baseCoinReward: 200,
     availableFor: ["weekly", "monthly"],
   },
 ];
@@ -272,6 +273,8 @@ const QUEST_CONCURRENCY_LIMIT = Math.max(
   1,
   Number.parseInt(process.env.QUEST_CONCURRENCY_LIMIT || "", 10) || 3,
 );
+
+const MIN_COIN_REWARD = 300;
 
 function getQuestCount(period: QuestPeriod) {
   return period === "daily" ? 15 : period === "weekly" ? 10 : 7;
@@ -415,12 +418,23 @@ export function generateQuestsByPeriod(
     if (period === "monthly") periodMultiplier = 1.5;
 
     const difficultyMultiplier = targetValue / template.minTarget;
-    const rewardExp = Math.round(
+    let rewardExp = Math.round(
       template.baseExpReward * difficultyMultiplier * periodMultiplier,
     );
-    const rewardCoins = Math.round(
+    let rewardCoins = Math.round(
       template.baseCoinReward * difficultyMultiplier * periodMultiplier,
     );
+
+    if (rewardCoins < MIN_COIN_REWARD) {
+      const scale = rewardCoins > 0 ? MIN_COIN_REWARD / rewardCoins : 1;
+      rewardCoins = MIN_COIN_REWARD;
+      if (scale > 1) {
+        const scaledExp = Math.round(rewardExp * scale);
+        if (scaledExp > rewardExp) {
+          rewardExp = scaledExp;
+        }
+      }
+    }
 
     return {
       title: template.titleTemplate.replace("{count}", targetValue.toString()),
