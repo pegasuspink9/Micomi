@@ -25,7 +25,7 @@
     },
     "android": {
       "package": "com.micomi.app",
-      "versionCode": 4,
+      "versionCode": 5,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/main-icon.png",
         "backgroundColor": "#98d4de"
@@ -45,7 +45,8 @@
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE",
         "android.permission.VIBRATE",
-        "android.permission.POST_NOTIFICATIONS"
+        "android.permission.POST_NOTIFICATIONS",
+        "com.android.vending.BILLING"
       ]
     },
     "web": {

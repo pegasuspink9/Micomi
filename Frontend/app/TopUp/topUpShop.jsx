@@ -188,7 +188,7 @@ export default function TopUpShop() {
 
     const fetchIAPProducts = async () => {
       try {
-        const skus = catalog.map(item => item.item_id).filter(Boolean);
+        const skus = catalog.map(item => item.google_product_id || item.item_id).filter(Boolean);
         if (skus.length > 0) {
           console.log('[TopUpShop] Fetching products from store for SKUs:', skus);
           const products = await IAP.getProducts({ skus });
@@ -243,7 +243,7 @@ export default function TopUpShop() {
 
               try {
                 const purchaseToken = generateMockToken();
-                const result = await topUpShopService.verifyPurchase(item.item_id, purchaseToken);
+                const result = await topUpShopService.verifyPurchase(item.google_product_id || item.item_id, purchaseToken);
                 showAlert(
                   'Purchase Successful',
                   result?.message || 'Your purchase was completed successfully.',
@@ -264,15 +264,15 @@ export default function TopUpShop() {
       setPurchasingItemId(item.item_id);
 
       try {
-        console.log(`[TopUpShop] Requesting native purchase for SKU: ${item.item_id}`);
+        console.log(`[TopUpShop] Requesting native purchase for SKU: ${item.google_product_id || item.item_id}`);
         // requestPurchase triggers the official Google Play Billing Bottom Sheet
         await IAP.requestPurchase({
           request: {
             google: {
-              skus: [item.item_id],
+              skus: [item.google_product_id || item.item_id],
             },
             apple: {
-              sku: item.item_id,
+              sku: item.apple_product_id || item.google_product_id || item.item_id,
               andDangerouslyFinishTransactionAutomatically: false,
             },
           },
