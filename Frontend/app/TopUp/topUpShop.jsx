@@ -60,6 +60,7 @@ export default function TopUpShop() {
   const [error, setError] = useState(null);
   const [purchasingItemId, setPurchasingItemId] = useState(null);
   const purchaseInFlight = useRef(false);
+  const [isIAPConnected, setIsIAPConnected] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(
     typeof params.category === 'string' && params.category && params.category !== 'all'
       ? params.category
@@ -111,6 +112,7 @@ export default function TopUpShop() {
       try {
         await IAP.initConnection();
         console.log('[TopUpShop] IAP Connection initialized successfully.');
+        setIsIAPConnected(true);
 
         if (Platform.OS === 'android') {
           await IAP.flushFailedPurchasesCachedAsPendingAndroid();
@@ -176,8 +178,29 @@ export default function TopUpShop() {
       if (purchaseUpdateSubscription) purchaseUpdateSubscription.remove();
       if (purchaseErrorSubscription) purchaseErrorSubscription.remove();
       IAP.endConnection();
+      setIsIAPConnected(false);
     };
   }, [showAlert]);
+
+  // Fetch product definitions from store once IAP connection is established and catalog is loaded
+  useEffect(() => {
+    if (isExpoGo || !isIAPConnected || !catalog.length) return;
+
+    const fetchIAPProducts = async () => {
+      try {
+        const skus = catalog.map(item => item.item_id).filter(Boolean);
+        if (skus.length > 0) {
+          console.log('[TopUpShop] Fetching products from store for SKUs:', skus);
+          const products = await IAP.getProducts({ skus });
+          console.log('[TopUpShop] Successfully fetched products from store:', products);
+        }
+      } catch (err) {
+        console.error('[TopUpShop] Failed to fetch products from store:', err);
+      }
+    };
+
+    fetchIAPProducts();
+  }, [catalog, isIAPConnected]);
 
   const loadCatalog = useCallback(async () => {
     try {
