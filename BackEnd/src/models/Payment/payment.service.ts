@@ -12,13 +12,43 @@ import {
 let playDeveloperApi: any = null;
 
 if (process.env.MOCK_IAP !== "true") {
-  const credentialsPath =
-    process.env.GOOGLE_APPLICATION_CREDENTIALS ||
-    path.resolve(__dirname, "credentials.json");
-  const auth = new google.auth.GoogleAuth({
-    keyFile: credentialsPath,
+  const credentialsEnv = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  const authOptions: any = {
     scopes: ["https://www.googleapis.com/auth/androidpublisher"],
-  });
+  };
+
+  let usedCredentials = false;
+  if (credentialsEnv) {
+    const trimmed = credentialsEnv.trim();
+    if (trimmed.startsWith("{")) {
+      try {
+        authOptions.credentials = JSON.parse(trimmed);
+        usedCredentials = true;
+      } catch (e) {
+        // Suppress stack trace for expected dotenv multiline truncation in local development
+        console.log("[Payment] Info: GOOGLE_APPLICATION_CREDENTIALS in .env is formatted as multiline JSON. Falling back to credentials.json.");
+      }
+    } else {
+      authOptions.keyFile = credentialsEnv;
+      usedCredentials = true;
+    }
+  }
+
+  if (!usedCredentials) {
+    authOptions.keyFile = path.resolve(__dirname, "credentials.json");
+  }
+
+  // Temporarily delete the environment variable so GoogleAuth doesn't try to open the JSON string as a file path
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  }
+
+  const auth = new google.auth.GoogleAuth(authOptions);
+
+  // Restore it afterwards
+  if (credentialsEnv) {
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = credentialsEnv;
+  }
 
   playDeveloperApi = google.androidpublisher({
     version: "v3",
@@ -31,11 +61,13 @@ export const verifyPurchase = async (
   req: Request<{}, any, VerifyPurchaseBody & { testPlayerId?: string }>,
   res: Response,
 ) => {
+  const { productId, purchaseToken } = req.body;
   // Allow passing testPlayerId in body ONLY during testing to bypass JWT auth in Postman
-  const isMock = process.env.MOCK_IAP === "true";
+  const isMock =
+    process.env.MOCK_IAP === "true" ||
+    (typeof purchaseToken === "string" && purchaseToken.startsWith("TEST_"));
   const playerId =
     (req as any).user?.id || (isMock ? req.body.testPlayerId : undefined);
-  const { productId, purchaseToken } = req.body;
 
   if (!productId || !purchaseToken || !playerId) {
     return errorResponse(

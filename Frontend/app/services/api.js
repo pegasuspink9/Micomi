@@ -7,7 +7,7 @@ const isNetworkError = (error) => {
 };
 
 const POSSIBLE_BACKEND_URLS = [
-  'https://micomi-huo8f.ondigitalocean.app'
+  'http://192.168.254.195:3000'
 ];
 
 class ApiService {

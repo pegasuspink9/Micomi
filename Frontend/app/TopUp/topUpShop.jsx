@@ -235,8 +235,16 @@ export default function TopUpShop() {
         console.log(`[TopUpShop] Requesting native purchase for SKU: ${item.item_id}`);
         // requestPurchase triggers the official Google Play Billing Bottom Sheet
         await IAP.requestPurchase({
-          skus: [item.item_id],
-          andDangerouslyFinishTransactionAutomaticallyIOS: false,
+          request: {
+            google: {
+              skus: [item.item_id],
+            },
+            apple: {
+              sku: item.item_id,
+              andDangerouslyFinishTransactionAutomatically: false,
+            },
+          },
+          type: 'in-app',
         });
         // The purchaseUpdatedListener will handle backend verification & finishTransaction
       } catch (err) {
