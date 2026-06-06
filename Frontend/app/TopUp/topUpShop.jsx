@@ -119,9 +119,11 @@ export default function TopUpShop() {
         // Listen for successful transactions
         purchaseUpdateSubscription = IAP.purchaseUpdatedListener(async (purchase) => {
           console.log('[TopUpShop] Purchase updated:', purchase);
-          const receipt = purchase.transactionReceipt;
-          if (receipt) {
-            try {
+          try {
+            if (!purchase) return;
+
+            const receipt = purchase.transactionReceipt;
+            if (receipt) {
               const token = purchase.purchaseToken || purchase.transactionId;
 
               // Verify the purchase with our secure backend verification endpoint
@@ -136,24 +138,31 @@ export default function TopUpShop() {
                 'Purchase Successful',
                 result?.message || 'Your purchase was completed successfully.',
               );
-            } catch (err) {
-              console.error('[TopUpShop] Verification or completion failed:', err);
-              showAlert('Verification Failed', err?.message || 'We could not verify your purchase. Please contact support.');
-            } finally {
-              purchaseInFlight.current = false;
-              setPurchasingItemId(null);
+            } else {
+              console.log('[TopUpShop] Purchase updated but missing transactionReceipt:', purchase);
             }
+          } catch (err) {
+            console.error('[TopUpShop] Verification or completion failed:', err);
+            showAlert('Verification Failed', err?.message || 'We could not verify your purchase. Please contact support.');
+          } finally {
+            purchaseInFlight.current = false;
+            setPurchasingItemId(null);
           }
         });
 
         // Listen for transaction errors (e.g. user cancelled)
         purchaseErrorSubscription = IAP.purchaseErrorListener((error) => {
           console.warn('[TopUpShop] Purchase error:', error);
-          if (error?.code !== 'E_USER_CANCELLED') {
-            showAlert('Purchase Failed', error?.message || 'Something went wrong with the purchase.');
+          try {
+            if (error?.code !== 'E_USER_CANCELLED') {
+              showAlert('Purchase Failed', error?.message || 'Something went wrong with the purchase.');
+            }
+          } catch (err) {
+            console.error('[TopUpShop] Error in purchaseErrorListener:', err);
+          } finally {
+            purchaseInFlight.current = false;
+            setPurchasingItemId(null);
           }
-          purchaseInFlight.current = false;
-          setPurchasingItemId(null);
         });
 
       } catch (err) {
