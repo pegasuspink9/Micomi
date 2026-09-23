@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import express from "express";
+import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
 
 import { setupCronJobs } from "../helper/cronJobs";
@@ -31,10 +32,11 @@ import dailyRewardRoutes from "./models/DailyReward/dailyReward.routes";
 import themeRoutes from "./models/Theme/theme.routes";
 import adsRoutes from "./models/Ads/ads.routes";
 import paymentRoutes from "./models/Payment/payment.routes";
+import { globalLimiter } from "../middleware/rateLimit.middleware";
 
 import { Server } from "socket.io";
 import http from "http";
-import { setSocketServer } from "./socket";
+import { setSocketServer, socketConnectionLimiter } from "./socket";
 
 dotenv.config();
 const app = express();
@@ -42,7 +44,9 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 setSocketServer(io);
 
-app.use(express.json());
+app.set("trust proxy", 1);
+
+app.use(express.json({ limit: "100kb" }));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
@@ -54,6 +58,8 @@ app.use(
     credentials: true,
   }),
 );
+
+app.use(globalLimiter);
 
 app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
@@ -78,16 +84,38 @@ app.use("/theme", themeRoutes);
 app.use("/payment", paymentRoutes);
 app.use("/ads", adsRoutes);
 
-//temporary
-app.get("/progress", getAllPlayerProgress);
+io.use(async (socket, next) => {
+  try {
+    const ip = socket.handshake.address;
+
+    await socketConnectionLimiter.consume(`ip:${ip}`);
+
+    const token = socket.handshake.auth?.token;
+
+    if (typeof token !== "string") {
+      return next(new Error("Authentication required"));
+    }
+
+    const user = jwt.verify(token, process.env.JWT_SECRET!) as {
+      id: number;
+      role: string;
+    };
+
+    if (user.role !== "player") {
+      return next(new Error("Player access required"));
+    }
+
+    socket.data.user = user;
+    next();
+  } catch {
+    next(new Error("Too many connections or invalid authentication"));
+  }
+});
 
 io.on("connection", (socket) => {
-  console.log("Player connected:", socket.id);
+  const playerId = socket.data.user.id;
 
-  socket.on("joinRoom", (playerId: number) => {
-    socket.join(playerId.toString());
-    console.log(`Player ${playerId} joined their room`);
-  });
+  socket.join(`player:${playerId}`);
 
   socket.on("disconnect", () => {
     console.log("Player disconnected:", socket.id);

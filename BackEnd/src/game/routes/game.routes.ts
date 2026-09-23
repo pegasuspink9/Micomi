@@ -13,6 +13,10 @@ import {
   authenticate,
   requirePlayer,
 } from "../../../middleware/auth.middleware";
+import {
+  gameplayLimiter,
+  purchaseLimiter,
+} from "../../../middleware/rateLimit.middleware";
 
 const router = express.Router();
 
@@ -33,6 +37,7 @@ router.post(
   "/entryLevel/:levelId",
   authenticate,
   requirePlayer,
+  gameplayLimiter,
   LevelController.enterLevelController,
 );
 router.post(
@@ -53,6 +58,7 @@ router.post(
   "/submit-challenge/:levelId/:challengeId",
   authenticate,
   requirePlayer,
+  gameplayLimiter,
   ChallengeController.submitChallenge,
 );
 router.post(
@@ -80,6 +86,7 @@ router.post(
   "/buy-character/:characterShopId",
   authenticate,
   requirePlayer,
+  gameplayLimiter,
   ShopController.buyCharacter,
 );
 router.get(
@@ -96,7 +103,11 @@ router.post(
 );
 
 //Achievement routes
-router.post("/check-achievements", AchievementController.getPlayerAchievements);
+router.post(
+  "/check-achievements",
+  authenticate,
+  AchievementController.getPlayerAchievements,
+);
 router.get(
   "/player-achievement",
   authenticate,
@@ -153,12 +164,14 @@ router.post(
   "/pvp/daily/match/topic",
   authenticate,
   requirePlayer,
+  gameplayLimiter,
   PvPDailyController.setMatchTopic,
 );
 router.post(
   "/pvp/daily/match/play",
   authenticate,
   requirePlayer,
+  gameplayLimiter,
   PvPDailyController.playDailyPvp,
 );
 router.get(
@@ -183,12 +196,14 @@ router.post(
   "/pvp/daily/match/cancel",
   authenticate,
   requirePlayer,
+  gameplayLimiter,
   PvPDailyController.cancelMatchmaking,
 );
 router.post(
   "/pvp/daily/match/:matchId/surrender",
   authenticate,
   requirePlayer,
+  gameplayLimiter,
   PvPDailyController.surrenderMatch,
 );
 router.get(
@@ -201,12 +216,14 @@ router.post(
   "/pvp/daily/match/:matchId/message",
   authenticate,
   requirePlayer,
+  gameplayLimiter,
   PvPDailyController.setInGameMessage,
 );
 router.post(
   "/pvp/daily/match/submit-answer/:matchId/:challengeId",
   authenticate,
   requirePlayer,
+  gameplayLimiter,
   PvPDailyController.submitAnswer,
 );
 
@@ -216,6 +233,7 @@ router.post(
   "/themes/:themeId/purchase",
   authenticate,
   requirePlayer,
+  purchaseLimiter,
   ThemeController.buyTheme,
 );
 router.post(

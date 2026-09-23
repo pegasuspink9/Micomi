@@ -4,10 +4,11 @@ import {
   authenticate,
   requireAdmin,
 } from "../../../middleware/auth.middleware";
+import { authLimiter } from "../../../middleware/rateLimit.middleware";
 
 const router = express.Router();
 
-router.post("/login", AdminController.loginAdmin);
+router.post("/login", authLimiter, AdminController.loginAdmin);
 
 router.get("/", authenticate, requireAdmin, AdminController.getAllAdmins);
 router.get("/:id", authenticate, requireAdmin, AdminController.getAdminById);

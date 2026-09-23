@@ -5,11 +5,12 @@ import {
   requireAdmin,
   requirePlayer,
 } from "../../../middleware/auth.middleware";
+import { authLimiter } from "../../../middleware/rateLimit.middleware";
 
 const router = express.Router();
 
-router.post("/login", PlayerController.loginPlayer);
-router.post("/register", PlayerController.createPlayer);
+router.post("/login", authLimiter, PlayerController.loginPlayer);
+router.post("/register", authLimiter, PlayerController.createPlayer);
 
 router.get(
   "/profile",
